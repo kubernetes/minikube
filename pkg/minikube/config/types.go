@@ -83,7 +83,8 @@ type ClusterConfig struct {
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
 	MultiNodeRequested      bool
-	ExtraDisks              int // currently only implemented for hyperkit
+	ExtraDisks              int // currently only implemented for hyperkit and kvm2
+	CertExpiration          time.Duration
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

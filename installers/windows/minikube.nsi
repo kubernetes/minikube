@@ -142,11 +142,11 @@ Section "Install"
 	WriteRegStr HKLM "${UNINSTALLDIR}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
 	WriteRegStr HKLM "${UNINSTALLDIR}" "InstallLocation" "$\"$INSTDIR$\""
 	WriteRegStr HKLM "${UNINSTALLDIR}" "DisplayIcon" "$\"$INSTDIR\logo.ico$\""
-	WriteRegStr HKLM "${UNINSTALLDIR}" "Publisher" "$\"${COMPANYNAME}$\""
-	WriteRegStr HKLM "${UNINSTALLDIR}" "HelpLink" "$\"${HELPURL}$\""
-	WriteRegStr HKLM "${UNINSTALLDIR}" "URLUpdateInfo" "$\"${UPDATEURL}$\""
-	WriteRegStr HKLM "${UNINSTALLDIR}" "URLInfoAbout" "$\"${ABOUTURL}$\""
-	WriteRegStr HKLM "${UNINSTALLDIR}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}$\""
+	WriteRegStr HKLM "${UNINSTALLDIR}" "Publisher" "${COMPANYNAME}"
+	WriteRegStr HKLM "${UNINSTALLDIR}" "HelpLink" "${HELPURL}"
+	WriteRegStr HKLM "${UNINSTALLDIR}" "URLUpdateInfo" "${UPDATEURL}"
+	WriteRegStr HKLM "${UNINSTALLDIR}" "URLInfoAbout" "${ABOUTURL}"
+	WriteRegStr HKLM "${UNINSTALLDIR}" "DisplayVersion" "${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}"
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "VersionMajor" ${VERSIONMAJOR}
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "VersionMinor" ${VERSIONMINOR}
 	

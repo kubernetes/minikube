@@ -30,6 +30,9 @@ RUN cd ./cmd/auto-pause/ && go build
 FROM ubuntu:focal-20210401
 
 ARG BUILDKIT_VERSION="v0.9.0"
+ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG CRIO_VERSION="1.22"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -113,13 +116,28 @@ RUN clean-install \
     openssh-server \
     dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    libglib2.0-0 \
+    # fuse3 is required for fuse-overlayfs
+    fuse3
 
 # install docker
 RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io
+
+# install fuse-overlayfs (used by rootless; apt-get version is old)
+RUN curl -sSL --retry 5 --output /usr/local/bin/fuse-overlayfs https://github.com/containers/fuse-overlayfs/releases/download/${FUSE_OVERLAYFS_VERSION}/fuse-overlayfs-$(uname -m) \
+  && chmod +x  /usr/local/bin/fuse-overlayfs
+
+# install containerd-fuse-overlayfs (used by rootless)
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+ && echo "Installing containerd-fuse-overlayfs..." \
+    && export CONTAINERD_FUSE_OVERLAYFS_BASE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/v${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
+    && curl -sSL --retry 5 --output /tmp/containerd-fuse-overlayfs.tgz "${CONTAINERD_FUSE_OVERLAYFS_BASE_URL}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${ARCH}.tar.gz" \
+    && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.tgz \
+    && rm -rf /tmp/containerd-fuse-overlayfs.tgz
+COPY deploy/kicbase/containerd-fuse-overlayfs.service /etc/systemd/system/containerd-fuse-overlayfs.service
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
@@ -139,9 +157,9 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     apt-key add - < Release.key && \
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.20/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.20.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/Release.key && \
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
+RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc
 

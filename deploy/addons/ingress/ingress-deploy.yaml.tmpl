@@ -215,7 +215,7 @@ rules:
     resources:
       - configmaps
     resourceNames:
-      - ingress-controller-leader-nginx
+      - ingress-controller-leader
     verbs:
       - get
       - update
@@ -225,6 +225,7 @@ rules:
       - configmaps
     verbs:
       - create
+      - update
   - apiGroups:
       - ''
     resources:
@@ -251,6 +252,17 @@ subjects:
   - kind: ServiceAccount
     name: ingress-nginx
     namespace: ingress-nginx
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+  name: nginx
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: k8s.io/ingress-nginx
 ---
 # Source: ingress-nginx/templates/controller-service-webhook.yaml
 apiVersion: v1

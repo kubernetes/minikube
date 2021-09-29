@@ -122,6 +122,7 @@ const (
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
+	certExpiration          = "cert-expiration"
 )
 
 var (
@@ -168,7 +169,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit driver)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
+	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -455,6 +457,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
 		ExtraDisks:              viper.GetInt(extraDisks),
+		CertExpiration:          viper.GetDuration(certExpiration),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -492,7 +495,35 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		}
 	}
 
+	if driver.IsKIC(drvName) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+		if si.Rootless {
+			if cc.KubernetesConfig.ContainerRuntime != "containerd" {
+				exit.Message(reason.Usage, "Container runtime must be set to \"containerd\" for rootless")
+				// TODO: support cri-o (https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri)
+			}
+			// KubeletInUserNamespace feature gate is essential for rootless driver.
+			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		}
+	}
+
 	return cc
+}
+
+func addFeatureGate(featureGates, s string) string {
+	split := strings.Split(featureGates, ",")
+	m := make(map[string]struct{}, len(split))
+	for _, v := range split {
+		m[v] = struct{}{}
+	}
+	if _, ok := m[s]; !ok {
+		split = append(split, s)
+	}
+	return strings.Join(split, ",")
 }
 
 func checkNumaCount(k8sVersion string) {
@@ -550,6 +581,10 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 	// this makes sure api server port not be set as 0!
 	if cc.KubernetesConfig.NodePort == 0 {
 		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+	}
+
+	if cc.CertExpiration == 0 {
+		cc.CertExpiration = constants.DefaultCertExpiration
 	}
 
 }
@@ -624,6 +659,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
+	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
@@ -730,7 +766,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

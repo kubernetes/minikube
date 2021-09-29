@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 /*
@@ -88,6 +89,12 @@ type Driver struct {
 
 	// NUMA XML
 	NUMANodeXML string
+
+	// Extra Disks
+	ExtraDisks int
+
+	// Extra Disks XML
+	ExtraDisksXML []string
 }
 
 const (
@@ -350,6 +357,26 @@ func (d *Driver) Create() (err error) {
 	log.Infof("Building disk image from %s", d.Boot2DockerURL)
 	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "error creating disk")
+	}
+
+	if d.ExtraDisks > 20 {
+		// Limiting the number of disks to 20 arbitrarily. If more disks are
+		// needed, the logical name generation has to changed to create them if
+		// the form hdaa, hdab, etc
+		return errors.Wrap(err, "cannot create more than 20 extra disks")
+	}
+	for i := 0; i < d.ExtraDisks; i++ {
+		diskpath, err := createExtraDisk(d, i)
+		if err != nil {
+			return errors.Wrap(err, "creating extra disks")
+		}
+		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.
+		// TODO: Enhance the domain template to use variable for the logical name of the main disk and the cdrom disk.
+		extraDisksXML, err := getExtraDiskXML(diskpath, fmt.Sprintf("hd%v", string(rune('d'+i))))
+		if err != nil {
+			return errors.Wrap(err, "creating extraDisk XML")
+		}
+		d.ExtraDisksXML = append(d.ExtraDisksXML, extraDisksXML)
 	}
 
 	if err := ensureDirPermissions(store); err != nil {

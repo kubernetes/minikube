@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -68,7 +69,7 @@ func TestAddons(t *testing.T) {
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
-			args = append(args, "--addons=ingress")
+			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
 		if !arm64Platform() {
 			args = append(args, "--addons=helm-tiller")
@@ -86,10 +87,10 @@ func TestAddons(t *testing.T) {
 		if detect.IsOnGCE() {
 			args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err == nil {
-				t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Command(), err)
 			} else {
-				if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+				if !detect.IsCloudShell() && !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
 					t.Errorf("Unexpected error message: %v", rr.Output())
 				} else {
 					// ok, use force here since we are in GCE
@@ -120,7 +121,6 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-			{"GCPAuth", validateGCPAuthAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -129,6 +129,25 @@ func TestAddons(t *testing.T) {
 			}
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
+	// Run other tests after to avoid collision
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"GCPAuth", validateGCPAuthAddon},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
 		}
@@ -155,7 +174,7 @@ func TestAddons(t *testing.T) {
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 	if NoneDriver() {
-		t.Skipf("skipping: ingress not supported ")
+		t.Skipf("skipping: ingress not supported")
 	}
 
 	client, err := kapi.Client(profile)
@@ -167,7 +186,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.107.218.58:443: i/o timeout
 	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": context deadline exceeded
 	if _, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=ingress-nginx", "pod", "--selector=app.kubernetes.io/component=controller", "--timeout=90s")); err != nil {
-		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
+		t.Fatalf("failed waiting for ingress-nginx-controller : %v", err)
 	}
 
 	// create networking.k8s.io/v1 ingress
@@ -191,7 +210,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(4)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for ngnix pod: %v", err)
 	}
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
@@ -203,19 +222,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	// check if the ingress can route nginx app with networking.k8s.io/v1 ingress
 	checkv1Ingress := func() error {
-		var rr *RunResult
-		var err error
-		if NoneDriver() { // just run curl directly on the none driver
-			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
-			if err != nil {
-				return err
-			}
-		} else {
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-			if err != nil {
-				return err
-			}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+		if err != nil {
+			return err
 		}
+
 		stderr := rr.Stderr.String()
 		if rr.Stderr.String() != "" {
 			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
@@ -228,6 +239,36 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 	if err := retry.Expo(checkv1Ingress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
+	}
+
+	if NeedsPortForward() {
+		t.Skip("skipping ingress DNS test for any combination that needs port forwarding")
+	}
+
+	// check the ingress-dns addon here as well
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "ingress-dns-example.yaml")))
+	if err != nil {
+		t.Errorf("failed to kubectl replace ingress-dns-example. args %q. %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
+	if err != nil {
+		t.Errorf("failed to retrieve minikube ip. args %q : %v", rr.Command(), err)
+	}
+	ip := strings.TrimSuffix(rr.Stdout.String(), "\n")
+
+	rr, err = Run(t, exec.CommandContext(ctx, "nslookup", "hello-john.test", ip))
+	if err != nil {
+		t.Errorf("failed to nslookup hello-john.test host. args %q : %v", rr.Command(), err)
+	}
+	// nslookup should include info about the hello-john.test host, including minikube's ip
+	if !strings.Contains(rr.Stdout.String(), ip) {
+		t.Errorf("unexpected output from nslookup. stdout: %v\nstderr: %v", rr.Stdout.String(), rr.Stderr.String())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress-dns", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable ingress-dns addon. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
@@ -389,10 +430,10 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	want := "Server: &version.Version"
-	// Test from inside the cluster (`helm version` use pod.list permission. we use tiller serviceaccount in kube-system to list pod)
+	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--serviceaccount=tiller", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}
@@ -663,8 +704,15 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+	disableGCPAuth := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+		t.Errorf("failed to disable GCP auth addon: %v", err)
 	}
 }

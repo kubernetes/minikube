@@ -19,6 +19,39 @@ set -o nounset
 set -o pipefail
 set -x
 
+# If /proc/self/uid_map 4294967295 mappings, we are in the initial user namespace, i.e. the host.
+# Otherwise we are in a non-initial user namespace.
+# https://github.com/opencontainers/runc/blob/v1.0.0-rc92/libcontainer/system/linux.go#L109-L118
+userns=""
+if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
+  userns="1"
+  echo 'INFO: running in a user namespace (experimental)'
+fi
+
+validate_userns() {
+  if [[ -z "${userns}" ]]; then
+    return
+  fi
+
+  local nofile_hard
+  nofile_hard="$(ulimit -Hn)"
+  local nofile_hard_expected="64000"
+  if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
+    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+  fi
+
+  if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    echo "ERROR: UserNS: cgroup v2 needs to be enabled, see https://rootlesscontaine.rs/getting-started/common/cgroup2/" >&2
+    exit 1
+  fi
+  for f in cpu memory pids; do
+    if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
+      echo "ERROR: UserNS: $f controller needs to be delegated, see https://rootlesscontaine.rs/getting-started/common/cgroup2/" >&2
+    exit 1
+    fi
+  done
+}
+
 configure_containerd() {
   # we need to switch to the 'native' snapshotter on zfs
   if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
@@ -73,12 +106,16 @@ fix_mount() {
     sync
   fi
 
-  echo 'INFO: remounting /sys read-only'
-  # systemd-in-a-container should have read only /sys
-  # https://systemd.io/CONTAINER_INTERFACE/
-  # however, we need other things from `docker run --privileged` ...
-  # and this flag also happens to make /sys rw, amongst other things
-  mount -o remount,ro /sys
+  if [[ -z "${userns}" ]]; then
+    echo 'INFO: remounting /sys read-only'
+    # systemd-in-a-container should have read only /sys
+    # https://systemd.io/CONTAINER_INTERFACE/
+    # however, we need other things from `docker run --privileged` ...
+    # and this flag also happens to make /sys rw, amongst other things
+    #
+    # This step is skipped when running inside UserNS, because it fails with EACCES.
+    mount -o remount,ro /sys
+  fi
 
   echo 'INFO: making mounts shared' >&2
   # for mount propagation
@@ -333,6 +370,9 @@ enable_network_magic(){
     echo -n "${curr_ipv6}" >/kind/old-ipv6
   fi
 }
+
+# validate state
+validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races

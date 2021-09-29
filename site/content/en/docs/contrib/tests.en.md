@@ -42,6 +42,11 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
+## TestCertExpiration
+makes sure minikube can start after its profile certs have expired.
+It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
+It also makes sure minikube prints a cert expiration warning to the user.
+
 ## TestDockerFlags
 makes sure the --docker-env and --docker-opt parameters are respected
 
@@ -53,6 +58,9 @@ makes sure the --force-systemd flag worked with the docker container runtime
 
 #### validateContainerdSystemd
 makes sure the --force-systemd flag worked with the containerd container runtime
+
+#### validateCrioSystemd
+makes sure the --force-systemd flag worked with the cri-o container runtime
 
 ## TestForceSystemdEnv
 makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the --force-systemd flag
@@ -75,26 +83,8 @@ are functionality tests which can safely share a profile in parallel
 #### validateNodeLabels
 checks if minikube cluster is created with correct kubernetes's node label
 
-#### validateLoadImage
-makes sure that `minikube image load` works as expected
-
-#### validateLoadImageFromFile
-makes sure that `minikube image load` works from a local file
-
-#### validateRemoveImage
-makes sures that `minikube image rm` works as expected
-
-#### validateSaveImage
-makes sure that `minikube image save` works as expected
-
-#### validateSaveImageToFile
-makes sure that `minikube image save` works to a local file
-
-#### validateBuildImage
-makes sures that `minikube image build` works as expected
-
-#### validateListImages
-makes sures that `minikube image ls` works as expected
+#### validateImageCommands
+runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 #### validateDockerEnv
 check functionality of minikube after evaluating docker-env
@@ -337,10 +327,6 @@ makes sure no left over left after deleting a profile such as containers or volu
 
 #### validateStatus
 makes sure paused clusters show up in minikube status correctly
-
-## TestDebPackageInstall
-TestPackageInstall tests installation of .deb packages with minikube itself and with kvm2 driver
-on various debian/ubuntu docker images
 
 ## TestPreload
 verifies the preload tarballs get pulled in properly by minikube

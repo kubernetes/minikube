@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -43,7 +44,7 @@ func TestScheduledStopWindows(t *testing.T) {
 		t.Skip("test only runs on windows")
 	}
 	profile := UniqueProfileName("scheduled-stop")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(6))
 	defer CleanupWithLogs(t, profile, cancel)
 	startMinikube(ctx, t, profile)
 
@@ -64,7 +65,7 @@ func TestScheduledStopWindows(t *testing.T) {
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
 
 	// wait for stop to complete
-	time.Sleep(15 * time.Second)
+	time.Sleep(time.Minute)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"

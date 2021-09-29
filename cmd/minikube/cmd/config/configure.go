@@ -199,13 +199,9 @@ var addonsConfigureCmd = &cobra.Command{
 				return net.ParseIP(s) != nil
 			}
 
-			if cfg.KubernetesConfig.LoadBalancerStartIP == "" {
-				cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
-			}
+			cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
 
-			if cfg.KubernetesConfig.LoadBalancerEndIP == "" {
-				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
-			}
+			cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})

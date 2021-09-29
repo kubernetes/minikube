@@ -1,3 +1,4 @@
+//go:build windows && integration
 // +build windows,integration
 
 /*

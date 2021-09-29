@@ -1,3 +1,4 @@
+//go:build linux && amd64
 // +build linux,amd64
 
 /*
@@ -74,6 +75,9 @@ const domainTmpl = `
     </rng>
     {{if .GPU}}
     {{.DevicesXML}}
+    {{end}}
+    {{if gt .ExtraDisks 0}}
+    {{.ExtraDisksXML}}
     {{end}}
   </devices>
 </domain>

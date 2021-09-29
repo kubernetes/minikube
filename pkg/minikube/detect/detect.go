@@ -68,8 +68,8 @@ func IsOnGCE() bool {
 
 // IsCloudShell determines whether minikube is running inside CloudShell
 func IsCloudShell() bool {
-	_, e := os.LookupEnv("CLOUDSHELL_ENVIRONMENT")
-	return e
+	e := os.Getenv("CLOUD_SHELL")
+	return e == "true"
 }
 
 // IsAmd64M1Emulation  determines whether amd64 minikube binary is running on M1 mac in emulation mode

@@ -146,14 +146,7 @@ func status() (retState registry.State) {
 		return suggestFix("info", -1, serr, fmt.Errorf("docker info error: %s", serr))
 	}
 
-	if si.Rootless {
-		return registry.State{
-			Reason:    "PROVIDER_DOCKER_ROOTLESS",
-			Error:     errors.New("rootless Docker not supported yet"),
-			Installed: true,
-			Healthy:   false,
-			Doc:       "https://github.com/kubernetes/minikube/issues/10836"}
-	}
+	// TODO: validate cgroup v2 delegation when si.Rootless is true
 
 	return checkNeedsImprovement()
 }

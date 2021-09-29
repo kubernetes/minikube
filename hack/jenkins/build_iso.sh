@@ -24,6 +24,9 @@ set -x -o pipefail
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
+# Make sure golang is installed and configured
+./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+
 # Make sure all required packages are installed
 sudo apt-get update
 sudo apt-get -y install build-essential unzip rsync bc python2 p7zip-full

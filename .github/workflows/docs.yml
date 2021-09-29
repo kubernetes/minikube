@@ -6,10 +6,10 @@ on:
       - master  
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.16.7'
+  GO_VERSION: '1.17.1'
 jobs:
   generate-docs:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
