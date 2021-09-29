@@ -151,7 +151,7 @@ func updateRunsFile(h *benchmarks, pastRunsPath string) {
 func createChart(benchmarks []benchmark, chartOutputPath string) {
 	n := len(benchmarks)
 	var cmdXYs, apiXYs, k8sXYs, dnsSvcXYs, appXYs, dnsAnsXYs, totalXYs, cpuXYs plotter.XYs
-	xys := []*plotter.XYs{&cmdXYs, &apiXYs, &k8sXYs, &dnsSvcXYs, &appXYs, &dnsAnsXYs, &totalXYs}
+	xys := []*plotter.XYs{&cmdXYs, &apiXYs, &k8sXYs, &dnsSvcXYs, &appXYs, &dnsAnsXYs, &totalXYs, &cpuXYs}
 
 	for _, xy := range xys {
 		*xy = make(plotter.XYs, n)
