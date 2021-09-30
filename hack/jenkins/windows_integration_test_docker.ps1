@@ -29,7 +29,13 @@ If ($lastexitcode -gt 0) {
 
 	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Docker_Windows.txt`", `"context`": `"Docker_Windows`"}"
 
-	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
+	$creds = "minikube-bot:$($env:access_token)"
+	$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($crds))
+	$auth = "Basic $encoded"
+	$headers = @{
+		Authorization = $auth
+	}
+	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 	docker system prune --all --force
 	Exit $lastexitcode
