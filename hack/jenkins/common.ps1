@@ -88,7 +88,7 @@ $headers = @{
 	Authorization = $auth
 }
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"${env:JOB_NAME}`"}"
-Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
+Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 ./out/windows_integration_teardown.ps1
 
