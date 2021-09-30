@@ -114,6 +114,10 @@ func readInLatestBenchmark(latestBenchmarkPath string) benchmark {
 	var total float64
 	for _, step := range steps {
 		*step /= float64(count)
+		// Don't add CPU time to the total time.
+		if step == &cpu {
+			continue
+		}
 		total += *step
 	}
 
