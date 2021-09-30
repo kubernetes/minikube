@@ -19,5 +19,6 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/common.ps1 out/
 $driver="hyperv"
 $timeout="180m"
 $env:JOB_NAME="Hyper-V_Windows"
+$env:EXTERNAL="yes"
 
 . ./out/common.ps1

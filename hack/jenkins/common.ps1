@@ -64,15 +64,31 @@ $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 
 #Upload logs to gcs
-gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt
-gsutil -qm cp testout.json gs://$gcs_bucket/${env:JOB_NAME}.json
-gsutil -qm cp testout.html gs://$gcs_bucket/${env:JOB_NAME}.html
-gsutil -qm cp testout_summary.json gs://$gcs_bucket/${env:JOB_NAME}_summary.json
+If($env:EXTERNAL -eq "yes"){
+	mkdir -p test_reports
+	cp testout.txt test_reports/out.txt
+	cp testout.json test_reports/out.json
+	cp testout.html test_reports/out.html
+	cp testout_summary.json test_reports/summary.txt
+} Else {
+	gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt
+	gsutil -qm cp testout.json gs://$gcs_bucket/${env:JOB_NAME}.json
+	gsutil -qm cp testout.html gs://$gcs_bucket/${env:JOB_NAME}.html
+	gsutil -qm cp testout_summary.json gs://$gcs_bucket/${env:JOB_NAME}_summary.json
+}
 
 $env:target_url="https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.html"
 # Update the PR with the new info
+
+# Manually build basic authorization headers, ugh
+$creds = "minikube-bot:$($env:access_token)"
+$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($crds))
+$auth = "Basic $encoded"
+$headers = @{
+	Authorization = $auth
+}
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"${env:JOB_NAME}`"}"
-Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
+Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 ./out/windows_integration_teardown.ps1
 
