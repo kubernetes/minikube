@@ -35,7 +35,7 @@ If ($lastexitcode -gt 0) {
 	$headers = @{
 		Authorization = $auth
 	}
-	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
+	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 	docker system prune --all --force
 	Exit $lastexitcode
