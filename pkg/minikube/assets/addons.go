@@ -467,7 +467,7 @@ var Addons = map[string]*Addon{
 			"helm-tiller-svc.yaml",
 			"0640"),
 	}, false, "helm-tiller", "", map[string]string{
-		"Tiller": "helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
+		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
 		// GCR is deprecated in helm
 		// https://github.com/helm/helm/issues/10004#issuecomment-894478908
