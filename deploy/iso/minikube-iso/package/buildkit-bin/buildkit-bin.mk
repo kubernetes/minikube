@@ -29,21 +29,24 @@ define BUILDKIT_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/buildkitd \
 		$(TARGET_DIR)/usr/sbin
+	$(INSTALL) -D -m 644 \
+		$(BUILDKIT_BIN_PKGDIR)/buildkit.conf \
+		$(TARGET_DIR)/usr/lib/tmpfiles.d/buildkit.conf
+	$(INSTALL) -D -m 644 \
+		$(BUILDKIT_BIN_PKGDIR)/buildkitd.toml \
+		$(TARGET_DIR)/etc/buildkit/buildkitd.toml
 endef
 
 define BUILDKIT_BIN_INSTALL_INIT_SYSTEMD
-        $(INSTALL) -D -m 644 \
-                        $(BUILDKIT_BIN_PKGDIR)/buildkit.service \
-                        $(TARGET_DIR)/usr/lib/systemd/system/buildkit.service
-        $(INSTALL) -D -m 644 \
-                        $(BUILDKIT_BIN_PKGDIR)/buildkit.socket \
-                        $(TARGET_DIR)/usr/lib/systemd/system/buildkit.socket
-        $(INSTALL) -D -m 644 \
-                        $(BUILDKIT_BIN_PKGDIR)/buildkit.conf \
-                        $(TARGET_DIR)/usr/lib/tmpfiles.d/buildkit.conf
-        $(INSTALL) -D -m 644 \
-                        $(BUILDKIT_BIN_PKGDIR)/buildkitd.toml \
-                        $(TARGET_DIR)/etc/buildkit/buildkitd.toml
+	$(INSTALL) -D -m 644 \
+		$(BUILDKIT_BIN_PKGDIR)/buildkit.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/buildkit.service
+	$(INSTALL) -D -m 644 \
+		$(BUILDKIT_BIN_PKGDIR)/buildkit.socket \
+		$(TARGET_DIR)/usr/lib/systemd/system/buildkit.socket
+	$(INSTALL) -D -m 644 \
+		$(BUILDKIT_BIN_PKGDIR)/51-buildkit.preset \
+		$(TARGET_DIR)/usr/lib/systemd/system-preset/51-buildkit.preset
 endef
 
 $(eval $(generic-package))
