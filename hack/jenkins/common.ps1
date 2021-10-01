@@ -12,16 +12,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# A utility to write commit statuses to github, since authenticating is complicated now
+function Write-GithubStatus {
+	param (
+		$JsonBody
+	)
+	# Manually build basic authorization headers, ugh
+	$creds = "minikube-bot:$($env:access_token)"
+	$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($creds))
+	$auth = "Basic $encoded"
+	$headers = @{
+		Authorization = $auth
+	}
+	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $JsonBody -ContentType "application/json" -Method Post -usebasicparsing
+}
+
+$env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
+$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
+
+# Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
+(New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
+
+# Make sure Docker is up and running
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+./out/setup_docker_desktop_windows.ps1
+If ($lastexitcode -gt 0) {
+	echo "Docker failed to start, exiting."
+
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"Hyper-V_Windows`"}"
+
+	Write-GithubStatus -JsonBody $json
+	docker system prune --all --force
+	Exit $lastexitcode
+}
+
+# Download gopogh and gotestsum
 (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
 (New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.6.4/gotestsum_1.6.4_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
 tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
 
+# Grab all the scripts we'll need for integration tests
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
+# Make sure an old minikube instance isn't running
 ./out/minikube-windows-amd64.exe delete --all
 
 ./out/windows_integration_setup.ps1
@@ -60,11 +97,11 @@ If($env:status -eq "failure") {
 }
 echo $description
 
-$env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
-$gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 
 #Upload logs to gcs
 If($env:EXTERNAL -eq "yes"){
+	# If we're not already in GCP, we won't have credentials to upload to GCS
+	# Instad, move logs to a predictable spot Jenkins can find and upload itself
 	mkdir -p test_reports
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json
@@ -78,17 +115,10 @@ If($env:EXTERNAL -eq "yes"){
 }
 
 $env:target_url="https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.html"
-# Update the PR with the new info
 
-# Manually build basic authorization headers, ugh
-$creds = "minikube-bot:$($env:access_token)"
-$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($creds))
-$auth = "Basic $encoded"
-$headers = @{
-	Authorization = $auth
-}
+# Update the PR with the new info
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"${env:JOB_NAME}`"}"
-Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $json -ContentType "application/json" -Method Post -usebasicparsing
+Write-GithubStatus -JsonBody $json
 
 ./out/windows_integration_teardown.ps1
 
