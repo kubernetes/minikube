@@ -100,9 +100,7 @@ var logsCmd = &cobra.Command{
 		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
 		if err != nil {
 			out.Ln("")
-			// Avoid exit.Error, since it outputs the issue URL
 			out.WarningT("{{.error}}", out.V{"error": err})
-			os.Exit(reason.ExSvcError)
 		}
 	},
 }
