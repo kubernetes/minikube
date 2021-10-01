@@ -30,7 +30,7 @@ If ($lastexitcode -gt 0) {
 	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"Hyper-V_Windows`"}"
 
 	$creds = "minikube-bot:$($env:access_token)"
-	$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($crds))
+	$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($creds))
 	$auth = "Basic $encoded"
 	$headers = @{
 		Authorization = $auth

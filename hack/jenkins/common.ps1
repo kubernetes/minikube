@@ -82,7 +82,7 @@ $env:target_url="https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.html"
 
 # Manually build basic authorization headers, ugh
 $creds = "minikube-bot:$($env:access_token)"
-$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($crds))
+$encoded = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($creds))
 $auth = "Basic $encoded"
 $headers = @{
 	Authorization = $auth
