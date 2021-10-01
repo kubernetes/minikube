@@ -255,15 +255,14 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	t.Run("ImageBuild", func(t *testing.T) {
 		MaybeParallel(t)
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pgrep", "buildkitd"))
-		if err == nil {
+		if _, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "pgrep", "buildkitd")); err == nil {
 			t.Errorf("buildkitd process is running, should not be running until `minikube image build` is ran")
 		}
 
 		newImage := fmt.Sprintf("localhost/my-image:%s", profile)
 
 		// try to build the new image with minikube
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
 		if err != nil {
 			t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
 		}
