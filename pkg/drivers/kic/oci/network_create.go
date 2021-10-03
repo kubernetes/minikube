@@ -54,7 +54,7 @@ func defaultBridgeName(ociBin string) string {
 }
 
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
+func CreateNetwork(ociBin string, profile string, networkName string) (net.IP, error) {
 	defaultBridgeName := defaultBridgeName(ociBin)
 	if networkName == defaultBridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
@@ -85,7 +85,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 			klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, err)
 			return nil, fmt.Errorf("un-retryable: %w", err)
 		}
-		info.gateway, err = tryCreateDockerNetwork(ociBin, subnet, info.mtu, networkName)
+		info.gateway, err = tryCreateDockerNetwork(ociBin, subnet, info.mtu, profile, networkName)
 		if err == nil {
 			klog.Infof("%s network %s %s created", ociBin, networkName, subnet.CIDR)
 			return info.gateway, nil
@@ -101,7 +101,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
 }
 
-func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
+func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, profile string, name string) (net.IP, error) {
 	gateway := net.ParseIP(subnet.Gateway)
 	klog.Infof("attempt to create %s network %s %s with gateway %s and MTU of %d ...", ociBin, name, subnet.CIDR, subnet.Gateway, mtu)
 	args := []string{
@@ -124,7 +124,7 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
 	}
-	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name)
+	args = append(args, fmt.Sprintf("--label=%s=%s,%s=%s", CreatedByLabelKey, "true", ProfileLabelKey, profile), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
@@ -304,7 +304,7 @@ func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 // DeleteKICNetworks deletes all networks created by kic
 func DeleteKICNetworks(ociBin string) []error {
 	var errs []error
-	ns, err := networkNamesByLabel(ociBin, CreatedByLabelKey)
+	ns, err := networkNamesByLabel(ociBin, ProfileLabelKey)
 	if err != nil {
 		return []error{errors.Wrap(err, "list all volume")}
 	}
