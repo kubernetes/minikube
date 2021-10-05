@@ -33,6 +33,11 @@ $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
+# Setup the cleanup and reboot cron
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_and_reboot.ps1 C:\jenkins
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_cron.ps1 out/
+./out/windows_cleanup_cron.ps1
+
 # Make sure Docker is up and running
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
 ./out/setup_docker_desktop_windows.ps1
