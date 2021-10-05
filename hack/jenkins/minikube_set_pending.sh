@@ -28,7 +28,7 @@ set -eux -o pipefail
 
 jobs=(
      'Hyperkit_macOS'
-     # 'Hyper-V_Windows'
+     'Hyper-V_Windows'
      # 'VirtualBox_Linux'
      # 'VirtualBox_macOS'
      # 'VirtualBox_Windows'

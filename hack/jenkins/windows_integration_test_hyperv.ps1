@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+mkdir -p out
+
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/common.ps1 out/
 
 $driver="hyperv"
-$timeout="65m"
+$timeout="180m"
 $env:JOB_NAME="Hyper-V_Windows"
+$env:EXTERNAL="yes"
 
 . ./out/common.ps1
