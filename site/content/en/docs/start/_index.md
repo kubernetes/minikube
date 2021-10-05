@@ -487,7 +487,7 @@ choco install minikube
 From a terminal with administrator access (but not logged in as root), run:
 
 ```shell
-minikube start
+minikube start  (default driver kvm2,if docker should) --driver=docker
 ```
 
 If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual-machine manager.
