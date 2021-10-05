@@ -39,7 +39,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_des
 If ($lastexitcode -gt 0) {
 	echo "Docker failed to start, exiting."
 
-	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"Hyper-V_Windows`"}"
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"$env:JOB_NAME`"}"
 
 	Write-GithubStatus -JsonBody $json
 	docker system prune --all --force
@@ -117,7 +117,7 @@ If($env:EXTERNAL -eq "yes"){
 $env:target_url="https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.html"
 
 # Update the PR with the new info
-$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"${env:JOB_NAME}`"}"
+$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins: $description`", `"target_url`": `"$env:target_url`", `"context`": `"$env:JOB_NAME`"}"
 Write-GithubStatus -JsonBody $json
 
 ./out/windows_integration_teardown.ps1
