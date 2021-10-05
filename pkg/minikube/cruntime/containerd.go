@@ -393,10 +393,6 @@ func downloadRemote(cr CommandRunner, src string) (string, error) {
 
 // BuildImage builds an image into this runtime
 func (r *Containerd) BuildImage(src string, file string, tag string, push bool, env []string, opts []string) error {
-	if err := r.initBuildkitDaemon(); err != nil {
-		return fmt.Errorf("failed to init buildkit daemon: %v", err)
-	}
-
 	// download url if not already present
 	dir, err := downloadRemote(r.Runner, src)
 	if err != nil {
@@ -454,24 +450,6 @@ func (r *Containerd) PushImage(name string) error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images push")
 	}
-	return nil
-}
-func (r *Containerd) initBuildkitDaemon() error {
-	// if daemon is already running, do nothing
-	cmd := exec.Command("pgrep", "buildkitd")
-	if _, err := r.Runner.RunCmd(cmd); err == nil {
-		return nil
-	}
-
-	// otherwise, start daemon
-	cmd = exec.Command("/bin/bash", "-c", "sudo -b buildkitd --oci-worker false --containerd-worker true --containerd-worker-namespace k8s.io &> /dev/null")
-	if _, err := r.Runner.RunCmd(cmd); err != nil {
-		return fmt.Errorf("failed to start buildkit daemon: %v", err)
-	}
-
-	// give the daemon time to finish starting up or image build will fail
-	time.Sleep(1 * time.Second)
-
 	return nil
 }
 
