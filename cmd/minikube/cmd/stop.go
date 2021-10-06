@@ -119,9 +119,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	register.Reg.SetStep(register.Done)
-	if stoppedNodes > 0 {
-		out.Step(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
-	}
+	out.Step(style.Stopped, `{{.count}} node{{if gt .count 1}}s{{end}} stopped.`, out.V{"count": stoppedNodes})
 }
 
 func stopProfile(profile string) int {
