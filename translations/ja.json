@@ -978,6 +978,7 @@
 	"{{.cluster}} IP has been updated to point at {{.ip}}": "{{.cluster}} の IP アドレスは {{.ip}} へと更新されました",
 	"{{.cluster}} IP was already correctly configured for {{.ip}}": "{{.cluster}} の IP アドレスは {{.ip}} としてすでに正常に設定されています",
 	"{{.count}} nodes stopped.": "{{.count}}台のノードが停止しました。",
+	"{{.count}} node{{if gt .count 1}}s{{end}} stopped.": "",
 	"{{.driver_name}} \"{{.cluster}}\" {{.machine_type}} is missing, will recreate.": "{{.driver_name}} 「 {{.cluster}} 」 {{.machine_type}} がありません。再生成します。",
 	"{{.driver_name}} couldn't proceed because {{.driver_name}} service is not healthy.": "",
 	"{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available": "",
