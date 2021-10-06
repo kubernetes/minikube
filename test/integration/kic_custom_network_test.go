@@ -75,7 +75,9 @@ func TestKicExistingNetwork(t *testing.T) {
 	}
 	// create custom network
 	networkName := "existing-network"
-	if _, err := oci.CreateNetwork(oci.Docker, networkName); err != nil {
+	profile := UniqueProfileName("existing-network")
+
+	if _, err := oci.CreateNetwork(oci.Docker, profile, networkName); err != nil {
 		t.Fatalf("error creating network: %v", err)
 	}
 	defer func() {
@@ -83,7 +85,6 @@ func TestKicExistingNetwork(t *testing.T) {
 			t.Logf("error deleting kic network, may need to delete manually: %v", err)
 		}
 	}()
-	profile := UniqueProfileName("existing-network")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
 	defer Cleanup(t, profile, cancel)
 
