@@ -976,6 +976,7 @@
 	"{{ .name }}: {{ .rejection }}": "{{ .name }} : {{ .rejection }}",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "{{.Driver}} utilise actuellement le pilote de stockage {{.StorageDriver}}, envisagez de passer à overlay2 pour de meilleures performances",
 	"{{.count}} nodes stopped.": "{{.count}} nœud(s) arrêté(s).",
+	"{{.count}} node{{if gt .count 1}}s{{end}} stopped.": "",
 	"{{.driver_name}} \"{{.cluster}}\" {{.machine_type}} is missing, will recreate.": "{{.driver_name}} \"{{.cluster}}\" {{.machine_type}} est manquant, il va être recréé.",
 	"{{.driver_name}} couldn't proceed because {{.driver_name}} service is not healthy.": "{{.driver_name}} n'a pas pu continuer car le service {{.driver_name}} n'est pas fonctionnel.",
 	"{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available": "{{.driver_name}} dispose de moins de 2 processeurs disponibles, mais Kubernetes nécessite au moins 2 procésseurs pour fonctionner",

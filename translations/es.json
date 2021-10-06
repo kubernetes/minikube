@@ -962,7 +962,7 @@
 	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
 	"{{ .name }}: {{ .rejection }}": "",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
-	"{{.count}} nodes stopped.": "",
+	"{{.count}} node{{if gt .count 1}}s{{end}} stopped.": "",
 	"{{.driver_name}} \"{{.cluster}}\" {{.machine_type}} is missing, will recreate.": "",
 	"{{.driver_name}} couldn't proceed because {{.driver_name}} service is not healthy.": "",
 	"{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available": "",
