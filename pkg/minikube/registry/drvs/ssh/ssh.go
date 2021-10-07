@@ -70,7 +70,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	if strings.HasPrefix(cc.SSHKey, "~") {
 		dirname, err := os.UserHomeDir()
 		if err != nil {
-			return nil, errors.Errorf("Error determining path to ssh key")
+			return nil, errors.Errorf("Error determining path to ssh key: %v", err)
 		}
 		d.SSHKey = filepath.Join(dirname, cc.SSHKey[1:])
 	} else {
