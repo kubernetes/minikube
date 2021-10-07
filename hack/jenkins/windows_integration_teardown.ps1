@@ -23,3 +23,4 @@ if ($driver -eq "docker") {
 }
 
 rm -r -Force $test_home
+C:\jenkins\windows_cleanup_and_reboot.ps1
