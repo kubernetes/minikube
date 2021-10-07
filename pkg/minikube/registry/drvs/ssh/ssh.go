@@ -18,6 +18,9 @@ package ssh
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
@@ -27,9 +30,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
-
-	"os/user"
-	"path/filepath"
 )
 
 func init() {
@@ -67,12 +67,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.IPAddress = cc.SSHIPAddress
 	d.SSHUser = cc.SSHUser
 
-	if len(cc.SSHKey) > 0 && cc.SSHKey[0] == '~' {
-		usr, err := user.Current()
+	if strings.HasPrefix(cc.SSHKey, "~") {
+		dirname, err := os.UserHomeDir()
 		if err != nil {
 			return nil, errors.Errorf("Error determining path to ssh key")
 		}
-		d.SSHKey = filepath.Join(usr.HomeDir, cc.SSHKey[1:])
+		d.SSHKey = filepath.Join(dirname, cc.SSHKey[1:])
 	} else {
 		d.SSHKey = cc.SSHKey
 	}
