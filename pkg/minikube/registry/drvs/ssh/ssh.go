@@ -67,7 +67,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.IPAddress = cc.SSHIPAddress
 	d.SSHUser = cc.SSHUser
 
-	//If ~ is in the front of the path to ssh-key then convert to the absolute path
 	if len(cc.SSHKey) > 0 && cc.SSHKey[0] == '~' {
 		usr, err := user.Current()
 		if err != nil {
