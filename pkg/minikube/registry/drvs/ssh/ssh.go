@@ -27,6 +27,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+
+        "os/user"
+	"path/filepath"
 )
 
 func init() {
@@ -63,7 +66,18 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	d.IPAddress = cc.SSHIPAddress
 	d.SSHUser = cc.SSHUser
-	d.SSHKey = cc.SSHKey
+	
+	//If ~ is in the front of the path to ssh-key then convert to the absolute path
+	if len(cc.SSHKey) > 0 && cc.SSHKey[0] == '~' {
+		usr, err := user.Current()
+		if err != nil {
+			return nil, errors.Errorf("Error determining path to ssh key")
+		}
+		d.SSHKey = filepath.Join(usr.HomeDir, cc.SSHKey[1:])
+	} else {
+		d.SSHKey = cc.SSHKey
+	}
+
 	d.SSHPort = cc.SSHPort
 
 	return d, nil
