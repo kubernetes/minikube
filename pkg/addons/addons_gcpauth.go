@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -75,7 +74,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	if err != nil {
 		if detect.IsCloudShell() {
 			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
-				f, err := ioutil.ReadFile(path.Join(c, "application_default_credentials.json"))
+				f, err := os.ReadFile(path.Join(c, "application_default_credentials.json"))
 				if err == nil {
 					creds, _ = google.CredentialsFromJSON(ctx, f)
 				}

@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -37,7 +36,7 @@ import (
 )
 
 func installRelease(version string) (f *os.File, err error) {
-	tf, err := ioutil.TempFile("", fmt.Sprintf("minikube-%s.*.exe", version))
+	tf, err := os.CreateTemp("", fmt.Sprintf("minikube-%s.*.exe", version))
 	if err != nil {
 		return tf, err
 	}
@@ -117,7 +116,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 			}
 		}
 		// using a fresh kubeconfig for this test
-		legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+		legacyKubeConfig, err := os.CreateTemp("", "legacy_kubeconfig")
 		if err != nil {
 			t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
 		}
@@ -176,7 +175,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 				}
 			}
 			// using a fresh kubeconfig for this test
-			legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+			legacyKubeConfig, err := os.CreateTemp("", "legacy_kubeconfig")
 			if err != nil {
 				t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
 			}

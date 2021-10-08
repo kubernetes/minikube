@@ -28,7 +28,7 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -157,7 +157,7 @@ func goVersions() (stable, stableMM, k8sVersion string, err error) {
 	if err != nil {
 		return "", "", "", err
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", "", err
 	}

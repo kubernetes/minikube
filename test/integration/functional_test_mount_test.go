@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -60,7 +59,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	}
 
 	t.Run("any-port", func(t *testing.T) {
-		tempDir, err := ioutil.TempDir("", "mounttest")
+		tempDir, err := os.MkdirTemp("", "mounttest")
 		defer func() { // clean up tempdir
 			err := os.RemoveAll(tempDir)
 			if err != nil {
@@ -107,7 +106,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		wantFromTest := []byte(testMarker)
 		for _, name := range []string{createdByTest, createdByTestRemovedByPod, testMarker} {
 			p := filepath.Join(tempDir, name)
-			err := ioutil.WriteFile(p, wantFromTest, 0644)
+			err := os.WriteFile(p, wantFromTest, 0644)
 			t.Logf("wrote %q to %s", wantFromTest, p)
 			if err != nil {
 				t.Errorf("WriteFile %s: %v", p, err)
@@ -160,7 +159,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 		// Read the file written by pod startup
 		p := filepath.Join(tempDir, createdByPod)
-		got, err := ioutil.ReadFile(p)
+		got, err := os.ReadFile(p)
 		if err != nil {
 			t.Errorf("failed to read file created by pod %q: %v", p, err)
 		}
@@ -209,7 +208,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 	})
 	t.Run("specific-port", func(t *testing.T) {
-		tempDir, err := ioutil.TempDir("", "mounttest")
+		tempDir, err := os.MkdirTemp("", "mounttest")
 		defer func() { // clean up tempdir
 			err := os.RemoveAll(tempDir)
 			if err != nil {

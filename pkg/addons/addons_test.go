@@ -17,7 +17,6 @@ limitations under the License.
 package addons
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -31,7 +30,7 @@ import (
 
 func createTestProfile(t *testing.T) string {
 	t.Helper()
-	td, err := ioutil.TempDir("", "profile")
+	td, err := os.MkdirTemp("", "profile")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}

@@ -20,7 +20,7 @@ limitations under the License.
 package hyperkit
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -54,12 +54,12 @@ func Test_getIpAddressFromFile(t *testing.T) {
 	defer tests.RemoveTempDir(tmpdir)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
-	if err := ioutil.WriteFile(dhcpFile, validLeases, 0644); err != nil {
+	if err := os.WriteFile(dhcpFile, validLeases, 0644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 
 	invalidFile := filepath.Join(tmpdir, "invalid")
-	if err := ioutil.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
+	if err := os.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 

@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -153,14 +152,14 @@ func (ss *StartSession) Stop(t *testing.T) {
 	killProcessFamily(t, ss.cmd.Process.Pid)
 	if t.Failed() {
 		if ss.Stdout.Size() > 0 {
-			stdout, err := ioutil.ReadAll(ss.Stdout)
+			stdout, err := io.ReadAll(ss.Stdout)
 			if err != nil {
 				t.Logf("read stdout failed: %v", err)
 			}
 			t.Logf("(dbg) %s stdout:\n%s", ss.cmd.Args, stdout)
 		}
 		if ss.Stderr.Size() > 0 {
-			stderr, err := ioutil.ReadAll(ss.Stderr)
+			stderr, err := io.ReadAll(ss.Stderr)
 			if err != nil {
 				t.Logf("read stderr failed: %v", err)
 			}
@@ -554,7 +553,7 @@ func testCpCmd(ctx context.Context, t *testing.T, profile string, node string) {
 		t.Errorf("failed to run an cp command. args %q : %v", rr.Command(), err)
 	}
 
-	expected, err := ioutil.ReadFile(srcPath)
+	expected, err := os.ReadFile(srcPath)
 	if err != nil {
 		t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
 	}
@@ -644,14 +643,18 @@ func CopyDir(src, dst string) error {
 
 	// get the collection of directory entries under src.
 	// for each entry build its corresponding path under dst.
-	entries, err := ioutil.ReadDir(src)
+	entries, err := os.ReadDir(src)
 	if err != nil {
 		return err
 	}
 
 	for _, entry := range entries {
 		// skip symlinks
-		if entry.Mode()&os.ModeSymlink != 0 {
+		entryInfo, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if entryInfo.Mode()&os.ModeSymlink != 0 {
 			continue
 		}
 

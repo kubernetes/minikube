@@ -19,7 +19,6 @@ package gvisor
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -179,7 +178,7 @@ func copyAssetToDest(targetName, dest string) error {
 	// Now, copy the data from this asset to dest
 	src := filepath.Join(vmpath.GuestGvisorDir, asset.GetTargetName())
 	log.Printf("%s asset path: %s", targetName, src)
-	contents, err := ioutil.ReadFile(src)
+	contents, err := os.ReadFile(src)
 	if err != nil {
 		return errors.Wrapf(err, "getting contents of %s", asset.GetSourcePath())
 	}

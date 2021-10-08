@@ -19,7 +19,7 @@ package tunnel
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/pkg/errors"
@@ -186,7 +186,7 @@ func (r *persistentRegistry) List() ([]*ID, error) {
 		}
 		return []*ID{}, nil
 	}
-	byteValue, _ := ioutil.ReadAll(f)
+	byteValue, _ := io.ReadAll(f)
 	var tunnels []*ID
 	if len(byteValue) == 0 {
 		return tunnels, nil

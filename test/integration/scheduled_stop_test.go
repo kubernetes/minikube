@@ -22,7 +22,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -146,7 +145,7 @@ func checkPID(t *testing.T, profile string) string {
 	var contents []byte
 	getContents := func() error {
 		var err error
-		contents, err = ioutil.ReadFile(file)
+		contents, err = os.ReadFile(file)
 		return err
 	}
 	// first, make sure the PID file exists

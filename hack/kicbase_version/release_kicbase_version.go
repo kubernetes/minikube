@@ -46,7 +46,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -218,7 +217,7 @@ func prepareImage(ctx context.Context, current, release string) (image string, e
 
 // getKICVersion returns current kic base image version and any error
 func getKICVersion() (string, error) {
-	blob, err := ioutil.ReadFile(kicFile)
+	blob, err := os.ReadFile(kicFile)
 	if err != nil {
 		return "", err
 	}

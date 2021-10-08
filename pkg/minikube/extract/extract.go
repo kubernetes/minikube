@@ -22,7 +22,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -161,7 +160,7 @@ func shouldCheckFile(path string) bool {
 // inspectFile goes through the given file line by line looking for translatable strings
 func inspectFile(e *state) error {
 	fset := token.NewFileSet()
-	r, err := ioutil.ReadFile(e.filename)
+	r, err := os.ReadFile(e.filename)
 	if err != nil {
 		return err
 	}
@@ -451,7 +450,7 @@ func writeStringsToFiles(e *state, output string) error {
 		}
 		fmt.Printf("Writing to %s", filepath.Base(path))
 		currentTranslations := make(map[string]interface{})
-		f, err := ioutil.ReadFile(path)
+		f, err := os.ReadFile(path)
 		if err != nil {
 			return errors.Wrap(err, "reading translation file")
 		}
@@ -491,7 +490,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
-		err = ioutil.WriteFile(path, c, info.Mode())
+		err = os.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}
@@ -509,7 +508,7 @@ func writeStringsToFiles(e *state, output string) error {
 		return errors.Wrap(err, "marshalling translations")
 	}
 	path := filepath.Join(output, "strings.txt")
-	err = ioutil.WriteFile(path, c, 0644)
+	err = os.WriteFile(path, c, 0644)
 	if err != nil {
 		return errors.Wrap(err, "writing translation file")
 	}

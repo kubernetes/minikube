@@ -19,7 +19,6 @@ package util
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -29,7 +28,7 @@ import (
 )
 
 func TestGenerateCACert(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
@@ -47,7 +46,7 @@ func TestGenerateCACert(t *testing.T) {
 	}
 
 	// Check the cert has the right shape.
-	certBytes, err := ioutil.ReadFile(certPath)
+	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		t.Fatalf("Error reading cert data: %v", err)
 	}
@@ -62,7 +61,7 @@ func TestGenerateCACert(t *testing.T) {
 }
 
 func TestGenerateSignedCert(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
@@ -73,7 +72,7 @@ func TestGenerateSignedCert(t *testing.T) {
 		t.Fatalf("Error generating tmpdir: %v", err)
 	}
 
-	signerTmpDir, err := ioutil.TempDir("", "")
+	signerTmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(signerTmpDir)
 		if err != nil {
@@ -149,7 +148,7 @@ func TestGenerateSignedCert(t *testing.T) {
 				t.Errorf("GenerateSignedCert() should have returned error, but didn't")
 			}
 			if err == nil {
-				certBytes, err := ioutil.ReadFile(certPath)
+				certBytes, err := os.ReadFile(certPath)
 				if err != nil {
 					t.Errorf("Error reading cert data: %v", err)
 				}

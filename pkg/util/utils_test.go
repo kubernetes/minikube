@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"io/ioutil"
 	"os"
 	"os/user"
 	"runtime"
@@ -81,7 +80,7 @@ func TestParseKubernetesVersion(t *testing.T) {
 }
 
 func TestChownR(t *testing.T) {
-	testDir, err := ioutil.TempDir(os.TempDir(), "")
+	testDir, err := os.MkdirTemp(os.TempDir(), "")
 	if nil != err {
 		return
 	}
@@ -134,7 +133,7 @@ func TestChownR(t *testing.T) {
 }
 
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
-	testDir, err := ioutil.TempDir(os.TempDir(), "")
+	testDir, err := os.MkdirTemp(os.TempDir(), "")
 	if nil != err {
 		return
 	}

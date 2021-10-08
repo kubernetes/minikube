@@ -22,7 +22,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,7 +46,7 @@ func TestDocs(docPath string, pathToCheck string) error {
 			return nil
 		}
 		fset := token.NewFileSet()
-		r, e := ioutil.ReadFile(path)
+		r, e := os.ReadFile(path)
 		if e != nil {
 			return errors.Wrap(e, fmt.Sprintf("error reading file %s", path))
 		}
@@ -103,7 +102,7 @@ func TestDocs(docPath string, pathToCheck string) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(docPath, buf.Bytes(), 0o644)
+	err = os.WriteFile(docPath, buf.Bytes(), 0o644)
 	return err
 }
 

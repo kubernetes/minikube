@@ -17,7 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync/atomic"
 
@@ -83,7 +83,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	cluster := api.NewCluster()
 	cluster.Server = cfg.ClusterServerAddress
 	if cfg.EmbedCerts {
-		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
+		cluster.CertificateAuthorityData, err = os.ReadFile(cfg.CertificateAuthority)
 		if err != nil {
 			return errors.Wrapf(err, "reading CertificateAuthority %s", cfg.CertificateAuthority)
 		}
@@ -100,11 +100,11 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	userName := cfg.ClusterName
 	user := api.NewAuthInfo()
 	if cfg.EmbedCerts {
-		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
+		user.ClientCertificateData, err = os.ReadFile(cfg.ClientCertificate)
 		if err != nil {
 			return errors.Wrapf(err, "reading ClientCertificate %s", cfg.ClientCertificate)
 		}
-		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
+		user.ClientKeyData, err = os.ReadFile(cfg.ClientKey)
 		if err != nil {
 			return errors.Wrapf(err, "reading ClientKey %s", cfg.ClientKey)
 		}

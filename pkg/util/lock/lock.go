@@ -19,7 +19,6 @@ package lock
 import (
 	"crypto/sha1"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -30,7 +29,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// WriteFile decorates ioutil.WriteFile with a file lock and retry
+// WriteFile decorates os.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	spec := PathMutexSpec(filename)
 	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
@@ -41,7 +40,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 
 	defer releaser.Release()
 
-	return ioutil.WriteFile(filename, data, perm)
+	return os.WriteFile(filename, data, perm)
 }
 
 // PathMutexSpec returns a mutex spec for a path

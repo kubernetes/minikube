@@ -22,7 +22,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os/exec"
@@ -211,7 +211,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}
@@ -342,7 +342,7 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}

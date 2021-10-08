@@ -17,7 +17,6 @@ limitations under the License.
 package image
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -160,7 +159,7 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 
 func writeImage(img v1.Image, dst string, ref name.Reference) error {
 	klog.Infoln("opening: ", dst)
-	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
+	f, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
 		return err
 	}

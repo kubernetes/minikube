@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -58,7 +57,7 @@ var (
 )
 
 func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
+	tmp, err := os.CreateTemp("", "build.*.tar")
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +183,7 @@ var saveImageCmd = &cobra.Command{
 			output = args[1]
 
 			if args[1] == "-" {
-				tmp, err := ioutil.TempFile("", "image.*.tar")
+				tmp, err := os.CreateTemp("", "image.*.tar")
 				if err != nil {
 					exit.Error(reason.GuestImageSave, "Failed to get temp", err)
 				}
