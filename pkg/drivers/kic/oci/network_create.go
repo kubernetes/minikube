@@ -218,7 +218,7 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(Podman, name)
-		if strings.Contains(rr.Output(), "No such network") {
+		if strings.Contains(rr.Output(), "no such network") {
 
 			return info, ErrNetworkNotFound
 		}
