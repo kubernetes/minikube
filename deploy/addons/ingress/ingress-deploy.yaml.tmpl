@@ -46,7 +46,8 @@ metadata:
 data:
   # see https://github.com/kubernetes/ingress-nginx/blob/master/docs/user-guide/nginx-configuration/configmap.md for all possible options and their description
   hsts: "false"
-  allow-snippet-annotations: 'true'
+# see https://github.com/kubernetes/minikube/pull/12702#discussion_r727519180: 'allow-snippet-annotations' should be used only if strictly required by another part of the deployment
+#  allow-snippet-annotations: 'true'
 ---
 apiVersion: v1
 kind: ConfigMap
