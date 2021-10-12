@@ -239,7 +239,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L323
-		"IngressController": "ingress-nginx/controller:v1.0.0-beta.3@sha256:44a7a06b71187a4529b0a9edee5cc22bdf71b414470eff696c3869ea8d90a695",
+		"IngressController": "ingress-nginx/controller:v1.0.3@sha256:4ade87838eb8256b094fbb5272d7dda9b6c7fa8b759e6af5383c1300996a7452",
 		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L612
 		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 		// https://github.com/kubernetes/ingress-nginx/blob/557604f4ef526f7755d36089b617bc7686c389f9/deploy/static/provider/kind/deploy.yaml#L660
