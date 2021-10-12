@@ -3,6 +3,10 @@ function Jenkins {
 	if ($?) {
 		return $TRUE
 	}
+	$common = Get-WMIObject -Class Win32_Process -Filter "Name='PowerShell.EXE'" | Where {$_.CommandLine -Like "*common.ps1*"}
+	if ($common -ne $NULL) {
+		return $TRUE
+	}
 	return $FALSE
 }
 
@@ -21,5 +25,10 @@ Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
 	Suspend-VM $_.Name
 	Stop-VM $_.Name -Force
 	Remove-VM $_.Name -Force
+}
+VBoxManage list vms | Foreach {
+	$m = $_.Substring(1, $_.LastIndexOf('"')-1)
+	VBoxManage controlvm $m poweroff
+	VBoxManage unregistervm $m --delete
 }
 shutdown /r
