@@ -238,12 +238,12 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/bdea0c8e462ce94031df622e1eda3196ac41933e/deploy/static/provider/kind/deploy.yaml#L327
-		"IngressController": "ingress-nginx/controller:v1.0.3@sha256:4ade87838eb8256b094fbb5272d7dda9b6c7fa8b759e6af5383c1300996a7452",
-		// https://github.com/kubernetes/ingress-nginx/blob/bdea0c8e462ce94031df622e1eda3196ac41933e/deploy/static/provider/kind/deploy.yaml#L617
-		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
-		// https://github.com/kubernetes/ingress-nginx/blob/bdea0c8e462ce94031df622e1eda3196ac41933e/deploy/static/provider/kind/deploy.yaml#L667
-		"KubeWebhookCertgenPatch": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L330
+		"IngressController": "ingress-nginx/controller:v1.0.4@sha256:545cff00370f28363dad31e3b59a94ba377854d3a11f18988f5f9e56841ef9ef",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L620
+		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L670
+		"KubeWebhookCertgenPatch": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
 	}, map[string]string{
 		"IngressController": "k8s.gcr.io",
 	}),
