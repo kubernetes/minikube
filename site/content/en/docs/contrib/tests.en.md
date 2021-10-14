@@ -243,6 +243,15 @@ verifies the docker driver and run with an existing network
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
 
+## TestMountStart
+tests using the mount command on start
+
+#### validateStartWithMount
+starts a cluster with mount enabled
+
+#### validateMount
+checks if the cluster has a folder mounted
+
 ## TestMultiNode
 tests all multi node cluster functionality
 
