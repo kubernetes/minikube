@@ -520,7 +520,7 @@ func killMountProcess() error {
 	profile := viper.GetString("profile")
 	paths := []string{
 		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
-		filepath.Join(localpath.Profile(profile)),
+		localpath.Profile(profile),
 	}
 
 	for _, path := range paths {
