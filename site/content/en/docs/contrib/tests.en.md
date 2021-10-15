@@ -433,6 +433,12 @@ starts a cluster with mount enabled
 #### validateMount
 checks if the cluster has a folder mounted
 
+#### validateMountStop
+stops a cluster
+
+#### validateRestart
+restarts a cluster
+
 ## TestMultiNode
 tests all multi node cluster functionality
 
