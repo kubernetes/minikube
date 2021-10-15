@@ -27,6 +27,10 @@ import (
 
 // TestMountStart tests using the mount command on start
 func TestMountStart(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping: none driver does not support mount")
+	}
+
 	MaybeParallel(t)
 
 	type validateFunc func(context.Context, *testing.T, string)
