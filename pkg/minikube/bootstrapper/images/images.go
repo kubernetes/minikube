@@ -31,8 +31,11 @@ func Pause(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	pv := "3.5"
+	pv := "3.6"
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
+	if semver.MustParseRange("<1.23.0-alpha.2")(v) {
+		pv = "3.5"
+	}
 	if semver.MustParseRange("<1.22.0-alpha.3")(v) {
 		pv = "3.4.1"
 	}
