@@ -517,7 +517,23 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 
 // killMountProcess kills the mount process, if it is running
 func killMountProcess() error {
-	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
+	profile := viper.GetString("profile")
+	paths := []string{
+		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
+		localpath.Profile(profile),
+	}
+
+	for _, path := range paths {
+		if err := killProcess(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func killProcess(path string) error {
+	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 		return nil
 	}
