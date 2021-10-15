@@ -167,7 +167,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	var wg sync.WaitGroup
 	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg)
+		go configureMounts(&wg, starter.Cfg.Mount, starter.Cfg.MountString)
 	}
 
 	wg.Add(1)

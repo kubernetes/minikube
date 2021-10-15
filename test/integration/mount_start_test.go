@@ -53,6 +53,9 @@ func TestMountStart(t *testing.T) {
 			{"VerifyMountSecond", validateMount, profile2},
 			{"DeleteFirst", validateDelete, profile1},
 			{"VerifyMountPostDelete", validateMount, profile2},
+			{"Stop", validateMountStop, profile2},
+			{"RestartStopped", validateRestart, profile2},
+			{"VerifyMountPostStop", validateMount, profile2},
 		}
 
 		for _, test := range tests {
@@ -72,6 +75,7 @@ func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"start", "-p", profile, "--memory=2048", "--mount"}
+	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -86,5 +90,27 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("mount failed: %q : %v", rr.Command(), err)
+	}
+}
+
+// validateMountStop stops a cluster
+func validateMountStop(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	args := []string{"stop", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("stop failed: %q : %v", rr.Command(), err)
+	}
+}
+
+// validateRestart restarts a cluster
+func validateRestart(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	args := []string{"start", "-p", profile}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("restart failed: %q : %v", rr.Command(), err)
 	}
 }
