@@ -31,8 +31,6 @@ func TestMountStart(t *testing.T) {
 		t.Skip("skipping: none driver does not support mount")
 	}
 
-	MaybeParallel(t)
-
 	type validateFunc func(context.Context, *testing.T, string)
 	profile1 := UniqueProfileName("mount-start-1")
 	profile2 := UniqueProfileName("mount-start-2")
