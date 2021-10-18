@@ -21,4 +21,4 @@ $timeout="180m"
 $env:JOB_NAME="Hyper-V_Windows"
 $env:EXTERNAL="yes"
 
-. Powershell -File ./out/common.ps1
+. ./out/common.ps1

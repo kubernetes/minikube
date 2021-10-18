@@ -3,10 +3,6 @@ function Jenkins {
 	if ($?) {
 		return $TRUE
 	}
-	$common = Get-WMIObject -Class Win32_Process -Filter "Name='PowerShell.EXE'" | Where {$_.CommandLine -Like "*common.ps1*"}
-	if ($common -ne $NULL) {
-		return $TRUE
-	}
 	return $FALSE
 }
 
