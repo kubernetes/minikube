@@ -130,6 +130,10 @@ func stopProfile(profile string) int {
 	api, cc := mustload.Partial(profile)
 	defer api.Close()
 
+	if err := killMountProcess(); err != nil {
+		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
 	for _, n := range cc.Nodes {
 		machineName := config.MachineName(*cc, n)
 
@@ -137,10 +141,6 @@ func stopProfile(profile string) int {
 		if !nonexistent {
 			stoppedNodes++
 		}
-	}
-
-	if err := killMountProcess(); err != nil {
-		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	if !keepActive {
