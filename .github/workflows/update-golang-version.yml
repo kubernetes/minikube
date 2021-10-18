@@ -6,7 +6,7 @@ on:
     - cron: "0 9 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.1'
+  GO_VERSION: '1.17.2'
 jobs:
   bump-golang-version:
     runs-on: ubuntu-20.04
