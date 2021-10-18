@@ -18,7 +18,6 @@ package tests
 
 import (
 	"bytes"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,7 +27,7 @@ import (
 
 // MakeTempDir creates the temp dir and returns the path
 func MakeTempDir() string {
-	tempDir, err := ioutil.TempDir("", "minipath")
+	tempDir, err := os.MkdirTemp("", "minipath")
 	if err != nil {
 		log.Fatal(err)
 	}

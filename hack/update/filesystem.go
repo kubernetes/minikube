@@ -19,7 +19,6 @@ package update
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -40,7 +39,7 @@ func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed 
 				return false, fmt.Errorf("unable to get file content: %w", err)
 			}
 			mode = info.Mode()
-			content, err = ioutil.ReadFile(path)
+			content, err = os.ReadFile(path)
 			if err != nil {
 				return false, fmt.Errorf("unable to read file content: %w", err)
 			}
@@ -54,7 +53,7 @@ func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed 
 			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 				return false, fmt.Errorf("unable to create directory: %w", err)
 			}
-			if err := ioutil.WriteFile(path, item.Content, mode); err != nil {
+			if err := os.WriteFile(path, item.Content, mode); err != nil {
 				return false, fmt.Errorf("unable to write file: %w", err)
 			}
 			changed = true
@@ -65,7 +64,7 @@ func fsUpdate(fsRoot string, schema map[string]Item, data interface{}) (changed 
 
 // Loadf returns the file content read as byte slice
 func Loadf(path string) []byte {
-	blob, err := ioutil.ReadFile(path)
+	blob, err := os.ReadFile(path)
 	if err != nil {
 		klog.Fatalf("Unable to load file %s: %v", path, err)
 		return nil

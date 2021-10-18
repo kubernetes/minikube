@@ -17,7 +17,6 @@ limitations under the License.
 package drivers
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,7 +29,7 @@ func Test_createDiskImage(t *testing.T) {
 	defer tests.RemoveTempDir(tmpdir)
 
 	sshPath := filepath.Join(tmpdir, "ssh")
-	if err := ioutil.WriteFile(sshPath, []byte("mysshkey"), 0644); err != nil {
+	if err := os.WriteFile(sshPath, []byte("mysshkey"), 0644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 	diskPath := filepath.Join(tmpdir, "disk")

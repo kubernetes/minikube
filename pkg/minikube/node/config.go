@@ -65,7 +65,8 @@ func configureMounts(wg *sync.WaitGroup) {
 	if klog.V(8).Enabled() {
 		mountDebugVal = 1
 	}
-	mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
+	profile := viper.GetString("profile")
+	mountCmd := exec.Command(path, "mount", "-p", profile, fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
 	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
 	if klog.V(8).Enabled() {
 		mountCmd.Stdout = os.Stdout
@@ -74,7 +75,7 @@ func configureMounts(wg *sync.WaitGroup) {
 	if err := mountCmd.Start(); err != nil {
 		exit.Error(reason.GuestMount, "Error starting mount", err)
 	}
-	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0o644); err != nil {
+	if err := lock.WriteFile(filepath.Join(localpath.Profile(profile), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0o644); err != nil {
 		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
 }

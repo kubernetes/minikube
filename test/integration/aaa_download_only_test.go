@@ -26,7 +26,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -230,7 +229,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 
 	// Make sure the downloaded image tarball exists
 	tarball := download.TarballPath(constants.DefaultKubernetesVersion, cRuntime)
-	contents, err := ioutil.ReadFile(tarball)
+	contents, err := os.ReadFile(tarball)
 	if err != nil {
 		t.Errorf("failed to read tarball file %q: %v", tarball, err)
 	}
@@ -240,7 +239,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
-	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
+	remoteChecksum, err := os.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
 	if err != nil {
 		t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime), err)
 	}

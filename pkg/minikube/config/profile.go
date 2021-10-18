@@ -19,7 +19,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -155,13 +154,13 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 		return lock.WriteFile(path, data, 0600)
 	}
 
-	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
+	tf, err := os.CreateTemp(filepath.Dir(path), "config.json.tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tf.Name())
 
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+	if err = os.WriteFile(tf.Name(), data, 0600); err != nil {
 		return err
 	}
 
@@ -295,7 +294,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 		miniPath = miniHome[0]
 	}
 	pRootDir := filepath.Join(miniPath, "profiles")
-	items, err := ioutil.ReadDir(pRootDir)
+	items, err := os.ReadDir(pRootDir)
 	for _, f := range items {
 		if f.IsDir() {
 			dirs = append(dirs, f.Name())

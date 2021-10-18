@@ -123,10 +123,8 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 			args = append(args, "-o")
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
-
-		args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"))
 	}
-	args = append(args, name)
+	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
@@ -220,7 +218,7 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 	rr, err := runCmd(cmd)
 	if err != nil {
 		logDockerNetworkInspect(Podman, name)
-		if strings.Contains(rr.Output(), "No such network") {
+		if strings.Contains(rr.Output(), "no such network") {
 
 			return info, ErrNetworkNotFound
 		}

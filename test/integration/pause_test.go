@@ -173,6 +173,13 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("expected to see error and volume %q to not exist after deletion but got no error and this output: %s", rr.Command(), rr.Output())
 		}
 
+		rr, err = Run(t, exec.CommandContext(ctx, "sudo", bin, "network", "ls"))
+		if err != nil {
+			t.Errorf("failed to get list of networks: %v", err)
+		}
+		if strings.Contains(rr.Output(), profile) {
+			t.Errorf("expected network %q to not exist after deletion but contained: %s", profile, rr.Output())
+		}
 	}
 
 }

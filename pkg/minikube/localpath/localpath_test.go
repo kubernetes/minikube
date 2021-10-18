@@ -18,7 +18,6 @@ package localpath
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -29,7 +28,7 @@ import (
 )
 
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
-	path, err := ioutil.TempDir("", "repwindl2vn")
+	path, err := os.MkdirTemp("", "repwindl2vn")
 	if err != nil {
 		t.Fatalf("Error make tmp directory: %v", err)
 	}

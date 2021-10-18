@@ -19,7 +19,6 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -223,7 +222,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			viper.Set(config.WantBetaUpdateNotification, tt.wantBetaUpdateNotification)
 			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
 
-			tmpfile, err := ioutil.TempFile("", "")
+			tmpfile, err := os.CreateTemp("", "")
 			if err != nil {
 				t.Fatalf("Cannot create temp file: %v", err)
 			}
