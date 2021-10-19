@@ -480,7 +480,7 @@ var Addons = map[string]*Addon{
 			"ingress-dns-pod.yaml",
 			"0640"),
 	}, false, "ingress-dns", "", map[string]string{
-		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.1@sha256:69dc3c878c2e49ad85b70fdf9e8e6e87a1f961f42c8029e0912bebfa828ade46",
+		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
 	}, map[string]string{
 		"IngressDNS": "gcr.io",
 	}),
