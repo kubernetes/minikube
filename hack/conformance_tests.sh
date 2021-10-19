@@ -35,6 +35,9 @@ readonly START_ARGS=${@:-}
 kubectl --context "${PROFILE_NAME}" get pods --all-namespaces
 "${MINIKUBE}" status -p "${PROFILE_NAME}"
 
+# Make sure jq is installed
+sudo apt-get install jq -y
+
 # Remove old sonobuoy installation
 rm -rf sonobuoy
 
