@@ -161,7 +161,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().StringArray(mountString, []string{constants.DefaultMountDir + ":/minikube-host"}, "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
 	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
 	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
@@ -171,6 +171,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Uint16(mountPortFlag, defaultMountPort, mountPortDescription)
 	startCmd.Flags().String(mountTypeFlag, defaultMountType, mountTypeDescription)
 	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
+	
 	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
@@ -516,7 +517,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
-		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
+		cc.ContainerVolumeMounts = viper.GetStringSlice(mountString)
 	}
 
 	if detect.IsCloudShell() {
