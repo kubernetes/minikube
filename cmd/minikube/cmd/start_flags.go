@@ -458,6 +458,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHPort:                 viper.GetInt(sshSSHPort),
 		ExtraDisks:              viper.GetInt(extraDisks),
 		CertExpiration:          viper.GetDuration(certExpiration),
+		Mount:                   viper.GetBool(createMount),
+		MountString:             viper.GetString(mountString),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -659,6 +661,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
+	updateBoolFromFlag(cmd, &cc.Mount, createMount)
+	updateStringFromFlag(cmd, &cc.MountString, mountString)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)

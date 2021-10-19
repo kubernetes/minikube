@@ -51,22 +51,22 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 // configureMounts configures any requested filesystem mounts
-func configureMounts(wg *sync.WaitGroup) {
+func configureMounts(wg *sync.WaitGroup, mount bool, mountString string) {
 	wg.Add(1)
 	defer wg.Done()
 
-	if !viper.GetBool(createMount) {
+	if !mount {
 		return
 	}
 
-	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
+	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": mountString})
 	path := os.Args[0]
 	mountDebugVal := 0
 	if klog.V(8).Enabled() {
 		mountDebugVal = 1
 	}
 	profile := viper.GetString("profile")
-	mountCmd := exec.Command(path, "mount", "-p", profile, fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
+	mountCmd := exec.Command(path, "mount", "-p", profile, fmt.Sprintf("--v=%d", mountDebugVal), mountString)
 	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
 	if klog.V(8).Enabled() {
 		mountCmd.Stdout = os.Stdout
