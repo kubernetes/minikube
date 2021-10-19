@@ -108,6 +108,21 @@ func PrepareContainerNode(p CreateParams) error {
 	return nil
 }
 
+// kernelModulesPath checks for the existence of a known kernel modules directory, returning the
+// first valid path
+func kernelModulesPath() (string, error) {
+	paths := []string{
+		"/lib/modules",
+		"/run/current-system/kernel-modules/lib/modules", // NixOS
+	}
+	for _, path := range paths {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			return path, nil
+		}
+	}
+	return "", errors.New("Unable to locate kernel modules")
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
@@ -120,6 +135,12 @@ func CreateContainerNode(p CreateParams) error {
 			klog.Warningf("error getting dameon info: %v", err)
 			return errors.Wrap(err, "daemon info")
 		}
+	}
+
+	modulesPath, err := kernelModulesPath()
+	if err != nil {
+		klog.Errorf("error getting kernel modules path: %v", err)
+		return errors.Wrap(err, "kernel modules")
 	}
 
 	runArgs := []string{
@@ -136,7 +157,7 @@ func CreateContainerNode(p CreateParams) error {
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
 		// some k8s things want /lib/modules
-		"-v", "/lib/modules:/lib/modules:ro",
+		"-v", fmt.Sprintf("%s:/lib/modules:ro", modulesPath),
 		"--hostname", p.Name, // make hostname match container name
 		"--name", p.Name, // ... and set the container name
 		"--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"),
