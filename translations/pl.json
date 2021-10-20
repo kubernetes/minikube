@@ -168,7 +168,6 @@
 	"Downloading VM boot image ...": "Pobieranie obrazu maszyny wirtualnej ...",
 	"Downloading driver {{.driver}}:": "",
 	"Downloading {{.name}} {{.version}}": "Pobieranie {{.name}} {{.version}}",
-	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "",
 	"ERROR creating `registry-creds-dpr` secret": "",

@@ -156,7 +156,6 @@
 	"Downloading Kubernetes {{.version}} preload ...": "Kubernetes {{.version}} のダウンロードの準備をしています",
 	"Downloading VM boot image ...": "VM ブートイメージをダウンロードしています...",
 	"Downloading driver {{.driver}}:": "{{.driver}} ドライバをダウンロードしています:",
-	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "`registry-creds-acr` シークレット作成中にエラーが発生しました",
 	"ERROR creating `registry-creds-dpr` secret": "`registry-creds-dpr` シークレット作成中にエラーが発生しました",
