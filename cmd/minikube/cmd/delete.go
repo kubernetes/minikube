@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/delete"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -151,7 +152,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 	// register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Deleting)
-
+	download.CleanUpOlderPreloads()
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
 		klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)

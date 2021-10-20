@@ -21,9 +21,12 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -281,4 +284,27 @@ var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, 
 	}
 
 	return nil
+}
+
+// CleanUpOlderPreloads deletes preload files beloning to older minikube versions
+// checks the current preload version and then if the saved tar file is belongs to older minikube it will delete it
+// in case of failure only logs to the user
+func CleanUpOlderPreloads() {
+	files, err := ioutil.ReadDir(targetDir())
+	if err != nil {
+		klog.Warningf("Failed to list prelaod files: %v", err)
+	}
+
+	for _, file := range files {
+		ver := strings.Split(file.Name(), "-")[3]
+
+		if ver != PreloadVersion {
+			fn := path.Join(targetDir(), file.Name())
+			klog.Infof("deleting older generation preload %s", fn)
+			err := os.Remove(fn)
+			if err != nil {
+				klog.Warningf("Failed to clean up older preload files, consider running `minikube delete --all --purge`")
+			}
+		}
+	}
 }
