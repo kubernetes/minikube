@@ -28,8 +28,8 @@ jobs:
 
     - name: Synchronize images to Alibaba Cloud Container Registry Service
       env: 
-        ACR_USER: ${{ secrets.ACR_USER }}
-        ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        ACR_USER: ${{ secrets.ALIBABA_CLOUD_ACR_USER }}
+        ACR_PASSWORD: ${{ secrets.ALIBABA_CLOUD_ACR_PASSWORD }}
         DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
         DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
