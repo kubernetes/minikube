@@ -22,7 +22,7 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+VERSION_TO_INSTALL=1.17.2
 INSTALL_PATH=${1}
 
 function current_arch() {
