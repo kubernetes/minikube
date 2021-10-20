@@ -168,7 +168,6 @@
 	"Downloading VM boot image ...": "가상 머신 부트 이미지 다운로드 중 ...",
 	"Downloading driver {{.driver}}:": "드라이버 {{.driver}} 다운로드 중 :",
 	"Downloading {{.name}} {{.version}}": "{{.name}} {{.version}} 다운로드 중",
-	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "registry-creds-acr` secret 생성 오류",
 	"ERROR creating `registry-creds-dpr` secret": "`registry-creds-dpr` secret 생성 오류",
