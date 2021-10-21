@@ -93,8 +93,8 @@ func checkRoutePassword(t *testing.T) {
 // checkDNSForward skips DNS forwarding test if runtime is not supported
 func checkDNSForward(t *testing.T) {
 	// Not all platforms support DNS forwarding
-	if runtime.GOOS != "darwin" {
-		t.Skip("DNS forwarding is supported for darwin only now, skipping test DNS forwarding")
+	if runtime.GOOS != "darwin" || KicDriver() {
+		t.Skip("DNS forwarding is only supported for hyprkit on darwin, skipping test DNS forwarding")
 	}
 }
 
