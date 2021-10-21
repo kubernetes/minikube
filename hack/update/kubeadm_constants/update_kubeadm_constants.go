@@ -67,7 +67,7 @@ func main() {
 	defer cancel()
 
 	if inputVersion == "latest" {
-		stableImageVersion, latestImageVersion, _, _, err := getK8sVersions(ctx, "kubernetes", "kubernetes")
+		stableImageVersion, latestImageVersion, err := getK8sVersions(ctx, "kubernetes", "kubernetes")
 		if err != nil {
 			klog.Fatal(err)
 		}
@@ -190,16 +190,16 @@ func executeCommand(command string, args ...string) (string, error) {
 }
 
 // getK8sVersion returns Kubernetes versions.
-func getK8sVersions(ctx context.Context, owner, repo string) (stable, latest, latestMM, latestP0 string, err error) {
+func getK8sVersions(ctx context.Context, owner, repo string) (stable, latest string, err error) {
 	// get Kubernetes versions from GitHub Releases
 	stable, latest, err = update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable) || !semver.IsValid(latest) {
-		return "", "", "", "", err
+	if err != nil {
+		return "", "", err
 	}
-	latestMM = semver.MajorMinor(latest)
-	latestP0 = latestMM + ".0"
-	if semver.Compare(stable, latestP0) == -1 {
-		latestP0 = latest
+
+	if !semver.IsValid(stable) || !semver.IsValid(latest) {
+		return "", "", fmt.Errorf("invalid release obtained stable : %s, latest : %s", stable, latest)
 	}
-	return stable, latest, latestMM, latestP0, nil
+
+	return stable, latest, nil
 }
