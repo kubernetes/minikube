@@ -17,8 +17,8 @@
 set -eux -o pipefail
 
 function install_gotestsum() {
-  sudo rm -f $(which gotestsum)
-  sudo PATH="$PATH" GOBIN="$GOROOT/bin" go install gotest.tools/gotestsum@v1.6.4
+  rm -f $(which gotestsum)
+  GOBIN="$GOROOT/bin" go install gotest.tools/gotestsum@v1.6.4
 }
 
 which gotestsum || install_gotestsum
