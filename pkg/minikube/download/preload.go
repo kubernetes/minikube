@@ -296,7 +296,7 @@ func CleanUpOlderPreloads() {
 
 	for _, file := range files {
 		splited := strings.Split(file.Name(), "-")
-		if len(splited) < 3 {
+		if len(splited) < 4 {
 			continue
 		}
 		ver := splited[3]
