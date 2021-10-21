@@ -229,13 +229,13 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
-	output := rr.Stdout.String()
+	output := strings.TrimSpace(rr.Stdout.String())
 	if output == "" {
 		return info, fmt.Errorf("no bridge network found for %s", name)
 	}
 
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(output), ",")
+	vals := strings.Split(output, ",")
 
 	if len(vals) >= 2 {
 		info.gateway = net.ParseIP(vals[1])
