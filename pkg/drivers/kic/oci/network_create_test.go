@@ -69,15 +69,76 @@ func TestDockerInspect(t *testing.T) {
 			}
 
 			if netInfo.mtu != tc.mtu {
-				t.Errorf("Expected not to have MTU as %v but got %v", tc.mtu, netInfo.mtu)
+				t.Errorf("Expected MTU to be %v but got %v", tc.mtu, netInfo.mtu)
 			}
 
 			if !netInfo.gateway.Equal(net.ParseIP(tc.gateway)) {
-				t.Errorf("Expected not to have gateway as %v but got %v", tc.gateway, netInfo.gateway)
+				t.Errorf("Expected gateway to be %v but got %v", tc.gateway, netInfo.gateway)
 			}
 
 			if !netInfo.subnet.IP.Equal(net.ParseIP(tc.subnetIP)) {
-				t.Errorf("Expected not to have subnet as %v but got %v", tc.subnetIP, netInfo.gateway)
+				t.Errorf("Expected subnet to be %v but got %v", tc.subnetIP, netInfo.subnet.IP)
+			}
+		})
+	}
+}
+
+var podmanResponse string
+var podmanInspectGetterMock = func(name string) (*RunResult, error) {
+	var responseInBytes bytes.Buffer
+	responseInBytes.WriteString(podmanResponse)
+	response := &RunResult{Stdout: responseInBytes}
+
+	return response, nil
+}
+
+func TestPodmanInspect(t *testing.T) {
+	var emptyGateway net.IP
+	gateway := net.ParseIP("172.17.0.1")
+	_, subnetIP, err := net.ParseCIDR("172.17.0.0/16")
+	if err != nil {
+		t.Fatalf("failed to parse CIDR: %v", err)
+	}
+
+	var tests = []struct {
+		name                  string
+		podmanInspectResponse string
+		gateway               net.IP
+		subnetIP              string
+	}{
+		{
+			name:                  "WithGateway",
+			podmanInspectResponse: "172.17.0.0/16,172.17.0.1",
+			gateway:               gateway,
+			subnetIP:              subnetIP.String(),
+		},
+		{
+			name:                  "WithoutGateway",
+			podmanInspectResponse: "172.17.0.0/16",
+			gateway:               emptyGateway,
+			subnetIP:              subnetIP.String(),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			podmanInspectResponse := tc.podmanInspectResponse
+
+			// setting up mock funcs
+			podmanResponse = podmanInspectResponse
+			podmanInspectGetter = podmanInspectGetterMock
+
+			netInfo, err := podmanNetworkInspect("m2")
+			if err != nil {
+				t.Errorf("Expected not to have error but got %v", err)
+			}
+
+			if !netInfo.gateway.Equal(tc.gateway) {
+				t.Errorf("Expected gateway to be %v but got %v", tc.gateway, netInfo.gateway)
+			}
+
+			if netInfo.subnet.String() != tc.subnetIP {
+				t.Errorf("Expected subnet to be %v but got %v", tc.subnetIP, netInfo.subnet)
 			}
 		})
 	}
