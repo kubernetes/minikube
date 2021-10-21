@@ -22,4 +22,9 @@ Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
 	Stop-VM $_.Name -Force
 	Remove-VM $_.Name -Force
 }
+VBoxManage list vms | Foreach {
+	$m = $_.Substring(1, $_.LastIndexOf('"')-1)
+	VBoxManage controlvm $m poweroff
+	VBoxManage unregistervm $m --delete
+}
 shutdown /r

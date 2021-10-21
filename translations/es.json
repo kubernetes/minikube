@@ -163,7 +163,6 @@
 	"Downloading driver {{.driver}}:": "Descargando el controlador {{.driver}}:",
 	"Due to issues with CRI-O post v1.17.3, we need to restart your cluster.": "Debido a problemas con CRI-O post v1.17.3, necesitamos reiniciar tu cluster.",
 	"Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.\nAlternatively to use this addon you can use a vm-based driver:\n\n\t'minikube start --vm=true'\n\nTo track the update on this work in progress feature please check:\nhttps://github.com/kubernetes/minikube/issues/7332": "Debido a las limitaciones de red del controlador {{.driver_name}} en {{.os_name}}, el complemento \"{{.addon_name}}\" no está soportado.\nPara usar este complemento, puedes utilizar un controlador basado en vm\n\n\t'minikube start --vm=true'\n\nPara realizar un seguimiento de las actualizaciones de esta función consulte:\nhttps://github.com/kubernetes/minikube/issues/7332",
-	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.": "",
 	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not supported. Try using a different driver.": "Debido a limitaciones de red del controlador {{.driver_name}}, el complemento \"{{.addon_name}}\" no está soportado. Intenta usar un controlador diferente.",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "ERROR creando el secreto `registry-creds-acr`",

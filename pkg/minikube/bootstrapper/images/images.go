@@ -34,7 +34,7 @@ func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	pv := "3.5"
+	pv := "3.6"
 
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	imageName := path.Join(kubernetesRepo(mirror), "pause")

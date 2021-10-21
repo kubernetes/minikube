@@ -151,7 +151,6 @@
 	"Downloading Kubernetes {{.version}} preload ...": "",
 	"Downloading VM boot image ...": "",
 	"Downloading driver {{.driver}}:": "",
-	"Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "",
 	"ERROR creating `registry-creds-dpr` secret": "",

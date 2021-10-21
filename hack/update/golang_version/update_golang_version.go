@@ -118,6 +118,11 @@ var (
 				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
 			},
 		},
+		"hack/jenkins/installers/check_install_golang.sh": {
+			Replace: map[string]string{
+				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
+			},
+		},
 	}
 
 	// PR data

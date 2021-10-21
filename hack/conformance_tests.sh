@@ -35,9 +35,17 @@ readonly START_ARGS=${@:-}
 kubectl --context "${PROFILE_NAME}" get pods --all-namespaces
 "${MINIKUBE}" status -p "${PROFILE_NAME}"
 
-curl -LO https://github.com/vmware-tanzu/sonobuoy/releases/download/v0.19.0/sonobuoy_0.19.0_linux_amd64.tar.gz || true
-tar -xzf sonobuoy_0.19.0_linux_amd64.tar.gz
+# Make sure jq is installed
+sudo apt-get install jq -y
 
+# Remove old sonobuoy installation
+rm -rf sonobuoy
+
+# Get latest sonobuoy version
+sonobuoy=$(curl -s https://api.github.com/repos/vmware-tanzu/sonobuoy/releases/latest | jq .assets[].browser_download_url | grep linux_amd64 | cut -d '"' -f 2)
+curl -LO $sonobuoy
+tarball=$(echo $sonobuoy | awk -F "/" '{print $(NF)}')
+tar -xzf $tarball
 
 ./sonobuoy run --mode=certified-conformance --wait --alsologtostderr
 outdir="$(mktemp -d)"
