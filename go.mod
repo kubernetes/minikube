@@ -16,7 +16,7 @@ require (
 	github.com/c4milo/gotoolkit v0.0.0-20190525173301-67483a18c17a // indirect
 	github.com/cenkalti/backoff/v4 v4.1.1
 	github.com/cheggaaa/pb/v3 v3.0.8
-	github.com/cloudevents/sdk-go/v2 v2.5.0
+	github.com/cloudevents/sdk-go/v2 v2.6.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/docker v20.10.10+incompatible
