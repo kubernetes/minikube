@@ -142,6 +142,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
+	go download.CleanUpOlderPreloads()
 
 	// No need to do the update check if no one is going to see it
 	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
