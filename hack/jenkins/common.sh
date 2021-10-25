@@ -399,8 +399,11 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
 if ! type "jq" > /dev/null; then
-echo ">> Installing jq"
-    if [ "${OS}" != "darwin" ]; then
+    echo ">> Installing jq"
+    if [ "${ARCH}" == "arm64" ]; then
+      echo "Unable to install 'jq' automatically for arm64, please install 'jq' manually."
+      exit 5
+    elif [ "${OS}" != "darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
     else
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
