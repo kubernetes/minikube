@@ -48,8 +48,22 @@ func TestAddons(t *testing.T) {
 
 	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		// Set an env var to point to our dummy credentials file
-		t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-		t.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+		// don't use t.Setenv because we sometimes manually unset the env var later manually
+		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		})
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
+		}
+
+		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		})
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		}
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
@@ -662,6 +676,8 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
 		t.Errorf("failed to disable GCP auth addon: %v", err)
 	}
+
+	// maybe check that everything got cleaned up here?
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() {
