@@ -27,6 +27,9 @@ docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local" || true
 
+export GOBIN=/usr/local/go/bin
+export PATH=$PATH:$GOBIN
+
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
