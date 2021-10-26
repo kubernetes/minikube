@@ -41,18 +41,13 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	}
 
 	args := []string{fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), kubectlBinary, kubectlAction}
-	if enable {
-		for _, f := range files {
-			args = append(args, []string{"-f", f}...)
-		}
-	} else {
-		// --ignore-not-found just ignores when we try to ignore a resource that is gone,
+	if !enable {
+		// --ignore-not-found just ignores when we try to delete a resource that is already gone,
 		// like a completed job with a ttlSecondsAfterFinished
 		args = append(args, "--ignore-not-found")
-		// reverse the order of files to delete, sometimes file order matters
-		for i := len(files) - 1; i >= 0; i-- {
-			args = append(args, []string{"-f", files[i]}...)
-		}
+	}
+	for _, f := range files {
+		args = append(args, []string{"-f", f}...)
 	}
 
 	return exec.Command("sudo", args...)
