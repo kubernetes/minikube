@@ -72,7 +72,7 @@ func TestCertOptions(t *testing.T) {
 	}
 
 	// verify that the apiserver is serving on port 8555
-	if NeedsPortForward() { //  docker/podman on non-linux the port will be a "random assigned port" in kubeconfig
+	if NeedsPortForward() { // in case of docker/podman on non-linux the port will be a "random assigned port" in kubeconfig
 		bin := "docker"
 		if PodmanDriver() {
 			bin = "podman"
@@ -80,14 +80,11 @@ func TestCertOptions(t *testing.T) {
 
 		port, err := oci.ForwardedPort(bin, profile, 8555)
 		if err != nil {
-			{
-				t.Errorf("failed to inspect container for the port %v", err)
-			}
+			t.Errorf("failed to inspect container for the port %v", err)
 		}
 		if port == 0 {
 			t.Errorf("expected to get a non-zero forwarded port but got %d", port)
 		}
-
 	} else {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "config", "view"))
 		if err != nil {
