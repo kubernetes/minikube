@@ -43,6 +43,7 @@ type benchmark struct {
 	App    float64   `json:"app"`
 	DNSAns float64   `json:"dnsAns"`
 	Total  float64   `json:"total"`
+	CPU    float64   `json:"cpu"`
 }
 
 // benchmarks contains a list of benchmarks, used for storing benchmark results to JSON
@@ -70,8 +71,8 @@ func readInLatestBenchmark(latestBenchmarkPath string) benchmark {
 		log.Fatal(err)
 	}
 
-	var cmd, api, k8s, dnsSvc, app, dnsAns float64
-	steps := []*float64{&cmd, &api, &k8s, &dnsSvc, &app, &dnsAns}
+	var cmd, api, k8s, dnsSvc, app, dnsAns, cpu float64
+	steps := []*float64{&cmd, &api, &k8s, &dnsSvc, &app, &dnsAns, &cpu}
 	count := 0
 
 	r := csv.NewReader(f)
@@ -91,8 +92,13 @@ func readInLatestBenchmark(latestBenchmarkPath string) benchmark {
 
 		values := []float64{}
 
-		// 8-13 contain the benchmark results
+		// 8-13 and 16 contain the benchmark results
+		var idx []int
 		for i := 8; i <= 13; i++ {
+			idx = append(idx, i)
+		}
+		idx = append(idx, 16)
+		for _, i := range idx {
 			v, err := strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
@@ -108,10 +114,14 @@ func readInLatestBenchmark(latestBenchmarkPath string) benchmark {
 	var total float64
 	for _, step := range steps {
 		*step /= float64(count)
+		// Don't add CPU time to the total time.
+		if step == &cpu {
+			continue
+		}
 		total += *step
 	}
 
-	return benchmark{time.Now(), cmd, api, k8s, dnsSvc, app, dnsAns, total}
+	return benchmark{time.Now(), cmd, api, k8s, dnsSvc, app, dnsAns, total, cpu}
 }
 
 // readInPastBenchmarks reads in the past benchmark results from a JSON file
@@ -144,8 +154,8 @@ func updateRunsFile(h *benchmarks, pastRunsPath string) {
 // createChart creates a time series chart of the benchmarks
 func createChart(benchmarks []benchmark, chartOutputPath string) {
 	n := len(benchmarks)
-	var cmdXYs, apiXYs, k8sXYs, dnsSvcXYs, appXYs, dnsAnsXYs, totalXYs plotter.XYs
-	xys := []*plotter.XYs{&cmdXYs, &apiXYs, &k8sXYs, &dnsSvcXYs, &appXYs, &dnsAnsXYs, &totalXYs}
+	var cmdXYs, apiXYs, k8sXYs, dnsSvcXYs, appXYs, dnsAnsXYs, totalXYs, cpuXYs plotter.XYs
+	xys := []*plotter.XYs{&cmdXYs, &apiXYs, &k8sXYs, &dnsSvcXYs, &appXYs, &dnsAnsXYs, &totalXYs, &cpuXYs}
 
 	for _, xy := range xys {
 		*xy = make(plotter.XYs, n)
@@ -164,6 +174,7 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 			{&appXYs, b.App},
 			{&dnsAnsXYs, b.DNSAns},
 			{&totalXYs, b.Total},
+			{&cpuXYs, b.CPU},
 		}
 		for _, xyValue := range xyValues {
 			xy := &(*xyValue.xys)[i]
@@ -193,6 +204,7 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 		{appXYs, color.RGBA{R: 255, G: 255, A: 255}, "App Running"},
 		{dnsAnsXYs, color.RGBA{G: 255, B: 255, A: 255}, "DNS Answering"},
 		{totalXYs, color.RGBA{B: 255, R: 140, A: 255}, "Total"},
+		{cpuXYs, color.RGBA{B: 57, R: 127, G: 85, A: 255}, "CPU"},
 	}
 
 	for _, step := range steps {

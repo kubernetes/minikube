@@ -84,14 +84,14 @@ fi
 
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  sudo apt-get -y install lsof psmisc
+  sudo apt-get -y install lsof psmisc dnsutils
 else
   brew install pstree coreutils pidof
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
 # installing golang so we could do go get for gopogh
-./installers/check_install_golang.sh "1.17" "/usr/local" || true
+./installers/check_install_golang.sh "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true

@@ -12,10 +12,10 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17'
+  GO_VERSION: '1.17.2'
 jobs:
   build_minikube:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -42,7 +42,7 @@ jobs:
           name: minikube_binaries
           path: out
   lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -61,7 +61,7 @@ jobs:
         run: make test
         continue-on-error: false
   unit_test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2

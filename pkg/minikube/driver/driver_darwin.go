@@ -27,6 +27,7 @@ var supportedDrivers = func() []string {
 		// on darwin/arm64 only docker and ssh are supported yet
 		return []string{
 			Docker,
+			Podman,
 			SSH,
 		}
 	}
@@ -37,6 +38,7 @@ var supportedDrivers = func() []string {
 		HyperKit,
 		VMware,
 		Docker,
+		Podman,
 		SSH,
 	}
 }()

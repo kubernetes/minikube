@@ -17,14 +17,18 @@ limitations under the License.
 package cni
 
 import (
+	"bytes"
 	"os/exec"
+	"text/template"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
 // From https://raw.githubusercontent.com/cilium/cilium/v1.9/install/kubernetes/quick-install.yaml
-var ciliumTmpl = `---
+var ciliumTmpl = template.Must(template.New("name").Parse(
+	`---
 # Source: cilium/templates/cilium-agent-serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -175,7 +179,7 @@ data:
   hubble-tls-key-file: /var/lib/cilium/tls/hubble/server.key
   hubble-tls-client-ca-files: /var/lib/cilium/tls/hubble/client-ca.crt
   ipam: "cluster-pool"
-  cluster-pool-ipv4-cidr: "10.0.0.0/8"
+  cluster-pool-ipv4-cidr: "{{.PodSubnet }}"
   cluster-pool-ipv4-mask-size: "24"
   disable-cnp-status-updates: "true"
   cgroup-root: "/run/cilium/cgroupv2"
@@ -786,7 +790,8 @@ spec:
       - configMap:
           name: cilium-config
         name: cilium-config-path
-`
+`,
+))
 
 // Cilium is the Cilium CNI manager
 type Cilium struct {
@@ -798,6 +803,35 @@ func (c Cilium) String() string {
 	return "Cilium"
 }
 
+// CIDR returns the default CIDR used by this CNI
+func (c Cilium) CIDR() string {
+	return DefaultPodCIDR
+}
+
+// GenerateKubeadmYAML generates the .yaml file
+func GenerateCiliumYAML() ([]byte, error) {
+
+	podCIDR := DefaultPodCIDR
+
+	klog.Infof("Using pod CIDR: %s", podCIDR)
+
+	opts := struct {
+		PodSubnet string
+	}{
+		PodSubnet: podCIDR,
+	}
+
+	b := bytes.Buffer{}
+	configTmpl := ciliumTmpl
+
+	klog.Infof("cilium options: %+v", opts)
+	if err := configTmpl.Execute(&b, opts); err != nil {
+		return nil, err
+	}
+	klog.Infof("cilium config:\n%s\n", b.String())
+	return b.Bytes(), nil
+}
+
 // Apply enables the CNI
 func (c Cilium) Apply(r Runner) error {
 	// see https://kubernetes.io/docs/tasks/administer-cluster/network-policy-provider/cilium-network-policy/
@@ -805,10 +839,10 @@ func (c Cilium) Apply(r Runner) error {
 		return errors.Wrap(err, "bpf mount")
 	}
 
-	return applyManifest(c.cc, r, manifestAsset([]byte(ciliumTmpl)))
-}
+	ciliumCfg, err := GenerateCiliumYAML()
+	if err != nil {
+		return errors.Wrap(err, "generating cilium cfg")
+	}
 
-// CIDR returns the default CIDR used by this CNI
-func (c Cilium) CIDR() string {
-	return DefaultPodCIDR
+	return applyManifest(c.cc, r, manifestAsset(ciliumCfg))
 }

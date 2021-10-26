@@ -18,7 +18,6 @@ package machine
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"testing"
@@ -67,7 +66,7 @@ func TestAddHostAliasInner(t *testing.T) {
 		t.Error(err)
 	}
 
-	buff, err := ioutil.ReadFile(tempFilePath)
+	buff, err := os.ReadFile(tempFilePath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -81,7 +80,7 @@ func TestAddHostAliasInner(t *testing.T) {
 }
 
 func writeContentToTempFile(content string) (string, error) {
-	etcHosts, err := ioutil.TempFile("", "hosts")
+	etcHosts, err := os.CreateTemp("", "hosts")
 	if err != nil {
 		return "", err
 	}

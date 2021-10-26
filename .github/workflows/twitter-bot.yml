@@ -8,7 +8,7 @@ on:
     types: [published]
 jobs:
   twitter-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: ethomson/send-tweet-action@v1
         with:

@@ -48,7 +48,7 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -121,7 +121,7 @@ func main() {
 
 // KICVersions returns current and stable KIC base image versions and any error occurred.
 func KICVersions() (current, stable string, err error) {
-	blob, err := ioutil.ReadFile(filepath.Join(update.FSRoot, kicFile))
+	blob, err := os.ReadFile(filepath.Join(update.FSRoot, kicFile))
 	if err != nil {
 		return "", "", err
 	}

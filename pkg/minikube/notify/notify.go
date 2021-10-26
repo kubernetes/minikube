@@ -19,8 +19,8 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -185,7 +185,7 @@ func writeTimeToFile(path string, inputTime time.Time) error {
 }
 
 func timeFromFileIfExists(path string) time.Time {
-	lastUpdateCheckTime, err := ioutil.ReadFile(path)
+	lastUpdateCheckTime, err := os.ReadFile(path)
 	if err != nil {
 		return time.Time{}
 	}

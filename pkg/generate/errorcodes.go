@@ -22,7 +22,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -41,7 +41,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 
 	fset := token.NewFileSet()
 	for _, pathToCheck := range pathsToCheck {
-		r, err := ioutil.ReadFile(pathToCheck)
+		r, err := os.ReadFile(pathToCheck)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("error reading file %s", pathToCheck))
 		}
@@ -122,5 +122,5 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 		}
 	}
 
-	return ioutil.WriteFile(docPath, buf.Bytes(), 0o644)
+	return os.WriteFile(docPath, buf.Bytes(), 0o644)
 }

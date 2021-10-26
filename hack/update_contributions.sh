@@ -38,18 +38,20 @@ git pull https://github.com/kubernetes/minikube.git master --tags
 
 tags_to_generate=${1:-1}
 
-# 1) Get tags.
-# 2) Filter out beta tags.
-# 3) Parse tag name into its version numbers.
-# 4) Sort by ascending version numbers.
-# 5) Reform tag name from version numbers.
-# 6) Pair up current and previous tags. Format: (previous tag, current tag)
-# 7) Format command to get tag dates.
-# 8) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
-# 9) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
+# 1) Fetch latest tags (https://github.com/kubernetes/minikube/issues/12561).
+# 2) Get tags.
+# 3) Filter out beta tags.
+# 4) Parse tag name into its version numbers.
+# 5) Sort by ascending version numbers.
+# 6) Reform tag name from version numbers.
+# 7) Pair up current and previous tags. Format: (previous tag, current tag)
+# 8) Format command to get tag dates.
+# 9) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
+# 10) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
 #   - Negative line numbers are used since entries are sorted in descending order.
-# 10) Take most recent $tags_to_generate tags.
+# 11) Take most recent $tags_to_generate tags.
 tags_with_range=$(
+  git fetch --tags -f \
   git --no-pager tag \
   | grep -v -e "beta" \
   | sed -r "s/v([0-9]*)\.([0-9]*)\.([0-9]*)/\1 \2 \3/" \

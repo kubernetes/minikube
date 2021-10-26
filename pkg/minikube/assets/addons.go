@@ -134,8 +134,8 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
 	}, false, "dashboard", "kubernetes", map[string]string{
-		"Dashboard":      "kubernetesui/dashboard:v2.1.0@sha256:7f80b5ba141bead69c4fee8661464857af300d7d7ed0274cf7beecedc00322e6",
-		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.4@sha256:555981a24f184420f3be0c79d4efb6c948a85cfce84034f85a563f4151a81cbf",
+		"Dashboard":      "kubernetesui/dashboard:v2.3.1@sha256:ec27f462cf1946220f5a9ace416a84a57c18f98c777876a8054405d1428cc92e",
+		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.7@sha256:36d5b3f60e1a144cc5ada820910535074bdf5cf73fb70d1ff1681537eef4e172",
 	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
@@ -467,7 +467,7 @@ var Addons = map[string]*Addon{
 			"helm-tiller-svc.yaml",
 			"0640"),
 	}, false, "helm-tiller", "", map[string]string{
-		"Tiller": "helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
+		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
 		// GCR is deprecated in helm
 		// https://github.com/helm/helm/issues/10004#issuecomment-894478908
@@ -480,8 +480,10 @@ var Addons = map[string]*Addon{
 			"ingress-dns-pod.yaml",
 			"0640"),
 	}, false, "ingress-dns", "", map[string]string{
-		"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
-	}, nil),
+		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
+	}, map[string]string{
+		"IngressDNS": "gcr.io",
+	}),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetallbAssets,
 			"metallb/metallb.yaml.tmpl",
@@ -721,7 +723,7 @@ func overrideDefaults(defaultMap, overrideMap map[string]string) map[string]stri
 
 // SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
 func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, err error) {
-	addonDefaultImages := addon.Images
+	addonDefaultImages := fixAddonImages(cc.KubernetesConfig.ImageRepository, addon.Images)
 	if addonDefaultImages == nil {
 		addonDefaultImages = make(map[string]string)
 	}
@@ -774,6 +776,23 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 		// Whether err is nil or not we still return here.
 	}
 	return images, customRegistries, err
+}
+
+// fixes addon image names according to image repository used
+func fixAddonImages(repo string, images map[string]string) map[string]string {
+	if repo == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		// for aliyun registry must strip namespace from image name, e.g.
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-minikube/storage-provisioner:v5 will not work
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/storage-provisioner:v5 does work
+		newImages := make(map[string]string)
+		for name, image := range images {
+			image = strings.TrimPrefix(image, "k8s-minikube/")
+			image = strings.TrimPrefix(image, "kubernetesui/")
+			newImages[name] = image
+		}
+		return newImages
+	}
+	return images
 }
 
 // GenerateTemplateData generates template data for template assets

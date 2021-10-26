@@ -223,9 +223,6 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 		if driver.IsKIC(cc.Driver) {
 			if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
-			} else if driver.BareMetal(cc.Driver) {
-				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
-					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
 		}
 		if err := supportLegacyIngress(cc); err != nil {

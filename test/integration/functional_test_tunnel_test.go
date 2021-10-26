@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -21,7 +22,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os/exec"
@@ -92,8 +93,8 @@ func checkRoutePassword(t *testing.T) {
 // checkDNSForward skips DNS forwarding test if runtime is not supported
 func checkDNSForward(t *testing.T) {
 	// Not all platforms support DNS forwarding
-	if runtime.GOOS != "darwin" {
-		t.Skip("DNS forwarding is supported for darwin only now, skipping test DNS forwarding")
+	if runtime.GOOS != "darwin" || KicDriver() {
+		t.Skip("DNS forwarding is only supported for Hyperkit on Darwin, skipping test DNS forwarding")
 	}
 }
 
@@ -210,7 +211,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}
@@ -341,7 +342,7 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}

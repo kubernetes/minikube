@@ -85,6 +85,9 @@ type ClusterConfig struct {
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
   ImageMirrorCountry      string
+	CertExpiration          time.Duration
+	Mount                   bool
+	MountString             string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

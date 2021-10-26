@@ -142,6 +142,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
+	go download.CleanUpOlderPreloads()
 
 	// No need to do the update check if no one is going to see it
 	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
@@ -1088,13 +1089,9 @@ func validateCPUCount(drvName string) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exitIfNotForced(reason.Usage, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
-		}
-
-		if diskSizeMB < minimumDiskSize {
-			exitIfNotForced(reason.RsrcInsufficientStorage, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
+			exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
 
@@ -1117,31 +1114,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(imageRepository) {
 		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
+	if cmd.Flags().Changed(ports) {
+		err := validatePorts(viper.GetStringSlice(ports))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+	}
 
 	if cmd.Flags().Changed(containerRuntime) {
-		runtime := strings.ToLower(viper.GetString(containerRuntime))
-
-		validOptions := cruntime.ValidRuntimes()
-		// `crio` is accepted as an alternative spelling to `cri-o`
-		validOptions = append(validOptions, constants.CRIO)
-
-		var validRuntime bool
-		for _, option := range validOptions {
-			if runtime == option {
-				validRuntime = true
-			}
-
-			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-			if runtime == "cri-o" {
-				viper.Set(containerRuntime, constants.CRIO)
-			}
+		err := validateRuntime(viper.GetString(containerRuntime))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
-
-		if !validRuntime {
-			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
-		}
-
-		validateCNI(cmd, runtime)
+		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
 	if driver.BareMetal(drvName) {
@@ -1204,6 +1190,61 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
+}
+
+// This function validates that the --ports are not below 1024 for the host and not outside range
+func validatePorts(ports []string) error {
+	for _, portDuplet := range ports {
+		for i, port := range strings.Split(portDuplet, ":") {
+			p, err := strconv.Atoi(port)
+			if err != nil {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
+			}
+			if p > 65535 || p < 1 {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
+			}
+			if p < 1024 && i == 0 {
+				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
+			}
+		}
+	}
+	return nil
+}
+
+// validateDiskSize validates the supplied disk size
+func validateDiskSize(diskSize string) error {
+	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
+	if err != nil {
+		return errors.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
+	}
+	if diskSizeMB < minimumDiskSize {
+		return errors.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
+	}
+	return nil
+}
+
+// validateRuntime validates the supplied runtime
+func validateRuntime(runtime string) error {
+	validOptions := cruntime.ValidRuntimes()
+	// `crio` is accepted as an alternative spelling to `cri-o`
+	validOptions = append(validOptions, constants.CRIO)
+
+	var validRuntime bool
+	for _, option := range validOptions {
+		if runtime == option {
+			validRuntime = true
+		}
+
+		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+		if runtime == "cri-o" {
+			viper.Set(containerRuntime, constants.CRIO)
+		}
+	}
+
+	if !validRuntime {
+		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", runtime, cruntime.ValidRuntimes())
+	}
+	return nil
 }
 
 // if container runtime is not docker, check that cni is not disabled

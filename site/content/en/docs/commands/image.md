@@ -56,9 +56,11 @@ minikube image build .
 ### Options
 
 ```
+      --all                     Build image on all nodes.
       --build-env stringArray   Environment variables to pass to the build. (format: key=value)
       --build-opt stringArray   Specify arbitrary flags to pass to the build. (format: key=value)
   -f, --file string             Path to the Dockerfile to use (optional)
+  -n, --node string             The node to build on. Defaults to the primary control plane.
       --push                    Push the new image (requires tag)
   -t, --tag string              Tag to apply to the new image (optional)
 ```

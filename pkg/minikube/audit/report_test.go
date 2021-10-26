@@ -17,13 +17,12 @@ limitations under the License.
 package audit
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestReport(t *testing.T) {
-	f, err := ioutil.TempFile("", "audit.json")
+	f, err := os.CreateTemp("", "audit.json")
 	if err != nil {
 		t.Fatalf("failed creating temporary file: %v", err)
 	}

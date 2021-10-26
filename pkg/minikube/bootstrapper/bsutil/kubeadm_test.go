@@ -18,7 +18,7 @@ package bsutil
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -83,7 +83,7 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 // It will error if no testdata are available or in absence of testdata for newest and default minor k8s versions.
 func recentReleases(n int) ([]string, error) {
 	path := "testdata"
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list testdata directory %s: %w", path, err)
 	}
@@ -177,7 +177,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
+				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
@@ -270,7 +270,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
+				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}

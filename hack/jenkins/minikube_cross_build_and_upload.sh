@@ -26,8 +26,7 @@ set -eux -o pipefail
 readonly bucket="minikube-builds"
 
 # Make sure the right golang version is installed based on Makefile
-WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
-./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+./hack/jenkins/installers/check_install_golang.sh /usr/local
 
 
 declare -rx BUILD_IN_DOCKER=y
@@ -43,6 +42,7 @@ docker rm $(docker ps -aq) || true
 make -j 16 \
   all \
   minikube-darwin-arm64 \
+  out/mkcmp \
   out/minikube_${DEB_VER}_amd64.deb \
   out/minikube_${DEB_VER}_arm64.deb \
   out/docker-machine-driver-kvm2_$(make deb_version_base).deb \

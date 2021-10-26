@@ -19,7 +19,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/delete"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -152,7 +152,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 	// register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	register.Reg.SetStep(register.Deleting)
-
+	download.CleanUpOlderPreloads()
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
 		klog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
@@ -518,13 +518,29 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 
 // killMountProcess kills the mount process, if it is running
 func killMountProcess() error {
-	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
+	profile := viper.GetString("profile")
+	paths := []string{
+		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
+		localpath.Profile(profile),
+	}
+
+	for _, path := range paths {
+		if err := killProcess(path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func killProcess(path string) error {
+	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 		return nil
 	}
 
 	klog.Infof("Found %s ...", pidPath)
-	out, err := ioutil.ReadFile(pidPath)
+	out, err := os.ReadFile(pidPath)
 	if err != nil {
 		return errors.Wrap(err, "ReadFile")
 	}

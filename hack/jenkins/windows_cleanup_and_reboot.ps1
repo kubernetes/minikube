@@ -15,13 +15,16 @@ if (Jenkins) {
 	exit 0
 }
 echo "doing it"
-taskkill /IM putty.exe
-taskkill /F /IM java.exe
+docker system prune --all --force --volumes
+Get-Process "*Docker Desktop*" | Stop-Process
 Get-VM | Where-Object {$_.Name -ne "DockerDesktopVM"} | Foreach {
-	C:\var\jenkins\workspace\Hyper-V_Windows_integration\out\minikube-windows-amd64.exe delete -p $_.Name
 	Suspend-VM $_.Name
 	Stop-VM $_.Name -Force
 	Remove-VM $_.Name -Force
 }
-Remove-Item -path C:\Users\admin\.minikube -recurse -force
+VBoxManage list vms | Foreach {
+	$m = $_.Substring(1, $_.LastIndexOf('"')-1)
+	VBoxManage controlvm $m poweroff
+	VBoxManage unregistervm $m --delete
+}
 shutdown /r

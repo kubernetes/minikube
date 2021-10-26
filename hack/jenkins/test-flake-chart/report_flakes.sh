@@ -85,7 +85,11 @@ awk -F, 'NR>1 {
   | sort -g -t, -k2,2 \
   >> "$TMP_FAILED_RATES"
 
-FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
+# Filter out arm64, macOS and windows tests until they're more stable
+TMP_FAILED_RATES_FILTERED=$(mktemp)
+grep -v "arm64\|macOS\|crio" "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES_FILTERED"
+
+FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES_FILTERED")
 if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
   echo "No failed tests! Aborting without commenting..." 1>&2
   exit 0
@@ -102,7 +106,7 @@ TEST_GOPOGH_LINK_FORMAT='https://storage.googleapis.com/minikube-builds/logs/'${
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
-head -n "$MAX_REPORTED_TESTS" "$TMP_FAILED_RATES" \
+head -n "$MAX_REPORTED_TESTS" "$TMP_FAILED_RATES_FILTERED" \
   | awk '-F[:,]' '{
       if ($3 != "n/a") {
         rate_text = sprintf("%3$s ([chart]('$TEST_CHART_LINK_FORMAT'))", $1, $2, $3)

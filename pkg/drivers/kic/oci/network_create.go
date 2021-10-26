@@ -123,10 +123,8 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 			args = append(args, "-o")
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
-
-		args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"))
 	}
-	args = append(args, name)
+	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
@@ -214,31 +212,32 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	return info, nil
 }
 
+var podmanInspectGetter = func(name string) (*RunResult, error) {
+	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
+	return runCmd(cmd)
+}
+
 func podmanNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
-	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
-	rr, err := runCmd(cmd)
+	rr, err := podmanInspectGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Podman, name)
-		if strings.Contains(rr.Output(), "No such network") {
+		if strings.Contains(rr.Output(), "no such network") {
 
 			return info, ErrNetworkNotFound
 		}
 		return info, err
 	}
 
-	output := rr.Stdout.String()
+	output := strings.TrimSpace(rr.Stdout.String())
 	if output == "" {
 		return info, fmt.Errorf("no bridge network found for %s", name)
 	}
 
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(output), ",")
-	if len(vals) == 0 {
-		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
-	}
+	vals := strings.Split(output, ",")
 
-	if len(vals) > 0 {
+	if len(vals) >= 2 {
 		info.gateway = net.ParseIP(vals[1])
 	}
 

@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -21,7 +22,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -43,7 +43,7 @@ func TestScheduledStopWindows(t *testing.T) {
 		t.Skip("test only runs on windows")
 	}
 	profile := UniqueProfileName("scheduled-stop")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(6))
 	defer CleanupWithLogs(t, profile, cancel)
 	startMinikube(ctx, t, profile)
 
@@ -64,7 +64,7 @@ func TestScheduledStopWindows(t *testing.T) {
 	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
 
 	// wait for stop to complete
-	time.Sleep(15 * time.Second)
+	time.Sleep(time.Minute)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"
@@ -145,7 +145,7 @@ func checkPID(t *testing.T, profile string) string {
 	var contents []byte
 	getContents := func() error {
 		var err error
-		contents, err = ioutil.ReadFile(file)
+		contents, err = os.ReadFile(file)
 		return err
 	}
 	// first, make sure the PID file exists

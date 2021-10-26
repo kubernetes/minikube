@@ -1,3 +1,4 @@
+//go:build darwin && integration
 // +build darwin,integration
 
 /*

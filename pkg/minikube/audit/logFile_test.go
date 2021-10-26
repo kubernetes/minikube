@@ -18,7 +18,6 @@ package audit
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,7 +38,7 @@ func TestLogFile(t *testing.T) {
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
-		f, err := ioutil.TempFile("", "audit.json")
+		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
 		}

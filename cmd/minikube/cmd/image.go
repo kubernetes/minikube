@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -33,6 +32,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
+)
+
+var (
+	allNodes bool
 )
 
 // imageCmd represents the image command
@@ -54,7 +57,7 @@ var (
 )
 
 func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
+	tmp, err := os.CreateTemp("", "build.*.tar")
 	if err != nil {
 		return "", err
 	}
@@ -180,7 +183,7 @@ var saveImageCmd = &cobra.Command{
 			output = args[1]
 
 			if args[1] == "-" {
-				tmp, err := ioutil.TempFile("", "image.*.tar")
+				tmp, err := os.CreateTemp("", "image.*.tar")
 				if err != nil {
 					exit.Error(reason.GuestImageSave, "Failed to get temp", err)
 				}
@@ -306,7 +309,7 @@ var buildImageCmd = &cobra.Command{
 				// Otherwise, assume it's a tar
 			}
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -387,6 +390,8 @@ func init() {
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
+	buildImageCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to build on. Defaults to the primary control plane.")
+	buildImageCmd.Flags().BoolVarP(&allNodes, "all", "", false, "Build image on all nodes.")
 	imageCmd.AddCommand(buildImageCmd)
 	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
 	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")

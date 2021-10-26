@@ -19,6 +19,7 @@ package node
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 
@@ -120,7 +121,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
-			baseImg = strings.Replace(baseImg, "gcr.io", cc.KubernetesConfig.ImageRepository, 1)
+			baseImg = updateKicImageRepo(baseImg, cc.KubernetesConfig.ImageRepository)
 			cc.KicBaseImage = baseImg
 		}
 		var finalImg string
@@ -254,4 +255,15 @@ func imagesInConfigFile() ([]string, error) {
 		return images, nil
 	}
 	return []string{}, nil
+}
+
+func updateKicImageRepo(imgName string, repo string) string {
+	image := strings.TrimPrefix(imgName, "gcr.io/")
+	if repo == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		// for aliyun registry must strip namespace from image name, e.g.
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-minikube/kicbase:v0.0.25 will not work
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase:v0.0.25 does work
+		image = strings.TrimPrefix(image, "k8s-minikube/")
+	}
+	return path.Join(repo, image)
 }

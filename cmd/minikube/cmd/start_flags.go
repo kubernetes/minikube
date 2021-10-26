@@ -122,6 +122,7 @@ const (
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
+	certExpiration          = "cert-expiration"
 )
 
 var (
@@ -169,6 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
+	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -455,6 +457,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
 		ExtraDisks:              viper.GetInt(extraDisks),
+		CertExpiration:          viper.GetDuration(certExpiration),
+		Mount:                   viper.GetBool(createMount),
+		MountString:             viper.GetString(mountString),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -581,6 +586,10 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
+	if cc.CertExpiration == 0 {
+		cc.CertExpiration = constants.DefaultCertExpiration
+	}
+
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
@@ -611,7 +620,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		out.WarningT("You cannot add or remove extra disks for an existing minikube cluster. Please first delete the cluster.")
 	}
 
-	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
 	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
@@ -653,6 +661,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
+	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
+	updateBoolFromFlag(cmd, &cc.Mount, createMount)
+	updateStringFromFlag(cmd, &cc.MountString, mountString)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)

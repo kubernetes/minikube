@@ -18,7 +18,6 @@ package machine
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	minikubeHome, err := os.MkdirTemp("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
@@ -148,7 +147,7 @@ func TestExcludedBinariesNotDownloaded(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	minikubeHome, err := os.MkdirTemp("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}

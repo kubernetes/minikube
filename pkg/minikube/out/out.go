@@ -23,7 +23,6 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,9 +32,9 @@ import (
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/briandowns/spinner"
 	"github.com/mattn/go-isatty"
+	"github.com/spf13/pflag"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -381,16 +380,8 @@ func displayError(msg string, err error) {
 }
 
 func latestLogFilePath() (string, error) {
-	if len(os.Args) < 2 {
-		return "", fmt.Errorf("unable to detect command")
-	}
-	cmd := os.Args[1]
-	if cmd == "start" {
-		return localpath.LastStartLog(), nil
-	}
-
 	tmpdir := os.TempDir()
-	files, err := ioutil.ReadDir(tmpdir)
+	files, err := os.ReadDir(tmpdir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get list of files in tempdir: %v", err)
 	}
@@ -400,27 +391,47 @@ func latestLogFilePath() (string, error) {
 		if !strings.Contains(file.Name(), "minikube_") {
 			continue
 		}
-		if !lastModTime.IsZero() && lastModTime.After(file.ModTime()) {
+		fileInfo, err := file.Info()
+		if err != nil {
+			return "", fmt.Errorf("failed to get file info: %v", err)
+		}
+		if !lastModTime.IsZero() && lastModTime.After(fileInfo.ModTime()) {
 			continue
 		}
 		lastModName = file.Name()
-		lastModTime = file.ModTime()
+		lastModTime = fileInfo.ModTime()
 	}
 	fullPath := filepath.Join(tmpdir, lastModName)
 
 	return fullPath, nil
 }
 
+func command() (string, error) {
+	if len(pflag.Args()) < 1 {
+		return "", fmt.Errorf("unable to detect command")
+	}
+
+	return pflag.Arg(0), nil
+}
+
 func displayGitHubIssueMessage() {
-	logPath, err := latestLogFilePath()
+	cmd, err := command()
 	if err != nil {
-		klog.Warningf("failed to diplay GitHub issue message: %v", err)
+		klog.Warningf("failed to get command: %v", err)
 	}
 
 	msg := Sprintf(style.Sad, "If the above advice does not help, please let us know:")
 	msg += Sprintf(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose\n")
-	msg += Sprintf(style.Empty, "Please attach the following file to the GitHub issue:")
-	msg += Sprintf(style.Empty, "- {{.logPath}}", V{"logPath": logPath})
+	msg += Sprintf(style.Empty, "Please run `minikube logs --file=logs.txt` and attach logs.txt to the GitHub issue.")
+
+	if cmd != "start" {
+		logPath, err := latestLogFilePath()
+		if err != nil {
+			klog.Warningf("failed to get latest log file path: %v", err)
+		}
+		msg += Sprintf(style.Empty, "Please also attach the following file to the GitHub issue:")
+		msg += Sprintf(style.Empty, "- {{.logPath}}", V{"logPath": logPath})
+	}
 
 	BoxedErr(msg)
 }

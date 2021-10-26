@@ -32,10 +32,13 @@ func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer tests.RemoveTempDir(tempDir)
 
-	k8s := config.KubernetesConfig{
-		APIServerName: constants.APIServerName,
-		DNSDomain:     constants.ClusterDNSDomain,
-		ServiceCIDR:   constants.DefaultServiceCIDR,
+	k8s := config.ClusterConfig{
+		CertExpiration: constants.DefaultCertExpiration,
+		KubernetesConfig: config.KubernetesConfig{
+			APIServerName: constants.APIServerName,
+			DNSDomain:     constants.ClusterDNSDomain,
+			ServiceCIDR:   constants.DefaultServiceCIDR,
+		},
 	}
 
 	if err := os.Mkdir(filepath.Join(tempDir, "certs"), 0777); err != nil {

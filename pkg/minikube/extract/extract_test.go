@@ -19,7 +19,6 @@ package extract
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -33,7 +32,7 @@ func TestExtract(t *testing.T) {
 	// The function we care about
 	functions := []string{"extract.PrintToScreen"}
 
-	tempdir, err := ioutil.TempDir("", "temptestdata")
+	tempdir, err := os.MkdirTemp("", "temptestdata")
 	if err != nil {
 		t.Fatalf("Creating temp dir: %v", err)
 	}
@@ -44,13 +43,13 @@ func TestExtract(t *testing.T) {
 		}
 	}()
 
-	src, err := ioutil.ReadFile("testdata/test.json")
+	src, err := os.ReadFile("testdata/test.json")
 	if err != nil {
 		t.Fatalf("Reading json file: %v", err)
 	}
 
 	tempfile := filepath.Join(tempdir, "tmpdata.json")
-	err = ioutil.WriteFile(tempfile, src, 0666)
+	err = os.WriteFile(tempfile, src, 0666)
 	if err != nil {
 		t.Fatalf("Writing temp json file: %v", err)
 	}
@@ -68,7 +67,7 @@ func TestExtract(t *testing.T) {
 		t.Fatalf("Error translating strings: %v", err)
 	}
 
-	f, err := ioutil.ReadFile(tempfile)
+	f, err := os.ReadFile(tempfile)
 	if err != nil {
 		t.Fatalf("Reading resulting json file: %v", err)
 	}
