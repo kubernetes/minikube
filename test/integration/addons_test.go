@@ -670,10 +670,8 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Command(), err)
-		} else {
-			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-				t.Errorf("Unexpected error message: %v", rr.Output())
-			}
+		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+			t.Errorf("Unexpected error message: %v", rr.Output())
 		}
 		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
