@@ -46,7 +46,10 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 			args = append(args, []string{"-f", f}...)
 		}
 	} else {
+		// --ignore-not-found just ignores when we try to ignore a resource that is gone,
+		// like a completed job with a ttlSecondsAfterFinished
 		args = append(args, "--ignore-not-found")
+		// reverse the order of files to delete, sometimes file order matters
 		for i := len(files) - 1; i >= 0; i-- {
 			args = append(args, []string{"-f", files[i]}...)
 		}
