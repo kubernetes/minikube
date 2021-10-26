@@ -46,6 +46,7 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 			args = append(args, []string{"-f", f}...)
 		}
 	} else {
+		args = append(args, "--ignore-not-found")
 		for i := len(files) - 1; i >= 0; i-- {
 			args = append(args, []string{"-f", files[i]}...)
 		}
