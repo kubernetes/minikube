@@ -41,8 +41,14 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	}
 
 	args := []string{fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), kubectlBinary, kubectlAction}
-	for _, f := range files {
-		args = append(args, []string{"-f", f}...)
+	if enable {
+		for _, f := range files {
+			args = append(args, []string{"-f", f}...)
+		}
+	} else {
+		for i := len(files) - 1; i >= 0; i-- {
+			args = append(args, []string{"-f", files[i]}...)
+		}
 	}
 
 	return exec.Command("sudo", args...)
