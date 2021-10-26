@@ -32,7 +32,8 @@ curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
 # if it doesn't exist, it will just return VERSION, which is covered in the if statement below
 HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
-CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
+CURRENT_KIC_VERSION=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2)
+CURRENT_KIC_TS=$(echo $CURRENT_KIC_VERSION | cut -d "-" -f 2)
 if [[ $HEAD_KIC_TIMESTAMP != v* ]]; then
 	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
 	if [[ $CURRENT_KIC_TS == v* ]] || [ $diff -lt 0 ]; then
@@ -62,19 +63,33 @@ GCR_IMG=${GCR_REPO}:${KIC_VERSION}
 DH_IMG=${DH_REPO}:${KIC_VERSION}
 export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 
+if [ "$release" = false ]; then
+	# Build a new kicbase image
+	CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
 
-# Build a new kicbase image
-CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
-
-# Abort with error message if above command failed
-ec=$?
-if [ $ec -gt 0 ]; then
-	if [ "$release" = false ]; then
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.  
-		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/kic_image_build.txt
-		"
+	# Abort with error message if above command failed
+	ec=$?
+	if [ $ec -gt 0 ]; then
+		if [ "$release" = false ]; then
+			gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.  
+			See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/kic_image_build.txt
+			"
+		fi
+		exit $ec
 	fi
-	exit $ec
+else
+	# Install crane, it does exactly what we want it to do
+	go install github.com/google/go-containerregistry/cmd/crane@latest
+
+	CURRENT_GCR_REPO=$(grep "gcrRepo =" pkg/drivers/kic/types.go | cut -d \" -f 2)
+	CURRENT_DH_REPO=$(grep "dockerhubRepo =" pkg/drivers/kic/types.go | cut -d \" -f 2)
+
+	CURRENT_GCR_IMG=$CURRENT_GCR_REPO:$CURRENT_KIC_VERSION
+	CURRENT_DH_IMG=$CURRENT_DH_REPO:$CURRENT_KIC_VERSION
+
+	crane copy $CURRENT_GCR_IMG $GCR_IMG
+	crane copy $CURRENT_DH_IMG $DH_IMG
+
 fi
 
 # Retrieve the sha from the new image
