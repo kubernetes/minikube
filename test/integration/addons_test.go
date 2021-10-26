@@ -695,10 +695,5 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}
-
-		// Disable the addon for good now
-		if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
-			t.Errorf("failed to disable GCP auth addon: %v", err)
-		}
 	}
 }
