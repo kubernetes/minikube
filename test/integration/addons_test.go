@@ -643,9 +643,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
-	if detect.IsOnGCE() && !detect.IsCloudShell() {
-		expected = "k8s-minikube"
-	}
+
 	if got != expected {
 		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 	}
