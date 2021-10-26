@@ -72,7 +72,7 @@ func TestCertOptions(t *testing.T) {
 	}
 
 	// verify that the apiserver is serving on port 8555
-	if NeedsPortForward() { // in case od docker/podman on non-linux the port will be a "random assigned port" in kubeconfig
+	if NeedsPortForward() { //  docker/podman on non-linux the port will be a "random assigned port" in kubeconfig
 		bin := "docker"
 		if PodmanDriver() {
 			bin = "podman"
