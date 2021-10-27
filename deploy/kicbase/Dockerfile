@@ -159,22 +159,30 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # Install cri-o/podman dependencies:
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    export DEB_BASE="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04" && \
+    curl -LO "${DEB_BASE}/all/containers-common_1-21_all.deb" && \
+    export DEB_ARCH="${DEB_BASE}/${ARCH}" && \
+    curl -LO "${DEB_ARCH}/catatonit_0.1.5~1_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/conmon_2.0.30-2_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/containernetworking-plugins_1.0.0-1_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/cri-tools_1.21.0~2_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/podman-plugins_1.2.0-1_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/criu_3.16.1-1_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/crun_1.2-2_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/cri-o-runc_1.0.1~0_${ARCH}.deb" && \
+    curl -LO "${DEB_ARCH}/podman-machine-cni_0.0.0-1_${ARCH}.deb" && \
+    clean-install ./*.deb
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    curl -LO "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.22/xUbuntu_20.04/${ARCH}/cri-o_1.22.0~0_${ARCH}.deb" && \
+    clean-install ./*.deb
 
 # install podman
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install podman && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    curl -LO "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/${ARCH}/podman_3.3.1-1_${ARCH}.deb" && \
+    clean-install ./*.deb && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
