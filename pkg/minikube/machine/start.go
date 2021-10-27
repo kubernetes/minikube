@@ -238,11 +238,16 @@ func postStartValidations(h *host.Host, drvName string) {
 	if err != nil {
 		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
-	if percentageFull >= 99 {
+	thresholdGiB := 20
+	availableGiB, err := DiskAvailable(r, "/var")
+	if err != nil {
+		klog.Warningf("error getting GiB of /var that is available: %v", err)
+	}
+	if percentageFull >= 99 && availableGiB < thresholdGiB {
 		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
 	}
 
-	if percentageFull >= 85 {
+	if percentageFull >= 85 && availableGiB < thresholdGiB {
 		out.WarnReason(kind, `{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
 	}
 }
@@ -260,6 +265,21 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 	percentage := strings.TrimSpace(output.Stdout.String())
 	percentage = strings.Trim(percentage, "%")
 	return strconv.Atoi(percentage)
+}
+
+// DiskAvailable returns the available capacity of dir in the VM/container in GiB
+func DiskAvailable(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestDiskUsedEnv); s != "" {
+		return strconv.Atoi(s)
+	}
+	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -BG %s | awk 'NR==2{print $4}'", dir)))
+	if err != nil {
+		klog.Warningf("error running df -BG /var: %v\n%v", err, output.Output())
+		return 0, err
+	}
+	gib := strings.TrimSpace(output.Stdout.String())
+	gib = strings.Trim(gib, "G")
+	return strconv.Atoi(gib)
 }
 
 // postStart are functions shared between startHost and fixHost
