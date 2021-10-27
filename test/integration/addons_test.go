@@ -47,62 +47,36 @@ func TestAddons(t *testing.T) {
 	defer Cleanup(t, profile, cancel)
 
 	setupSucceeded := t.Run("Setup", func(t *testing.T) {
-		// We don't need a dummy file is we're on GCE
-		if !detect.IsOnGCE() || detect.IsCloudShell() {
-			// Set an env var to point to our dummy credentials file
-			err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-			t.Cleanup(func() {
-				os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-			})
-			if err != nil {
-				t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
-			}
-
-			err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-			t.Cleanup(func() {
-				os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-			})
-			if err != nil {
-				t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
-			}
+		// Set an env var to point to our dummy credentials file
+		// don't use t.Setenv because we sometimes manually unset the env var later manually
+		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		})
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
 		}
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
+		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		})
+		if err != nil {
+			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
+		}
+
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
 		if !arm64Platform() {
 			args = append(args, "--addons=helm-tiller")
 		}
-		if !detect.IsOnGCE() {
-			args = append(args, "--addons=gcp-auth")
-		}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
 
-		// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
-		// then use force to actually test using creds.
-		if detect.IsOnGCE() {
-			args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Command(), err)
-			} else {
-				if !detect.IsCloudShell() && !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-					t.Errorf("Unexpected error message: %v", rr.Output())
-				} else {
-					// ok, use force here since we are in GCE
-					// do not use --force unless absolutely necessary
-					args = append(args, "--force")
-					rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-					if err != nil {
-						t.Errorf("%s failed: %v", rr.Command(), err)
-					}
-				}
-			}
-		}
 	})
 
 	if !setupSucceeded {
@@ -669,15 +643,34 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
-	if detect.IsOnGCE() && !detect.IsCloudShell() {
-		expected = "k8s-minikube"
-	}
+
 	if got != expected {
 		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 	}
 
+	disableGCPAuth := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+		t.Errorf("failed to disable GCP auth addon: %v", err)
+	}
+
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() {
+		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
+		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+			t.Errorf("Unexpected error message: %v", rr.Output())
+		}
 		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
@@ -696,23 +689,9 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("print env project: %v", err)
 		}
 
-		// Make sure the pod is up and running, which means we successfully pulled the private image down
-		// 8 minutes, because 4 is not enough for images to pull in all cases.
 		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}
-	}
-
-	disableGCPAuth := func() error {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
-		t.Errorf("failed to disable GCP auth addon: %v", err)
 	}
 }

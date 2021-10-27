@@ -267,7 +267,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	}
 
 	// If the gcp-auth credentials haven't been mounted in, don't start the pods
-	if name == "gcp-auth" {
+	if name == "gcp-auth" && enable {
 		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
 		if err != nil || rr.Stdout.String() == "" {
 			return true, nil

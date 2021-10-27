@@ -41,6 +41,11 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	}
 
 	args := []string{fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), kubectlBinary, kubectlAction}
+	if !enable {
+		// --ignore-not-found just ignores when we try to delete a resource that is already gone,
+		// like a completed job with a ttlSecondsAfterFinished
+		args = append(args, "--ignore-not-found")
+	}
 	for _, f := range files {
 		args = append(args, []string{"-f", f}...)
 	}
