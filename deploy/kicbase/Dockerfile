@@ -164,11 +164,17 @@ RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/li
     apt-key add - < Release.key && \
     clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc
+# install cri-o
+# TODO: remove the `sed` line with the next cri-o release, the current version of the install script has errors
+RUN export CRIO_HASH=6becad23eadd7dfdd25fd8df386bf3b706cf7758 \
+    && export CRIO_TAR=cri-o.amd64."${CRIO_HASH}".tar.gz \
+    && curl -LO "https://storage.googleapis.com/cri-o/artifacts/${CRIO_TAR}" \
+    && tar -xzvf "${CRIO_TAR}" \
+    && cd cri-o \
+    && sed -i 's/#\/usr\/bin\/env sh/#!\/usr\/bin\/env bash/' ./install \
+    && make \
+    && rm -rf "${CRIO_TAR}" \
+    && rm -rf cri-o
 
 # install podman
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
