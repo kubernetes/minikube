@@ -158,35 +158,41 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
 
 # Install cri-o/podman dependencies:
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
+    export DEB_BASE="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04" && \
+    curl -LO "${DEB_BASE}/all/containers-common_1-21_all.deb" && \
     if [ "$ARCH" != "ppc64le" ]; then \
-    	clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
+        clean-install conmon containernetworking-plugins crun; \
     else \
-    	clean-install containers-common conmon containernetworking-plugins crun; \
+        export DEB_ARCH="${DEB_BASE}/${ARCH}" && \
+        curl -LO "${DEB_ARCH}/conmon_2.0.30-2_${ARCH}.deb" && \
+        curl -LO "${DEB_ARCH}/containernetworking-plugins_1.0.0-1_${ARCH}.deb" && \
+        curl -LO "${DEB_ARCH}/criu_3.16.1-1_${ARCH}.deb" && \
+        curl -LO "${DEB_ARCH}/crun_1.2-2_${ARCH}.deb" && \
+        curl -LO "${DEB_ARCH}/cri-o-runc_1.0.1~0_${ARCH}.deb" && \
+        curl -LO "${DEB_ARCH}/podman-machine-cni_0.0.0-1_${ARCH}.deb"; \
     fi
+    clean-install ./*.deb
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+        curl -LO "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.22/xUbuntu_20.04/${ARCH}/cri-o_1.22.0~0_${ARCH}.deb" && \
+        clean-install ./*.deb; \
+    fi
 
 # install podman
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install podman && \
-    addgroup --system podman && \
-    mkdir -p /etc/systemd/system/podman.socket.d && \
-    printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
+    if [ "$ARCH" != "ppc64le" ]; then \
+        curl -LO "https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/${ARCH}/podman_3.3.1-1_${ARCH}.deb" && \
+        clean-install ./*.deb && \
+        addgroup --system podman && \
+        mkdir -p /etc/systemd/system/podman.socket.d && \
+        printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
            > /etc/systemd/system/podman.socket.d/override.conf && \
-    mkdir -p /etc/tmpfiles.d && \
-    echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
-    systemd-tmpfiles --create; fi
+        mkdir -p /etc/tmpfiles.d && \
+        echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
+        systemd-tmpfiles --create; \
+    fi
 
 # automount service
 COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
