@@ -132,6 +132,7 @@ const (
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
 	certExpiration          = "cert-expiration"
+	binaryMirror            = "binary-mirror"
 )
 
 var (
@@ -189,6 +190,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
+	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -490,6 +492,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MountPort:               uint16(viper.GetUint(mountPortFlag)),
 		MountType:               viper.GetString(mountTypeFlag),
 		MountUID:                viper.GetString(mountUID),
+		BinaryMirror:            viper.GetString(binaryMirror),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -707,6 +710,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateUint16FromFlag(cmd, &cc.MountPort, mountPortFlag)
 	updateStringFromFlag(cmd, &cc.MountType, mountTypeFlag)
 	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
+	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
