@@ -34,6 +34,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -233,22 +234,36 @@ func postStartValidations(h *host.Host, drvName string) {
 		return
 	}
 
+	if viper.GetBool("force") {
+		return
+	}
+
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
-	thresholdGiB := 20
+
 	availableGiB, err := DiskAvailable(r, "/var")
 	if err != nil {
 		klog.Warningf("error getting GiB of /var that is available: %v", err)
 	}
+	thresholdGiB := 20
+
 	if percentageFull >= 99 && availableGiB < thresholdGiB {
-		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+		exit.Message(
+			kind,
+			`{{.n}} is out of disk space! (/var is at {{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 
 	if percentageFull >= 85 && availableGiB < thresholdGiB {
-		out.WarnReason(kind, `{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+		out.WarnReason(
+			kind,
+			`{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 }
 
