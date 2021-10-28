@@ -403,6 +403,15 @@ verifies files and packges installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestIngressAddonLegacy
+tests ingress and ingress-dns addons with legacy k8s version <1.19
+
+#### validateIngressAddonActivation
+tests ingress addon activation
+
+#### validateIngressDNSAddonActivation
+tests ingress-dns addon activation
+
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
 
