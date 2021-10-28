@@ -81,26 +81,21 @@ Tests are typically read with a great air of skepticism, because chances are the
 These are Kubernetes tests that run against an arbitrary cluster and exercise a wide range of Kubernetes features.
 You can run these against minikube by following these steps:
 
-* Clone the Kubernetes repo somewhere on your system.
-* Run `make quick-release` in the k8s repo.
-* Start up a minikube cluster with: `minikube start`.
-* Set following two environment variables:
+Install [docker](https://docs.docker.com/engine/install/)
+Install [kubectl](https://v1-18.docs.kubernetes.io/docs/tasks/tools/install-kubectl/)
+Clone the [minikube repo](https://github.com/kubernetes/minikube)
 
-```shell
-export KUBECONFIG=$HOME/.kube/config
-export KUBERNETES_CONFORMANCE_TEST=y
+## Compile the latest minikube binary
+```console
+% cd <minikube dir>
+% make
 ```
 
-* Run the tests (from the k8s repo):
+## Trigger the tests and get back the results
 
-```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check-version-skew=false
+```console
+% cd <minikube dir>
+./hack/conformance_tests.sh out/minikube --driver=docker --container-runtimer=docker --kubernetes-version=stable
 ```
 
-To run a specific conformance test, you can use the `ginkgo.focus` flag to filter the set using a regular expression.
-The `hack/e2e.go` wrapper and the `e2e.sh` wrappers have a little trouble with quoting spaces though, so use the `\s` regular expression character instead.
-For example, to run the test `should update annotations on modification [Conformance]`, use following command:
-
-```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check-version-skew=false
-```
+This script will run the latest sonobuoy against a minikube cluster with two nodes and the provided parameters.
