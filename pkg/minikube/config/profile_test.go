@@ -280,7 +280,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		expectedName string
 	}{
 		{"old style", "p1", "192.168.64.75", 8443, "minikube"},
-		{"new style", "p2_newformat", "192.168.99.136", 8443, "m01"},
+		{"new style", "p2_newformat", "192.168.59.136", 8443, "m01"},
 	}
 
 	for _, tc := range tests {

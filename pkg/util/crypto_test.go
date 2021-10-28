@@ -94,7 +94,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")
 
-	ips := []net.IP{net.ParseIP("192.168.99.100"), net.ParseIP("10.0.0.10")}
+	ips := []net.IP{net.ParseIP("192.168.59.100"), net.ParseIP("10.0.0.10")}
 	alternateDNS := []string{"kubernetes.default.svc.cluster.local", "kubernetes.default"}
 
 	var tests = []struct {
