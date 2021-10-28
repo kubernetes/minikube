@@ -34,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -163,10 +164,23 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed waiting for ingress-nginx-controller : %v", err)
 	}
 
+	// use nginx ingress yaml that corresponds to k8s version
+	// default: k8s >= v1.19, ingress api v1
+	ingressYaml := "nginx-ingress-v1.yaml"
+	ingressDNSYaml := "ingress-dns-example-v1.yaml"
+	v, err := client.ServerVersion()
+	if err != nil {
+		t.Log("failed to get k8s version, assuming v1.19+ => ingress api v1")
+	} else if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, v.Minor))) {
+		// legacy: k8s < v1.19 & ingress api v1beta1
+		ingressYaml = "nginx-ingress-v1beta1.yaml"
+		ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
+	}
+
 	// create networking.k8s.io/v1 ingress
 	createv1Ingress := func() error {
 		// apply networking.k8s.io/v1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressYaml)))
 		if err != nil {
 			return err
 		}
@@ -220,7 +234,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// check the ingress-dns addon here as well
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "ingress-dns-example.yaml")))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressDNSYaml)))
 	if err != nil {
 		t.Errorf("failed to kubectl replace ingress-dns-example. args %q. %v", rr.Command(), err)
 	}
