@@ -179,7 +179,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
-	// maintain backwards compatibility for ingress with k8s < v1.19
+	// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19
 	if strings.HasPrefix(name, "ingress") && enable {
 		if err := supportLegacyIngress(addon, *cc); err != nil {
 			return err
@@ -294,21 +294,36 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 	return false
 }
 
-// maintain backwards compatibility for ingress with k8s < v1.19 by replacing default addon images with older versions
+// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19 by replacing default addons' images with compatible versions
 func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
-		addon.Images = map[string]string{
-			// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
-			"IngressController": "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
-			// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
-			"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-			"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		if addon.Name() == "ingress" {
+			addon.Images = map[string]string{
+				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
+				"IngressController": "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
+				// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
+				"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+			}
+			addon.Registries = map[string]string{
+				"IngressController": "k8s.gcr.io",
+			}
+			return nil
 		}
+		if addon.Name() == "ingress-dns" {
+			addon.Images = map[string]string{
+				"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+			}
+			addon.Registries = nil
+			return nil
+		}
+		return fmt.Errorf("supportLegacyIngress called for unexpected addon %q - nothing to do here", addon.Name())
 	}
+
 	return nil
 }
 
