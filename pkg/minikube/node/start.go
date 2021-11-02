@@ -290,15 +290,15 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
-	nodeTitle := "Starting control plane node"
+	startingPhrase := "Starting control plane node"
 	if !apiServer {
-		nodeTitle = "Starting worker node"
+		startingPhrase = "Starting worker node"
 	}
 	if cc.KubernetesConfig.KubernetesVersion == "v0.0.0" {
-		nodeTitle = "Starting minikube without Kubernetes"
+		startingPhrase = "Starting minikube without Kubernetes"
 	}
 
-	out.Step(style.ThumbsUp, "{{.nodeName}} {{.name}} in cluster {{.cluster}}", out.V{"nodeName": nodeTitle, "name": name, "cluster": cc.Name})
+	out.Step(style.ThumbsUp, "{{.nodeName}} {{.name}} in cluster {{.cluster}}", out.V{"nodeName": startingPhrase, "name": name, "cluster": cc.Name})
 
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))
