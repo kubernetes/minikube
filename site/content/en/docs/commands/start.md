@@ -54,7 +54,7 @@ minikube start [flags]
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
-      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
+      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --hyperkit-vpnkit-sock string       Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)
       --hyperkit-vsock-ports strings      List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)
