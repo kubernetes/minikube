@@ -37,6 +37,7 @@ gcloud cloud-shell ssh --authorize-session << EOF
  COMMIT=$COMMIT
  EXTRA_BUILD_ARGS=$EXTRA_BUILD_ARGS
  access_token=$access_token
+ ROOT_JOB_ID=$ROOT_JOB_ID
 
  # Prevent cloud-shell is ephemeral warnings on apt-get
  touch ~/.cloudshell/no-apt-get-warning
