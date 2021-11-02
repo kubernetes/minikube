@@ -88,6 +88,10 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+	var kcs *kubeconfig.Settings
+	if starter.Node.KubernetesVersion == "v0.0.0" {
+		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -115,7 +119,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 
 	var bs bootstrapper.Bootstrapper
-	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
@@ -286,11 +289,16 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
-	if apiServer {
-		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
-	} else {
-		out.Step(style.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+
+	nodeTitle := "Starting control plane node"
+	if !apiServer {
+		nodeTitle = "Starting worker node"
 	}
+	if cc.KubernetesConfig.KubernetesVersion == "v0.0.0" {
+		nodeTitle = "Starting minikube without Kubernetes"
+	}
+
+	out.Step(style.ThumbsUp, "{{.nodeName}} {{.name}} in cluster {{.cluster}}", out.V{"nodeName": nodeTitle, "name": name, "cluster": cc.Name})
 
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicBaseImage(&kicGroup, cc, viper.GetBool("download-only"))

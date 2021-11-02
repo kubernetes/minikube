@@ -164,7 +164,11 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
 		}
 
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status, strconv.Itoa(len(p.Config.Nodes))})
+		k8sVersion := p.Config.KubernetesConfig.KubernetesVersion
+		if k8sVersion == "v0.0.0" { // for --no-kubernetes flag
+			k8sVersion = "N/A"
+		}
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes))})
 	}
 	return data
 }
