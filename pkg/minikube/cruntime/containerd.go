@@ -90,6 +90,7 @@ oom_score = 0
 
 	[plugins."io.containerd.grpc.v1.cri"]
       [plugins."io.containerd.grpc.v1.cri".containerd]
+        discard_unpacked_layers = true
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
           [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
             runtime_type = "io.containerd.runc.v2"
