@@ -137,6 +137,10 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 }
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
+	if cc == nil {
+		out.String("{}")
+		return
+	}
 	addonNames := make([]string, 0, len(assets.Addons))
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
