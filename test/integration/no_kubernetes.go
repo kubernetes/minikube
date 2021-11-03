@@ -111,7 +111,7 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 	}
 
 	if !strings.Contains(rr.Output(), "N/A") {
-		t.Fatalf("expected N/A in the profile list for kubernets version but got : %q : %v", rr.Command(), rr.Output())
+		t.Fatalf("expected N/A in the profile list for kubernetes version but got : %q : %v", rr.Command(), rr.Output())
 	}
 
 	args = []string{"profile", "list", "--output=json"}
