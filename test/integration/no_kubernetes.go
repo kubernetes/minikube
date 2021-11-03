@@ -27,7 +27,7 @@ import (
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
-// for usecases where user only needs to use the container runtime (docker,containerd,crio) inside minikube
+// for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
 func TestNoKubernetes(t *testing.T) {
 	MaybeParallel(t)
 
