@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -165,7 +166,7 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		}
 
 		k8sVersion := p.Config.KubernetesConfig.KubernetesVersion
-		if k8sVersion == "v0.0.0" { // for --no-kubernetes flag
+		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
 		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes))})

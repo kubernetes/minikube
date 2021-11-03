@@ -89,7 +89,7 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
-	if starter.Node.KubernetesVersion == "v0.0.0" {
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
 		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
 	// wait for preloaded tarball to finish downloading before configuring runtimes
@@ -294,7 +294,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	if !apiServer {
 		startingPhrase = "Starting worker node"
 	}
-	if cc.KubernetesConfig.KubernetesVersion == "v0.0.0" {
+	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 		startingPhrase = "Starting minikube without Kubernetes"
 	}
 

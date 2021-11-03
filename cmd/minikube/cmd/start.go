@@ -433,7 +433,7 @@ func displayEnviron(env []string) {
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
-	if k8sVersion == "v0.0.0" {
+	if k8sVersion == constants.NoKubernetesVersion {
 		register.Reg.SetStep(register.Done)
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 		out.BoxedWithConfig(box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
