@@ -96,7 +96,7 @@ func validateStopNoK8S(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"stop", "-p", profile}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Fatalf("Failed to stop minikbue %q : %v", rr.Command(), err)
+		t.Fatalf("Failed to stop minikube %q : %v", rr.Command(), err)
 	}
 }
 
