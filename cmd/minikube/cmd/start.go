@@ -1530,7 +1530,7 @@ func isBaseImageApplicable(drv string) bool {
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	if viper.GetBool(noKubernetes) {
-		klog.Info("No Kubernetes flag is set, setting Kubernetes version to v0.0.0")
+		klog.Infof("No Kubernetes flag is set, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		viper.Set(kubernetesVersion, constants.NoKubernetesVersion)
 	}
 
