@@ -67,7 +67,7 @@ func TestNoKubernetes(t *testing.T) {
 	})
 }
 
-// validateStartNoK8S starts a minikube cluster without kuberentes started/configured
+// validateStartNoK8S starts a minikube cluster without kubernetes started/configured
 func validateStartNoK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
