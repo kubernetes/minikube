@@ -123,7 +123,7 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 }
 
 // validateStartNoArgs valides that minikube start with no args works
-func validateStartNorArgs(ctx context.Context, t *testing.T, profile string) {
+func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
