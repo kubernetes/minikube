@@ -122,7 +122,7 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 
 }
 
-// validateStartNorArgs valides that minikube start with no args works
+// validateStartNoArgs valides that minikube start with no args works
 func validateStartNorArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
