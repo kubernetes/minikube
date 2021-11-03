@@ -1475,22 +1475,12 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 // validateKubernetesVersion ensures that the requested version is reasonable
 func validateKubernetesVersion(old *config.ClusterConfig) {
 	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
-	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
-	}
-	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
-	}
-
-	zeroVersion, err := semver.Make("0.0.0")
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse v0.0.0 Kubernetes : {{.error}}", out.V{"error": err})
-	}
+	oldestVersion := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
+	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
 	if nvs.Equals(zeroVersion) {
-		klog.Info("No kuberentes version set for minikube, setting Kubernetes version to v0.0.0")
+		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
 	if nvs.LT(oldestVersion) {
@@ -1541,8 +1531,7 @@ func isBaseImageApplicable(drv string) bool {
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	if viper.GetBool(noKubernetes) {
 		klog.Info("No Kubernetes flag is set, setting Kubernetes version to v0.0.0")
-		viper.Set(kubernetesVersion, "v0.0.0")
-
+		viper.Set(kubernetesVersion, constants.NoKubernetesVersion)
 	}
 
 	paramVersion := viper.GetString(kubernetesVersion)
