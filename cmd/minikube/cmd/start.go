@@ -437,7 +437,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		register.Reg.SetStep(register.Done)
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 		out.BoxedWithConfig(box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
-- "minikube docker-env" to build images by pointing to the docker inside minikube
+- "minikube docker-env" to point your docker-cli to the docker inside minikube.
 - "minikube image" to build images without docker`)
 		return nil
 	}
