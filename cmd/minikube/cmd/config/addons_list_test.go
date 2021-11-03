@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"log"
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -39,7 +39,7 @@ func TestAddonsList(t *testing.T) {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
 		if _, err := r.Read(b); err != nil {
-			log.Fatalf("failed to read bytes: %v", err)
+			t.Fatalf("failed to read bytes: %v", err)
 		}
 		got := string(b)
 		expected := `|-----------------------------|-----------------------|
@@ -51,7 +51,11 @@ func TestAddonsList(t *testing.T) {
 	})
 
 	t.Run("NonExistingClusterJSON", func(t *testing.T) {
-		b := make([]byte, 2)
+		type addons struct {
+			Ambassador *interface{} `json:"ambassador"`
+		}
+
+		b := make([]byte, 534)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)
@@ -68,12 +72,14 @@ func TestAddonsList(t *testing.T) {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
 		if _, err := r.Read(b); err != nil {
-			log.Fatalf("failed to read bytes: %v", err)
+			t.Fatalf("failed to read bytes: %v", err)
 		}
-		got := string(b)
-		expected := "{}"
-		if got != expected {
-			t.Errorf("Expected = %q; got = %q", expected, got)
+		got := addons{}
+		if err := json.Unmarshal(b, &got); err != nil {
+			t.Fatalf("failed to unmarshal output; output: %q; err: %v", string(b), err)
+		}
+		if got.Ambassador == nil {
+			t.Errorf("expected `ambassador` field to not be nil, but was")
 		}
 	})
 }
