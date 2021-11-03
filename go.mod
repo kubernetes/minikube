@@ -66,7 +66,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.21.9
+	github.com/shirou/gopsutil/v3 v3.21.10
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.9.0
@@ -134,7 +134,7 @@ require (
 	github.com/go-fonts/liberation v0.2.0 // indirect
 	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
-	github.com/go-ole/go-ole v1.2.5 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-pdf/fpdf v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
@@ -155,6 +155,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
 	github.com/klauspost/compress v1.13.0 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
