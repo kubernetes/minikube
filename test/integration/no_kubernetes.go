@@ -46,7 +46,7 @@ func TestNoKubernetes(t *testing.T) {
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
-			{"StartNoArgs", validateStartNorArgs},
+			{"StartNoArgs", validateStartNoArgs},
 			{"VerifyK8sNotRunningSecond", validateK8SNotRunning},
 		}
 
