@@ -31,6 +31,9 @@ import (
 func TestNoKubernetes(t *testing.T) {
 	MaybeParallel(t)
 
+	if NoneDriver() {
+		t.Skip("None driver does not need --no-kubernetes test")
+	}
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("NoKubernetes")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
