@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 1.24.0 - 2021-11-04
+
+Features:
+* Add --no-kubernetes flag  to start minikube without kubernetes [#12848](https://github.com/kubernetes/minikube/pull/12848)
+* `minikube addons list` shows addons if cluster does not exist [#12837](https://github.com/kubernetes/minikube/pull/12837)
+
+Bug fixes:
+* virtualbox: change default `host-only-cidr` [#12811](https://github.com/kubernetes/minikube/pull/12811)
+* fix zsh completion [#12841](https://github.com/kubernetes/minikube/pull/12841)
+* Fix starting on Windows with VMware driver on non `C:` drive [#12819](https://github.com/kubernetes/minikube/pull/12819)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akira Yoshiyama
+- Keyhoh
+- Medya Ghazizadeh
+- Nicolas Busseneau
+- Sharif Elgamal
+- Steven Powell
+- Toshiaki Inukai
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (11 comments)
+- sharifelgamal (10 comments)
+- afbjorklund (6 comments)
+- atoato88 (5 comments)
+- medyagh (3 comments)
+- yosshy (1 comments)
+
+Thank you to our triage members for this release!
+
+- sharifelgamal (13 comments)
+- afbjorklund (9 comments)
+- spowelljr (6 comments)
+- medyagh (3 comments)
+- Sarathgiggso (2 comments)
+
 ## Version 1.24.0-beta.0 - 2021-10-28
 
 Features:
