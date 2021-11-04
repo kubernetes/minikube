@@ -290,7 +290,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
-	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnessecary
+	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnecessary
 	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
