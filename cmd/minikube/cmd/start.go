@@ -442,8 +442,6 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		return nil
 	}
 
-	// here are some ideas to do without Kubernetes:
-
 	// To be shown at the end, regardless of exit path
 	defer func() {
 		register.Reg.SetStep(register.Done)
