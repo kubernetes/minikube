@@ -28,7 +28,10 @@ readonly bucket="minikube/latest"
 declare -rx GOPATH=/var/lib/jenkins/go
 
 GIT_COMMIT_AT_HEAD=$(git rev-parse HEAD | xargs)
-MINIKUBE_LATEST_COMMIT=$(gsutil stat gs://minikube/latest/minikube-linux-amd64 | grep commit | awk '{ print $2 }' | xargs)
+gsutil cp gs://minikube/latest/minikube-linux-amd64 && chmod +x ./minikube-linux-amd64
+MINIKUBE_LATEST_COMMIT=$(./minikube-linux-amd64 version | grep commit | awk '{ print $2 }')
+
+rm ./minikube-linux-amd64
 
 if [ "$GIT_COMMIT_AT_HEAD" = "$MINIKUBE_LATEST_COMMIT" ]; then
   echo "The current uploaded binary is already latest, skipping build"

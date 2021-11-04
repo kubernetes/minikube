@@ -96,9 +96,9 @@ $failures=echo $gopogh_status | jq '.NumberOfFail'
 $tests=echo $gopogh_status | jq '.NumberOfTests'
 $bad_status="$failures / $tests failures"
 
-$description="$status in $elapsed minute(s)."
+$description="$status in $elapsed minutes."
 If($env:status -eq "failure") {
-	$description="completed with $bad_status in $elapsed minute(s)."
+	$description="completed with $bad_status in $elapsed minutes."
 }
 echo $description
 
