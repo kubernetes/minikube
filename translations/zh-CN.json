@@ -394,7 +394,7 @@
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "向 minikube 中的访客隐藏管理程序签名（仅限 kvm2 驱动程序）",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --vm-driver": "Hyperkit 已损坏。升级到最新的 hyperkit 版本以及/或者 Docker 桌面版。或者，你可以通过 --vm-driver 切换其他选项",
-	"Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
+	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "",
 	"Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --vm-driver": "Hyperkit 的网络挂了。升级到最新的 hyperkit 版本以及/或者 Docker 桌面版。或者，你可以通过 --vm-driver 切换其他选项",
 	"IP Address to use to expose ports (docker and podman driver only)": "",
 	"IP address (ssh driver only)": "",

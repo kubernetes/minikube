@@ -320,7 +320,7 @@
 	"Group ID:     {{.groupID}}": "",
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "Permite ocultar la firma del hipervisor al invitado en minikube (solo con el controlador de kvm2)",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
-	"Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
+	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "",
 	"IP Address to use to expose ports (docker and podman driver only)": "",
 	"IP address (ssh driver only)": "",
 	"If present, writes to the provided file instead of stdout.": "",

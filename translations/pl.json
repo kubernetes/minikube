@@ -324,7 +324,7 @@
 	"Have you set up libvirt correctly?": "Czy napewno skonfigurowano libvirt w sposób prawidłowy?",
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
-	"Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "",
+	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "",
 	"IP Address to use to expose ports (docker and podman driver only)": "",
 	"IP address (ssh driver only)": "",
 	"If present, writes to the provided file instead of stdout.": "",
