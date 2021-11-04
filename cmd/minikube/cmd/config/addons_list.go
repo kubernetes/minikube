@@ -146,6 +146,11 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonsMap := map[string]map[string]interface{}{}
 
 	for _, addonName := range addonNames {
+		if cc == nil {
+			addonsMap[addonName] = map[string]interface{}{}
+			continue
+		}
+
 		addonBundle := assets.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
 
