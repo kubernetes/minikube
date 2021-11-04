@@ -334,8 +334,8 @@ var providerIssues = []match{
 		Kind: Kind{
 			ID:       "PR_HYPERKIT_VMNET_FRAMEWORK",
 			ExitCode: ExProviderError,
-			Advice: `Hyperkit networking is broken. Try Disabling the internet sharing as described https://github.com/kubernetes/minikube/issues/5594#issuecomment-939372612 
-also try upgrade to the latest hyperkit version and/or Docker for Desktop. You may choose an alternate --driver`,
+			Advice: `Hyperkit networking is broken. Try Disabling the internet sharing as described here: https://github.com/kubernetes/minikube/issues/5594#issuecomment-939372612 
+Also you could try to upgrade to the latest "hyperkit" version and/or Docker for Desktop. You may choose an alternate --driver`,
 			Issues: []int{6028, 5594},
 		},
 		Regexp: re(`error from vmnet.framework: -1`),
