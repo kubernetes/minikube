@@ -126,7 +126,7 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
