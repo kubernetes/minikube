@@ -88,6 +88,10 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+	var kcs *kubeconfig.Settings
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
+		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -115,7 +119,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 
 	var bs bootstrapper.Bootstrapper
-	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
@@ -286,10 +289,17 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
-	if apiServer {
-		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+
+	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnecessary
+	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
-		out.Step(style.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		if apiServer {
+			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		} else {
+			out.Step(style.ThumbsUp, "Starting worker node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		}
+
 	}
 
 	if driver.IsKIC(cc.Driver) {
