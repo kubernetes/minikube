@@ -50,7 +50,7 @@ Alternatively if you temporary don't want to use Kubernetes you could use pause 
 minikube pause
 ```
 
-Alternatively you could use the auto-pause addon that will do that for you automatically.
+minikube also has an addon that automatically pauses Kubernetes after a certain amount of inactivity:
 
 ```
 minikube addons enable auto-pause
