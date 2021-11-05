@@ -45,7 +45,7 @@ Yes! If you want to use minikube only as a Docker Desktop replacement without st
 minikube start --no-kubernetes
 ```
 
-Alternatively if you temporary don't want to use Kubernetes you could use pause and later unpause Kubernetes 
+Alternatively, if you want to temporarily turn off Kubernetes, you can pause and later unpause Kubernetes 
 ```
 minikube pause
 ```
