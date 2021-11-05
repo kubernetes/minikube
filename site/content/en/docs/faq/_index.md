@@ -33,7 +33,7 @@ minikube profiles are meant to be isolated from one another, with their own sett
 minikube's VM includes a Docker daemon running inside Linux for free, so you can use 
 `minikube docker-env` to point your terminal's Docker CLI to the Docker inside minikube.
 
-You would need to start minikube with a VM driver (instead of docker) for example hyperkit on Mac and HyperV on windows
+You would need to start minikube with a VM driver, instead of docker, such as hyperkit on macOS and Hyper-V on Windows.
 ```
 minikube start --driver=hyperv 
 ```
