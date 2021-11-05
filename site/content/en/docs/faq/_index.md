@@ -29,7 +29,7 @@ minikube profile list
 
 minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
 
-## Can I use minikube as a Docker Desktop replacement ?
+## Can I use minikube as a Docker Desktop replacement?
 minikube's VM includes a Docker daemon running inside Linux for free, you could use 
 `minikube docker-env` command to point your terminal's docker-cli to the Docker inside minikube.
 
