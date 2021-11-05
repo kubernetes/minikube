@@ -29,6 +29,36 @@ minikube profile list
 
 minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
 
+## Can I use minikube as a Docker Desktop replacement ?
+minikube's VM includes a Docker daemon running inside Linux for free, you could use 
+`minikube docker-env` command to point your terminal's docker-cli to the Docker inside minikube.
+
+You would need to start minikube with a VM driver (instead of docker) for example hyperkit on Mac and HyperV on windows
+```
+minikube start --driver=hyperv 
+```
+
+Alternatively, you could use "minikube image build" command instead of "docker build"
+
+## Can I start minikube without Kuberentes runninng ?
+If you do not want to use Kubernetes cluster at all, and only interested in the minikube VM, you could do this
+
+```
+minikube start --no-kubernetes
+```
+
+Alternatively if you temporary don't want to use Kubernetes you could use pause and later unpause Kubernetes 
+```
+minikube pause
+```
+
+Alternatively you could use the auto-pause addon that will do that for you automatically.
+
+```
+minikube addons enable auto-pause
+```
+
+
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
