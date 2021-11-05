@@ -37,12 +37,10 @@ You would need to start minikube with a VM driver (instead of docker) for exampl
 ```
 minikube start --driver=hyperv 
 ```
-
 Alternatively, you could use "minikube image build" command instead of "docker build"
 
 ## Can I start minikube without Kuberentes runninng ?
-If you do not want to use Kubernetes cluster at all, and only interested in the minikube VM, you could do this
-
+if you only want to use minikube as a Docker Desktop replacement and dont want to use kuberentes itself try:
 ```
 minikube start --no-kubernetes
 ```
