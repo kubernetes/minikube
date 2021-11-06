@@ -138,6 +138,9 @@ func formatKubeadmImageList(version, data string) (string, error) {
 	for _, line := range lines {
 		imageTag := strings.Split(line, ":")
 		if len(imageTag) == 2 {
+			// removing the repo from image name
+			imageName := strings.Split(imageTag[0], "/")
+			imageTag[0] = strings.Join(imageName[1:], "/")
 			templateData[majorMinorVersion][imageTag[0]] = imageTag[1]
 		}
 	}

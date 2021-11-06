@@ -35,15 +35,13 @@ func Pause(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
 	pv := "3.6"
-
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	imageName := path.Join(kubernetesRepo(mirror), "pause")
-
+	imageName := "pause"
 	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		pv = pVersion
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, pv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -79,12 +77,11 @@ func coreDNS(v semver.Version, mirror string) string {
 	}
 
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	imageName := path.Join(kubernetesRepo(mirror), in)
-	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][in]; ok {
 		cv = cVersion
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, cv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), in), cv)
 }
 
 // etcd returns the image used for etcd
@@ -94,13 +91,12 @@ func etcd(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.5.0-0"
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	imageName := path.Join(kubernetesRepo(mirror), "etcd")
-
+	imageName := "etcd"
 	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		ev = eVersion
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, ev)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
 }
 
 // auxiliary returns images that are helpful for running minikube
