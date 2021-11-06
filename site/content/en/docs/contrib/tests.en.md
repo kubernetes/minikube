@@ -403,6 +403,15 @@ verifies files and packges installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestIngressAddonLegacy
+tests ingress and ingress-dns addons with legacy k8s version <1.19
+
+#### validateIngressAddonActivation
+tests ingress addon activation
+
+#### validateIngressDNSAddonActivation
+tests ingress-dns addon activation
+
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
 
@@ -495,6 +504,25 @@ and --cni=false
 makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
 try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
 should fail if hairpinMode is off
+
+## TestNoKubernetes
+tests starting minikube without Kubernetes,
+for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
+
+#### validateStartNoK8S
+starts a minikube cluster without kubernetes started/configured
+
+#### validateK8SNotRunning
+validates that there is no kubernetes running inside minikube
+
+#### validateStopNoK8S
+validates that minikube is stopped after a --no-kubernetes start
+
+#### validateProfileListNoK8S
+validates that profile list works with --no-kubernetes
+
+#### validateStartNoArgs
+valides that minikube start with no args works
 
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected

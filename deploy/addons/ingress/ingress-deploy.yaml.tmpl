@@ -46,6 +46,8 @@ metadata:
 data:
   # see https://github.com/kubernetes/ingress-nginx/blob/master/docs/user-guide/nginx-configuration/configmap.md for all possible options and their description
   hsts: "false"
+# see https://github.com/kubernetes/minikube/pull/12702#discussion_r727519180: 'allow-snippet-annotations' should be used only if strictly required by another part of the deployment
+#  allow-snippet-annotations: 'true'
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -102,8 +104,10 @@ rules:
       - list
       - watch
   - apiGroups:
+      {{- if eq .IngressAPIVersion "v1beta1"}}
       - extensions
-      - networking.k8s.io   # k8s 1.14+
+      {{- end}}
+      - networking.k8s.io
     resources:
       - ingresses
     verbs:
@@ -118,14 +122,16 @@ rules:
       - create
       - patch
   - apiGroups:
+      {{- if eq .IngressAPIVersion "v1beta1"}}
       - extensions
-      - networking.k8s.io   # k8s 1.14+
+      {{- end}}
+      - networking.k8s.io
     resources:
       - ingresses/status
     verbs:
       - update
   - apiGroups:
-      - networking.k8s.io   # k8s 1.14+
+      - networking.k8s.io
     resources:
       - ingressclasses
     verbs:
@@ -187,8 +193,10 @@ rules:
       - list
       - watch
   - apiGroups:
+      {{- if eq .IngressAPIVersion "v1beta1"}}
       - extensions
-      - networking.k8s.io   # k8s 1.14+
+      {{- end}}
+      - networking.k8s.io
     resources:
       - ingresses
     verbs:
@@ -196,14 +204,16 @@ rules:
       - list
       - watch
   - apiGroups:
+      {{- if eq .IngressAPIVersion "v1beta1"}}
       - extensions
-      - networking.k8s.io   # k8s 1.14+
+      {{- end}}
+      - networking.k8s.io
     resources:
       - ingresses/status
     verbs:
       - update
   - apiGroups:
-      - networking.k8s.io   # k8s 1.14+
+      - networking.k8s.io
     resources:
       - ingressclasses
     verbs:
@@ -225,7 +235,6 @@ rules:
       - configmaps
     verbs:
       - create
-      - update
   - apiGroups:
       - ''
     resources:
@@ -253,17 +262,6 @@ subjects:
     name: ingress-nginx
     namespace: ingress-nginx
 ---
-apiVersion: networking.k8s.io/v1
-kind: IngressClass
-metadata:
-  labels:
-    app.kubernetes.io/component: controller
-  name: nginx
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
-spec:
-  controller: k8s.io/ingress-nginx
----
 # Source: ingress-nginx/templates/controller-service-webhook.yaml
 apiVersion: v1
 kind: Service
@@ -280,6 +278,9 @@ spec:
     - name: https-webhook
       port: 443
       targetPort: webhook
+      {{- if eq .IngressAPIVersion "v1"}}
+      appProtocol: https
+      {{- end}}
   selector:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
@@ -298,15 +299,26 @@ metadata:
   namespace: ingress-nginx
 spec:
   type: NodePort
+  {{- if eq .IngressAPIVersion "v1"}}
+  ipFamilyPolicy: SingleStack
+  ipFamilies:
+    - IPv4
+  {{- end}}
   ports:
     - name: http
       port: 80
       protocol: TCP
       targetPort: http
+      {{- if eq .IngressAPIVersion "v1"}}
+      appProtocol: http
+      {{- end}}
     - name: https
       port: 443
       protocol: TCP
       targetPort: https
+      {{- if eq .IngressAPIVersion "v1"}}
+      appProtocol: https
+      {{- end}}
   selector:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
@@ -329,10 +341,6 @@ spec:
       app.kubernetes.io/instance: ingress-nginx
       app.kubernetes.io/component: controller
   revisionHistoryLimit: 10
-  strategy:
-    rollingUpdate:
-      maxUnavailable: 1
-    type: RollingUpdate
   minReadySeconds: 0
   template:
     metadata:
@@ -355,7 +363,14 @@ spec:
           args:
             - /nginx-ingress-controller
             - --election-id=ingress-controller-leader
+            {{- if eq .IngressAPIVersion "v1"}}
+            - --controller-class=k8s.io/ingress-nginx
+            - --watch-ingress-without-class=true
+            {{- end}}
+            {{- if eq .IngressAPIVersion "v1beta1"}}
             - --ingress-class=nginx
+            {{- end}}
+            - --publish-status-address=localhost
             - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
             - --report-node-internal-ip-address
             - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
@@ -431,12 +446,28 @@ spec:
           secret:
             secretName: ingress-nginx-admission
 ---
+{{- if eq .IngressAPIVersion "v1"}}
+# Source: ingress-nginx/templates/controller-ingressclass.yaml
+# We don't support namespaced ingressClass yet
+# So a ClusterRole and a ClusterRoleBinding is required
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  labels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+  name: nginx
+  namespace: ingress-nginx
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
+spec:
+  controller: k8s.io/ingress-nginx
+---
+{{- end}}
 # Source: ingress-nginx/templates/admission-webhooks/validating-webhook.yaml
 # before changing this value, check the required kubernetes version
 # https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/#prerequisites
-# Currently(v0.49.0), ValidatingWebhookConfiguration of this validates v1beta1 request
-# TODO(govargo): check this after upstream ingress-nginx can validate v1 version
-# https://github.com/kubernetes/ingress-nginx/blob/controller-v0.49.0/internal/admission/controller/main.go#L46-L52
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -461,10 +492,10 @@ webhooks:
     failurePolicy: Fail
     sideEffects: None
     admissionReviewVersions:
-    {{- if eq .IngressAPIVersion "v1beta1"}}
       - v1
-    {{- end}}
-      - {{.IngressAPIVersion}}
+      {{- if eq .IngressAPIVersion "v1beta1"}}
+      - v1beta1
+      {{- end}}
     clientConfig:
       service:
         namespace: ingress-nginx

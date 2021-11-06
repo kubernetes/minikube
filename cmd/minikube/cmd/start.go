@@ -32,6 +32,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -142,6 +143,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
+	go download.CleanUpOlderPreloads()
 
 	// No need to do the update check if no one is going to see it
 	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
@@ -431,6 +433,15 @@ func displayEnviron(env []string) {
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
+	if k8sVersion == constants.NoKubernetesVersion {
+		register.Reg.SetStep(register.Done)
+		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
+		out.BoxedWithConfig(box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube docker-env" to point your docker-cli to the docker inside minikube.
+- "minikube image" to build images without docker.`)
+		return nil
+	}
+
 	// To be shown at the end, regardless of exit path
 	defer func() {
 		register.Reg.SetStep(register.Done)
@@ -1462,16 +1473,14 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 // validateKubernetesVersion ensures that the requested version is reasonable
 func validateKubernetesVersion(old *config.ClusterConfig) {
 	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
+	oldestVersion := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
+	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
-	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	if nvs.Equals(zeroVersion) {
+		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		return
 	}
-	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
-	}
-
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
@@ -1518,6 +1527,13 @@ func isBaseImageApplicable(drv string) bool {
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
+	if viper.GetBool(noKubernetes) {
+		klog.Infof("No Kubernetes flag is set, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		if old != nil {
+			old.KubernetesConfig.KubernetesVersion = constants.NoKubernetesVersion
+		}
+	}
+
 	paramVersion := viper.GetString(kubernetesVersion)
 
 	// try to load the old version first if the user didn't specify anything

@@ -134,13 +134,13 @@ func BoxedErr(format string, a ...V) {
 }
 
 // BoxedWithConfig writes a templated message in a box with customized style config to stdout
-func BoxedWithConfig(cfg box.Config, st style.Enum, title string, format string, a ...V) {
+func BoxedWithConfig(cfg box.Config, st style.Enum, title string, text string, a ...V) {
 	if st != style.None {
 		title = Sprintf(st, title)
 	}
 	// need to make sure no newlines are in the title otherwise box-cli-maker panics
 	title = strings.ReplaceAll(title, "\n", "")
-	boxedCommon(String, cfg, title, format, a...)
+	boxedCommon(String, cfg, title, text, a...)
 }
 
 // Sprintf is used for returning the string (doesn't write anything)

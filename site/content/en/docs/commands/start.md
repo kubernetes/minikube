@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.27-1633027942-12081@sha256:4780f1897569d2bf77aafb3d133a08d42b4fe61127f06fcfc90c2c5d902d893c")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.28@sha256:4780f1897569d2bf77aafb3d133a08d42b4fe61127f06fcfc90c2c5d902d893c")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
@@ -54,7 +54,7 @@ minikube start [flags]
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
-      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
+      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --hyperkit-vpnkit-sock string       Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)
       --hyperkit-vsock-ports strings      List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)
@@ -66,9 +66,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/12081/minikube-v1.23.1-1633115168-12081.iso,https://github.com/kubernetes/minikube/releases/download/v1.23.1-1633115168-12081/minikube-v1.23.1-1633115168-12081.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.23.1-1633115168-12081.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.24.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.24.0/minikube-v1.24.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.24.0.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.22.2, 'latest' for v1.22.3-rc.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.22.3, 'latest' for v1.22.4-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
@@ -85,6 +85,7 @@ minikube start [flags]
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
+      --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)
   -n, --nodes int                         The number of nodes to spin up. Defaults to 1. (default 1)
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")

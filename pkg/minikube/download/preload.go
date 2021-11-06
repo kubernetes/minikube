@@ -23,7 +23,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -88,7 +90,7 @@ func TarballPath(k8sVersion, containerRuntime string) string {
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
 func remoteTarballURL(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion, containerRuntime))
+	return fmt.Sprintf("https://%s/%s/%s", downloadHost, PreloadBucket, TarballName(k8sVersion, containerRuntime))
 }
 
 func setPreloadState(k8sVersion, containerRuntime string, value bool) {
@@ -281,4 +283,30 @@ var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, 
 	}
 
 	return nil
+}
+
+// CleanUpOlderPreloads deletes preload files beloning to older minikube versions
+// checks the current preload version and then if the saved tar file is belongs to older minikube it will delete it
+// in case of failure only logs to the user
+func CleanUpOlderPreloads() {
+	files, err := os.ReadDir(targetDir())
+	if err != nil {
+		klog.Warningf("Failed to list preload files: %v", err)
+	}
+
+	for _, file := range files {
+		splited := strings.Split(file.Name(), "-")
+		if len(splited) < 4 {
+			continue
+		}
+		ver := splited[3]
+		if ver != PreloadVersion {
+			fn := path.Join(targetDir(), file.Name())
+			klog.Infof("deleting older generation preload %s", fn)
+			err := os.Remove(fn)
+			if err != nil {
+				klog.Warningf("Failed to clean up older preload files, consider running `minikube delete --all --purge`")
+			}
+		}
+	}
 }

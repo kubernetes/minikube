@@ -37,7 +37,15 @@ var (
 	// DownloadMock is called instead of the download implementation if not nil.
 	DownloadMock func(src, dst string) error
 	checkCache   = os.Stat
+
+	aliyunMirror = "kubernetes.oss-cn-hangzhou.aliyuncs.com"
+	downloadHost = "storage.googleapis.com"
 )
+
+// SetAliyunMirror set the download host for Aliyun mirror
+func SetAliyunMirror() {
+	downloadHost = aliyunMirror
+}
 
 // CreateDstDownloadMock is the default mock implementation of download.
 func CreateDstDownloadMock(src, dst string) error {

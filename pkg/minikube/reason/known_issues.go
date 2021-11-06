@@ -334,8 +334,9 @@ var providerIssues = []match{
 		Kind: Kind{
 			ID:       "PR_HYPERKIT_VMNET_FRAMEWORK",
 			ExitCode: ExProviderError,
-			Advice:   "Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver",
-			Issues:   []int{6028, 5594},
+			Advice: `Hyperkit networking is broken. Try disabling Internet Sharing: System Preference > Sharing > Internet Sharing. 
+Alternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.`,
+			Issues: []int{6028, 5594},
 		},
 		Regexp: re(`error from vmnet.framework: -1`),
 		GOOS:   []string{"darwin"},
