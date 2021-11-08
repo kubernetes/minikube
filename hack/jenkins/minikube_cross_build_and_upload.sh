@@ -83,7 +83,7 @@ gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
 
 readonly bucket_mirror="minikube/latest"
 readonly HEAD="master"
-if [[ "${ghprbPullId}" -eq "${HEAD}" ]]; then
+if [[ "${ghprbPullId}" == "${HEAD}" ]]; then
   # Copy artifacts to known mirror location
   gsutil cp -R "gs://${bucket}/${ghprbPullId}/minikube-*" "gs://${bucket_mirror}"
 fi
