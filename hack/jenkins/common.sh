@@ -403,7 +403,7 @@ if ! type "jq" > /dev/null; then
     if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
       sudo apt-get install jq -y
     elif [ "${ARCH}" == "arm64" ]; then
-      echo "Unable to install 'jq' automatically for arm64, please install 'jq' manually."
+      echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
       exit 5
     elif [ "${OS}" != "darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
