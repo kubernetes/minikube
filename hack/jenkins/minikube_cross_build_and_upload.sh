@@ -24,7 +24,6 @@
 set -eux -o pipefail
 
 readonly bucket="minikube-builds"
-readonly bucket_mirror="minikube/latest"
 
 # Make sure the right golang version is installed based on Makefile
 ./hack/jenkins/installers/check_install_golang.sh /usr/local
@@ -61,7 +60,6 @@ if (echo ${COMMIT} | grep -q dirty); then
 fi
 
 
-
 gsutil cp "gs://${bucket}/logs/index.html" \
   "gs://${bucket}/logs/${ghprbPullId}/index.html"
 
@@ -83,7 +81,9 @@ rm -rf out/buildroot
 # -R: recursive. strangely, this is not the default for sync.
 gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
 
-if [[ "${ghprbPullId}" -eq master ]]; then
+readonly bucket_mirror="minikube/latest"
+readonly HEAD="master"
+if [[ "${ghprbPullId}" -eq "${HEAD}" ]]; then
   # Copy artifacts to known mirror location
   gsutil cp -R "gs://${bucket}/${ghprbPullId}/minikube-*" "gs://${bucket_mirror}"
 fi
