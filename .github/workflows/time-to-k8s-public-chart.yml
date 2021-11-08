@@ -9,6 +9,7 @@ env:
   GO_VERSION: '1.17.3'
 jobs:
   time-to-k8s-public-chart:
+    if: github.repository == 'kubernetes/minikube'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2

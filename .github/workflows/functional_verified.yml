@@ -43,14 +43,6 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-          whoami
-          echo github ref $GITHUB_REF
-          echo workflow $GITHUB_WORKFLOW
-          echo home $HOME
-          echo event name $GITHUB_EVENT_NAME
-          echo workspace $GITHUB_WORKSPACE
-          echo "end of debug stuff"
-          echo $(which jq)
       - uses: actions/upload-artifact@v1
         with:
           name: minikube_binaries

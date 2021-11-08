@@ -423,9 +423,9 @@ gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "$
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
-description="completed with ${status} in ${elapsed} minute(s)."
+description="completed with ${status} in ${elapsed} minutes."
 if [ "$status" = "failure" ]; then
-  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+  description="completed with ${pessimistic_status} in ${elapsed} minutes."
 fi
 echo "$description"
 
