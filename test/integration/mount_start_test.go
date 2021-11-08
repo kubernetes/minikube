@@ -22,6 +22,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"runtime"
 	"testing"
 )
 
@@ -29,6 +30,9 @@ import (
 func TestMountStart(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
+	}
+	if KicDriver() && runtime.GOOS == "windows" {
+		t.Skip("skipping: Docker driver on Windows fails mounting due to 'The notification platform is unavailable'")
 	}
 
 	type validateFunc func(context.Context, *testing.T, string)
