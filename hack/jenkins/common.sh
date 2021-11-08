@@ -400,7 +400,9 @@ elapsed=$min.$sec
 
 if ! type "jq" > /dev/null; then
     echo ">> Installing jq"
-    if [ "${ARCH}" == "arm64" ]; then
+    if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
+      sudo apt-get install jq -y
+    elif [ "${ARCH}" == "arm64" ]; then
       echo "Unable to install 'jq' automatically for arm64, please install 'jq' manually."
       exit 5
     elif [ "${OS}" != "darwin" ]; then
