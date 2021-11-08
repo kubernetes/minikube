@@ -83,5 +83,7 @@ rm -rf out/buildroot
 # -R: recursive. strangely, this is not the default for sync.
 gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
 
-# Copy artifacts to known mirror location
-gsutil cp -R "gs://${bucket}/${ghprbPullId}" "gs://${bucket_mirror}"
+if [[ "${ghprbPullId}" -eq "master" ]] then
+  # Copy artifacts to known mirror location
+  gsutil cp -R "gs://${bucket}/${ghprbPullId}" "gs://${bucket_mirror}"
+fi
