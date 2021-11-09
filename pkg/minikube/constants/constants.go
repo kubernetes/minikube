@@ -99,6 +99,8 @@ const (
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
 	// TestDiskAvailableEnv is used in integration tests for insufficient storage with 'minikube status' (in GiB)
 	TestDiskAvailableEnv = "MINIKUBE_TEST_AVAILABLE_STORAGE"
+	// MinikubeRootlessEnv is used to force Rootless Docker/Podman driver
+	MinikubeRootlessEnv = "MINIKUBE_ROOTLESS"
 
 	// scheduled stop constants
 

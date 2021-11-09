@@ -135,6 +135,12 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	// viper maps $MINIKUBE_ROOTLESS to --rootless automatically, but it does not do vice versa,
+	// so we map --rootless to $MINIKUBE_ROOTLESS expliclity here.
+	// $MINIKUBE_ROOTLESS is referred by KIC runner, which isn't aware of the *cobra.Command object.
+	if cmd.Flag(rootless).Changed {
+		os.Setenv(constants.MinikubeRootlessEnv, strconv.FormatBool(viper.GetBool(rootless)))
+	}
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	ctx := context.Background()
 	out.SetJSON(outputFormat == "json")
