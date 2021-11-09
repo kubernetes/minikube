@@ -509,9 +509,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.Rootless {
-			if cc.KubernetesConfig.ContainerRuntime != "containerd" {
-				exit.Message(reason.Usage, "Container runtime must be set to \"containerd\" for rootless")
-				// TODO: support cri-o (https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri)
+			if cc.KubernetesConfig.ContainerRuntime == "docker" {
+				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
 			}
 			// KubeletInUserNamespace feature gate is essential for rootless driver.
 			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
