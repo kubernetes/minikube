@@ -17,6 +17,8 @@ limitations under the License.
 package reason
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 
 	"k8s.io/minikube/pkg/minikube/style"
@@ -306,6 +308,19 @@ var providerIssues = []match{
 			Issues:   []int{10362},
 		},
 		Regexp: re(`unexpected "=" in operand`),
+	},
+	{
+		Kind: Kind{
+			ID:       "PR_DOCKER_FILE_SHARING",
+			ExitCode: ExProviderError,
+			Advice: fmt.Sprintf(`There are a couple ways to enable the required file sharing:
+1. Enable "Use the WSL 2 based engine" in Docker Desktop
+or
+2. Enable file sharing in Docker Desktop for the %s%s directory`, os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH")),
+			URL: "https://docs.docker.com/desktop/windows/#file-sharing",
+		},
+		GOOS:   []string{"windows"},
+		Regexp: re(`Post "http://ipc/filesharing/share": context deadline exceeded`),
 	},
 
 	// Hyperkit hypervisor
