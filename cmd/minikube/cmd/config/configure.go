@@ -221,7 +221,7 @@ var addonsConfigureCmd = &cobra.Command{
 				return format.MatchString(s)
 			}
 
-			customCert := AskForStaticValidatedValue("-- Enter custom cert(format is \"namespace/secret\"): ", validator)
+			customCert := AskForStaticValidatedValue("-- Enter custom cert (format is \"namespace/secret\"): ", validator)
 			if cfg.KubernetesConfig.CustomIngressCert != "" {
 				overwrite := AskForYesNoConfirmation("A custom cert for ingress has already been set. Do you want overwrite it?", posResponses, negResponses)
 				if !overwrite {
