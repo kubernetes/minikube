@@ -12,14 +12,14 @@ DNS service for ingress controllers running on your minikube server
 When running minikube locally, you may want to run your services on an ingress controller so that you don't have to use
 minikube tunnel or NodePorts to access your services. While NodePort might be okay in a lot of circumstances, an ingress
 is necessary to test some features. Ingress controllers are great because you can define your entire architecture in
-something like a helm chart and all your services will be available.
+something like a helm chart, and all your services will be available.
 
 However, for minikube, there is an additional challenge. Your ingress controller relies on DNS, so local DNS names like
 `myservice.test` will have to resolve to your `minikube ip`. The only real way to do this is to add an entry for every
 service in your `/etc/hosts` file. This gets messy for obvious reasons. For each service you are running that each has
 its own DNS entry, you will need to configure it manually. Even if you automate it, you then need to rely on the host
 operating system for storing configurations instead of storing them in your cluster. To make it worse, these
-configurations have to be constantly maintained and updated as services are added, remove, and renamed. I call it the
+configurations have to be constantly maintained and updated as services are added, removed, and renamed. I call it the
 `/etc/hosts` pollution problem.
 
 ### Solution
@@ -107,7 +107,7 @@ Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkMana
 
 {{% quiz_instruction_plain id="/macOS" %}}
 
-Create a file in `/etc/resolver/minikube-test` with the following content.
+Create a file in `/etc/resolver/minikube-test` with the following contents.
 
 ```
 domain test
