@@ -38,7 +38,7 @@ import (
 func KillExisting(profiles []string) {
 	for _, profile := range profiles {
 		if err := killPIDForProfile(profile); err != nil {
-			klog.Errorf("error killng PID for profile %s: %v", profile, err)
+			klog.Warningf("error killng PID for profile %s: %v", profile, err)
 		}
 		_, cc := mustload.Partial(profile)
 		cc.ScheduledStop = nil
