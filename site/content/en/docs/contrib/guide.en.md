@@ -1,7 +1,7 @@
 ---
 title: "Contributor Guide"
 linkTitle: "Guide"
-date: 2019-11-09
+date: 2021-11-09
 weight: 1
 description: >
   How to become a minikube contributor
