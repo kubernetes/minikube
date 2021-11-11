@@ -448,7 +448,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) e
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.`)
 		case constants.CRIO:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
-- "minikube podman-env" to point your podman-cli to the podman inside minikube`)
+- "minikube podman-env" to point your podman-cli to the podman inside minikube.`)
 		}
 		return nil
 	}
