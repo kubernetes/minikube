@@ -438,17 +438,18 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) e
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 
 		// Runtime message.
-		msg := `- "minikube ssh" to SSH into minikube's node.`
+		boxConfig := box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}
 		switch viper.GetString(containerRuntime) {
 		case constants.DefaultContainerRuntime:
-			msg += `
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
 - "minikube docker-env" to point your docker-cli to the docker inside minikube.
-- "minikube image" to build images without docker.`
+- "minikube image" to build images without docker.`)
+		case constants.Containerd:
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.`)
 		case constants.CRIO:
-			msg += `
-- "minikube podman-env" to point your podman-cli to the podman inside minikube`
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube podman-env" to point your podman-cli to the podman inside minikube`)
 		}
-		out.BoxedWithConfig(box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}, style.Tip, "Things to try without Kubernetes ...", msg)
 		return nil
 	}
 
