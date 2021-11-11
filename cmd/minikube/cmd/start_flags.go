@@ -691,6 +691,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
 	}
 
+	// If this cluster was stopped by a scheduled stop, clear the config
+	if cc.ScheduledStop != nil && time.Until(time.Unix(cc.ScheduledStop.InitiationTime, 0).Add(cc.ScheduledStop.Duration)) <= 0 {
+		cc.ScheduledStop = nil
+	}
+
 	return cc
 }
 
