@@ -124,6 +124,25 @@ const (
 
 	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
 	DefaultCertExpiration = time.Hour * 24 * 365 * 3
+
+	// Mount9PVersionFlag is the flag used to set the mount 9P version
+	Mount9PVersionFlag = "9p-version"
+	// MountGIDFlag is the flag used to set the mount GID
+	MountGIDFlag = "gid"
+	// MountIPFlag is the flag used to set the mount IP
+	MountIPFlag = "ip"
+	// MountMSizeFlag is the flag used to set the mount msize
+	MountMSizeFlag = "msize"
+	// MountModeFlag is the flag used to set the mount mode
+	MountModeFlag = "mode"
+	// MountOptionsFlag is the flag used to set the mount options
+	MountOptionsFlag = "options"
+	// MountPortFlag is the flag used to set the mount port
+	MountPortFlag = "port"
+	// MountTypeFlag is the flag used to set the mount type
+	MountTypeFlag = "type"
+	// MountUIDFlag is the flag used to set the mount UID
+	MountUIDFlag = "uid"
 )
 
 var (
