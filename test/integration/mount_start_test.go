@@ -32,7 +32,8 @@ func TestMountStart(t *testing.T) {
 		t.Skip("skipping: none driver does not support mount")
 	}
 	if KicDriver() && runtime.GOOS == "windows" {
-		t.Skip("skipping: Docker driver on Windows fails mounting due to 'The notification platform is unavailable'")
+		t.Skip(`skipping: Docker driver on Windows fails mounting due to 'The notification platform is unavailable'
+TODO: Fix 'The notification platform is unavailable' error from occuring: https://github.com/kubernetes/minikube/issues/12931`)
 	}
 
 	type validateFunc func(context.Context, *testing.T, string)

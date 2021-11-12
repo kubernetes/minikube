@@ -17,6 +17,8 @@ limitations under the License.
 package reason
 
 import (
+	"fmt"
+	"os"
 	"regexp"
 
 	"k8s.io/minikube/pkg/minikube/style"
@@ -219,6 +221,21 @@ var hostIssues = []match{
 	{
 		Kind:   HostHomePermission,
 		Regexp: re(`/.minikube/.*: permission denied`),
+	},
+	{
+		Kind: Kind{
+			ID:       "HOST_NOTIFICATION_PLATFORM",
+			ExitCode: ExHostUnsupported,
+			Advice: fmt.Sprintf(`It seems you're running Windows in headless mode.
+Docker Desktop is trying to output a notification but the notification platform is unavailable due to being in headless mode.
+
+You can run Windows in a non-headless mode or you can likely supresses the notifications by enabling file sharing, you can do this two ways:
+1. Enable "Use the WSL 2 based engine" in Docker Desktop
+or
+2. Enable file sharing in Docker Desktop for the %s%s directory`, os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH")),
+		},
+		Regexp: re(`The notification platform is unavailable`),
+		GOOS:   []string{"windows"},
 	},
 }
 
