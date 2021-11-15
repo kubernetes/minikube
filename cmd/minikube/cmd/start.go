@@ -959,12 +959,13 @@ func memoryLimits(drvName string) (int, int, error) {
 	return sysLimit, containerLimit, nil
 }
 
-// suggestMemoryAllocation calculates the default memory footprint in MiB
-func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
-	if mem := viper.GetInt(memory); mem != 0 {
+// suggestMemoryAllocation calculates the default memory footprint in MiB.
+func suggestMemoryAllocation(sysLimit, containerLimit, nodes int) int {
+	if mem := viper.GetInt(memory); mem != 0 && mem < sysLimit {
 		return mem
 	}
-	fallback := 2200
+
+	const fallback = 2200
 	maximum := 6000
 
 	if sysLimit > 0 && fallback > sysLimit {
