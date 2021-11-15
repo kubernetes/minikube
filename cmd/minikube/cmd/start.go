@@ -1126,6 +1126,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateCPUCount(drvName)
 
+	if drvName == driver.None && viper.GetBool(noKubernetes) {
+		exit.Message(reason.Usage, "Cannot use the option --no-kubernetes on the {{.name}} driver", out.V{"name": drvName})
+	}
+
 	if cmd.Flags().Changed(memory) {
 		validateChangedMemoryFlags(drvName)
 	}
