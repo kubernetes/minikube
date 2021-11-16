@@ -542,7 +542,25 @@ func extractAdvice(f ast.Node, e *state) error {
 
 		if i.Name == "Advice" {
 			// At this point we know the value in the kvp is guaranteed to be a string
-			advice, _ := kvp.Value.(*ast.BasicLit)
+			advice, ok := kvp.Value.(*ast.BasicLit)
+			if !ok {
+				// Maybe the advice is a function call, like fmt.Sprintf
+				ad, ok := kvp.Value.(*ast.CallExpr)
+				if !ok {
+					// Ok, we tried. Abort.
+					return true
+				}
+				// Let's support fmt.Sprintf with a string argument only
+				adArg, ok := ad.Args[0].(*ast.BasicLit)
+				if !ok {
+					return true
+				}
+				s := checkString(adArg.Value)
+				if s != "" {
+					e.translations[s] = ""
+				}
+				return true
+			}
 			s := checkString(advice.Value)
 			if s != "" {
 				e.translations[s] = ""
