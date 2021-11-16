@@ -139,7 +139,7 @@ func BoxedWithConfig(cfg box.Config, st style.Enum, title string, text string, a
 		title = Sprintf(st, title)
 	}
 	// need to make sure no newlines are in the title otherwise box-cli-maker panics
-	title = strings.ReplaceAll(title, "\n", "")
+	title = translate.T(strings.ReplaceAll(title, "\n", ""))
 	boxedCommon(String, cfg, title, text, a...)
 }
 

@@ -263,7 +263,6 @@ func checkArguments(s *ast.CallExpr, e *state) {
 			if s := checkIdentForStringValue(i); s != "" {
 				e.translations[s] = ""
 				matched = true
-				break
 			}
 		}
 
@@ -272,12 +271,11 @@ func checkArguments(s *ast.CallExpr, e *state) {
 			if s := checkString(argString.Value); s != "" {
 				e.translations[s] = ""
 				matched = true
-				break
 			}
 		}
 	}
 
-	// No string arguments were found, check everything the calls this function for strings
+	// No string arguments were found, check everything that calls this function for strings
 	if !matched {
 		addParentFuncToList(e)
 	}
