@@ -89,10 +89,7 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
-	// Do not bootstrap cluster if --no-kubernetes.
-	if viper.GetBool("no-kubernetes") ||
-		starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
-		starter.Node.KubernetesVersion = constants.NoKubernetesVersion
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
 		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
 	// wait for preloaded tarball to finish downloading before configuring runtimes
