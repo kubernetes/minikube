@@ -20,6 +20,8 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
@@ -234,7 +236,25 @@ var addonsConfigureCmd = &cobra.Command{
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
+		case "auto-pause":
+			profile := ClusterFlagValue()
+			_, cfg := mustload.Partial(profile)
 
+			pauseTimeStr := AskForStaticValue("-- Enter interval time to pause (in minutes): ")
+			pauseTime, err := strconv.Atoi(pauseTimeStr)
+			if err != nil {
+				out.ErrT(style.Fatal, "Failed to extract integer in minutes to pause.")
+			}
+
+			// Check validity of time input.
+			if pauseTime < 0 {
+				out.ErrT(style.Fatal, "Time to pause should be non-negative time.")
+			}
+
+			cfg.AutoPauseTime = time.Minute * time.Duration(pauseTime)
+			if err := config.SaveProfile(profile, cfg); err != nil {
+				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+			}
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
 			return

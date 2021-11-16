@@ -124,6 +124,7 @@ const (
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
 	certExpiration          = "cert-expiration"
+	autoPauseTime           = "auto-pause-time"
 )
 
 var (
@@ -173,6 +174,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
+	startCmd.Flags().Duration(autoPauseTime, time.Minute, "Duration for how often minikube needs to check to autopause cluster")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -486,6 +488,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			NodePort:               viper.GetInt(apiServerPort),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
+		AutoPauseTime:      viper.GetDuration(autoPauseTime),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -666,6 +669,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
+	updateDurationFromFlag(cmd, &cc.AutoPauseTime, autoPauseTime)
 	updateBoolFromFlag(cmd, &cc.Mount, createMount)
 	updateStringFromFlag(cmd, &cc.MountString, mountString)
 

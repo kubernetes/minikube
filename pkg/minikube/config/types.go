@@ -87,6 +87,9 @@ type ClusterConfig struct {
 	CertExpiration          time.Duration
 	Mount                   bool
 	MountString             string
+	// AutoPauseTime is used to specify how often minikube needs to check to autopause
+	// cluster.
+	AutoPauseTime time.Duration
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
