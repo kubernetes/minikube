@@ -549,15 +549,18 @@ func extractAdvice(f ast.Node, e *state) error {
 					return true
 				}
 				// Let's support fmt.Sprintf with a string argument only
-				adArg, ok := ad.Args[0].(*ast.BasicLit)
-				if !ok {
-					return true
-				}
-				s := checkString(adArg.Value)
-				if s != "" {
-					e.translations[s] = ""
+				for _, arg := range ad.Args {
+					adArg, ok := arg.(*ast.BasicLit)
+					if !ok {
+						continue
+					}
+					s := checkString(adArg.Value)
+					if s != "" {
+						e.translations[s] = ""
+					}
 				}
 				return true
+
 			}
 			s := checkString(advice.Value)
 			if s != "" {
