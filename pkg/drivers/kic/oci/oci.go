@@ -123,6 +123,30 @@ func kernelModulesPath() (string, error) {
 	return "", errors.New("Unable to locate kernel modules")
 }
 
+func checkRunning(p CreateParams) func() error {
+	return func() error {
+		r, err := ContainerRunning(p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking running for %q : %v", p.Name, err)
+		}
+		if !r {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
+		}
+		s, err := ContainerStatus(p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
+		}
+		if s != state.Running {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
+		}
+		if !iptablesFileExists(p.OCIBinary, p.Name) {
+			return fmt.Errorf("iptables file doesn't exist, see #8179")
+		}
+		klog.Infof("the created container %q has a running status.", p.Name)
+		return nil
+	}
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
@@ -247,29 +271,7 @@ func CreateContainerNode(p CreateParams) error {
 		return errors.Wrap(err, "create container")
 	}
 
-	checkRunning := func() error {
-		r, err := ContainerRunning(p.OCIBinary, p.Name)
-		if err != nil {
-			return fmt.Errorf("temporary error checking running for %q : %v", p.Name, err)
-		}
-		if !r {
-			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
-		}
-		s, err := ContainerStatus(p.OCIBinary, p.Name)
-		if err != nil {
-			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
-		}
-		if s != state.Running {
-			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
-		}
-		if !iptablesFileExists(p.OCIBinary, p.Name) {
-			return fmt.Errorf("iptables file doesn't exist, see #8179")
-		}
-		klog.Infof("the created container %q has a running status.", p.Name)
-		return nil
-	}
-
-	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
+	if err := retry.Expo(checkRunning(p), 15*time.Millisecond, 25*time.Second); err != nil {
 		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
