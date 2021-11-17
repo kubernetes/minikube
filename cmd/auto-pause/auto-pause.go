@@ -48,21 +48,38 @@ func main() {
 	// TODO: #10595 make this configurable
 	const interval = time.Minute * 1
 
+	// Check if interval is greater than 0 so NewTicker does not panic.
+	if interval <= 0 {
+		exit.Message(reason.Usage, "Auto-pause interval must be greater than 0,"+
+			" not current value of {{.interval}}", out.V{"interval": interval.String()})
+	}
+	tickerChannel := time.NewTicker(interval)
+
 	// Check current state
 	alreadyPaused()
 
 	// channel for incoming messages
 	go func() {
 		for {
-			// On each iteration new timer is created
 			select {
-			// TODO: #10596 make it memory-leak proof
-			case <-time.After(interval):
+			case <-tickerChannel.C:
 				runPause()
 			case <-unpauseRequests:
 				fmt.Printf("Got request\n")
 				if runtimePaused {
 					runUnpause()
+
+					// Reset once cluster has been unpaused.
+					tickerChannel.Reset(interval)
+
+					// Avoid race where tick happens before Reset call and after unPause.
+					for {
+						select {
+						case <-tickerChannel.C:
+						default:
+							break
+						}
+					}
 				}
 
 				done <- struct{}{}
