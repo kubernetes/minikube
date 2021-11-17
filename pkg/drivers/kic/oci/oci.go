@@ -108,19 +108,18 @@ func PrepareContainerNode(p CreateParams) error {
 	return nil
 }
 
-// kernelModulesPath checks for the existence of a known kernel modules directory, returning the
-// first valid path
-func kernelModulesPath() (string, error) {
+// kernelModulesPath checks for the existence of a known alternative kernel modules directory,
+// returning the default if none are present
+func kernelModulesPath() string {
 	paths := []string{
-		"/lib/modules",
 		"/run/current-system/kernel-modules/lib/modules", // NixOS
 	}
 	for _, path := range paths {
-		if _, err := os.Stat(path); !os.IsNotExist(err) {
-			return path, nil
+		if _, err := os.Stat(path); err == nil {
+			return path
 		}
 	}
-	return "", errors.New("Unable to locate kernel modules")
+	return "/lib/modules"
 }
 
 func checkRunning(p CreateParams) func() error {
@@ -161,12 +160,6 @@ func CreateContainerNode(p CreateParams) error {
 		}
 	}
 
-	modulesPath, err := kernelModulesPath()
-	if err != nil {
-		klog.Errorf("error getting kernel modules path: %v", err)
-		return errors.Wrap(err, "kernel modules")
-	}
-
 	runArgs := []string{
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
@@ -181,7 +174,7 @@ func CreateContainerNode(p CreateParams) error {
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
 		// some k8s things want /lib/modules
-		"-v", fmt.Sprintf("%s:/lib/modules:ro", modulesPath),
+		"-v", fmt.Sprintf("%s:/lib/modules:ro", kernelModulesPath()),
 		"--hostname", p.Name, // make hostname match container name
 		"--name", p.Name, // ... and set the container name
 		"--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"),
