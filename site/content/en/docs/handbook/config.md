@@ -124,10 +124,34 @@ Some features can only be accessed by minikube specific environment variables, h
 
 ### Example: Disabling emoji
 
+{{% tabs %}}
+
+{{% linuxtab %}}
+
 ```shell
 export MINIKUBE_IN_STYLE=false
 minikube start
 ```
+
+{{% /linuxtab %}}
+
+{{% mactab %}}
+
+```shell
+export MINIKUBE_IN_STYLE=false
+minikube start
+```
+
+{{% /mactab %}}
+
+{{% windowstab %}}
+
+```shell
+$env:MINIKUBE_IN_STYLE=false
+```
+
+{{% /windowstab %}}
+{{% /tabs %}}
 
 ### Making environment values persistent
 
