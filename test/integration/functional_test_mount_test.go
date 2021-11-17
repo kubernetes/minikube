@@ -59,6 +59,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	}
 
 	t.Run("any-port", func(t *testing.T) {
+		t.Skip("Skipping until https://github.com/kubernetes/minikube/issues/12301 is resolved.")
 		tempDir, err := os.MkdirTemp("", "mounttest")
 		defer func() { // clean up tempdir
 			err := os.RemoveAll(tempDir)
