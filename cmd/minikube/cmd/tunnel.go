@@ -109,7 +109,7 @@ var tunnelCmd = &cobra.Command{
 func outputTunnelStarted() {
 	out.Styled(style.Success, "Tunnel successfully started")
 	out.Ln("")
-	out.Styled(style.Notice, "NOTE: This process must stay alive for the tunnel to be accessible ...")
+	out.Styled(style.Notice, "NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...")
 	out.Ln("")
 }
 
