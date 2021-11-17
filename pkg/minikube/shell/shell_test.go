@@ -31,11 +31,11 @@ func TestGenerateUsageHint(t *testing.T) {
 		{EnvConfig{""}, `# foo
 # eval $(bar)`},
 		{EnvConfig{"powershell"}, `# foo
-# & bar | Invoke-Expression`},
+# & bar --shell powershell | Invoke-Expression`},
 		{EnvConfig{"bash"}, `# foo
 # eval $(bar)`},
-		{EnvConfig{"powershell"}, `# foo
-# & bar | Invoke-Expression`},
+		{EnvConfig{"cmd"}, `REM foo
+REM @FOR /f "tokens=*" %i IN ('bar --shell cmd') DO @%i`},
 		{EnvConfig{"emacs"}, `;; foo
 ;; (with-temp-buffer (shell-command "bar" (current-buffer)) (eval-buffer))`},
 		{EnvConfig{"fish"}, `# foo

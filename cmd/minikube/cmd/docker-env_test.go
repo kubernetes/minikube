@@ -155,7 +155,7 @@ $Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
 $Env:DOCKER_CERT_PATH = "/certs"
 $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
 # To point your shell to minikube's docker-daemon, run:
-# & minikube -p powershell docker-env | Invoke-Expression
+# & minikube -p powershell docker-env --shell powershell | Invoke-Expression
 `,
 
 			`Remove-Item Env:\\DOCKER_TLS_VERIFY
@@ -175,7 +175,7 @@ SET DOCKER_HOST=tcp://192.168.0.1:2376
 SET DOCKER_CERT_PATH=/certs
 SET MINIKUBE_ACTIVE_DOCKERD=cmd
 REM To point your shell to minikube's docker-daemon, run:
-REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
+REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env --shell cmd') DO @%i
 `,
 
 			`SET DOCKER_TLS_VERIFY=
@@ -261,7 +261,7 @@ $Env:DOCKER_CERT_PATH = "/certs"
 $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell-no-proxy-idempotent"
 $Env:no_proxy = "192.168.0.1"
 # To point your shell to minikube's docker-daemon, run:
-# & minikube -p powershell-no-proxy-idempotent docker-env | Invoke-Expression
+# & minikube -p powershell-no-proxy-idempotent docker-env --shell powershell | Invoke-Expression
 `,
 
 			`Remove-Item Env:\\DOCKER_TLS_VERIFY
