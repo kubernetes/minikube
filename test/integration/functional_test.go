@@ -223,6 +223,27 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// tagAndLoadImage is a helper function to pull, tag, load image (decreases cyclomatic complexity for linter).
+func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage string) {
+	newPulledImage := fmt.Sprintf("%s:%s", addonResizer, "1.8.9")
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", newPulledImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", newPulledImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
+	}
+
+	checkImageExists(ctx, t, profile, taggedImage)
+}
+
 // validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	// docs(skip): Skips on `none` driver as image loading is not supported
@@ -314,6 +335,21 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		checkImageExists(ctx, t, profile, taggedImage)
+	})
+
+	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
+	t.Run("ImageReloadDaemon", func(t *testing.T) {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+		if err != nil {
+			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
+		}
+
+		checkImageExists(ctx, t, profile, taggedImage)
+	})
+
+	// docs: Make sure a new updated tag works by `minikube image load --daemon`
+	t.Run("ImageTagAndLoadDaemon", func(t *testing.T) {
+		tagAndLoadImage(ctx, t, profile, taggedImage)
 	})
 
 	// docs: Make sure image saving works by `minikube image load --daemon`
