@@ -212,7 +212,7 @@ Note: On macOS the remote client is called "podman", since there is no local "po
 {{% /mactab %}}
 {{% windowstab %}}
 This is similar to docker-env but only for CRI-O runtime.
-To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
 
 PowerShell
 ```shell
