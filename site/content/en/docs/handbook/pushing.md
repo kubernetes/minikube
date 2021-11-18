@@ -199,7 +199,7 @@ You should now be able to use Podman client on the command line on your host mac
 podman help
 ```
 
-Now you can 'build' against the storage inside minikube, which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman build -t my_image .
