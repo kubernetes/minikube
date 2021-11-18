@@ -66,7 +66,7 @@ eval $(minikube docker-env)
 ```
 {{% /mactab %}}
 {{% windowstab %}}
-Powershell
+PowerShell
 ```shell
 & minikube -p minikube docker-env --shell powershell | Invoke-Expression
 ```
