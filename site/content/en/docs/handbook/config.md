@@ -148,6 +148,7 @@ minikube start
 
 ```shell
 $env:MINIKUBE_IN_STYLE=false
+minikube start
 ```
 
 {{% /windowstab %}}
@@ -158,4 +159,7 @@ $env:MINIKUBE_IN_STYLE=false
 To make the exported variables persistent across reboots:
 
 * Linux and macOS: Add these declarations to `~/.bashrc` or wherever your shells environment variables are stored.
-* Windows: Add these declarations via [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
+* Windows: Either add these declarations to your `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` or run the following in a powershell terminal:
+```shell
+[Environment]::SetEnvironmentVariable("key", "value", [EnvironmentVariableTarget]::User)
+```
