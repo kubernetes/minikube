@@ -193,7 +193,7 @@ To push directly to CRI-O, configure Podman client on your host using the podman
 eval $(minikube podman-env)
 ```
 
-You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
 
 ```shell
 podman help
