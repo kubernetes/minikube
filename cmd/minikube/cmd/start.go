@@ -1231,7 +1231,7 @@ func validatePorts(ports []string) error {
 			if p > 65535 || p < 1 {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
 			}
-			if p < 1024 && i == 0 {
+			if detect.IsMicrosoftWSL() && p < 1024 && i == 0 {
 				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
 			}
 		}
