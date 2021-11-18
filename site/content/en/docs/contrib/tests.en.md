@@ -1,7 +1,7 @@
 ---
-title: "Integration Tests"
+title: "List of Integration Test Cases"
 description: >
-  All minikube integration tests
+  Auto generated list of all minikube integration tests and what they do.
 ---
 
 
