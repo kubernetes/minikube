@@ -159,7 +159,7 @@ minikube start
 To make the exported variables persistent across reboots:
 
 * Linux and macOS: Add these declarations to `~/.bashrc` or wherever your shells environment variables are stored.
-* Windows: Either add these declarations to your `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` or run the following in a powershell terminal:
+* Windows: Either add these declarations to your `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` or run the following in a PowerShell terminal:
 ```shell
 [Environment]::SetEnvironmentVariable("key", "value", [EnvironmentVariableTarget]::User)
 ```
