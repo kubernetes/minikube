@@ -226,7 +226,7 @@ cmd
 
 You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
 
-Now you can 'build' against the storage inside minikube, which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman help
