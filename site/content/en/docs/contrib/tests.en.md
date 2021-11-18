@@ -94,6 +94,8 @@ Steps:
 - Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
+- Try to load image already loaded and make sure `minikube image load --daemon` works
+- Make sure a new updated tag works by `minikube image load --daemon`
 - Make sure image saving works by `minikube image load --daemon`
 - Make sure image removal works by `minikube image rm`
 - Make sure image loading from file works by `minikube image load`
