@@ -33,7 +33,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
@@ -86,6 +88,7 @@ var tunnelCmd = &cobra.Command{
 			sshPort := strconv.Itoa(port)
 			sshKey := filepath.Join(localpath.MiniPath(), "machines", cname, "id_rsa")
 
+			outputTunnelStarted()
 			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1(), clientset.NetworkingV1())
 			err = kicSSHTunnel.Start()
 			if err != nil {
@@ -101,6 +104,13 @@ var tunnelCmd = &cobra.Command{
 		}
 		<-done
 	},
+}
+
+func outputTunnelStarted() {
+	out.Styled(style.Success, "Tunnel successfully started")
+	out.Ln("")
+	out.Styled(style.Notice, "NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...")
+	out.Ln("")
 }
 
 func init() {
