@@ -187,7 +187,7 @@ Note: On Linux the remote client is called "podman-remote", while the local prog
 {{% /linuxtab %}}
 {{% mactab %}}
 This is similar to docker-env but only for CRI-O runtime.
-To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
 
 ```shell
 eval $(minikube podman-env)
