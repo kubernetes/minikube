@@ -52,13 +52,7 @@ ln -s $(which minikube) /usr/local/bin/kubectl
 You can also alias kubectl for easier usage.
 
 ```shell
-Set-Alias -Name "kubectl" -Value "minikube kubectl --"
-```
-
-Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
-
-```shell
-New-Item -Path (Get-Command minikube).Path -ItemType SymbolicLink -Value C:\minikube\minikube.exe
+function kubectl { minikube kubectl -- $args }
 ```
 
 {{% /windowstab %}}
