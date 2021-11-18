@@ -58,15 +58,8 @@ minikube addons enable ingress-dns
 
 <h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Add the `minikube ip` as a DNS server</h2>
 
-{{% card %}}
-
-{{% quiz_row base="" name="Operating system" %}}
-{{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
-{{% /quiz_row %}}
-
-{{% card %}}
-
-{{% quiz_instruction_plain id="/Linux" %}}
+{{% tabs %}}
+{{% linuxtab %}}
 
 Update the file `/etc/resolvconf/resolv.conf.d/base` to have the following contents.
 
@@ -103,9 +96,9 @@ systemctl restart NetworkManager.service
 
 Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
 
-{{% /quiz_instruction_plain %}}
+{{% /linuxtab %}}
 
-{{% quiz_instruction_plain id="/macOS" %}}
+{{% mactab %}}
 
 Create a file in `/etc/resolver/minikube-test` with the following contents.
 
@@ -124,9 +117,9 @@ See https://www.unix.com/man-page/opendarwin/5/resolver/
 
 Note that the `port` feature does not work as documented.
 
-{{% /quiz_instruction_plain %}}
+{{% /mactab %}}
 
-{{% quiz_instruction_plain id="/Windows" %}}
+{{% windowstab %}}
 
 Open `Powershell` as Administrator and execute the following.
 ```sh
@@ -138,11 +131,8 @@ The following will remove any matching rules before creating a new one. This is 
 Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force; Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
 ```
 
-{{% /quiz_instruction_plain %}}
-
-{{% /card %}}
-
-{{% /card %}}
+{{% /windowstab %}}
+{{% /tabs %}}
 
 ## Testing
 
