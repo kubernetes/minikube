@@ -214,7 +214,7 @@ Note: On macOS the remote client is called "podman", since there is no local "po
 This is similar to docker-env but only for CRI-O runtime.
 To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
 
-Powershell
+PowerShell
 ```shell
 & minikube -p minikube podman-env --shell powershell | Invoke-Expression
 ```
