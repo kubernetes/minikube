@@ -224,7 +224,7 @@ cmd
 @FOR /f "tokens=*" %i IN ('minikube -p minikube podman-env --shell cmd') DO @%i
 ```
 
-You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
 
 Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
