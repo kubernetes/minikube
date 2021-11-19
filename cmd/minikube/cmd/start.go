@@ -1543,7 +1543,10 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	if viper.GetBool(noKubernetes) {
 		// Exit if --kubernetes-version is specified.
 		if viper.GetString(kubernetesVersion) != "" {
-			exit.Message(reason.Usage, "cannot specify --kubernetes-version with --no-kubernetes")
+			exit.Message(reason.Usage, `cannot specify --kubernetes-version with --no-kubernetes,
+to unset a global config run:
+
+$ minikube config unset kubernetes-version`)
 		}
 
 		klog.Infof("No Kubernetes flag is set, setting Kubernetes version to %s", constants.NoKubernetesVersion)
