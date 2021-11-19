@@ -1055,6 +1055,15 @@ var guestIssues = []match{
 	},
 	{
 		Kind: Kind{
+			ID:       "GUEST_STORAGE_DRIVER_BTRFS",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\"LocalStorageCapacityIsolation=false\"`",
+			Issues:   []int{7923},
+		},
+		Regexp: re(`unsupported graph driver: btrfs`),
+	},
+	{
+		Kind: Kind{
 			ID:       "GUEST_INCORRECT_ARCH",
 			ExitCode: ExGuestUnsupported,
 			Advice:   "You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead",
