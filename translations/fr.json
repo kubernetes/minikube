@@ -579,6 +579,7 @@
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "Le système n'a que {{.size}} Mio disponibles, moins que les {{.req}} Mio requis pour Kubernetes",
 	"Tag images": "Marquer des images",
 	"Tag to apply to the new image (optional)": "Tag à appliquer à la nouvelle image (facultatif)",
+	"Target \u003cremote file path\u003e must be an absolute Path. Relative Path is not allowed (example: \"minikube:/home/docker/copied.txt\")": "",
 	"Target directory {{.path}} must be an absolute path": "Le répertoire cible {{.path}} doit être un chemin absolu",
 	"Target {{.path}} can not be empty": "La cible {{.path}} ne peut pas être vide",
 	"Test docs have been saved at - {{.path}}": "Les documents de test ont été enregistrés à - {{.path}}",

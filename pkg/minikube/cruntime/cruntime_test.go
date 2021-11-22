@@ -244,6 +244,10 @@ func (f *FakeRunner) Remove(assets.CopyableFile) error {
 	return nil
 }
 
+func (f *FakeRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
+}
+
 func (f *FakeRunner) dockerPs(args []string) (string, error) {
 	// ps -a --filter="name=apiserver" --format="{{.ID}}"
 	if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {

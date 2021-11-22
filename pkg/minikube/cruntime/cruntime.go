@@ -69,6 +69,8 @@ type CommandRunner interface {
 	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Manager is a common interface for container runtimes

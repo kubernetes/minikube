@@ -1,4 +1,5 @@
 {
+
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' アドオンが無効です",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "「{{.context}}」コンテキストが更新されて、{{.hostname}}:{{.port}} を指すようになりました",
 	"\"{{.machineName}}\" does not exist, nothing to stop": "「{{.machineName}}」は存在しません。停止対象がありません",
@@ -608,6 +609,7 @@
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "",
 	"Tag images": "イメージのタグ付与",
 	"Tag to apply to the new image (optional)": "新しいイメージに適用するタグ (任意)",
+	"Target \u003cremote file path\u003e must be an absolute Path. Relative Path is not allowed (example: \"minikube:/home/docker/copied.txt\")": "",
 	"Target directory {{.path}} must be an absolute path": "ターゲットディレクトリ {{.path}} は絶対パスでなければなりません。",
 	"Target {{.path}} can not be empty": "ターゲット {{.path}} は空にできません",
 	"Test docs have been saved at - {{.path}}": "テストドキュメントは {{.path}} に保存されました",
