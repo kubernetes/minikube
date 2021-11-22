@@ -869,6 +869,7 @@
 	"bash completion.": "",
 	"call with cleanup=true to remove old tunnels": "",
 	"cancel any existing scheduled stop requests": "예정된 모든 중지 요청을 취소합니다",
+	"cannot specify --kubernetes-version with --no-kubernetes,\nto unset a global config run:\n\n$ minikube config unset kubernetes-version": "",
 	"config modifies minikube config files using subcommands like \"minikube config set driver kvm2\"\nConfigurable fields: \\n\\n": "",
 	"config view failed": "config view 가 실패하였습니다",
 	"containers paused status: {{.paused}}": "",
