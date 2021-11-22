@@ -1,5 +1,4 @@
 {
-
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' アドオンが無効です",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "「{{.context}}」コンテキストが更新されて、{{.hostname}}:{{.port}} を指すようになりました",
 	"\"{{.machineName}}\" does not exist, nothing to stop": "「{{.machineName}}」は存在しません。停止対象がありません",
@@ -114,6 +113,7 @@
 	"Continuously listing/getting the status with optional interval duration.": "任意のインターバル時間で、継続的にステータスをリストアップ/取得します。",
 	"Control Plane could not update, try minikube delete --all --purge": "コントロールプレーンがアップデートできません。minikube delete --all --purge を試してください",
 	"Copy the specified file into minikube": "指定したファイルを minikube にコピーします",
+	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\nDefault target node controlplane and If \u003csource node name\u003e is omitted, It will trying to copy from host.\n\nExample Command : \"minikube cp a.txt /home/docker/b.txt\" +\n                  \"minikube cp a.txt minikube-m02:/home/docker/b.txt\"\n                  \"minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt\"": "",
 	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\\nExample Command : \\\"minikube cp a.txt /home/docker/b.txt\\\"\\n                  \\\"minikube cp a.txt minikube-m02:/home/docker/b.txt\\\"\\n": "指定したファイルを minikube にコピーします。ファイルは minikube 内の \u003ctarget file absolute path\u003e に保存されます。\\nコマンドの例: 「minikube cp a.txt /home/docker/b.txt」\\n              「minikube cp a.txt minikube-m02:/home/docker/b.txt」\\n",
 	"Could not determine a Google Cloud project, which might be ok.": "Google Cloud プロジェクトを特定できませんでしたが、問題はないかもしれません。",
 	"Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.": "GCP の認証情報が見つかりませんでした。`gcloud auth application-default login` を実行するか、環境変数 GOOGLE_APPLICATION_CREDENTIALS に認証情報ファイルのパスを設定してください。",
