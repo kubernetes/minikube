@@ -511,6 +511,9 @@ should fail if hairpinMode is off
 tests starting minikube without Kubernetes,
 for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
 
+#### validateStartNoK8sWithVersion
+expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+
 #### validateStartNoK8S
 starts a minikube cluster without kubernetes started/configured
 

@@ -810,6 +810,7 @@
 	"bash completion.": "complétion bash",
 	"call with cleanup=true to remove old tunnels": "appelez avec cleanup=true pour supprimer les anciens tunnels",
 	"cancel any existing scheduled stop requests": "annuler toutes les demandes d'arrêt programmées existantes",
+	"cannot specify --kubernetes-version with --no-kubernetes,\nto unset a global config run:\n\n$ minikube config unset kubernetes-version": "",
 	"config modifies minikube config files using subcommands like \"minikube config set driver kvm2\"\nConfigurable fields: \\n\\n": "config modifie les fichiers de configuration de minikube à l'aide de sous-commandes telles que \"minikube config set driver kvm2\"\nChamps configurables : \\n\\n",
 	"config view failed": "échec de la vue de configuration",
 	"containers paused status: {{.paused}}": "état des conteneurs en pause : {{.paused}}",

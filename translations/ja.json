@@ -872,6 +872,7 @@
 	"bash completion.": "",
 	"call with cleanup=true to remove old tunnels": "cleanup=true で呼び出すことで、古い tunnel を削除することができます",
 	"cancel any existing scheduled stop requests": "",
+	"cannot specify --kubernetes-version with --no-kubernetes,\nto unset a global config run:\n\n$ minikube config unset kubernetes-version": "",
 	"config modifies minikube config files using subcommands like \"minikube config set driver kvm\"\nConfigurable fields:\\n\\n": "config では以下のようにサブコマンドを使用して、minikube の設定ファイルを編集することができます。 \"minikube config set driver kvm\"\n設定可能なフィールドは以下です。\\n\\n",
 	"config modifies minikube config files using subcommands like \"minikube config set driver kvm2\"\nConfigurable fields: \\n\\n": "",
 	"config view failed": "設定を表示するのに失敗しました",
