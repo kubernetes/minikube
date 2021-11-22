@@ -111,7 +111,7 @@
 	"Continuously listing/getting the status with optional interval duration.": "",
 	"Control Plane could not update, try minikube delete --all --purge": "",
 	"Copy the specified file into minikube": "",
-	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\\nExample Command : \\\"minikube cp a.txt /home/docker/b.txt\\\"\\n                  \\\"minikube cp a.txt minikube-m02:/home/docker/b.txt\\\"\\n": "",
+	"Copy the specified file into minikube, it will be saved at path \u003ctarget file absolute path\u003e in your minikube.\nDefault target node controlplane and If \u003csource node name\u003e is omitted, It will trying to copy from host.\n\nExample Command : \"minikube cp a.txt /home/docker/b.txt\" +\n                  \"minikube cp a.txt minikube-m02:/home/docker/b.txt\"\n                  \"minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt\"": "",
 	"Could not determine a Google Cloud project, which might be ok.": "",
 	"Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.": "",
 	"Could not process error from failed deletion": "",
