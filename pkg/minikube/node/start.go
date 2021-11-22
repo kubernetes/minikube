@@ -90,11 +90,13 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+	var wg sync.WaitGroup
 	stop8ks, err := handleNoKubernetes(starter)
 	if err != nil {
 		return nil, err
 	}
 	if stop8ks {
+		configureMounts(&wg, *starter.Cfg)
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
 
@@ -146,7 +148,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	var wg sync.WaitGroup
 	if !driver.IsKIC(starter.Cfg.Driver) {
 		go configureMounts(&wg, *starter.Cfg)
 	}
