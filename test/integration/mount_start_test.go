@@ -94,7 +94,7 @@ func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 func validateMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	sshArgs := []string{"-p", profile, "ssh"}
+	sshArgs := []string{"-p", profile, "ssh", "--"}
 
 	args := sshArgs
 	args = append(args, "ls", "/minikube-host")
