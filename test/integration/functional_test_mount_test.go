@@ -50,16 +50,8 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
-	if HyperVDriver() {
-		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
-	}
-
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8303")
-	}
 
 	t.Run("any-port", func(t *testing.T) {
-		t.Skip("Skipping until https://github.com/kubernetes/minikube/issues/12301 is resolved.")
 		tempDir, err := os.MkdirTemp("", "mounttest")
 		defer func() { // clean up tempdir
 			err := os.RemoveAll(tempDir)
