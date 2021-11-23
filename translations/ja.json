@@ -707,7 +707,7 @@
 	"This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true": "これは環境変数 CHANGE_MINIKUBE_NONE_USER=true を設定して自動的に行うこともできます",
 	"This control plane is not running! (state={{.state}})": "このコントロールプレーンは動作していません! (state={{.state}})",
 	"This driver does not yet work on your architecture. Maybe try --driver=none": "このドライバーはあなたのアーキテクチャではまだ機能しません。もしかしたら、--driver=none を試してみてください",
-	"This is a known issue with BTRFS storage driver, there is a workaround, please checkout the issue on GitHub": "これは BTRFS ストレージドライバーの既知のバグです (回避策があります)。GitHub の issue を確認してください",
+	"This is a known issue with BTRFS storage driver, there is a workaround, please checkout the issue on GitHub": "これは BTRFS ストレージドライバーの既知の問題です (回避策があります)。GitHub の issue を確認してください",
 	"This is unusual - you may want to investigate using \"{{.command}}\"": "これは異常です - 「{{.command}}」を使って調査できます",
 	"This will keep the existing kubectl context and will create a minikube context.": "これにより既存の kubectl コンテキストが保持され、minikube コンテキストが作成されます。",
 	"This will start the mount daemon and automatically mount files into minikube": "これによりマウントデーモンが起動し、ファイルが minikube に自動的にマウントされます",
