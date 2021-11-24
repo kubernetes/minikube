@@ -30,7 +30,7 @@ import (
 const (
 	mountGID   = "0"
 	mountMSize = "6543"
-	mountMode  = "777"
+	mountMode  = "0777"
 	mountPort  = "46464"
 	mountUID   = "0"
 )
@@ -110,8 +110,9 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get directory mode: %v", err)
 	}
 
-	if !strings.Contains(rr.Output(), mountMode) {
-		t.Errorf("wanted mode to be %q; got: %q", mountMode, rr.Output())
+	want := "777"
+	if !strings.Contains(rr.Output(), want) {
+		t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
 	}
 
 	args = sshArgs
