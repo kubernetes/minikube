@@ -1223,7 +1223,15 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 // This function validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
 	for _, portDuplet := range ports {
-		for i, port := range strings.Split(portDuplet, ":") {
+		parts := strings.Split(portDuplet, ":")
+		if len(parts) > 2 {
+			ip := parts[0]
+			if net.ParseIP(ip) == nil {
+				return errors.Errorf("Sorry, the IP address provided with --ports flag is invalid: %s", ip)
+			}
+			parts = parts[1:]
+		}
+		for i, port := range parts {
 			p, err := strconv.Atoi(port)
 			if err != nil {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
