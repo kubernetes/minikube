@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"os/exec"
@@ -156,6 +157,7 @@ func TestFunctional(t *testing.T) {
 			{"ImageCommands", validateImageCommands},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
 			{"Version", validateVersionCmd},
+			{"AccessExternalService", validateExternalServiceAccess},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -2061,6 +2063,30 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	want = "You appear to be using a proxy"
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
+	}
+}
+
+// validateExternalServiceAccess asserts that we can ping an external server from minikube.
+func validateExternalServiceAccess(ctx context.Context, t *testing.T, profile string) {
+	want := "Success Ping."
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, err := w.Write([]byte(want))
+		if err != nil {
+			fmt.Fprintf(w, "Error: %v \n", err)
+		}
+	}))
+	defer srv.Close()
+
+	wgetStr := fmt.Sprintf("'wget --spider -S %v'", srv.URL)
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--restart=Never",
+		"--image=busybox", "-it", "--", "sh", "-c", wgetStr))
+	if err != nil {
+		t.Errorf("failed to hit external service URL args %q failed: %v", rr.Command(), err)
+	}
+
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("Could not find %v in %v", want, rr.Stdout.String())
 	}
 }
 
