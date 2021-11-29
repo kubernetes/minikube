@@ -536,7 +536,7 @@ minikube dashboard
 Create a sample deployment and expose it on port 8080:
 
 ```shell
-kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube --image=polyverse/node-echo-server
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
@@ -567,7 +567,7 @@ You should be able to see the request metadata from nginx such as the `CLIENT VA
 To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
-kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
+kubectl create deployment balanced --image=polyverse/node-echo-server  
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 

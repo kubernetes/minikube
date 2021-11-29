@@ -187,7 +187,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 	defer PostMortemLogs(t, profile)
 
 	// Enable an addon to assert it requests the correct image.
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=polyverse/node-echo-server", "--registries=MetricsServer=fake.domain"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -202,8 +202,8 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 		t.Errorf("failed to get info on auto-pause deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " fake.domain/k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " fake.domain/polyverse/node-echo-server") {
+		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/polyverse/node-echo-server\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
@@ -228,7 +228,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 	}
 
 	// Enable an addon to assert it comes up afterwards
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=k8s.gcr.io/echoserver:1.4"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=polyverse/node-echo-server"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -278,8 +278,8 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " polyverse/node-echo-server") {
+		t.Errorf("addon did not load correct image. Expected to contain \" polyverse/node-echo-server\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 

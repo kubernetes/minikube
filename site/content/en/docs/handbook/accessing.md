@@ -95,7 +95,7 @@ Status:
 #### Create a kubernetes deployment
 
 ```shell
-kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube1 --image=polyverse/node-echo-server
 ```
 
 #### Create a kubernetes service type LoadBalancer

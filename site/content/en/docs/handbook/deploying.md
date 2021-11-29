@@ -11,7 +11,7 @@ aliases:
 ## kubectl
 
 ```shell
-kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube1 --image=polyverse/node-echo-server
 kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ```
 

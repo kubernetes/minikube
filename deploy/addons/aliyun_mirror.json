@@ -40,7 +40,7 @@
   "k8s.gcr.io/cluster-autoscaler": "registry.cn-hangzhou.aliyuncs.com/google_containers/cluster-autoscaler",
   "k8s.gcr.io/coredns/coredns": "registry.cn-hangzhou.aliyuncs.com/google_containers/coredns",
   "k8s.gcr.io/defaultbackend": "registry.cn-hangzhou.aliyuncs.com/google_containers/defaultbackend",
-  "k8s.gcr.io/echoserver": "registry.cn-hangzhou.aliyuncs.com/google_containers/echoserver",
+  "polyverse/node-echo-server": "registry.cn-hangzhou.aliyuncs.com/google_containers/echoserver",
   "k8s.gcr.io/elasticsearch": "registry.cn-hangzhou.aliyuncs.com/google_containers/elasticsearch",
   "k8s.gcr.io/etcd": "registry.cn-hangzhou.aliyuncs.com/google_containers/etcd",
   "k8s.gcr.io/etcd-amd64": "registry.cn-hangzhou.aliyuncs.com/google_containers/etcd-amd64",
