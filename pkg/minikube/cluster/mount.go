@@ -59,6 +59,8 @@ const (
 	MountErrorUnknown = iota
 	// MountErrorConnect
 	MountErrorConnect
+	// MountErrorChmod
+	MountErrorChmod
 )
 
 // MountError wrapper around errors in the `Mount` function
@@ -91,7 +93,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
 	}
 	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo chmod %o %s", c.Mode, target))); err != nil {
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "chmod folder")}
+		return &MountError{ErrorType: MountErrorChmod, UnderlyingError: errors.Wrap(err, "chmod folder")}
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())
