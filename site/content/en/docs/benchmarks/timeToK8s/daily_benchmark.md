@@ -9,8 +9,8 @@ weight: -99999999
 
 ## Docker
 
-![Docker Benchmarks](https://storage.googleapis.com/minikube-time-to-k8s/docker-chart.png)
+![Docker Benchmarks](https://time-to-k8s.s3.us-west-1.amazonaws.com/docker-chart.png)
 
 ## Containerd
 
-![Containerd Benchmarks](https://storage.googleapis.com/minikube-time-to-k8s/containerd-chart.png)
+![Containerd Benchmarks](https://time-to-k8s.s3.us-west-1.amazonaws.com/containerd-chart.png)
