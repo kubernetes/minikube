@@ -94,7 +94,7 @@ require (
 	k8s.io/client-go v0.22.2
 	k8s.io/klog/v2 v2.30.0
 	k8s.io/kubectl v0.22.2
-	k8s.io/kubernetes v1.21.3
+	k8s.io/kubernetes v1.21.5
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
@@ -171,7 +171,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
-	github.com/opencontainers/runc v1.0.0-rc95 // indirect
+	github.com/opencontainers/runc v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/prometheus/client_golang v1.7.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
