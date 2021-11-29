@@ -161,6 +161,8 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 		*xy = make(plotter.XYs, n)
 	}
 
+	var maxTotal float64
+
 	for i, b := range benchmarks {
 		date := float64(b.Date.Unix())
 		xyValues := []struct {
@@ -181,6 +183,9 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 			xy.Y = xyValue.value
 			xy.X = date
 		}
+		if b.Total > maxTotal {
+			maxTotal = b.Total
+		}
 	}
 
 	p := plot.New()
@@ -190,7 +195,7 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 	p.X.Label.Text = "date"
 	p.X.Tick.Marker = plot.TimeTicks{Format: "2006-01-02"}
 	p.Y.Label.Text = "time (seconds)"
-	p.Y.Max = 95
+	p.Y.Max = maxTotal + 15
 
 	steps := []struct {
 		xys   plotter.XYs
