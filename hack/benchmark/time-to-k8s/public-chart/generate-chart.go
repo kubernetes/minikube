@@ -161,7 +161,7 @@ func createChart(benchmarks []benchmark, chartOutputPath string) {
 		*xy = make(plotter.XYs, n)
 	}
 
-	maxTotal := 0
+	var maxTotal float64
 
 	for i, b := range benchmarks {
 		date := float64(b.Date.Unix())
