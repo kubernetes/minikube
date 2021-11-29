@@ -15,14 +15,16 @@ minikube supports [PersistentVolumes](https://kubernetes.io/docs/concepts/storag
 
 minikube is configured to persist files stored under the following directories, which are made in the Minikube VM (or on your localhost if running on bare metal).  You may lose data from other directories on reboots.
 
-* `/data`
+* `/data`*
 * `/var/lib/minikube`
 * `/var/lib/docker`
 * `/var/lib/containerd`
 * `/var/lib/buildkit`
 * `/var/lib/containers`
-* `/tmp/hostpath_pv`
-* `/tmp/hostpath-provisioner`
+* `/tmp/hostpath_pv`*
+* `/tmp/hostpath-provisioner`*
+
+\* mount point for another directory, stored under `/var` or on a separate data disk
 
 Here is an example PersistentVolume config to persist data in the '/data' directory:
 
