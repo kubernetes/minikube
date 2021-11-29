@@ -55,6 +55,7 @@ type Driver struct {
 	exec       command.Runner
 	NodeConfig Config
 	OCIBinary  string // docker,podman
+	StaticIP   bool   // weather to make a static IP or not for the control-plane
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -94,7 +95,7 @@ func (d *Driver) Create() error {
 	}
 	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName); err != nil {
 		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
-	} else if gateway != nil {
+	} else if gateway != nil && d.StaticIP {
 		params.Network = networkName
 		ip := gateway.To4()
 		// calculate the container IP based on guessing the machine index

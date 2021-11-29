@@ -87,6 +87,7 @@ type ClusterConfig struct {
 	CertExpiration          time.Duration
 	Mount                   bool
 	MountString             string
+	StaticIP                bool // if set to false will let driver(docker) to choose random IP, currently only implemneted by Docker driver
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

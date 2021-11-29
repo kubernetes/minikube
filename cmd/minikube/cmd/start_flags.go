@@ -113,6 +113,7 @@ const (
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
 	network                 = "network"
+	staticIP                = "static-ip"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 	sshIPAddress            = "ssh-ip-address"
@@ -169,6 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
+	startCmd.Flags().Bool(staticIP, true, "if set to false will let driver choose ranom IP for node. (useful when sharing network with multiple clusters)")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
@@ -427,6 +429,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
+		StaticIP:                viper.GetBool(staticIP),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
@@ -624,6 +627,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		out.WarningT("You cannot add or remove extra disks for an existing minikube cluster. Please first delete the cluster.")
 	}
 
+	updateBoolFromFlag(cmd, &cc.StaticIP, staticIP)
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
 	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)

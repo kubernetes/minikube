@@ -84,6 +84,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ExtraArgs:         extraArgs,
 		Network:           cc.Network,
 		ListenAddress:     cc.ListenAddress,
+		StaticIP:          cc.StaticIP,
 	}), nil
 }
 
