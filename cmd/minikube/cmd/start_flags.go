@@ -518,6 +518,17 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		}
 	}
 
+	if driver.IsDockerBTRFS(drvName) {
+		fg := "LocalStorageCapacityIsolation=false"
+		if !strings.Contains(cc.KubernetesConfig.FeatureGates, fg) {
+			klog.Info("auto-setting LocalStorageCapacityIsolation to false")
+			if len(cc.KubernetesConfig.FeatureGates) != 0 {
+				fg = "," + fg
+			}
+			cc.KubernetesConfig.FeatureGates += fg
+		}
+	}
+
 	return cc
 }
 

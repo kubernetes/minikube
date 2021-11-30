@@ -19,6 +19,7 @@ package driver
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"sort"
 	"strconv"
@@ -142,6 +143,24 @@ func IsDockerDesktop(name string) bool {
 		}
 	}
 	return false
+}
+
+// IsDockerBTRFS checks if Docker is using btrfs storage driver
+func IsDockerBTRFS(name string) bool {
+	if !IsDocker(name) {
+		return false
+	}
+	cmd := exec.Command("docker", "info", "-f", "{{.Driver}}")
+	if err := cmd.Run(); err != nil {
+		klog.Warning("failed to get Docker storage driver: %v", err)
+		return false
+	}
+	output, err := cmd.Output()
+	if err != nil {
+		klog.Warning("failed to get command output: %v", err)
+		return false
+	}
+	return strings.Contains(string(output), "btrfs")
 }
 
 // IsMock checks if the driver is a mock
