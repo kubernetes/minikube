@@ -32,7 +32,7 @@ run_benchmark() {
 }
 
 generate_chart() {
-        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./chart.png --past-runs ./runs.json
+        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --daily-chart ./daily-chart.png --weekly-chart ./weekly-chart.png --past-runs ./runs.json
 }
 
 copy() {
@@ -42,7 +42,8 @@ copy() {
 cleanup() {
 	rm ./runs.json
 	rm ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv
-	rm ./chart.png
+	rm ./daily-chart.png
+	rm ./weekly-chart.png
 }
 
 copy "$BUCKET/$RUNTIME-runs.json" ./runs.json
@@ -54,6 +55,7 @@ generate_chart
 
 copy ./runs.json "$BUCKET/$RUNTIME-runs.json"
 copy ./runs.json "$BUCKET/$(date +'%Y-%m-%d')-$RUNTIME.json"
-copy ./chart.png "$BUCKET/$RUNTIME-chart.png"
+copy ./daily-chart.png "$BUCKET/$RUNTIME-chart.png"
+copy ./weekly-chart.png "$BUCKET/$RUNTIME-weekly-chart.png"
 
 cleanup
