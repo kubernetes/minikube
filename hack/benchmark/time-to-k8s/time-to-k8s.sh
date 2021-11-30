@@ -38,7 +38,7 @@ run_benchmark() {
 }
 
 generate_chart() {
-	go run ./hack/benchmark/time-to-k8s/chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./site/static/images/benchmarks/timeToK8s/"$1".png
+	go run ./hack/benchmark/time-to-k8s/chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./site/static/images/benchmarks/timeToK8s/"$1".png >> ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
 }
 
 create_page() {
@@ -55,6 +55,6 @@ install_minikube
 
 VERSION=$(minikube version --short)
 run_benchmark
-generate_chart "$VERSION"
 create_page "$VERSION"
+generate_chart "$VERSION"
 cleanup
