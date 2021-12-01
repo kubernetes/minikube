@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.22.0
+CRIO_BIN_VERSION = v1.22.1
 CRIO_BIN_COMMIT = 63ca93845d5fe05cdca826367afcb601ece8d7ad
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
