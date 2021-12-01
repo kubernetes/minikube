@@ -103,6 +103,11 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("mount failed: %q : %v", rr.Command(), err)
 	}
 
+	// Docker has it's own mounting method, it doesn't respect the mounting flags
+	if DockerDriver() {
+		return
+	}
+
 	args = sshArgs
 	args = append(args, "stat", "--format", "'%a'", "/minikube-host")
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
