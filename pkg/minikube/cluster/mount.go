@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -92,8 +93,12 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		}
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
 	}
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo chmod %o %s", c.Mode, target))); err != nil {
-		return &MountError{ErrorType: MountErrorChmod, UnderlyingError: errors.Wrap(err, "chmod folder")}
+
+	// skipping macOS due to https://github.com/kubernetes/minikube/issues/13070
+	if runtime.GOOS != "darwin" {
+		if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo chmod %o %s", c.Mode, target))); err != nil {
+			return &MountError{ErrorType: MountErrorChmod, UnderlyingError: errors.Wrap(err, "chmod folder")}
+		}
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())
