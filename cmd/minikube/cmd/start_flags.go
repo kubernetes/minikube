@@ -517,7 +517,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
 		}
 		if si.StorageDriver == "btrfs" {
-			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfa storage driver")
+			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
 		}
 	}
