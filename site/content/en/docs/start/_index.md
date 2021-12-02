@@ -113,7 +113,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Stable" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Homebrew" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Beta" name="Installer type" %}}
@@ -362,7 +362,7 @@ curl -L $u > minikube-beta.armv7hl.rpm && sudo rpm -Uvh minikube-beta.armv7hl.rp
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/macOS/x86-64/Stable/Homebrew" %}}
-If the [Brew Package Manager](https://brew.sh/) is installed:
+If the [Homebrew Package Manager](https://brew.sh/) is installed:
 
 ```shell
 brew install minikube
@@ -395,6 +395,21 @@ sudo install minikube-darwin-amd64 /usr/local/bin/minikube
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-arm64
 sudo install minikube-darwin-arm64 /usr/local/bin/minikube
+```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction id="/macOS/ARM64/Stable/Homebrew" %}}
+If the [Homebrew Package Manager](https://brew.sh/) is installed:
+
+```shell
+brew install minikube
+```
+
+If `which minikube` fails after installation via brew, you may have to remove the old minikube links and link the newly installed binary:
+
+```shell
+brew unlink minikube
+brew link minikube
 ```
 {{% /quiz_instruction %}}
 

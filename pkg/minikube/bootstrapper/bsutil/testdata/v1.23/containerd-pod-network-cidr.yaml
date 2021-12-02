@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -17,7 +17,7 @@ nodeRegistration:
     node-ip: 1.1.1.1
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
@@ -39,8 +39,8 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
-      listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
-kubernetesVersion: v1.15.0
+      proxy-refresh-interval: "70000"
+kubernetesVersion: v1.23.0-beta.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "192.168.32.0/20"

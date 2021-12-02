@@ -1230,7 +1230,15 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 // This function validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
 	for _, portDuplet := range ports {
-		for i, port := range strings.Split(portDuplet, ":") {
+		parts := strings.Split(portDuplet, ":")
+		if len(parts) > 2 {
+			ip := parts[0]
+			if net.ParseIP(ip) == nil {
+				return errors.Errorf("Sorry, the IP address provided with --ports flag is invalid: %s", ip)
+			}
+			parts = parts[1:]
+		}
+		for i, port := range parts {
 			p, err := strconv.Atoi(port)
 			if err != nil {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
@@ -1553,6 +1561,14 @@ func isBaseImageApplicable(drv string) bool {
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	if viper.GetBool(noKubernetes) {
+		// Exit if --kubernetes-version is specified.
+		if viper.GetString(kubernetesVersion) != "" {
+			exit.Message(reason.Usage, `cannot specify --kubernetes-version with --no-kubernetes,
+to unset a global config run:
+
+$ minikube config unset kubernetes-version`)
+		}
+
 		klog.Infof("No Kubernetes flag is set, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		if old != nil {
 			old.KubernetesConfig.KubernetesVersion = constants.NoKubernetesVersion

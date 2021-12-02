@@ -450,6 +450,14 @@ func TestValidatePorts(t *testing.T) {
 			ports:    []string{"8080:80", "6443:443"},
 			errorMsg: "",
 		},
+		{
+			ports:    []string{"127.0.0.1:80:80"},
+			errorMsg: "",
+		},
+		{
+			ports:    []string{"1000.0.0.1:80:80"},
+			errorMsg: "Sorry, the IP address provided with --ports flag is invalid: 1000.0.0.1",
+		},
 	}
 	if detect.IsMicrosoftWSL() {
 		tests = append(tests, portTest{

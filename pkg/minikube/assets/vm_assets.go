@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -35,21 +36,66 @@ import (
 // MemorySource is the source name used for in-memory copies
 const MemorySource = "memory"
 
-// CopyableFile is something that can be copied
-type CopyableFile interface {
+// ReadableFile is something that can be read
+type ReadableFile interface {
 	io.Reader
-	io.Writer
 	GetLength() int
-	SetLength(int)
 	GetSourcePath() string
-	GetTargetPath() string
 
-	GetTargetDir() string
-	GetTargetName() string
 	GetPermissions() string
 	GetModTime() (time.Time, error)
 	Seek(int64, int) (int64, error)
 	Close() error
+}
+
+// CopyableFile is something that can be copied
+type CopyableFile interface {
+	ReadableFile
+
+	io.Writer
+	SetLength(int)
+	GetTargetPath() string
+	GetTargetDir() string
+	GetTargetName() string
+}
+
+type writeFn func(d []byte) (n int, err error)
+type BaseCopyableFile struct {
+	ReadableFile
+
+	writer     writeFn
+	length     int
+	targetDir  string
+	targetName string
+}
+
+func (r *BaseCopyableFile) Write(d []byte) (n int, err error) {
+	return r.writer(d)
+}
+
+func (r *BaseCopyableFile) SetLength(length int) {
+	r.length = length
+}
+
+func (r *BaseCopyableFile) GetTargetPath() string {
+	return filepath.Join(r.GetTargetDir(), r.GetTargetName())
+}
+
+func (r *BaseCopyableFile) GetTargetDir() string {
+	return r.targetDir
+}
+
+func (r *BaseCopyableFile) GetTargetName() string {
+	return r.targetName
+}
+
+func NewBaseCopyableFile(source ReadableFile, writer writeFn, targetDir, targetName string) *BaseCopyableFile {
+	return &BaseCopyableFile{
+		ReadableFile: source,
+		writer:       writer,
+		targetDir:    targetDir,
+		targetName:   targetName,
+	}
 }
 
 // BaseAsset is the base asset class

@@ -82,9 +82,7 @@ func initGCPTracer() (*gcpTracer, error) {
 		[]texporter.Option{
 			texporter.WithProjectID(projectID),
 		},
-		sdktrace.WithConfig(sdktrace.Config{
-			DefaultSampler: sdktrace.AlwaysSample(),
-		}),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "installing pipeline")

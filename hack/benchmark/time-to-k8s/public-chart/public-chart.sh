@@ -18,6 +18,7 @@ set -e
 
 # container-runtime (docker or containerd)
 RUNTIME="$1"
+BUCKET="s3://time-to-k8s"
 
 install_minikube() {
         make
@@ -31,24 +32,30 @@ run_benchmark() {
 }
 
 generate_chart() {
-        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./chart.png --past-runs ./runs.json
+        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --daily-chart ./daily-chart.png --weekly-chart ./weekly-chart.png --past-runs ./runs.json
+}
+
+copy() {
+	aws s3 cp "$1" "$2"
 }
 
 cleanup() {
 	rm ./runs.json
 	rm ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv
-	rm ./chart.png
+	rm ./daily-chart.png
+	rm ./weekly-chart.png
 }
 
-gsutil -m cp "gs://minikube-time-to-k8s/$RUNTIME-runs.json" ./runs.json
+copy "$BUCKET/$RUNTIME-runs.json" ./runs.json
 
 install_minikube
 
 run_benchmark
 generate_chart
 
-gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$RUNTIME-runs.json"
-gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$(date +'%Y-%m-%d')-$RUNTIME.json"
-gsutil -m cp ./chart.png "gs://minikube-time-to-k8s/$RUNTIME-chart.png"
+copy ./runs.json "$BUCKET/$RUNTIME-runs.json"
+copy ./runs.json "$BUCKET/$(date +'%Y-%m-%d')-$RUNTIME.json"
+copy ./daily-chart.png "$BUCKET/$RUNTIME-chart.png"
+copy ./weekly-chart.png "$BUCKET/$RUNTIME-weekly-chart.png"
 
 cleanup

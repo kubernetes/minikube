@@ -47,7 +47,8 @@ func TestNoKubernetes(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"StartWithK8s", validateStartWithK8S},
+			{"StartNoK8sWithVersion", validateStartNoK8sWithVersion},
+      {"StartWithK8s", validateStartWithK8S},
 			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
@@ -72,6 +73,17 @@ func TestNoKubernetes(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateStartNoK8sWithVersion expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--kubernetes-version=1.20"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err == nil {
+		t.Fatalf("expected an error but none was thrown with args: %q", rr.Command())
+  }
 }
 
 // validateStartWithK8S starts a minikube cluster with Kubernetes started/configured.
