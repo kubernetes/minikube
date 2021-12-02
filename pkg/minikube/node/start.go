@@ -91,10 +91,6 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
-	// Stop existing Kubernetes node.
-	if starter.StopK8s {
-		kubeadm.StopKubernetes(starter.Cfg.KubernetesConfig, starter.Runner)
-	}
 	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
 		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
@@ -108,6 +104,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// Stop existing Kubernetes node if applicable.
+	kubeadm.StopKubernetes(starter.StopK8s, cr, starter.Cfg.KubernetesConfig, starter.Runner)
 
 	// check if installed runtime is compatible with current minikube code
 	if err = cruntime.CheckCompatibility(cr); err != nil {

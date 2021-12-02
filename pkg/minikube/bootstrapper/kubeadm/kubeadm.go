@@ -802,13 +802,12 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 }
 
 // StopKubernetes stops existing kubernetes.
-func StopKubernetes(k8s config.KubernetesConfig, runner command.Runner) error {
-	out.Infof("Stopping Kubernetes ...")
-
-	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: runner, Socket: k8s.CRISocket})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
+func StopKubernetes(stop bool, cr cruntime.Manager, k8s config.KubernetesConfig, runner command.Runner) {
+	// Minimize cyclomatic complexity for parent functions.
+	if !stop {
+		return
 	}
+	out.Infof("Stopping Kubernetes ...")
 
 	if err := sysinit.New(runner).ForceStop("kubelet"); err != nil {
 		klog.Warningf("stop kubelet: %v", err)
@@ -824,7 +823,6 @@ func StopKubernetes(k8s config.KubernetesConfig, runner command.Runner) error {
 			klog.Warningf("error stopping containers: %v", err)
 		}
 	}
-	return nil
 }
 
 // DeleteCluster removes the components that were started earlier
@@ -854,9 +852,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		klog.Warningf("%s: %v", rr.Command(), err)
 	}
 
-	if err := StopKubernetes(k8s, k.c); err != nil {
-		return err
-	}
+	StopKubernetes(true, cr, k8s, k.c)
 
 	return derr
 }
