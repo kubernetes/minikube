@@ -120,6 +120,9 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
 	}
 
+	// give time for 9P process to be listed as running on Windows
+	time.Sleep(5 * time.Second)
+
 	args = sshArgs
 	args = append(args, "mount", "|", "grep", "9p")
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
