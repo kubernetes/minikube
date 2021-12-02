@@ -516,16 +516,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
 		}
-	}
-
-	if driver.IsDockerBTRFS(drvName) {
-		fg := "LocalStorageCapacityIsolation=false"
-		if !strings.Contains(cc.KubernetesConfig.FeatureGates, fg) {
-			klog.Info("auto-setting LocalStorageCapacityIsolation to false")
-			if len(cc.KubernetesConfig.FeatureGates) != 0 {
-				fg = "," + fg
-			}
-			cc.KubernetesConfig.FeatureGates += fg
+		if si.StorageDriver == "btrfs" {
+			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfa storage driver")
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
 		}
 	}
 
@@ -533,6 +526,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 }
 
 func addFeatureGate(featureGates, s string) string {
+	if len(featureGates) == 0 {
+		return s
+	}
 	split := strings.Split(featureGates, ",")
 	m := make(map[string]struct{}, len(split))
 	for _, v := range split {
