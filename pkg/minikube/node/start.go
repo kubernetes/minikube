@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -79,6 +80,7 @@ var (
 type Starter struct {
 	Runner         command.Runner
 	PreExists      bool
+	StopK8s        bool
 	MachineAPI     libmachine.API
 	Host           *host.Host
 	Cfg            *config.ClusterConfig
@@ -89,6 +91,10 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
+	// Stop existing Kubernetes node.
+	if starter.StopK8s {
+		kubeadm.StopKubernetes(starter.Cfg.KubernetesConfig, starter.Runner)
+	}
 	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
 		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
