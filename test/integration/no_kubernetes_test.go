@@ -48,7 +48,7 @@ func TestNoKubernetes(t *testing.T) {
 			validator validateFunc
 		}{
 			{"StartNoK8sWithVersion", validateStartNoK8sWithVersion},
-      {"StartWithK8s", validateStartWithK8S},
+			{"StartWithK8s", validateStartWithK8S},
 			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
@@ -83,7 +83,7 @@ func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile st
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err == nil {
 		t.Fatalf("expected an error but none was thrown with args: %q", rr.Command())
-  }
+	}
 }
 
 // validateStartWithK8S starts a minikube cluster with Kubernetes started/configured.
