@@ -188,7 +188,7 @@ func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// getK8sStatus returns whether Kubernetes is running. 123
+// getK8sStatus returns whether Kubernetes is running.
 func getK8sStatus(ctx context.Context, t *testing.T, profile string) string {
 	// Run `minikube status` as JSON output.
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
