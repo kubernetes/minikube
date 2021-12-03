@@ -4,7 +4,7 @@ body:
   - type: markdown
     id: problem
     attributes:
-      label: What Happend?
+      label: What Happened?
       description: |
       Tip: Add the "--alsologtostderr" flag to the command-line for more logs
     validations:
