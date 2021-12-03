@@ -297,7 +297,8 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	// If Kubernetes is running, and --no-kubernetes is specified, stop.
 	var stopk8s bool
-	if existing != nil && viper.GetBool(noKubernetes) {
+	if existing != nil && existing.KubernetesConfig.KubernetesVersion != constants.NoKubernetesVersion && viper.GetBool(noKubernetes) {
+		klog.Infof("ABC1 existing.KubernetesConfig.KubernetesVersion %s", existing.KubernetesConfig.KubernetesVersion)
 		stopk8s = true
 	}
 
