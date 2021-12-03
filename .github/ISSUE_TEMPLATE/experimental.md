@@ -18,7 +18,7 @@ body:
     validations:
       required: true
   - type: dropdown
-    id: Operating system
+    id: operating-system
     attributes:
       label: Operating System
       description: What is your OS ?
