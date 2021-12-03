@@ -10,7 +10,7 @@ body:
     validations:
       required: true
   - type: markdown
-    id: problem
+    id: logs
     attributes:
       description: |
       label: Attach log file
