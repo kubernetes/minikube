@@ -73,6 +73,11 @@ func TestGetKubernetesVersion(t *testing.T) {
 			expectedVersion: constants.NewestKubernetesVersion,
 			paramVersion:    "latest",
 		},
+		{
+			description:     "kubernetes-version given as 'newest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "newest",
+		},
 	}
 
 	for _, test := range tests {
