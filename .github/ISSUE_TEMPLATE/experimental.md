@@ -20,7 +20,7 @@ body:
   - type: dropdown
     id: Operating system
     attributes:
-      label: Operating Syste,
+      label: Operating System
       description: What is your OS ?
       options:
         - MacOs (Default)
