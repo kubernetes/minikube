@@ -803,7 +803,14 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 
 // StopKubernetes attempts to stop existing kubernetes.
 func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
-	out.Infof("Stopping Kubernetes ...")
+
+	// Verify that Kubernetes is still running.
+	stk := kverify.ServiceStatus(runner, "kubelet")
+	if stk.String() != "Running" {
+		return
+	}
+
+	out.Infof("Kubernetes: Stopping ...")
 
 	// Force stop "Kubelet".
 	if err := sysinit.New(runner).ForceStop("kubelet"); err != nil {
@@ -821,6 +828,10 @@ func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
 			klog.Warningf("error stopping containers: %v", err)
 		}
 	}
+
+	// Verify that Kubernetes has stopped.
+	stk = kverify.ServiceStatus(runner, "kubelet")
+	out.Infof("Kubernetes: {{.status}}", out.V{"status": stk.String()})
 }
 
 // DeleteCluster removes the components that were started earlier
