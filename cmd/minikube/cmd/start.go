@@ -1577,7 +1577,7 @@ $ minikube config unset kubernetes-version`)
 
 	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
 		paramVersion = constants.DefaultKubernetesVersion
-	} else if strings.EqualFold(paramVersion, "latest") || strings.EqualFold(paramVersion, "newest") {
+	} else if strings.EqualFold(strings.ToLower(paramVersion), "latest") || strings.EqualFold(strings.ToLower(paramVersion), "newest") {
 		paramVersion = constants.NewestKubernetesVersion
 	}
 

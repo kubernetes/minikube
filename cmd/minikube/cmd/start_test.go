@@ -74,9 +74,19 @@ func TestGetKubernetesVersion(t *testing.T) {
 			paramVersion:    "latest",
 		},
 		{
+			description:     "kubernetes-version given as 'LATEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "LATEST",
+		},
+		{
 			description:     "kubernetes-version given as 'newest', no config",
 			expectedVersion: constants.NewestKubernetesVersion,
 			paramVersion:    "newest",
+		},
+		{
+			description:     "kubernetes-version given as 'NEWEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "NEWEST",
 		},
 	}
 
