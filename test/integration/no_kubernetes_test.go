@@ -79,6 +79,7 @@ func TestNoKubernetes(t *testing.T) {
 func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	// docs: start minikube with no kubernetes.
 	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--kubernetes-version=1.20"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err == nil {
@@ -90,12 +91,14 @@ func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile st
 func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	// docs: start minikube with Kubernetes.
 	args := append([]string{"start", "-p", profile}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
+	// docs: return an error if Kubernetes is not running.
 	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Running" {
 		t.Errorf("Kubernetes status, got: %s, want: Running", k8sStatus)
 	}
@@ -105,16 +108,19 @@ func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
 func validateStartWithStopK8s(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	// docs: start minikube with no Kubernetes.
 	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
+	// docs: return an error if Kubernetes is not stopped.
 	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Stopped" {
 		t.Errorf("Kubernetes status, got: %s, want: Stopped", k8sStatus)
 	}
 
+	// docs: delete minikube profile.
 	args = []string{"delete", "-p", profile}
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -126,6 +132,7 @@ func validateStartWithStopK8s(ctx context.Context, t *testing.T, profile string)
 func validateStartNoK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	// docs: start minikube with no Kubernetes.
 	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
