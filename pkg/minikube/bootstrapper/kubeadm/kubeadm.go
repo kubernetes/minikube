@@ -803,7 +803,6 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 
 // StopKubernetes attempts to stop existing kubernetes.
 func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
-
 	// Verify that Kubernetes is still running.
 	stk := kverify.ServiceStatus(runner, "kubelet")
 	if stk.String() != "Running" {
