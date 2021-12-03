@@ -91,29 +91,10 @@ type Starter struct {
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
-	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
-		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
-	}
-	// wait for preloaded tarball to finish downloading before configuring runtimes
-	waitCacheRequiredImages(&cacheGroup)
-
-	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
+	cr, err := handleNoKubernetes(starter)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to parse Kubernetes version")
+		return kcs, err
 	}
-
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
-
-	// Stop existing Kubernetes node if applicable.
-	kubeadm.StopKubernetes(starter.StopK8s, cr, starter.Cfg.KubernetesConfig, starter.Runner)
-
-	// check if installed runtime is compatible with current minikube code
-	if err = cruntime.CheckCompatibility(cr); err != nil {
-		return nil, err
-	}
-
-	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
 	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
@@ -241,6 +222,41 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// handleNoKubernetes handles starting minikube without Kubernetes.
+func handleNoKubernetes(starter Starter) (cruntime.Manager, error) {
+	// Do not bootstrap cluster if --no-kubernetes.
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
+		// Stop existing Kubernetes node if applicable.
+		if starter.StopK8s {
+			cr, err := cruntime.New(cruntime.Config{Type: starter.Cfg.KubernetesConfig.ContainerRuntime, Runner: starter.Runner, Socket: starter.Cfg.KubernetesConfig.CRISocket})
+			if err != nil {
+				return nil, err
+			}
+			kubeadm.StopKubernetes(starter.Runner, cr)
+		}
+		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
+
+	// Wait for preloaded tarball to finish downloading before configuring runtimes.
+	waitCacheRequiredImages(&cacheGroup)
+
+	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to parse Kubernetes version")
+	}
+
+	// Configure the runtime (docker, containerd, crio).
+	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// Check if installed runtime is compatible with current minikube code.
+	if err = cruntime.CheckCompatibility(cr); err != nil {
+		return nil, err
+	}
+
+	showVersionInfo(starter.Node.KubernetesVersion, cr)
+	return cr, nil
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.
