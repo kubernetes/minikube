@@ -1,4 +1,4 @@
-name: English
+name: Create a Bug (English)
 description: Report an issue in English
 body:
   - type: markdown
