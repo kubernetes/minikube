@@ -12,8 +12,8 @@ body:
   - type: markdown
     id: logs
     attributes:
+      label: Attach the log file
       description: |
-      label: Attach log file
       Tip: Run `minikube logs --file=log.txt` then drag & drop `log.txt` file to the browser. 
     validations:
       required: true
