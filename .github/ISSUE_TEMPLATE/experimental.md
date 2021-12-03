@@ -23,7 +23,7 @@ body:
       label: Operating System
       description: What is your OS ?
       options:
-        - MacOs (Default)
+        - macOS (Default)
         - Windows
         - Ubuntu
         - Redhat/Fedora
