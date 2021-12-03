@@ -21,7 +21,7 @@ body:
     id: operating-system
     attributes:
       label: Operating System
-      description: What is your OS ?
+      description: What is your OS?
       options:
         - macOS (Default)
         - Windows
