@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -33,6 +32,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/reason"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
+)
+
+var (
+	allNodes bool
 )
 
 // imageCmd represents the image command
@@ -54,7 +57,7 @@ var (
 )
 
 func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
+	tmp, err := os.CreateTemp("", "build.*.tar")
 	if err != nil {
 		return "", err
 	}
@@ -144,6 +147,77 @@ var loadImageCmd = &cobra.Command{
 	},
 }
 
+func readFile(w io.Writer, tmp string) error {
+	r, err := os.Open(tmp)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(w, r)
+	if err != nil {
+		return err
+	}
+	err = r.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// saveImageCmd represents the image load command
+var saveImageCmd = &cobra.Command{
+	Use:     "save IMAGE [ARCHIVE | -]",
+	Short:   "Save a image from minikube",
+	Long:    "Save a image from minikube",
+	Example: "minikube image save image\nminikube image save image image.tar",
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			exit.Message(reason.Usage, "Please provide an image in the container runtime to save from minikube via <minikube image save IMAGE_NAME>")
+		}
+		// Save images from container runtime
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if len(args) > 1 {
+			output = args[1]
+
+			if args[1] == "-" {
+				tmp, err := os.CreateTemp("", "image.*.tar")
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to get temp", err)
+				}
+				tmp.Close()
+				output = tmp.Name()
+			}
+
+			if err := machine.DoSaveImages([]string{args[0]}, output, []*config.Profile{profile}, ""); err != nil {
+				exit.Error(reason.GuestImageSave, "Failed to save image", err)
+			}
+
+			if args[1] == "-" {
+				err := readFile(os.Stdout, output)
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to read temp", err)
+				}
+				os.Remove(output)
+			}
+		} else {
+			if err := machine.SaveAndCacheImages([]string{args[0]}, []*config.Profile{profile}); err != nil {
+				exit.Error(reason.GuestImageSave, "Failed to save image", err)
+			}
+			if imgDaemon || imgRemote {
+				image.UseDaemon(imgDaemon)
+				image.UseRemote(imgRemote)
+				err := image.UploadCachedImage(args[0])
+				if err != nil {
+					exit.Error(reason.GuestImageSave, "Failed to save image", err)
+				}
+			}
+		}
+	},
+}
+
 var removeImageCmd = &cobra.Command{
 	Use:   "rm IMAGE [IMAGE...]",
 	Short: "Remove one or more images",
@@ -161,6 +235,24 @@ $ minikube image unload image busybox
 		}
 		if err := machine.RemoveImages(args, profile); err != nil {
 			exit.Error(reason.GuestImageRemove, "Failed to remove image", err)
+		}
+	},
+}
+
+var pullImageCmd = &cobra.Command{
+	Use:   "pull",
+	Short: "Pull images",
+	Example: `
+$ minikube image pull busybox
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.PullImages(args, profile); err != nil {
+			exit.Error(reason.GuestImagePull, "Failed to pull images", err)
 		}
 	},
 }
@@ -217,7 +309,7 @@ var buildImageCmd = &cobra.Command{
 				// Otherwise, assume it's a tar
 			}
 		}
-		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}); err != nil {
+		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
 		if tmp != "" {
@@ -245,6 +337,46 @@ $ minikube image ls
 	},
 }
 
+var tagImageCmd = &cobra.Command{
+	Use:   "tag",
+	Short: "Tag images",
+	Example: `
+$ minikube image tag source target
+`,
+	Aliases: []string{"list"},
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 2 {
+			exit.Message(reason.Usage, "Please provide source and target image")
+		}
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.TagImage(profile, args[0], args[1]); err != nil {
+			exit.Error(reason.GuestImageTag, "Failed to tag images", err)
+		}
+	},
+}
+
+var pushImageCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Push images",
+	Example: `
+$ minikube image push busybox
+`,
+	Run: func(cmd *cobra.Command, args []string) {
+		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.Error(reason.Usage, "loading profile", err)
+		}
+
+		if err := machine.PushImages(args, profile); err != nil {
+			exit.Error(reason.GuestImagePush, "Failed to push images", err)
+		}
+	},
+}
+
 func init() {
 	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
@@ -252,11 +384,19 @@ func init() {
 	loadImageCmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite image even if same image:tag name exists")
 	imageCmd.AddCommand(loadImageCmd)
 	imageCmd.AddCommand(removeImageCmd)
+	imageCmd.AddCommand(pullImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
 	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
+	buildImageCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to build on. Defaults to the primary control plane.")
+	buildImageCmd.Flags().BoolVarP(&allNodes, "all", "", false, "Build image on all nodes.")
 	imageCmd.AddCommand(buildImageCmd)
+	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
+	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")
+	imageCmd.AddCommand(saveImageCmd)
 	imageCmd.AddCommand(listImageCmd)
+	imageCmd.AddCommand(tagImageCmd)
+	imageCmd.AddCommand(pushImageCmd)
 }

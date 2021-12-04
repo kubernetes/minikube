@@ -17,11 +17,14 @@ limitations under the License.
 package command
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,12 +44,55 @@ var (
 )
 
 // SSHRunner runs commands through SSH.
-//
+
 // It implements the CommandRunner interface.
 type SSHRunner struct {
 	d drivers.Driver
 	c *ssh.Client
 	s *ssh.Session
+}
+
+type sshReadableFile struct {
+	length      int
+	sourcePath  string
+	permissions string
+	sess        *ssh.Session
+	modTime     time.Time
+	reader      io.Reader
+}
+
+// GetLength returns lentgh of file
+func (s *sshReadableFile) GetLength() int {
+	return s.length
+}
+
+// GetSourcePath returns asset name
+func (s *sshReadableFile) GetSourcePath() string {
+	return s.sourcePath
+}
+
+// GetPermissions returns permissions
+func (s *sshReadableFile) GetPermissions() string {
+	return s.permissions
+}
+
+func (s *sshReadableFile) GetModTime() (time.Time, error) {
+	return s.modTime, nil
+}
+
+func (s *sshReadableFile) Read(p []byte) (int, error) {
+	if s.GetLength() == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
+	return s.reader.Read(p)
+}
+
+func (s *sshReadableFile) Seek(offset int64, whence int) (int64, error) {
+	return 0, fmt.Errorf("Seek is not implemented for sshReadableFile")
+}
+
+func (s *sshReadableFile) Close() error {
+	return s.sess.Close()
 }
 
 // NewSSHRunner returns a new SSHRunner that will run commands
@@ -372,4 +418,135 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
 	return g.Wait()
+}
+
+// CopyFrom copies a file from the remote over SSH.
+func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+
+	sess, err := s.session()
+	if err != nil {
+		return errors.Wrap(err, "NewSession")
+	}
+	defer func() {
+		if err := sess.Close(); err != nil {
+			if err != io.EOF {
+				klog.Errorf("session close: %v", err)
+			}
+		}
+	}()
+
+	cmd := exec.Command("stat", "-c", "%s", dst)
+	rr, err := s.RunCmd(cmd)
+	if err != nil {
+		return fmt.Errorf("%s: %v", cmd, err)
+	}
+	length, err := strconv.Atoi(strings.TrimSuffix(rr.Stdout.String(), "\n"))
+	if err != nil {
+		return err
+	}
+	src := f.GetSourcePath()
+	klog.Infof("scp %s --> %s (%d bytes)", dst, src, length)
+	f.SetLength(length)
+
+	r, err := sess.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "StdoutPipe")
+	}
+	w, err := sess.StdinPipe()
+	if err != nil {
+		return errors.Wrap(err, "StdinPipe")
+	}
+	// The scpcmd below *should not* return until all data is copied and the
+	// StdinPipe is closed. But let's use errgroup to make it explicit.
+	var g errgroup.Group
+	var copied int64
+
+	g.Go(func() error {
+		defer w.Close()
+		br := bufio.NewReader(r)
+		fmt.Fprint(w, "\x00")
+		b, err := br.ReadBytes('\n')
+		if err != nil {
+			return errors.Wrap(err, "ReadBytes")
+		}
+		if b[0] != 'C' {
+			return fmt.Errorf("unexpected: %v", b)
+		}
+		fmt.Fprint(w, "\x00")
+
+		copied = 0
+		for copied < int64(length) {
+			n, err := io.CopyN(f, br, int64(length))
+			if err != nil {
+				return errors.Wrap(err, "io.CopyN")
+			}
+			copied += n
+		}
+		fmt.Fprint(w, "\x00")
+		err = sess.Wait()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	scp := fmt.Sprintf("sudo scp -f %s", f.GetTargetPath())
+	err = sess.Start(scp)
+	if err != nil {
+		return fmt.Errorf("%s: %s", scp, err)
+	}
+	return g.Wait()
+}
+
+func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	klog.V(4).Infof("NewsshReadableFile: %s -> %s", sourcePath)
+
+	if !strings.HasPrefix(sourcePath, "/") {
+		return nil, fmt.Errorf("sourcePath must be an absolute Path. Relative Path is not allowed")
+	}
+
+	// get file size and modtime of the destination
+	rr, err := s.RunCmd(exec.Command("stat", "-c", "%#a %s %y", sourcePath))
+	if err != nil {
+		return nil, err
+	}
+
+	stdout := strings.TrimSpace(rr.Stdout.String())
+	outputs := strings.SplitN(stdout, " ", 3)
+
+	permission := outputs[0]
+	size, err := strconv.Atoi(outputs[1])
+	if err != nil {
+		return nil, err
+	}
+
+	modTime, err := time.Parse(layout, outputs[2])
+	if err != nil {
+		return nil, err
+	}
+
+	sess, err := s.session()
+	if err != nil {
+		return nil, errors.Wrap(err, "NewSession")
+	}
+
+	r, err := sess.StdoutPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "StdOutPipe")
+	}
+
+	cmd := fmt.Sprintf("cat %s", sourcePath)
+	if err := sess.Start(cmd); err != nil {
+		return nil, err
+	}
+
+	return &sshReadableFile{
+		length:      size,
+		sourcePath:  sourcePath,
+		permissions: permission,
+		reader:      r,
+		modTime:     modTime,
+		sess:        sess,
+	}, nil
 }

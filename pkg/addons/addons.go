@@ -18,6 +18,7 @@ package addons
 
 import (
 	"fmt"
+	"os/exec"
 	"path"
 	"runtime"
 	"sort"
@@ -26,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -44,15 +46,19 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Force is used to override checks for addons
-var Force bool = false
+var Force = false
 
 // Refresh is used to refresh pods in specific cases when an addon is enabled
 // Currently only used for gcp-auth
-var Refresh bool = false
+var Refresh = false
+
+// ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
+var ErrSkipThisAddon = errors.New("skipping this addon")
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -64,11 +70,17 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 
 	// Run any additional validations for this property
 	if err := run(cc, name, value, a.validations); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running validations")
 	}
 
 	// Run any callbacks for this property
 	if err := run(cc, name, value, a.callbacks); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "running callbacks")
 	}
 	return nil
@@ -91,6 +103,9 @@ func SetAndSave(profile string, name string, value string) error {
 	}
 
 	if err := RunCallbacks(cc, name, value); err != nil {
+		if errors.Is(err, ErrSkipThisAddon) {
+			return err
+		}
 		return errors.Wrap(err, "run callbacks")
 	}
 
@@ -104,15 +119,18 @@ func SetAndSave(profile string, name string, value string) error {
 
 // Runs all the validation or callback functions and collects errors
 func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error {
-	var errors []error
+	var errs []error
 	for _, fn := range fns {
 		err := fn(cc, name, value)
 		if err != nil {
-			errors = append(errors, err)
+			if errors.Is(err, ErrSkipThisAddon) {
+				return ErrSkipThisAddon
+			}
+			errs = append(errs, err)
 		}
 	}
-	if len(errors) > 0 {
-		return fmt.Errorf("%v", errors)
+	if len(errs) > 0 {
+		return fmt.Errorf("%v", errs)
 	}
 	return nil
 }
@@ -150,22 +168,72 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		}
 	}
 
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
+	}
+
+	// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19
+	if strings.HasPrefix(name, "ingress") && enable {
+		if err := supportLegacyIngress(addon, *cc); err != nil {
+			return err
+		}
+	}
+
+	// Persist images even if the machine is running so starting gets the correct images.
+	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
+	if err != nil {
+		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
+	}
+
+	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
+	}
+
+	mName := config.MachineName(*cc, cp)
+	host, err := machine.LoadHost(api, mName)
+	if err != nil || !machine.IsRunning(api, mName) {
+		klog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
+		return nil
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		return errors.Wrap(err, "command runner")
+	}
+
+	bail, err := addonSpecificChecks(cc, name, enable, runner)
+	if err != nil {
+		return err
+	}
+	if bail {
+		return nil
+	}
+
+	var networkInfo assets.NetworkInfo
+	if len(cc.Nodes) >= 1 {
+		networkInfo.ControlPlaneNodeIP = cc.Nodes[0].IP
+		networkInfo.ControlPlaneNodePort = cc.Nodes[0].Port
+	} else {
+		out.WarningT("At least needs control plane nodes to enable addon")
+	}
+
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
+	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
+}
+
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, runner command.Runner) (bool, error) {
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
-			if runtime.GOOS == "windows" {
+			if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
-			} else if runtime.GOOS != "linux" {
-				exit.Message(reason.Usage, `Due to networking limitations of driver {{.driver_name}} on {{.os_name}}, {{.addon_name}} addon is not supported.
-Alternatively to use this addon you can use a vm-based driver:
-
-	'minikube start --vm=true'
-
-To track the update on this work in progress feature please check:
-https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
-			} else if driver.BareMetal(cc.Driver) {
-				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
-					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
 		}
 	}
@@ -181,64 +249,36 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		}
 	}
 
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		return errors.Wrap(err, "machine client")
-	}
-	defer api.Close()
-
-	cp, err := config.PrimaryControlPlane(cc)
-	if err != nil {
-		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
-	}
-
-	// Persist images even if the machine is running so starting gets the correct images.
-	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
-	if err != nil {
-		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
-	}
-
-	mName := config.MachineName(*cc, cp)
-	host, err := machine.LoadHost(api, mName)
-	if err != nil || !machine.IsRunning(api, mName) {
-		klog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
-		return nil
-	}
-
 	if name == "registry" {
 		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
-				return errors.Wrap(err, "registry port")
+				return false, errors.Wrap(err, "registry port")
 			}
 			if enable {
 				out.Boxed(`Registry addon with {{.driver}} driver uses port {{.port}} please use that instead of default port 5000`, out.V{"driver": cc.Driver, "port": port})
 			}
 			out.Styled(style.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
-	}
-
-	runner, err := machine.CommandRunner(host)
-	if err != nil {
-		return errors.Wrap(err, "command runner")
+		return false, nil
 	}
 
 	if name == "auto-pause" && !enable { // needs to be disabled before deleting the service file in the internal disable
 		if err := sysinit.New(runner).DisableNow("auto-pause"); err != nil {
 			klog.ErrorS(err, "failed to disable", "service", "auto-pause")
 		}
+		return false, nil
 	}
 
-	var networkInfo assets.NetworkInfo
-	if len(cc.Nodes) >= 1 {
-		networkInfo.ControlPlaneNodeIP = cc.Nodes[0].IP
-		networkInfo.ControlPlaneNodePort = cc.Nodes[0].Port
-	} else {
-		out.WarningT("At least needs control plane nodes to enable addon")
+	// If the gcp-auth credentials haven't been mounted in, don't start the pods
+	if name == "gcp-auth" && enable {
+		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
+		if err != nil || rr.Stdout.String() == "" {
+			return true, nil
+		}
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
-	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
+	return false, nil
 }
 
 func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
@@ -252,6 +292,39 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 	}
 
 	return false
+}
+
+// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19 by replacing default addons' images with compatible versions
+func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
+	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		if addon.Name() == "ingress" {
+			addon.Images = map[string]string{
+				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
+				"IngressController": "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
+				// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
+				"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+			}
+			addon.Registries = map[string]string{
+				"IngressController": "k8s.gcr.io",
+			}
+			return nil
+		}
+		if addon.Name() == "ingress-dns" {
+			addon.Images = map[string]string{
+				"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+			}
+			addon.Registries = nil
+			return nil
+		}
+		return fmt.Errorf("supportLegacyIngress called for unexpected addon %q - nothing to do here", addon.Name())
+	}
+
+	return nil
 }
 
 func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {
@@ -377,7 +450,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	enabledAddons := []string{}
+	var enabledAddons []string
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
@@ -387,7 +460,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		awg.Add(1)
 		go func(name string) {
 			err := RunCallbacks(cc, name, "true")
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrSkipThisAddon) {
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			} else {
 				enabledAddons = append(enabledAddons, name)

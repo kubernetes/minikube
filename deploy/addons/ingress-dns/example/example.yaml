@@ -39,6 +39,7 @@ metadata:
   name: example-ingress
   namespace: kube-system
 spec:
+  ingressClassName: nginx
   rules:
     - host: hello-john.test
       http:

@@ -24,6 +24,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,18 +36,66 @@ import (
 // MemorySource is the source name used for in-memory copies
 const MemorySource = "memory"
 
-// CopyableFile is something that can be copied
-type CopyableFile interface {
+// ReadableFile is something that can be read
+type ReadableFile interface {
 	io.Reader
 	GetLength() int
 	GetSourcePath() string
 
-	GetTargetDir() string
-	GetTargetName() string
 	GetPermissions() string
 	GetModTime() (time.Time, error)
 	Seek(int64, int) (int64, error)
 	Close() error
+}
+
+// CopyableFile is something that can be copied
+type CopyableFile interface {
+	ReadableFile
+
+	io.Writer
+	SetLength(int)
+	GetTargetPath() string
+	GetTargetDir() string
+	GetTargetName() string
+}
+
+type writeFn func(d []byte) (n int, err error)
+type BaseCopyableFile struct {
+	ReadableFile
+
+	writer     writeFn
+	length     int
+	targetDir  string
+	targetName string
+}
+
+func (r *BaseCopyableFile) Write(d []byte) (n int, err error) {
+	return r.writer(d)
+}
+
+func (r *BaseCopyableFile) SetLength(length int) {
+	r.length = length
+}
+
+func (r *BaseCopyableFile) GetTargetPath() string {
+	return filepath.Join(r.GetTargetDir(), r.GetTargetName())
+}
+
+func (r *BaseCopyableFile) GetTargetDir() string {
+	return r.targetDir
+}
+
+func (r *BaseCopyableFile) GetTargetName() string {
+	return r.targetName
+}
+
+func NewBaseCopyableFile(source ReadableFile, writer writeFn, targetDir, targetName string) *BaseCopyableFile {
+	return &BaseCopyableFile{
+		ReadableFile: source,
+		writer:       writer,
+		targetDir:    targetDir,
+		targetName:   targetName,
+	}
 }
 
 // BaseAsset is the base asset class
@@ -60,6 +110,11 @@ type BaseAsset struct {
 // GetSourcePath returns asset name
 func (b *BaseAsset) GetSourcePath() string {
 	return b.SourcePath
+}
+
+// GetTargetPath returns target path
+func (b *BaseAsset) GetTargetPath() string {
+	return path.Join(b.GetTargetDir(), b.GetTargetName())
 }
 
 // GetTargetDir returns target dir
@@ -86,6 +141,7 @@ func (b *BaseAsset) GetModTime() (time.Time, error) {
 type FileAsset struct {
 	BaseAsset
 	reader io.ReadSeeker
+	writer io.Writer
 	file   *os.File // Optional pointer to close file through FileAsset.Close()
 }
 
@@ -134,6 +190,14 @@ func (f *FileAsset) GetLength() (flen int) {
 	return int(fi.Size())
 }
 
+// SetLength sets the file length
+func (f *FileAsset) SetLength(flen int) {
+	err := os.Truncate(f.SourcePath, int64(flen))
+	if err != nil {
+		klog.Errorf("truncate(%q) failed: %v", f.SourcePath, err)
+	}
+}
+
 // GetModTime returns modification time of the file
 func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.SourcePath)
@@ -150,6 +214,23 @@ func (f *FileAsset) Read(p []byte) (int, error) {
 		return 0, errors.New("Error attempting FileAsset.Read, FileAsset.reader uninitialized")
 	}
 	return f.reader.Read(p)
+}
+
+// Write writes the asset
+func (f *FileAsset) Write(p []byte) (int, error) {
+	if f.writer == nil {
+		f.file.Close()
+		perms, err := strconv.ParseUint(f.Permissions, 8, 32)
+		if err != nil || perms > 07777 {
+			return 0, err
+		}
+		f.file, err = os.OpenFile(f.SourcePath, os.O_RDWR|os.O_CREATE, os.FileMode(perms))
+		if err != nil {
+			return 0, err
+		}
+		f.writer = io.Writer(f.file)
+	}
+	return f.writer.Write(p)
 }
 
 // Seek resets the reader to offset
@@ -177,9 +258,21 @@ func (m *MemoryAsset) GetLength() int {
 	return m.length
 }
 
+// SetLength returns length
+func (m *MemoryAsset) SetLength(len int) {
+	m.length = len
+}
+
 // Read reads the asset
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
+}
+
+// Writer writes the asset
+func (m *MemoryAsset) Write(p []byte) (int, error) {
+	m.length = len(p)
+	m.reader = bytes.NewReader(p)
+	return len(p), nil
 }
 
 // Seek resets the reader to offset
@@ -298,12 +391,24 @@ func (m *BinAsset) GetLength() int {
 	return m.length
 }
 
+// SetLength sets length
+func (m *BinAsset) SetLength(len int) {
+	m.length = len
+}
+
 // Read reads the asset
 func (m *BinAsset) Read(p []byte) (int, error) {
 	if m.GetLength() == 0 {
 		return 0, fmt.Errorf("attempted read from a 0 length asset")
 	}
 	return m.reader.Read(p)
+}
+
+// Write writes the asset
+func (m *BinAsset) Write(p []byte) (int, error) {
+	m.length = len(p)
+	m.reader = bytes.NewReader(p)
+	return len(p), nil
 }
 
 // Seek resets the reader to offset

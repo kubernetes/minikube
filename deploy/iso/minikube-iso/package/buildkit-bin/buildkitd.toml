@@ -1,0 +1,5 @@
+[worker.oci]
+  enabled = false
+[worker.containerd]
+  enabled = true
+  namespace = "k8s.io"

@@ -16,7 +16,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 * 2GB of free memory
 * 20GB of free disk space
 * Internet connection
-* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMWare]({{<ref "/docs/drivers/vmware">}})
+* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
@@ -113,7 +113,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Stable" name="Installer type" %}}
-{{% quiz_button option="Binary download" %}}
+{{% quiz_button option="Binary download" %}} {{% quiz_button option="Homebrew" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Beta" name="Installer type" %}}
@@ -362,7 +362,7 @@ curl -L $u > minikube-beta.armv7hl.rpm && sudo rpm -Uvh minikube-beta.armv7hl.rp
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/macOS/x86-64/Stable/Homebrew" %}}
-If the [Brew Package Manager](https://brew.sh/) is installed:
+If the [Homebrew Package Manager](https://brew.sh/) is installed:
 
 ```shell
 brew install minikube
@@ -398,6 +398,21 @@ sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 ```
 {{% /quiz_instruction %}}
 
+{{% quiz_instruction id="/macOS/ARM64/Stable/Homebrew" %}}
+If the [Homebrew Package Manager](https://brew.sh/) is installed:
+
+```shell
+brew install minikube
+```
+
+If `which minikube` fails after installation via brew, you may have to remove the old minikube links and link the newly installed binary:
+
+```shell
+brew unlink minikube
+brew link minikube
+```
+{{% /quiz_instruction %}}
+
 {{% quiz_instruction id="/macOS/ARM64/Beta/Binary download" %}}
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
@@ -425,20 +440,19 @@ choco install minikube
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
 1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
 <br>
-    Or if you have `curl` installed, use this command:
-    ```shell
-    curl -Lo minikube.exe https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe
-    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
-    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    Or if using `PowerShell`, use this command:
+    ```powershell
+    New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
+    Invoke-WebRequest -OutFile 'c:\minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
     ```
 
 2. Add the binary in to your `PATH`.  
 <br>
     _Make sure to run PowerShell as Administrator._
-    ```shell
-    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-    if($oldpath -notlike "*;C:\minikube*"){`
-      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    ```powershell
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
@@ -447,22 +461,22 @@ choco install minikube
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
 1. Download the <a href="#" id="latest-beta-download-link">latest beta release</a>.  
 <br>
-    Or if you have `curl` installed, use this command:
-    ```shell
-    $r='https://api.github.com/repos/kubernetes/minikube/releases'
-    $u=curl -s $r | Select-String -Pattern 'http.*download/v.*beta.*/minikube-windows-amd64.exe' | Select Matches -First 1
-    curl -Lo minikube.exe $u.Matches.Value
-    New-Item -Path "c:\" -Name "minikube" -ItemType "directory" -Force
-    Move-Item .\minikube.exe c:\minikube\minikube.exe -Force
+    Or if using `PowerShell`, use this command:
+    ```powershell
+    New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
+    $response = Invoke-WebRequest -Uri 'https://api.github.com/repos/kubernetes/minikube/releases' -UseBasicParsing
+    $json = $response.Content | ConvertFrom-Json
+    $item = ($json | ?{ $_.prerelease -eq $true })[0].assets | ?{ $_.name -eq 'minikube-windows-amd64.exe' }
+    Invoke-WebRequest -Uri $item.browser_download_url -OutFile 'c:\minikube\minikube.exe' -UseBasicParsing
     ```
 
 2. Add the binary in to your `PATH`.  
 <br>
     _Make sure to run PowerShell as Administrator._
-    ```shell
-    $oldpath=[Environment]::GetEnvironmentVariable("Path", [EnvironmentVariableTarget]::Machine)
-    if($oldpath -notlike "*;C:\minikube*"){`
-      [Environment]::SetEnvironmentVariable("Path", $oldpath+";C:\minikube", [EnvironmentVariableTarget]::Machine)`
+    ```powershell
+    $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
@@ -501,10 +515,14 @@ If you already have kubectl installed, you can now use it to access your shiny n
 kubectl get po -A
 ```
 
-Alternatively, minikube can download the appropriate version of kubectl, if you don't mind the double-dashes in the command-line:
+Alternatively, minikube can download the appropriate version of kubectl and you should be able to use it like this:
 
 ```shell
 minikube kubectl -- get po -A
+```
+You can also make your life easier by adding the following to your shell config:
+```shell
+alias kubectl="minikube kubectl --"
 ```
 
 Initially, some services such as the storage-provisioner, may not yet be in a Running state. This is a normal condition during cluster bring-up, and will resolve itself momentarily. For additional insight into your cluster state, minikube bundles the Kubernetes Dashboard, allowing you to get easily acclimated to your new environment:
@@ -540,7 +558,9 @@ Alternatively, use kubectl to forward the port:
 kubectl port-forward service/hello-minikube 7080:8080
 ```
 
-Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/)
+Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/).
+
+You should be able to see the request metadata from nginx such as the `CLIENT VALUES`, `SERVER VALUES`, `HEADERS RECEIVED` and the `BODY` in the application output. Try changing the path of the request and observe the changes in the `CLIENT VALUES`. Similarly, you can do a POST request to the same and observe the body show up in `BODY` section of the output.
 
 ### LoadBalancer deployments
 
@@ -571,6 +591,11 @@ Pause Kubernetes without impacting deployed applications:
 
 ```shell
 minikube pause
+```
+
+Unpause a paused instance:
+```shell
+minikube unpause
 ```
 
 Halt the cluster:

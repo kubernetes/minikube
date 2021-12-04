@@ -74,6 +74,3 @@ if [[ "$recent" != *"beta"* ]]; then
   echo ""
   echo "Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/$recent/) for this release!"
 fi
-
-echo ""
-echo "Don't forget to run `make update-leaderboard` & `make time-to-k8s-benchmark`!"

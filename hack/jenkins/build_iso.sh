@@ -24,6 +24,9 @@ set -x -o pipefail
 # Make sure gh is installed and configured
 ./hack/jenkins/installers/check_install_gh.sh
 
+# Make sure golang is installed and configured
+./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+
 # Make sure all required packages are installed
 sudo apt-get update
 sudo apt-get -y install build-essential unzip rsync bc python2 p7zip-full
@@ -46,10 +49,7 @@ ec=$?
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
-		See the logs at: 
-		```
-		https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/iso-${BUILD_NUMBER}/iso_build.txt
-		```
+		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
 		"
 	fi
 	exit $ec

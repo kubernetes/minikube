@@ -84,14 +84,14 @@ fi
 
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  sudo apt-get -y install lsof psmisc
+  sudo apt-get -y install lsof psmisc dnsutils
 else
   brew install pstree coreutils pidof
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
 # installing golang so we could do go get for gopogh
-./installers/check_install_golang.sh "1.16.6" "/usr/local" || true
+./installers/check_install_golang.sh "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
@@ -399,8 +399,13 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
 if ! type "jq" > /dev/null; then
-echo ">> Installing jq"
-    if [ "${OS}" != "darwin" ]; then
+    echo ">> Installing jq"
+    if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
+      sudo apt-get install jq -y
+    elif [ "${ARCH}" == "arm64" ]; then
+      echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
+      exit 5
+    elif [ "${OS}" != "darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
     else
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
@@ -423,9 +428,9 @@ gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "$
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
-description="completed with ${status} in ${elapsed} minute(s)."
+description="completed with ${status} in ${elapsed} minutes."
 if [ "$status" = "failure" ]; then
-  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+  description="completed with ${pessimistic_status} in ${elapsed} minutes."
 fi
 echo "$description"
 

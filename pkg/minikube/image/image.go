@@ -19,7 +19,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -33,10 +32,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -153,11 +154,15 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 		}
 	}
 	if useRemote {
+		ref, canonicalName, err := fixRemoteImageName(ref, imgName)
+		if err != nil {
+			return nil, "", err
+		}
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err == nil {
 			img, err = fixPlatform(ref, img, defaultPlatform)
 			if err == nil {
-				return img, canonicalName(ref), nil
+				return img, canonicalName, nil
 			}
 		}
 	}
@@ -189,6 +194,62 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 		klog.Infof("remote lookup for %+v: %v", ref, err)
 	}
 	return img, err
+}
+
+// imagePathInCache returns path in local cache directory
+func imagePathInCache(img string) string {
+	f := filepath.Join(constants.ImageCacheDir, img)
+	f = localpath.SanitizeCacheDir(f)
+	return f
+}
+
+func UploadCachedImage(imgName string) error {
+	tag, err := name.NewTag(imgName, name.WeakValidation)
+	if err != nil {
+		klog.Infof("error parsing image name %s tag %v ", imgName, err)
+		return err
+	}
+	return uploadImage(tag, imagePathInCache(imgName))
+}
+
+func uploadImage(tag name.Tag, p string) error {
+	var err error
+	var img v1.Image
+
+	if !useDaemon && !useRemote {
+		return fmt.Errorf("neither daemon nor remote")
+	}
+
+	img, err = tarball.ImageFromPath(p, &tag)
+	if err != nil {
+		return errors.Wrap(err, "tarball")
+	}
+	ref := name.Reference(tag)
+
+	klog.Infof("uploading image: %+v from: %s", ref, p)
+	if useDaemon {
+		return uploadDaemon(tag, img)
+	}
+	if useRemote {
+		return uploadRemote(ref, img, defaultPlatform)
+	}
+	return nil
+}
+
+func uploadDaemon(tag name.Tag, img v1.Image) error {
+	resp, err := daemon.Write(tag, img)
+	if err != nil {
+		klog.Warningf("daemon load for %s: %v\n%s", tag, err, resp)
+	}
+	return err
+}
+
+func uploadRemote(ref name.Reference, img v1.Image, p v1.Platform) error {
+	err := remote.Write(ref, img, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
+	if err != nil {
+		klog.Warningf("remote push for %s: %v", ref, err)
+	}
+	return err
 }
 
 // See https://github.com/kubernetes/minikube/issues/10402
@@ -227,7 +288,7 @@ func cleanImageCacheDir() error {
 			return nil
 		}
 		// If directory is empty, delete it
-		entries, err := ioutil.ReadDir(path)
+		entries, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}
@@ -258,4 +319,23 @@ func normalizeTagName(image string) string {
 		tag = parts[len(parts)-1]
 	}
 	return base + ":" + tag
+}
+
+func fixRemoteImageName(ref name.Reference, imgName string) (name.Reference, string, error) {
+	const aliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers/"
+	if strings.HasPrefix(imgName, aliyunMirror) {
+		// for aliyun registry must strip namespace from image name, e.g.
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/coredns/coredns:v1.8.0 will not work
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.8.0 does work
+		image := strings.TrimPrefix(imgName, aliyunMirror)
+		image = strings.TrimPrefix(image, "k8s-minikube/")
+		image = strings.TrimPrefix(image, "kubernetesui/")
+		image = strings.TrimPrefix(image, "coredns/")
+		remoteRef, err := name.ParseReference(aliyunMirror+image, name.WeakValidation)
+		if err != nil {
+			return nil, "", err
+		}
+		return remoteRef, canonicalName(ref), nil
+	}
+	return ref, canonicalName(ref), nil
 }

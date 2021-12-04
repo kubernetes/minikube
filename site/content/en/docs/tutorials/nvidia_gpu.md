@@ -1,6 +1,6 @@
 ---
 title: "NVIDIA GPU Support"
-linkTitle: "NVIDIA GPU support"
+linkTitle: "NVIDIA GPU Support"
 weight: 1
 date: 2018-01-02
 description: >

@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 22
+VERSION_MINOR ?= 24
 VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.22.0-1627488369-11483
+ISO_VERSION ?= v1.24.0-1638385553-13059
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -32,26 +32,34 @@ RPM_VERSION ?= $(DEB_VERSION)
 RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.16.6
+# update this only by running `make update-golang-version`
+GO_VERSION ?= 1.17.3
+# update this only by running `make update-golang-version`
+GO_K8S_VERSION_PREFIX ?= v1.23.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2020.02.12
+BUILDROOT_BRANCH ?= 2021.02.4
+# the go version on the line below is for the ISO and does not need to be updated often
+GOLANG_OPTIONS = GO_VERSION=1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
-HYPERKIT_BUILD_IMAGE 	?= neilotoole/xcgo:go1.15
+# source code for image: https://github.com/spowelljr/xcgo
+HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.17
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
+
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-buster.0
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
@@ -65,9 +73,10 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.182
-# latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.39.0
+KERNEL_VERSION ?= 4.19.202
+# latest from https://github.com/golangci/golangci-lint/releases 
+# update this only by running `make update-golint-version`
+GOLINT_VERSION ?= v1.43.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -75,7 +84,7 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
+	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 export GO111MODULE := on
@@ -278,19 +287,18 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
-	mkdir -p $(BUILD_DIR)/buildroot/output/build
-	echo "module buildroot.org/go" > $(BUILD_DIR)/buildroot/output/build/go.mod
-	$(MAKE) -C $(BUILD_DIR)/buildroot host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
 iso-menuconfig: ## Configure buildroot configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot savedefconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) savedefconfig
 
 # Change the kernel configuration for the minikube ISO
 .PHONY: linux-menuconfig
@@ -305,7 +313,7 @@ ifeq ($(IN_DOCKER),1)
 else
 	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
-		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
+		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make out/minikube.iso'
 endif
 
 iso_in_docker:
@@ -682,7 +690,7 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
-KICBASE_ARCH = linux/arm64,linux/amd64
+KICBASE_ARCH = linux/amd64,linux/arm64,linux/s390x
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
@@ -785,7 +793,7 @@ release-notes:
 update-leaderboard:
 	hack/update_contributions.sh
 
-out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
+out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
@@ -972,6 +980,12 @@ update-golang-version:
 update-kubernetes-version:
 	(cd hack/update/kubernetes_version && \
 	 go run update_kubernetes_version.go)
+
+.PHONY: update-golint-version
+update-golint-version:
+	(cd hack/update/golint_version && \
+	 go run update_golint_version.go)
+
 
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:

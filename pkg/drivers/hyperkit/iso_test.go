@@ -17,13 +17,12 @@ limitations under the License.
 package hyperkit
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestExtractFile(t *testing.T) {
-	testDir, err := ioutil.TempDir(os.TempDir(), "")
+	testDir, err := os.MkdirTemp(os.TempDir(), "")
 	if nil != err {
 		return
 	}

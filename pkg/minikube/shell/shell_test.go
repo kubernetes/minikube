@@ -31,16 +31,17 @@ func TestGenerateUsageHint(t *testing.T) {
 		{EnvConfig{""}, `# foo
 # eval $(bar)`},
 		{EnvConfig{"powershell"}, `# foo
-# & bar | Invoke-Expression`},
+# & bar --shell powershell | Invoke-Expression`},
 		{EnvConfig{"bash"}, `# foo
 # eval $(bar)`},
-		{EnvConfig{"powershell"}, `# foo
-# & bar | Invoke-Expression`},
+		{EnvConfig{"cmd"}, `REM foo
+REM @FOR /f "tokens=*" %i IN ('bar --shell cmd') DO @%i`},
 		{EnvConfig{"emacs"}, `;; foo
 ;; (with-temp-buffer (shell-command "bar" (current-buffer)) (eval-buffer))`},
 		{EnvConfig{"fish"}, `# foo
 # bar | source`},
 		{EnvConfig{"none"}, ``},
+		{EnvConfig{"tcsh"}, "\n: \"foo\"\n: eval `bar`\n"},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -67,6 +68,7 @@ func TestCfgSet(t *testing.T) {
 		{"", "eval", EnvConfig{"emacs"}, `")`},
 		{"", "eval", EnvConfig{"none"}, ``},
 		{"", "eval", EnvConfig{"fish"}, `";`},
+		{"", "eval", EnvConfig{"tcsh"}, `";`},
 	}
 	for _, tc := range testCases {
 		tc := tc
@@ -100,6 +102,7 @@ set -e bar;`},
 		{[]string{"baz", "bar"}, EnvConfig{"emacs"}, `(setenv "baz" nil)
 (setenv "bar" nil)`},
 		{[]string{"baz", "bar"}, EnvConfig{"none"}, "baz\nbar"},
+		{[]string{"baz", "bar"}, EnvConfig{"tcsh"}, "unsetenv baz;\nunsetenv bar;"},
 	}
 	for _, tc := range testCases {
 		tc := tc

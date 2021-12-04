@@ -129,7 +129,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	klog.Infof("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "ip", "route", "delete", serviceCIDR)
 	stdInAndOut, err := command.CombinedOutput()
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	klog.Infof("%s", message)
 	if err != nil {
 		return fmt.Errorf("error deleting Route: %s, %s", message, err)

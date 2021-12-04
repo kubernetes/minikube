@@ -16,10 +16,11 @@ $test_home="$env:HOMEDRIVE$env:HOMEPATH\minikube-integration"
 
 if ($driver -eq "docker") {
   # Remove unused images and containers
-  docker system prune --all --force
+  docker system prune --all --force --volumes
 
   # Just shutdown Docker, it's safer than anything else
   Get-Process "*Docker Desktop*" | Stop-Process
 }
 
 rm -r -Force $test_home
+C:\jenkins\windows_cleanup_and_reboot.ps1

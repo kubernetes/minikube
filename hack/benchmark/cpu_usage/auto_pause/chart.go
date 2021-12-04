@@ -54,10 +54,10 @@ func main() {
 
 func execute() error {
 	// sessionID is generated and used at cpu usage benchmark
-	sessionID := os.Args[1]
-	if len(sessionID) == 0 {
+	if len(os.Args) <= 1 || len(os.Args[1]) == 0 {
 		return errors.New("Please identify sessionID")
 	}
+	sessionID := os.Args[1]
 
 	// Create plot instance
 	p := plot.New()
@@ -72,7 +72,7 @@ func execute() error {
 
 	// Open non-autopause csv file of benchmark summary
 	napResults := []float64{}
-	var napFn string = "./out/benchmark-results/" + sessionID + "/cstat.nonautopause.summary"
+	napFn := "./out/benchmark-results/" + sessionID + "/cstat.nonautopause.summary"
 	napFile, err := os.Open(napFn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")
@@ -97,7 +97,7 @@ func execute() error {
 
 	// Open auto-pause csv file of benchmark summary
 	apResults := []float64{}
-	var apFn string = "./out/benchmark-results/" + sessionID + "/cstat.autopause.summary"
+	apFn := "./out/benchmark-results/" + sessionID + "/cstat.autopause.summary"
 	apFile, err := os.Open(apFn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")

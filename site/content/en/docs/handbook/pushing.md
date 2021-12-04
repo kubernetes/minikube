@@ -31,14 +31,14 @@ Here is a comparison table to help you choose:
 
 | Method | Supported Runtimes | Performance | Load | Build |
 |--- |--- |--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  | yes | yes |
+|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-cri-o-podman-env) |   only cri-o |  good  | yes | yes |
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 |  [ctr/buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  | yes | yes |
 |  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
 |  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
-|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 
 * note1 : the default container-runtime on minikube is 'docker'.
 * note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
@@ -54,9 +54,29 @@ This means you don't have to build on your host machine and push the image into 
 
 To point your terminal to use the docker daemon inside minikube run this:
 
+{{% tabs %}}
+{{% linuxtab %}}
 ```shell
 eval $(minikube docker-env)
 ```
+{{% /linuxtab %}}
+{{% mactab %}}
+```shell
+eval $(minikube docker-env)
+```
+{{% /mactab %}}
+{{% windowstab %}}
+PowerShell
+```shell
+& minikube -p minikube docker-env --shell powershell | Invoke-Expression
+```
+
+cmd
+```shell
+@FOR /f "tokens=*" %i IN ('minikube -p minikube docker-env --shell cmd') DO @%i
+```
+{{% /windowstab %}}
+{{% /tabs %}}
 
 Now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
 
@@ -139,6 +159,8 @@ For more information, see:
 
 ## 3. Pushing directly to in-cluster CRI-O. (podman-env)
 
+{{% tabs %}}
+{{% linuxtab %}}
 This is similar to docker-env but only for CRI-O runtime.
 To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
 
@@ -147,9 +169,6 @@ eval $(minikube podman-env)
 ```
 
 You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
-
-{{% tabs %}}
-{{% linuxtab %}}
 
 ```shell
 podman-remote help
@@ -167,12 +186,20 @@ Note: On Linux the remote client is called "podman-remote", while the local prog
 
 {{% /linuxtab %}}
 {{% mactab %}}
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
+
+```shell
+eval $(minikube podman-env)
+```
+
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
 
 ```shell
 podman help
 ```
 
-now you can 'build' against the storage inside minikube, which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman build -t my_image .
@@ -184,8 +211,22 @@ Note: On macOS the remote client is called "podman", since there is no local "po
 
 {{% /mactab %}}
 {{% windowstab %}}
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
 
-now you can 'build' against the storage inside minikube, which is instantly accessible to kubernetes cluster.
+PowerShell
+```shell
+& minikube -p minikube podman-env --shell powershell | Invoke-Expression
+```
+
+cmd
+```shell
+@FOR /f "tokens=*" %i IN ('minikube -p minikube podman-env --shell cmd') DO @%i
+```
+
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
+
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman help

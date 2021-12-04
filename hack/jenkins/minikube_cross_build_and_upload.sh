@@ -26,8 +26,7 @@ set -eux -o pipefail
 readonly bucket="minikube-builds"
 
 # Make sure the right golang version is installed based on Makefile
-WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
-./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+./hack/jenkins/installers/check_install_golang.sh /usr/local
 
 
 declare -rx BUILD_IN_DOCKER=y
@@ -43,6 +42,7 @@ docker rm $(docker ps -aq) || true
 make -j 16 \
   all \
   minikube-darwin-arm64 \
+  out/mkcmp \
   out/minikube_${DEB_VER}_amd64.deb \
   out/minikube_${DEB_VER}_arm64.deb \
   out/docker-machine-driver-kvm2_$(make deb_version_base).deb \
@@ -58,7 +58,6 @@ if (echo ${COMMIT} | grep -q dirty); then
   echo "'minikube version' reports dirty commit: ${COMMIT}"
   exit 1
 fi
-
 
 
 gsutil cp "gs://${bucket}/logs/index.html" \
@@ -81,3 +80,10 @@ rm -rf out/buildroot
 # -J: gzip compression
 # -R: recursive. strangely, this is not the default for sync.
 gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
+
+readonly bucket_mirror="minikube/latest"
+readonly HEAD="master"
+if [[ "${ghprbPullId}" == "${HEAD}" ]]; then
+  # Copy artifacts to known mirror location
+  gsutil cp -R "gs://${bucket}/${ghprbPullId}/minikube-*" "gs://${bucket_mirror}"
+fi

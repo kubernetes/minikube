@@ -265,8 +265,16 @@ func (f *FakeRunner) Copy(assets.CopyableFile) error {
 	return nil
 }
 
+func (f *FakeRunner) CopyFrom(assets.CopyableFile) error {
+	return nil
+}
+
 func (f *FakeRunner) Remove(assets.CopyableFile) error {
 	return nil
+}
+
+func (f *FakeRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
 }
 
 func (f *FakeRunner) dockerPs(args []string) (string, error) {
@@ -693,7 +701,7 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			err = cr.Enable(true, false)
+			err = cr.Enable(true, false, false)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
 			}

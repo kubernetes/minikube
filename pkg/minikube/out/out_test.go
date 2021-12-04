@@ -21,11 +21,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/Delta456/box-cli-maker/v2"
+	"github.com/spf13/pflag"
 
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -130,37 +131,96 @@ func createLogFile() (string, error) {
 	return f.Name(), nil
 }
 
-func TestLatestLogPath(t *testing.T) {
-	filename, err := createLogFile()
+func TestLatestLogFilePath(t *testing.T) {
+	want, err := createLogFile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(filename)
+	defer os.Remove(want)
 
+	got, err := latestLogFilePath()
+	if err != nil {
+		t.Errorf("latestLogFilePath() failed with error = %v", err)
+	}
+	if got != want {
+		t.Errorf("latestLogFilePath() = %q; wanted %q", got, want)
+	}
+}
+
+func TestCommand(t *testing.T) {
 	testCases := []struct {
-		args []string
-		want string
+		args        []string
+		want        string
+		shouldError bool
 	}{
 		{
 			[]string{"minikube", "start"},
-			localpath.LastStartLog(),
+			"start",
+			false,
 		},
 		{
-			[]string{"minikube", "status"},
-			filename,
+			[]string{"minikube", "--profile", "profile1", "start"},
+			"start",
+			false,
+		},
+		{
+			[]string{"minikube"},
+			"",
+			true,
 		},
 	}
+
+	pflag.String("profile", "", "")
 
 	for _, tt := range testCases {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = tt.args
-		got, err := latestLogFilePath()
-		if err != nil {
-			t.Fatalf("os.Args = %s; latestLogFilePath() failed with error = %v", tt.args, err)
+		pflag.Parse()
+		got, err := command()
+		if err == nil && tt.shouldError {
+			t.Errorf("os.Args = %s; command() did not fail but was expected to", tt.args)
+		}
+		if err != nil && !tt.shouldError {
+			t.Errorf("os.Args = %s; command() failed with error = %v", tt.args, err)
 		}
 		if got != tt.want {
-			t.Errorf("os.Args = %s; latestLogFilePath() = %q; wanted %q", tt.args, got, tt.want)
+			t.Errorf("os.Args = %s; command() = %q; wanted %q", tt.args, got, tt.want)
+		}
+	}
+}
+
+func TestDisplayGitHubIssueMessage(t *testing.T) {
+	testCases := []struct {
+		args                 []string
+		shouldContainMessage bool
+	}{
+		{
+			[]string{"minikube", "start"},
+			false,
+		},
+		{
+			[]string{"minikube", "delete"},
+			true,
+		},
+	}
+
+	msg := "Please also attach the following file to the GitHub issue:"
+
+	for _, tt := range testCases {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = tt.args
+		pflag.Parse()
+		f := tests.NewFakeFile()
+		SetErrFile(f)
+		displayGitHubIssueMessage()
+		output := f.String()
+		if strings.Contains(output, msg) && !tt.shouldContainMessage {
+			t.Errorf("os.Args = %s; displayGitHubIssueMessage() output = %q; did not expect it to contain = %q", tt.args, output, msg)
+		}
+		if !strings.Contains(output, msg) && tt.shouldContainMessage {
+			t.Errorf("os.Args = %s; displayGitHubIssueMessage() output = %q; expected to contain = %q", tt.args, output, msg)
 		}
 	}
 }

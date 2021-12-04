@@ -185,7 +185,15 @@ func NeedsPortForward(name string) bool {
 		return true
 	}
 	// Docker for Desktop
-	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL()
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL() {
+		return true
+	}
+
+	si, err := oci.CachedDaemonInfo(name)
+	if err != nil {
+		panic(err)
+	}
+	return si.Rootless
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.

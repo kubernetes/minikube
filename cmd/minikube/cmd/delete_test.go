@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,7 +52,7 @@ func exclude(vals []string, exclude []string) []string {
 
 func fileNames(path string) ([]string, error) {
 	result := []string{}
-	fis, err := ioutil.ReadDir(path)
+	fis, err := os.ReadDir(path)
 	if err != nil {
 		return result, err
 	}
@@ -64,7 +63,7 @@ func fileNames(path string) ([]string, error) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	td, err := ioutil.TempDir("", "single")
+	td, err := os.MkdirTemp("", "single")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
@@ -170,7 +169,7 @@ func deleteContextTest() error {
 }
 
 func TestDeleteAllProfiles(t *testing.T) {
-	td, err := ioutil.TempDir("", "all")
+	td, err := os.MkdirTemp("", "all")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
@@ -221,7 +220,8 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs, validProfiles, inValidProfiles)
 	}
 
-	profiles := append(validProfiles, inValidProfiles...)
+	profiles := validProfiles
+	profiles = append(profiles, inValidProfiles...)
 	hostAndDirsDeleter = hostAndDirsDeleterMock
 	errs := DeleteProfiles(profiles)
 
@@ -233,7 +233,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("profiles: %v", err)
 	}
-	afterMachines, err := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
+	afterMachines, err := os.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	if err != nil {
 		t.Errorf("machines: %v", err)
 	}

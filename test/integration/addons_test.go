@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -29,11 +30,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -46,57 +47,41 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	// We don't need a dummy file is we're on GCE
-	if !detect.IsOnGCE() || detect.IsCloudShell() {
+	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		// Set an env var to point to our dummy credentials file
+		// don't use t.Setenv because we sometimes manually unset the env var later manually
 		err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", filepath.Join(*testdataDir, "gcp-creds.json"))
-		defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		})
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_APPLICATION_CREDENTIALS env var: %v", err)
 		}
 
 		err = os.Setenv("GOOGLE_CLOUD_PROJECT", "this_is_fake")
-		defer os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		t.Cleanup(func() {
+			os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		})
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
-	}
 
-	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
-		args = append(args, "--addons=ingress")
-	}
-	if !arm64Platform() {
-		args = append(args, "--addons=helm-tiller")
-	}
-	if !detect.IsOnGCE() {
-		args = append(args, "--addons=gcp-auth")
-	}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// If we're running the integration tests on GCE, which is frequently the case, first check to make sure we exit out properly,
-	// then use force to actually test using creds.
-	if detect.IsOnGCE() {
-		args = []string{"-p", profile, "addons", "enable", "gcp-auth"}
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-		if err == nil {
-			t.Errorf("Expected error but didn't get one. command %v, output %v", rr.Command(), rr.Output())
-		} else {
-			if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-				t.Errorf("Unexpected error message: %v", rr.Output())
-			} else {
-				// ok, use force here since we are in GCE
-				// do not use --force unless absolutely necessary
-				args = append(args, "--force")
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Command(), err)
-				}
-			}
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+		if !NoneDriver() { // none driver does not support ingress
+			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
+		if !arm64Platform() {
+			args = append(args, "--addons=helm-tiller")
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+
+	})
+
+	if !setupSucceeded {
+		t.Fatalf("Failed setup for addon tests")
 	}
 
 	// Parallelized tests
@@ -111,7 +96,6 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-			{"GCPAuth", validateGCPAuthAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -125,26 +109,47 @@ func TestAddons(t *testing.T) {
 		}
 	})
 
-	// Assert that disable/enable works offline
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
-	}
+	// Run other tests after to avoid collision
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"GCPAuth", validateGCPAuthAddon},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
+	t.Run("StoppedEnableDisable", func(t *testing.T) {
+		// Assert that disable/enable works offline
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
+		}
+	})
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-	if NoneDriver() || (runtime.GOOS == "darwin" && KicDriver()) {
-		t.Skipf("skipping: ingress not supported ")
+	if NoneDriver() {
+		t.Skipf("skipping: ingress not supported")
 	}
 
 	client, err := kapi.Client(profile)
@@ -152,17 +157,30 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get Kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "ingress-nginx", "ingress-nginx-controller", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for ingress-controller deployment to stabilize: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "ingress-nginx", "app.kubernetes.io/name=ingress-nginx", Minutes(12)); err != nil {
-		t.Fatalf("failed waititing for ingress-nginx-controller : %v", err)
+	// avoid timeouts like:
+	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": dial tcp 10.107.218.58:443: i/o timeout
+	// Error from server (InternalError): Internal error occurred: failed calling webhook "validate.nginx.ingress.kubernetes.io": Post "https://ingress-nginx-controller-admission.ingress-nginx.svc:443/networking/v1/ingresses?timeout=10s": context deadline exceeded
+	if _, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=ingress-nginx", "pod", "--selector=app.kubernetes.io/component=controller", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waiting for ingress-nginx-controller : %v", err)
 	}
 
-	// create networking.k8s.io/v1beta1 ingress
-	createv1betaIngress := func() error {
-		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1beta.yaml")))
+	// use nginx ingress yaml that corresponds to k8s version
+	// default: k8s >= v1.19, ingress api v1
+	ingressYaml := "nginx-ingress-v1.yaml"
+	ingressDNSYaml := "ingress-dns-example-v1.yaml"
+	v, err := client.ServerVersion()
+	if err != nil {
+		t.Log("failed to get k8s version, assuming v1.19+ => ingress api v1")
+	} else if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, v.Minor))) {
+		// legacy: k8s < v1.19 & ingress api v1beta1
+		ingressYaml = "nginx-ingress-v1beta1.yaml"
+		ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
+	}
+
+	// create networking.k8s.io/v1 ingress
+	createv1Ingress := func() error {
+		// apply networking.k8s.io/v1 ingress
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressYaml)))
 		if err != nil {
 			return err
 		}
@@ -171,9 +189,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-
-	// create networking.k8s.io/v1beta1 ingress
-	if err := retry.Expo(createv1betaIngress, 1*time.Second, Seconds(90)); err != nil {
+	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
 		t.Errorf("failed to create ingress: %v", err)
 	}
 
@@ -182,7 +198,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(4)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for ngnix pod: %v", err)
 	}
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
@@ -191,88 +207,56 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	want := "Welcome to nginx!"
 	addr := "http://127.0.0.1/"
-	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
-	checkv1betaIngress := func() error {
-		var rr *RunResult
-		var err error
-		if NoneDriver() { // just run curl directly on the none driver
-			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
-			if err != nil {
-				return err
-			}
-		} else {
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-			if err != nil {
-				return err
-			}
-		}
-
-		stderr := rr.Stderr.String()
-		if rr.Stderr.String() != "" {
-			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
-		}
-
-		stdout := rr.Stdout.String()
-		if !strings.Contains(stdout, want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
-		}
-		return nil
-	}
-
-	// check if the ingress can route nginx app with networking.k8s.io/v1beta1 ingress
-	if err := retry.Expo(checkv1betaIngress, 500*time.Millisecond, Seconds(90)); err != nil {
-		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
-	}
-
-	// create networking.k8s.io/v1 ingress
-	createv1Ingress := func() error {
-		// apply networking.k8s.io/v1beta1 ingress
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ingv1.yaml")))
-		if err != nil {
-			return err
-		}
-		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temporary)", rr.Command(), rr.Stderr)
-		}
-		return nil
-	}
-
-	// create networking.k8s.io/v1 ingress
-	if err := retry.Expo(createv1Ingress, 1*time.Second, Seconds(90)); err != nil {
-		t.Errorf("failed to create ingress: %v", err)
-	}
 
 	// check if the ingress can route nginx app with networking.k8s.io/v1 ingress
 	checkv1Ingress := func() error {
-		var rr *RunResult
-		var err error
-		if NoneDriver() { // just run curl directly on the none driver
-			rr, err = Run(t, exec.CommandContext(ctx, "curl", "-s", addr, "-H", "'Host: nginx.example.com'"))
-			if err != nil {
-				return err
-			}
-		} else {
-			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
-			if err != nil {
-				return err
-			}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl -s %s -H 'Host: nginx.example.com'", addr)))
+		if err != nil {
+			return err
 		}
 
 		stderr := rr.Stderr.String()
 		if rr.Stderr.String() != "" {
 			t.Logf("debug: unexpected stderr for %v:\n%s", rr.Command(), stderr)
 		}
-
 		stdout := rr.Stdout.String()
 		if !strings.Contains(stdout, want) {
 			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), stdout, want)
 		}
 		return nil
 	}
-
-	// check if the ingress can route nginx app with networking.k8s.io/v1 ingress
 	if err := retry.Expo(checkv1Ingress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("failed to get expected response from %s within minikube: %v", addr, err)
+	}
+
+	if NeedsPortForward() {
+		t.Skip("skipping ingress DNS test for any combination that needs port forwarding")
+	}
+
+	// check the ingress-dns addon here as well
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, ingressDNSYaml)))
+	if err != nil {
+		t.Errorf("failed to kubectl replace ingress-dns-example. args %q. %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
+	if err != nil {
+		t.Errorf("failed to retrieve minikube ip. args %q : %v", rr.Command(), err)
+	}
+	ip := strings.TrimSuffix(rr.Stdout.String(), "\n")
+
+	rr, err = Run(t, exec.CommandContext(ctx, "nslookup", "hello-john.test", ip))
+	if err != nil {
+		t.Errorf("failed to nslookup hello-john.test host. args %q : %v", rr.Command(), err)
+	}
+	// nslookup should include info about the hello-john.test host, including minikube's ip
+	if !strings.Contains(rr.Stdout.String(), ip) {
+		t.Errorf("unexpected output from nslookup. stdout: %v\nstderr: %v", rr.Stdout.String(), rr.Stderr.String())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress-dns", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable ingress-dns addon. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
@@ -434,10 +418,10 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	}
 
 	want := "Server: &version.Version"
-	// Test from inside the cluster (`helm version` use pod.list permission. we use tiller serviceaccount in kube-system to list pod)
+	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--serviceaccount=tiller", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}
@@ -464,37 +448,27 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
-	}
-
 	start := time.Now()
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "catalog-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for catalog-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod catalog-operator: %v", err)
 	}
 	t.Logf("catalog-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "olm-operator", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for olm-operator deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("olm-operator stabilized in %s", time.Since(start))
-	if err := kapi.WaitForDeploymentToStabilize(client, "olm", "packageserver", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for packageserver deployment to stabilize: %v", err)
+
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod olm-operator: %v", err)
 	}
 	t.Logf("packageserver stabilized in %s", time.Since(start))
 
-	if _, err := PodWait(ctx, t, profile, "olm", "app=catalog-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
+	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
+		t.Fatalf("failed waititing for pod operatorhubio-catalog: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=olm-operator", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod olm-operator: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "app=packageserver", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod packageserver: %v", err)
-	}
-	if _, err := PodWait(ctx, t, profile, "olm", "olm.catalogSource=operatorhubio-catalog", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
-	}
+	t.Logf("operatorhubio-catalog stabilized in %s", time.Since(start))
 
 	// Install one sample Operator such as etcd
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "etcd.yaml")))
@@ -516,7 +490,6 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-
 	// Operator installation takes a while
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())
@@ -684,15 +657,34 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	got = strings.TrimSpace(rr.Stdout.String())
 	expected = "this_is_fake"
-	if detect.IsOnGCE() && !detect.IsCloudShell() {
-		expected = "k8s-minikube"
-	}
+
 	if got != expected {
 		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 	}
 
+	disableGCPAuth := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+		t.Errorf("failed to disable GCP auth addon: %v", err)
+	}
+
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() {
+		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
+		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+			t.Errorf("Unexpected error message: %v", rr.Output())
+		}
 		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
@@ -700,14 +692,20 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 		// Make sure the pod is up and running, which means we successfully pulled the private image down
 		// 8 minutes, because 4 is not enough for images to pull in all cases.
-		_, err := PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}
-	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed disabling gcp-auth addon. arg %q.s %v", rr.Command(), err)
+		// Try it with a European mirror as well
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
+
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
+		}
 	}
 }

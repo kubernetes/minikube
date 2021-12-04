@@ -18,7 +18,6 @@ package tunnel
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -50,7 +49,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
@@ -164,7 +163,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("%s", stdInAndOut)
+	msg := string(stdInAndOut)
 	klog.V(4).Infof("%s", msg)
 	re := regexp.MustCompile("^delete net ([^:]*)$")
 	if !re.MatchString(msg) {
@@ -187,7 +186,7 @@ func writeResolverFile(route *Route) error {
 	klog.Infof("preparing DNS forwarding config in %q:\n%s", resolverFile, content)
 
 	// write resolver content into tf, then copy it to /etc/resolver/clusterDomain
-	tf, err := ioutil.TempFile("", "minikube-tunnel-resolver-")
+	tf, err := os.CreateTemp("", "minikube-tunnel-resolver-")
 	if err != nil {
 		return errors.Wrap(err, "tempfile")
 	}

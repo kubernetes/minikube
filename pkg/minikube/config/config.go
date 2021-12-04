@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -171,7 +171,15 @@ func encode(w io.Writer, m MinikubeConfig) error {
 
 // Load loads the Kubernetes and machine config for the current machine
 func Load(profile string, miniHome ...string) (*ClusterConfig, error) {
-	return DefaultLoader.LoadConfigFromFile(profile, miniHome...)
+	cc, err := DefaultLoader.LoadConfigFromFile(profile, miniHome...)
+	if err == nil {
+		klog.Infof("Loaded profile config \"%s\": Driver=%s, ContainerRuntime=%s, KubernetesVersion=%s",
+			profile,
+			cc.Driver,
+			cc.KubernetesConfig.ContainerRuntime,
+			cc.KubernetesConfig.KubernetesVersion)
+	}
+	return cc, err
 }
 
 // Write writes the Kubernetes and machine config for the current machine
@@ -202,7 +210,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 		return nil, errors.Wrap(err, "stat")
 	}
 
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsPermission(err) {
 			return nil, &ErrPermissionDenied{err.Error()}
@@ -222,7 +230,7 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, contents, 0644)
+	return os.WriteFile(path, contents, 0644)
 }
 
 // MultiNode returns true if the cluster has multiple nodes or if the request is asking for multinode

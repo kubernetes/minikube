@@ -1,3 +1,4 @@
+//go:build darwin
 // +build darwin
 
 /*
@@ -21,7 +22,6 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -276,10 +276,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	if err := d.setupNFSMounts(); err != nil {
-		return err
-	}
-	return nil
+	return d.setupNFSMounts()
 }
 
 func (d *Driver) setupIP(mac string) error {
@@ -368,7 +365,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-	bs, err := ioutil.ReadFile(pidFile)
+	bs, err := os.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}

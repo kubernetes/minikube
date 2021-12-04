@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -140,6 +139,10 @@ func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
 }
 
+func (k *kicRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, fmt.Errorf("kicRunner does not support ReadableFile - you could be the first to add it")
+}
+
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
@@ -192,7 +195,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "determining temp directory")
 	}
 
-	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
+	tf, err := os.CreateTemp(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
 	}
@@ -202,6 +205,15 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "write")
 	}
 	return k.copy(tf.Name(), dst)
+}
+
+// CopyFrom copies a file
+func (k *kicRunner) CopyFrom(f assets.CopyableFile) error {
+	src := f.GetTargetPath()
+	dst := f.GetSourcePath()
+
+	klog.Infof("%s (direct): %s --> %s", k.ociBin, src, dst)
+	return k.copyFrom(src, dst)
 }
 
 // tempDirectory returns the directory to use as the temp directory
@@ -227,6 +239,14 @@ func (k *kicRunner) copy(src string, dst string) error {
 		return copyToPodman(src, fullDest)
 	}
 	return copyToDocker(src, fullDest)
+}
+
+func (k *kicRunner) copyFrom(src string, dst string) error {
+	fullSource := fmt.Sprintf("%s:%s", k.nameOrID, src)
+	if k.ociBin == oci.Podman {
+		return copyToPodman(fullSource, dst)
+	}
+	return copyToDocker(fullSource, dst)
 }
 
 func (k *kicRunner) chmod(dst string, perm string) error {

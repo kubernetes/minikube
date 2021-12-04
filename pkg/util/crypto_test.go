@@ -19,7 +19,6 @@ package util
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -29,7 +28,7 @@ import (
 )
 
 func TestGenerateCACert(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
@@ -47,7 +46,7 @@ func TestGenerateCACert(t *testing.T) {
 	}
 
 	// Check the cert has the right shape.
-	certBytes, err := ioutil.ReadFile(certPath)
+	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		t.Fatalf("Error reading cert data: %v", err)
 	}
@@ -62,7 +61,7 @@ func TestGenerateCACert(t *testing.T) {
 }
 
 func TestGenerateSignedCert(t *testing.T) {
-	tmpDir, err := ioutil.TempDir("", "")
+	tmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(tmpDir)
 		if err != nil {
@@ -73,7 +72,7 @@ func TestGenerateSignedCert(t *testing.T) {
 		t.Fatalf("Error generating tmpdir: %v", err)
 	}
 
-	signerTmpDir, err := ioutil.TempDir("", "")
+	signerTmpDir, err := os.MkdirTemp("", "")
 	defer func() { // clean up tempdir
 		err := os.RemoveAll(signerTmpDir)
 		if err != nil {
@@ -95,7 +94,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")
 
-	ips := []net.IP{net.ParseIP("192.168.99.100"), net.ParseIP("10.0.0.10")}
+	ips := []net.IP{net.ParseIP("192.168.59.100"), net.ParseIP("10.0.0.10")}
 	alternateDNS := []string{"kubernetes.default.svc.cluster.local", "kubernetes.default"}
 
 	var tests = []struct {
@@ -140,7 +139,7 @@ func TestGenerateSignedCert(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			err := GenerateSignedCert(
 				certPath, keyPath, "minikube", ips, alternateDNS, test.signerCertPath,
-				test.signerKeyPath,
+				test.signerKeyPath, constants.DefaultCertExpiration,
 			)
 			if err != nil && !test.err {
 				t.Errorf("GenerateSignedCert() error = %v", err)
@@ -149,7 +148,7 @@ func TestGenerateSignedCert(t *testing.T) {
 				t.Errorf("GenerateSignedCert() should have returned error, but didn't")
 			}
 			if err == nil {
-				certBytes, err := ioutil.ReadFile(certPath)
+				certBytes, err := os.ReadFile(certPath)
 				if err != nil {
 					t.Errorf("Error reading cert data: %v", err)
 				}

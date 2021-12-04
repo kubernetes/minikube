@@ -17,8 +17,8 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
 	"net"
+	"os"
 	"regexp"
 
 	"github.com/spf13/cobra"
@@ -31,6 +31,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
 )
+
+var posResponses = []string{"yes", "y"}
+var negResponses = []string{"no", "n"}
 
 var addonsConfigureCmd = &cobra.Command{
 	Use:   "configure ADDON_NAME",
@@ -45,8 +48,6 @@ var addonsConfigureCmd = &cobra.Command{
 		// allows for additional prompting of information when enabling addons
 		switch addon {
 		case "registry-creds":
-			posResponses := []string{"yes", "y"}
-			negResponses := []string{"no", "n"}
 
 			// Default values
 			awsAccessID := "changeme"
@@ -84,7 +85,7 @@ var addonsConfigureCmd = &cobra.Command{
 				}
 
 				// Read file from disk
-				dat, err := ioutil.ReadFile(gcrPath)
+				dat, err := os.ReadFile(gcrPath)
 
 				if err != nil {
 					out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
@@ -199,13 +200,9 @@ var addonsConfigureCmd = &cobra.Command{
 				return net.ParseIP(s) != nil
 			}
 
-			if cfg.KubernetesConfig.LoadBalancerStartIP == "" {
-				cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
-			}
+			cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
 
-			if cfg.KubernetesConfig.LoadBalancerEndIP == "" {
-				cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
-			}
+			cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
@@ -224,9 +221,15 @@ var addonsConfigureCmd = &cobra.Command{
 				return format.MatchString(s)
 			}
 
-			if cfg.KubernetesConfig.CustomIngressCert == "" {
-				cfg.KubernetesConfig.CustomIngressCert = AskForStaticValidatedValue("-- Enter custom cert(format is \"namespace/secret\"): ", validator)
+			customCert := AskForStaticValidatedValue("-- Enter custom cert (format is \"namespace/secret\"): ", validator)
+			if cfg.KubernetesConfig.CustomIngressCert != "" {
+				overwrite := AskForYesNoConfirmation("A custom cert for ingress has already been set. Do you want overwrite it?", posResponses, negResponses)
+				if !overwrite {
+					break
+				}
 			}
+
+			cfg.KubernetesConfig.CustomIngressCert = customCert
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})

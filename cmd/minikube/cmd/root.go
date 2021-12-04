@@ -107,7 +107,9 @@ func Execute() {
 		profile := ""
 		for i, a := range os.Args {
 			if a == "--context" {
-				profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				if len(os.Args) > i+1 {
+					profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				}
 				break
 			} else if strings.HasPrefix(a, "--context=") {
 				context := strings.Split(a, "=")[1]

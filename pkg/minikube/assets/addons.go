@@ -21,12 +21,15 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -131,8 +134,8 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
 	}, false, "dashboard", "kubernetes", map[string]string{
-		"Dashboard":      "kubernetesui/dashboard:v2.1.0@sha256:7f80b5ba141bead69c4fee8661464857af300d7d7ed0274cf7beecedc00322e6",
-		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.4@sha256:555981a24f184420f3be0c79d4efb6c948a85cfce84034f85a563f4151a81cbf",
+		"Dashboard":      "kubernetesui/dashboard:v2.3.1@sha256:ec27f462cf1946220f5a9ace416a84a57c18f98c777876a8054405d1428cc92e",
+		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.7@sha256:36d5b3f60e1a144cc5ada820910535074bdf5cf73fb70d1ff1681537eef4e172",
 	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
@@ -230,24 +233,17 @@ var Addons = map[string]*Addon{
 	}),
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-configmap.yaml.tmpl",
+			"ingress/ingress-deploy.yaml.tmpl",
 			vmpath.GuestAddonsDir,
-			"ingress-configmap.yaml",
-			"0640"),
-		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-rbac.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"ingress-rbac.yaml",
-			"0640"),
-		MustBinAsset(addons.IngressAssets,
-			"ingress/ingress-dp.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"ingress-dp.yaml",
+			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "", map[string]string{
-		"IngressController":        "ingress-nginx/controller:v0.44.0@sha256:3dd0fac48073beaca2d67a78c746c7593f9c575168a17139a9955a82c63c4b9a",
-		"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-		"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L330
+		"IngressController": "ingress-nginx/controller:v1.0.4@sha256:545cff00370f28363dad31e3b59a94ba377854d3a11f18988f5f9e56841ef9ef",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L620
+		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
+		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L670
+		"KubeWebhookCertgenPatch": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
 	}, map[string]string{
 		"IngressController": "k8s.gcr.io",
 	}),
@@ -314,8 +310,9 @@ var Addons = map[string]*Addon{
 			"olm.yaml",
 			"0640"),
 	}, false, "olm", "", map[string]string{
-		"OLM":                        "operator-framework/olm:v0.17.0@sha256:de396b540b82219812061d0d753440d5655250c621c753ed1dc67d6154741607",
-		"UpstreamCommunityOperators": "operator-framework/upstream-community-operators:07bbc13@sha256:cc7b3fdaa1ccdea5866fcd171669dc0ed88d3477779d8ed32e3712c827e38cc0",
+		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
+		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
+		"UpstreamCommunityOperators": "operatorhubio/catalog:latest",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
@@ -470,9 +467,11 @@ var Addons = map[string]*Addon{
 			"helm-tiller-svc.yaml",
 			"0640"),
 	}, false, "helm-tiller", "", map[string]string{
-		"Tiller": "kubernetes-helm/tiller:v2.16.12@sha256:6003775d503546087266eda39418d221f9afb5ccfe35f637c32a1161619a3f9c",
+		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
-		"Tiller": "gcr.io",
+		// GCR is deprecated in helm
+		// https://github.com/helm/helm/issues/10004#issuecomment-894478908
+		"Tiller": "ghcr.io",
 	}),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressDNSAssets,
@@ -481,8 +480,10 @@ var Addons = map[string]*Addon{
 			"ingress-dns-pod.yaml",
 			"0640"),
 	}, false, "ingress-dns", "", map[string]string{
-		"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
-	}, nil),
+		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
+	}, map[string]string{
+		"IngressDNS": "gcr.io",
+	}),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetallbAssets,
 			"metallb/metallb.yaml.tmpl",
@@ -531,13 +532,13 @@ var Addons = map[string]*Addon{
 			"gcp-auth-service.yaml",
 			"0640"),
 		MustBinAsset(addons.GcpAuthAssets,
-			"gcp-auth/gcp-auth-webhook.yaml.tmpl.tmpl",
+			"gcp-auth/gcp-auth-webhook.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth", "google", map[string]string{
-		"KubeWebhookCertgen": "jettech/kube-webhook-certgen:v1.3.0@sha256:ff01fba91131ed260df3f3793009efbf9686f5a5ce78a85f81c386a4403f7689",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.6@sha256:c407ad6ee97d8a0e8a21c713e2d9af66aaf73315e4a123874c00b786f962f3cd",
+		"KubeWebhookCertgen": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.7@sha256:be9661afbd47e4042bee1cb48cae858cc2f4b4e121340ee69fdc0013aeffcca4",
 	}, map[string]string{
 		"GCPAuthWebhook": "gcr.io",
 	}),
@@ -795,6 +796,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP string
 		LoadBalancerEndIP   string
 		CustomIngressCert   string
+		IngressAPIVersion   string
 		ContainerRuntime    string
 		Images              map[string]string
 		Registries          map[string]string
@@ -807,6 +809,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
 		CustomIngressCert:   cfg.CustomIngressCert,
+		IngressAPIVersion:   "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
 		ContainerRuntime:    cfg.ContainerRuntime,
 		Images:              images,
 		Registries:          addon.Registries,
@@ -818,6 +821,16 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 	if opts.Registries == nil {
 		opts.Registries = make(map[string]string)
+	}
+
+	// maintain backwards compatibility with k8s < v1.19
+	// by using v1beta1 instead of v1 api version for ingress
+	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		opts.IngressAPIVersion = "v1beta1"
 	}
 
 	// Network info for generating template

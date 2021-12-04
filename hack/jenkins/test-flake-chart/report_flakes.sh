@@ -42,11 +42,15 @@ TMP_DATA=$(mktemp)
 # 5) Filter tests to only include failed tests (and only get their names and environment).
 # 6) Sort by environment, then test name.
 # 7) Store in file $TMP_DATA.
-< "${ENVIRONMENT_LIST}" sed -r "s|^|gs://minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/|; s|$|_summary.json|" \
+sed -r "s|^|gs://minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/|; s|$|_summary.json|" "${ENVIRONMENT_LIST}" \
   | (xargs gsutil ls || true) \
   | xargs gsutil cat \
   | "$DIR/process_data.sh" \
-  | sed -n -r -e "s|[0-9a-f]*,[0-9-]*,([a-zA-Z/_0-9-]*),([a-zA-Z/_0-9-]*),Failed,[.0-9]*,[a-zA-Z/_0-9-]*,[0-9]*,[.0-9]*|\1:\2|p" \
+  | awk -F, 'NR>1 {
+      if ($5 == "Failed") {
+        printf "%s:%s\n", $3, $4
+      }
+    }' \
   | sort \
   > "$TMP_DATA"
 
@@ -54,19 +58,38 @@ TMP_DATA=$(mktemp)
 TMP_FLAKE_RATES=$(mktemp)
 gsutil cp gs://minikube-flake-rate/flake_rates.csv "$TMP_FLAKE_RATES"
 
-TMP_FAILED_RATES="$TMP_FLAKE_RATES\_filtered"
+TMP_FAILED_RATES=$(mktemp)
+# 1) Parse the flake rates to only include the environment and test name.
+# 2) Sort the environment+test names.
+# 3) Get all lines in $TMP_DATA not present in $TMP_FLAKE_RATES.
+# 4) Append column containing "n/a" to data.
+# 4) Store in $TMP_FAILED_RATES
+awk -F, 'NR>1 {
+  printf "%s:%s\n", $1, $2
+}' "$TMP_FLAKE_RATES" \
+  | sort \
+  | comm -13 - "$TMP_DATA" \
+  | sed -r -e 's|$|,n/a|' \
+  > "$TMP_FAILED_RATES"
+
 # 1) Parse the flake rates to only include the environment, test name, and flake rates.
 # 2) Sort the flake rates based on environment+test name.
 # 3) Join the flake rates with the failing tests to only get flake rates of failing tests.
 # 4) Sort failed test flake rates based on the flakiness of that test - stable tests should be first on the list.
-# 5) Store in file $TMP_FAILED_RATES.
-< "$TMP_FLAKE_RATES" sed -n -r -e "s|([a-zA-Z0-9_-]*),([a-zA-Z/0-9_-]*),([.0-9]*),[.0-9]*|\1:\2,\3|p" \
+# 5) Append to file $TMP_FAILED_RATES.
+awk -F, 'NR>1 {
+  printf "%s:%s,%s\n", $1, $2, $3
+}' "$TMP_FLAKE_RATES" \
   | sort -t, -k1,1 \
   | join -t , -j 1 "$TMP_DATA" - \
   | sort -g -t, -k2,2 \
-  > "$TMP_FAILED_RATES"
+  >> "$TMP_FAILED_RATES"
 
-FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES")
+# Filter out arm64 and crio tests until they're more stable
+TMP_FAILED_RATES_FILTERED=$(mktemp)
+grep -v "arm64\|crio" "$TMP_FAILED_RATES" > "$TMP_FAILED_RATES_FILTERED"
+
+FAILED_RATES_LINES=$(wc -l < "$TMP_FAILED_RATES_FILTERED")
 if [[ "$FAILED_RATES_LINES" -eq 0 ]]; then
   echo "No failed tests! Aborting without commenting..." 1>&2
   exit 0
@@ -77,14 +100,21 @@ TMP_COMMENT=$(mktemp)
 printf "These are the flake rates of all failed tests.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" > "$TMP_COMMENT"
 
 # Create variables to use for sed command.
-ENV_CHART_LINK_FORMAT="https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=\1"
-TEST_CHART_LINK_FORMAT="${ENV_CHART_LINK_FORMAT}\&test=\2"
-TEST_GOPOGH_LINK_FORMAT="https://storage.googleapis.com/minikube-builds/logs/${PR_NUMBER}/${ROOT_JOB}/\1.html#fail_\2"
+ENV_CHART_LINK_FORMAT='https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=%1$s'
+TEST_CHART_LINK_FORMAT=${ENV_CHART_LINK_FORMAT}'&test=%2$s'
+TEST_GOPOGH_LINK_FORMAT='https://storage.googleapis.com/minikube-builds/logs/'${PR_NUMBER}'/'${ROOT_JOB}'/%1$s.html#fail_%2$s'
 # 1) Get the first $MAX_REPORTED_TESTS lines.
 # 2) Print a row in the table with the environment, test name, flake rate, and a link to the flake chart for that test.
 # 3) Append these rows to file $TMP_COMMENT.
-< "$TMP_FAILED_RATES" head -n $MAX_REPORTED_TESTS \
-  | sed -n -r -e "s|([a-zA-Z\/0-9_-]*):([a-zA-Z\/0-9_-]*),([.0-9]*)|\|[\1](${ENV_CHART_LINK_FORMAT})\|\2 ([gopogh](${TEST_GOPOGH_LINK_FORMAT}))\|\3 ([chart](${TEST_CHART_LINK_FORMAT}))\||p" \
+head -n "$MAX_REPORTED_TESTS" "$TMP_FAILED_RATES_FILTERED" \
+  | awk '-F[:,]' '{
+      if ($3 != "n/a") {
+        rate_text = sprintf("%3$s ([chart]('$TEST_CHART_LINK_FORMAT'))", $1, $2, $3)
+      } else {
+        rate_text = $3
+      }
+      printf "|[%1$s]('$ENV_CHART_LINK_FORMAT')|%2$s ([gopogh]('$TEST_GOPOGH_LINK_FORMAT'))|%3$s|\n", $1, $2, rate_text
+    }' \
   >> "$TMP_COMMENT"
 
 # If there are too many failing tests, add an extra row explaining this, and a message after the table.

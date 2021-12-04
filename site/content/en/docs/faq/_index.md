@@ -29,6 +29,34 @@ minikube profile list
 
 minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
 
+## Can I use minikube as a Docker Desktop replacement?
+minikube's VM includes a Docker daemon running inside Linux for free, so you can use 
+`minikube docker-env` to point your terminal's Docker CLI to the Docker inside minikube.
+
+You would need to start minikube with a VM driver, instead of docker, such as hyperkit on macOS and Hyper-V on Windows.
+```
+minikube start --driver=hyperv 
+```
+Alternatively, you can use `minikube image build`  instead of `minikube docker-env` and `docker build`.
+
+## Can I start minikube without Kubernetes running?
+Yes! If you want to use minikube only as a Docker Desktop replacement without starting Kubernetes itself, try:
+```
+minikube start --no-kubernetes
+```
+
+Alternatively, if you want to temporarily turn off Kubernetes, you can pause and later unpause Kubernetes 
+```
+minikube pause
+```
+
+minikube also has an addon that automatically pauses Kubernetes after a certain amount of inactivity:
+
+```
+minikube addons enable auto-pause
+```
+
+
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
@@ -95,7 +123,7 @@ Simply run the following command to be enrolled into beta notifications:
 minikube config set WantBetaUpdateNotification true
 ```
 
-## Can I get rid of the emoji in minikube's outpuut?
+## Can I get rid of the emoji in minikube's output?
 
 Yes! If you prefer not having emoji in your minikube output 😔 , just set the `MINIKUBE_IN_STYLE` environment variable to `0` or `false`:
 

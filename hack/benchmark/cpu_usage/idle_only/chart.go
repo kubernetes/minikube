@@ -53,10 +53,10 @@ func main() {
 
 func execute() error {
 	// sessionID is generated and used at cpu usage benchmark
-	sessionID := os.Args[1]
-	if len(sessionID) == 0 {
+	if len(os.Args) <= 1 || len(os.Args[1]) == 0 {
 		return errors.New("Please identify sessionID")
 	}
+	sessionID := os.Args[1]
 
 	// Create plot instance
 	p := plot.New()
@@ -71,7 +71,7 @@ func execute() error {
 
 	// Open csv file of benchmark summary
 	results := []float64{}
-	var fn string = "./out/benchmark-results/" + sessionID + "/cstat.summary"
+	fn := "./out/benchmark-results/" + sessionID + "/cstat.summary"
 	file, err := os.Open(fn)
 	if err != nil {
 		return errors.Wrap(err, "Missing summary csv")

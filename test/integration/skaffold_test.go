@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 /*
@@ -21,7 +22,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,8 +72,15 @@ func TestSkaffold(t *testing.T) {
 		t.Fatalf("unable to determine abs path: %v", err)
 	}
 
-	if filepath.Base(Target()) != "minikube" {
-		new := filepath.Join(filepath.Dir(abs), "minikube")
+	binaryName := "minikube"
+	pathSeparator := ":"
+	if runtime.GOOS == "windows" {
+		binaryName += ".exe"
+		pathSeparator = ";"
+	}
+
+	if filepath.Base(Target()) != binaryName {
+		new := filepath.Join(filepath.Dir(abs), binaryName)
 		t.Logf("copying %s to %s", Target(), new)
 		if err := copy.Copy(Target(), new); err != nil {
 			t.Fatalf("error copying to minikube")
@@ -81,7 +88,7 @@ func TestSkaffold(t *testing.T) {
 	}
 
 	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", filepath.Dir(abs), os.Getenv("PATH")))
+	os.Setenv("PATH", fmt.Sprintf("%s%s%s", filepath.Dir(abs), pathSeparator, os.Getenv("PATH")))
 
 	// make sure 'docker' and 'minikube' are now in PATH
 	for _, binary := range []string{"minikube", "docker"} {
@@ -114,7 +121,7 @@ func TestSkaffold(t *testing.T) {
 
 // installSkaffold installs the latest release of skaffold
 func installSkaffold() (f *os.File, err error) {
-	tf, err := ioutil.TempFile("", "skaffold.exe")
+	tf, err := os.CreateTemp("", "skaffold.exe")
 	if err != nil {
 		return tf, err
 	}

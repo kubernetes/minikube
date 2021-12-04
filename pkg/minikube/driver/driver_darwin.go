@@ -22,11 +22,12 @@ import (
 )
 
 // supportedDrivers is a list of supported drivers on Darwin.
-var supportedDrivers []string = func() []string {
+var supportedDrivers = func() []string {
 	if runtime.GOARCH == "arm64" {
 		// on darwin/arm64 only docker and ssh are supported yet
 		return []string{
 			Docker,
+			Podman,
 			SSH,
 		}
 	}
@@ -37,6 +38,7 @@ var supportedDrivers []string = func() []string {
 		HyperKit,
 		VMware,
 		Docker,
+		Podman,
 		SSH,
 	}
 }()

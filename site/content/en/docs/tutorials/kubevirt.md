@@ -1,6 +1,6 @@
 ---
 title: "How to use KubeVirt with minikube"
-linkTitle: "KubeVirt support"
+linkTitle: "KubeVirt Support"
 weight: 1
 date: 2020-05-26
 description: >

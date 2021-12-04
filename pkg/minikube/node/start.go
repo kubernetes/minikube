@@ -88,6 +88,10 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+	var kcs *kubeconfig.Settings
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
+		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -115,7 +119,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 
 	var bs bootstrapper.Bootstrapper
-	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
@@ -156,7 +159,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
+		if err = bs.SetupCerts(*starter.Cfg, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
@@ -167,7 +170,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	var wg sync.WaitGroup
 	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg)
+		go configureMounts(&wg, starter.Cfg.Mount, starter.Cfg.MountString)
 	}
 
 	wg.Add(1)
@@ -286,10 +289,17 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
-	if apiServer {
-		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+
+	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnecessary
+	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
-		out.Step(style.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		if apiServer {
+			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		} else {
+			out.Step(style.ThumbsUp, "Starting worker node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		}
+
 	}
 
 	if driver.IsKIC(cc.Driver) {
@@ -349,7 +359,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers, forceSystemd())
+	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
@@ -401,11 +412,7 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 		}
 		return nil
 	}
-	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
@@ -426,11 +433,7 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 		klog.Info(rr.Stdout.String())
 		return nil
 	}
-	if err := retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
@@ -452,7 +455,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+	if err := bs.SetupCerts(cfg, n); err != nil {
 		exit.Error(reason.GuestCert, "Failed to setup certs", err)
 	}
 

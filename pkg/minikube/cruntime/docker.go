@@ -111,7 +111,10 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers, forceSystemd bool) error {
+func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+	if inUserNamespace {
+		return errors.New("inUserNamespace must not be true for docker")
+	}
 	containerdWasActive := r.Init.Active("containerd")
 
 	if disOthers {
@@ -190,7 +193,7 @@ func (r *Docker) Disable() error {
 	return r.Init.Mask("docker.service")
 }
 
-// ImageExists checks if an image exists
+// ImageExists checks if image exists based on image name and optionally image sha
 func (r *Docker) ImageExists(name string, sha string) bool {
 	// expected output looks like [SHA_ALGO:SHA]
 	c := exec.Command("docker", "image", "inspect", "--format", "{{.Id}}", name)
@@ -198,7 +201,7 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 	if err != nil {
 		return false
 	}
-	if !strings.Contains(rr.Output(), sha) {
+	if sha != "" && !strings.Contains(rr.Output(), sha) {
 		return false
 	}
 	return true
@@ -226,7 +229,7 @@ func (r *Docker) ListImages(ListImagesOptions) ([]string, error) {
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
-	c := exec.Command("docker", "load", "-i", path)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
 	}
@@ -249,7 +252,7 @@ func (r *Docker) PullImage(name string) error {
 // SaveImage saves an image from this runtime
 func (r *Docker) SaveImage(name string, path string) error {
 	klog.Infof("Saving image %s: %s", name, path)
-	c := exec.Command("docker", "save", name, "-o", path)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "saveimage docker.")
 	}
@@ -265,6 +268,16 @@ func (r *Docker) RemoveImage(name string) error {
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "remove image docker.")
+	}
+	return nil
+}
+
+// TagImage tags an image in this runtime
+func (r *Docker) TagImage(source string, target string) error {
+	klog.Infof("Tagging image %s: %s", source, target)
+	c := exec.Command("docker", "tag", source, target)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "tag image docker.")
 	}
 	return nil
 }
@@ -299,6 +312,16 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 		if _, err := r.Runner.RunCmd(c); err != nil {
 			return errors.Wrap(err, "pushimage docker.")
 		}
+	}
+	return nil
+}
+
+// PushImage pushes an image
+func (r *Docker) PushImage(name string) error {
+	klog.Infof("Pushing image: %s", name)
+	c := exec.Command("docker", "push", name)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "push image docker.")
 	}
 	return nil
 }

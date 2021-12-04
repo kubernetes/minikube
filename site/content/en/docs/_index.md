@@ -11,7 +11,7 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 
 ![Screenshot](/images/screenshot.png)
 
-🎉 Latest Release: v1.22.0 - Jul 07, 2021 ([changelog](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md))
+🎉 Latest Release: v1.24.0 - Nov 05, 2021 ([changelog](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md))
 
 ## Highlights
 
@@ -22,6 +22,8 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 * Docker API endpoint for blazing fast [image pushes]({{< ref "/docs/handbook/pushing.md#pushing-directly-to-the-in-cluster-docker-daemon" >}})
 * Advanced features such as [LoadBalancer]({{< ref "/docs/handbook/accessing.md#loadbalancer-access" >}}), filesystem mounts, and FeatureGates
 * [Addons]({{< ref "/docs/handbook/deploying.md#addons" >}}) for easily installed Kubernetes applications
+* Supports common [CI environments](https://github.com/minikube-ci/examples)
+
 
 ## Survey
 

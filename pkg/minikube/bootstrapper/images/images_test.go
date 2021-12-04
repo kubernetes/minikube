@@ -66,6 +66,15 @@ k8s.gcr.io/pause:3.4.1
 k8s.gcr.io/etcd:3.4.13-0
 k8s.gcr.io/coredns/coredns:v1.8.0
 `, "\n"), "\n")},
+		{"v1.22.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.22.0
+k8s.gcr.io/kube-controller-manager:v1.22.0
+k8s.gcr.io/kube-scheduler:v1.22.0
+k8s.gcr.io/kube-proxy:v1.22.0
+k8s.gcr.io/pause:3.5
+k8s.gcr.io/etcd:3.5.0-0
+k8s.gcr.io/coredns/coredns:v1.8.4
+`, "\n"), "\n")},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.version, func(t *testing.T) {
@@ -85,8 +94,8 @@ k8s.gcr.io/coredns/coredns:v1.8.0
 func TestAuxiliary(t *testing.T) {
 	want := []string{
 		"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"docker.io/kubernetesui/dashboard:v2.1.0",
-		"docker.io/kubernetesui/metrics-scraper:v1.0.4",
+		"docker.io/kubernetesui/dashboard:v2.3.1",
+		"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 	}
 	got := auxiliary("")
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -97,8 +106,8 @@ func TestAuxiliary(t *testing.T) {
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
 		"test.mirror/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"test.mirror/kubernetesui/dashboard:v2.1.0",
-		"test.mirror/kubernetesui/metrics-scraper:v1.0.4",
+		"test.mirror/kubernetesui/dashboard:v2.3.1",
+		"test.mirror/kubernetesui/metrics-scraper:v1.0.7",
 	}
 	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {

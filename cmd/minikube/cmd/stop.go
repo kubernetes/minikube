@@ -119,9 +119,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	register.Reg.SetStep(register.Done)
-	if stoppedNodes > 0 {
-		out.Step(style.Stopped, `{{.count}} nodes stopped.`, out.V{"count": stoppedNodes})
-	}
+	out.Step(style.Stopped, `{{.count}} node{{if gt .count 1}}s{{end}} stopped.`, out.V{"count": stoppedNodes})
 }
 
 func stopProfile(profile string) int {
@@ -132,6 +130,10 @@ func stopProfile(profile string) int {
 	api, cc := mustload.Partial(profile)
 	defer api.Close()
 
+	if err := killMountProcess(); err != nil {
+		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
 	for _, n := range cc.Nodes {
 		machineName := config.MachineName(*cc, n)
 
@@ -139,10 +141,6 @@ func stopProfile(profile string) int {
 		if !nonexistent {
 			stoppedNodes++
 		}
-	}
-
-	if err := killMountProcess(); err != nil {
-		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	if !keepActive {

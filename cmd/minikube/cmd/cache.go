@@ -33,9 +33,7 @@ import (
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
 const cacheImageConfigKey = "cache"
 
-var (
-	all string
-)
+const allFlag = "all"
 
 // cacheCmd represents the cache command
 var cacheCmd = &cobra.Command{
@@ -63,11 +61,11 @@ var addCacheCmd = &cobra.Command{
 }
 
 func addCacheCmdFlags() {
-	addCacheCmd.Flags().Bool(all, false, "Add image to cache for all running minikube clusters")
+	addCacheCmd.Flags().Bool(allFlag, false, "Add image to cache for all running minikube clusters")
 }
 
 func cacheAddProfiles() []*config.Profile {
-	if viper.GetBool(all) {
+	if viper.GetBool(allFlag) {
 		validProfiles, _, err := config.ListProfiles() // need to load image to all profiles
 		if err != nil {
 			klog.Warningf("error listing profiles: %v", err)

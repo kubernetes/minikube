@@ -25,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -485,7 +484,7 @@ func TestErrorCreatingTunnel(t *testing.T) {
 		e: errors.New("error loading machine"),
 	}
 
-	f, err := ioutil.TempFile(os.TempDir(), "reg_")
+	f, err := os.CreateTemp(os.TempDir(), "reg_")
 	f.Close()
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)

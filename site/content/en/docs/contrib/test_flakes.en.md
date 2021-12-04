@@ -20,3 +20,5 @@ description: >
 |MacOS|docker|docker|[Docker_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_macOS)|
 |MacOS|hyperkit|docker|[Hyperkit_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Hyperkit_macOS)|
 |Windows|docker|docker|[Docker_Windows](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Windows)|
+|Windows|hyperv|docker|[Hyper-V_Windows](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Hyper-V_Windows)|
+|Cloud Shell|docker|docker|[Docker_Cloud_Shell](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Cloud_Shell)|

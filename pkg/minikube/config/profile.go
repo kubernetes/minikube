@@ -19,7 +19,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -152,19 +151,16 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 
 	// If no config file exists, don't worry about swapping paths
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := lock.WriteFile(path, data, 0600); err != nil {
-			return err
-		}
-		return nil
+		return lock.WriteFile(path, data, 0600)
 	}
 
-	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
+	tf, err := os.CreateTemp(filepath.Dir(path), "config.json.tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tf.Name())
 
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+	if err = os.WriteFile(tf.Name(), data, 0600); err != nil {
 		return err
 	}
 
@@ -176,11 +172,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 		return err
 	}
 
-	if err = os.Rename(tf.Name(), path); err != nil {
-		return err
-	}
-
-	return nil
+	return os.Rename(tf.Name(), path)
 }
 
 // DeleteProfile deletes a profile and removes the profile dir
@@ -287,7 +279,7 @@ func removeChildNodes(inValidPs []*Profile, nodeNames map[string]bool) (ps []*Pr
 
 // LoadProfile loads type Profile based on its name
 func LoadProfile(name string, miniHome ...string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
+	cfg, err := Load(name, miniHome...)
 	p := &Profile{
 		Name:   name,
 		Config: cfg,
@@ -302,7 +294,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 		miniPath = miniHome[0]
 	}
 	pRootDir := filepath.Join(miniPath, "profiles")
-	items, err := ioutil.ReadDir(pRootDir)
+	items, err := os.ReadDir(pRootDir)
 	for _, f := range items {
 		if f.IsDir() {
 			dirs = append(dirs, f.Name())

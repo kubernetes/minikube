@@ -1,3 +1,4 @@
+//go:build iso
 // +build iso
 
 /*
@@ -35,11 +36,13 @@ func TestGuestEnvironment(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
-	}
+	t.Run("Setup", func(t *testing.T) {
+		args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false"}, StartArgs()...)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
+		}
+	})
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {

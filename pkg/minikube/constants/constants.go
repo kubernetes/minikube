@@ -34,12 +34,15 @@ var (
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.21.3"
+	DefaultKubernetesVersion = "v1.22.4"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.22.0-rc.0"
+	NewestKubernetesVersion = "v1.23.0-beta.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
-	OldestKubernetesVersion = "v1.14.0"
+	OldestKubernetesVersion = "v1.16.0"
+	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
+	NoKubernetesVersion = "v0.0.0"
+
 	// DefaultClusterName is the default nane for the k8s cluster
 	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
@@ -53,6 +56,8 @@ const (
 	SSHPort = 22
 	// RegistryAddonPort os the default registry addon port
 	RegistryAddonPort = 5000
+	// Containerd is the default name and spelling for the containerd container runtime
+	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
 	// DefaultContainerRuntime is our default container runtime
@@ -116,6 +121,9 @@ const (
 	TimeFormat = time.RFC1123
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
+
+	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
+	DefaultCertExpiration = time.Hour * 24 * 365 * 3
 )
 
 var (

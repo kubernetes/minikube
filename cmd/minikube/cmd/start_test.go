@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -27,6 +28,8 @@ import (
 
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -69,6 +72,21 @@ func TestGetKubernetesVersion(t *testing.T) {
 			description:     "kubernetes-version given as 'latest', no config",
 			expectedVersion: constants.NewestKubernetesVersion,
 			paramVersion:    "latest",
+		},
+		{
+			description:     "kubernetes-version given as 'LATEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "LATEST",
+		},
+		{
+			description:     "kubernetes-version given as 'newest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "newest",
+		},
+		{
+			description:     "kubernetes-version given as 'NEWEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "NEWEST",
 		},
 	}
 
@@ -362,4 +380,116 @@ func TestValidateImageRepository(t *testing.T) {
 		})
 	}
 
+}
+
+func TestValidateDiskSize(t *testing.T) {
+	var tests = []struct {
+		diskSize string
+		errorMsg string
+	}{
+		{
+			diskSize: "2G",
+			errorMsg: "",
+		},
+		{
+			diskSize: "test",
+			errorMsg: "Validation unable to parse disk size test: FromHumanSize: invalid size: 'test'",
+		},
+		{
+			diskSize: "6M",
+			errorMsg: fmt.Sprintf("Requested disk size 6 is less than minimum of %v", minimumDiskSize),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.diskSize, func(t *testing.T) {
+			got := validateDiskSize(test.diskSize)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateDiskSize(diskSize=%v): got %v, expected %v", test.diskSize, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidateRuntime(t *testing.T) {
+	var tests = []struct {
+		runtime  string
+		errorMsg string
+	}{
+		{
+			runtime:  "cri-o",
+			errorMsg: "",
+		},
+		{
+			runtime:  "docker",
+			errorMsg: "",
+		},
+
+		{
+			runtime:  "test",
+			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.runtime, func(t *testing.T) {
+			got := validateRuntime(test.runtime)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("ValidateRuntime(runtime=%v): got %v, expected %v", test.runtime, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidatePorts(t *testing.T) {
+	type portTest struct {
+		ports    []string
+		errorMsg string
+	}
+	var tests = []portTest{
+		{
+			ports:    []string{"test:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [test:80]",
+		},
+		{
+			ports:    []string{"0:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80]",
+		},
+		{
+			ports:    []string{"8080:80", "6443:443"},
+			errorMsg: "",
+		},
+		{
+			ports:    []string{"127.0.0.1:80:80"},
+			errorMsg: "",
+		},
+		{
+			ports:    []string{"1000.0.0.1:80:80"},
+			errorMsg: "Sorry, the IP address provided with --ports flag is invalid: 1000.0.0.1",
+		},
+	}
+	if detect.IsMicrosoftWSL() {
+		tests = append(tests, portTest{
+			ports:    []string{"80:80"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
+		})
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.ports, ","), func(t *testing.T) {
+			gotError := ""
+			got := validatePorts(test.ports)
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
+			}
+		})
+	}
 }

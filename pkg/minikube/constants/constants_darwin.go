@@ -1,4 +1,5 @@
-// +build darwin, !gendocs
+//go:build (darwin && ignore) || !gendocs
+// +build darwin,ignore !gendocs
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

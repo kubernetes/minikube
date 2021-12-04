@@ -65,8 +65,12 @@ type CommandRunner interface {
 	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+	// CopyFrom is a convenience method that runs a command to copy a file back
+	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -76,7 +80,7 @@ type Manager interface {
 	// Version retrieves the current version of this runtime
 	Version() (string, error)
 	// Enable idempotently enables this runtime on a host
-	Enable(bool, bool) error
+	Enable(bool, bool, bool) error
 	// Disable idempotently disables this runtime on a host
 	Disable() error
 	// Active returns whether or not a runtime is active on a host
@@ -101,8 +105,12 @@ type Manager interface {
 	BuildImage(string, string, string, bool, []string, []string) error
 	// Save an image from the runtime on a host
 	SaveImage(string, string) error
+	// Tag an image
+	TagImage(string, string) error
+	// Push an image from the runtime to the container registry
+	PushImage(string) error
 
-	// ImageExists takes image name and image sha checks if an it exists
+	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
 	// ListImages returns a list of images managed by this container runtime
 	ListImages(ListImagesOptions) ([]string, error)

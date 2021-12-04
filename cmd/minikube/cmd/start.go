@@ -32,6 +32,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -142,6 +143,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer pkgtrace.Cleanup()
 	displayVersion(version.GetVersion())
+	go download.CleanUpOlderPreloads()
 
 	// No need to do the update check if no one is going to see it
 	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
@@ -430,7 +432,29 @@ func displayEnviron(env []string) {
 	}
 }
 
-func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) error {
+	if k8sVersion == constants.NoKubernetesVersion {
+		register.Reg.SetStep(register.Done)
+		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
+
+		// Runtime message.
+		boxConfig := box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}
+		switch viper.GetString(containerRuntime) {
+		case constants.DefaultContainerRuntime:
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube docker-env" to point your docker-cli to the docker inside minikube.
+- "minikube image" to build images without docker.`)
+		case constants.Containerd:
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube image" to build images without docker.`)
+		case constants.CRIO:
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube podman-env" to point your podman-cli to the podman inside minikube.
+- "minikube image" to build images without docker.`)
+		}
+		return nil
+	}
+
 	// To be shown at the end, regardless of exit path
 	defer func() {
 		register.Reg.SetStep(register.Done)
@@ -935,12 +959,13 @@ func memoryLimits(drvName string) (int, int, error) {
 	return sysLimit, containerLimit, nil
 }
 
-// suggestMemoryAllocation calculates the default memory footprint in MiB
-func suggestMemoryAllocation(sysLimit int, containerLimit int, nodes int) int {
-	if mem := viper.GetInt(memory); mem != 0 {
+// suggestMemoryAllocation calculates the default memory footprint in MiB.
+func suggestMemoryAllocation(sysLimit, containerLimit, nodes int) int {
+	if mem := viper.GetInt(memory); mem != 0 && mem < sysLimit {
 		return mem
 	}
-	fallback := 2200
+
+	const fallback = 2200
 	maximum := 6000
 
 	if sysLimit > 0 && fallback > sysLimit {
@@ -1088,13 +1113,9 @@ func validateCPUCount(drvName string) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB, err := util.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
-			exitIfNotForced(reason.Usage, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
-		}
-
-		if diskSizeMB < minimumDiskSize {
-			exitIfNotForced(reason.RsrcInsufficientStorage, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
+			exitIfNotForced(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
 
@@ -1105,6 +1126,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	validateCPUCount(drvName)
+
+	if drvName == driver.None && viper.GetBool(noKubernetes) {
+		exit.Message(reason.Usage, "Cannot use the option --no-kubernetes on the {{.name}} driver", out.V{"name": drvName})
+	}
 
 	if cmd.Flags().Changed(memory) {
 		validateChangedMemoryFlags(drvName)
@@ -1117,31 +1142,20 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(imageRepository) {
 		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
+	if cmd.Flags().Changed(ports) {
+		err := validatePorts(viper.GetStringSlice(ports))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+
+	}
 
 	if cmd.Flags().Changed(containerRuntime) {
-		runtime := strings.ToLower(viper.GetString(containerRuntime))
-
-		validOptions := cruntime.ValidRuntimes()
-		// `crio` is accepted as an alternative spelling to `cri-o`
-		validOptions = append(validOptions, constants.CRIO)
-
-		var validRuntime bool
-		for _, option := range validOptions {
-			if runtime == option {
-				validRuntime = true
-			}
-
-			// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-			if runtime == "cri-o" {
-				viper.Set(containerRuntime, constants.CRIO)
-			}
+		err := validateRuntime(viper.GetString(containerRuntime))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
-
-		if !validRuntime {
-			exit.Message(reason.Usage, `Invalid Container Runtime: "{{.runtime}}". Valid runtimes are: {{.validOptions}}`, out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidRuntimes(), ", ")})
-		}
-
-		validateCNI(cmd, runtime)
+		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
 	if driver.BareMetal(drvName) {
@@ -1204,6 +1218,69 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateRegistryMirror()
 	validateInsecureRegistry()
+}
+
+// This function validates that the --ports are not below 1024 for the host and not outside range
+func validatePorts(ports []string) error {
+	for _, portDuplet := range ports {
+		parts := strings.Split(portDuplet, ":")
+		if len(parts) > 2 {
+			ip := parts[0]
+			if net.ParseIP(ip) == nil {
+				return errors.Errorf("Sorry, the IP address provided with --ports flag is invalid: %s", ip)
+			}
+			parts = parts[1:]
+		}
+		for i, port := range parts {
+			p, err := strconv.Atoi(port)
+			if err != nil {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
+			}
+			if p > 65535 || p < 1 {
+				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
+			}
+			if detect.IsMicrosoftWSL() && p < 1024 && i == 0 {
+				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
+			}
+		}
+	}
+	return nil
+}
+
+// validateDiskSize validates the supplied disk size
+func validateDiskSize(diskSize string) error {
+	diskSizeMB, err := util.CalculateSizeInMB(diskSize)
+	if err != nil {
+		return errors.Errorf("Validation unable to parse disk size %v: %v", diskSize, err)
+	}
+	if diskSizeMB < minimumDiskSize {
+		return errors.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
+	}
+	return nil
+}
+
+// validateRuntime validates the supplied runtime
+func validateRuntime(runtime string) error {
+	validOptions := cruntime.ValidRuntimes()
+	// `crio` is accepted as an alternative spelling to `cri-o`
+	validOptions = append(validOptions, constants.CRIO)
+
+	var validRuntime bool
+	for _, option := range validOptions {
+		if runtime == option {
+			validRuntime = true
+		}
+
+		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
+		if runtime == "cri-o" {
+			viper.Set(containerRuntime, constants.CRIO)
+		}
+	}
+
+	if !validRuntime {
+		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", runtime, cruntime.ValidRuntimes())
+	}
+	return nil
 }
 
 // if container runtime is not docker, check that cni is not disabled
@@ -1422,16 +1499,14 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 // validateKubernetesVersion ensures that the requested version is reasonable
 func validateKubernetesVersion(old *config.ClusterConfig) {
 	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
+	oldestVersion := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
+	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
-	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	if nvs.Equals(zeroVersion) {
+		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		return
 	}
-	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
-	if err != nil {
-		exit.Message(reason.InternalSemverParse, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
-	}
-
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
@@ -1478,6 +1553,21 @@ func isBaseImageApplicable(drv string) bool {
 }
 
 func getKubernetesVersion(old *config.ClusterConfig) string {
+	if viper.GetBool(noKubernetes) {
+		// Exit if --kubernetes-version is specified.
+		if viper.GetString(kubernetesVersion) != "" {
+			exit.Message(reason.Usage, `cannot specify --kubernetes-version with --no-kubernetes,
+to unset a global config run:
+
+$ minikube config unset kubernetes-version`)
+		}
+
+		klog.Infof("No Kubernetes flag is set, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		if old != nil {
+			old.KubernetesConfig.KubernetesVersion = constants.NoKubernetesVersion
+		}
+	}
+
 	paramVersion := viper.GetString(kubernetesVersion)
 
 	// try to load the old version first if the user didn't specify anything
@@ -1487,7 +1577,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 
 	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
 		paramVersion = constants.DefaultKubernetesVersion
-	} else if strings.EqualFold(paramVersion, "latest") {
+	} else if strings.EqualFold(strings.ToLower(paramVersion), "latest") || strings.EqualFold(strings.ToLower(paramVersion), "newest") {
 		paramVersion = constants.NewestKubernetesVersion
 	}
 

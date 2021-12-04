@@ -75,8 +75,14 @@ type Runner interface {
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 
+	// CopyFrom is a convenience method that runs a command to copy a file back
+	CopyFrom(assets.CopyableFile) error
+
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	// ReadableFile open a remote file for reading
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Command returns a human readable command string that does not induce eye fatigue
@@ -186,7 +192,7 @@ func fileExists(r Runner, f assets.CopyableFile, dst string) (bool, error) {
 	return srcModTime.Equal(dstModTime), nil
 }
 
-// writeFile is like ioutil.WriteFile, but does not require reading file into memory
+// writeFile is like os.WriteFile, but does not require reading file into memory
 func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE, perms)
 	if err != nil {
