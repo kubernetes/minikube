@@ -40,22 +40,81 @@ validate_userns() {
     echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
   fi
 
-  if [[ ! -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
-    echo "ERROR: UserNS: cgroup v2 needs to be enabled, see https://rootlesscontaine.rs/getting-started/common/cgroup2/" >&2
-    exit 1
+  if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    for f in cpu memory pids; do
+      if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
+        echo "ERROR: UserNS: $f controller needs to be delegated" >&2
+        exit 1
+      fi
+    done
   fi
-  for f in cpu memory pids; do
-    if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
-      echo "ERROR: UserNS: $f controller needs to be delegated, see https://rootlesscontaine.rs/getting-started/common/cgroup2/" >&2
-    exit 1
-    fi
-  done
+}
+
+overlayfs_preferrable() {
+	if [[ -z "$userns" ]]; then
+		# If we are outside userns, we can always assume overlayfs is preferrable
+		return 0
+	fi
+
+	# Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
+	# but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
+	if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
+		echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
+		return 1
+	fi
+
+	# Check overlayfs availability, by attempting to mount it.
+	#
+	# Overlayfs inside userns is known to be available for the following environments:
+	# - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
+	# - Ubuntu kernel
+	# - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
+	# - Sysbox
+	tmp=$(mktemp -d)
+	mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
+	if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
+		echo "INFO: UserNS: kernel does not seem to support overlayfs."
+		rm -rf "${tmp}"
+		return 1
+	fi
+	umount "${tmp}/m"
+	rm -rf "${tmp}"
+
+	# Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
+	# Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
+	if grep -q "_t:" "/proc/self/attr/current"; then
+		# When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
+		# https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
+		echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
+	fi
+	return 0
 }
 
 configure_containerd() {
-  # we need to switch to the 'native' snapshotter on zfs
-  if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
-    sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+  local snapshotter=""
+  if [[ -n "$userns" ]]; then
+    # userns (rootless) configs
+
+    # Adjust oomScoreAdj
+    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
+
+    # Use fuse-overlayfs if overlayfs is not preferrable: https://github.com/kubernetes-sigs/kind/issues/2275
+    if [[ -z "$snapshotter" ]] && ! overlayfs_preferrable; then
+      snapshotter="fuse-overlayfs"
+    fi
+  else
+    # we need to switch to the 'native' snapshotter on zfs
+    if [[ -z "$snapshotter" ]] && [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
+      snapshotter="native"
+    fi
+  fi
+  if [[ -n "$snapshotter" ]]; then
+    echo "INFO: changing snapshotter from \"overlayfs\" to \"$snapshotter\""
+    sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
+    if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
+      echo 'INFO: enabling containerd-fuse-overlayfs service'
+      systemctl enable containerd-fuse-overlayfs
+    fi
   fi
 }
 
@@ -106,15 +165,19 @@ fix_mount() {
     sync
   fi
 
-  if [[ -z "${userns}" ]]; then
-    echo 'INFO: remounting /sys read-only'
-    # systemd-in-a-container should have read only /sys
-    # https://systemd.io/CONTAINER_INTERFACE/
-    # however, we need other things from `docker run --privileged` ...
-    # and this flag also happens to make /sys rw, amongst other things
-    #
-    # This step is skipped when running inside UserNS, because it fails with EACCES.
-    mount -o remount,ro /sys
+  echo 'INFO: remounting /sys read-only'
+  # systemd-in-a-container should have read only /sys
+  # https://systemd.io/CONTAINER_INTERFACE/
+  # however, we need other things from `docker run --privileged` ...
+  # and this flag also happens to make /sys rw, amongst other things
+  #
+  # This step is ignored when running inside UserNS, because it fails with EACCES.
+  if ! mount -o remount,ro /sys; then
+    if [[ -n "$userns" ]]; then
+      echo 'INFO: UserNS: ignoring mount fail' >&2
+    else
+      exit 1
+    fi
   fi
 
   echo 'INFO: making mounts shared' >&2
@@ -287,18 +350,15 @@ fix_kmsg() {
 }
 
 select_iptables() {
-  # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
-  local mode=nft
+  # based on: https://github.com/kubernetes-sigs/iptables-wrappers/blob/97b01f43a8e8db07840fc4b95e833a37c0d36b12/iptables-wrapper-installer.sh
+  local mode num_legacy_lines num_nft_lines
   num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep '^-' | wc -l || true)
-  if [ "${num_legacy_lines}" -ge 10 ]; then
+  num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
+  if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
     mode=legacy
   else
-    num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
-    if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
-      mode=legacy
-    fi
+    mode=nft
   fi
-
   echo "INFO: setting iptables to detected mode: ${mode}" >&2
   update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null

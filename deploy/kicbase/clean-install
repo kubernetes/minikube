@@ -35,5 +35,6 @@ rm -rf \
    /tmp/* \
    /var/tmp/* \
    /usr/share/doc/* \
+   /usr/share/doc-base/* \
    /usr/share/man/* \
    /usr/share/local/*

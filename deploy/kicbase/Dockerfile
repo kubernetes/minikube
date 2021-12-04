@@ -27,7 +27,7 @@ RUN cd ./cmd/auto-pause/ && go build
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210401
+FROM ubuntu:focal-20211006
 
 ARG BUILDKIT_VERSION="v0.9.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -36,6 +36,7 @@ ARG CRIO_VERSION="1.22"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY deploy/kicbase/10-network-magic.conf /etc/sysctl.d/10-network-magic.conf
 COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
@@ -46,7 +47,7 @@ COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
 #
 # First we must ensure that our util scripts are executable.
 #
-# The base image already has: ssh, apt, snapd, but we need to install more packages.
+# The base image already has a basic userspace + apt but we need to install more packages.
 # Packages installed are broken down into (each on a line):
 # - packages needed to run services (systemd)
 # - packages needed for kubernetes components
@@ -73,6 +74,7 @@ RUN echo "Ensuring scripts are executable ..." \
       libseccomp2 pigz \
       bash ca-certificates curl rsync \
       nfs-common \
+      jq \
       iputils-ping netcat-openbsd vim-tiny \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
