@@ -905,6 +905,7 @@
 	"loading profile": "",
 	"max time to wait per Kubernetes or host to be healthy.": "",
 	"minikube addons list --output OUTPUT. json, list": "",
+	"minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\\\"LocalStorageCapacityIsolation=false\\\"`": "",
 	"minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'": "",
 	"minikube is not meant for production use. You are opening non-local traffic": "",
 	"minikube is unable to access the Google Container Registry. You may need to configure it to use a HTTP proxy.": "",

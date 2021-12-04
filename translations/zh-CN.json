@@ -1030,6 +1030,7 @@
 	"max time to wait per Kubernetes core services to be healthy.": "每个 Kubernetes 核心服务保持健康所需的最长时间。",
 	"max time to wait per Kubernetes or host to be healthy.": "",
 	"minikube addons list --output OUTPUT. json, list": "",
+	"minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\\\"LocalStorageCapacityIsolation=false\\\"`": "",
 	"minikube is exiting due to an error. If the above message is not useful, open an issue:": "由于出错 minikube 正在退出。如果以上信息没有帮助，请提交问题反馈：",
 	"minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'": "",
 	"minikube is not meant for production use. You are opening non-local traffic": "",
