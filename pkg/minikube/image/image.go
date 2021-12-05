@@ -203,6 +203,7 @@ func imagePathInCache(img string) string {
 	return f
 }
 
+// UploadCachedImage uploads cached image
 func UploadCachedImage(imgName string) error {
 	tag, err := name.NewTag(imgName, name.WeakValidation)
 	if err != nil {

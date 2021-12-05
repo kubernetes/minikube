@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+// ErrorCodes generates error codes
 func ErrorCodes(docPath string, pathsToCheck []string) error {
 	buf := bytes.NewBuffer([]byte{})
 	date := time.Now().Format("2006-01-02")
