@@ -385,6 +385,8 @@
 	"Kubernetes requires at least 2 CPU's to start": "",
 	"Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}": "이제 {{.new}} 버전의 쿠버네티스를 사용할 수 있습니다. 업그레이드를 원하신다면 다음과 같이 지정하세요: --kubernetes-version={{.prefix}}{{.new}}",
 	"Kubernetes {{.version}} is not supported by this release of minikube": "{{.version}} 버전의 쿠버네티스는 설치되어 있는 버전의 minikube에서 지원되지 않습니다.",
+	"Kubernetes: Stopping ...": "",
+	"Kubernetes: {{.status}}": "",
 	"Launching Kubernetes ...": "쿠버네티스를 시작하는 중 ...",
 	"Launching proxy ...": "프록시를 시작하는 중 ...",
 	"List all available images from the local cache.": "",
