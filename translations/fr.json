@@ -856,7 +856,7 @@
 	"loading profile": "profil de chargement",
 	"max time to wait per Kubernetes or host to be healthy.": "temps d'attente maximal par Kubernetes ou hôte pour être en bonne santé.",
 	"minikube addons list --output OUTPUT. json, list": "liste des modules minikube --output OUTPUT. json, liste",
-	"minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\\\"LocalStorageCapacityIsolation=false\\\"`": "",
+	"minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\\\"LocalStorageCapacityIsolation=false\\\"`": "minikube ne prend pas encore en charge le pilote de stockage BTRFS, il existe une solution de contournement, ajoutez l'indicateur suivant à votre commande de démarrage `--feature-gates=\\\"LocalStorageCapacityIsolation=false\\\"`",
 	"minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'": "minikube manque des fichiers relatifs à votre environnement invité. Cela peut être corrigé en exécutant 'minikube delete'",
 	"minikube is not meant for production use. You are opening non-local traffic": "minikube n'est pas destiné à une utilisation en production. Vous ouvrez du trafic non local",
 	"minikube is unable to access the Google Container Registry. You may need to configure it to use a HTTP proxy.": "minikube ne peut pas accéder à Google Container Registry. Vous devrez peut-être le configurer pour utiliser un proxy HTTP.",
