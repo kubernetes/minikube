@@ -58,9 +58,9 @@ type mountRunner interface {
 const (
 	// MountErrorUnknown failed with unknown error
 	MountErrorUnknown = iota
-	// MountErrorConnect
+	// MountErrorConnect failed to connect
 	MountErrorConnect
-	// MountErrorChmod
+	// MountErrorChmod failed to chmod
 	MountErrorChmod
 )
 

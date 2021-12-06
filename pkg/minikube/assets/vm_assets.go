@@ -60,6 +60,8 @@ type CopyableFile interface {
 }
 
 type writeFn func(d []byte) (n int, err error)
+
+// BaseCopyableFile is something that can be copied and written
 type BaseCopyableFile struct {
 	ReadableFile
 
@@ -69,26 +71,32 @@ type BaseCopyableFile struct {
 	targetName string
 }
 
+// Write is for write something into the file
 func (r *BaseCopyableFile) Write(d []byte) (n int, err error) {
 	return r.writer(d)
 }
 
+// SetLength is for setting the length
 func (r *BaseCopyableFile) SetLength(length int) {
 	r.length = length
 }
 
+// GetTargetPath returns target path
 func (r *BaseCopyableFile) GetTargetPath() string {
 	return filepath.Join(r.GetTargetDir(), r.GetTargetName())
 }
 
+// GetTargetDir returns target dir
 func (r *BaseCopyableFile) GetTargetDir() string {
 	return r.targetDir
 }
 
+// GetTargetName returns target name
 func (r *BaseCopyableFile) GetTargetName() string {
 	return r.targetName
 }
 
+// NewBaseCopyableFile creates a new instance of BaseCopyableFile
 func NewBaseCopyableFile(source ReadableFile, writer writeFn, targetDir, targetName string) *BaseCopyableFile {
 	return &BaseCopyableFile{
 		ReadableFile: source,
