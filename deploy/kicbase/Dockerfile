@@ -29,7 +29,7 @@ RUN cd ./cmd/auto-pause/ && go build
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20210401
 
-ARG BUILDKIT_VERSION="v0.9.0"
+ARG BUILDKIT_VERSION="v0.9.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.22"
