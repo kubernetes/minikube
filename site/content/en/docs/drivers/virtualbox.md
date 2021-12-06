@@ -16,7 +16,7 @@ VirtualBox is minikube's original driver. It may not provide the fastest start-u
 minikube start supports some VirtualBox specific flags:
 
 * **`--host-only-cidr`**: The CIDR to be used for the minikube VM (default "192.168.59.1/24")
-  * On Linux, Mac OS X and Oracle Solaris with VirtualBox >= 6.1.28, [only IP addresses in the 192.68.56.0/21 range are allowed for host-only networking by default](https://www.virtualbox.org/manual/ch06.html#network_hostonly). Passing a disallowed value to `--host-only-cidr` will result in a VirtualBox access denied error: `VBoxManage: error: Code E_ACCESSDENIED (0x80070005) - Access denied (extended info not available)`.
+  * On Linux, Mac OS X and Oracle Solaris with VirtualBox >= 6.1.28, [only IP addresses in the 192.168.56.0/21 range are allowed for host-only networking by default](https://www.virtualbox.org/manual/ch06.html#network_hostonly). Passing a disallowed value to `--host-only-cidr` will result in a VirtualBox access denied error: `VBoxManage: error: Code E_ACCESSDENIED (0x80070005) - Access denied (extended info not available)`.
 * **`--no-vtx-check`**: Disable checking for the availability of hardware virtualization
 
 ## Issues
