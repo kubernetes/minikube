@@ -142,6 +142,7 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	return nil
 }
 
+// CopyFrom copy content from file to the stored map.
 func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	v, ok := f.fileMap.Load(file.GetSourcePath())
 	if !ok {
@@ -161,6 +162,7 @@ func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	return nil
 }
 
+// ReadableFile implements interface (without implementation)
 func (f *FakeCommandRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
 	return nil, nil
 }

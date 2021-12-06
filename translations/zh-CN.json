@@ -445,6 +445,8 @@
 	"Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}": "Kubernetes {{.new}} 现在可用了。如果您想升级，请指定 --kubernetes-version={{.new}}",
 	"Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}": "",
 	"Kubernetes {{.version}} is not supported by this release of minikube": "当前版本的 minukube 不支持 Kubernetes {{.version}}",
+	"Kubernetes: Stopping ...": "",
+	"Kubernetes: {{.status}}": "",
 	"Launching Kubernetes ... ": "正在启动 Kubernetes ... ",
 	"Launching proxy ...": "",
 	"List all available images from the local cache.": "",

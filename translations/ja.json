@@ -357,6 +357,8 @@
 	"Kubernetes requires at least 2 CPU's to start": "",
 	"Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}": "",
 	"Kubernetes {{.version}} is not supported by this release of minikube": "",
+	"Kubernetes: Stopping ...": "",
+	"Kubernetes: {{.status}}": "",
 	"Launching Kubernetes ...": "Kubernetes を起動しています...",
 	"Launching proxy ...": "プロキシを起動しています...",
 	"List all available images from the local cache.": "",
