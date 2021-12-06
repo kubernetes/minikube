@@ -295,6 +295,12 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		updateDriver(driverName)
 	}
 
+	// Check whether we may need to stop Kubernetes.
+	var stopk8s bool
+	if existing != nil && viper.GetBool(noKubernetes) {
+		stopk8s = true
+	}
+
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
@@ -337,6 +343,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	return node.Starter{
 		Runner:         mRunner,
 		PreExists:      preExists,
+		StopK8s:        stopk8s,
 		MachineAPI:     mAPI,
 		Host:           host,
 		ExistingAddons: existingAddons,
