@@ -39,7 +39,7 @@ body:
         - N/A
         - Docker
         - Podman
-        - Hyperkit
+        - HyperKit
         - HyperV
         - KVM2
         - Virtualbox
