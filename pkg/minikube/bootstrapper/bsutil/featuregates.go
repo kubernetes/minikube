@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/kubernetes/cmd/kubeadm/app/features"
+	"k8s.io/minikube/third_party/kubeadm/app/features"
 )
 
 // supportedFG indicates whether a feature name is supported by the bootstrapper
