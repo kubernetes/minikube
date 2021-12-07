@@ -25,7 +25,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 )
 
 const (
@@ -124,7 +123,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	// We can't get the mount details with Hyper-V
 	if HyperVDriver() {
 		return
-        }
+	}
 
 	args = sshArgs
 	args = append(args, "mount", "|", "grep", "9p")
