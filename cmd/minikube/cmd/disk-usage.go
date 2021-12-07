@@ -58,12 +58,7 @@ func runDiskUsage(cmd *cobra.Command, args []string) {
 	for _, dir := range minikubeDirs {
 		dirNameList := strings.Split(dir, "/")
 		dirName := dirNameList[len(dirNameList)-1]
-		info, err := os.Lstat(dir)
-		if err != nil {
-			klog.Errorf("Error reading info about configured minikube path:\n%s", err)
-			os.Exit(1)
-		}
-		totalFileSize := diskUsage(dir, info)
+		totalFileSize := diskUsage(dir)
 		var totalFileSizeOut string
 		if !longOutFlag {
 			totalFileSizeOut = units.HumanSize(float64(totalFileSize))
@@ -75,7 +70,7 @@ func runDiskUsage(cmd *cobra.Command, args []string) {
 	}
 }
 
-func diskUsage(currPath string, info os.FileInfo) int64 {
+func diskUsage(currPath string) int64 {
 	var size int64
 
 	dir, err := os.Open(currPath)
@@ -87,12 +82,11 @@ func diskUsage(currPath string, info os.FileInfo) int64 {
 	files, err := dir.Readdir(-1)
 	if err != nil {
 		klog.Errorf("Error reading files minikube path:\n%s", err)
-		os.Exit(1)
 	}
 
 	for _, file := range files {
 		if file.IsDir() {
-			size += diskUsage(fmt.Sprintf("%s/%s", currPath, file.Name()), file)
+			size += diskUsage(fmt.Sprintf("%s/%s", currPath, file.Name()))
 		} else {
 			size += file.Size()
 		}
