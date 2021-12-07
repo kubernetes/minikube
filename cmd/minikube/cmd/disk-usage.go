@@ -19,10 +19,11 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
+	"strconv"
 
 	"github.com/spf13/cobra"
+	units "github.com/docker/go-units"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -32,18 +33,6 @@ var (
 	longOutFlag  bool
 	rootOnlyFlag bool
 )
-
-var decimalUnitPrefixMap = map[int]string{
-	0: "",
-	1: "K",
-	2: "M",
-	3: "G",
-	4: "T",
-	5: "P",
-	6: "E",
-	7: "Z",
-	8: "Y",
-}
 
 // runDiskUsage represents the disk-usage command
 var diskUsageCmd = &cobra.Command{
@@ -75,25 +64,15 @@ func runDiskUsage(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		totalFileSize := diskUsage(dir, info)
-		totalFileSizeOut := strconv.FormatInt(diskUsage(dir, info), 10)
-
-		var decimalUnitPrefixMapKey int
+		var totalFileSizeOut string
 		if !longOutFlag {
-			totalFileSizeOut, decimalUnitPrefixMapKey = int64ToFloat32FormattedString(totalFileSize)
+			totalFileSizeOut = units.HumanSize(float64(totalFileSize))
+		} else {
+			totalFileSizeOut = strconv.FormatInt(totalFileSize, 10)
 		}
 
-		out.Infof("{{.directory}} - {{.diskSize}}{{.decimalUnitPrefix}}B", out.V{"directory": dirName, "diskSize": totalFileSizeOut, "decimalUnitPrefix": decimalUnitPrefixMap[decimalUnitPrefixMapKey]})
+		out.Infof("{{.directory}} - {{.diskSize}}{{.decimalUnitPrefix}}", out.V{"directory": dirName, "diskSize": totalFileSizeOut})
 	}
-}
-
-func int64ToFloat32FormattedString(in_int int64) (string, int) {
-	decimalUnitPrefixMapKey := 0
-	totalFileSizeFloat := float32(in_int)
-	for totalFileSizeFloat > float32(1000) {
-		totalFileSizeFloat = totalFileSizeFloat / 1024
-		decimalUnitPrefixMapKey++
-	}
-	return fmt.Sprintf("%.2f", totalFileSizeFloat), decimalUnitPrefixMapKey
 }
 
 func diskUsage(currPath string, info os.FileInfo) int64 {
