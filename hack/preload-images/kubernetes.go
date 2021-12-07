@@ -36,7 +36,7 @@ func recentK8sVersions() ([]string, error) {
 	var releases []string
 	for _, r := range list {
 		// Exclude "alpha" releases.
-		if !strings.Contains(r.GetTagName(), "alpha") {
+		if strings.Contains(r.GetTagName(), "alpha") {
 			continue
 		}
 		releases = append(releases, r.GetTagName())
