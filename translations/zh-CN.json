@@ -877,7 +877,6 @@
 	"Unable to pull images, which may be OK: {{.error}}": "无法拉取镜像，有可能是正常状况：{{.error}}",
 	"Unable to push cached images: {{.error}}": "",
 	"Unable to remove machine directory": "",
-	"Unable to restart cluster, will reset it: {{.error}}": "",
 	"Unable to safely downgrade existing Kubernetes v{{.old}} cluster to v{{.new}}": "",
 	"Unable to start VM. Please investigate and run 'minikube delete' if possible": "无法启动虚拟机。可能的话请检查后执行 'minikube delete'",
 	"Unable to stop VM": "无法停止虚拟机",
