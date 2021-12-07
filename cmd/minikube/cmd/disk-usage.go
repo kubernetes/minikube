@@ -19,11 +19,11 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 
-	"github.com/spf13/cobra"
 	units "github.com/docker/go-units"
+	"github.com/spf13/cobra"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
