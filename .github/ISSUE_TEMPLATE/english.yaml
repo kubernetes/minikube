@@ -42,7 +42,7 @@ body:
         - HyperKit
         - HyperV
         - KVM2
-        - Virtualbox
+        - VirtualBox
         - None (Baremetal)
         - SSH
         - VMWare
