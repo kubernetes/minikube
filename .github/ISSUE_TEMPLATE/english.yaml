@@ -40,7 +40,7 @@ body:
         - Docker
         - Podman
         - HyperKit
-        - HyperV
+        - Hyper-V
         - KVM2
         - VirtualBox
         - None (Baremetal)
