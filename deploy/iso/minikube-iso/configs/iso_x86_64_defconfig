@@ -1,0 +1,42 @@
+# Architecture
+BR2_x86_64=y
+
+# Toolchain
+BR2_TOOLCHAIN_BUILDROOT_WCHAR=y
+
+# System
+BR2_SYSTEM_DHCP="eth0"
+
+# Required tools to create bootable media
+BR2_PACKAGE_HOST_DOSFSTOOLS=y
+BR2_PACKAGE_HOST_GENIMAGE=y
+BR2_PACKAGE_HOST_MTOOLS=y
+
+# Bootloader
+BR2_TARGET_GRUB2=y
+BR2_TARGET_GRUB2_X86_64_EFI=y
+BR2_TARGET_GRUB2_BUILTIN_CONFIG="$(BR2_EXTERNAL_minimal_PATH)/board/iso/x86_64/grub-stub.cfg"
+BR2_TARGET_GRUB2_BUILTIN_MODULES="boot linux ext2 fat squash4 part_msdos part_gpt normal efi_gop udf iso9660 search search_fs_file search_fs_uuid search_label"
+
+# Filesystem / image
+BR2_TARGET_ROOTFS_CPIO=y
+BR2_TARGET_ROOTFS_CPIO_GZIP=y
+# BR2_TARGET_ROOTFS_TAR is not set
+BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_minimal_PATH)/board/iso/x86_64/post-build.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_minimal_PATH)/board/iso/x86_64/post-image.sh"
+BR2_ROOTFS_POST_SCRIPT_ARGS="$(BR2_EXTERNAL_minimal_PATH)/board/iso/x86_64/genimage.cfg"
+
+# Linux headers same as kernel, a 4.19 series
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_19=y
+
+# Kernel
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION=y
+BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="4.19.182"
+BR2_LINUX_KERNEL_USE_ARCH_DEFAULT_CONFIG=y
+BR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y
+
+BR2_CCACHE=y
+
+# Packages
+BR2_PACKAGE_ACPID=y
