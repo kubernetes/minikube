@@ -18,13 +18,22 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.23": {
+			"coredns/coredns":         "v1.8.6",
+			"etcd":                    "3.5.1-0",
+			"kube-apiserver":          "v1.22.4",
+			"kube-controller-manager": "v1.22.4",
+			"kube-proxy":              "v1.22.4",
+			"kube-scheduler":          "v1.22.4",
+			"pause":                   "3.6",
+		},
 		"v1.22": {
 			"coredns/coredns":         "v1.8.4",
 			"etcd":                    "3.5.0-0",
-			"kube-apiserver":          "v1.22.3",
-			"kube-controller-manager": "v1.22.3",
-			"kube-proxy":              "v1.22.3",
-			"kube-scheduler":          "v1.22.3",
+			"kube-apiserver":          "v1.22.4",
+			"kube-controller-manager": "v1.22.4",
+			"kube-proxy":              "v1.22.4",
+			"kube-scheduler":          "v1.22.4",
 			"pause":                   "3.5",
 		},
 		"v1.21": {
