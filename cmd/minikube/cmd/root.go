@@ -236,6 +236,7 @@ func init() {
 				configCmd.ConfigCmd,
 				configCmd.ProfileCmd,
 				updateContextCmd,
+				diskUsageCmd,
 			},
 		},
 		{
