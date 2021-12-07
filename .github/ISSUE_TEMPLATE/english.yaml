@@ -45,7 +45,7 @@ body:
         - VirtualBox
         - None (Baremetal)
         - SSH
-        - VMWare
+        - VMware
         - Parallels
     validations:
       required: false
