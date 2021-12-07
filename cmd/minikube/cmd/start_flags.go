@@ -692,6 +692,12 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
+	if cmd.Flags().Changed("apiserver-ips") {
+		// IPSlice not supported in Viper
+		// https://github.com/spf13/viper/issues/460
+		cc.KubernetesConfig.APIServerIPs = apiServerIPs
+	}
+
 	// Handle flags and legacy configuration upgrades that do not contain KicBaseImage
 	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
