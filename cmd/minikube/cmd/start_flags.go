@@ -403,6 +403,7 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
+// getExtraOptions gets Kubernetes extra options from flags
 func getExtraOptions() config.ExtraOptionSlice {
 	extraOptionVals := config.ExtraOptionSlice{}
 	val := viper.GetString(extraOptions)
@@ -410,7 +411,7 @@ func getExtraOptions() config.ExtraOptionSlice {
 		return extraOptionVals
 	}
 	if err := extraOptionVals.Set(val); err != nil {
-		klog.Errorf("Invalid %s flag provided, flag will be ignored", extraOptions)
+		klog.Errorf("Invalid %s flag provided, flag will be ignored: %v", extraOptions, err)
 	}
 	return extraOptionVals
 }
