@@ -1199,8 +1199,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	// validate kubeadm extra args
-	extraOptions := getExtraOptions()
-	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(extraOptions); len(invalidOpts) > 0 {
+	if invalidOpts := bsutil.FindInvalidExtraConfigFlags(config.ExtraOptions); len(invalidOpts) > 0 {
 		out.WarningT(
 			"These --extra-config parameters are invalid: {{.invalid_extra_opts}}",
 			out.V{"invalid_extra_opts": invalidOpts},
@@ -1213,7 +1212,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	// check that kubeadm extra args contain only allowed parameters
-	for param := range extraOptions.AsMap().Get(bsutil.Kubeadm) {
+	for param := range config.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
 		if !config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmCmdParam], param) &&
 			!config.ContainsParam(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmConfigParam], param) {
 			exit.Message(reason.Usage, "Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
@@ -1473,19 +1472,17 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	err = nil
 	hints := driver.FlagDefaults(drvName)
 	if len(hints.ExtraOptions) > 0 {
-		extraOptionVals := getExtraOptions()
 		for _, eo := range hints.ExtraOptions {
-			if extraOptionVals.Exists(eo) {
+			if config.ExtraOptions.Exists(eo) {
 				klog.Infof("skipping extra-config %q.", eo)
 				continue
 			}
 			klog.Infof("auto setting extra-config to %q.", eo)
-			err = extraOptionVals.Set(eo)
+			err = config.ExtraOptions.Set(eo)
 			if err != nil {
 				err = errors.Wrapf(err, "setting extra option %s", eo)
 			}
 		}
-		viper.Set(extraOptions, extraOptionVals)
 	}
 
 	if !cmd.Flags().Changed(cacheImages) {

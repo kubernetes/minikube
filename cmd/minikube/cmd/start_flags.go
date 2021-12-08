@@ -124,7 +124,6 @@ const (
 	listenAddress           = "listen-address"
 	extraDisks              = "extra-disks"
 	certExpiration          = "cert-expiration"
-	extraOptions            = "extra-config"
 )
 
 var (
@@ -180,7 +179,7 @@ func initMinikubeFlags() {
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
 	startCmd.Flags().String(startNamespace, "default", "The named space to activate after start")
-	startCmd.Flags().String(extraOptions, "",
+	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
@@ -403,19 +402,6 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
-// getExtraOptions gets Kubernetes extra options from flags
-func getExtraOptions() config.ExtraOptionSlice {
-	extraOptionVals := config.ExtraOptionSlice{}
-	val := viper.GetString(extraOptions)
-	if val == "" {
-		return extraOptionVals
-	}
-	if err := extraOptionVals.Set(val); err != nil {
-		klog.Errorf("Invalid %s flag provided, flag will be ignored: %v", extraOptions, err)
-	}
-	return extraOptionVals
-}
-
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -494,7 +480,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        getRepository(cmd, k8sVersion),
-			ExtraOptions:           getExtraOptions(),
+			ExtraOptions:           config.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			CNI:                    getCNIConfig(cmd),
 			NodePort:               viper.GetInt(apiServerPort),
@@ -694,8 +680,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
 	}
 
-	if cmd.Flags().Changed(extraOptions) {
-		cc.KubernetesConfig.ExtraOptions = getExtraOptions()
+	if cmd.Flags().Changed("extra-config") {
+		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
 	}
 
 	if cmd.Flags().Changed(cniFlag) || cmd.Flags().Changed(enableDefaultCNI) {

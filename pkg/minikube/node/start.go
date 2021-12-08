@@ -477,7 +477,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	if err != nil {
 		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
 	}
-	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
+	for _, eo := range config.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
