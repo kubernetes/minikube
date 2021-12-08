@@ -61,8 +61,6 @@ var (
 	DockerEnv []string
 	// DockerOpt contains the option parameters
 	DockerOpt []string
-	// ExtraOptions contains extra options (if any)
-	ExtraOptions ExtraOptionSlice
 )
 
 // ErrNotExist is the error returned when a config does not exist
