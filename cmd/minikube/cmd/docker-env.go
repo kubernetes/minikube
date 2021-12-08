@@ -37,7 +37,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -50,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 const minLogCheckTime = 60 * time.Second
