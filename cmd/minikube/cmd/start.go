@@ -1286,7 +1286,7 @@ func validateRuntime(rtime string) error {
 	}
 
 	if (rtime == "crio" || rtime == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
-		return errors.Errorf("The CRI-O runtime is not compatible with the ppc architecture.")
+		return errors.New("The CRI-O runtime is not compatible with the ppc architecture.")
 	}
 
 	if !validRuntime {
