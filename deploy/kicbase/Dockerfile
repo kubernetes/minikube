@@ -209,8 +209,7 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 RUN systemctl disable containerd
 # disable crio for archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm /etc/crictl.yaml && systemctl enable podman.socket
-; fi
+    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm /etc/crictl.yaml && systemctl enable podman.socket; fi
 # enable docker which is default
 RUN systemctl enable docker.service 
 # making SSH work for docker container 
