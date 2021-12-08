@@ -122,7 +122,7 @@ RUN clean-install \
 
 # install docker
 # use the bionic packages for arm32
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
     if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
     sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
@@ -162,21 +162,26 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # Install cri-o/podman dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; fi
+    	curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    	apt-key add - < Release.key && \
+    	clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
+    else sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    	curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+    	apt-key add - < Release.key && \
+    	clean-install containers-common conmon containernetworking-plugins crun; \
+    fi
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc; fi
 
 # install podman
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
@@ -201,7 +206,10 @@ COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/syst
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl disable containerd
+# disable crio for archs that support it
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable docker which is default
 RUN systemctl enable docker.service && systemctl enable podman.socket
 # making SSH work for docker container 
