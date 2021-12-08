@@ -1267,25 +1267,30 @@ func validateDiskSize(diskSize string) error {
 }
 
 // validateRuntime validates the supplied runtime
-func validateRuntime(runtime string) error {
+func validateRuntime(rtime string) error {
 	validOptions := cruntime.ValidRuntimes()
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
 
 	var validRuntime bool
 	for _, option := range validOptions {
-		if runtime == option {
+		if rtime == option {
 			validRuntime = true
 		}
 
 		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-		if runtime == "cri-o" {
+		if rtime == "cri-o" {
 			viper.Set(containerRuntime, constants.CRIO)
 		}
+
+	}
+
+	if (rtime == "crio" || rtime == "cri-o") && strings.HasPrefix(runtime.GOARCH, "ppc64") {
+		return errors.Errorf("The CRI-O runtime is not compatible with the ppc architecture.")
 	}
 
 	if !validRuntime {
-		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", runtime, cruntime.ValidRuntimes())
+		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
 	}
 	return nil
 }

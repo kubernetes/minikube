@@ -690,7 +690,7 @@ docker-multi-arch-builder:
 	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
 	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
 
-KICBASE_ARCH = linux/amd64,linux/arm64,linux/s390x
+KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/arm,linux/ppc64le
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)

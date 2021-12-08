@@ -121,7 +121,10 @@ RUN clean-install \
     fuse3
 
 # install docker
-RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
+# use the bionic packages for arm32
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
+    sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io
@@ -159,10 +162,11 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # Install cri-o/podman dependencies:
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
-    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
+    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; fi
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
 RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
