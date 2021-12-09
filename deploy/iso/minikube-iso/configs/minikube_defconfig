@@ -123,6 +123,3 @@ BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
 BR2_ROOTFS_POST_BUILD_SCRIPT="board/pc/post-build.sh"
 
 BR2_ROOTFS_POST_IMAGE_SCRIPT="board/pc/post-image-efi.sh" # +efi
-
-# Linux headers same as kernel, a 4.19 series
-# BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_19=y # already in mk.
