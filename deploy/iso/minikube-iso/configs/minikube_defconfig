@@ -120,7 +120,6 @@ BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
 # -BR2_ROOTFS_POST_IMAGE_SCRIPT="support/scripts/genimage.sh"
 # -BR2_ROOTFS_POST_SCRIPT_ARGS="-c board/pc/genimage-bios.cfg"
 
-# Maybe we do not need this post-build script?
 BR2_ROOTFS_POST_BUILD_SCRIPT="board/pc/post-build.sh"
 
 # What does this do and do we need it?
