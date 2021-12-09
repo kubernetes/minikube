@@ -452,19 +452,12 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) e
 - "minikube docker-env" to point your docker-cli to the docker inside minikube.
 - "minikube image" to build images without docker.`)
 		case constants.Containerd:
-<<<<<<< HEAD
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
 - "minikube image" to build images without docker.`)
 		case constants.CRIO:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
 - "minikube podman-env" to point your podman-cli to the podman inside minikube.
 - "minikube image" to build images without docker.`)
-=======
-			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.`)
-		case constants.CRIO:
-			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
-- "minikube podman-env" to point your podman-cli to the podman inside minikube`)
->>>>>>> 906b57ec4227a7516173cd35e6e0238cdf934e7d
 		}
 		return nil
 	}
