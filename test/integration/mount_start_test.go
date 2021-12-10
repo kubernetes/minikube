@@ -21,8 +21,19 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
+	"runtime"
+	"strings"
 	"testing"
+)
+
+const (
+	mountGID   = "0"
+	mountMSize = "6543"
+	mountMode  = "0777"
+	mountPort  = "46464"
+	mountUID   = "0"
 )
 
 // TestMountStart tests using the mount command on start
@@ -72,7 +83,7 @@ func TestMountStart(t *testing.T) {
 func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"start", "-p", profile, "--memory=2048", "--mount"}
+	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-mode", mountMode, "--mount-port", mountPort, "--mount-uid", mountUID}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -84,10 +95,62 @@ func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 func validateMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"-p", profile, "ssh", "ls", "/minikube-host"}
+	sshArgs := []string{"-p", profile, "ssh", "--"}
+
+	args := sshArgs
+	args = append(args, "ls", "/minikube-host")
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("mount failed: %q : %v", rr.Command(), err)
+	}
+
+	// Docker has it's own mounting method, it doesn't respect the mounting flags
+	if DockerDriver() {
+		return
+	}
+
+	// skipping macOS due to https://github.com/kubernetes/minikube/issues/13070
+	if runtime.GOOS != "darwin" {
+		args = sshArgs
+		args = append(args, "stat", "--format", "'%a'", "/minikube-host")
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Fatalf("failed to get directory mode: %v", err)
+		}
+
+		const want = "777"
+		if !strings.Contains(rr.Output(), want) {
+			t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
+		}
+	}
+
+	// We can't get the mount details with Hyper-V
+	if HyperVDriver() {
+		return
+	}
+
+	args = sshArgs
+	args = append(args, "mount", "|", "grep", "9p")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to get mount information: %v", err)
+	}
+
+	flags := []struct {
+		key      string
+		expected string
+	}{
+		{"gid", mountGID},
+		{"msize", mountMSize},
+		{"port", mountPort},
+		{"uid", mountUID},
+	}
+
+	for _, flag := range flags {
+		want := fmt.Sprintf("%s=%s", flag.key, flag.expected)
+		if !strings.Contains(rr.Output(), want) {
+			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, rr.Output())
+		}
 	}
 }
 
