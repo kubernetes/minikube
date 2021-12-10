@@ -77,7 +77,16 @@ minikube start [flags]
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
       --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory.
       --mount                             This will start the mount daemon and automatically mount files into minikube.
+      --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
+      --mount-gid string                  Default group id used for the mount (default "docker")
+      --mount-ip string                   Specify the ip that the mount should be setup on
+      --mount-mode uint                   File permissions used for the mount (default 493)
+      --mount-msize int                   The number of bytes to use for 9p packet payload (default 262144)
+      --mount-options strings             Additional mount options, such as cache=fscache
+      --mount-port uint16                 Specify the port that the mount should be setup on, where 0 means any free port.
       --mount-string string               The argument to pass the minikube mount command on start.
+      --mount-type string                 Specify the mount filesystem type (supported types: 9p) (default "9p")
+      --mount-uid string                  Default user id used for the mount (default "docker")
       --namespace string                  The named space to activate after start (default "default")
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
