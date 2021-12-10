@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -108,16 +109,19 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 		return
 	}
 
-	args = sshArgs
-	args = append(args, "stat", "--format", "'%a'", "/minikube-host")
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("failed to get directory mode: %v", err)
-	}
+	// skipping macOS due to https://github.com/kubernetes/minikube/issues/13070
+	if runtime.GOOS != "darwin" {
+		args = sshArgs
+		args = append(args, "stat", "--format", "'%a'", "/minikube-host")
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Fatalf("failed to get directory mode: %v", err)
+		}
 
-	const want = "777"
-	if !strings.Contains(rr.Output(), want) {
-		t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
+		const want = "777"
+		if !strings.Contains(rr.Output(), want) {
+			t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
+		}
 	}
 
 	// We can't get the mount details with Hyper-V
