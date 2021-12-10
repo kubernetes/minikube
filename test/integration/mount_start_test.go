@@ -115,7 +115,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to get directory mode: %v", err)
 	}
 
-	want := "777"
+	const want = "777"
 	if !strings.Contains(rr.Output(), want) {
 		t.Errorf("wanted mode to be %q; got: %q", want, rr.Output())
 	}
