@@ -145,7 +145,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	for _, flag := range flags {
 		want := fmt.Sprintf("%s=%s", flag.key, flag.expected)
 		if !strings.Contains(rr.Output(), want) {
-			t.Errorf("wanted gid to be: %q; got: %q", want, rr.Output())
+			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, rr.Output())
 		}
 	}
 }
