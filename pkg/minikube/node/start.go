@@ -148,9 +148,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg, *starter.Cfg)
-	}
+	go configureMounts(&wg, *starter.Cfg)
 
 	wg.Add(1)
 	go func() {
