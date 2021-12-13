@@ -21,10 +21,10 @@ var (
 		"v1.23": {
 			"coredns/coredns":         "v1.8.6",
 			"etcd":                    "3.5.1-0",
-			"kube-apiserver":          "v1.22.4",
-			"kube-controller-manager": "v1.22.4",
-			"kube-proxy":              "v1.22.4",
-			"kube-scheduler":          "v1.22.4",
+			"kube-apiserver":          "v1.23.0",
+			"kube-controller-manager": "v1.23.0",
+			"kube-proxy":              "v1.23.0",
+			"kube-scheduler":          "v1.23.0",
 			"pause":                   "3.6",
 		},
 		"v1.22": {
