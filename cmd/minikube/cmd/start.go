@@ -1285,7 +1285,7 @@ func validateRuntime(rtime string) error {
 
 	}
 
-	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || runtime.GOARCH == "arm-v7") {
+	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || detect.RuntimeArch() == "arm" || strings.HasPrefix(detect.RuntimeArch(), "arm/")) {
 		out.Error(reason.RuntimeIncompat, "The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.", out.V{"runtime": rtime, "arch": runtime.GOARCH})
 	}
 
