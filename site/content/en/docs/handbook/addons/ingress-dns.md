@@ -155,6 +155,49 @@ Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClie
 {{% /windowstab %}}
 {{% /tabs %}}
 
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>(optional) Configure in-cluster DNS server to resolve local DNS names inside cluster</h2>
+
+Sometimes it's useful to access other applications inside cluster via ingress and by their local DNS name - microservices/APIs/tests. 
+In such case ingress-dns addon should be used by in-cluster DNS server - [CoreDNS](https://coredns.io/) to resolve local DNS names.  
+
+Edit your CoreDNS config
+```sh
+kubectl edit configmap coredns -n kube-system
+```
+and add block for your local domain 
+```
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+
+```
+Replace `192.168.99.169` with your `minikube ip`.
+
+The final ConfigMap should look like:
+```yaml
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+...
+    }
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+kind: ConfigMap
+metadata:
+...
+```
+See https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/
+
 ## Testing
 
 <h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Add the test ingress</h2>
