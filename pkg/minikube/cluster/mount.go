@@ -18,9 +18,7 @@ package cluster
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,8 +42,6 @@ type MountConfig struct {
 	MSize int
 	// Port is the port to connect to on the host
 	Port int
-	// Mode is the file permissions to set the mount to (octals)
-	Mode os.FileMode
 	// Extra mount options. See https://www.kernel.org/doc/Documentation/filesystems/9p.txt
 	Options map[string]string
 }
@@ -82,7 +78,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
 	}
 
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s", c.Mode, target))); err != nil {
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s", target))); err != nil {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
 	}
 
@@ -92,13 +88,6 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 			return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
 		}
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
-	}
-
-	// skipping macOS due to https://github.com/kubernetes/minikube/issues/13070
-	if runtime.GOOS != "darwin" {
-		if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo chmod %o %s", c.Mode, target))); err != nil {
-			return &MountError{ErrorType: MountErrorChmod, UnderlyingError: errors.Wrap(err, "chmod folder")}
-		}
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())

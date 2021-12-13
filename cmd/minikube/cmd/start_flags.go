@@ -86,7 +86,6 @@ const (
 	mount9PVersion          = "mount-9p-version"
 	mountGID                = "mount-gid"
 	mountIPFlag             = "mount-ip"
-	mountMode               = "mount-mode"
 	mountMSize              = "mount-msize"
 	mountOptions            = "mount-options"
 	mountPortFlag           = "mount-port"
@@ -165,7 +164,6 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
 	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
 	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
-	startCmd.Flags().Uint(mountMode, defaultMountMode, mountModeDescription)
 	startCmd.Flags().Int(mountMSize, defaultMountMSize, mountMSizeDescription)
 	startCmd.Flags().StringSlice(mountOptions, defaultMountOptions(), mountOptionsDescription)
 	startCmd.Flags().Uint16(mountPortFlag, defaultMountPort, mountPortDescription)
@@ -487,7 +485,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		Mount9PVersion:          viper.GetString(mount9PVersion),
 		MountGID:                viper.GetString(mountGID),
 		MountIP:                 viper.GetString(mountIPFlag),
-		MountMode:               viper.GetUint(mountMode),
 		MountMSize:              viper.GetInt(mountMSize),
 		MountOptions:            viper.GetStringSlice(mountOptions),
 		MountPort:               uint16(viper.GetUint(mountPortFlag)),
@@ -705,7 +702,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.Mount9PVersion, mount9PVersion)
 	updateStringFromFlag(cmd, &cc.MountGID, mountGID)
 	updateStringFromFlag(cmd, &cc.MountIP, mountIPFlag)
-	updateUintFromFlag(cmd, &cc.MountMode, mountMode)
 	updateIntFromFlag(cmd, &cc.MountMSize, mountMSize)
 	updateStringSliceFromFlag(cmd, &cc.MountOptions, mountOptions)
 	updateUint16FromFlag(cmd, &cc.MountPort, mountPortFlag)
@@ -779,13 +775,6 @@ func updateIntFromFlag(cmd *cobra.Command, v *int, key string) {
 func updateDurationFromFlag(cmd *cobra.Command, v *time.Duration, key string) {
 	if cmd.Flags().Changed(key) {
 		*v = viper.GetDuration(key)
-	}
-}
-
-// updateUintFromFlag will update the existing uint from the flag.
-func updateUintFromFlag(cmd *cobra.Command, v *uint, key string) {
-	if cmd.Flags().Changed(key) {
-		*v = viper.GetUint(key)
 	}
 }
 

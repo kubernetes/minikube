@@ -80,7 +80,6 @@ minikube start [flags]
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
       --mount-gid string                  Default group id used for the mount (default "docker")
       --mount-ip string                   Specify the ip that the mount should be setup on
-      --mount-mode uint                   File permissions used for the mount (default 493)
       --mount-msize int                   The number of bytes to use for 9p packet payload (default 262144)
       --mount-options strings             Additional mount options, such as cache=fscache
       --mount-port uint16                 Specify the port that the mount should be setup on, where 0 means any free port.

@@ -51,8 +51,6 @@ const (
 	mountGIDDescription       = "Default group id used for the mount"
 	defaultMountIP            = ""
 	mountIPDescription        = "Specify the ip that the mount should be setup on"
-	defaultMountMode          = 0o755
-	mountModeDescription      = "File permissions used for the mount"
 	defaultMountMSize         = 262144
 	mountMSizeDescription     = "The number of bytes to use for 9p packet payload"
 	mountOptionsDescription   = "Additional mount options, such as cache=fscache"
@@ -79,7 +77,6 @@ var (
 	gid          string
 	mSize        int
 	options      []string
-	mode         uint
 )
 
 // supportedFilesystems is a map of filesystem types to not warn against.
@@ -166,7 +163,6 @@ var mountCmd = &cobra.Command{
 			Version: mountVersion,
 			MSize:   mSize,
 			Port:    port,
-			Mode:    os.FileMode(mode),
 			Options: map[string]string{},
 		}
 
@@ -194,7 +190,6 @@ var mountCmd = &cobra.Command{
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
 		out.Infof("Version:      {{.version}}", out.V{"version": cfg.Version})
 		out.Infof("Message Size: {{.size}}", out.V{"size": cfg.MSize})
-		out.Infof("Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
 		out.Infof("Options:      {{.options}}", out.V{"options": cfg.Options})
 		out.Infof("Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
@@ -245,7 +240,6 @@ func init() {
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().StringVar(&uid, constants.MountUIDFlag, defaultMountUID, mountUIDDescription)
 	mountCmd.Flags().StringVar(&gid, constants.MountGIDFlag, defaultMountGID, mountGIDDescription)
-	mountCmd.Flags().UintVar(&mode, constants.MountModeFlag, defaultMountMode, mountModeDescription)
 	mountCmd.Flags().StringSliceVar(&options, constants.MountOptionsFlag, defaultMountOptions(), mountOptionsDescription)
 	mountCmd.Flags().IntVar(&mSize, constants.MountMSizeFlag, defaultMountMSize, mountMSizeDescription)
 }

@@ -468,7 +468,6 @@
 	"Paused {{.count}} containers": "",
 	"Paused {{.count}} containers in: {{.namespaces}}": "",
 	"Pausing node {{.name}} ... ": "",
-	"Permissions:  {{.octalMode}} ({{.writtenMode}})": "",
 	"Please also attach the following file to the GitHub issue:": "",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "",
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "",
