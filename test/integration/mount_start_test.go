@@ -22,6 +22,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -36,6 +37,8 @@ const (
 	mountUID   = "0"
 )
 
+var mountStartTmpDir = ""
+
 // TestMountStart tests using the mount command on start
 func TestMountStart(t *testing.T) {
 	if NoneDriver() {
@@ -45,6 +48,12 @@ func TestMountStart(t *testing.T) {
 	type validateFunc func(context.Context, *testing.T, string)
 	profile1 := UniqueProfileName("mount-start-1")
 	profile2 := UniqueProfileName("mount-start-2")
+	tmpDir, err := os.MkdirTemp("", "mount-test")
+	if err != nil {
+		t.Fatalf("failed to create tmp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+	mountStartTmpDir = tmpDir
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile1, cancel)
 	defer Cleanup(t, profile2, cancel)
@@ -83,7 +92,9 @@ func TestMountStart(t *testing.T) {
 func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-mode", mountMode, "--mount-port", mountPort, "--mount-uid", mountUID}
+	mountString := fmt.Sprintf("%s:/minikube-host", mountStartTmpDir)
+
+	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-string", mountString, "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-mode", mountMode, "--mount-port", mountPort, "--mount-uid", mountUID}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
