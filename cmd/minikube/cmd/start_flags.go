@@ -83,6 +83,15 @@ const (
 	imageRepository         = "image-repository"
 	imageMirrorCountry      = "image-mirror-country"
 	mountString             = "mount-string"
+	mount9PVersion          = "mount-9p-version"
+	mountGID                = "mount-gid"
+	mountIPFlag             = "mount-ip"
+	mountMode               = "mount-mode"
+	mountMSize              = "mount-msize"
+	mountOptions            = "mount-options"
+	mountPortFlag           = "mount-port"
+	mountTypeFlag           = "mount-type"
+	mountUID                = "mount-uid"
 	disableDriverMounts     = "disable-driver-mounts"
 	cacheImages             = "cache-images"
 	uuid                    = "uuid"
@@ -153,6 +162,15 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
+	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
+	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
+	startCmd.Flags().Uint(mountMode, defaultMountMode, mountModeDescription)
+	startCmd.Flags().Int(mountMSize, defaultMountMSize, mountMSizeDescription)
+	startCmd.Flags().StringSlice(mountOptions, defaultMountOptions(), mountOptionsDescription)
+	startCmd.Flags().Uint16(mountPortFlag, defaultMountPort, mountPortDescription)
+	startCmd.Flags().String(mountTypeFlag, defaultMountType, mountTypeDescription)
+	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
 	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
@@ -466,6 +484,15 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		CertExpiration:          viper.GetDuration(certExpiration),
 		Mount:                   viper.GetBool(createMount),
 		MountString:             viper.GetString(mountString),
+		Mount9PVersion:          viper.GetString(mount9PVersion),
+		MountGID:                viper.GetString(mountGID),
+		MountIP:                 viper.GetString(mountIPFlag),
+		MountMode:               viper.GetUint(mountMode),
+		MountMSize:              viper.GetInt(mountMSize),
+		MountOptions:            viper.GetStringSlice(mountOptions),
+		MountPort:               uint16(viper.GetUint(mountPortFlag)),
+		MountType:               viper.GetString(mountTypeFlag),
+		MountUID:                viper.GetString(mountUID),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -675,6 +702,15 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
 	updateBoolFromFlag(cmd, &cc.Mount, createMount)
 	updateStringFromFlag(cmd, &cc.MountString, mountString)
+	updateStringFromFlag(cmd, &cc.Mount9PVersion, mount9PVersion)
+	updateStringFromFlag(cmd, &cc.MountGID, mountGID)
+	updateStringFromFlag(cmd, &cc.MountIP, mountIPFlag)
+	updateUintFromFlag(cmd, &cc.MountMode, mountMode)
+	updateIntFromFlag(cmd, &cc.MountMSize, mountMSize)
+	updateStringSliceFromFlag(cmd, &cc.MountOptions, mountOptions)
+	updateUint16FromFlag(cmd, &cc.MountPort, mountPortFlag)
+	updateStringFromFlag(cmd, &cc.MountType, mountTypeFlag)
+	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
@@ -743,6 +779,20 @@ func updateIntFromFlag(cmd *cobra.Command, v *int, key string) {
 func updateDurationFromFlag(cmd *cobra.Command, v *time.Duration, key string) {
 	if cmd.Flags().Changed(key) {
 		*v = viper.GetDuration(key)
+	}
+}
+
+// updateUintFromFlag will update the existing uint from the flag.
+func updateUintFromFlag(cmd *cobra.Command, v *uint, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = viper.GetUint(key)
+	}
+}
+
+// updateUint16FromFlag will update the existing uint16 from the flag.
+func updateUint16FromFlag(cmd *cobra.Command, v *uint16, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = uint16(viper.GetUint(key))
 	}
 }
 
