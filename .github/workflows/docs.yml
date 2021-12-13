@@ -6,7 +6,7 @@ on:
       - master  
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.5'
+  GO_VERSION: '1.17.3'
 jobs:
   generate-docs:
     runs-on: ubuntu-20.04
