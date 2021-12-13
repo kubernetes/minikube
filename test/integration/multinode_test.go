@@ -193,7 +193,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		// copy local to node
 		testCpCmd(ctx, t, profile, "", srcPath, n.Name, dstPath)
 
-		// copy back from node to lcoal
+		// copy back from node to local
 		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("cp-test_%s.txt", n.Name))
 		testCpCmd(ctx, t, profile, n.Name, dstPath, "", tmpPath)
 
@@ -202,7 +202,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 			if n.Name == n2.Name {
 				continue
 			}
-			fp := filepath.Join("/home/docker", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
+			fp := fmt.Sprintf("/home/docker/cp-test_%s_%s.txt", n.Name, n2.Name)
 			testCpCmd(ctx, t, profile, n.Name, dstPath, n2.Name, fp)
 		}
 	}
