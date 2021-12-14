@@ -63,6 +63,7 @@
 	"All existing scheduled stops cancelled": "예정된 모든 중지 요청이 취소되었습니다",
 	"Allow user prompts for more information": "많은 정보를 위해 사용자 프롬프트를 허가합니다",
 	"Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \\\"auto\\\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers": "",
+	"Alternatively you could install one of these drivers:": "",
 	"Amount of RAM allocated to the minikube VM (format: \u003cnumber\u003e[\u003cunit\u003e], where unit = b, k, m or g).": "minikube 가상 머신에 할당할 RAM 의 용량 (format: \u003cnumber\u003e[\u003cunit\u003e], where unit = b, k, m or g)",
 	"Amount of time to wait for a service in seconds": "",
 	"Amount of time to wait for service in seconds": "",
