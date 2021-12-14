@@ -605,7 +605,7 @@
 	"Successfully added {{.name}} to {{.cluster}}!": "{{.cluster}} への {{.name}} 追加に成功しました!",
 	"Successfully deleted all profiles": "全てのプロファイルの削除に成功しました",
 	"Successfully mounted {{.sourcePath}} to {{.destinationPath}}": "{{.destinationPath}} への {{.sourcePath}} のマウントに成功しました",
-	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "[{{.minikubeDirectory}}] ディレクトリーにある minikube の削除に成功しました",
+	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "[{{.minikubeDirectory}}] にある minikube ディレクトリーの削除に成功しました",
 	"Successfully started node {{.name}}!": "{{.name}} ノードの起動に成功しました!",
 	"Successfully stopped node {{.name}}": "{{.name}} ノードの停止に成功しました",
 	"Suggestion: {{.advice}}": "提案: {{.advice}}",
