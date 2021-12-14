@@ -565,13 +565,13 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
-		klog.Infof("needs reconfigure: primary control plane error: %v", err)
+		klog.Warningf("needs reconfigure: primary control plane error: %v", err)
 		return true
 	}
 
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
-		klog.Infof("needs reconfigure: control plane error: %v", err)
+		klog.Warningf("needs reconfigure: control plane error: %v", err)
 		return true
 	}
 
@@ -583,7 +583,7 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 
 	client, err := k.client(hostname, port)
 	if err != nil {
-		klog.Infof("needs reconfigure: getting k8s client error: %v", err)
+		klog.Warningf("needs reconfigure: getting k8s client error: %v", err)
 		return true
 	}
 
@@ -597,26 +597,26 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 	apiStatusTimeout := 3000 * time.Millisecond
 	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
 	if err != nil {
-		klog.Infof("needs reconfigure: apiserver error: %v", err)
+		klog.Warningf("needs reconfigure: apiserver error: %v", err)
 		return true
 	}
 	if st != state.Running {
-		klog.Infof("needs reconfigure: apiserver in state %s", st)
+		klog.Warningf("needs reconfigure: apiserver in state %s", st.String())
 		return true
 	}
 
 	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		klog.Infof("needs reconfigure: %v", err)
+		klog.Warningf("needs reconfigure: %v", err)
 		return true
 	}
 
 	if err := kverify.APIServerVersionMatch(client, cfg.KubernetesConfig.KubernetesVersion); err != nil {
-		klog.Infof("needs reconfigure: %v", err)
+		klog.Warningf("needs reconfigure: %v", err)
 		return true
 	}
 
 	// DANGER: This log message is hard-coded in an integration test!
-	klog.Infof("The running cluster does not require reconfiguration: %s", hostname)
+	klog.Infof("%s: %s", constants.ReconfigurationNotRequired, hostname)
 	return false
 }
 
