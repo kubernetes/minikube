@@ -594,7 +594,7 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 		return true
 	}
 	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
-	apiStatusTimeout := 3000 * time.Millisecond
+	apiStatusTimeout := 3 * time.Second
 	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
 	if err != nil {
 		klog.Warningf("needs reconfigure: apiserver error: %v", err)
