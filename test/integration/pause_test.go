@@ -59,6 +59,9 @@ func TestPause(t *testing.T) {
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
 			}
+			if t.Failed() {
+				t.Fatalf("Previous test failed, not running dependent tests")
+			}
 
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
