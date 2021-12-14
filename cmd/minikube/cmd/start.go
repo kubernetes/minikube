@@ -627,8 +627,21 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			}
 			return rejects[i].Priority > rejects[j].Priority
 		})
+
+		// Display the issue for installed drivers
 		for _, r := range rejects {
-			if !r.Default {
+			if r.Default && r.State.Installed {
+				out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+				if r.Suggestion != "" {
+					out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
+				}
+			}
+		}
+
+		// Display the other drivers users can install
+		out.Step(style.Tip, "Alternatively you could install one of these drivers:")
+		for _, r := range rejects {
+			if !r.Default || r.State.Installed {
 				continue
 			}
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
