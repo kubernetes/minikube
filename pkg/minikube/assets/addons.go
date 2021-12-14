@@ -790,33 +790,33 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 
 	opts := struct {
-		LegacyKubernetesVersion bool
-		Arch                    string
-		ExoticArch              string
-		ImageRepository         string
-		LoadBalancerStartIP     string
-		LoadBalancerEndIP       string
-		CustomIngressCert       string
-		IngressAPIVersion       string
-		ContainerRuntime        string
-		Images                  map[string]string
-		Registries              map[string]string
-		CustomRegistries        map[string]string
-		NetworkInfo             map[string]string
+		PreOneTwentyKubernetes bool
+		Arch                   string
+		ExoticArch             string
+		ImageRepository        string
+		LoadBalancerStartIP    string
+		LoadBalancerEndIP      string
+		CustomIngressCert      string
+		IngressAPIVersion      string
+		ContainerRuntime       string
+		Images                 map[string]string
+		Registries             map[string]string
+		CustomRegistries       map[string]string
+		NetworkInfo            map[string]string
 	}{
-		LegacyKubernetesVersion: false,
-		Arch:                    a,
-		ExoticArch:              ea,
-		ImageRepository:         cfg.ImageRepository,
-		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
-		CustomIngressCert:       cfg.CustomIngressCert,
-		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:        cfg.ContainerRuntime,
-		Images:                  images,
-		Registries:              addon.Registries,
-		CustomRegistries:        customRegistries,
-		NetworkInfo:             make(map[string]string),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -835,7 +835,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		opts.IngressAPIVersion = "v1beta1"
 	}
 	if semver.MustParseRange("<1.20.0")(v) {
-		opts.LegacyKubernetesVersion = true
+		opts.PreOneTwentyKubernetes = true
 	}
 
 	// Network info for generating template
