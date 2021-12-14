@@ -667,6 +667,7 @@
 	"The time interval for each check that wait performs in seconds": "L'intervalle de temps pour chaque contrôle que wait effectue en secondes",
 	"The value passed to --format is invalid": "La valeur passée à --format n'est pas valide",
 	"The value passed to --format is invalid: {{.error}}": "La valeur passée à --format n'est pas valide : {{.error}}",
+	"The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "Il existe plusieurs manières d'activer le partage de fichiers requis :\n1. Activez \"Utiliser le moteur basé sur WSL 2\" dans Docker Desktop\nou\n2. Activer le partage de fichiers dans Docker Desktop pour le répertoire %s%s",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "Ces paramètres --extra-config ne sont pas valides : {{.invalid_extra_opts}}",
 	"These changes will take effect upon a minikube delete and then a minikube start": "Ces modifications prendront effet lors d'une suppression de minikube, puis d'un démarrage de minikube",
