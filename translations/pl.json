@@ -725,6 +725,7 @@
 	"The value passed to --format is invalid": "Wartość przekazana do --format jest nieprawidłowa",
 	"The value passed to --format is invalid: {{.error}}": "Wartość przekazana do --format jest nieprawidłowa: {{.error}}",
 	"The {{.driver_name}} driver should not be used with root privileges.": "{{.driver_name}} nie powinien być używany z przywilejami root'a.",
+	"The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "",
 	"These changes will take effect upon a minikube delete and then a minikube start": "",

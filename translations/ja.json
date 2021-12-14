@@ -709,6 +709,7 @@
 	"The value passed to --format is invalid": "--format の値が無効です",
 	"The value passed to --format is invalid: {{.error}}": "--format の値が無効です: {{.error}}",
 	"The {{.driver_name}} driver should not be used with root privileges.": "{{.driver_name}} ドライバーをルート権限で使用しないでください",
+	"The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "必要なファイル共有を有効にする方法が 2 つあります:\n1. Docker Desktop 中の「Use the WSL 2 based engine」を有効にする\nまたは\n2. %s%s ディレクトリー用の Docker Desktop でファイル共有を有効にする",
 	"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}": "新バージョンの '{{.driver_executable}}' があります。アップグレードを検討してください。{{.documentation_url}}",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "次の --extra-config パラメーターは無効です: {{.invalid_extra_opts}}",
