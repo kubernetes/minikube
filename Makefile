@@ -1002,6 +1002,7 @@ endif
 update-kubeadm-constants:
 	(cd hack/update/kubeadm_constants && \
 	 go run update_kubeadm_constants.go)
+	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 
 .PHONY: stress
 stress: ## run the stress tests
