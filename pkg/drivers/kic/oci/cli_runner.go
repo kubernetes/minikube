@@ -135,7 +135,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)
-	if warn {
+	if warn && !out.JSON {
 		if elapsed > warnTime {
 			warnLock.Lock()
 			_, ok := alreadyWarnedCmds[rr.Command()]

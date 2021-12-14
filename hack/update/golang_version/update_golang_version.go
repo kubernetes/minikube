@@ -85,6 +85,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-kubadm-constants.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/update-golang-version.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,

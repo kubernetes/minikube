@@ -33,10 +33,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+// TestDocs generates list of tests
 func TestDocs(docPath string, pathToCheck string) error {
 	buf := bytes.NewBuffer([]byte{})
 	date := time.Now().Format("2006-01-02")
-	title := out.Fmt(title, out.V{"Command": "Integration Tests", "Description": "All minikube integration tests", "Date": date})
+	title := out.Fmt(title, out.V{"Command": "List of Integration Test Cases", "Description": "Auto generated list of all minikube integration tests and what they do.", "Date": date})
 	_, err := buf.Write([]byte(title))
 	if err != nil {
 		return err

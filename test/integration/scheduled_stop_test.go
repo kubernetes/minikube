@@ -94,29 +94,30 @@ func TestScheduledStopUnix(t *testing.T) {
 	}
 
 	// schedule a second stop which should cancel the first scheduled stop
-	stopMinikube(ctx, t, profile, []string{"--schedule", "8s"})
+	stopMinikube(ctx, t, profile, []string{"--schedule", "15s"})
 	if processRunning(t, pid) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
-	checkPID(t, profile)
+	pid = checkPID(t, profile)
 
 	// cancel the shutdown and make sure minikube is still running after 8 seconds
 	// sleep 12 just to be safe
 	stopMinikube(ctx, t, profile, []string{"--cancel-scheduled"})
-	time.Sleep(12 * time.Second)
+	time.Sleep(25 * time.Second)
 	// make sure minikube status is "Running"
 	ensureMinikubeStatus(ctx, t, profile, "Host", state.Running.String())
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 
 	// schedule another stop, make sure minikube status is "Stopped"
-	stopMinikube(ctx, t, profile, []string{"--schedule", "5s"})
+	stopMinikube(ctx, t, profile, []string{"--schedule", "15s"})
+	time.Sleep(15 * time.Second)
 	if processRunning(t, pid) {
 		t.Fatalf("process %v running but should have been killed on reschedule of stop", pid)
 	}
 
 	// wait for stop to complete
-	time.Sleep(25 * time.Second)
+	time.Sleep(30 * time.Second)
 	// make sure minikube timetoStop is not present
 	ensureTimeToStopNotPresent(ctx, t, profile)
 	// make sure minikube status is "Stopped"

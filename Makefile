@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.24.0-1639438918-12892
+ISO_VERSION ?= v1.24.0-1638835912-13105
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,9 +33,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.17.3
+GO_VERSION ?= 1.17.5
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.23.0
+GO_K8S_VERSION_PREFIX ?= v1.24.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -59,7 +59,7 @@ HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.17
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
 
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-buster.0
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
@@ -997,6 +997,12 @@ else
 	 export UPDATE_TARGET="all" && \
 	 go run update_kubernetes_version.go)
 endif
+
+.PHONY: update-kubeadm-constants
+update-kubeadm-constants:
+	(cd hack/update/kubeadm_constants && \
+	 go run update_kubeadm_constants.go)
+	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 
 .PHONY: stress
 stress: ## run the stress tests

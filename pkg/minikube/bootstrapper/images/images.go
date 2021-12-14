@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"path"
 
+	"k8s.io/minikube/pkg/minikube/constants"
+
 	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/version"
@@ -31,21 +33,15 @@ func Pause(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	pv := "3.6"
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	if semver.MustParseRange("<1.23.0-alpha.2")(v) {
-		pv = "3.5"
+	pv := "3.6"
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	imageName := "pause"
+	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+		pv = pVersion
 	}
-	if semver.MustParseRange("<1.22.0-alpha.3")(v) {
-		pv = "3.4.1"
-	}
-	if semver.MustParseRange("<1.21.0-alpha.3")(v) {
-		pv = "3.2"
-	}
-	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
-		pv = "3.1"
-	}
-	return path.Join(kubernetesRepo(mirror), "pause:"+pv)
+
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -73,30 +69,19 @@ func coreDNS(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+
+	cv := "1.8.4"
 	in := "coredns/coredns"
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
 		in = "coredns"
 	}
-	cv := "v1.8.4"
-	switch v.Minor {
-	case 21:
-		cv = "v1.8.0"
-	case 20, 19:
-		cv = "1.7.0"
-	case 18:
-		cv = "1.6.7"
-	case 17:
-		cv = "1.6.5"
-	case 16:
-		cv = "1.6.2"
-	case 15, 14:
-		cv = "1.3.1"
-	case 13:
-		cv = "1.2.6"
-	case 12:
-		cv = "1.2.2"
+
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][in]; ok {
+		cv = cVersion
 	}
-	return path.Join(kubernetesRepo(mirror), in+":"+cv)
+
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), in), cv)
 }
 
 // etcd returns the image used for etcd
@@ -105,26 +90,13 @@ func etcd(v semver.Version, mirror string) string {
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.5.0-0"
-
-	switch v.Minor {
-	case 19, 20, 21:
-		ev = "3.4.13-0"
-	case 17, 18:
-		ev = "3.4.3-0"
-	case 16:
-		ev = "3.3.15-0"
-	case 14, 15:
-		ev = "3.3.10"
-	case 12, 13:
-		ev = "3.2.24"
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	imageName := "etcd"
+	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+		ev = eVersion
 	}
 
-	// An awkward special case for v1.19.0 - do not imitate unless necessary
-	if v.Equals(semver.MustParse("1.19.0")) {
-		ev = "3.4.9-1"
-	}
-
-	return path.Join(kubernetesRepo(mirror), "etcd:"+ev)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
 }
 
 // auxiliary returns images that are helpful for running minikube

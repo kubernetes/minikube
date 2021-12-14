@@ -87,6 +87,14 @@ type ClusterConfig struct {
 	CertExpiration          time.Duration
 	Mount                   bool
 	MountString             string
+	Mount9PVersion          string
+	MountGID                string
+	MountIP                 string
+	MountMSize              int
+	MountOptions            []string
+	MountPort               uint16
+	MountType               string
+	MountUID                string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

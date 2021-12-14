@@ -172,6 +172,7 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+// AllowsPreload returns if preload is allowed for the driver
 func AllowsPreload(driverName string) bool {
 	return !BareMetal(driverName) && !IsSSH(driverName)
 }

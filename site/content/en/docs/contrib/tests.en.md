@@ -1,7 +1,7 @@
 ---
-title: "Integration Tests"
+title: "List of Integration Test Cases"
 description: >
-  All minikube integration tests
+  Auto generated list of all minikube integration tests and what they do.
 ---
 
 
@@ -94,6 +94,8 @@ Steps:
 - Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
+- Try to load image already loaded and make sure `minikube image load --daemon` works
+- Make sure a new updated tag works by `minikube image load --daemon`
 - Make sure image saving works by `minikube image load --daemon`
 - Make sure image removal works by `minikube image rm`
 - Make sure image loading from file works by `minikube image load`
@@ -509,8 +511,32 @@ should fail if hairpinMode is off
 tests starting minikube without Kubernetes,
 for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
 
+#### validateStartNoK8sWithVersion
+expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+
+Steps:
+- start minikube with no kubernetes.
+
+#### validateStartWithK8S
+starts a minikube cluster with Kubernetes started/configured.
+
+Steps:
+- start minikube with Kubernetes.
+- return an error if Kubernetes is not running.
+
+#### validateStartWithStopK8s
+starts a minikube cluster while stopping Kubernetes.
+
+Steps:
+- start minikube with no Kubernetes.
+- return an error if Kubernetes is not stopped.
+- delete minikube profile.
+
 #### validateStartNoK8S
 starts a minikube cluster without kubernetes started/configured
+
+Steps:
+- start minikube with no Kubernetes.
 
 #### validateK8SNotRunning
 validates that there is no kubernetes running inside minikube
@@ -522,7 +548,7 @@ validates that minikube is stopped after a --no-kubernetes start
 validates that profile list works with --no-kubernetes
 
 #### validateStartNoArgs
-valides that minikube start with no args works
+validates that minikube start with no args works.
 
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected

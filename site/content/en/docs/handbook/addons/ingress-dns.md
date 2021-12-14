@@ -12,14 +12,14 @@ DNS service for ingress controllers running on your minikube server
 When running minikube locally, you may want to run your services on an ingress controller so that you don't have to use
 minikube tunnel or NodePorts to access your services. While NodePort might be okay in a lot of circumstances, an ingress
 is necessary to test some features. Ingress controllers are great because you can define your entire architecture in
-something like a helm chart and all your services will be available.
+something like a helm chart, and all your services will be available.
 
 However, for minikube, there is an additional challenge. Your ingress controller relies on DNS, so local DNS names like
 `myservice.test` will have to resolve to your `minikube ip`. The only real way to do this is to add an entry for every
 service in your `/etc/hosts` file. This gets messy for obvious reasons. For each service you are running that each has
 its own DNS entry, you will need to configure it manually. Even if you automate it, you then need to rely on the host
 operating system for storing configurations instead of storing them in your cluster. To make it worse, these
-configurations have to be constantly maintained and updated as services are added, remove, and renamed. I call it the
+configurations have to be constantly maintained and updated as services are added, removed, and renamed. I call it the
 `/etc/hosts` pollution problem.
 
 ### Solution
@@ -58,15 +58,10 @@ minikube addons enable ingress-dns
 
 <h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Add the `minikube ip` as a DNS server</h2>
 
-{{% card %}}
+{{% tabs %}}
+{{% linuxtab %}}
 
-{{% quiz_row base="" name="Operating system" %}}
-{{% quiz_button option="Linux" %}} {{% quiz_button option="macOS" %}} {{% quiz_button option="Windows" %}}
-{{% /quiz_row %}}
-
-{{% card %}}
-
-{{% quiz_instruction_plain id="/Linux" %}}
+## Linux OS with resolvconf
 
 Update the file `/etc/resolvconf/resolv.conf.d/base` to have the following contents.
 
@@ -93,21 +88,40 @@ If your Linux OS does not use `systemctl`, run the following commands.
 
 See https://linux.die.net/man/5/resolver
 
-When you are using Network Manager with the `dnsmasq` plugin, you can add an additional configuration file, but you need
-to restart NetworkManager to activate the change.
+## Linux OS with Network Manager
 
-```bash
-echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
-systemctl restart NetworkManager.service
+Network Manager can run integrated caching DNS server - `dnsmasq` plugin and can be configured to use separate nameservers per domain. 
+
+Edit /etc/NetworkManager/NetworkManager.conf and set `dns=dnsmasq`
+
 ```
-
+[main]
+dns=dnsmasq
+```
 Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
 
-{{% /quiz_instruction_plain %}}
+Configure dnsmasq to handle .test domain 
 
-{{% quiz_instruction_plain id="/macOS" %}}
+```bash
+sudo mkdir /etc/NetworkManager/dnsmasq.d/
+echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
+```
 
-Create a file in `/etc/resolver/minikube-test` with the following content.
+Restart Network Manager
+```
+systemctl restart NetworkManager.service
+```
+Ensure your /etc/resolv.conf  contains only single nameserver
+```bash
+cat /etc/resolv.conf | grep nameserver
+nameserver 127.0.0.1
+```
+
+{{% /linuxtab %}}
+
+{{% mactab %}}
+
+Create a file in `/etc/resolver/minikube-test` with the following contents.
 
 ```
 domain test
@@ -124,9 +138,9 @@ See https://www.unix.com/man-page/opendarwin/5/resolver/
 
 Note that the `port` feature does not work as documented.
 
-{{% /quiz_instruction_plain %}}
+{{% /mactab %}}
 
-{{% quiz_instruction_plain id="/Windows" %}}
+{{% windowstab %}}
 
 Open `Powershell` as Administrator and execute the following.
 ```sh
@@ -138,11 +152,51 @@ The following will remove any matching rules before creating a new one. This is 
 Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force; Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
 ```
 
-{{% /quiz_instruction_plain %}}
+{{% /windowstab %}}
+{{% /tabs %}}
 
-{{% /card %}}
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>(optional) Configure in-cluster DNS server to resolve local DNS names inside cluster</h2>
 
-{{% /card %}}
+Sometimes it's useful to access other applications inside cluster via ingress and by their local DNS name - microservices/APIs/tests. 
+In such case ingress-dns addon should be used by in-cluster DNS server - [CoreDNS](https://coredns.io/) to resolve local DNS names.  
+
+Edit your CoreDNS config
+```sh
+kubectl edit configmap coredns -n kube-system
+```
+and add block for your local domain 
+```
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+
+```
+Replace `192.168.99.169` with your `minikube ip`.
+
+The final ConfigMap should look like:
+```yaml
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+...
+    }
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+kind: ConfigMap
+metadata:
+...
+```
+See https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/
 
 ## Testing
 

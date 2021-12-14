@@ -81,7 +81,7 @@ var shellConfigMap = map[string]shellData{
 		unsetDelimiter: "",
 		usageHint: func(s ...interface{}) string {
 			return fmt.Sprintf(`# %s
-# & %s | Invoke-Expression
+# & %s --shell powershell | Invoke-Expression
 `, s...)
 		},
 	},
@@ -94,7 +94,7 @@ var shellConfigMap = map[string]shellData{
 		unsetDelimiter: "=",
 		usageHint: func(s ...interface{}) string {
 			return fmt.Sprintf(`REM %s
-REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
+REM @FOR /f "tokens=*" %%i IN ('%s --shell cmd') DO @%%i
 `, s...)
 		},
 	},

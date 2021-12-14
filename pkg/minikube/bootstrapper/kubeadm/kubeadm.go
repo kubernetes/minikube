@@ -41,7 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -65,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Bootstrapper is a bootstrapper using kubeadm
@@ -801,6 +801,38 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	return joinCmd, nil
 }
 
+// StopKubernetes attempts to stop existing kubernetes.
+func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
+	// Verify that Kubernetes is still running.
+	stk := kverify.ServiceStatus(runner, "kubelet")
+	if stk.String() != "Running" {
+		return
+	}
+
+	out.Infof("Kubernetes: Stopping ...")
+
+	// Force stop "Kubelet".
+	if err := sysinit.New(runner).ForceStop("kubelet"); err != nil {
+		klog.Warningf("stop kubelet: %v", err)
+	}
+
+	// Stop each Kubernetes container.
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		klog.Warningf("unable to list kube-system containers: %v", err)
+	}
+	if len(containers) > 0 {
+		klog.Warningf("found %d kube-system containers to stop", len(containers))
+		if err := cr.StopContainers(containers); err != nil {
+			klog.Warningf("error stopping containers: %v", err)
+		}
+	}
+
+	// Verify that Kubernetes has stopped.
+	stk = kverify.ServiceStatus(runner, "kubelet")
+	out.Infof("Kubernetes: {{.status}}", out.V{"status": stk.String()})
+}
+
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
@@ -828,21 +860,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		klog.Warningf("%s: %v", rr.Command(), err)
 	}
 
-	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
-		klog.Warningf("stop kubelet: %v", err)
-	}
-
-	containers, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
-	if err != nil {
-		klog.Warningf("unable to list kube-system containers: %v", err)
-	}
-	if len(containers) > 0 {
-		klog.Warningf("found %d kube-system containers to stop", len(containers))
-		if err := cr.StopContainers(containers); err != nil {
-			klog.Warningf("error stopping containers: %v", err)
-		}
-	}
-
+	StopKubernetes(k.c, cr)
 	return derr
 }
 
