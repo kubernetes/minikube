@@ -662,7 +662,6 @@
 	"The time interval for each check that wait performs in seconds": "",
 	"The value passed to --format is invalid": "",
 	"The value passed to --format is invalid: {{.error}}": "",
-	"The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "",
 	"These changes will take effect upon a minikube delete and then a minikube start": "",

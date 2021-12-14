@@ -492,9 +492,6 @@ minikube failed to enable the current container runtime
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
 
-"RUNTIME_INCOMPAT" (Exit code ExRuntimeError)  
-the chosen container runtime doesn't work with the system architecture  
-
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
 

@@ -813,7 +813,6 @@
 	"The value passed to --format is invalid": "",
 	"The value passed to --format is invalid: {{.error}}": "",
 	"The {{.driver_name}} driver should not be used with root privileges.": "不应以根权限使用 {{.driver_name}} 驱动程序。",
-	"The {{.runtime}} runtime is not compatible with the {{.arch}} architecture.": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "",
 	"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}": "“{{.driver_executable}}”有一个新版本。请考虑升级。{{.documentation_url}}",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "",
