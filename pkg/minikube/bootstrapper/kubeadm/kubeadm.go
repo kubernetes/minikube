@@ -615,7 +615,6 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 		return true
 	}
 
-	// DANGER: This log message is hard-coded in an integration test!
 	klog.Infof("%s: %s", constants.ReconfigurationNotRequired, hostname)
 	return false
 }
