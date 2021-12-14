@@ -461,7 +461,6 @@
 	"Paused {{.count}} containers": "Zatrzymane kontenery: {{.count}}",
 	"Paused {{.count}} containers in: {{.namespaces}}": "Zatrzymane kontenery: {{.count}} w przestrzeniach nazw: {{.namespaces}}",
 	"Pausing node {{.name}} ... ": "Zatrzymywanie węzła {{.name}} ... ",
-	"Permissions:  {{.octalMode}} ({{.writtenMode}})": "",
 	"Please also attach the following file to the GitHub issue:": "",
 	"Please attach the following file to the GitHub issue:": "Dołącz następujący plik do zgłoszenia problemu na GitHubie:",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "Utwórz klaster z większym rozmiarem dysku: `minikube start --disk SIZE_MB`",

@@ -95,7 +95,6 @@ func generateMountArgs(profile string, cc config.ClusterConfig) []string {
 		{constants.MountGIDFlag, cc.MountGID},
 		{constants.MountIPFlag, cc.MountIP},
 		{constants.MountMSizeFlag, fmt.Sprintf("%d", cc.MountMSize)},
-		{constants.MountModeFlag, fmt.Sprintf("%d", cc.MountMode)},
 		{constants.MountPortFlag, fmt.Sprintf("%d", cc.MountPort)},
 		{constants.MountTypeFlag, cc.MountType},
 		{constants.MountUIDFlag, cc.MountUID},

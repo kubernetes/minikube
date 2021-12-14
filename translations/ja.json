@@ -447,7 +447,6 @@
 	"Paused {{.count}} containers in: {{.namespaces}}": "次のnamespaceに存在する {{.count}} 個のコンテナを停止しました: {{.namespaces}}",
 	"Pausing node {{.name}} ...": "ノード {{.name}} を一時停止しています ...",
 	"Pausing node {{.name}} ... ": "",
-	"Permissions:  {{.octalMode}} ({{.writtenMode}})": "",
 	"Please also attach the following file to the GitHub issue:": "",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "",
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "",

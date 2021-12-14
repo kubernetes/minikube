@@ -133,8 +133,6 @@ const (
 	MountIPFlag = "ip"
 	// MountMSizeFlag is the flag used to set the mount msize
 	MountMSizeFlag = "msize"
-	// MountModeFlag is the flag used to set the mount mode
-	MountModeFlag = "mode"
 	// MountOptionsFlag is the flag used to set the mount options
 	MountOptionsFlag = "options"
 	// MountPortFlag is the flag used to set the mount port
