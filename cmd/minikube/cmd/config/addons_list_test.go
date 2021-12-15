@@ -19,6 +19,7 @@ package config
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,12 +42,13 @@ func TestAddonsList(t *testing.T) {
 		if _, err := r.Read(b); err != nil {
 			t.Fatalf("failed to read bytes: %v", err)
 		}
+		// Instead of comparing strings directly, compare the number of pipes we see,
+		// so we can make sure there are two columns
 		got := string(b)
-		expected := `|-----------------------------|-----------------------|
-|         ADDON NAME          |      MAINTAINER       |
-|-----------------------------|-----------------------|`
-		if got != expected {
-			t.Errorf("Expected header to be: %q; got = %q", expected, got)
+		pipeCount := strings.Count(got, "|")
+		expected := 8
+		if pipeCount != expected {
+			t.Errorf("Expected header to be to have %d pipes; got = %d: %q", expected, pipeCount, got)
 		}
 	})
 
