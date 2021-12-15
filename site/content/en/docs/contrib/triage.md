@@ -153,9 +153,9 @@ A sample response to ask for more info:
 
 > I don’t yet have a clear way to replicate this issue. Do you mind adding some additional details. Here is additional information that would be helpful:
 >
-> \*  The exact `minikube start` command line used
+> \* The exact `minikube start` command line used
 >
-> \*  The full output of the `minikube start` command, preferably with `--alsologtostderr -v=4` for extra logging.
+> \* The full output of the `minikube start` command, preferably with `--alsologtostderr -v=4` for extra logging.
 >
 > \* The full output of `minikube logs`
 >
@@ -213,11 +213,11 @@ If an issue hasn't been active for more than four weeks, and the author has been
 >
 >Additional information that may be helpful:
 >
->* Whether the issue occurs with the latest minikube release
+> \* Whether the issue occurs with the latest minikube release
 >
->* The exact minikube start command line used
+> \* The exact minikube start command line used
 >
->* Attach the full output of minikube logs, run `minikube logs --file=logs.txt` to create a log file
+> \* Attach the full output of minikube logs, run `minikube logs --file=logs.txt` to create a log file
 >
 >Thank you for sharing your experience!
 
