@@ -57,7 +57,7 @@ func TestAddonsList(t *testing.T) {
 		// which has 9 pipes
 		expected := 9
 		if pipeCount != expected {
-			t.Errorf("Expected header to be to have %d pipes; got = %d: %q", expected, pipeCount, got)
+			t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
 		}
 	})
 
