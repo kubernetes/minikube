@@ -91,7 +91,9 @@ func suppressDockerMessage() bool {
 	env := os.Getenv(envKey)
 	suppress, err := strconv.ParseBool(env)
 	if err != nil {
-		klog.Errorf("failed to parse bool from the %s env, defaulting to 'false'; received: %s: %v", envKey, env, err)
+		msg := fmt.Sprintf("failed to parse bool from the %s env, defaulting to 'false'; received: %s: %v", envKey, env, err)
+		klog.Warning(msg)
+		out.Styled(style.Warning, msg)
 		return false
 	}
 	return suppress
