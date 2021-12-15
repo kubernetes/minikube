@@ -141,6 +141,9 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
+
+	// ReconfigurationNotRequired is the message logged when reconfiguration is not required
+	ReconfigurationNotRequired = "The running cluster does not require reconfiguration"
 )
 
 var (

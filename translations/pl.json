@@ -779,7 +779,6 @@
 	"Unable to pick a default driver. Here is what was considered, in preference order:": "",
 	"Unable to push cached images: {{.error}}": "",
 	"Unable to remove machine directory": "",
-	"Unable to restart cluster, will reset it: {{.error}}": "",
 	"Unable to safely downgrade existing Kubernetes v{{.old}} cluster to v{{.new}}": "",
 	"Unable to start VM": "Nie można uruchomić maszyny wirtualnej",
 	"Unable to stop VM": "Nie można zatrzymać maszyny wirtualnej",
