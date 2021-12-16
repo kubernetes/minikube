@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.28-1638824847-13104@sha256:a90edc66cae8cca35685dce007b915405a2ba91d903f99f7d8f79cd9d1faabab")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.28-1639515145-13124@sha256:50a7fba584fcd78435535ec8407fa75d58db1612175b13fd473300d522f7ac80")
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
@@ -66,7 +66,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13105/minikube-v1.24.0-1638835912-13105.iso,https://github.com/kubernetes/minikube/releases/download/v1.24.0-1638835912-13105/minikube-v1.24.0-1638835912-13105.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.24.0-1638835912-13105.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/12892/minikube-v1.24.0-1639505700-12892.iso,https://github.com/kubernetes/minikube/releases/download/v1.24.0-1639505700-12892/minikube-v1.24.0-1639505700-12892.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.24.0-1639505700-12892.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.22.4, 'latest' for v1.23.0-rc.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
@@ -80,7 +80,6 @@ minikube start [flags]
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
       --mount-gid string                  Default group id used for the mount (default "docker")
       --mount-ip string                   Specify the ip that the mount should be setup on
-      --mount-mode uint                   File permissions used for the mount (default 493)
       --mount-msize int                   The number of bytes to use for 9p packet payload (default 262144)
       --mount-options strings             Additional mount options, such as cache=fscache
       --mount-port uint16                 Specify the port that the mount should be setup on, where 0 means any free port.

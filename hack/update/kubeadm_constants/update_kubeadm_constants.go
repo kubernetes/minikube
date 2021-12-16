@@ -65,13 +65,12 @@ func main() {
 	// set a context with defined timeout
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
-
 	if inputVersion == "latest" {
-		stableImageVersion, latestImageVersion, err := getK8sVersions(ctx, "kubernetes", "kubernetes")
+		stableImageVersion, latestImageVersion, edgeImageVersion, err := getK8sVersions(ctx, "kubernetes", "kubernetes")
 		if err != nil {
 			klog.Fatal(err)
 		}
-		imageVersions = append(imageVersions, stableImageVersion, latestImageVersion)
+		imageVersions = append(imageVersions, stableImageVersion, latestImageVersion, edgeImageVersion)
 	} else if semver.IsValid(inputVersion) {
 		imageVersions = append(imageVersions, inputVersion)
 	} else {
@@ -193,16 +192,16 @@ func executeCommand(command string, args ...string) (string, error) {
 }
 
 // getK8sVersion returns Kubernetes versions.
-func getK8sVersions(ctx context.Context, owner, repo string) (stable, latest string, err error) {
+func getK8sVersions(ctx context.Context, owner, repo string) (stable, latest, edge string, err error) {
 	// get Kubernetes versions from GitHub Releases
-	stable, latest, err = update.GHReleases(ctx, owner, repo)
+	stable, latest, edge, err = update.GHReleases(ctx, owner, repo)
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 
-	if !semver.IsValid(stable) || !semver.IsValid(latest) {
-		return "", "", fmt.Errorf("invalid release obtained stable : %s, latest : %s", stable, latest)
+	if !semver.IsValid(stable) || !semver.IsValid(latest) || !semver.IsValid(edge) {
+		return "", "", "", fmt.Errorf("invalid release obtained stable : %s, latest : %s, edge: %s", stable, latest, edge)
 	}
 
-	return stable, latest, nil
+	return stable, latest, edge, nil
 }

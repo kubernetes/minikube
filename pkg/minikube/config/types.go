@@ -90,7 +90,6 @@ type ClusterConfig struct {
 	Mount9PVersion          string
 	MountGID                string
 	MountIP                 string
-	MountMode               uint
 	MountMSize              int
 	MountOptions            []string
 	MountPort               uint16

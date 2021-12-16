@@ -17,8 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"bufio"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/out"
@@ -26,7 +28,6 @@ import (
 
 func TestAddonsList(t *testing.T) {
 	t.Run("NonExistingClusterTable", func(t *testing.T) {
-		b := make([]byte, 167)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)
@@ -38,15 +39,25 @@ func TestAddonsList(t *testing.T) {
 		if err := w.Close(); err != nil {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
-		if _, err := r.Read(b); err != nil {
-			t.Fatalf("failed to read bytes: %v", err)
+		buf := bufio.NewScanner(r)
+		pipeCount := 0
+		got := ""
+		// Pull the first 3 lines from stdout
+		for i := 0; i < 3; i++ {
+			if !buf.Scan() {
+				t.Fatalf("failed to read stdout")
+			}
+			pipeCount += strings.Count(buf.Text(), "|")
+			got += buf.Text()
 		}
-		got := string(b)
-		expected := `|-----------------------------|-----------------------|
-|         ADDON NAME          |      MAINTAINER       |
-|-----------------------------|-----------------------|`
-		if got != expected {
-			t.Errorf("Expected header to be: %q; got = %q", expected, got)
+		// The lines we pull should look something like
+		// |-----------------------------|-----------------------|
+		// |         ADDON NAME          |      MAINTAINER       |
+		// |-----------------------------|-----------------------|
+		// which has 9 pipes
+		expected := 9
+		if pipeCount != expected {
+			t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
 		}
 	})
 

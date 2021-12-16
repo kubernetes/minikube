@@ -24,7 +24,6 @@ minikube mount [flags] <source directory>:<target directory>
       --gid string          Default group id used for the mount (default "docker")
       --ip string           Specify the ip that the mount should be setup on
       --kill                Kill the mount process spawned by minikube start
-      --mode uint           File permissions used for the mount (default 493)
       --msize int           The number of bytes to use for 9p packet payload (default 262144)
       --options strings     Additional mount options, such as cache=fscache
       --port uint16         Specify the port that the mount should be setup on, where 0 means any free port.
