@@ -16,14 +16,26 @@
 
 set -e
 
-BOARD_DIR=$(dirname "$0")
+GENIMAGE_CFG="$2"
 
-# Detect boot strategy, EFI or BIOS
-if [ -d "$BINARIES_DIR/efi-part/" ]; then
-    cp -f "$BOARD_DIR/grub-efi.cfg" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
-else
-    cp -f "$BOARD_DIR/grub-bios.cfg" "$TARGET_DIR/boot/grub/grub.cfg"
+support/scripts/genimage.sh -c "$GENIMAGE_CFG"
 
-    # Copy grub 1st stage to binaries, required for genimage
-    cp -f "$TARGET_DIR/lib/grub/i386-pc/boot.img" "$BINARIES_DIR"
-fi
+cd "$BINARIES_DIR"
+mkdir -p root/boot
+cp bzImage root/boot/vmlinuz
+cp rootfs.cpio.gz root/boot/initrd.img
+mkdir -p root/EFI/BOOT
+cp efi-part/EFI/BOOT/* root/EFI/BOOT/
+cp efiboot.img root/EFI/BOOT/
+
+mkisofs \
+   -o boot.iso \
+   -R -J -v -d -N \
+   -hide-rr-moved \
+   -no-emul-boot \
+   -eltorito-platform=efi \
+   -eltorito-boot EFI/BOOT/efiboot.img \
+   -V "EFIBOOTISO" \
+   -A "EFI Boot ISO" \
+   root
+cd -
