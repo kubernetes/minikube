@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // TestPause tests minikube pause functionality
@@ -96,7 +97,7 @@ func validateStartNoReconfigure(ctx context.Context, t *testing.T, profile strin
 	}
 
 	if !NoneDriver() {
-		softLog := "The running cluster does not require reconfiguration"
+		softLog := constants.ReconfigurationNotRequired
 		if !strings.Contains(rr.Output(), softLog) {
 			t.Errorf("expected the second start log output to include %q but got: %s", softLog, rr.Output())
 		}
