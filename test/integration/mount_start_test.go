@@ -23,6 +23,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -30,9 +31,14 @@ import (
 const (
 	mountGID   = "0"
 	mountMSize = "6543"
-	mountPort  = "46464"
 	mountUID   = "0"
 )
+
+var mountStartPort = 46463
+
+func mountPort() string {
+	return strconv.Itoa(mountStartPort)
+}
 
 // TestMountStart tests using the mount command on start
 func TestMountStart(t *testing.T) {
@@ -55,8 +61,8 @@ func TestMountStart(t *testing.T) {
 			profile   string
 		}{
 			{"StartWithMountFirst", validateStartWithMount, profile1},
-			{"StartWithMountSecond", validateStartWithMount, profile2},
 			{"VerifyMountFirst", validateMount, profile1},
+			{"StartWithMountSecond", validateStartWithMount, profile2},
 			{"VerifyMountSecond", validateMount, profile2},
 			{"DeleteFirst", validateDelete, profile1},
 			{"VerifyMountPostDelete", validateMount, profile2},
@@ -84,7 +90,10 @@ func TestMountStart(t *testing.T) {
 func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort, "--mount-uid", mountUID}
+	// We have to increment this because if you have two mounts with the same port, when you kill one cluster the mount will break for the other
+	mountStartPort++
+
+	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -124,7 +133,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	}{
 		{"gid", mountGID},
 		{"msize", mountMSize},
-		{"port", mountPort},
+		{"port", mountPort()},
 		{"uid", mountUID},
 	}
 
