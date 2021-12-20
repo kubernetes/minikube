@@ -36,6 +36,12 @@ jobs:
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
       - uses: actions/checkout@v2
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
       - uses: actions/setup-go@v2
         with:
           go-version: ${{env.GO_VERSION}}
