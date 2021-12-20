@@ -299,7 +299,7 @@ metadata:
   namespace: ingress-nginx
 spec:
   type: NodePort
-  {{- if eq .IngressAPIVersion "v1"}}
+  {{- if and (eq .IngressAPIVersion "v1") (not .PreOneTwentyKubernetes)}}
   ipFamilyPolicy: SingleStack
   ipFamilies:
     - IPv4
