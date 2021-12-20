@@ -239,7 +239,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L330
-		"IngressController": "ingress-nginx/controller:v1.0.4@sha256:545cff00370f28363dad31e3b59a94ba377854d3a11f18988f5f9e56841ef9ef",
+		"IngressController": "ingress-nginx/controller:v1.1.0@sha256:f766669fdcf3dc26347ed273a55e754b427eb4411ee075a53f30718b4499076a",
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L620
 		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L670
@@ -792,31 +792,33 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 
 	opts := struct {
-		Arch                string
-		ExoticArch          string
-		ImageRepository     string
-		LoadBalancerStartIP string
-		LoadBalancerEndIP   string
-		CustomIngressCert   string
-		IngressAPIVersion   string
-		ContainerRuntime    string
-		Images              map[string]string
-		Registries          map[string]string
-		CustomRegistries    map[string]string
-		NetworkInfo         map[string]string
+		PreOneTwentyKubernetes bool
+		Arch                   string
+		ExoticArch             string
+		ImageRepository        string
+		LoadBalancerStartIP    string
+		LoadBalancerEndIP      string
+		CustomIngressCert      string
+		IngressAPIVersion      string
+		ContainerRuntime       string
+		Images                 map[string]string
+		Registries             map[string]string
+		CustomRegistries       map[string]string
+		NetworkInfo            map[string]string
 	}{
-		Arch:                a,
-		ExoticArch:          ea,
-		ImageRepository:     cfg.ImageRepository,
-		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
-		CustomIngressCert:   cfg.CustomIngressCert,
-		IngressAPIVersion:   "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:    cfg.ContainerRuntime,
-		Images:              images,
-		Registries:          addon.Registries,
-		CustomRegistries:    customRegistries,
-		NetworkInfo:         make(map[string]string),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -833,6 +835,9 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		opts.IngressAPIVersion = "v1beta1"
+	}
+	if semver.MustParseRange("<1.20.0")(v) {
+		opts.PreOneTwentyKubernetes = true
 	}
 
 	// Network info for generating template
