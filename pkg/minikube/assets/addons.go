@@ -310,9 +310,9 @@ var Addons = map[string]*Addon{
 			"olm.yaml",
 			"0640"),
 	}, false, "olm", "third-party (operator framework)", map[string]string{
-		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
+		"OLM": "operator-framework/olm@sha256:c49039da04a4a3c39dd9fd0cefd9f8edb7e9921b629d5ecb6ef5a6f4e1917504",
 		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
-		"UpstreamCommunityOperators": "operatorhubio/catalog:latest@sha256:53fad78977d83dde0c27b3183c2acc25ec153ae466e1b3c9a7efb517691b77b7",
+		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:83542ccd73403a84817cb06a408cf39b51c8e22990936072ff4b51d57ca20d0a",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
@@ -781,7 +781,7 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string, enable bool) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -857,23 +857,25 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
 
-		if override, ok := opts.CustomRegistries[name]; ok {
-			out.Infof("Using image {{.registry}}{{.image}}", out.V{
-				"registry": override,
-				// removing the SHA from UI
-				// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
-				"image": strings.Split(image, "@")[0],
-			})
-		} else if opts.ImageRepository != "" {
-			out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
-				"registry": opts.ImageRepository,
-				"image":    image,
-			})
-		} else {
-			out.Infof("Using image {{.registry}}{{.image}}", out.V{
-				"registry": opts.Registries[name],
-				"image":    strings.Split(image, "@")[0],
-			})
+		if enable {
+			if override, ok := opts.CustomRegistries[name]; ok {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": override,
+					// removing the SHA from UI
+					// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
+					"image": strings.Split(image, "@")[0],
+				})
+			} else if opts.ImageRepository != "" {
+				out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
+					"registry": opts.ImageRepository,
+					"image":    image,
+				})
+			} else {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": opts.Registries[name],
+					"image":    strings.Split(image, "@")[0],
+				})
+			}
 		}
 	}
 	return opts
