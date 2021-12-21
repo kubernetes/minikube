@@ -20,7 +20,7 @@ jobs:
         id: bumpk8s
         run: |
           t=$(make update-kubernetes-version)
-          t=$(head -n 1 t)
+          t=$(echo $t | head -n 1)
           echo "::set-output name=title::$t"
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
