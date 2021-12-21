@@ -43,7 +43,7 @@ else
 	export ISO_BUCKET
 fi
 
-make release-iso | tee iso-logs.txt
+make out/minikube.iso | tee iso-logs.txt
 # Abort with error message if above command failed
 ec=$?
 if [ $ec -gt 0 ]; then
