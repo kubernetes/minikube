@@ -978,7 +978,7 @@ update-golang-version:
 
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
-	(cd hack/update/kubernetes_version && \
+	@(cd hack/update/kubernetes_version && \
 	 go run update_kubernetes_version.go)
 
 .PHONY: update-golint-version
