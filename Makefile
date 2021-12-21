@@ -33,9 +33,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.17.5
+GO_VERSION ?= 1.17.3
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.24.0
+GO_K8S_VERSION_PREFIX ?= v1.23.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -59,7 +59,7 @@ HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.17
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
 
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-buster.0
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
@@ -986,6 +986,10 @@ update-golint-version:
 	(cd hack/update/golint_version && \
 	 go run update_golint_version.go)
 
+.PHONY: update-preload-version
+update-preload-version:
+	(cd hack/update/preload_version && \
+	 go run update_preload_version.go)
 
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:
