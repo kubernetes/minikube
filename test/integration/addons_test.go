@@ -293,7 +293,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=gcr.io/k8s-minikube/busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
 		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}

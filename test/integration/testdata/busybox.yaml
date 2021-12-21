@@ -6,7 +6,7 @@ metadata:
     integration-test: busybox
 spec:
   containers:
-    - image: busybox:1.28.4-glibc
+    - image: gcr.io/k8s-minikube/busybox:1.28.4-glibc
       command:
         - sleep
         - "3600"
