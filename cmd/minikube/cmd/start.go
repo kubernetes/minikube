@@ -452,10 +452,12 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) e
 - "minikube docker-env" to point your docker-cli to the docker inside minikube.
 - "minikube image" to build images without docker.`)
 		case constants.Containerd:
-			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.`)
+			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
+- "minikube image" to build images without docker.`)
 		case constants.CRIO:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
-- "minikube podman-env" to point your podman-cli to the podman inside minikube`)
+- "minikube podman-env" to point your podman-cli to the podman inside minikube.
+- "minikube image" to build images without docker.`)
 		}
 		return nil
 	}
@@ -625,8 +627,21 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			}
 			return rejects[i].Priority > rejects[j].Priority
 		})
+
+		// Display the issue for installed drivers
 		for _, r := range rejects {
-			if !r.Default {
+			if r.Default && r.State.Installed {
+				out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+				if r.Suggestion != "" {
+					out.Infof("{{ .name }}: Suggestion: {{ .suggestion}}", out.V{"name": r.Name, "suggestion": r.Suggestion})
+				}
+			}
+		}
+
+		// Display the other drivers users can install
+		out.Step(style.Tip, "Alternatively you could install one of these drivers:")
+		for _, r := range rejects {
+			if !r.Default || r.State.Installed {
 				continue
 			}
 			out.Infof("{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
@@ -1265,25 +1280,30 @@ func validateDiskSize(diskSize string) error {
 }
 
 // validateRuntime validates the supplied runtime
-func validateRuntime(runtime string) error {
+func validateRuntime(rtime string) error {
 	validOptions := cruntime.ValidRuntimes()
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
 
 	var validRuntime bool
 	for _, option := range validOptions {
-		if runtime == option {
+		if rtime == option {
 			validRuntime = true
 		}
 
 		// Convert `cri-o` to `crio` as the K8s config uses the `crio` spelling
-		if runtime == "cri-o" {
+		if rtime == "cri-o" {
 			viper.Set(containerRuntime, constants.CRIO)
 		}
+
+	}
+
+	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || detect.RuntimeArch() == "arm" || strings.HasPrefix(detect.RuntimeArch(), "arm/")) {
+		return errors.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details.", rtime, runtime.GOARCH)
 	}
 
 	if !validRuntime {
-		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", runtime, cruntime.ValidRuntimes())
+		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
 	}
 	return nil
 }
