@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -127,10 +128,25 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	return n, nil
 }
 
+func deleteNodeConfig(cc config.ClusterConfig, n *config.Node, name string) (*config.Node, error) {
+	_, index, err := Retrieve(cc, name)
+	if err != nil {
+		return n, errors.Wrap(err, "retrieve")
+	}
+
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+}
+
 // Delete calls drainNode to remove node from cluster and deletes the host.
 func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	n, err := drainNode(cc, name)
+
 	if err != nil {
+		// delete node config if the node doesn't exist
+		if apiErrors.IsNotFound(err) {
+			return deleteNodeConfig(cc, n, name)
+		}
 		return n, err
 	}
 
@@ -144,14 +160,7 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	if err != nil {
 		return n, err
 	}
-
-	_, index, err := Retrieve(cc, name)
-	if err != nil {
-		return n, errors.Wrap(err, "retrieve")
-	}
-
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return deleteNodeConfig(cc, n, name)
 }
 
 // Retrieve finds the node by name in the given cluster
