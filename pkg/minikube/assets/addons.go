@@ -312,7 +312,7 @@ var Addons = map[string]*Addon{
 	}, false, "olm", "third-party (operator framework)", map[string]string{
 		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
 		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
-		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:35f25af956dcc171577ab3b5f7f7e8f78ebb77d9e773a888d4561a3aab94824c",
+		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
