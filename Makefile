@@ -776,7 +776,7 @@ push-gvisor-addon-image: gvisor-addon-image
 	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
-release-iso: out/minikube.iso checksum  ## Build and release .iso file
+release-iso: buildroot-image out/minikube.iso checksum  ## Build and release .iso file
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
 
