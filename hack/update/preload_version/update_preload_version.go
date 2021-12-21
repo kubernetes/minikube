@@ -55,12 +55,12 @@ var (
 
 	// prBranchPrefix is the PR branch prefix; will be appended with the first 7 characters of the PR commit SHA.
 	prBranchPrefix = "update-preload-version_"
-	prTitle        = `update preload version: {stable: "{{.StableVersion}}"}`
+	prTitle        = `update preload version: {update: "{{.UpdateVersion}}"}`
 )
 
 // Data holds updated preload version.
 type Data struct {
-	UpdateVersion string `json:"stableVersion"`
+	UpdateVersion string `json:"updateVersion"`
 }
 
 func main() {
