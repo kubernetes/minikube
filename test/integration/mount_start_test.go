@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -93,12 +94,14 @@ func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	// We have to increment this because if you have two mounts with the same port, when you kill one cluster the mount will break for the other
 	mountStartPort++
 
-	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID}
+	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID, "--no-kubernetes"}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+	// The mount takes a split second to come up, without this the validateMount test will fail
+	time.Sleep(1 * time.Second)
 }
 
 // validateMount checks if the cluster has a folder mounted
