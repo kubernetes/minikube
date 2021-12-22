@@ -168,4 +168,6 @@ func validateRestart(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("restart failed: %q : %v", rr.Command(), err)
 	}
+	// The mount takes a split second to come up, without this the validateMount test will fail
+	time.Sleep(1 * time.Second)
 }
