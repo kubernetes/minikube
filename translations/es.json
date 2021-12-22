@@ -44,7 +44,7 @@
 	"Access to ports below 1024 may fail on Windows with OpenSSH clients older than v8.1. For more information, see: https://minikube.sigs.k8s.io/docs/handbook/accessing/#access-to-ports-1024-on-windows-requires-root-permission": "",
 	"Add SSH identity key to SSH authentication agent": "Agregar llave SSH al agente de autenticacion SSH",
 	"Add an image to local cache.": "Agregar una imagen al caché local",
-	"Add host key to SSH known_hosts file": "Agregar la llave del host al fichero know_hosts",
+	"Add host key to SSH known_hosts file": "Agregar la llave del host al fichero known_hosts",
 	"Add image to cache for all running minikube clusters": "Agregar la imagen al cache para todos los cluster de minikube activos",
 	"Add machine IP to NO_PROXY environment variable": "Agregar una IP de máquina a la variable de entorno NO_PROXY",
 	"Add, delete, or push a local image into minikube": "Agrega, elimina, o empuja una imagen local dentro de minikube, haciendo (add, delete, push) respectivamente.",
