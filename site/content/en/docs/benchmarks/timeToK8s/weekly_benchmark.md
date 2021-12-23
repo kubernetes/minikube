@@ -2,7 +2,7 @@
 title: "Weekly Average Benchmark"
 description: >
   Chart to visualize the time-to-k8s benchmark weekly average against HEAD
-weight: -99999998
+weight: -99999999
 ---
 
 [Benchmarking Machine Specs](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)
