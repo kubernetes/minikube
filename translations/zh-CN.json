@@ -374,6 +374,7 @@
 	"For more information, see: {{.url}}": "",
 	"Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect": "强制为指定的 shell 配置环境：[fish, cmd, powershell, tcsh, bash, zsh]，默认为 auto-detect",
 	"Force minikube to perform possibly dangerous operations": "强制 minikube 执行可能有风险的操作",
+	"Format output. One of: short|table|json|yaml": "",
 	"Format to print stdout in. Options include: [text,json]": "",
 	"Found docker, but the docker service isn't running. Try restarting the docker service.": "",
 	"Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.": "",

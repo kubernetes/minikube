@@ -245,22 +245,13 @@ func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage str
 	checkImageExists(ctx, t, profile, taggedImage)
 }
 
-// validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
-func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
-	// docs(skip): Skips on `none` driver as image loading is not supported
-	if NoneDriver() {
-		t.Skip("image commands are not available on the none driver")
-	}
-	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
-	}
-
+// runImageList is a helper function to run 'image ls' command test.
+func runImageList(ctx context.Context, t *testing.T, profile, testName, format string, expectedResult []string) {
 	// docs: Make sure image listing works by `minikube image ls`
-	t.Run("ImageList", func(t *testing.T) {
+	t.Run(testName, func(t *testing.T) {
 		MaybeParallel(t)
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format))
 		if err != nil {
 			t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
 		}
@@ -272,12 +263,29 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		list := rr.Output()
-		for _, theImage := range []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"} {
+		for _, theImage := range expectedResult {
 			if !strings.Contains(list, theImage) {
 				t.Fatalf("expected %s to be listed with minikube but the image is not there", theImage)
 			}
 		}
 	})
+}
+
+// validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
+func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
+	// docs(skip): Skips on `none` driver as image loading is not supported
+	if NoneDriver() {
+		t.Skip("image commands are not available on the none driver")
+	}
+	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
+	if GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
+	}
+
+	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- docker.io/kubernetesui/dashboard"})
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {

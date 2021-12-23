@@ -285,6 +285,7 @@
 	"For more information, see: {{.url}}": "Pour plus d'informations, voir : {{.url}}",
 	"Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect": "Forcer l'environnement à être configuré pour un shell spécifié : [fish, cmd, powershell, tcsh, bash, zsh], la valeur par défaut est la détection automatique",
 	"Force minikube to perform possibly dangerous operations": "Oblige minikube à réaliser des opérations possiblement dangereuses.",
+	"Format output. One of: short|table|json|yaml": "",
 	"Format to print stdout in. Options include: [text,json]": "Format dans lequel imprimer la sortie standard. Les options incluent : [text,json]",
 	"Found docker, but the docker service isn't running. Try restarting the docker service.": "Docker trouvé, mais le service docker ne fonctionne pas. Essayez de redémarrer le service Docker.",
 	"Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.": "Pilote(s) trouvé(s) mais aucun n'était en fonctionnement. Voir ci-dessus pour des suggestions sur la façon de réparer les pilotes installés.",
