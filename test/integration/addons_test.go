@@ -447,7 +447,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 // validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
+	t.Skip("Skipping Olm addon till images are fixed")
 	start := time.Now()
 
 	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
