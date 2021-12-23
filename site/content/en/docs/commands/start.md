@@ -66,7 +66,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13123/minikube-v1.24.0-1640194376-13123.iso,https://github.com/kubernetes/minikube/releases/download/v1.24.0-1640194376-13123/minikube-v1.24.0-1640194376-13123.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.24.0-1640194376-13123.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13195/minikube-v1.24.0-1640253061-13195.iso,https://github.com/kubernetes/minikube/releases/download/v1.24.0-1640253061-13195/minikube-v1.24.0-1640253061-13195.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.24.0-1640253061-13195.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.1, 'latest' for v1.23.2-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
