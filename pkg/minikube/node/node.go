@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -32,6 +31,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
+
+type NotExistError struct {
+	Name  string
+	Index int
+}
+
+func (e *NotExistError) Error() string {
+	return fmt.Sprintf("Node %s: does not exist", e.Name)
+}
 
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
@@ -77,9 +85,14 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 
 // drainNode drains then deletes (removes) node from cluster.
 func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, _, err := Retrieve(cc, name)
+	n, index, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
+	}
+
+	// Exit if the node doesn't exist
+	if len(n.IP) == 0 {
+		return n, &NotExistError{Name: n.Name, Index: index}
 	}
 
 	m := config.MachineName(cc, *n)
@@ -128,12 +141,7 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	return n, nil
 }
 
-func deleteNodeConfig(cc config.ClusterConfig, n *config.Node, name string) (*config.Node, error) {
-	_, index, err := Retrieve(cc, name)
-	if err != nil {
-		return n, errors.Wrap(err, "retrieve")
-	}
-
+func deleteNodeConfig(cc config.ClusterConfig, n *config.Node, index int) (*config.Node, error) {
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
 	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
@@ -143,11 +151,13 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	n, err := drainNode(cc, name)
 
 	if err != nil {
+		switch err.(type) {
 		// delete node config if the node doesn't exist
-		if apiErrors.IsNotFound(err) {
-			return deleteNodeConfig(cc, n, name)
+		case *NotExistError:
+			return deleteNodeConfig(cc, n, err.(*NotExistError).Index)
+		default:
+			return n, err
 		}
-		return n, err
 	}
 
 	m := config.MachineName(cc, *n)
@@ -160,7 +170,13 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 	if err != nil {
 		return n, err
 	}
-	return deleteNodeConfig(cc, n, name)
+
+	_, index, err := Retrieve(cc, name)
+	if err != nil {
+		return n, errors.Wrap(err, "retrieve")
+	}
+
+	return deleteNodeConfig(cc, n, index)
 }
 
 // Retrieve finds the node by name in the given cluster
