@@ -383,7 +383,7 @@
 	"Load a image into minikube": "minikube にイメージを読み込ませます",
 	"Local folders to share with Guest via NFS mounts (hyperkit driver only)": "NFS マウントを介してゲストと共有するローカルフォルダー (hyperkit ドライバーのみ)",
 	"Local proxy ignored: not passing {{.name}}={{.value}} to docker env.": "ローカルプロキシーは無視されました: docker env に {{.name}}={{.value}} は渡されません。",
-	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "ネットワーキングに使用する VPNKit ソケットのロケーション。空の場合、Hyperkit VPNKitSock が無効になり、'auto' の場合、Docker for Mac のVPNKit 接続が使用され、それ以外の場合、指定された VSock が使用されます (hyperkit ドライバーのみ)",
+	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "ネットワーキングに使用する VPNKit ソケットのロケーション。空の場合、Hyperkit VPNKitSock が無効になり、'auto' の場合、Docker for Mac の VPNKit 接続が使用され、それ以外の場合、指定された VSock が使用されます (hyperkit ドライバーのみ)",
 	"Location of the minikube iso": "minikube iso の場所",
 	"Locations to fetch the minikube ISO from.": "minikube ISO の取得元",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": 	"SSH を使ってマシンにログインしたりコマンドを実行します ('docker-machine ssh' と同様です)。",
