@@ -4,6 +4,7 @@
 *.so
 
 # Folders
+.devcontainer
 .cache
 _obj
 _test
