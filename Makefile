@@ -74,7 +74,7 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.202
-# latest from https://github.com/golangci/golangci-lint/releases 
+# latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v1.43.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -409,7 +409,7 @@ out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
-.PHONY: extract 
+.PHONY: extract
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
@@ -551,13 +551,13 @@ out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--REVISION--/'$(DEB_REVISION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
-  
+
 	if [ "$*" = "amd64" ]; then \
 	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
 	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-  
+
 	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
 	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
 	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
@@ -714,7 +714,7 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 build-kic-base-image: docker-multi-arch-builder ## Build multi-arch local/kicbase:latest
 	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) .
 
-.PHONY: push-kic-base-image 
+.PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
@@ -895,7 +895,7 @@ endif
 	chmod +X $@
 
 
-site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule
 	git submodule update -f --init --recursive
 
 out/hugo/hugo:
@@ -961,7 +961,7 @@ compare: out/mkcmp out/minikube
 	mv out/minikube out/master.minikube
 	git checkout $(CURRENT_GIT_BRANCH)
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
-	
+
 
 .PHONY: help
 help:
@@ -1028,3 +1028,8 @@ time-to-k8s-benchmark:
 update-gopogh-version: ## update gopogh version
 	(cd hack/update/gopogh_version && \
 	 go run update_gopogh_version.go)
+
+.PHONY: bump-preload
+bump-preload:
+	(cd hack/update/golint_version && \
+	 go run update_golint_version.go)
