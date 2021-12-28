@@ -60,8 +60,10 @@ const (
 	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// Docker is the default name and spelling for the docker container runtime
+	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
-	DefaultContainerRuntime = "docker"
+	DefaultContainerRuntime = ""
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"

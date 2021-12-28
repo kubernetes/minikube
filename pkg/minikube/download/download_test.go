@@ -94,7 +94,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker"); err != nil {
+		if err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker"); err != nil {
 			t.Logf("Failed to download preload: %+v (may be ok)", err)
 		}
 		group.Done()
@@ -119,7 +119,7 @@ func testPreloadNotExists(t *testing.T) {
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
+	err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker")
 	if err != nil {
 		t.Errorf("Expected no error when preload exists")
 	}
@@ -140,7 +140,7 @@ func testPreloadChecksumMismatch(t *testing.T) {
 		return fmt.Errorf("checksum mismatch")
 	}
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
+	err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker")
 	expectedErrMsg := "checksum mismatch"
 	if err == nil {
 		t.Errorf("Expected error when checksum mismatches")

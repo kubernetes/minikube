@@ -280,7 +280,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
-		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
+		if co.Config.KubernetesConfig.ContainerRuntime != constants.Docker {
 			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}

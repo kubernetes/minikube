@@ -134,6 +134,7 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
+	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
 }
