@@ -36,7 +36,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -66,6 +66,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 const waitTimeout = "wait-timeout"
@@ -79,6 +80,7 @@ var (
 type Starter struct {
 	Runner         command.Runner
 	PreExists      bool
+	StopK8s        bool
 	MachineAPI     libmachine.API
 	Host           *host.Host
 	Cfg            *config.ClusterConfig
@@ -88,10 +90,16 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
-	var kcs *kubeconfig.Settings
-	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion { // do not bootstrap cluster if --no-kubernetes
-		return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	var wg sync.WaitGroup
+	stopk8s, err := handleNoKubernetes(starter)
+	if err != nil {
+		return nil, err
 	}
+	if stopk8s {
+		configureMounts(&wg, *starter.Cfg)
+		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
+
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -118,41 +126,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		klog.Errorf("Unable to add host alias: %v", err)
 	}
 
+	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
 	if apiServer {
-		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
+		kcs, bs, err = handleAPIServer(starter, cr, hostIP)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to setup kubeconfig")
-		}
-
-		// setup kubeadm (must come after setupKubeconfig)
-		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
-		err = bs.StartCluster(*starter.Cfg)
-		if err != nil {
-			ExitIfFatal(err)
-			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
-
-		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
-		if err := kubeconfig.Update(kcs); err != nil {
-			return nil, errors.Wrap(err, "Failed kubeconfig update")
-		}
-
-		// scale down CoreDNS from default 2 to 1 replica
-		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-		}
-
-		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
-		go func() {
-			// inject {"host.minikube.internal": hostIP} record into CoreDNS
-			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
-			}
-		}()
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
@@ -168,10 +148,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	var wg sync.WaitGroup
-	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg, starter.Cfg.Mount, starter.Cfg.MountString)
-	}
+	go configureMounts(&wg, *starter.Cfg)
 
 	wg.Add(1)
 	go func() {
@@ -236,6 +213,63 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// handleNoKubernetes handles starting minikube without Kubernetes.
+func handleNoKubernetes(starter Starter) (bool, error) {
+	// Do not bootstrap cluster if --no-kubernetes.
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
+		// Stop existing Kubernetes node if applicable.
+		if starter.StopK8s {
+			cr, err := cruntime.New(cruntime.Config{Type: starter.Cfg.KubernetesConfig.ContainerRuntime, Runner: starter.Runner, Socket: starter.Cfg.KubernetesConfig.CRISocket})
+			if err != nil {
+				return false, err
+			}
+			kubeadm.StopKubernetes(starter.Runner, cr)
+		}
+		return true, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
+	return false, nil
+}
+
+// handleAPIServer handles starting the API server.
+func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
+	var err error
+
+	// Must be written before bootstrap, otherwise health checks may flake due to stale IP.
+	kcs := setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to setup kubeconfig")
+	}
+
+	// Setup kubeadm (must come after setupKubeconfig).
+	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	err = bs.StartCluster(*starter.Cfg)
+	if err != nil {
+		ExitIfFatal(err)
+		out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
+		return nil, bs, err
+	}
+
+	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
+	if err := kubeconfig.Update(kcs); err != nil {
+		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
+	}
+
+	// Scale down CoreDNS from default 2 to 1 replica.
+	if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+		klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+	}
+
+	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
+	go func() {
+		// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
+		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+			klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+			out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+		}
+	}()
+	return kcs, bs, nil
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.
@@ -442,7 +476,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	if err != nil {
 		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
 	}
-	for _, eo := range config.ExtraOptions {
+	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries

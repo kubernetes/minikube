@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/deploy/addons"
 )
 
+// AliyunMirror list of images from Aliyun mirror
 var AliyunMirror = loadAliyunMirror()
 
 func loadAliyunMirror() map[string]string {
@@ -39,6 +40,7 @@ func loadAliyunMirror() map[string]string {
 	return mirror
 }
 
+// FixAddonImagesAndRegistries fixes images & registries in addon
 func FixAddonImagesAndRegistries(addon *Addon, images map[string]string, registries map[string]string) (customImages, customRegistries map[string]string) {
 	customImages = make(map[string]string)
 	customRegistries = make(map[string]string)

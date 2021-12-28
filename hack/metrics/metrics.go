@@ -117,11 +117,9 @@ func exportMinikubeStart(ctx context.Context, projectID, containerRuntime string
 func getExporter(projectID, containerRuntime string) (*stackdriver.Exporter, error) {
 	return stackdriver.NewExporter(stackdriver.Options{
 		ProjectID: projectID,
-		// MetricPrefix helps uniquely identify your metrics.
-		MetricPrefix: "minikube_start",
 		// ReportingInterval sets the frequency of reporting metrics
 		// to stackdriver backend.
-		ReportingInterval:       1 * time.Second,
+		ReportingInterval:       11 * time.Second,
 		DefaultMonitoringLabels: getLabels(containerRuntime),
 	})
 }

@@ -16,8 +16,9 @@
 
 set -e
 
+DRIVER="$1"
 # container-runtime (docker or containerd)
-RUNTIME="$1"
+RUNTIME="$2"
 BUCKET="s3://time-to-k8s"
 
 install_minikube() {
@@ -28,7 +29,7 @@ install_minikube() {
 run_benchmark() {
         ( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
                 git submodule update --init &&
-                go run . --config "../public-chart/$RUNTIME-benchmark.yaml" --iterations 10 --output ./output.csv )
+                go run . --config "../public-chart/$DRIVER-$RUNTIME-benchmark.yaml" --iterations 10 --output ./output.csv )
 }
 
 generate_chart() {
@@ -46,16 +47,16 @@ cleanup() {
 	rm ./weekly-chart.png
 }
 
-copy "$BUCKET/$RUNTIME-runs.json" ./runs.json
+copy "$BUCKET/$DRIVER-$RUNTIME-runs.json" ./runs.json
 
 install_minikube
 
 run_benchmark
 generate_chart
 
-copy ./runs.json "$BUCKET/$RUNTIME-runs.json"
-copy ./runs.json "$BUCKET/$(date +'%Y-%m-%d')-$RUNTIME.json"
-copy ./daily-chart.png "$BUCKET/$RUNTIME-chart.png"
-copy ./weekly-chart.png "$BUCKET/$RUNTIME-weekly-chart.png"
+copy ./runs.json "$BUCKET/$DRIVER-$RUNTIME-runs.json"
+copy ./runs.json "$BUCKET/$(date +'%Y-%m-%d')-$DRIVER-$RUNTIME.json"
+copy ./daily-chart.png "$BUCKET/$DRIVER-$RUNTIME-chart.png"
+copy ./weekly-chart.png "$BUCKET/$DRIVER-$RUNTIME-weekly-chart.png"
 
 cleanup

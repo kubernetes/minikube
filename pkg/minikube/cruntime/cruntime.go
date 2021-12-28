@@ -113,7 +113,7 @@ type Manager interface {
 	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
 	// ListImages returns a list of images managed by this container runtime
-	ListImages(ListImagesOptions) ([]string, error)
+	ListImages(ListImagesOptions) ([]ListImage, error)
 
 	// RemoveImage remove image based on name
 	RemoveImage(string) error
@@ -166,6 +166,13 @@ type ListContainersOptions struct {
 
 // ListImagesOptions are the options to use for listing images
 type ListImagesOptions struct {
+}
+
+type ListImage struct {
+	ID          string   `json:"id" yaml:"id"`
+	RepoDigests []string `json:"repoDigests" yaml:"repoDigests"`
+	RepoTags    []string `json:"repoTags" yaml:"repoTags"`
+	Size        string   `json:"size" yaml:"size"`
 }
 
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running

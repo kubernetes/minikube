@@ -17,6 +17,7 @@ limitations under the License.
 package cruntime
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -208,22 +210,43 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 }
 
 // ListImages returns a list of images managed by this container runtime
-func (r *Docker) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
+	c := exec.Command("docker", "images", "--no-trunc", "--format", "{{json .}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker images")
 	}
-	short := strings.Split(rr.Stdout.String(), "\n")
-	imgs := []string{}
-	for _, img := range short {
+	type dockerImage struct {
+		ID         string `json:"ID"`
+		Repository string `json:"Repository"`
+		Tag        string `json:"Tag"`
+		Size       string `json:"Size"`
+	}
+	images := strings.Split(rr.Stdout.String(), "\n")
+	result := []ListImage{}
+	for _, img := range images {
 		if img == "" {
 			continue
 		}
-		img = addDockerIO(img)
-		imgs = append(imgs, img)
+
+		var jsonImage dockerImage
+		if err := json.Unmarshal([]byte(img), &jsonImage); err != nil {
+			return nil, errors.Wrap(err, "Image convert problem")
+		}
+		size, err := units.FromHumanSize(jsonImage.Size)
+		if err != nil {
+			return nil, errors.Wrap(err, "Image size convert problem")
+		}
+
+		repoTag := fmt.Sprintf("%s:%s", jsonImage.Repository, jsonImage.Tag)
+		result = append(result, ListImage{
+			ID:          strings.TrimPrefix(jsonImage.ID, "sha256:"),
+			RepoDigests: []string{},
+			RepoTags:    []string{addDockerIO(repoTag)},
+			Size:        fmt.Sprintf("%d", size),
+		})
 	}
-	return imgs, nil
+	return result, nil
 }
 
 // LoadImage loads an image into this runtime

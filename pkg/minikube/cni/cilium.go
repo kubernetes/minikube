@@ -808,7 +808,7 @@ func (c Cilium) CIDR() string {
 	return DefaultPodCIDR
 }
 
-// GenerateKubeadmYAML generates the .yaml file
+// GenerateCiliumYAML generates the .yaml file
 func GenerateCiliumYAML() ([]byte, error) {
 
 	podCIDR := DefaultPodCIDR

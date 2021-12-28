@@ -91,7 +91,6 @@ Steps:
 runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 Steps:
-- Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
 - Try to load image already loaded and make sure `minikube image load --daemon` works
@@ -514,8 +513,29 @@ for use cases where user only needs to use the container runtime (docker, contai
 #### validateStartNoK8sWithVersion
 expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
 
+Steps:
+- start minikube with no kubernetes.
+
+#### validateStartWithK8S
+starts a minikube cluster with Kubernetes started/configured.
+
+Steps:
+- start minikube with Kubernetes.
+- return an error if Kubernetes is not running.
+
+#### validateStartWithStopK8s
+starts a minikube cluster while stopping Kubernetes.
+
+Steps:
+- start minikube with no Kubernetes.
+- return an error if Kubernetes is not stopped.
+- delete minikube profile.
+
 #### validateStartNoK8S
 starts a minikube cluster without kubernetes started/configured
+
+Steps:
+- start minikube with no Kubernetes.
 
 #### validateK8SNotRunning
 validates that there is no kubernetes running inside minikube
@@ -527,7 +547,7 @@ validates that minikube is stopped after a --no-kubernetes start
 validates that profile list works with --no-kubernetes
 
 #### validateStartNoArgs
-valides that minikube start with no args works
+validates that minikube start with no args works.
 
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected

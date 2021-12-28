@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 const issueBase = "https://github.com/kubernetes/minikube/issues"
@@ -60,8 +61,8 @@ var (
 	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
 	// minikube has no current cluster running
 	UsageNoProfileRunning = Kind{ID: "MK_USAGE_NO_PROFILE", ExitCode: ExProgramUsage,
-		Advice: `You can create one using 'minikube start'.
-		`,
+		Advice: translate.T(`You can create one using 'minikube start'.
+		`),
 		Style: style.Caching,
 	}
 	// minikube was interrupted by an OS signal
@@ -149,11 +150,11 @@ var (
 	RsrcInsufficientDarwinDockerCores = Kind{
 		ID:       "RSRC_DOCKER_CORES",
 		ExitCode: ExInsufficientCores,
-		Advice: `1. Click on "Docker for Desktop" menu icon
+		Advice: translate.T(`1. Click on "Docker for Desktop" menu icon
 			2. Click "Preferences"
 			3. Click "Resources"
 			4. Increase "CPUs" slider bar to 2 or higher
-			5. Click "Apply & Restart"`,
+			5. Click "Apply & Restart"`),
 		Style: style.UnmetRequirement,
 		URL:   "https://docs.docker.com/docker-for-mac/#resources",
 	}
@@ -162,11 +163,11 @@ var (
 	RsrcInsufficientWindowsDockerCores = Kind{
 		ID:       "RSRC_DOCKER_CORES",
 		ExitCode: ExInsufficientCores,
-		Advice: `1. Open the "Docker Desktop" menu by clicking the Docker icon in the system tray
+		Advice: translate.T(`1. Open the "Docker Desktop" menu by clicking the Docker icon in the system tray
 		2. Click "Settings"
 		3. Click "Resources"
 		4. Increase "CPUs" slider bar to 2 or higher
-		5. Click "Apply & Restart"`,
+		5. Click "Apply & Restart"`),
 		URL:   "https://docs.docker.com/docker-for-windows/#resources",
 		Style: style.UnmetRequirement,
 	}
@@ -181,11 +182,11 @@ var (
 	RsrcInsufficientWindowsDockerMemory = Kind{
 		ID:       "RSRC_DOCKER_MEMORY",
 		ExitCode: ExInsufficientMemory,
-		Advice: `1. Open the "Docker Desktop" menu by clicking the Docker icon in the system tray
+		Advice: translate.T(`1. Open the "Docker Desktop" menu by clicking the Docker icon in the system tray
 		2. Click "Settings"
 		3. Click "Resources"
 		4. Increase "Memory" slider bar to {{.recommend}} or higher
-		5. Click "Apply & Restart"`,
+		5. Click "Apply & Restart"`),
 		URL:   "https://docs.docker.com/docker-for-windows/#resources",
 		Style: style.UnmetRequirement,
 	}
@@ -193,11 +194,11 @@ var (
 	RsrcInsufficientDarwinDockerMemory = Kind{
 		ID:       "RSRC_DOCKER_MEMORY",
 		ExitCode: ExInsufficientMemory,
-		Advice: `1. Click on "Docker for Desktop" menu icon
+		Advice: translate.T(`1. Click on "Docker for Desktop" menu icon
 			2. Click "Preferences"
 			3. Click "Resources"
 			4. Increase "Memory" slider bar to {{.recommend}} or higher
-			5. Click "Apply & Restart"`,
+			5. Click "Apply & Restart"`),
 		Style: style.UnmetRequirement,
 		URL:   "https://docs.docker.com/docker-for-mac/#resources",
 	}
@@ -206,22 +207,22 @@ var (
 	RsrcInsufficientDockerStorage = Kind{
 		ID:       "RSRC_DOCKER_STORAGE",
 		ExitCode: ExInsufficientStorage,
-		Advice: `Try one or more of the following to free up space on the device:
+		Advice: translate.T(`Try one or more of the following to free up space on the device:
 	
 			1. Run "docker system prune" to remove unused Docker data (optionally with "-a")
 			2. Increase the storage allocated to Docker for Desktop by clicking on:
 				Docker icon > Preferences > Resources > Disk Image Size
-			3. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,
+			3. Run "minikube ssh -- docker system prune" if using the Docker container runtime`),
 		Issues: []int{9024},
 	}
 	// insufficient disk storage available to the podman driver
 	RsrcInsufficientPodmanStorage = Kind{
 		ID:       "RSRC_PODMAN_STORAGE",
 		ExitCode: ExInsufficientStorage,
-		Advice: `Try one or more of the following to free up space on the device:
+		Advice: translate.T(`Try one or more of the following to free up space on the device:
 	
 			1. Run "sudo podman system prune" to remove unused podman data
-			2. Run "minikube ssh -- docker system prune" if using the Docker container runtime`,
+			2. Run "minikube ssh -- docker system prune" if using the Docker container runtime`),
 		Issues: []int{9024},
 	}
 
@@ -240,7 +241,7 @@ var (
 	HostHomePermission = Kind{
 		ID:       "HOST_HOME_PERMISSION",
 		ExitCode: ExHostPermission,
-		Advice:   "Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix",
+		Advice:   translate.T("Your user lacks permissions to the minikube profile directory. Run: 'sudo chown -R $USER $HOME/.minikube; chmod -R u+wrx $HOME/.minikube' to fix"),
 		Issues:   []int{9165},
 	}
 
@@ -274,9 +275,9 @@ var (
 
 	// minikube failed to access the driver control plane or API endpoint
 	DrvCPEndpoint = Kind{ID: "DRV_CP_ENDPOINT",
-		Advice: `Recreate the cluster by running:
+		Advice: translate.T(`Recreate the cluster by running:
 		minikube delete {{.profileArg}}
-		minikube start {{.profileArg}}`,
+		minikube start {{.profileArg}}`),
 		ExitCode: ExDriverError,
 		Style:    style.Failure,
 	}
@@ -333,10 +334,10 @@ var (
 	GuestMountCouldNotConnect = Kind{
 		ID:       "GUEST_MOUNT_COULD_NOT_CONNECT",
 		ExitCode: ExGuestError,
-		Advice: `If the host has a firewall:
+		Advice: translate.T(`If the host has a firewall:
 		
 		1. Allow a port through the firewall
-		2. Specify "--port=<port_number>" for "minikube mount"`,
+		2. Specify "--port=<port_number>" for "minikube mount"`),
 	}
 	// minkube failed to update a mount
 	GuestMountConflict = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
@@ -439,7 +440,7 @@ var (
 	KubernetesDowngrade = Kind{
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",
 		ExitCode: ExControlPlaneUnsupported,
-		Advice: `1) Recreate the cluster with Kubernetes {{.new}}, by running:
+		Advice: translate.T(`1) Recreate the cluster with Kubernetes {{.new}}, by running:
 	  
 		  minikube delete{{.profile}}
 		  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}
@@ -451,7 +452,7 @@ var (
 		3) Use the existing cluster at version Kubernetes {{.old}}, by running:
 	  
 		  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}
-		`,
+		`),
 		Style: style.SeeNoEvil,
 	}
 )

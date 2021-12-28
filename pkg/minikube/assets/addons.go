@@ -157,7 +157,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640"),
-	}, true, "storage-provisioner", "kubernetes", map[string]string{
+	}, true, "storage-provisioner", "google", map[string]string{
 		"StorageProvisioner": fmt.Sprintf("k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion()),
 	}, map[string]string{
 		"StorageProvisioner": "gcr.io",
@@ -181,7 +181,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.StorageProvisionerGlusterAssets,
 			"storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			vmpath.GuestAddonsDir,
-			"storage-privisioner-glusterfile.yaml",
+			"storage-provisioner-glusterfile.yaml",
 			"0640"),
 	}, false, "storage-provisioner-gluster", "", map[string]string{
 		"Heketi":                 "heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
@@ -221,7 +221,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kibana-svc.yaml",
 			"0640"),
-	}, false, "efk", "", map[string]string{
+	}, false, "efk", "third-party (elastic)", map[string]string{
 		"Elasticsearch":        "elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2",
 		"FluentdElasticsearch": "fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97",
 		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
@@ -239,7 +239,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L330
-		"IngressController": "ingress-nginx/controller:v1.0.4@sha256:545cff00370f28363dad31e3b59a94ba377854d3a11f18988f5f9e56841ef9ef",
+		"IngressController": "ingress-nginx/controller:v1.1.0@sha256:f766669fdcf3dc26347ed273a55e754b427eb4411ee075a53f30718b4499076a",
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L620
 		"KubeWebhookCertgenCreate": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
 		// https://github.com/kubernetes/ingress-nginx/blob/14f6b32032b709d3e0f614ca85954c3583c5fe3d/deploy/static/provider/kind/deploy.yaml#L670
@@ -253,7 +253,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-operator.yaml",
 			"0640"),
-	}, false, "istio-provisioner", "", map[string]string{
+	}, false, "istio-provisioner", "third-party (istio)", map[string]string{
 		"IstioOperator": "istio/operator:1.5.0@sha256:25a6398ed4996a5313767ceb63768d503c266f63506ad3074b30eef6b5b5167e",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
@@ -262,14 +262,14 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
-	}, false, "istio", "", nil, nil),
+	}, false, "istio", "third-party (istio)", nil, nil),
 	"kubevirt": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubevirtAssets,
 			"kubevirt/pod.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"pod.yaml",
 			"0640"),
-	}, false, "kubevirt", "", map[string]string{
+	}, false, "kubevirt", "third-party (kubevirt)", map[string]string{
 		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
 	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
@@ -309,10 +309,10 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"olm.yaml",
 			"0640"),
-	}, false, "olm", "", map[string]string{
+	}, false, "olm", "third-party (operator framework)", map[string]string{
 		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
 		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
-		"UpstreamCommunityOperators": "operatorhubio/catalog:latest",
+		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4",
 	}, map[string]string{
 		"OLM":                        "quay.io",
 		"UpstreamCommunityOperators": "quay.io",
@@ -345,7 +345,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds", "", map[string]string{
+	}, false, "registry-creds", "third-party (upmc enterprises)", map[string]string{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
@@ -412,7 +412,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
-	}, false, "nvidia-gpu-device-plugin", "", map[string]string{
+	}, false, "nvidia-gpu-device-plugin", "third-party (nvidia)", map[string]string{
 		"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:1.0.0-beta4@sha256:94d46bf513cbc43c4d77a364e4bbd409d32d89c8e686e12551cc3eb27c259b90",
 	}, nil),
 	"logviewer": NewAddon([]*BinAsset{
@@ -426,7 +426,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640"),
-	}, false, "logviewer", "google", map[string]string{
+	}, false, "logviewer", "", map[string]string{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
@@ -466,7 +466,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"helm-tiller-svc.yaml",
 			"0640"),
-	}, false, "helm-tiller", "", map[string]string{
+	}, false, "helm-tiller", "third-party (helm)", map[string]string{
 		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
 		// GCR is deprecated in helm
@@ -479,7 +479,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640"),
-	}, false, "ingress-dns", "", map[string]string{
+	}, false, "ingress-dns", "google", map[string]string{
 		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
 	}, map[string]string{
 		"IngressDNS": "gcr.io",
@@ -495,7 +495,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"metallb-config.yaml",
 			"0640"),
-	}, false, "metallb", "", map[string]string{
+	}, false, "metallb", "third-party (metallb)", map[string]string{
 		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
 		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, nil),
@@ -515,7 +515,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
-	}, false, "ambassador", "", map[string]string{
+	}, false, "ambassador", "third-party (ambassador)", map[string]string{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",
@@ -538,7 +538,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "gcp-auth", "google", map[string]string{
 		"KubeWebhookCertgen": "k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.7@sha256:be9661afbd47e4042bee1cb48cae858cc2f4b4e121340ee69fdc0013aeffcca4",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.8@sha256:26c7b2454f1c946d7c80839251d939606620f37c2f275be2796c1ffd96c438f6",
 	}, map[string]string{
 		"GCPAuthWebhook": "gcr.io",
 	}),
@@ -673,7 +673,9 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"portainer.yaml",
 			"0640"),
-	}, false, "portainer", "portainer.io", nil, nil),
+	}, false, "portainer", "portainer.io", map[string]string{
+		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
+	}, nil),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
@@ -779,7 +781,7 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string) interface{} {
+func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string, enable bool) interface{} {
 
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
@@ -790,31 +792,33 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 
 	opts := struct {
-		Arch                string
-		ExoticArch          string
-		ImageRepository     string
-		LoadBalancerStartIP string
-		LoadBalancerEndIP   string
-		CustomIngressCert   string
-		IngressAPIVersion   string
-		ContainerRuntime    string
-		Images              map[string]string
-		Registries          map[string]string
-		CustomRegistries    map[string]string
-		NetworkInfo         map[string]string
+		PreOneTwentyKubernetes bool
+		Arch                   string
+		ExoticArch             string
+		ImageRepository        string
+		LoadBalancerStartIP    string
+		LoadBalancerEndIP      string
+		CustomIngressCert      string
+		IngressAPIVersion      string
+		ContainerRuntime       string
+		Images                 map[string]string
+		Registries             map[string]string
+		CustomRegistries       map[string]string
+		NetworkInfo            map[string]string
 	}{
-		Arch:                a,
-		ExoticArch:          ea,
-		ImageRepository:     cfg.ImageRepository,
-		LoadBalancerStartIP: cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:   cfg.LoadBalancerEndIP,
-		CustomIngressCert:   cfg.CustomIngressCert,
-		IngressAPIVersion:   "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:    cfg.ContainerRuntime,
-		Images:              images,
-		Registries:          addon.Registries,
-		CustomRegistries:    customRegistries,
-		NetworkInfo:         make(map[string]string),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -831,6 +835,9 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		opts.IngressAPIVersion = "v1beta1"
+	}
+	if semver.MustParseRange("<1.20.0")(v) {
+		opts.PreOneTwentyKubernetes = true
 	}
 
 	// Network info for generating template
@@ -855,23 +862,25 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
 
-		if override, ok := opts.CustomRegistries[name]; ok {
-			out.Infof("Using image {{.registry}}{{.image}}", out.V{
-				"registry": override,
-				// removing the SHA from UI
-				// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
-				"image": strings.Split(image, "@")[0],
-			})
-		} else if opts.ImageRepository != "" {
-			out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
-				"registry": opts.ImageRepository,
-				"image":    image,
-			})
-		} else {
-			out.Infof("Using image {{.registry}}{{.image}}", out.V{
-				"registry": opts.Registries[name],
-				"image":    strings.Split(image, "@")[0],
-			})
+		if enable {
+			if override, ok := opts.CustomRegistries[name]; ok {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": override,
+					// removing the SHA from UI
+					// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
+					"image": strings.Split(image, "@")[0],
+				})
+			} else if opts.ImageRepository != "" {
+				out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
+					"registry": opts.ImageRepository,
+					"image":    image,
+				})
+			} else {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": opts.Registries[name],
+					"image":    strings.Split(image, "@")[0],
+				})
+			}
 		}
 	}
 	return opts

@@ -224,7 +224,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 

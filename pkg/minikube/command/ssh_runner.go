@@ -44,7 +44,7 @@ var (
 )
 
 // SSHRunner runs commands through SSH.
-
+//
 // It implements the CommandRunner interface.
 type SSHRunner struct {
 	d drivers.Driver
@@ -499,6 +499,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 	return g.Wait()
 }
 
+// ReadableFile returns assets.ReadableFile for the sourcePath (via `stat` command)
 func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
 	klog.V(4).Infof("NewsshReadableFile: %s -> %s", sourcePath)
 

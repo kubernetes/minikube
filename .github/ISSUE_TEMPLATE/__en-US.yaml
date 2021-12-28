@@ -1,5 +1,5 @@
-name: Create a Bug (English)
-description: Report an issue in English
+name: English
+description: Report an issue
 body:
   - type: textarea
     id: problem
@@ -28,5 +28,24 @@ body:
         - Ubuntu
         - Redhat/Fedora
         - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: driver
+    attributes:
+      label: Driver
+      description: What driver do you use?
+      options:
+        - N/A
+        - Docker
+        - Podman
+        - HyperKit
+        - Hyper-V
+        - KVM2
+        - VirtualBox
+        - None (Baremetal)
+        - SSH
+        - VMware
+        - Parallels
     validations:
       required: false
