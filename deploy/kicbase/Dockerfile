@@ -36,6 +36,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 FROM ubuntu:focal-20220316
 
 ARG BUILDKIT_VERSION="v0.9.3"
+ARG NERDCTL_VERSION="v0.15.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.22"
@@ -170,6 +171,15 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && chmod 755 /usr/local/bin/buildkit-qemu-* \
     && chmod 755 /usr/local/bin/buildkitd \
     && systemctl enable buildkit.socket
+
+# install nerdctl
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
+ && echo "Installing nerdctl..." \
+    && export NERDCTL_BASE_URL="https://github.com/containerd/nerdctl/releases/download/${NERDCTL_VERSION}" \
+    && curl -sSL --retry 5 --output /tmp/nerdctl.tgz "${NERDCTL_BASE_URL}/nerdctl-$(echo ${NERDCTL_VERSION} | tr -d 'v')-linux-${ARCH}.tar.gz" \
+    && tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz nerdctl \
+    && rm -rf /tmp/nerdctl.tgz \
+    && chmod 755 /usr/local/bin/nerdctl
 
 # Install cri-o/podman dependencies:
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
