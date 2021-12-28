@@ -1,0 +1,8 @@
+name: kubevirt
+maintainer: third-party (kubevirt)
+templates:
+  - source: pod.yaml.tmpl
+    target: /etc/kubernetes/addons/pod.yaml
+images:
+  Kubectl:
+    image: bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887

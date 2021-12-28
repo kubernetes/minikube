@@ -1,0 +1,10 @@
+name: logviewer
+maintainer: unknown (third-party)
+templates:
+  - source: logviewer-dp-and-svc.yaml.tmpl
+    target: /etc/kubernetes/addons/logviewer-dp-and-svc.yaml
+  - source: logviewer-rbac.yaml.tmpl
+    target: /etc/kubernetes/addons/logviewer-rbac.yaml
+images:
+  LogViewer:
+    image: ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405

@@ -1,0 +1,9 @@
+name: freshpod
+maintainer: google
+templates:
+  - source: freshpod-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/freshpod-rc.yaml
+images:
+  FreshPod:
+    registry: gcr.io
+    image: google-samples/freshpod:v0.0.1@sha256:b9efde5b509da3fd2959519c4147b653d0c5cefe8a00314e2888e35ecbcb46f9

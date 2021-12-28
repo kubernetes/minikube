@@ -1,0 +1,12 @@
+name: nvidia-driver-installer
+maintainer: google
+templates:
+  - source: nvidia-driver-installer.yaml.tmpl
+    target: /etc/kubernetes/addons/nvidia-driver-installer.yaml
+images:
+  NvidiaDriverInstaller:
+    registry: k8s.gcr.io
+    image: minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01
+  Pause:
+    registry: k8s.gcr.io
+    image: pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e

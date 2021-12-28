@@ -1,0 +1,13 @@
+name: ambassador
+maintainer: third-party (ambassador)
+templates:
+  - source: ambassador-operator-crds.yaml.tmpl
+    target: /etc/kubernetes/addons/ambassador-operator-crds.yaml
+  - source: ambassador-operator.yaml.tmpl
+    target: /etc/kubernetes/addons/ambassador-operator.yaml
+  - source: ambassadorinstallation.yaml.tmpl
+    target: /etc/kubernetes/addons/ambassadorinstallation.yaml
+images:
+  AmbassadorOperator:
+    registry: quay.io
+    image: datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed

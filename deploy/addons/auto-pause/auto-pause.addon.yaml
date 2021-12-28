@@ -1,0 +1,18 @@
+name: auto-pause
+maintainer: google
+templates:
+  - source: auto-pause.yaml.tmpl
+    target: /etc/kubernetes/addons/auto-pause.yaml
+  - source: auto-pause-hook.yaml.tmpl
+    target: /etc/kubernetes/addons/auto-pause-hook.yaml
+  - source: haproxy.cfg.tmpl
+    target: /var/lib/minikube/haproxy.cfg
+  - source: auto-pause.service.tmpl
+    target: /etc/systemd/system/auto-pause.service
+assets:
+  - source: unpause.lua
+    target: /var/lib/minikube/unpause.lua
+images:
+  AutoPauseHook:
+    registry: gcr.io
+    image: k8s-minikube/auto-pause-hook:v0.0.2@sha256:c76be418df5ca9c66d0d11c2c68461acbf4072c1cdfc17e64729c5ef4d5a4128

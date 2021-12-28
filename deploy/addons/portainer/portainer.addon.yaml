@@ -1,0 +1,8 @@
+name: portainer
+maintainer: portainer.io
+templates:
+  - source: portainer.yaml.tmpl
+    target: /etc/kubernetes/addons/portainer.yaml
+images:
+  Portainer:
+    image: portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498

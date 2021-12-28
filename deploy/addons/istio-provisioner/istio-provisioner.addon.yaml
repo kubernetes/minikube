@@ -1,0 +1,8 @@
+name: istio-provisioner
+maintainer: third-party (istio)
+templates:
+  - source: istio-operator.yaml.tmpl
+    target: /etc/kubernetes/addons/istio-operator.yaml
+images:
+  IstioOperator:
+    image: istio/operator:1.5.0@sha256:25a6398ed4996a5313767ceb63768d503c266f63506ad3074b30eef6b5b5167e

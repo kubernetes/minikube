@@ -1,0 +1,12 @@
+name: metallb
+maintainer: third-party (metallb)
+templates:
+  - source: metallb.yaml.tmpl
+    target: /etc/kubernetes/addons/metallb.yaml
+  - source: metallb-config.yaml.tmpl
+    target: /etc/kubernetes/addons/metallb-config.yaml
+images:
+  Speaker:
+    image: metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991
+  Controller:
+    image: metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502

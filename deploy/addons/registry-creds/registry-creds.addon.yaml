@@ -1,0 +1,8 @@
+name: registry-creds
+maintainer: third-party (upmc enterprises)
+templates:
+  - source: registry-creds-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/registry-creds-rc.yaml
+images:
+  RegistryCreds:
+    image: upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605

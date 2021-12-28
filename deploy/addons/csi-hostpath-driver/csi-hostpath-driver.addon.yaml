@@ -1,0 +1,57 @@
+name: csi-hostpath-driver
+maintainer: kubernetes
+templates:
+  - source: rbac/rbac-external-attacher.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-attacher.yaml
+  - source: rbac/rbac-external-health-monitor-agent.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-health-monitor-agent.yaml
+  - source: rbac/rbac-external-health-monitor-controller.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-health-monitor-controller.yaml
+  - source: rbac/rbac-external-provisioner.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-provisioner.yaml
+  - source: rbac/rbac-external-resizer.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-resizer.yaml
+  - source: rbac/rbac-external-snapshotter.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-external-snapshotter.yaml
+  - source: deploy/csi-hostpath-attacher.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-attacher.yaml
+  - source: deploy/csi-hostpath-driverinfo.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-driverinfo.yaml
+  - source: deploy/csi-hostpath-plugin.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-plugin.yaml
+  - source: deploy/csi-hostpath-provisioner.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-provisioner.yaml
+  - source: deploy/csi-hostpath-resizer.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-resizer.yaml
+  - source: deploy/csi-hostpath-snapshotter.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-snapshotter.yaml
+  - source: deploy/csi-hostpath-storageclass.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-storageclass.yaml
+images:
+  Attacher:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-attacher:v3.1.0@sha256:50c3cfd458fc8e0bf3c8c521eac39172009382fc66dc5044a330d137c6ed0b09
+  HostMonitorAgent:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-external-health-monitor-agent:v0.2.0@sha256:c20d4a4772599e68944452edfcecc944a1df28c19e94b942d526ca25a522ea02
+  HostMonitorController:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-external-health-monitor-controller:v0.2.0@sha256:14988b598a180cc0282f3f4bc982371baf9a9c9b80878fb385f8ae8bd04ecf16
+  NodeDriverRegistrar:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-node-driver-registrar:v2.0.1@sha256:e07f914c32f0505e4c470a62a40ee43f84cbf8dc46ff861f31b14457ccbad108
+  HostPathPlugin:
+    registry: k8s.gcr.io
+    image: sig-storage/hostpathplugin:v1.6.0@sha256:b526bd29630261eceecf2d38c84d4f340a424d57e1e2661111e2649a4663b659
+  LivenessProbe:
+    registry: k8s.gcr.io
+    image: sig-storage/livenessprobe:v2.2.0@sha256:48da0e4ed7238ad461ea05f68c25921783c37b315f21a5c5a2780157a6460994
+  Resizer:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-resizer:v1.1.0@sha256:7a5ba58a44e0d749e0767e4e37315bcf6a61f33ce3185c1991848af4db0fb70a
+  Snapshotter:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-snapshotter:v4.0.0@sha256:51f2dfde5bccac7854b3704689506aeecfb793328427b91115ba253a93e60782
+  Provisioner:
+    registry: k8s.gcr.io
+    image: sig-storage/csi-provisioner:v2.1.0@sha256:20c828075d1e36f679d6a91e905b0927141eef5e15be0c9a1ca4a6a0ed9313d2

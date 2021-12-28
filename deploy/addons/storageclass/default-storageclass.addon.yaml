@@ -1,0 +1,5 @@
+name: default-storageclass
+maintainer: kubernetes
+templates:
+  - source: storageclass.yaml.tmpl
+    target: /etc/kubernetes/addons/storageclass.yaml

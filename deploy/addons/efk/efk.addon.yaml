@@ -1,0 +1,27 @@
+name: efk
+maintainer: third-party (elastic)
+templates:
+  - source: elasticsearch-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/elasticsearch-rc.yaml
+  - source: elasticsearch-svc.yaml.tmpl
+    target: /etc/kubernetes/addons/elasticsearch-svc.yaml
+  - source: fluentd-es-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/fluentd-es-rc.yaml
+  - source: fluentd-es-configmap.yaml.tmpl
+    target: /etc/kubernetes/addons/fluentd-es-configmap.yaml
+  - source: kibana-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/kibana-rc.yaml
+  - source: kibana-svc.yaml.tmpl
+    target: /etc/kubernetes/addons/kibana-svc.yaml
+images:
+  Elasticsearch:
+    registry: k8s.gcr.io
+    image: elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2
+  FluentdElasticsearch:
+    registry: k8s.gcr.io
+    image: fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97
+  Alpine:
+    image: alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475
+  Kibana:
+    registry: docker.elastic.co
+    image: kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f

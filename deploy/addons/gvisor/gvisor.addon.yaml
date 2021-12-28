@@ -1,0 +1,13 @@
+name: gvisor
+maintainer: google
+templates:
+  - source: gvisor-pod.yaml.tmpl
+    target: /etc/kubernetes/addons/gvisor-pod.yaml
+  - source: gvisor-runtimeclass.yaml.tmpl
+    target: /etc/kubernetes/addons/gvisor-runtimeclass.yaml
+  - source: gvisor-config.toml
+    target: /tmp/gvisor-config.toml
+images:
+  GvisorAddon:
+    registry: gcr.io
+    image: k8s-minikube/gvisor-addon:3@sha256:23eb17d48a66fc2b09c31454fb54ecae520c3e9c9197ef17fcb398b4f31d505a

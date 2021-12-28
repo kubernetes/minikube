@@ -1,0 +1,27 @@
+name: dashboard
+maintainer: kubernetes
+templates:
+  - source: dashboard-dp.yaml.tmpl
+    target: /etc/kubernetes/addons/dashboard-dp.yaml
+assets:
+  - source: dashboard-ns.yaml
+    target: /etc/kubernetes/addons/dashboard-ns.yaml
+  - source: dashboard-clusterrole.yaml
+    target: /etc/kubernetes/addons/dashboard-clusterrole.yaml
+  - source: dashboard-clusterrolebinding.yaml
+    target: /etc/kubernetes/addons/dashboard-clusterrolebinding.yaml
+  - source: dashboard-configmap.yaml
+    target: /etc/kubernetes/addons/dashboard-configmap.yaml
+  - source: dashboard-role.yaml
+    target: /etc/kubernetes/addons/dashboard-role.yaml
+  - source: dashboard-sa.yaml
+    target: /etc/kubernetes/addons/dashboard-sa.yaml
+  - source: dashboard-secret.yaml
+    target: /etc/kubernetes/addons/dashboard-secret.yaml
+  - source: dashboard-svc.yaml
+    target: /etc/kubernetes/addons/dashboard-svc.yaml
+images:
+  Dashboard:
+    image: kubernetesui/dashboard:v2.3.1@sha256:ec27f462cf1946220f5a9ace416a84a57c18f98c777876a8054405d1428cc92e
+  MetricsScraper:
+    image: kubernetesui/metrics-scraper:v1.0.7@sha256:36d5b3f60e1a144cc5ada820910535074bdf5cf73fb70d1ff1681537eef4e172

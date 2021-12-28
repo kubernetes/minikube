@@ -1,0 +1,8 @@
+name: nvidia-gpu-device-plugin
+maintainer: third-party (nvidia)
+templates:
+  - source: nvidia-gpu-device-plugin.yaml.tmpl
+    target: /etc/kubernetes/addons/nvidia-gpu-device-plugin.yaml
+images:
+  NvidiaDevicePlugin:
+    image: nvidia/k8s-device-plugin:1.0.0-beta4@sha256:94d46bf513cbc43c4d77a364e4bbd409d32d89c8e686e12551cc3eb27c259b90

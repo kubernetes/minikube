@@ -1,0 +1,21 @@
+name: volumesnapshots
+maintainer: kubernetes
+templates:
+  # make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
+  # if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
+  - source: csi-hostpath-snapshotclass.yaml.tmpl
+    target: /etc/kubernetes/addons/csi-hostpath-snapshotclass.yaml
+  - source: snapshot.storage.k8s.io_volumesnapshotclasses.yaml.tmpl
+    target: /etc/kubernetes/addons/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+  - source: snapshot.storage.k8s.io_volumesnapshotcontents.yaml.tmpl
+    target: /etc/kubernetes/addons/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+  - source: snapshot.storage.k8s.io_volumesnapshots.yaml.tmpl
+    target: /etc/kubernetes/addons/snapshot.storage.k8s.io_volumesnapshots.yaml
+  - source: rbac-volume-snapshot-controller.yaml.tmpl
+    target: /etc/kubernetes/addons/rbac-volume-snapshot-controller.yaml
+  - source: volume-snapshot-controller-deployment.yaml.tmpl
+    target: /etc/kubernetes/addons/volume-snapshot-controller-deployment.yaml
+images:
+  SnapshotController:
+    registry: k8s.gcr.io
+    image: sig-storage/snapshot-controller:v4.0.0@sha256:00fcc441ea9f72899c25eed61d602272a2a58c5f0014332bdcb5ac24acef08e4

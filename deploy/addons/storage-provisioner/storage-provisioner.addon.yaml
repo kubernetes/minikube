@@ -1,0 +1,9 @@
+name: storage-provisioner
+maintainer: google
+templates:
+  - source: storage-provisioner.yaml.tmpl
+    target: /etc/kubernetes/addons/storage-provisioner.yaml
+images:
+  StorageProvisioner:
+    registry: gcr.io
+    image: k8s-minikube/storage-provisioner # TODO: version.StorageProvisionerVersion

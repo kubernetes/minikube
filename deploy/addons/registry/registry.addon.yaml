@@ -1,0 +1,15 @@
+name: registry
+maintainer: google
+templates:
+  - source: registry-rc.yaml.tmpl
+    target: /etc/kubernetes/addons/registry-rc.yaml
+  - source: registry-svc.yaml.tmpl
+    target: /etc/kubernetes/addons/registry-svc.yaml
+  - source: registry-proxy.yaml.tmpl
+    target: /etc/kubernetes/addons/registry-proxy.yaml
+images:
+  Registry:
+    image: registry:2.7.1@sha256:d5459fcb27aecc752520df4b492b08358a1912fcdfa454f7d2101d4b09991daa
+  KubeRegistryProxy:
+    registry: gcr.io
+    image: google_containers/kube-registry-proxy:0.4@sha256:1040f25a5273de0d72c54865a8efd47e3292de9fb8e5353e3fa76736b854f2da

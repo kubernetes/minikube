@@ -1,0 +1,19 @@
+name: storage-provisioner-gluster
+maintainer: unknown (third-party)
+templates:
+  - source: storage-gluster-ns.yaml.tmpl
+    target: /etc/kubernetes/addons/storage-gluster-ns.yaml
+  - source: glusterfs-daemonset.yaml.tmpl
+    target: /etc/kubernetes/addons/glusterfs-daemonset.yaml
+  - source: heketi-deployment.yaml.tmpl
+    target: /etc/kubernetes/addons/heketi-deployment.yaml
+  - source: storage-provisioner-glusterfile.yaml.tmpl
+    target: /etc/kubernetes/addons/storage-provisioner-glusterfile.yaml
+images:
+  Heketi:
+    image: heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8
+  GlusterfileProvisioner:
+    image: gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223
+  GlusterfsServer:
+    registry: quay.io
+    image: nixpanic/glusterfs-server:pr_fake-disk@sha256:3c58ae9d4e2007758954879d3f4095533831eb757c64ca6a0e32d1fc53fb6034

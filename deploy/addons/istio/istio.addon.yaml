@@ -1,0 +1,5 @@
+name: istio
+maintainer: third-party (istio)
+templates:
+  - source: istio-default-profile.yaml.tmpl
+    target: /etc/kubernetes/addons/istio-default-profile.yaml

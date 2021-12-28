@@ -1,0 +1,15 @@
+name: olm
+maintainer: third-party (operator framework)
+templates:
+  - source: crds.yaml.tmpl
+    target: /etc/kubernetes/addons/crds.yaml
+  - source: olm.yaml.tmpl
+    target: /etc/kubernetes/addons/olm.yaml
+images:
+  OLM:
+    registry: quay.io
+    image: operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed
+  # operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
+  UpstreamCommunityOperators:
+    registry: quay.io
+    image: operatorhubio/catalog:latest@sha256:53fad78977d83dde0c27b3183c2acc25ec153ae466e1b3c9a7efb517691b77b7

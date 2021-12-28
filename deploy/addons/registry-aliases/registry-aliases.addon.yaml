@@ -1,0 +1,22 @@
+name: registry-aliases
+maintainer: unknown (third-party)
+templates:
+  - source: registry-aliases-sa.tmpl
+    target: /etc/kubernetes/addons/registry-aliases-sa.yaml
+  - source: registry-aliases-sa-crb.tmpl
+    target: /etc/kubernetes/addons/registry-aliases-sa-crb.yaml
+  - source: registry-aliases-config.tmpl
+    target: /etc/kubernetes/addons/registry-aliases-config.yaml
+  - source: node-etc-hosts-update.tmpl
+    target: /etc/kubernetes/addons/node-etc-hosts-update.yaml
+  - source: patch-coredns-job.tmpl
+    target: /etc/kubernetes/addons/patch-coredns-job.yaml
+images:
+  CoreDNSPatcher:
+    registry: quay.io
+    image: rhdevelopers/core-dns-patcher@sha256:9220ff32f690c3d889a52afb59ca6fcbbdbd99e5370550cc6fd249adea8ed0a9
+  Alpine:
+    image: alpine:3.11@sha256:0bd0e9e03a022c3b0226667621da84fc9bf562a9056130424b5bfbd8bcb0397f
+  Pause:
+    registry: gcr.io
+    image: google_containers/pause:3.1@sha256:f78411e19d84a252e53bff71a4407a5686c46983a2c2eeed83929b888179acea

@@ -1,0 +1,5 @@
+name: pod-security-policy
+maintainer: unknown (third-party)
+templates:
+  - source: pod-security-policy.yaml.tmpl
+    target: /etc/kubernetes/addons/pod-security-policy.yaml

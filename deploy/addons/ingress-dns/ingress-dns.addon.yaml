@@ -1,0 +1,9 @@
+name: ingress-dns
+maintainer: google
+templates:
+  - source: ingress-dns-pod.yaml.tmpl
+    target: /etc/kubernetes/addons/ingress-dns-pod.yaml
+images:
+  IngressDNS:
+    registry: gcr.io
+    image: k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f

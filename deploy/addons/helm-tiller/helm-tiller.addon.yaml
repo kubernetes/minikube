@@ -1,0 +1,14 @@
+name: helm-tiller
+maintainer: third-party (helm)
+templates:
+  - source: helm-tiller-dp.tmpl
+    target: /etc/kubernetes/addons/helm-tiller-dp.yaml
+  - source: helm-tiller-rbac.tmpl
+    target: /etc/kubernetes/addons/helm-tiller-rbac.yaml
+  - source: helm-tiller-svc.tmpl
+    target: /etc/kubernetes/addons/helm-tiller-svc.yaml
+images:
+  # GCR is deprecated in helm: https://github.com/helm/helm/issues/10004#issuecomment-894478908
+  Tiller:
+    registry: ghcr.io
+    image: helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f
