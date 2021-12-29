@@ -31,20 +31,50 @@ Add your manifest YAML's to the directory you have created:
 cp *.yaml deploy/addons/<addon name>
 ```
 
+Create an addon manifest file describing how to activate the addon, in the addon directory. Here is the manifest for the `dashboard` addon located at `deploy/addons/dashboard/dashboard.addon.yaml`:
+
+```yaml
+name: dashboard
+maintainer: kubernetes
+templates:
+  - source: dashboard-dp.yaml.tmpl
+    target: /etc/kubernetes/addons/dashboard-dp.yaml
+assets:
+  - source: dashboard-ns.yaml
+    target: /etc/kubernetes/addons/dashboard-ns.yaml
+  - source: dashboard-clusterrole.yaml
+    target: /etc/kubernetes/addons/dashboard-clusterrole.yaml
+  # ...
+images:
+  Dashboard:
+    image: kubernetesui/dashboard:v2.3.1@sha256:ec27f462cf1946220f5a9ace416a84a57c18f98c777876a8054405d1428cc92e
+  MetricsScraper:
+    image: kubernetesui/metrics-scraper:v1.0.7@sha256:36d5b3f60e1a144cc5ada820910535074bdf5cf73fb70d1ff1681537eef4e172
+```
+
+The entries under `templates` and `assets` have the following properties:
+
+* `source`: the source path
+* `target`: destination path (typically `/etc/kubernetes/addons/<filename>`)
+* `permissions`: the file permissions, `0640` by default
+
+The `maintainer` property is meant to inform users about the controlling party of an addon's images. In the case above, the maintainer is Kubernetes, since the registry addon uses images that Kubernetes controls. When creating a new addon, the source of the images should be contacted and requested whether they are willing to be the point of contact for this addon before being put. If the source does not accept the responsibility, leaving the maintainer field empty is acceptable.
+
 Note: If the addon never needs authentication to GCP, then consider adding the following label to the pod's yaml:
 
 ```yaml
 gcp-auth-skip-secret: "true"
 ```
 
-To make the addon appear in `minikube addons list`, add it to `pkg/addons/config.go`. Here is the entry used by the `registry` addon, which will work for any addon which does not require custom code:
+If you need to customize how the addon is validated and activated, add it to `pkg/addons/config.go`. Here is the entry used by the `gvisor` addon, which has the `IsRuntimeContainerd` validation and `verifyAddonStatus` callback:
 
 ```go
-  {
-    name:      "registry",
-    set:       SetBool,
-    callbacks: []setFn{EnableOrDisableAddon},
-  },
+	{
+		name:        "gvisor",
+		set:         SetBool,
+		validations: []setFn{IsRuntimeContainerd},
+		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
+	},
 ```
 
 Next, add all required files using `//go:embed` directives to a new embed.FS variable in `deploy/addons/assets.go`. Here is the entry used by the `csi-hostpath-driver` addon:
@@ -55,41 +85,23 @@ Next, add all required files using `//go:embed` directives to a new embed.FS var
 	CsiHostpathDriverAssets embed.FS
 ```
 
-Then, add into `pkg/minikube/assets/addons.go` the list of files to copy into the cluster, including manifests. Here is the entry used by the `registry` addon:
+At the bottom of the same file, add the plugin to the list of embedded plugins. Here is the entry used by the `csi-hostpath-driver` addon:
 
 ```go
-  "registry": NewAddon([]*BinAsset{
-    MustBinAsset(addons.RegistryAssets,
-      "registry/registry-rc.yaml.tmpl",
-      vmpath.GuestAddonsDir,
-      "registry-rc.yaml",
-      "0640",
-      false),
-    MustBinAsset(addons.RegistryAssets,
-      "registry/registry-svc.yaml.tmpl",
-      vmpath.GuestAddonsDir,
-      "registry-svc.yaml",
-      "0640",
-      false),
-    MustBinAsset(addons.RegistryAssets,
-      "registry/registry-proxy.yaml.tmpl",
-      vmpath.GuestAddonsDir,
-      "registry-proxy.yaml",
-      "0640",
-      false),
-  }, false, "registry", "google"),
+var Embedded = map[string]embed.FS{
+	// ...
+	"addon.CsiHostpathDriverAssets":         CsiHostpathDriverAssets,
+}
 ```
 
-The `MustBinAsset` arguments are:
+Then register the addon manifest path to the `deploy/addons/addon-registry.yaml` file. Here is the entry used by the `csi-hostpath-driver` addon:
 
-* asset variable (typically present in `deploy/addons/assets.go`)
-* source filename
-* destination directory (typically `vmpath.GuestAddonsDir`)
-* destination filename
-* permissions (typically `0640`)
-* boolean value representing if template substitution is required (often `false`)
-
-The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`. In addition, following the addon name on the last line is the maintainer field. This is meant to inform users about the controlling party of an addon's images. In the case above, the maintainer is Google, since the registry addon uses images that Google controls. When creating a new addon, the source of the images should be contacted and requested whether they are willing to be the point of contact for this addon before being put. If the source does not accept the responsibility, leaving the maintainer field empty is acceptable.
+```yaml
+addons:
+  // ...
+  - embedfs://addon.CsiHostpathDriverAssets/csi-hostpath-driver/csi-hostpath-driver.addon.yaml
+}
+```
 
 To see other examples, see the [addons commit history](https://github.com/kubernetes/minikube/commits/master/deploy/addons) for other recent examples.
 

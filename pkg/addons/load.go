@@ -19,6 +19,7 @@ package addons
 import (
 	"fmt"
 	"net/url"
+	"os"
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/pkg/errors"
@@ -90,8 +91,12 @@ func loadAddons() map[string]*AddonPackage {
 
 func loadRegistry(path string, addons map[string]*AddonPackage) error {
 	uri, err := url.Parse(path)
-	if err != nil {
-		return errors.Wrapf(err, "parsing registry URL %s", path)
+	if err != nil || uri.Scheme == "" {
+		path = "file:///" + os.ExpandEnv(path)
+		uri, err = url.Parse(path)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create URL")
+		}
 	}
 
 	var regConfig registryDeclaration
