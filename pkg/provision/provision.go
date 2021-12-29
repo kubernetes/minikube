@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -150,7 +149,7 @@ func copyHostCerts(authOptions auth.Options) error {
 
 	execRunner := command.NewExecRunner(false)
 	for src, dst := range hostCerts {
-		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
+		f, err := assets.NewFileAsset(src, dst, "0777")
 		if err != nil {
 			return errors.Wrapf(err, "open cert file: %s", src)
 		}
@@ -190,7 +189,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	}
 
 	for src, dst := range remoteCerts {
-		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
+		f, err := assets.NewFileAsset(src, dst, "0640")
 		if err != nil {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}

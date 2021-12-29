@@ -20,7 +20,7 @@ import "embed"
 
 var (
 	// DefaultAddonRegistryAssets assets for the default addons registry
-	// go:embed addon-registry.yaml
+	//go:embed addon-registry.yaml
 	DefaultAddonRegistryAssets embed.FS
 
 	// AutoPauseAssets assets for auto-pause addon
@@ -173,3 +173,37 @@ var (
 	//go:embed aliyun_mirror.json
 	AliyunMirror embed.FS
 )
+
+var Embedded = map[string]embed.FS{
+	"addon.DefaultAddonRegistryAssets":      DefaultAddonRegistryAssets,
+	"addon.AutoPauseAssets":                 AutoPauseAssets,
+	"addon.DashboardAssets":                 DashboardAssets,
+	"addon.DefaultStorageClassAssets":       DefaultStorageClassAssets,
+	"addon.PodSecurityPolicyAssets":         PodSecurityPolicyAssets,
+	"addon.StorageProvisionerAssets":        StorageProvisionerAssets,
+	"addon.StorageProvisionerGlusterAssets": StorageProvisionerGlusterAssets,
+	"addon.EfkAssets":                       EfkAssets,
+	"addon.IngressAssets":                   IngressAssets,
+	"addon.IstioProvisionerAssets":          IstioProvisionerAssets,
+	"addon.IstioAssets":                     IstioAssets,
+	"addon.KubevirtAssets":                  KubevirtAssets,
+	"addon.MetricsServerAssets":             MetricsServerAssets,
+	"addon.OlmAssets":                       OlmAssets,
+	"addon.RegistryAssets":                  RegistryAssets,
+	"addon.RegistryCredsAssets":             RegistryCredsAssets,
+	"addon.RegistryAliasesAssets":           RegistryAliasesAssets,
+	"addon.FreshpodAssets":                  FreshpodAssets,
+	"addon.NvidiaDriverInstallerAssets":     NvidiaDriverInstallerAssets,
+	"addon.NvidiaGpuDevicePluginAssets":     NvidiaGpuDevicePluginAssets,
+	"addon.LogviewerAssets":                 LogviewerAssets,
+	"addon.GvisorAssets":                    GvisorAssets,
+	"addon.HelmTillerAssets":                HelmTillerAssets,
+	"addon.IngressDNSAssets":                IngressDNSAssets,
+	"addon.MetallbAssets":                   MetallbAssets,
+	"addon.AmbassadorAssets":                AmbassadorAssets,
+	"addon.GcpAuthAssets":                   GcpAuthAssets,
+	"addon.VolumeSnapshotsAssets":           VolumeSnapshotsAssets,
+	"addon.CsiHostpathDriverAssets":         CsiHostpathDriverAssets,
+	"addon.PortainerAssets":                 PortainerAssets,
+	"addon.AliyunMirror":                    AliyunMirror,
+}

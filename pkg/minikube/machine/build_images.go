@@ -163,7 +163,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	}
 
 	dst := path.Join(buildRoot, filename)
-	f, err := assets.NewFileAsset(src, buildRoot, filename, "0644")
+	f, err := assets.NewFileAsset(src, path.Join(buildRoot, filename), "0644")
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}

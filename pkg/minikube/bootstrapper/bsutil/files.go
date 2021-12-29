@@ -45,7 +45,7 @@ const (
 func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	dirs := []string{}
 	for _, f := range files {
-		dirs = append(dirs, f.GetTargetDir())
+		dirs = append(dirs, path.Dir(f.GetTargetPath()))
 	}
 	args := append([]string{"mkdir", "-p"}, dirs...)
 	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {

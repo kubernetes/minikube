@@ -12,4 +12,4 @@ images:
   # operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
   UpstreamCommunityOperators:
     registry: quay.io
-    image: operatorhubio/catalog:latest@sha256:53fad78977d83dde0c27b3183c2acc25ec153ae466e1b3c9a7efb517691b77b7
+    image: operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4

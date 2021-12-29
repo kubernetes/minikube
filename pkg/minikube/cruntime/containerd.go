@@ -538,7 +538,7 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 	}
 
 	// Copy over tarball into host
-	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
+	fa, err := assets.NewFileAsset(tarballPath, path.Join(targetDir, targetName), "0644")
 	if err != nil {
 		return errors.Wrap(err, "getting file asset")
 	}

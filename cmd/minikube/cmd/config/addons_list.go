@@ -26,7 +26,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -93,8 +93,8 @@ var stringFromStatus = func(addonStatus bool) string {
 }
 
 var printAddonsList = func(cc *config.ClusterConfig) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
+	addonNames := make([]string, 0, len(addons.Addons))
+	for addonName := range addons.Addons {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
@@ -111,8 +111,8 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 	}
 
 	for _, addonName := range addonNames {
-		addonBundle := assets.Addons[addonName]
-		maintainer := addonBundle.Maintainer
+		addonBundle := addons.Addons[addonName]
+		maintainer := addonBundle.Maintainer()
 		if maintainer == "" {
 			maintainer = "unknown (third-party)"
 		}
@@ -137,8 +137,8 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 }
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
+	addonNames := make([]string, 0, len(addons.Addons))
+	for addonName := range addons.Addons {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
@@ -151,7 +151,7 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 			continue
 		}
 
-		addonBundle := assets.Addons[addonName]
+		addonBundle := addons.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
 
 		addonsMap[addonName] = map[string]interface{}{

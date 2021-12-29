@@ -22,7 +22,6 @@ import (
 
 	"fmt"
 	"os"
-	pt "path"
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -129,7 +128,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 			return 0, nil
 		}
 
-		return assets.NewBaseCopyableFile(f, fakeWriter, pt.Dir(dst.path), pt.Base(dst.path))
+		return assets.NewBaseCopyableFile(f, fakeWriter, dst.path)
 	}
 
 	if _, err := os.Stat(src.path); err != nil {
@@ -140,7 +139,7 @@ func copyableFile(co *mustload.ClusterController, src, dst *remotePath) assets.C
 		}
 	}
 
-	fa, err := assets.NewFileAsset(src.path, pt.Dir(dst.path), pt.Base(dst.path), "0644")
+	fa, err := assets.NewFileAsset(src.path, dst.path, "0644")
 	if err != nil {
 		out.ErrLn("%v", errors.Wrap(err, "getting file asset"))
 		os.Exit(1)

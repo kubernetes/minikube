@@ -18,7 +18,6 @@ package cni
 
 import (
 	"os"
-	"path"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -52,7 +51,7 @@ func NewCustom(cc config.ClusterConfig, manifest string) (Custom, error) {
 
 // Apply enables the CNI
 func (c Custom) Apply(r Runner) error {
-	m, err := assets.NewFileAsset(c.manifest, path.Dir(manifestPath()), path.Base(manifestPath()), "0644")
+	m, err := assets.NewFileAsset(c.manifest, manifestPath(), "0644")
 	if err != nil {
 		return errors.Wrap(err, "manifest")
 	}

@@ -21,7 +21,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -62,7 +62,7 @@ var addonsOpenCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		addon, ok := assets.Addons[addonName] // validate addon input
+		addon, ok := addons.Addons[addonName] // validate addon input
 		if !ok {
 			exit.Message(reason.Usage, `addon '{{.name}}' is not a valid addon packaged with minikube.
 To see the list of available addons run:

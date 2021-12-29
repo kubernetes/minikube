@@ -31,7 +31,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/addons"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"k8s.io/minikube/pkg/minikube/browser"
@@ -75,7 +74,7 @@ var dashboardCmd = &cobra.Command{
 		var err error
 
 		// Check dashboard status before enabling it
-		addon := assets.Addons["dashboard"]
+		addon := addons.Addons["dashboard"]
 		enabled := addon.IsEnabled(co.Config)
 
 		if !enabled {

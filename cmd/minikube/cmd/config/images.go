@@ -21,7 +21,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -39,8 +39,9 @@ var addonsImagesCmd = &cobra.Command{
 
 		addon := args[0]
 		// allows for additional prompting of information when enabling addons
-		if conf, ok := assets.Addons[addon]; ok {
-			if conf.Images != nil {
+		if conf, ok := addons.Addons[addon]; ok {
+			images := conf.GetImages()
+			if len(images) == 0 {
 				out.Infof("{{.name}} has following images:", out.V{"name": addon})
 
 				var tData [][]string
@@ -50,8 +51,8 @@ var addonsImagesCmd = &cobra.Command{
 				table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 				table.SetCenterSeparator("|")
 
-				for imageName, defaultImage := range conf.Images {
-					tData = append(tData, []string{imageName, defaultImage, conf.Registries[imageName]})
+				for _, image := range images {
+					tData = append(tData, []string{image.Name(), image.Image(), image.Registry()})
 				}
 
 				table.AppendBulk(tData)

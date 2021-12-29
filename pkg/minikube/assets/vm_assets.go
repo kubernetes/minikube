@@ -23,8 +23,6 @@ import (
 	"html/template"
 	"io"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -48,15 +46,17 @@ type ReadableFile interface {
 	Close() error
 }
 
-// CopyableFile is something that can be copied
-type CopyableFile interface {
-	ReadableFile
-
+// CopyableFile is something that can be written
+type WriteableFile interface {
 	io.Writer
 	SetLength(int)
 	GetTargetPath() string
-	GetTargetDir() string
-	GetTargetName() string
+}
+
+// CopyableFile is something that can be copied
+type CopyableFile interface {
+	ReadableFile
+	WriteableFile
 }
 
 type writeFn func(d []byte) (n int, err error)
@@ -67,8 +67,7 @@ type BaseCopyableFile struct {
 
 	writer     writeFn
 	length     int
-	targetDir  string
-	targetName string
+	targetPath string
 }
 
 // Write is for write something into the file
@@ -83,34 +82,28 @@ func (r *BaseCopyableFile) SetLength(length int) {
 
 // GetTargetPath returns target path
 func (r *BaseCopyableFile) GetTargetPath() string {
-	return filepath.Join(r.GetTargetDir(), r.GetTargetName())
-}
-
-// GetTargetDir returns target dir
-func (r *BaseCopyableFile) GetTargetDir() string {
-	return r.targetDir
-}
-
-// GetTargetName returns target name
-func (r *BaseCopyableFile) GetTargetName() string {
-	return r.targetName
+	return r.targetPath
 }
 
 // NewBaseCopyableFile creates a new instance of BaseCopyableFile
-func NewBaseCopyableFile(source ReadableFile, writer writeFn, targetDir, targetName string) *BaseCopyableFile {
+func NewBaseCopyableFile(source ReadableFile, writer writeFn, targetPath string) *BaseCopyableFile {
 	return &BaseCopyableFile{
 		ReadableFile: source,
 		writer:       writer,
-		targetDir:    targetDir,
-		targetName:   targetName,
+		targetPath:   targetPath,
 	}
+}
+
+type Asset interface {
+	CopyableFile
+	IsTemplate() bool
+	Evaluate(data interface{}) (Asset, error)
 }
 
 // BaseAsset is the base asset class
 type BaseAsset struct {
 	SourcePath  string
-	TargetDir   string
-	TargetName  string
+	TargetPath  string
 	Permissions string
 	Source      string
 }
@@ -122,17 +115,7 @@ func (b *BaseAsset) GetSourcePath() string {
 
 // GetTargetPath returns target path
 func (b *BaseAsset) GetTargetPath() string {
-	return path.Join(b.GetTargetDir(), b.GetTargetName())
-}
-
-// GetTargetDir returns target dir
-func (b *BaseAsset) GetTargetDir() string {
-	return b.TargetDir
-}
-
-// GetTargetName returns target name
-func (b *BaseAsset) GetTargetName() string {
-	return b.TargetName
+	return b.TargetPath
 }
 
 // GetPermissions returns permissions
@@ -155,12 +138,12 @@ type FileAsset struct {
 
 // NewMemoryAssetTarget creates a new MemoryAsset, with target
 func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
-	return NewMemoryAsset(d, path.Dir(targetPath), path.Base(targetPath), permissions)
+	return NewMemoryAsset(d, targetPath, permissions)
 }
 
 // NewFileAsset creates a new FileAsset
-func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
-	klog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+func NewFileAsset(src, targetPath, permissions string) (*FileAsset, error) {
+	klog.V(4).Infof("NewFileAsset: %s -> %s", src, targetPath)
 
 	info, err := os.Stat(src)
 	if err != nil {
@@ -179,8 +162,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 	return &FileAsset{
 		BaseAsset: BaseAsset{
 			SourcePath:  src,
-			TargetDir:   targetDir,
-			TargetName:  targetName,
+			TargetPath:  targetPath,
 			Permissions: permissions,
 		},
 		reader: io.NewSectionReader(f, 0, info.Size()),
@@ -294,17 +276,26 @@ func (m *MemoryAsset) Close() error {
 }
 
 // NewMemoryAsset creates a new MemoryAsset
-func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
+func NewMemoryAsset(d []byte, targetPath, permissions string) *MemoryAsset {
 	return &MemoryAsset{
 		BaseAsset: BaseAsset{
-			TargetDir:   targetDir,
-			TargetName:  targetName,
+			TargetPath:  targetPath,
 			Permissions: permissions,
 			SourcePath:  MemorySource,
 		},
 		reader: bytes.NewReader(d),
 		length: len(d),
 	}
+}
+
+// IsTemplate returns if the asset is a template
+func (m *MemoryAsset) IsTemplate() bool {
+	return false
+}
+
+// Evaluate evaluates the template to a new asset
+func (m *MemoryAsset) Evaluate(data interface{}) (Asset, error) {
+	return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
 }
 
 // BinAsset is a bindata (binary data) asset
@@ -317,8 +308,8 @@ type BinAsset struct {
 }
 
 // MustBinAsset creates a new BinAsset, or panics if invalid
-func MustBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) *BinAsset {
-	asset, err := NewBinAsset(fs, name, targetDir, targetName, permissions)
+func MustBinAsset(fs embed.FS, name, targetPath, permissions string, isTemplate bool) *BinAsset {
+	asset, err := NewBinAsset(fs, name, targetPath, permissions, isTemplate)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
 	}
@@ -326,18 +317,17 @@ func MustBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) 
 }
 
 // NewBinAsset creates a new BinAsset
-func NewBinAsset(fs embed.FS, name, targetDir, targetName, permissions string) (*BinAsset, error) {
+func NewBinAsset(fs embed.FS, name, targetPath, permissions string, isTemplate bool) (*BinAsset, error) {
 	m := &BinAsset{
 		FS: fs,
 		BaseAsset: BaseAsset{
 			SourcePath:  name,
-			TargetDir:   targetDir,
-			TargetName:  targetName,
+			TargetPath:  targetPath,
 			Permissions: permissions,
 		},
 		template: nil,
 	}
-	err := m.loadData()
+	err := m.loadData(isTemplate)
 	return m, err
 }
 
@@ -352,18 +342,20 @@ func defaultValue(defValue string, val interface{}) string {
 	return strVal
 }
 
-func (m *BinAsset) loadData() error {
+func (m *BinAsset) loadData(isTemplate bool) error {
 	contents, err := m.FS.ReadFile(m.SourcePath)
 	if err != nil {
 		return err
 	}
 
-	tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
-	if err != nil {
-		return err
-	}
+	if isTemplate {
+		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		if err != nil {
+			return err
+		}
 
-	m.template = tpl
+		m.template = tpl
+	}
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
@@ -380,7 +372,7 @@ func (m *BinAsset) IsTemplate() bool {
 }
 
 // Evaluate evaluates the template to a new asset
-func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
+func (m *BinAsset) Evaluate(data interface{}) (Asset, error) {
 	if !m.IsTemplate() {
 		return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
 
@@ -391,7 +383,9 @@ func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 		return nil, err
 	}
 
-	return NewMemoryAsset(buf.Bytes(), m.GetTargetDir(), m.GetTargetName(), m.GetPermissions()), nil
+	var asset = NewMemoryAsset(buf.Bytes(), m.GetTargetPath(), m.GetPermissions())
+
+	return asset, nil
 }
 
 // GetLength returns length

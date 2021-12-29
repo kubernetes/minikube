@@ -142,7 +142,7 @@ func (s *SSHRunner) session() (*ssh.Session, error) {
 
 // Remove runs a command to delete a file on the remote.
 func (s *SSHRunner) Remove(f assets.CopyableFile) error {
-	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
+	dst := f.GetTargetPath()
 	klog.Infof("rm: %s", dst)
 
 	sess, err := s.session()
@@ -343,7 +343,9 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	dst := f.GetTargetPath()
+	dstDir := path.Dir(dst)
+	dstBase := path.Base(dst)
 
 	// For small files, don't bother risking being wrong for no performance benefit
 	if f.GetLength() > 2048 {
@@ -387,7 +389,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 	g.Go(func() error {
 		defer w.Close()
-		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
+		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), dstBase)
 		fmt.Fprint(w, header)
 		if f.GetLength() == 0 {
 			klog.Warningf("asked to copy a 0 byte asset: %+v", f)
@@ -400,13 +402,13 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 			return errors.Wrap(err, "io.Copy")
 		}
 		if copied != int64(f.GetLength()) {
-			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
+			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", dstBase, f.GetLength(), copied)
 		}
 		fmt.Fprint(w, "\x00")
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo test -d %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	scp := fmt.Sprintf("sudo test -d %s && sudo scp -t %s", dstDir, dstDir)
 	mtime, err := f.GetModTime()
 	if err != nil {
 		klog.Infof("error getting modtime for %s: %v", dst, err)
@@ -422,7 +424,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 // CopyFrom copies a file from the remote over SSH.
 func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	dst := f.GetTargetPath()
 
 	sess, err := s.session()
 	if err != nil {

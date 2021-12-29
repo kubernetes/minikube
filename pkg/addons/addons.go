@@ -19,7 +19,6 @@ package addons
 import (
 	"fmt"
 	"os/exec"
-	"path"
 	"runtime"
 	"sort"
 	"strconv"
@@ -59,6 +58,83 @@ var Refresh = false
 
 // ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
 var ErrSkipThisAddon = errors.New("skipping this addon")
+
+var defaultAddons = map[string]bool{
+	"default-storageclass": true,
+	"storage-provisioner":  true,
+}
+
+// AddonImage represents a single image in an addon
+type AddonImage struct {
+	name     string
+	registry string
+	image    string
+}
+
+// Name get the name of the addon image
+func (a AddonImage) Name() string {
+	return a.name
+}
+
+// Registry get the registry containing the image
+func (a AddonImage) Registry() string {
+	return a.registry
+}
+
+// Image get the path of the image
+func (a AddonImage) Image() string {
+	return a.image
+}
+
+// AddonPackage represents a whole addon
+type AddonPackage struct {
+	maintainer string
+	name       string
+	assets     []assets.Asset
+	images     map[string]AddonImage
+}
+
+// Name get the addon name
+func (a *AddonPackage) Name() string {
+	return a.name
+}
+
+// Maintainer get the addon maintainer
+func (a *AddonPackage) Maintainer() string {
+	return a.maintainer
+}
+
+// GetImages gets a list of the addon images
+func (a *AddonPackage) GetImages() map[string]AddonImage {
+	return a.images
+}
+
+// GetAssets gets a list of the addon assets
+func (a *AddonPackage) GetAssets() []assets.Asset {
+	return a.assets
+}
+
+// IsEnabled checks if an Addon is enabled for the given profile
+func (a *AddonPackage) IsEnabled(cc *config.ClusterConfig) bool {
+	status, ok := cc.Addons[a.name]
+	if ok {
+		return status
+	}
+
+	// Return the default unconfigured state of the addon
+	status, ok = defaultAddons[a.name]
+	return ok && status
+}
+
+// WithImages overrides the images and returns a new AddonPackage
+func (a AddonPackage) WithImages(images map[string]AddonImage) AddonPackage {
+	return AddonPackage{
+		name:       a.name,
+		maintainer: a.maintainer,
+		assets:     a.assets,
+		images:     images,
+	}
+}
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -155,7 +231,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
-	addon := assets.Addons[name]
+	addon := Addons[name]
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
@@ -187,13 +263,13 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 
 	// Persist images even if the machine is running so starting gets the correct images.
-	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
+	images, customRegistries, err := selectAndPersistImages(addon, cc)
 	if err != nil {
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
 	}
 
 	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
-		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
+		images, customRegistries = fixAddonImagesAndRegistries(addon, images, customRegistries)
 	}
 
 	mName := config.MachineName(*cc, cp)
@@ -224,7 +300,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
+	data := generateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
@@ -281,7 +357,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	return false, nil
 }
 
-func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
+func isAddonAlreadySet(cc *config.ClusterConfig, addon *AddonPackage, enable bool) bool {
 	enabled := addon.IsEnabled(cc)
 	if enabled && enable {
 		return true
@@ -295,30 +371,40 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 }
 
 // maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19 by replacing default addons' images with compatible versions
-func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
+func supportLegacyIngress(addon *AddonPackage, cc config.ClusterConfig) error {
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		if addon.Name() == "ingress" {
-			addon.Images = map[string]string{
-				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
-				"IngressController": "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
-				// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
-				"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-			}
-			addon.Registries = map[string]string{
-				"IngressController": "k8s.gcr.io",
+			addon.images = map[string]AddonImage{
+				"IngressController": {
+					name:     "IngressController",
+					image:    "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
+					registry: "",
+				},
+				"KubeWebhookCertgenCreate": {
+					name:     "KubeWebhookCertgenCreate",
+					image:    "jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+					registry: "docker.io",
+				},
+				"KubeWebhookCertgenPatch": {
+					name:     "KubeWebhookCertgenPatch",
+					image:    "jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+					registry: "",
+				},
 			}
 			return nil
 		}
 		if addon.Name() == "ingress-dns" {
-			addon.Images = map[string]string{
-				"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+			addon.images = map[string]AddonImage{
+				"IngressDNS": {
+					name:     "IngressDNS",
+					image:    "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+					registry: "",
+				},
 			}
-			addon.Registries = nil
 			return nil
 		}
 		return fmt.Errorf("supportLegacyIngress called for unexpected addon %q - nothing to do here", addon.Name())
@@ -327,22 +413,22 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	return nil
 }
 
-func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(cc *config.ClusterConfig, add *AddonPackage, runner command.Runner, data interface{}, enable bool) error {
 	deployFiles := []string{}
 
-	for _, addon := range addon.Assets {
+	for _, asset := range add.GetAssets() {
 		var f assets.CopyableFile
-		var err error
-		if addon.IsTemplate() {
-			f, err = addon.Evaluate(data)
+		if asset.IsTemplate() {
+			d, err := asset.Evaluate(data)
 			if err != nil {
-				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetSourcePath())
+				return errors.Wrapf(err, "evaluate bundled addon %s asset", asset.GetSourcePath())
 			}
-
+			f = d
 		} else {
-			f = addon
+			f = asset
 		}
-		fPath := path.Join(f.GetTargetDir(), f.GetTargetName())
+
+		fPath := asset.GetTargetPath()
 
 		if enable {
 			klog.Infof("installing %s", fPath)
@@ -418,7 +504,7 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	}()
 
 	// Get the default values of any addons not saved to our config
-	for name, a := range assets.Addons {
+	for name, a := range Addons {
 		defaultVal := a.IsEnabled(cc)
 
 		_, exists := toEnable[name]
@@ -477,4 +563,193 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+}
+
+// GenerateTemplateData generates template data for template assets
+func generateTemplateData(addon *AddonPackage, cfg config.KubernetesConfig, netInfo assets.NetworkInfo, images, customRegistries map[string]string, enable bool) interface{} {
+
+	a := runtime.GOARCH
+	// Some legacy docker images still need the -arch suffix
+	// for  less common architectures blank suffix for amd64
+	ea := ""
+	if runtime.GOARCH != "amd64" {
+		ea = "-" + runtime.GOARCH
+	}
+
+	var registries = make(map[string]string, len(addon.GetImages()))
+	for _, image := range addon.GetImages() {
+		registries[image.Name()] = image.Registry()
+	}
+
+	opts := struct {
+		PreOneTwentyKubernetes bool
+		Arch                   string
+		ExoticArch             string
+		ImageRepository        string
+		LoadBalancerStartIP    string
+		LoadBalancerEndIP      string
+		CustomIngressCert      string
+		IngressAPIVersion      string
+		ContainerRuntime       string
+		Images                 map[string]string
+		Registries             map[string]string
+		CustomRegistries       map[string]string
+		NetworkInfo            map[string]string
+	}{
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
+	}
+	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
+		opts.ImageRepository += "/"
+	}
+	if opts.Registries == nil {
+		opts.Registries = make(map[string]string)
+	}
+
+	// maintain backwards compatibility with k8s < v1.19
+	// by using v1beta1 instead of v1 api version for ingress
+	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		opts.IngressAPIVersion = "v1beta1"
+	}
+	if semver.MustParseRange("<1.20.0")(v) {
+		opts.PreOneTwentyKubernetes = true
+	}
+
+	// Network info for generating template
+	opts.NetworkInfo["ControlPlaneNodeIP"] = netInfo.ControlPlaneNodeIP
+	opts.NetworkInfo["ControlPlaneNodePort"] = fmt.Sprint(netInfo.ControlPlaneNodePort)
+
+	// Append postfix "/" to registries
+	for k, v := range opts.Registries {
+		if v != "" && !strings.HasSuffix(v, "/") {
+			opts.Registries[k] = v + "/"
+		}
+	}
+
+	for k, v := range opts.CustomRegistries {
+		if v != "" && !strings.HasSuffix(v, "/") {
+			opts.CustomRegistries[k] = v + "/"
+		}
+	}
+
+	for name, image := range opts.Images {
+		if _, ok := opts.Registries[name]; !ok {
+			opts.Registries[name] = "" // Avoid nil access when rendering
+		}
+
+		if override, ok := opts.CustomRegistries[name]; ok {
+			out.Infof("Using image {{.registry}}{{.image}}", out.V{
+				"registry": override,
+				// removing the SHA from UI
+				// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
+				"image": strings.Split(image, "@")[0],
+			})
+		} else if opts.ImageRepository != "" {
+			out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
+				"registry": opts.ImageRepository,
+				"image":    image,
+			})
+		} else {
+			out.Infof("Using image {{.registry}}{{.image}}", out.V{
+				"registry": opts.Registries[name],
+				"image":    strings.Split(image, "@")[0],
+			})
+		}
+
+		if enable {
+			if override, ok := opts.CustomRegistries[name]; ok {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": override,
+					// removing the SHA from UI
+					// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
+					"image": strings.Split(image, "@")[0],
+				})
+			} else if opts.ImageRepository != "" {
+				out.Infof("Using image {{.registry}}{{.image}} (global image repository)", out.V{
+					"registry": opts.ImageRepository,
+					"image":    image,
+				})
+			} else {
+				out.Infof("Using image {{.registry}}{{.image}}", out.V{
+					"registry": opts.Registries[name],
+					"image":    strings.Split(image, "@")[0],
+				})
+			}
+		}
+	}
+	return opts
+}
+
+// SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
+func selectAndPersistImages(addon *AddonPackage, cc *config.ClusterConfig) (images, customRegistries map[string]string, err error) {
+	addonDefaultImages := addon.GetImages()
+	addonImages := make(map[string]string, len(addonDefaultImages))
+
+	for _, image := range addonDefaultImages {
+		addonImages[image.Name()] = image.Image()
+	}
+
+	// Use previously configured custom images.
+	images = overrideDefaults(addonImages, cc.CustomAddonImages)
+	if viper.IsSet(config.AddonImages) {
+		// Parse the AddonImages flag if present.
+		newImages := parseMapString(viper.GetString(config.AddonImages))
+		for name, image := range newImages {
+			if image == "" {
+				out.WarningT("Ignoring empty custom image {{.name}}", out.V{"name": name})
+				delete(newImages, name)
+				continue
+			}
+			if _, ok := addonImages[name]; !ok {
+				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": name})
+			}
+		}
+		// Use newly configured custom images.
+		images = overrideDefaults(addonImages, newImages)
+		// Store custom addon images to be written.
+		cc.CustomAddonImages = mergeMaps(cc.CustomAddonImages, images)
+	}
+
+	// Use previously configured custom registries.
+	customRegistries = filterKeySpace(addonImages, cc.CustomAddonRegistries) // filter by images map because registry map may omit default registry.
+	if viper.IsSet(config.AddonRegistries) {
+		// Parse the AddonRegistries flag if present.
+		customRegistries = parseMapString(viper.GetString(config.AddonRegistries))
+		for name := range customRegistries {
+			if _, ok := addonImages[name]; !ok { // check images map because registry map may omitted default registry
+				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": name})
+				delete(customRegistries, name)
+			}
+		}
+		// Since registry map may omit default registry, any previously set custom registries for these images must be cleared.
+		for name := range addonImages {
+			delete(cc.CustomAddonRegistries, name)
+		}
+		// Merge newly set registries into custom addon registries to be written.
+		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, customRegistries)
+	}
+
+	err = nil
+	// If images or registries were specified, save the config afterward.
+	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
+		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
+		err = config.Write(viper.GetString(config.ProfileName), cc)
+		// Whether err is nil or not we still return here.
+	}
+	return images, customRegistries, err
 }

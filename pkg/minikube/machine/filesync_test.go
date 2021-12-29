@@ -18,6 +18,7 @@ package machine
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -136,7 +137,7 @@ func TestAssetsFromDir(t *testing.T) {
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
-				got[actualFile.GetSourcePath()] = actualFile.GetTargetDir()
+				got[actualFile.GetSourcePath()] = path.Dir(actualFile.GetTargetPath())
 			}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("files differ: (-want +got)\n%s", diff)

@@ -24,11 +24,13 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -165,18 +167,18 @@ func copyConfigFiles() error {
 }
 
 func copyAssetToDest(targetName, dest string) error {
-	var asset *assets.BinAsset
-	for _, a := range assets.Addons["gvisor"].Assets {
-		if a.GetTargetName() == targetName {
+	var asset assets.Asset
+	for _, a := range addons.Addons["gvisor"].GetAssets() {
+		if path.Base(a.GetTargetPath()) == targetName {
 			asset = a
 		}
 	}
 	if asset == nil {
-		return fmt.Errorf("no asset matching target %s among %+v", targetName, assets.Addons["gvisor"])
+		return fmt.Errorf("no asset matching target %s among %+v", targetName, addons.Addons["gvisor"])
 	}
 
 	// Now, copy the data from this asset to dest
-	src := filepath.Join(vmpath.GuestGvisorDir, asset.GetTargetName())
+	src := filepath.Join(vmpath.GuestGvisorDir, path.Base(asset.GetTargetPath()))
 	log.Printf("%s asset path: %s", targetName, src)
 	contents, err := os.ReadFile(src)
 	if err != nil {

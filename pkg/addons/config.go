@@ -39,8 +39,8 @@ var addonPodLabels = map[string]string{
 	"csi-hostpath-driver": "kubernetes.io/minikube-addons=csi-hostpath-driver",
 }
 
-// Addons is a list of all addons
-var Addons = []*Addon{
+// AddonConfig is a list of all addons
+var AddonConfig = []*Addon{
 	{
 		name:      "auto-pause",
 		set:       SetBool,

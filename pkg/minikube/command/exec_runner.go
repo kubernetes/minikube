@@ -22,8 +22,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"time"
@@ -139,7 +137,7 @@ func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (e *execRunner) Copy(f assets.CopyableFile) error {
-	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
+	dst := f.GetTargetPath()
 	if _, err := os.Stat(dst); err == nil {
 		klog.Infof("found %s, removing ...", dst)
 		if err := e.Remove(f); err != nil {
@@ -185,7 +183,7 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 
 // CopyFrom copies a file
 func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
-	src := path.Join(f.GetTargetDir(), f.GetTargetName())
+	src := f.GetTargetPath()
 
 	dst := f.GetSourcePath()
 	klog.Infof("cp: %s --> %s (%d bytes)", src, dst, f.GetLength())
@@ -203,7 +201,7 @@ func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
 
 // Remove removes a file
 func (e *execRunner) Remove(f assets.CopyableFile) error {
-	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	dst := f.GetTargetPath()
 	klog.Infof("rm: %s", dst)
 	if e.sudo {
 		if err := os.Remove(dst); err != nil {

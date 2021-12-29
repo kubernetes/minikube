@@ -213,7 +213,7 @@ func (d *Driver) prepareSSH() error {
 	}
 
 	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
-	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
+	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/authorized_keys", "0644")
 	if err != nil {
 		return errors.Wrap(err, "create pubkey assetfile ")
 	}

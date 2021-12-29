@@ -290,7 +290,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	}
 
 	dst := path.Join(loadRoot, filename)
-	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
+	f, err := assets.NewFileAsset(src, path.Join(loadRoot, filename), "0644")
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
@@ -479,7 +479,7 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 		return err
 	}
 
-	f, err := assets.NewFileAsset(dst, saveRoot, filename, "0644")
+	f, err := assets.NewFileAsset(dst, path.Join(saveRoot, filename), "0644")
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}

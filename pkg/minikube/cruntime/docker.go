@@ -488,7 +488,7 @@ func (r *Docker) forceSystemd() error {
 "storage-driver": "overlay2"
 }
 `
-	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	ma := assets.NewMemoryAsset([]byte(daemonConfig), path.Join("/etc/docker", "daemon.json"), "0644")
 	return r.Runner.Copy(ma)
 }
 
@@ -529,7 +529,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	}
 
 	// Copy over tarball into host
-	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
+	fa, err := assets.NewFileAsset(tarballPath, path.Join(targetDir, targetName), "0644")
 	if err != nil {
 		return errors.Wrap(err, "getting file asset")
 	}

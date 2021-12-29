@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -65,7 +64,7 @@ func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 	// assets.Addons[].IsEnabled() returns the current status of the addon or default value.
 	// config.AddonList contains list of addons to be enabled.
 	addonList := viper.GetStringSlice(config.AddonListFlag)
-	isVolumesnapshotsEnabled := assets.Addons[volumesnapshotsAddon].IsEnabled(cc) || contains(addonList, volumesnapshotsAddon)
+	isVolumesnapshotsEnabled := Addons[volumesnapshotsAddon].IsEnabled(cc) || contains(addonList, volumesnapshotsAddon)
 	if isCsiDriverEnabled && !isVolumesnapshotsEnabled {
 		// just print out a warning directly, we don't want to return any errors since
 		// that would prevent the addon from being enabled (callbacks wouldn't be run)
@@ -77,7 +76,7 @@ func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 // isAddonValid returns the addon, true if it is valid
 // otherwise returns nil, false
 func isAddonValid(name string) (*Addon, bool) {
-	for _, a := range Addons {
+	for _, a := range AddonConfig {
 		if a.name == name {
 			return a, true
 		}

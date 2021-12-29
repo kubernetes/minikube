@@ -22,7 +22,6 @@ import (
 	"sync"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -72,14 +71,58 @@ func TestIsAddonAlreadySet(t *testing.T) {
 	if err := Set(cc, "registry", "true"); err != nil {
 		t.Errorf("unable to set registry true: %v", err)
 	}
-	if !assets.Addons["registry"].IsEnabled(cc) {
+
+	registry, ok := Addons["registry"]
+	if !ok {
+		t.Errorf("expected registry %d", len(Addons))
+	}
+
+	if !registry.IsEnabled(cc) {
 		t.Errorf("expected registry to be enabled")
 	}
 
-	if assets.Addons["ingress"].IsEnabled(cc) {
+	if Addons["ingress"].IsEnabled(cc) {
 		t.Errorf("expected ingress to not be enabled")
 	}
 
+}
+
+func TestAssetsLoaded(t *testing.T) {
+	dashboard, ok := Addons["dashboard"]
+	if !ok {
+		t.Errorf("expected dashboard %d", len(Addons))
+	}
+
+	assets := dashboard.GetAssets()
+	var dp, ns bool
+	for _, asset := range assets {
+		switch asset.GetSourcePath() {
+		case "dashboard/dashboard-dp.yaml.tmpl":
+			if asset.GetTargetPath() != "/etc/kubernetes/addons/dashboard-dp.yaml" {
+				t.Errorf("dashboard-dp.yaml.tmpl target path is wrong")
+			}
+			if !asset.IsTemplate() {
+				t.Errorf("dashboard-dp.yaml.tmpl is not a template")
+			}
+			dp = true
+		case "dashboard/dashboard-ns.yaml":
+			if asset.GetTargetPath() != "/etc/kubernetes/addons/dashboard-ns.yaml" {
+				t.Errorf("dashboard-ns.yaml target path is wrong")
+			}
+			if asset.IsTemplate() {
+				t.Errorf("dashboard-ns.yaml is a template")
+			}
+			ns = true
+		}
+	}
+
+	if !dp {
+		t.Errorf("dashboard/dashboard-dp.yaml.tmpl not found")
+	}
+
+	if !ns {
+		t.Errorf("dashboard/dashboard-ns.yaml.tmpl not checked")
+	}
 }
 
 func TestDisableUnknownAddon(t *testing.T) {
@@ -145,7 +188,7 @@ func TestStart(t *testing.T) {
 	go Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
 	wg.Wait()
 
-	if !assets.Addons["dashboard"].IsEnabled(cc) {
+	if !Addons["dashboard"].IsEnabled(cc) {
 		t.Errorf("expected dashboard to be enabled")
 	}
 }

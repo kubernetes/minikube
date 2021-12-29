@@ -63,7 +63,7 @@ func syncLocalAssets(cr command.Runner) error {
 	seen := map[string]bool{}
 	create := []string{}
 	for _, f := range fs {
-		dir := f.GetTargetDir()
+		dir := path.Dir(f.GetTargetPath())
 		if guaranteed[dir] || seen[dir] {
 			continue
 		}
@@ -147,7 +147,7 @@ func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.Co
 		targetName := path.Base(dest)
 
 		klog.Infof("local asset: %s -> %s in %s", localPath, targetName, targetDir)
-		f, err := assets.NewFileAsset(localPath, targetDir, targetName, ps)
+		f, err := assets.NewFileAsset(localPath, dest, ps)
 		if err != nil {
 			return errors.Wrapf(err, "creating file asset for %s", localPath)
 		}

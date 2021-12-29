@@ -83,7 +83,7 @@ func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) err
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, vmpath.GuestKubernetesCertsDir, cert, perms)
+		certFile, err := assets.NewFileAsset(p, path.Join(vmpath.GuestKubernetesCertsDir, cert), perms)
 		if err != nil {
 			return errors.Wrapf(err, "key asset %s", cert)
 		}
@@ -95,7 +95,7 @@ func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) err
 		return err
 	}
 	for src, dst := range caCerts {
-		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
+		certFile, err := assets.NewFileAsset(src, dst, "0644")
 		if err != nil {
 			return errors.Wrapf(err, "ca asset %s", src)
 		}
@@ -125,7 +125,7 @@ func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) err
 	}
 
 	if n.ControlPlane {
-		kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
+		kubeCfgFile := assets.NewMemoryAsset(data, path.Join(vmpath.GuestPersistentDir, "kubeconfig"), "0644")
 		copyableFiles = append(copyableFiles, kubeCfgFile)
 	}
 

@@ -19,7 +19,6 @@ package docker
 import (
 	"encoding/json"
 	"os/exec"
-	"path"
 
 	"github.com/opencontainers/go-digest"
 	"k8s.io/klog/v2"
@@ -86,7 +85,7 @@ func (s *Storage) Update() error {
 		return err
 	}
 
-	asset := assets.NewMemoryAsset(contents, path.Dir(referenceStorePath), path.Base(referenceStorePath), "0644")
+	asset := assets.NewMemoryAsset(contents, referenceStorePath, "0644")
 	return s.runner.Copy(asset)
 }
 

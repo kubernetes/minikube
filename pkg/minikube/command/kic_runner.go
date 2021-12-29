@@ -22,7 +22,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -145,7 +144,7 @@ func (k *kicRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error)
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	dst := f.GetTargetPath()
 
 	// For tiny files, it's cheaper to overwrite than check
 	if f.GetLength() > 4096 {
@@ -290,7 +289,7 @@ func copyToDocker(src string, dest string) error {
 
 // Remove removes a file
 func (k *kicRunner) Remove(f assets.CopyableFile) error {
-	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
+	dst := f.GetTargetPath()
 	klog.Infof("rm: %s", dst)
 
 	_, err := k.RunCmd(exec.Command("sudo", "rm", dst))
