@@ -6,4 +6,6 @@ templates:
 images:
   StorageProvisioner:
     registry: gcr.io
-    image: k8s-minikube/storage-provisioner # TODO: version.StorageProvisionerVersion
+    # this is updated during addon loading if it does not contain a label
+    # see: GetStorageProvisionerVersion()
+    image: k8s-minikube/storage-provisioner

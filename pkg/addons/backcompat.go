@@ -17,10 +17,16 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"strings"
 
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/version"
 )
 
 // overrideDefaults creates a copy of `defaultMap` where `overrideMap` replaces any of its values that `overrideMap` contains.
@@ -106,4 +112,64 @@ func fixAddonImagesAndRegistries(addon *AddonPackage, images map[string]string, 
 		}
 	}
 	return customImages, customRegistries
+}
+
+func supportStorageProvisionerVersion(addonName string, image AddonImage) AddonImage {
+	if addonName != "storage-provisioner" || image.name != "StorageProvisioner" {
+		return image
+	}
+
+	var labelIndex = strings.LastIndex(image.image, ":")
+	var slashIndex = strings.LastIndex(image.image, "/")
+
+	// these are equal if neither '/' nor ':' is found
+	if labelIndex <= slashIndex {
+		image.image = fmt.Sprintf("%s:%s", image.Image(), version.GetStorageProvisionerVersion())
+	}
+	return image
+}
+
+// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19 by replacing default addons' images with compatible versions
+func supportLegacyIngress(addon *AddonPackage, cc config.ClusterConfig) error {
+	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	if semver.MustParseRange("<1.19.0")(v) {
+		if addon.Name() == "ingress" {
+			addon.images = map[string]AddonImage{
+				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
+				"IngressController": {
+					name:     "IngressController",
+					image:    "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
+					registry: "",
+				},
+				// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
+				"KubeWebhookCertgenCreate": {
+					name:     "KubeWebhookCertgenCreate",
+					image:    "jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+					registry: "docker.io",
+				},
+				"KubeWebhookCertgenPatch": {
+					name:     "KubeWebhookCertgenPatch",
+					image:    "jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+					registry: "",
+				},
+			}
+			return nil
+		}
+		if addon.Name() == "ingress-dns" {
+			addon.images = map[string]AddonImage{
+				"IngressDNS": {
+					name:     "IngressDNS",
+					image:    "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+					registry: "",
+				},
+			}
+			return nil
+		}
+		return fmt.Errorf("supportLegacyIngress called for unexpected addon %q - nothing to do here", addon.Name())
+	}
+
+	return nil
 }

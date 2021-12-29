@@ -145,11 +145,11 @@ func LoadAddon(regURI *url.URL, addonPath string, path string, addons map[string
 
 	images := make(map[string]AddonImage, len(addonConfig.Images))
 	for name, image := range addonConfig.Images {
-		images[name] = AddonImage{
+		images[name] = supportStorageProvisionerVersion(addonConfig.Name, AddonImage{
 			name:     name,
 			image:    image.Image,
 			registry: image.Registry,
-		}
+		})
 	}
 
 	addons[addonConfig.Name] = &AddonPackage{

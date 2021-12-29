@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/version"
 )
 
 func createTestProfile(t *testing.T) string {
@@ -122,6 +123,22 @@ func TestAssetsLoaded(t *testing.T) {
 
 	if !ns {
 		t.Errorf("dashboard/dashboard-ns.yaml.tmpl not checked")
+	}
+}
+
+func TestStorageProvisionerVersion(t *testing.T) {
+	provisioner, ok := Addons["storage-provisioner"]
+	if !ok {
+		t.Errorf("expected provisioner %d", len(Addons))
+	}
+
+	image, ok := provisioner.images["StorageProvisioner"]
+	if !ok {
+		t.Errorf("expected StorageProvisioner image")
+	}
+
+	if image.image != "k8s-minikube/storage-provisioner:"+version.GetStorageProvisionerVersion() {
+		t.Errorf("StorageProvisioner image does not include version: %s", image.image)
 	}
 }
 
