@@ -307,15 +307,6 @@ type BinAsset struct {
 	length   int
 }
 
-// MustBinAsset creates a new BinAsset, or panics if invalid
-func MustBinAsset(fs embed.FS, name, targetPath, permissions string, isTemplate bool) *BinAsset {
-	asset, err := NewBinAsset(fs, name, targetPath, permissions, isTemplate)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
-	}
-	return asset
-}
-
 // NewBinAsset creates a new BinAsset
 func NewBinAsset(fs embed.FS, name, targetPath, permissions string, isTemplate bool) (*BinAsset, error) {
 	m := &BinAsset{
@@ -420,5 +411,110 @@ func (m *BinAsset) Seek(offset int64, whence int) (int64, error) {
 
 // Close implemented for CopyableFile interface. Always return nil.
 func (m *BinAsset) Close() error {
+	return nil
+}
+
+// CustomAsset is a custom asset on the filesystem
+type CustomAsset struct {
+	BaseAsset
+	FullPath string
+	reader   io.ReadSeeker
+	template *template.Template
+	length   int
+}
+
+// NewCustomAsset creates a new CustomAsset
+func NewCustomAsset(fullPath, name, targetPath, permissions string, isTemplate bool) (*CustomAsset, error) {
+	m := &CustomAsset{
+		FullPath: fullPath,
+		BaseAsset: BaseAsset{
+			SourcePath:  name,
+			TargetPath:  targetPath,
+			Permissions: permissions,
+		},
+		template: nil,
+	}
+	err := m.loadData(isTemplate)
+	return m, err
+}
+
+func (m *CustomAsset) loadData(isTemplate bool) error {
+	contents, err := os.ReadFile(m.FullPath)
+	if err != nil {
+		return err
+	}
+
+	if isTemplate {
+		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		if err != nil {
+			return err
+		}
+
+		m.template = tpl
+	}
+
+	m.length = len(contents)
+	m.reader = bytes.NewReader(contents)
+	klog.V(1).Infof("Created asset %s with %d bytes", m.SourcePath, m.length)
+	if m.length == 0 {
+		return fmt.Errorf("%s is an empty asset", m.SourcePath)
+	}
+	return nil
+}
+
+// IsTemplate returns if the asset is a template
+func (m *CustomAsset) IsTemplate() bool {
+	return m.template != nil
+}
+
+// Evaluate evaluates the template to a new asset
+func (m *CustomAsset) Evaluate(data interface{}) (Asset, error) {
+	if !m.IsTemplate() {
+		return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
+
+	}
+
+	var buf bytes.Buffer
+	if err := m.template.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+
+	var asset = NewMemoryAsset(buf.Bytes(), m.GetTargetPath(), m.GetPermissions())
+
+	return asset, nil
+}
+
+// GetLength returns length
+func (m *CustomAsset) GetLength() int {
+	return m.length
+}
+
+// SetLength sets length
+func (m *CustomAsset) SetLength(len int) {
+	m.length = len
+}
+
+// Read reads the asset
+func (m *CustomAsset) Read(p []byte) (int, error) {
+	if m.GetLength() == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
+	return m.reader.Read(p)
+}
+
+// Write writes the asset
+func (m *CustomAsset) Write(p []byte) (int, error) {
+	m.length = len(p)
+	m.reader = bytes.NewReader(p)
+	return len(p), nil
+}
+
+// Seek resets the reader to offset
+func (m *CustomAsset) Seek(offset int64, whence int) (int64, error) {
+	return m.reader.Seek(offset, whence)
+}
+
+// Close implemented for CopyableFile interface. Always return nil.
+func (m *CustomAsset) Close() error {
 	return nil
 }

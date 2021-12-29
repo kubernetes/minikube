@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -28,7 +29,7 @@ import (
 )
 
 func UnmarshalLoad(url *url.URL, data interface{}) error {
-	asset, err := LoadAsset(url, "", "0640", false)
+	asset, err := LoadAsset(nil, url, "", "0640", false)
 	if err != nil {
 		return errors.Wrapf(err, "loading asset %s", url.String())
 	}
@@ -46,15 +47,22 @@ func UnmarshalLoad(url *url.URL, data interface{}) error {
 	return nil
 }
 
-func LoadAsset(url *url.URL, targetPath, permissions string, isTemplate bool) (*BinAsset, error) {
+func LoadAsset(context *url.URL, url *url.URL, targetPath, permissions string, isTemplate bool) (Asset, error) {
+	finalURL := url
+	if context != nil {
+		finalURL = context.ResolveReference(url)
+	}
+
 	scheme := "file"
-	if url.Scheme != "" {
-		scheme = url.Scheme
+	if finalURL.Scheme != "" {
+		scheme = finalURL.Scheme
 	}
 
 	switch scheme {
 	case "embedfs":
-		return loadBinAsset(url.Host, url.Path, targetPath, permissions, isTemplate)
+		return loadBinAsset(finalURL.Host, finalURL.Path, targetPath, permissions, isTemplate)
+	case "file":
+		return loadCustomAsset(url.Path, finalURL.Path, targetPath, permissions, isTemplate)
 	default:
 		return nil, fmt.Errorf("asset scheme %s is not supported", scheme)
 	}
@@ -69,4 +77,16 @@ func loadBinAsset(packageName, sourcePath, targetPath, permissions string, isTem
 	}
 
 	return nil, fmt.Errorf("embedfs package %s does not exist", packageName)
+}
+
+func loadCustomAsset(sourcePath, fullPath, targetPath, permissions string, isTemplate bool) (*CustomAsset, error) {
+	sourcePath = strings.TrimPrefix(sourcePath, "/")
+
+	if runtime.GOOS == "windows" {
+		// something like file:///c:/test/foo.yaml becomes /c:/test/foo.yaml
+		// that is clearly invalid on Windows, so clear the leading "/"
+		fullPath = strings.TrimPrefix(fullPath, "/")
+	}
+
+	return NewCustomAsset(fullPath, sourcePath, targetPath, permissions, isTemplate)
 }

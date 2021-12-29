@@ -17,8 +17,10 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"net/url"
 
+	"github.com/docker/machine/libmachine/log"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -63,6 +65,26 @@ func loadAddons() map[string]*AddonPackage {
 		}
 	}
 
+	config, err := LoadAddonsConfig()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if config != nil {
+		for _, registry := range config.CustomRegistries {
+			if !registry.Enabled {
+				continue
+			}
+
+			err := loadRegistry(registry.Path, addons)
+
+			if err != nil {
+				log.Errorf("failed to load custom registry %s: %s", registry.Path, err)
+			}
+		}
+	}
+
 	return addons
 }
 
@@ -100,6 +122,10 @@ func LoadAddon(regURI *url.URL, addonPath string, path string, addons map[string
 	err = assets.UnmarshalLoad(addonURI, &addonConfig)
 	if err != nil {
 		return err
+	}
+
+	if _, exists := addons[addonConfig.Name]; exists {
+		return fmt.Errorf("addon %s already exists", addonConfig.Name)
 	}
 
 	assets := make([]assets.Asset, 0, len(addonConfig.Templates)+len(addonConfig.Assets))
@@ -142,11 +168,9 @@ func loadAssets(addonURI *url.URL, configs []addonAssetDeclaration, isTemplate b
 			return results, errors.Wrapf(err, "parsing asset URL %s", assetConfig.Source)
 		}
 
-		assetURI = addonURI.ResolveReference(assetURI)
-
-		assetData, err := assets.LoadAsset(assetURI, assetConfig.Target, permissions, isTemplate)
+		assetData, err := assets.LoadAsset(addonURI, assetURI, assetConfig.Target, permissions, isTemplate)
 		if err != nil {
-			return results, errors.Wrapf(err, "loading asset %s %s", assetURI.String(), addonURI.String())
+			return results, errors.Wrapf(err, "loading asset %s", assetConfig.Source)
 		}
 
 		results = append(results, assetData)

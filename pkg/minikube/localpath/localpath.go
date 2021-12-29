@@ -38,6 +38,11 @@ func ConfigFile() string {
 	return MakeMiniPath("config", "config.json")
 }
 
+// AddonsConfigFile is the path of the addons config
+func AddonsConfigFile() string {
+	return MakeMiniPath("config", "addons.json")
+}
+
 // MiniPath returns the path to the user's minikube dir
 func MiniPath() string {
 	minikubeHomeEnv := os.Getenv(MinikubeHome)

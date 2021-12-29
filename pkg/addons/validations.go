@@ -76,11 +76,21 @@ func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 // isAddonValid returns the addon, true if it is valid
 // otherwise returns nil, false
 func isAddonValid(name string) (*Addon, bool) {
-	for _, a := range AddonConfig {
+	for _, a := range AddonOverrides {
 		if a.name == name {
 			return a, true
 		}
 	}
+
+	addon, ok := Addons[name]
+	if ok {
+		return &Addon{
+			name:      addon.name,
+			set:       SetBool,
+			callbacks: []setFn{EnableOrDisableAddon},
+		}, true
+	}
+
 	return nil, false
 }
 
