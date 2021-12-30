@@ -683,7 +683,7 @@ async function init() {
   }
 
   if (desiredTest === undefined) {
-    displayEnvironmentChart(testData, desiredEnvironment, desiredPeriod);
+    displayEnvironmentChart(testData, desiredEnvironment);
   } else {
     displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
   }
