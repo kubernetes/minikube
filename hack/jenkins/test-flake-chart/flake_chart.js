@@ -690,12 +690,16 @@ async function init() {
   document.querySelector('#data_date_container').style.display = 'block';
   document.querySelector('#data_date').innerText = responseDate.toLocaleString();
   let periodDisplay, newURL;
+
+  // we're going to take the current page URL (desiredPeriod) and modify it to create the link to the other page
   if (desiredPeriod === 'last90') {
-    newURL = window.location.href.replace(/&?period=last90/gi, '');
-    periodDisplay = `Currently viewing last 90 days of data: <a href="` + newURL + `">View all-time data</a>`;
+    // remove '&period=last90' to make a link to the all-time data page
+    otherPeriodURL = window.location.href.replace(/&?period=last90/gi, '');
+    periodDisplay = `Currently viewing last 90 days of data: <a href="` + otherPeriodURL + `">View all-time data</a>`;
   } else {
-    newURL = window.location.href + '&period=last90';
-    periodDisplay = `Currently viewing all-time data: <a href="` + newURL + `">View last 90 days of data</a>`;
+    // add '&period=last90' to make a link to the last 90 days page
+    otherPeriodURL = window.location.href + '&period=last90';
+    periodDisplay = `Currently viewing all-time data: <a href="` + otherPeriodURL + `">View last 90 days of data</a>`;
   }
   document.querySelector('#period_display').innerHTML = periodDisplay;
 }
