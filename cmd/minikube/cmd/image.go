@@ -54,6 +54,7 @@ var (
 	dockerFile string
 	buildEnv   []string
 	buildOpt   []string
+	format     string
 )
 
 func saveFile(r io.Reader) (string, error) {
@@ -331,7 +332,7 @@ $ minikube image ls
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.ListImages(profile); err != nil {
+		if err := machine.ListImages(profile, format); err != nil {
 			exit.Error(reason.GuestImageList, "Failed to list images", err)
 		}
 	},
@@ -396,6 +397,7 @@ func init() {
 	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
 	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")
 	imageCmd.AddCommand(saveImageCmd)
+	listImageCmd.Flags().StringVar(&format, "format", "short", "Format output. One of: short|table|json|yaml")
 	imageCmd.AddCommand(listImageCmd)
 	imageCmd.AddCommand(tagImageCmd)
 	imageCmd.AddCommand(pushImageCmd)

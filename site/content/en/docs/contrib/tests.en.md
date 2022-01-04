@@ -91,7 +91,6 @@ Steps:
 runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 Steps:
-- Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
 - Try to load image already loaded and make sure `minikube image load --daemon` works

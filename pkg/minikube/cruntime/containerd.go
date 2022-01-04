@@ -283,21 +283,8 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 }
 
 // ListImages lists images managed by this container runtime
-func (r *Containerd) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "list", "--quiet")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "ctr images list")
-	}
-	all := strings.Split(rr.Stdout.String(), "\n")
-	imgs := []string{}
-	for _, img := range all {
-		if img == "" || strings.Contains(img, "sha256:") {
-			continue
-		}
-		imgs = append(imgs, img)
-	}
-	return imgs, nil
+func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
+	return listCRIImages(r.Runner)
 }
 
 // LoadImage loads an image into this runtime
@@ -592,16 +579,6 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
-	}
-	type crictlImages struct {
-		Images []struct {
-			ID          string      `json:"id"`
-			RepoTags    []string    `json:"repoTags"`
-			RepoDigests []string    `json:"repoDigests"`
-			Size        string      `json:"size"`
-			UID         interface{} `json:"uid"`
-			Username    string      `json:"username"`
-		} `json:"images"`
 	}
 
 	var jsonImages crictlImages

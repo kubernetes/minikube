@@ -25,6 +25,12 @@ WORKDIR /src
 ADD . .
 RUN cd ./cmd/auto-pause/ && go build 
 
+# cri-dockerd static
+FROM golang:1.16
+RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
+    cd cri-dockerd && git checkout 542e27dee12db61d6e96d2a83a20359474a5efa2 && \
+    cd src && env CGO_ENABLED=0 go build -o cri-dockerd
+
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20210401
@@ -40,6 +46,9 @@ COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.con
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
+COPY --from=1 /go/cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
+COPY --from=1 /go/cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
+COPY --from=1 /go/cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.

@@ -17,20 +17,25 @@ limitations under the License.
 package machine
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/client"
+	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -666,7 +671,7 @@ func RemoveImages(images []string, profile *config.Profile) error {
 }
 
 // ListImages lists images on all nodes in profile
-func ListImages(profile *config.Profile) error {
+func ListImages(profile *config.Profile, format string) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "error creating api client")
@@ -681,6 +686,7 @@ func ListImages(profile *config.Profile) error {
 		return errors.Wrapf(err, "error loading config for profile :%v", pName)
 	}
 
+	images := map[string]cruntime.ListImage{}
 	for _, n := range c.Nodes {
 		m := config.MachineName(*c, n)
 
@@ -709,12 +715,98 @@ func ListImages(profile *config.Profile) error {
 				klog.Warningf("Failed to list images for profile %s %v", pName, err.Error())
 				continue
 			}
-			sort.Sort(sort.Reverse(sort.StringSlice(list)))
-			fmt.Printf(strings.Join(list, "\n") + "\n")
+
+			for _, img := range list {
+				if _, ok := images[img.ID]; !ok {
+					images[img.ID] = img
+				}
+			}
 		}
 	}
 
+	uniqueImages := []cruntime.ListImage{}
+	for _, img := range images {
+		uniqueImages = append(uniqueImages, img)
+	}
+
+	switch format {
+	case "table":
+		var data [][]string
+		for _, item := range uniqueImages {
+			imageSize := humanImageSize(item.Size)
+			id := parseImageID(item.ID)
+			for _, img := range item.RepoTags {
+				imageName, tag := parseRepoTag(img)
+				if imageName == "" {
+					continue
+				}
+				data = append(data, []string{imageName, tag, id, imageSize})
+			}
+		}
+		renderImagesTable(data)
+	case "json":
+		json, err := json.Marshal(uniqueImages)
+		if err != nil {
+			klog.Warningf("Error marshalling images list: %v", err.Error())
+			return nil
+		}
+		fmt.Printf(string(json) + "\n")
+	case "yaml":
+		yaml, err := yaml.Marshal(uniqueImages)
+		if err != nil {
+			klog.Warningf("Error marshalling images list: %v", err.Error())
+			return nil
+		}
+		fmt.Printf(string(yaml) + "\n")
+	default:
+		res := []string{}
+		for _, item := range uniqueImages {
+			res = append(res, item.RepoTags...)
+		}
+		sort.Sort(sort.Reverse(sort.StringSlice(res)))
+		fmt.Printf(strings.Join(res, "\n") + "\n")
+	}
+
 	return nil
+}
+
+// parseRepoTag splits input string for two parts: image name and image tag
+func parseRepoTag(repoTag string) (string, string) {
+	idx := strings.LastIndex(repoTag, ":")
+	if idx == -1 {
+		return "", ""
+	}
+	return repoTag[:idx], repoTag[idx+1:]
+}
+
+// parseImageID truncates image id
+func parseImageID(id string) string {
+	maxImageIDLen := 13
+	if len(id) > maxImageIDLen {
+		return id[:maxImageIDLen]
+	}
+	return id
+}
+
+// humanImageSize prints size of image in human readable format
+func humanImageSize(imageSize string) string {
+	f, err := strconv.ParseFloat(imageSize, 32)
+	if err == nil {
+		return units.HumanSizeWithPrecision(f, 3)
+	}
+	return imageSize
+}
+
+// renderImagesTable renders pretty table for images list
+func renderImagesTable(images [][]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Image", "Tag", "Image ID", "Size"})
+	table.SetAutoFormatHeaders(false)
+	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetCenterSeparator("|")
+	table.AppendBulk(images)
+	table.Render()
 }
 
 // TagImage tags image in all nodes in profile

@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.24.0-1639505700-12892
+ISO_VERSION ?= v1.24.0-1640253061-13195
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -979,7 +979,7 @@ update-golang-version:
 
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
-	(cd hack/update/kubernetes_version && \
+	@(cd hack/update/kubernetes_version && \
 	 go run update_kubernetes_version.go)
 
 .PHONY: update-golint-version
@@ -987,6 +987,10 @@ update-golint-version:
 	(cd hack/update/golint_version && \
 	 go run update_golint_version.go)
 
+.PHONY: update-preload-version
+update-preload-version:
+	(cd hack/update/preload_version && \
+	 go run update_preload_version.go)
 
 .PHONY: update-kubernetes-version-pr
 update-kubernetes-version-pr:
