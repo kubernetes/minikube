@@ -40,13 +40,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed opening source file %q: %v", *dataFile, err)
 	}
-	defer data.Close()
 
 	dataLast90, err := os.OpenFile(*dataLast90File, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("failed creating target file %q: %v", *dataLast90File, err)
 	}
-	defer dataLast90.Close()
 
 	dw := bufio.NewWriter(dataLast90)
 
@@ -94,6 +92,12 @@ func main() {
 	}
 	if err := s.Err(); err != nil {
 		log.Fatalf("scanner had an error: %v", err)
+	}
+	if err := data.Close(); err != nil {
+		log.Fatalf("failed to close source file: %v", err)
+	}
+	if err := dataLast90.Close(); err != nil {
+		log.Fatalf("failed to close target file: %v", err)
 	}
 }
 
