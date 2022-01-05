@@ -52,10 +52,12 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		hostname = cc.KubernetesConfig.APIServerName
 	}
-	ip := net.ParseIP(cp.IP)
-	if ip == nil {
-		return hostname, ip, cp.Port, fmt.Errorf("failed to parse ip for %q", cp.IP)
+	ips, err := net.LookupIP(cp.IP)
+	if err != nil || len(ips) == 0 {
+		return hostname, net.IP{}, cp.Port, fmt.Errorf("failed to lookup ip for %q", cp.IP)
 	}
+	// get last IP as it's IPv4
+	ip := ips[len(ips)-1]
 	return hostname, ip, cp.Port, nil
 }
 
