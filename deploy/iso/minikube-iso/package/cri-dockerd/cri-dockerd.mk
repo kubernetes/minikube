@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-# 0.2.0-dev
-CRI_DOCKERD_VERSION = 542e27dee12db61d6e96d2a83a20359474a5efa2
+# 0.2.0
+CRI_DOCKERD_VERSION = eb0c48ef49856f7d098ec005ddebcae197e08e49
 CRI_DOCKERD_SITE = https://github.com/Mirantis/cri-dockerd/archive
 CRI_DOCKERD_SOURCE = $(CRI_DOCKERD_VERSION).tar.gz
 
