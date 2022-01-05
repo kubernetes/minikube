@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -55,7 +56,7 @@ func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 	wg.Add(1)
 	defer wg.Done()
 
-	if !cc.Mount {
+	if !cc.Mount || driver.IsKIC(cc.Driver) {
 		return
 	}
 

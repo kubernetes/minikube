@@ -235,7 +235,7 @@ type FlagHints struct {
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
-	fh := FlagHints{}
+	fh := FlagHints{ExtraOptions: []string{"kubelet.global-housekeeping-interval=60m", "kubelet.housekeeping-interval=5m"}}
 	if name != None {
 		fh.CacheImages = true
 		return fh

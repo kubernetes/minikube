@@ -89,6 +89,9 @@ func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
 func suppressDockerMessage() bool {
 	envKey := "MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE"
 	env := os.Getenv(envKey)
+	if env == "" {
+		return false
+	}
 	suppress, err := strconv.ParseBool(env)
 	if err != nil {
 		msg := fmt.Sprintf("failed to parse bool from the %s env, defaulting to 'false'; received: %s: %v", envKey, env, err)
