@@ -54,7 +54,7 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 	}
 	ips, err := net.LookupIP(cp.IP)
 	if err != nil || len(ips) == 0 {
-		return hostname, net.IP{}, cp.Port, fmt.Errorf("failed to lookup ip for %q", cp.IP)
+		return hostname, nil, cp.Port, fmt.Errorf("failed to lookup ip for %q", cp.IP)
 	}
 	// get last IP as it's IPv4
 	ip := ips[len(ips)-1]
