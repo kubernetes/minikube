@@ -83,6 +83,7 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
     SUMMARY="${BUCKET_PATH}/${ENVIRONMENT}_summary.json"
     "${DIR}/upload_tests.sh" "${SUMMARY}" || true
   done
+  "${DIR}/process_last_90/process_last_90.sh"
 else
   "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${ROOT_JOB_ID}" "${FINISHED_LIST}"
 fi
