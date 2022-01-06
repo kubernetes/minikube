@@ -38,6 +38,7 @@ import (
 
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -133,7 +134,7 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("The test WaitService is broken on github actions in macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 	checkRoutePassword(t)
@@ -192,7 +193,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
 	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -240,7 +241,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 // validateDNSDig validates if the DNS forwarding works by dig command DNS lookup
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -275,7 +276,7 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 // validateDNSDscacheutil validates if the DNS forwarding works by dscacheutil command DNS lookup
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -300,7 +301,7 @@ func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
 // validateAccessDNS validates if the test service can be accessed with DNS forwarding from host
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 

@@ -107,3 +107,9 @@ func DockerInstalledViaSnap() bool {
 
 	return strings.Contains(string(o), "snap")
 }
+
+// GithubActionRunner returns true if running inside a github action runner
+func GithubActionRunner() bool {
+	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
