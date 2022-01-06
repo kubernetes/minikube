@@ -960,7 +960,7 @@
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details": "您似乎正在使用代理，但您的 NO_PROXY 环境不包含 minikube IP ({{.ip_address}})。如需了解详情，请参阅 {{.documentation_url}}",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "",
-	"You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)": "",
+	"You are trying to run the amd64 binary on an M1 system.\\nPlease consider running the darwin/arm64 binary instead.\\nDownload at {{.url}}": "",
 	"You can create one using 'minikube start'.\n\t\t": "",
 	"You can delete them using the following command(s): ": "",
 	"You can force an unsupported Kubernetes version via the --force flag": "",
