@@ -34,7 +34,7 @@ func main() {
 	if *dataFile == "" || *dataLast90File == "" {
 		fmt.Println("All flags are required and cannot be empty")
 		flag.PrintDefaults()
-		return
+		os.Exit(1)
 	}
 
 	data, err := os.Open(*dataFile)

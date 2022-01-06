@@ -60,7 +60,7 @@ func main() {
 	if *releasesFile == "" || *version == "" {
 		fmt.Println("All flags are required and cannot be empty")
 		flag.PrintDefaults()
-		return
+		os.Exit(1)
 	}
 
 	r, err := getReleases(*releasesFile)
