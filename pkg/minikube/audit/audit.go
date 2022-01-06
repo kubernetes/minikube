@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -51,13 +52,23 @@ func args() string {
 }
 
 // Log details about the executed command.
-func Log(startTime time.Time) {
+func LogCommandStart() string {
 	if len(os.Args) < 2 || !shouldLog() {
 		return
 	}
-	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
+	id := uuid.New().String()
+	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), time.Now(), id)
 	if err := appendToLog(r); err != nil {
 		klog.Warning(err)
+	}
+	return r.id
+}
+
+func LogCommandEnd(id string, logs []string) {
+	for _, v := range logsToRows(logs) {
+		if v.id == id {
+			v.endTime = time.Now()
+		}
 	}
 }
 

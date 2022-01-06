@@ -37,6 +37,7 @@ type row struct {
 	startTime string
 	user      string
 	version   string
+	id        string
 	Data      map[string]string `json:"data"`
 }
 
@@ -72,7 +73,7 @@ func (e *row) toMap() map[string]string {
 }
 
 // newRow creates a new audit row.
-func newRow(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *row {
+func newRow(command string, args string, user string, version string, startTime time.Time, id string, profile ...string) *row {
 	p := viper.GetString(config.ProfileName)
 	if len(profile) > 0 {
 		p = profile[0]
@@ -80,11 +81,11 @@ func newRow(command string, args string, user string, version string, startTime 
 	return &row{
 		args:      args,
 		command:   command,
-		endTime:   endTime.Format(constants.TimeFormat),
 		profile:   p,
 		startTime: startTime.Format(constants.TimeFormat),
 		user:      user,
 		version:   version,
+		id:        id,
 	}
 }
 

@@ -78,8 +78,8 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	defer audit.Log(time.Now())
-
+	auditID := audit.LogCommandStart()
+	defer audit.LogCommandEnd(auditID, logs)
 	// Check whether this is a windows binary (.exe) running inisde WSL.
 	if runtime.GOOS == "windows" && detect.IsMicrosoftWSL() {
 		var found = false
