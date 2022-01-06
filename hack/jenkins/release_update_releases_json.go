@@ -126,8 +126,7 @@ func getSHA(operatingSystem, arch string) (string, error) {
 	if operatingSystem == "windows" {
 		arch += ".exe"
 	}
-	//filePath := fmt.Sprintf("out/minikube-%s-%s.sha256", operatingSystem, arch)
-	filePath := "out/minikube-test.sha256"
+	filePath := fmt.Sprintf("out/minikube-%s-%s.sha256", operatingSystem, arch)
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %q: %v", filePath, err)
