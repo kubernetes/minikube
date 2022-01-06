@@ -776,7 +776,7 @@
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "",
-	"You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)": "",
+	"You are trying to run the amd64 binary on an M1 system.\\nPlease consider running the darwin/arm64 binary instead.\\nDownload at {{.url}}": "",
 	"You can create one using 'minikube start'.\n\t\t": "",
 	"You can delete them using the following command(s): ": "",
 	"You can force an unsupported Kubernetes version via the --force flag": "",
