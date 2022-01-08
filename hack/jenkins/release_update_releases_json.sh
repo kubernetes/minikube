@@ -24,11 +24,12 @@
 
 set -e
 
-export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
+./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
-export DARWIN_SHA256=$(cat out/minikube-darwin-amd64.sha256)
-export LINUX_SHA256=$(cat out/minikube-linux-amd64.sha256)
-export WINDOWS_SHA256=$(cat out/minikube-windows-amd64.exe.sha256)
+# Get directory of script.
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 
 # Update releases.json w/ new release in gcs and github
 git config user.name "minikube-bot"
@@ -39,8 +40,7 @@ git checkout -b "jenkins-releases.json-${TAGNAME}"
 git status
 
 if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
-  #Prepends the new version to the release-beta.json file
-  sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases-beta.json
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME"
 
   git add -A
   git commit -m "Update releases-beta.json to include ${TAGNAME}"
@@ -53,8 +53,7 @@ if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   # Upload file to GCS so that minikube can see the new version
   gsutil cp deploy/minikube/releases-beta.json gs://minikube/releases-beta.json
 else
-  #Prepends the new version to the release.json file
-  sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME"
 
   #Update the front page of our documentation
   now=$(date +"%b %d, %Y")
