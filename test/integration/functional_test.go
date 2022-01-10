@@ -949,7 +949,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s) expect Docker Windows
 	timeout := Seconds(5)
 	if runtime.GOOS == "windows" && DockerDriver() {
-		timeout = Seconds(10)
+		timeout = Seconds(20)
 	}
 	mctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
