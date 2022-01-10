@@ -299,7 +299,8 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		newImage := fmt.Sprintf("localhost/my-image:%s", profile)
 
 		// try to build the new image with minikube
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+		buildArg := fmt.Sprintf("arch=%s", runtime.GOARCH)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "--build-arg", buildArg, "-t", newImage, filepath.Join(*testdataDir, "build")))
 		if err != nil {
 			t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
 		}

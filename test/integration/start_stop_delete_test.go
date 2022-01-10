@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -303,7 +304,8 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
 
 	// schedule a pod to assert persistence
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	yaml := fmt.Sprintf("busybox-%s.yaml", runtime.GOARCH)
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, yaml)))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}

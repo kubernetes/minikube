@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -483,7 +484,8 @@ func validateNameConflict(ctx context.Context, t *testing.T, profile string) {
 // validateDeployAppToMultiNode deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile string) {
 	// Create a deployment for app
-	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/multinodes/multinode-pod-dns-test.yaml"))
+	yaml := fmt.Sprintf("./testdata/multinodes/multinode-pod-dns-test-%s.yaml", runtime.GOARCH)
+	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", yaml))
 	if err != nil {
 		t.Errorf("failed to create busybox deployment to multinode cluster")
 	}

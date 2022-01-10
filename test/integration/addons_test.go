@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -293,7 +294,8 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=gcr.io/k8s-minikube/busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
+	image := fmt.Sprintf("gcr.io/k8s-minikube/busybox-%s", runtime.GOARCH)
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image", image, "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
 		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}
@@ -601,7 +603,8 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// schedule a pod to check environment variables
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	yaml := fmt.Sprintf("busybox-%s.yaml", runtime.GOARCH)
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, yaml)))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}

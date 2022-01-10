@@ -148,7 +148,8 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		// Start the "busybox-mount" pod.
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
+		yaml := fmt.Sprintf("busybox-mount-test-%s.yaml", runtime.GOARCH)
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, yaml)))
 		if err != nil {
 			t.Fatalf("failed to 'kubectl replace' for busybox-mount-test. args %q : %v", rr.Command(), err)
 		}
