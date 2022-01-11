@@ -649,14 +649,15 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
 	// avoid "Found multiple CRI sockets, please use --cri-socket to select one: /var/run/dockershim.sock, /var/run/crio/crio.sock" error
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket})
+	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing Kubernetes version")
+	}
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket, KubernetesVersion: version})
 	if err != nil {
 		klog.Errorf("cruntime: %v", err)
 	}
 	sp := cr.SocketPath()
-	if sp == "" {
-		sp = kconst.DefaultDockerCRISocket
-	}
 	joinCmd = fmt.Sprintf("%s --cri-socket %s", joinCmd, sp)
 
 	return joinCmd, nil
@@ -696,21 +697,17 @@ func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
-
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
+	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket, KubernetesVersion: version})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
 
 	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
 	sp := cr.SocketPath()
-	if sp == "" {
-		sp = kconst.DefaultDockerCRISocket
-	}
 	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
 	if version.LT(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
@@ -737,9 +734,15 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
+	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
 	r, err := cruntime.New(cruntime.Config{
-		Type:   cfg.KubernetesConfig.ContainerRuntime,
-		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket,
+		Type:              cfg.KubernetesConfig.ContainerRuntime,
+		Runner:            k.c,
+		Socket:            cfg.KubernetesConfig.CRISocket,
+		KubernetesVersion: version,
 	})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
