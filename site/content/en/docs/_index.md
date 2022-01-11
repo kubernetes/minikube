@@ -19,7 +19,7 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 * Cross-platform (Linux, macOS, Windows)
 * Deploy as a VM, a container, or on bare-metal
 * Multiple container runtimes (CRI-O, containerd, docker)
-* Docker API endpoint for blazing fast [image pushes]({{< ref "/docs/handbook/pushing.md#pushing-directly-to-the-in-cluster-docker-daemon" >}})
+* Direct API endpoint for blazing fast [image load and build]({{< ref "/docs/handbook/pushing.md" >}})
 * Advanced features such as [LoadBalancer]({{< ref "/docs/handbook/accessing.md#loadbalancer-access" >}}), filesystem mounts, and FeatureGates
 * [Addons]({{< ref "/docs/handbook/deploying.md#addons" >}}) for easily installed Kubernetes applications
 * Supports common [CI environments](https://github.com/minikube-ci/examples)
