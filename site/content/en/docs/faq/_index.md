@@ -30,19 +30,23 @@ minikube profile list
 minikube profiles are meant to be isolated from one another, with their own settings and drivers. If you want to create a single cluster with multiple nodes, try the [multi-node feature]({{< ref "/docs/tutorials/multi_node" >}}) instead.
 
 ## Can I use minikube as a Docker Desktop replacement?
+
 minikube's VM includes a Docker daemon running inside Linux for free, so you can use 
 `minikube docker-env` to point your terminal's Docker CLI to the Docker inside minikube.
 
+Note: this only works with the "docker" container runtime, not with e.g. "containerd"
+
 You would need to start minikube with a VM driver, instead of docker, such as hyperkit on macOS and Hyper-V on Windows.
 ```
-minikube start --driver=hyperv 
+minikube start --container-runtime=docker --vm=true
 ```
 Alternatively, you can use `minikube image build`  instead of `minikube docker-env` and `docker build`.
 
 ## Can I start minikube without Kubernetes running?
+
 Yes! If you want to use minikube only as a Docker Desktop replacement without starting Kubernetes itself, try:
 ```
-minikube start --no-kubernetes
+minikube start --container-runtime=docker --no-kubernetes
 ```
 
 Alternatively, if you want to temporarily turn off Kubernetes, you can pause and later unpause Kubernetes 
