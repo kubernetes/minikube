@@ -263,6 +263,13 @@ var Addons = map[string]*Addon{
 			"istio-default-profile.yaml",
 			"0640"),
 	}, false, "istio", "third-party (istio)", nil, nil),
+	"kong": NewAddon([]*BinAsset{
+		MustBinAsset(addons.KongAssets,
+			"kong/kong-ingress-controller.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"kong-ingress-controller.yaml",
+			"0640"),
+	}, false, "kong", "third-party (Kong HQ)", nil, nil),
 	"kubevirt": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubevirtAssets,
 			"kubevirt/pod.yaml.tmpl",
