@@ -404,6 +404,7 @@
 	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "",
 	"Location of the minikube iso": "Ścieżka do obrazu iso minikube",
 	"Location of the minikube iso.": "Ścieżka do obrazu iso minikube",
+	"Location to fetch kubectl, kubelet, \u0026 kubeadm binaries from.": "",
 	"Locations to fetch the minikube ISO from.": "Ścieżki, z których pobrany będzie obra ISO minikube",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'": "Zaloguj się i wykonaj polecenie w maszynie za pomocą ssh. Podobne do 'docker-machine ssh'",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "Zaloguj się i wykonaj polecenie w maszynie za pomocą ssh. Podobne do 'docker-machine ssh'",

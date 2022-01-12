@@ -399,6 +399,7 @@
 	"Local proxy ignored: not passing {{.name}}={{.value}} to docker env.": "",
 	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "Ubicación del socket de VPNKit que se utiliza para ofrecer funciones de red. Si se deja en blanco, se inhabilita VPNKitSock de Hyperkit; si se define como \"auto\", se utiliza Docker para las conexiones de VPNKit en Mac. Con cualquier otro valor, se utiliza el VSock especificado (solo con el controlador de hyperkit)",
 	"Location of the minikube iso": "Ubicación de la ISO de minikube",
+	"Location to fetch kubectl, kubelet, \u0026 kubeadm binaries from.": "",
 	"Locations to fetch the minikube ISO from.": "",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "",
 	"Log into the minikube environment (for debugging)": "",
