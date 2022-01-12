@@ -4,7 +4,7 @@
 #
 ########################################################################
 
-FALCO_MODULE_VERSION = 0.30.0
+FALCO_MODULE_VERSION = 0.28.0
 FALCO_MODULE_SITE = https://github.com/falcosecurity/falco/archive
 FALCO_MODULE_SOURCE = $(FALCO_MODULE_VERSION).tar.gz
 FALCO_MODULE_DEPENDENCIES += ncurses libyaml
@@ -12,7 +12,7 @@ FALCO_MODULE_LICENSE = Apache-2.0
 FALCO_MODULE_LICENSE_FILES = COPYING
 
 # see cmake/modules/sysdig-repo/CMakeLists.txt
-FALCO_MODULE_SYSDIG_VERSION = 4fb6288275f567f63515df0ff0a6518043ecfa9b
+FALCO_MODULE_SYSDIG_VERSION = 5c0b863ddade7a45568c0ac97d037422c9efb750
 FALCO_MODULE_EXTRA_DOWNLOADS = https://github.com/draios/sysdig/archive/${FALCO_MODULE_SYSDIG_VERSION}.tar.gz
 
 define FALCO_MODULE_SYSDIG_SRC
