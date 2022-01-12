@@ -476,6 +476,7 @@
 	"Local proxy ignored: not passing {{.name}}={{.value}} to docker env.": "",
 	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "用于网络连接的 VPNKit 套接字的位置。如果为空，则停用 Hyperkit VPNKitSock；如果为“auto”，则将 Docker 用于 Mac VPNKit 连接；否则使用指定的 VSock（仅限 hyperkit 驱动程序）",
 	"Location of the minikube iso": "minikube iso 的位置",
+	"Location to fetch kubectl, kubelet, \u0026 kubeadm binaries from.": "",
 	"Locations to fetch the minikube ISO from.": "",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "",
 	"Log into the minikube environment (for debugging)": "",
