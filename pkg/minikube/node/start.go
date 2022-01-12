@@ -256,9 +256,11 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
 	}
 
-	// Scale down CoreDNS from default 2 to 1 replica.
-	if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-		klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+	if !starter.Cfg.DisableOptimizations {
+		// Scale down CoreDNS from default 2 to 1 replica.
+		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
 	}
 
 	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.

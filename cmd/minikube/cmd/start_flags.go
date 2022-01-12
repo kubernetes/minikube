@@ -133,6 +133,7 @@ const (
 	extraDisks              = "extra-disks"
 	certExpiration          = "cert-expiration"
 	binaryMirror            = "binary-mirror"
+	disableOptimizations    = "disable-optimizations"
 )
 
 var (
@@ -191,6 +192,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
+	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that improve minikube performance. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -379,6 +381,27 @@ func getDiskSize() int {
 	return diskSize
 }
 
+func getExtraOptions() config.ExtraOptionSlice {
+	options := []string{}
+	if detect.IsCloudShell() {
+		options = append(options, "kubelet.cgroups-per-qos=false", "kubelet.enforce-node-allocatable=\"\"")
+	}
+	if !viper.GetBool(disableOptimizations) {
+		options = append(options, "kubelet.housekeeping-interval=5m")
+	}
+	for _, eo := range options {
+		if config.ExtraOptions.Exists(eo) {
+			klog.Infof("skipping extra-config %q.", eo)
+			continue
+		}
+		klog.Infof("setting extra-config: %s", eo)
+		if err := config.ExtraOptions.Set(eo); err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set extra option", err)
+		}
+	}
+	return config.ExtraOptions
+}
+
 func getRepository(cmd *cobra.Command, k8sVersion string) string {
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
@@ -493,6 +516,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MountType:               viper.GetString(mountTypeFlag),
 		MountUID:                viper.GetString(mountUID),
 		BinaryMirror:            viper.GetString(binaryMirror),
+		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -507,7 +531,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        getRepository(cmd, k8sVersion),
-			ExtraOptions:           config.ExtraOptions,
+			ExtraOptions:           getExtraOptions(),
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			CNI:                    getCNIConfig(cmd),
 			NodePort:               viper.GetInt(apiServerPort),
@@ -517,17 +541,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
-	}
-
-	if detect.IsCloudShell() {
-		err := cc.KubernetesConfig.ExtraOptions.Set("kubelet.cgroups-per-qos=false")
-		if err != nil {
-			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
-		}
-		err = cc.KubernetesConfig.ExtraOptions.Set("kubelet.enforce-node-allocatable=\"\"")
-		if err != nil {
-			exit.Error(reason.InternalConfigSet, "failed to set cloud shell kubelet config options", err)
-		}
 	}
 
 	if driver.IsKIC(drvName) {
@@ -711,13 +724,14 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.MountType, mountTypeFlag)
 	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
 	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
+	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
 	}
 
 	if cmd.Flags().Changed("extra-config") {
-		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
+		cc.KubernetesConfig.ExtraOptions = getExtraOptions()
 	}
 
 	if cmd.Flags().Changed(cniFlag) || cmd.Flags().Changed(enableDefaultCNI) {
