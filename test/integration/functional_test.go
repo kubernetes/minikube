@@ -759,7 +759,7 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
 
-	expectedExtraOptions := "kubelet.housekeeping-interval=5m"
+	expectedExtraOptions = "kubelet.housekeeping-interval=5m"
 	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
