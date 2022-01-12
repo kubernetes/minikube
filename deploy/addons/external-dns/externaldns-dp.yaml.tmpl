@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: external-dns
+    app.kubernetes.io/part-of: kube-system
+    kubernetes.io/minikube-addons: external-dns
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: external-dns
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+        - name: external-dns
+          image: {{ .CustomRegistries.ExternalDNS | default .ImageRepository | default .Registries.ExternalDNS }}{{ .Images.ExternalDNS }}
+          args:
+            - --registry=txt
+            - --txt-prefix=external-dns-
+            - --txt-owner-id=k8s
+            - --provider=rfc2136
+            - --rfc2136-host=bind
+            - --rfc2136-port=53
+            - --rfc2136-zone=demo
+            - --rfc2136-tsig-secret=G8cuP1DtUfwegpYWaDoNbvwVkMU05Na/qYcv4DHnGHs=
+            - --rfc2136-tsig-secret-alg=hmac-sha256
+            - --rfc2136-tsig-keyname=externaldns
+            - --rfc2136-tsig-axfr
+            - --source=ingress
+            - --source=service
+            - --source=istio-gateway
+            - --source=istio-virtualservice
+            - --domain-filter=demo

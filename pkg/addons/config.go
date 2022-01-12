@@ -64,6 +64,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:      "external-dns",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "freshpod",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},

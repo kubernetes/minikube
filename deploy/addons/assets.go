@@ -48,6 +48,10 @@ var (
 	//go:embed efk/*.tmpl
 	EfkAssets embed.FS
 
+	// ExternalDns assets for external-dns addon
+	//go:embed external-dns/*.tmpl
+	ExternalDNSAssets embed.FS
+
 	// IngressAssets assets for ingress addon
 	//go:embed ingress/*.tmpl
 	IngressAssets embed.FS

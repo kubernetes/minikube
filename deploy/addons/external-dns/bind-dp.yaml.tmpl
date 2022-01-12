@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bind
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: bind
+    app.kubernetes.io/part-of: kube-system
+    kubernetes.io/minikube-addons: external-dns
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: bind
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: bind
+    spec:
+      hostNetwork: true
+      containers:
+        - name: bind
+          image: {{ .CustomRegistries.Bind | default .ImageRepository | default .Registries.Bind }}{{ .Images.Bind }}
+          ports:
+            - name: udp-dns
+              containerPort: 53
+              protocol: UDP
+            - name: tcp-dns
+              containerPort: 53
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /conf
+              name: bind-config
+      volumes:
+        - name: bind-config
+          configMap:
+            name: bind-config

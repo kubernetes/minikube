@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bind-config
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: bind
+    app.kubernetes.io/part-of: kube-system
+    kubernetes.io/minikube-addons: external-dns
+data:
+  bind.yaml: |
+    bind:
+      domain:
+        forward: demo.
+        reverse: 1.168.192.in-addr.arpa.
+      upstream: 8.8.8.8,8.8.4.4
+      key:
+        name: externaldns
+        secret: G8cuP1DtUfwegpYWaDoNbvwVkMU05Na/qYcv4DHnGHs=
+        algorithm: hmac-sha256
