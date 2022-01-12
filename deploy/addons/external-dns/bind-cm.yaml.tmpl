@@ -11,7 +11,7 @@ data:
   bind.yaml: |
     bind:
       domain:
-        forward: demo.
+        forward: {{ .CustomDNSZone | default "demo" }}.
         reverse: 1.168.192.in-addr.arpa.
       upstream: 8.8.8.8,8.8.4.4
       key:

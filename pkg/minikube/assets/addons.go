@@ -839,6 +839,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP    string
 		LoadBalancerEndIP      string
 		CustomIngressCert      string
+		CustomDNSZone          string
 		IngressAPIVersion      string
 		ContainerRuntime       string
 		Images                 map[string]string
@@ -853,6 +854,7 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
 		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
 		CustomIngressCert:      cfg.CustomIngressCert,
+		CustomDNSZone:          cfg.CustomDNSZone,
 		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
 		ContainerRuntime:       cfg.ContainerRuntime,
 		Images:                 images,

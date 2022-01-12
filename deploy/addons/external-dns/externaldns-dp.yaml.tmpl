@@ -27,7 +27,7 @@ spec:
             - --provider=rfc2136
             - --rfc2136-host=bind
             - --rfc2136-port=53
-            - --rfc2136-zone=demo
+            - --rfc2136-zone={{ .CustomDNSZone | default "demo" }}
             - --rfc2136-tsig-secret=G8cuP1DtUfwegpYWaDoNbvwVkMU05Na/qYcv4DHnGHs=
             - --rfc2136-tsig-secret-alg=hmac-sha256
             - --rfc2136-tsig-keyname=externaldns
@@ -36,4 +36,4 @@ spec:
             - --source=service
             - --source=istio-gateway
             - --source=istio-virtualservice
-            - --domain-filter=demo
+            - --domain-filter={{ .CustomDNSZone | default "demo" }}
