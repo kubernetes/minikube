@@ -9,7 +9,46 @@ aliases:
 
 The Docker driver allows you to install Kubernetes into an existing Docker install. On Linux, this does not require virtualization to be enabled.
 
-{{% readfile file="/docs/drivers/includes/docker_usage.inc" %}}
+## Requirements
+
+- [Install Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc) 18.09 or higher
+- amd64 or arm64 system.
+- If using WSL complete [these steps]({{<ref "/docs/tutorials/wsl_docker_driver">}}) first
+
+## Usage
+
+Start a cluster using the docker driver:
+
+```shell
+minikube start --driver=docker
+```
+To make docker the default driver:
+
+```shell
+minikube config set driver docker
+```
+
+## Rootless Docker
+### Requirements
+- Docker 20.10 or higher, see https://rootlesscontaine.rs/getting-started/docker/
+- Cgroup v2 delegation, see https://rootlesscontaine.rs/getting-started/common/cgroup2/
+
+### Usage
+
+Start a cluster using the rootless docker driver:
+
+```shell
+dockerd-rootless-setuptool.sh install -f
+docker context use rootless
+
+minikube start --driver=docker --container-runtime=containerd
+```
+
+The `--container-runtime` flag must be set to "containerd" or "cri-o".
+
+The restrictions of rootless `kind` apply to minikube with rootless docker as well.
+
+See https://kind.sigs.k8s.io/docs/user/rootless/ .
 
 ## Special features
 
