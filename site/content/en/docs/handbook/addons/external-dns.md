@@ -37,7 +37,12 @@ minikube start
 <h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>(optional) Configure the addon</h2>
 
 You can only configure hostnames ending with `.demo` because the DNS zone is set to
-`demo.` by default. If you want to change the DNS zone, you can do so by configuring the addon.
+`demo.` by default. If you want to:
+
+- enable support for Istio CRDs or
+- change the default DNS zone, 
+
+you can do so by configuring the addon.
 
 ```bash
 minikube addons configure external-dns

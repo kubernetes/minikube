@@ -238,24 +238,24 @@ var addonsConfigureCmd = &cobra.Command{
 			profile := ClusterFlagValue()
 			_, cfg := mustload.Partial(profile)
 
+			cfg.KubernetesConfig.EnableIstioCrds = AskForYesNoConfirmation("\nDo you want to enable support for Istio CRDs (Gateway & VirtualService)?", posResponses, negResponses)
+
 			enableCustomDNSZone := AskForYesNoConfirmation("\nDo you want to override the default DNS zone (default zone is 'demo')?", posResponses, negResponses)
-			if !enableCustomDNSZone {
-				break
-			}
-			validator := func(s string) bool {
+			if enableCustomDNSZone {
+				validator := func(s string) bool {
 				format := regexp.MustCompile(`^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]).)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$`)
-				return format.MatchString(s)
-			}
-
-			customDNSZone := AskForStaticValidatedValue("-- Enter custom DNS zone (e.g. example.com): ", validator)
-			if cfg.KubernetesConfig.CustomDNSZone != "" {
-				overwrite := AskForYesNoConfirmation("A custom DNS zone has already been set. Do you want to overwrite it?", posResponses, negResponses)
-				if !overwrite {
-					break
+					return format.MatchString(s)
 				}
-			}
 
-			cfg.KubernetesConfig.CustomDNSZone = customDNSZone
+				customDNSZone := AskForStaticValidatedValue("-- Enter custom DNS zone (e.g. example.com): ", validator)
+				if cfg.KubernetesConfig.CustomDNSZone != "" {
+					overwrite := AskForYesNoConfirmation("A custom DNS zone has already been set. Do you want to overwrite it?", posResponses, negResponses)
+					if !overwrite {
+						break
+					}
+				}
+				cfg.KubernetesConfig.CustomDNSZone = customDNSZone
+			}
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})

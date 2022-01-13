@@ -34,6 +34,8 @@ spec:
             - --rfc2136-tsig-axfr
             - --source=ingress
             - --source=service
+          {{- if .EnableIstioCrds }}
             - --source=istio-gateway
             - --source=istio-virtualservice
+          {{- end }}
             - --domain-filter={{ .CustomDNSZone | default "demo" }}
