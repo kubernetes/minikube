@@ -38,3 +38,4 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
 * [VMware Workstation]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
+* [wsl2] - you may install chocolatey in your windows powershell and run chocolatey command and then install kubectl.exe and run the " minikube start " command in your ubuntu wsl2 terminal.
