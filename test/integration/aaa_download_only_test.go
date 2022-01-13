@@ -310,7 +310,7 @@ func TestBinaryMirror(t *testing.T) {
 		t.Errorf("Failed to generate sha256 checksum file: %+v", err)
 	}
 
-	args := []string{"start", "--download-only", "-p", profile, "--alsologtostderr", "--binary-mirror", ts.URL}
+	args := append([]string{"start", "--download-only", "-p", profile, "--alsologtostderr", "--binary-mirror", ts.URL}, StartArgs()...)
 
 	cmd := exec.CommandContext(ctx, Target(), args...)
 	if _, err := Run(t, cmd); err != nil {
