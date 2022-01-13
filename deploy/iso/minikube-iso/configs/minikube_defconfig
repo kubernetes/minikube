@@ -25,7 +25,7 @@ BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/aarch64-ef
 # BR2_ROOTFS_POST_SCRIPT_ARGS="-c $(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/aarch64-efi/genimage-efi.cfg"
 
 # Debug attempt at previously working genimage.cfg.
-BR2_ROOTFS_POST_SCRIPT_ARGS="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/genimage.cfg"
+BR2_ROOTFS_POST_SCRIPT_ARGS="-c $(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/genimage.cfg"
 
 # Linux headers same as Kernel
 BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_4_19=y
