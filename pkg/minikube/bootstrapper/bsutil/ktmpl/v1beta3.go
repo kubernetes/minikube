@@ -58,8 +58,6 @@ kind: ClusterConfiguration
 certificatesDir: {{.CertDir}}
 clusterName: mk
 controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
-dns:
-  type: CoreDNS
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
