@@ -1473,7 +1473,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
 
-	endpoint := strings.TrimSpace(rr.Stdout.String())
+	splits := strings.Split(rr.Stdout.String(), "|")
+	var endpoint string
+	// get the last endpoint in the output to test http to https
+	for _, v := range splits {
+		if strings.Contains(v, "http") {
+			endpoint = strings.TrimSpace(v)
+		}
+	}
 	t.Logf("found endpoint: %s", endpoint)
 
 	u, err := url.Parse(endpoint)
