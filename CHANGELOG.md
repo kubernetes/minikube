@@ -18,7 +18,6 @@ Minor Improvements:
 
 Bug fixes:
 * Fix ingress for k8s v1.19 [#13173](https://github.com/kubernetes/minikube/pull/13173)
-* Fix multinode file copying test on Windows [#13154](https://github.com/kubernetes/minikube/pull/13154)
 * Fix mounting with VMware #12426 [#13000](https://github.com/kubernetes/minikube/pull/13000)
 * Fix `Bad file descriptor` on mount [#13013](https://github.com/kubernetes/minikube/pull/13013)
 * Fix `docker-env` with new PowerShell versions [#12870](https://github.com/kubernetes/minikube/pull/12870)
