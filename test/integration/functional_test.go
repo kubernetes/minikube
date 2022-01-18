@@ -2071,7 +2071,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 		memoryFlag = "--memory=6000"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.
-	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all", "--disable-optimizations=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("%s=%s", proxyEnv, addr))
@@ -2090,10 +2090,6 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	want = "You appear to be using a proxy"
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
-	}
-
-	if strings.Contains(rr.Stderr.String(), "kubelet.housekeeping-interval=5m") {
-		t.Error("--disable-optimizations=true is not working, optimizations found")
 	}
 }
 
