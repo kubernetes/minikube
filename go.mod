@@ -29,7 +29,7 @@ require (
 	github.com/google/go-github/v36 v36.0.0
 	github.com/google/slowjam v1.0.0
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/go-getter v1.5.9
+	github.com/hashicorp/go-getter v1.5.11
 	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
@@ -93,7 +93,7 @@ require (
 	k8s.io/client-go v0.22.4
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.22.4
-	k8s.io/klog/v2 v2.30.0
+	k8s.io/klog/v2 v2.40.1
 	k8s.io/kubectl v0.22.2
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
