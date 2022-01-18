@@ -93,7 +93,7 @@ require (
 	k8s.io/client-go v0.22.4
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.22.4
-	k8s.io/klog/v2 v2.30.0
+	k8s.io/klog/v2 v2.40.1
 	k8s.io/kubectl v0.22.2
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
