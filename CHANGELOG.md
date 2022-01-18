@@ -23,7 +23,7 @@ Bug fixes:
 * Fix `docker-env` with new PowerShell versions [#12870](https://github.com/kubernetes/minikube/pull/12870)
 
 Version Upgrades:
-* Upgrade Docker, from v20.10.8 to v20.10.12
+* Upgrade Docker, from v20.10.8 to v20.10.11
 * Upgrade containerd, from v1.4.9 to v1.4.12
 * Upgrade cri-o from v1.22.0 to v1.22.1 [#13059](https://github.com/kubernetes/minikube/pull/13059)
 * Update gcp-auth-webhook image to v0.0.8 [#13185](https://github.com/kubernetes/minikube/pull/13185)
