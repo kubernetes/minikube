@@ -269,7 +269,10 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kong-ingress-controller.yaml",
 			"0640"),
-	}, false, "kong", "third-party (Kong HQ)", nil, nil),
+	}, false, "kong", "third-party (Kong HQ)", map[string]string{
+		"Kong":        "kong:2.7@sha256:4d3e93207305ace881fe9e95ac27717b6fbdd9e0ec1873c34e94908a4f4c9335",
+		"KongIngress": "kong/kubernetes-ingress-controller:2.1.1@sha256:60e4102ab2da7f61e9c478747f0762d06a6166b5f300526b237ed7354c3cb4c8",
+	}, nil),
 	"kubevirt": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubevirtAssets,
 			"kubevirt/pod.yaml.tmpl",

@@ -1316,7 +1316,7 @@ spec:
           value: /dev/stderr
         - name: KONG_PROXY_ERROR_LOG
           value: /dev/stderr
-        image: kong:2.7
+        image: {{.CustomRegistries.Kong | default .ImageRepository | default .Registries.Kong}}{{.Images.Kong}}
         lifecycle:
           preStop:
             exec:
@@ -1372,7 +1372,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: kong/kubernetes-ingress-controller:2.1.1
+        image: {{.CustomRegistries.KongIngress | default .ImageRepository | default .Registries.KongIngress}}{{.Images.KongIngress}}
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
