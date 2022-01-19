@@ -35,6 +35,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/docker/machine/libmachine/state"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -65,35 +66,17 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
-<<<<<<< HEAD
-=======
-	}
-
-	args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver"}, StartArgs()...)
-	if !NoneDriver() && !(runtime.GOOS == "darwin" && KicDriver()) { // none driver and macos docker driver does not support ingress
-		args = append(args, "--addons=ingress")
-	}
-	if !arm64Platform() {
-		args = append(args, "--addons=helm-tiller")
-	}
-	if ContainerRuntime() == "docker" && !arm64Platform() {
-		args = append(args, "--addons=auto-pause")
-	}
-	if !detect.IsOnGCE() {
-		args = append(args, "--addons=gcp-auth")
-	}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
->>>>>>> 422ca5475 (add auto-pause addon only for docker cri)
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=olm", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
 		if !arm64Platform() {
-			args = append(args, "--addons=helm-tiller", "--addons=auto-pause")
+			args = append(args, "--addons=helm-tiller")
+		}
+
+		if ContainerRuntime() == "docker" && !arm64Platform() {
+			args = append(args, "--addons=auto-pause")
 		}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
@@ -118,11 +101,7 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-<<<<<<< HEAD
 			{"AutoPause", validateAutoPause},
-=======
-			{"GCPAuth", validateGCPAuthAddon},
->>>>>>> 306eef026 (run auto-pause addon as a seperate test)
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -136,7 +115,6 @@ func TestAddons(t *testing.T) {
 		}
 	})
 
-<<<<<<< HEAD
 	// Run other tests after to avoid collision
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
@@ -171,7 +149,6 @@ func TestAddons(t *testing.T) {
 			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 		}
 	})
-=======
 	// AutoPause addon test
 	t.Run("AutoPause", func(t *testing.T) {
 		if ContainerRuntime() != "docker" {
@@ -180,21 +157,6 @@ func TestAddons(t *testing.T) {
 			validateAutoPause(ctx, t, profile)
 		}
 	})
-
-	// Assert that disable/enable works offline
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
-	}
->>>>>>> 306eef026 (run auto-pause addon as a seperate test)
 }
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
