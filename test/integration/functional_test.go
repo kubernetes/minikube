@@ -283,10 +283,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
 
-	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "k8s.gcr.io/kube-apiserver"})
+	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| k8s.gcr.io/kube-apiserver"})
+	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"k8s.gcr.io/kube-apiserver"})
+	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- k8s.gcr.io/kube-apiserver"})
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {
