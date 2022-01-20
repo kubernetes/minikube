@@ -133,7 +133,12 @@ func shouldCheckURLBetaVersion(filePath string) bool {
 // Release represents a release
 type Release struct {
 	Name      string
-	Checksums map[string]string
+	Checksums Checksum
+}
+
+type Checksum struct {
+	Arch       string
+	osChecksum map[string]string
 }
 
 // Releases represents several release
