@@ -34,6 +34,7 @@ if ! [[ -x "${DIR}/pullsheet" ]]; then
   install_pullsheet
 fi
 
+git fetch --tags -f
 git pull https://github.com/kubernetes/minikube.git master --tags
 
 tags_to_generate=${1:-1}
@@ -51,7 +52,6 @@ tags_to_generate=${1:-1}
 #   - Negative line numbers are used since entries are sorted in descending order.
 # 11) Take most recent $tags_to_generate tags.
 tags_with_range=$(
-  git fetch --tags -f \
   git --no-pager tag \
   | grep -v -e "beta" \
   | sed -r "s/v([0-9]*)\.([0-9]*)\.([0-9]*)/\1 \2 \3/" \
