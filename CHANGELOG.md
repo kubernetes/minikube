@@ -1,5 +1,25 @@
 # Release Notes
 
+## Version 1.25.1 - 2022-01-20
+
+* Resolved regression breaking `minikube start` with hyperkit driver [#13418](https://github.com/kubernetes/minikube/pull/13418)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our triage members for this release!
+
+- klaases (13 comments)
+- RA489 (12 comments)
+- spowelljr (7 comments)
+- afbjorklund (6 comments)
+- sharifelgamal (2 comments)
+
 ## Version 1.25.0 - 2022-01-18
 
 Features:
