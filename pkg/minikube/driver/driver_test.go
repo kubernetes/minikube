@@ -85,7 +85,7 @@ func TestMachineType(t *testing.T) {
 }
 
 func TestFlagDefaults(t *testing.T) {
-	expected := FlagHints{CacheImages: true}
+	expected := FlagHints{CacheImages: true, ExtraOptions: []string{"kubelet.housekeeping-interval=5m"}}
 	if diff := cmp.Diff(FlagDefaults(VirtualBox), expected); diff != "" {
 		t.Errorf("defaults mismatch (-want +got):\n%s", diff)
 	}
@@ -98,7 +98,7 @@ func TestFlagDefaults(t *testing.T) {
 
 	expected = FlagHints{
 		CacheImages:  false,
-		ExtraOptions: []string{fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name())},
+		ExtraOptions: []string{"kubelet.housekeeping-interval=5m", fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name())},
 	}
 	systemdResolvConf = tf.Name()
 	if diff := cmp.Diff(FlagDefaults(None), expected); diff != "" {

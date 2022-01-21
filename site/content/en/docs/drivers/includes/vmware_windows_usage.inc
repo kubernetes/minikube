@@ -1,6 +1,6 @@
 ## Requirements
 
-*VMware Workstation
+* VMware Workstation
 
 ## Driver Installation
 

@@ -22,7 +22,7 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=1.17.2
+VERSION_TO_INSTALL=1.17.5
 INSTALL_PATH=${1}
 
 function current_arch() {
@@ -50,7 +50,7 @@ function check_and_install_golang() {
     return
   fi
 
-  sudo chown -R jenkins:jenkins "$INSTALL_PATH"/go
+  sudo chown -R $USER:$USER "$INSTALL_PATH"/go
 
   # golang has been installed and check its version
   if [[ $(go version | cut -d' ' -f 3) =~ go(([0-9]+)\.([0-9]+).([0-9]+)*) ]]; then
@@ -88,7 +88,7 @@ function install_golang() {
   sudo rm -rf "$GO_DIR"
   sudo mkdir -p "$GO_DIR"
   sudo tar -C "$GO_DIR" --strip-components=1 -xzf "$GO_TGZ"
-  sudo chown -R jenkins:jenkins "$GO_DIR"
+  sudo chown -R $USER:$USER "$GO_DIR"
 
   popd >/dev/null
   echo "installed in $GO_DIR: $($GO_DIR/bin/go version)"

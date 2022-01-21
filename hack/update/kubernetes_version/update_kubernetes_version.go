@@ -28,6 +28,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -137,7 +138,9 @@ func main() {
 		klog.Fatalf("Unable to get Kubernetes versions: %v", err)
 	}
 	data := Data{StableVersion: stable, LatestVersion: latest, LatestVersionMM: latestMM, LatestVersionP0: latestP0}
-	klog.Infof("Kubernetes versions: 'stable' is %s and 'latest' is %s", data.StableVersion, data.LatestVersion)
+
+	// Print PR title for Github action.
+	fmt.Printf("Bump Kubernetes version default: %s and latest: %s\n", data.StableVersion, data.LatestVersion)
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
@@ -145,7 +148,7 @@ func main() {
 // k8sVersion returns Kubernetes versions.
 func k8sVersions(ctx context.Context, owner, repo string) (stable, latest, latestMM, latestP0 string, err error) {
 	// get Kubernetes versions from GitHub Releases
-	stable, latest, err = update.GHReleases(ctx, owner, repo)
+	stable, latest, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) || !semver.IsValid(latest) {
 		return "", "", "", "", err
 	}

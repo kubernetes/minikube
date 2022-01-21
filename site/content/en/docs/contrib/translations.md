@@ -76,6 +76,8 @@ All translations are stored in the top-level `translations` directory.
 
 ### Testing translations
 
+* You can verify that the translations are syntactically valid by running: `go test k8s.io/minikube/pkg/minikube/translate`
+
 * Once you have all the translations you want, save the file and rebuild the minikube from scratch to pick up your new translations:
 
  ```

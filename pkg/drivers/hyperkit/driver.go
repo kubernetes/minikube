@@ -426,7 +426,6 @@ func (d *Driver) extractKernel(isoPath string) error {
 	}{
 		{"/boot/bzimage", "bzimage"},
 		{"/boot/initrd", "initrd"},
-		{"/isolinux/isolinux.cfg", "isolinux.cfg"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
 		if err := ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {

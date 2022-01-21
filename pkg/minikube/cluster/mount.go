@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"sort"
 	"strconv"
@@ -43,8 +42,6 @@ type MountConfig struct {
 	MSize int
 	// Port is the port to connect to on the host
 	Port int
-	// Mode is the file permissions to set the mount to (octals)
-	Mode os.FileMode
 	// Extra mount options. See https://www.kernel.org/doc/Documentation/filesystems/9p.txt
 	Options map[string]string
 }
@@ -57,8 +54,10 @@ type mountRunner interface {
 const (
 	// MountErrorUnknown failed with unknown error
 	MountErrorUnknown = iota
-	// MountErrorConnect
+	// MountErrorConnect failed to connect
 	MountErrorConnect
+	// MountErrorChmod failed to chmod
+	MountErrorChmod
 )
 
 // MountError wrapper around errors in the `Mount` function
@@ -79,7 +78,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
 	}
 
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s", c.Mode, target))); err != nil {
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s", target))); err != nil {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
 	}
 

@@ -103,10 +103,10 @@ func recentReleases(n int) ([]string, error) {
 	foundDefault := false
 
 	for _, v := range versions {
-		if strings.HasPrefix(constants.NewestKubernetesVersion, v) {
+		if strings.HasPrefix(constants.NewestKubernetesVersion, v) { //nolint:gocritic // Complains "constants.NewestKubernetesVersion and v arguments order looks reversed"
 			foundNewest = true
 		}
-		if strings.HasPrefix(constants.DefaultKubernetesVersion, v) {
+		if strings.HasPrefix(constants.DefaultKubernetesVersion, v) { //nolint:gocritic // Same as above
 			foundDefault = true
 		}
 	}

@@ -46,6 +46,6 @@ curl -LO \
   https://storage.googleapis.com/kubernetes-release/release/$kv/bin/linux/amd64/kubectl \
   && install kubectl /tmp/
 
-export MINIKUBE_WANTUPDATENOTIFICATION=false
+/tmp/minikube-linux-amd64 config set WantUpdateNotification false
 /tmp/minikube-linux-amd64 start --driver=docker
 ```

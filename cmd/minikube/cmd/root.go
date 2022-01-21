@@ -95,7 +95,7 @@ func Execute() {
 	}
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		out.Infof("You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)",
+		out.Boxed("You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}",
 			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
@@ -107,7 +107,9 @@ func Execute() {
 		profile := ""
 		for i, a := range os.Args {
 			if a == "--context" {
-				profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				if len(os.Args) > i+1 {
+					profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				}
 				break
 			} else if strings.HasPrefix(a, "--context=") {
 				context := strings.Split(a, "=")[1]

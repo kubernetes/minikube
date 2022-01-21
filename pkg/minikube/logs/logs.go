@@ -174,6 +174,8 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 
 	out.SetOutFile(logOutput)
 	defer out.SetOutFile(os.Stdout)
+	out.SetErrFile(logOutput)
+	defer out.SetErrFile(os.Stderr)
 
 	sort.Strings(names)
 	failed := []string{}
@@ -248,6 +250,8 @@ func outputLastStart() error {
 func OutputOffline(lines int, logOutput *os.File) {
 	out.SetOutFile(logOutput)
 	defer out.SetOutFile(os.Stdout)
+	out.SetErrFile(logOutput)
+	defer out.SetErrFile(os.Stderr)
 	if err := outputAudit(lines); err != nil {
 		klog.Errorf("failed to output audit logs: %v", err)
 	}

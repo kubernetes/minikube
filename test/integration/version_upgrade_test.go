@@ -154,10 +154,14 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	desiredLegacyVersion := legacyVersion()
-	tf, err := installRelease(desiredLegacyVersion)
-	if err != nil {
-		t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
-	}
+	var tf *os.File
+	t.Run("Setup", func(t *testing.T) {
+		var err error
+		tf, err = installRelease(desiredLegacyVersion)
+		if err != nil {
+			t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
+		}
+	})
 	defer os.Remove(tf.Name())
 
 	t.Run("Upgrade", func(t *testing.T) {
@@ -192,7 +196,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			t.Fatalf("legacy %s start failed: %v", desiredLegacyVersion, err)
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
+		rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
 		if err != nil {
 			t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
 		}

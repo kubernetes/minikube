@@ -293,7 +293,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=gcr.io/k8s-minikube/busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
 		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}
@@ -446,27 +446,27 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 
 // validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
+	t.Skip("Skipping Olm addon till images are fixed")
 	defer PostMortemLogs(t, profile)
-
 	start := time.Now()
 
 	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=catalog-operator", "--timeout=90s")); err != nil {
-		t.Fatalf("failed waititing for pod catalog-operator: %v", err)
+		t.Fatalf("failed waiting for pod catalog-operator: %v", err)
 	}
 	t.Logf("catalog-operator stabilized in %s", time.Since(start))
 
 	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=olm-operator", "--timeout=90s")); err != nil {
-		t.Fatalf("failed waititing for pod olm-operator: %v", err)
+		t.Fatalf("failed waiting for pod olm-operator: %v", err)
 	}
 	t.Logf("olm-operator stabilized in %s", time.Since(start))
 
 	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=app=packageserver", "--timeout=90s")); err != nil {
-		t.Fatalf("failed waititing for pod olm-operator: %v", err)
+		t.Fatalf("failed waiting for pod olm-operator: %v", err)
 	}
 	t.Logf("packageserver stabilized in %s", time.Since(start))
 
 	if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for=condition=ready", "--namespace=olm", "pod", "--selector=olm.catalogSource=operatorhubio-catalog", "--timeout=90s")); err != nil {
-		t.Fatalf("failed waititing for pod operatorhubio-catalog: %v", err)
+		t.Fatalf("failed waiting for pod operatorhubio-catalog: %v", err)
 	}
 	t.Logf("operatorhubio-catalog stabilized in %s", time.Since(start))
 

@@ -60,7 +60,6 @@ if (echo ${COMMIT} | grep -q dirty); then
 fi
 
 
-
 gsutil cp "gs://${bucket}/logs/index.html" \
   "gs://${bucket}/logs/${ghprbPullId}/index.html"
 
@@ -81,3 +80,10 @@ rm -rf out/buildroot
 # -J: gzip compression
 # -R: recursive. strangely, this is not the default for sync.
 gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
+
+readonly bucket_mirror="minikube/latest"
+readonly HEAD="master"
+if [[ "${ghprbPullId}" == "${HEAD}" ]]; then
+  # Copy artifacts to known mirror location
+  gsutil cp -R "gs://${bucket}/${ghprbPullId}/minikube-*" "gs://${bucket_mirror}"
+fi

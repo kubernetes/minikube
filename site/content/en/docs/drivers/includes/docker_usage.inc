@@ -32,7 +32,7 @@ docker context use rootless
 minikube start --driver=docker --container-runtime=containerd
 ```
 
-The `--container-runtime` flag must be currently set to "containerd".
+The `--container-runtime` flag must be set to "containerd" or "cri-o".
 
 The restrictions of rootless `kind` apply to minikube with rootless docker as well.
 

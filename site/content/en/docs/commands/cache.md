@@ -50,7 +50,7 @@ minikube cache add [flags]
 ### Options
 
 ```
-      --   Add image to cache for all running minikube clusters
+      --all   Add image to cache for all running minikube clusters
 ```
 
 ### Options inherited from parent commands

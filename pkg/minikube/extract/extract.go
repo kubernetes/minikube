@@ -263,7 +263,6 @@ func checkArguments(s *ast.CallExpr, e *state) {
 			if s := checkIdentForStringValue(i); s != "" {
 				e.translations[s] = ""
 				matched = true
-				break
 			}
 		}
 
@@ -272,12 +271,11 @@ func checkArguments(s *ast.CallExpr, e *state) {
 			if s := checkString(argString.Value); s != "" {
 				e.translations[s] = ""
 				matched = true
-				break
 			}
 		}
 	}
 
-	// No string arguments were found, check everything the calls this function for strings
+	// No string arguments were found, check everything that calls this function for strings
 	if !matched {
 		addParentFuncToList(e)
 	}
@@ -542,7 +540,28 @@ func extractAdvice(f ast.Node, e *state) error {
 
 		if i.Name == "Advice" {
 			// At this point we know the value in the kvp is guaranteed to be a string
-			advice, _ := kvp.Value.(*ast.BasicLit)
+			advice, ok := kvp.Value.(*ast.BasicLit)
+			if !ok {
+				// Maybe the advice is a function call, like fmt.Sprintf
+				ad, ok := kvp.Value.(*ast.CallExpr)
+				if !ok {
+					// Ok, we tried. Abort.
+					return true
+				}
+				// Let's support fmt.Sprintf with a string argument only
+				for _, arg := range ad.Args {
+					adArg, ok := arg.(*ast.BasicLit)
+					if !ok {
+						continue
+					}
+					s := checkString(adArg.Value)
+					if s != "" {
+						e.translations[s] = ""
+					}
+				}
+				return true
+
+			}
 			s := checkString(advice.Value)
 			if s != "" {
 				e.translations[s] = ""

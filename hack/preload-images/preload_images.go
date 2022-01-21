@@ -152,7 +152,7 @@ func makePreload(cfg preloadCfg) error {
 	return nil
 }
 
-func verifyDockerStorage() error {
+var verifyDockerStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "docker", "info", "-f", "{{.Info.Driver}}")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -167,7 +167,7 @@ func verifyDockerStorage() error {
 	return nil
 }
 
-func verifyPodmanStorage() error {
+var verifyPodmanStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "sudo", "podman", "info", "-f", "json")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

@@ -32,6 +32,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
+var posResponses = []string{"yes", "y"}
+var negResponses = []string{"no", "n"}
+
 var addonsConfigureCmd = &cobra.Command{
 	Use:   "configure ADDON_NAME",
 	Short: "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list",
@@ -45,8 +48,6 @@ var addonsConfigureCmd = &cobra.Command{
 		// allows for additional prompting of information when enabling addons
 		switch addon {
 		case "registry-creds":
-			posResponses := []string{"yes", "y"}
-			negResponses := []string{"no", "n"}
 
 			// Default values
 			awsAccessID := "changeme"
@@ -220,9 +221,15 @@ var addonsConfigureCmd = &cobra.Command{
 				return format.MatchString(s)
 			}
 
-			if cfg.KubernetesConfig.CustomIngressCert == "" {
-				cfg.KubernetesConfig.CustomIngressCert = AskForStaticValidatedValue("-- Enter custom cert(format is \"namespace/secret\"): ", validator)
+			customCert := AskForStaticValidatedValue("-- Enter custom cert (format is \"namespace/secret\"): ", validator)
+			if cfg.KubernetesConfig.CustomIngressCert != "" {
+				overwrite := AskForYesNoConfirmation("A custom cert for ingress has already been set. Do you want overwrite it?", posResponses, negResponses)
+				if !overwrite {
+					break
+				}
 			}
+
+			cfg.KubernetesConfig.CustomIngressCert = customCert
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})

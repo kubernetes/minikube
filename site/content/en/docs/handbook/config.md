@@ -114,24 +114,50 @@ Some features can only be accessed by minikube specific environment variables, h
 
 * **MINIKUBE_IN_STYLE** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
 
-* **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
-
-* **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
-
 * **CHANGE_MINIKUBE_NONE_USER** - (bool) automatically change ownership of ~/.minikube to the value of $SUDO_USER
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
 
+* **MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE** - (bool) suppresses Docker performance warnings when Docker is slow
+
 ### Example: Disabling emoji
+
+{{% tabs %}}
+
+{{% linuxtab %}}
 
 ```shell
 export MINIKUBE_IN_STYLE=false
 minikube start
 ```
 
+{{% /linuxtab %}}
+
+{{% mactab %}}
+
+```shell
+export MINIKUBE_IN_STYLE=false
+minikube start
+```
+
+{{% /mactab %}}
+
+{{% windowstab %}}
+
+```shell
+$env:MINIKUBE_IN_STYLE=false
+minikube start
+```
+
+{{% /windowstab %}}
+{{% /tabs %}}
+
 ### Making environment values persistent
 
 To make the exported variables persistent across reboots:
 
 * Linux and macOS: Add these declarations to `~/.bashrc` or wherever your shells environment variables are stored.
-* Windows: Add these declarations via [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
+* Windows: Either add these declarations to your `~\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` or run the following in a PowerShell terminal:
+```shell
+[Environment]::SetEnvironmentVariable("key", "value", [EnvironmentVariableTarget]::User)
+```

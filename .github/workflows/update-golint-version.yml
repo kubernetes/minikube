@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.2'
+  GO_VERSION: '1.17.5'
 jobs:
   bump-golint-version:
     runs-on: ubuntu-20.04
@@ -26,7 +26,7 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: bump golaint versions
+          commit-message: bump golint versions
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_golint_version

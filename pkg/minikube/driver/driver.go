@@ -172,6 +172,7 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+// AllowsPreload returns if preload is allowed for the driver
 func AllowsPreload(driverName string) bool {
 	return !BareMetal(driverName) && !IsSSH(driverName)
 }
@@ -234,7 +235,7 @@ type FlagHints struct {
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
-	fh := FlagHints{}
+	fh := FlagHints{ExtraOptions: []string{"kubelet.housekeeping-interval=5m"}}
 	if name != None {
 		fh.CacheImages = true
 		return fh

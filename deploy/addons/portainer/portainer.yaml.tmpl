@@ -117,7 +117,7 @@ spec:
              claimName: portainer      
       containers:
         - name: portainer
-          image: "portainer/portainer-ce:latest"
+          image: {{.CustomRegistries.Portainer | default .ImageRepository | default .Registries.Portainer}}{{.Images.Portainer}}
           imagePullPolicy: Always
           args:  [ '--tunnel-port','30776' ]          
           volumeMounts:

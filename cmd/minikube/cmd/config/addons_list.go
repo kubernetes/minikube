@@ -52,7 +52,10 @@ var addonsListCmd = &cobra.Command{
 			exit.Message(reason.Usage, "usage: minikube addons list")
 		}
 
-		_, cc := mustload.Partial(ClusterFlagValue())
+		var cc *config.ClusterConfig
+		if config.ProfileExists(ClusterFlagValue()) {
+			_, cc = mustload.Partial(ClusterFlagValue())
+		}
 		switch strings.ToLower(addonListOutput) {
 		case "list":
 			printAddonsList(cc)
@@ -98,18 +101,26 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 
 	var tData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Addon Name", "Profile", "Status", "Maintainer"})
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
+	if cc == nil {
+		table.SetHeader([]string{"Addon Name", "Maintainer"})
+	} else {
+		table.SetHeader([]string{"Addon Name", "Profile", "Status", "Maintainer"})
+	}
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		enabled := addonBundle.IsEnabled(cc)
 		maintainer := addonBundle.Maintainer
 		if maintainer == "" {
 			maintainer = "unknown (third-party)"
 		}
+		if cc == nil {
+			tData = append(tData, []string{addonName, maintainer})
+			continue
+		}
+		enabled := addonBundle.IsEnabled(cc)
 		tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer})
 	}
 
@@ -135,6 +146,11 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonsMap := map[string]map[string]interface{}{}
 
 	for _, addonName := range addonNames {
+		if cc == nil {
+			addonsMap[addonName] = map[string]interface{}{}
+			continue
+		}
+
 		addonBundle := assets.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
 

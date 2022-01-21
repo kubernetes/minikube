@@ -293,7 +293,7 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 	}
 
 	// try to copy cached files to the temp minikube folder to avoid downloading of iso and preloads
-	_ = CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
+	_ = CopyDir(localpath.MakeMiniPath("cache"), filepath.Join(mkDir, "cache"))
 
 	// change permission to allow driver to be executable
 	if err = os.Chmod(testDriverPath, 0755); err != nil {

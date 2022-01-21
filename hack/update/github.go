@@ -210,7 +210,7 @@ func ghUpdate(ctx context.Context, owner, repo string, token string, schema map[
 
 // GHReleases returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository, and any error occurred.
 // If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
-func GHReleases(ctx context.Context, owner, repo string) (stable, latest string, err error) {
+func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge string, err error) {
 	ghc := ghClient(ctx, ghToken)
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
@@ -218,7 +218,7 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 	for (opts.Page+1)*ghListPerPage <= ghSearchLimit {
 		rls, resp, err := ghc.Repositories.ListTags(ctx, owner, repo, opts)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		for _, rl := range rls {
 			ver := *rl.Name
@@ -235,7 +235,12 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 				if semver.Compare(ver, latest) == 1 {
 					latest = ver
 				}
+			} else if strings.Contains(prerls, "-alpha") {
+				if semver.Compare(ver, edge) == 1 {
+					edge = ver
+				}
 			}
+
 			// make sure that latest >= stable
 			if semver.Compare(latest, stable) == -1 {
 				latest = stable
@@ -246,7 +251,7 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest string,
 		}
 		opts.Page = resp.NextPage
 	}
-	return stable, latest, nil
+	return stable, latest, edge, nil
 }
 
 // ghClient returns GitHub Client with a given context and optional token for authenticated requests.

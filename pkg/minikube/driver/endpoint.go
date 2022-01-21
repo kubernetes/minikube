@@ -35,16 +35,16 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 		}
 		hostname := oci.DaemonHost(driverName)
 
-		ip := net.ParseIP(hostname)
-		if ip == nil {
-			return hostname, ip, port, fmt.Errorf("failed to parse ip for %q", hostname)
+		ips, err := net.LookupIP(hostname)
+		if err != nil || len(ips) == 0 {
+			return hostname, nil, port, fmt.Errorf("failed to lookup ip for %q", hostname)
 		}
 
 		// https://github.com/kubernetes/minikube/issues/3878
 		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 			hostname = cc.KubernetesConfig.APIServerName
 		}
-		return hostname, ip, port, err
+		return hostname, ips[0], port, err
 	}
 
 	// https://github.com/kubernetes/minikube/issues/3878
@@ -52,11 +52,11 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		hostname = cc.KubernetesConfig.APIServerName
 	}
-	ip := net.ParseIP(cp.IP)
-	if ip == nil {
-		return hostname, ip, cp.Port, fmt.Errorf("failed to parse ip for %q", cp.IP)
+	ips, err := net.LookupIP(cp.IP)
+	if err != nil || len(ips) == 0 {
+		return hostname, nil, cp.Port, fmt.Errorf("failed to lookup ip for %q", cp.IP)
 	}
-	return hostname, ip, cp.Port, nil
+	return hostname, ips[0], cp.Port, nil
 }
 
 // AutoPauseProxyEndpoint returns the endpoint for the auto-pause (reverse proxy to api-sever)

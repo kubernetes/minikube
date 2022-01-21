@@ -36,6 +36,17 @@ type container struct {
 	Status string
 }
 
+type crictlImages struct {
+	Images []struct {
+		ID          string      `json:"id"`
+		RepoTags    []string    `json:"repoTags"`
+		RepoDigests []string    `json:"repoDigests"`
+		Size        string      `json:"size"`
+		UID         interface{} `json:"uid"`
+		Username    string      `json:"username"`
+	} `json:"images"`
+}
+
 // crictlList returns the output of 'crictl ps' in an efficient manner
 func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
@@ -265,6 +276,33 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return jsonMap, nil
+}
+
+// listCRIImages lists images using crictl
+func listCRIImages(cr CommandRunner) ([]ListImage, error) {
+	c := exec.Command("sudo", "crictl", "images", "--output", "json")
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "crictl images")
+	}
+
+	var jsonImages crictlImages
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	if err != nil {
+		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		return nil, err
+	}
+
+	images := []ListImage{}
+	for _, img := range jsonImages.Images {
+		images = append(images, ListImage{
+			ID:          img.ID,
+			RepoDigests: img.RepoDigests,
+			RepoTags:    img.RepoTags,
+			Size:        img.Size,
+		})
+	}
+	return images, nil
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID

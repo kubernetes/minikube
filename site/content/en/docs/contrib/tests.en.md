@@ -1,7 +1,7 @@
 ---
-title: "Integration Tests"
+title: "List of Integration Test Cases"
 description: >
-  All minikube integration tests
+  Auto generated list of all minikube integration tests and what they do.
 ---
 
 
@@ -10,6 +10,9 @@ makes sure the --download-only parameter in minikube start caches the appropriat
 
 ## TestDownloadOnlyKic
 makes sure --download-only caches the docker driver images as well.
+
+## TestBinaryMirror
+tests functionality of --binary-mirror flag
 
 ## TestOffline
 makes sure minikube works without internet, once the user has cached the necessary images.
@@ -91,9 +94,10 @@ Steps:
 runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 Steps:
-- Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
+- Try to load image already loaded and make sure `minikube image load --daemon` works
+- Make sure a new updated tag works by `minikube image load --daemon`
 - Make sure image saving works by `minikube image load --daemon`
 - Make sure image removal works by `minikube image rm`
 - Make sure image loading from file works by `minikube image load`
@@ -403,6 +407,15 @@ verifies files and packges installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestIngressAddonLegacy
+tests ingress and ingress-dns addons with legacy k8s version <1.19
+
+#### validateIngressAddonActivation
+tests ingress addon activation
+
+#### validateIngressDNSAddonActivation
+tests ingress-dns addon activation
+
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
 
@@ -495,6 +508,49 @@ and --cni=false
 makes sure the hairpinning (https://en.wikipedia.org/wiki/Hairpinning) is correctly configured for given CNI
 try to access deployment/netcat pod using external, obtained from 'netcat' service dns resolution, IP address
 should fail if hairpinMode is off
+
+## TestNoKubernetes
+tests starting minikube without Kubernetes,
+for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
+
+#### validateStartNoK8sWithVersion
+expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+
+Steps:
+- start minikube with no kubernetes.
+
+#### validateStartWithK8S
+starts a minikube cluster with Kubernetes started/configured.
+
+Steps:
+- start minikube with Kubernetes.
+- return an error if Kubernetes is not running.
+
+#### validateStartWithStopK8s
+starts a minikube cluster while stopping Kubernetes.
+
+Steps:
+- start minikube with no Kubernetes.
+- return an error if Kubernetes is not stopped.
+- delete minikube profile.
+
+#### validateStartNoK8S
+starts a minikube cluster without kubernetes started/configured
+
+Steps:
+- start minikube with no Kubernetes.
+
+#### validateK8SNotRunning
+validates that there is no kubernetes running inside minikube
+
+#### validateStopNoK8S
+validates that minikube is stopped after a --no-kubernetes start
+
+#### validateProfileListNoK8S
+validates that profile list works with --no-kubernetes
+
+#### validateStartNoArgs
+validates that minikube start with no args works.
 
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected

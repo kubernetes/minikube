@@ -26,6 +26,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -42,6 +43,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
@@ -66,7 +68,7 @@ var apiPortTest = 8441
 // Store the proxy session so we can clean it up at the end
 var mitm *StartSession
 
-var runCorpProxy = GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
+var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
@@ -223,22 +225,34 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
-func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
-	// docs(skip): Skips on `none` driver as image loading is not supported
-	if NoneDriver() {
-		t.Skip("image commands are not available on the none driver")
-	}
-	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
+// tagAndLoadImage is a helper function to pull, tag, load image (decreases cyclomatic complexity for linter).
+func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage string) {
+	newPulledImage := fmt.Sprintf("%s:%s", addonResizer, "1.8.9")
+	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", newPulledImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 	}
 
+	rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", newPulledImage, taggedImage))
+	if err != nil {
+		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+	if err != nil {
+		t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
+	}
+
+	checkImageExists(ctx, t, profile, taggedImage)
+}
+
+// runImageList is a helper function to run 'image ls' command test.
+func runImageList(ctx context.Context, t *testing.T, profile, testName, format string, expectedResult []string) {
 	// docs: Make sure image listing works by `minikube image ls`
-	t.Run("ImageList", func(t *testing.T) {
+	t.Run(testName, func(t *testing.T) {
 		MaybeParallel(t)
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format))
 		if err != nil {
 			t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
 		}
@@ -250,12 +264,29 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		list := rr.Output()
-		for _, theImage := range []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"} {
+		for _, theImage := range expectedResult {
 			if !strings.Contains(list, theImage) {
 				t.Fatalf("expected %s to be listed with minikube but the image is not there", theImage)
 			}
 		}
 	})
+}
+
+// validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
+func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
+	// docs(skip): Skips on `none` driver as image loading is not supported
+	if NoneDriver() {
+		t.Skip("image commands are not available on the none driver")
+	}
+	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
+		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
+	}
+
+	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- docker.io/kubernetesui/dashboard"})
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {
@@ -314,6 +345,21 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		checkImageExists(ctx, t, profile, taggedImage)
+	})
+
+	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
+	t.Run("ImageReloadDaemon", func(t *testing.T) {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+		if err != nil {
+			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
+		}
+
+		checkImageExists(ctx, t, profile, taggedImage)
+	})
+
+	// docs: Make sure a new updated tag works by `minikube image load --daemon`
+	t.Run("ImageTagAndLoadDaemon", func(t *testing.T) {
+		tagAndLoadImage(ctx, t, profile, taggedImage)
 	})
 
 	// docs: Make sure image saving works by `minikube image load --daemon`
@@ -989,7 +1035,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// docs: Run `minikube cache add` and make sure we can build and add a local image to the cache
 		t.Run("add_local", func(t *testing.T) {
-			if GithubActionRunner() && runtime.GOOS == "darwin" {
+			if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 				t.Skipf("skipping this test because Docker can not run in macos on github action free version. https://github.community/t/is-it-possible-to-install-and-configure-docker-on-macos-runner/16981")
 			}
 
@@ -1555,7 +1601,22 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `minikube cp ...` to copy a file to the minikube node
 	// docs: Run `minikube ssh sudo cat ...` to print out the copied file within minikube
 	// docs: make sure the file is correctly copied
-	testCpCmd(ctx, t, profile, "")
+
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	// copy to node
+	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
+
+	// copy from node
+	tmpDir, err := ioutil.TempDir("", "mk_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
+	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
 }
 
 // validateMySQL validates a minimalist MySQL deployment
@@ -2002,7 +2063,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	// Use more memory so that we may reliably fit MySQL and nginx
 	memoryFlag := "--memory=4000"
 	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
-	if GithubActionRunner() && VirtualboxDriver() {
+	if detect.GithubActionRunner() && VirtualboxDriver() {
 		memoryFlag = "--memory=6000"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.

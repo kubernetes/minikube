@@ -29,6 +29,7 @@ function Write-GithubStatus {
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
+$env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
@@ -63,9 +64,6 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
-# Make sure an old minikube instance isn't running
-./out/minikube-windows-amd64.exe delete --all
-
 ./out/windows_integration_setup.ps1
 
 $started=Get-Date -UFormat %s
@@ -96,9 +94,9 @@ $failures=echo $gopogh_status | jq '.NumberOfFail'
 $tests=echo $gopogh_status | jq '.NumberOfTests'
 $bad_status="$failures / $tests failures"
 
-$description="$status in $elapsed minute(s)."
+$description="$status in $elapsed minutes."
 If($env:status -eq "failure") {
-	$description="completed with $bad_status in $elapsed minute(s)."
+	$description="completed with $bad_status in $elapsed minutes."
 }
 echo $description
 
