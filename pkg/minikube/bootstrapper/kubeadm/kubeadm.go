@@ -835,6 +835,7 @@ func kubectlPath(cfg config.ClusterConfig) string {
 }
 
 // applyNodeLabels applies minikube labels to all the nodes
+// but it's currently called only from kubeadm.StartCluster (via kubeadm.init) where there's only one - first node
 func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
 	// converting - and : to _ because of Kubernetes label restriction
@@ -843,12 +844,19 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
+	// ensure that "primary" label is applied only to the 1st node in the cluster (used eg for placing ingress there)
+	// this is used to uniquely distinguish that from other nodes in multi-master/multi-control-plane cluster config
+	primaryLbl := "minikube.k8s.io/primary=false"
+	if len(cfg.Nodes) <= 1 {
+		primaryLbl = "minikube.k8s.io/primary=true"
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
 	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
-		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
+		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, primaryLbl, "--all", "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
