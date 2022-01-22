@@ -37,20 +37,16 @@ fi
 git fetch --tags -f
 git pull https://github.com/kubernetes/minikube.git master --tags
 
-tags_to_generate=${1:-1}
-
-# 1) Fetch latest tags (https://github.com/kubernetes/minikube/issues/12561).
-# 2) Get tags.
-# 3) Filter out beta tags.
-# 4) Parse tag name into its version numbers.
-# 5) Sort by ascending version numbers.
-# 6) Reform tag name from version numbers.
-# 7) Pair up current and previous tags. Format: (previous tag, current tag)
-# 8) Format command to get tag dates.
-# 9) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
-# 10) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
+# 1) Get tags.
+# 2) Filter out beta tags.
+# 3) Parse tag name into its version numbers.
+# 4) Sort by ascending version numbers.
+# 5) Reform tag name from version numbers.
+# 6) Pair up current and previous tags. Format: (previous tag, current tag)
+# 7) Format command to get tag dates.
+# 8) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
+# 9) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
 #   - Negative line numbers are used since entries are sorted in descending order.
-# 11) Take most recent $tags_to_generate tags.
 tags_with_range=$(
   git --no-pager tag \
   | grep -v -e "beta" \
@@ -60,8 +56,7 @@ tags_with_range=$(
   | sed -n -r "x; G; s/\n/ /; p"\
   | sed -n -r "s/([v.0-9]+) ([v.0-9]+)/-c '{ echo -n \2; git log -1 --pretty=format:\" %as \" \1; git log -1 --pretty=format:\"%as\" \2; echo;}'/p" \
   | xargs -L 1 bash \
-  | sed "=" | sed -r "N;s/\n/ /;s/^/-/" \
-  | tail -n "$tags_to_generate")
+  | sed "=" | sed -r "N;s/\n/ /;s/^/-/")
 
 destination="$DIR/../site/content/en/docs/contrib/leaderboard"
 mkdir -p "$destination"
@@ -79,6 +74,10 @@ function cleanup_token() {
 trap cleanup_token EXIT
 
 while read -r tag_index tag_name tag_start tag_end; do
+  FILE="site/content/en/docs/contrib/leaderboard/$tag_name.html"
+  if [[ -f "$FILE" ]]; then
+    continue
+  fi
   echo "Generating leaderboard for" "$tag_name" "(from $tag_start to $tag_end)"
   # Print header for page.
   printf -- "---\ntitle: \"$tag_name - $tag_end\"\nlinkTitle: \"$tag_name - $tag_end\"\nweight: $tag_index\n---\n" > "$destination/$tag_name.html"
