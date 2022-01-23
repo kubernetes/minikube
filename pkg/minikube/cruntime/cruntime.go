@@ -49,7 +49,7 @@ func (cs ContainerState) String() string {
 
 // ValidRuntimes lists the supported container runtimes
 func ValidRuntimes() []string {
-	return []string{"docker", "cri-o", "containerd"}
+	return []string{"docker", "containerd", "cri-o"}
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
