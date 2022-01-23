@@ -620,13 +620,13 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: IngressClass
 metadata:
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: "true"
   labels:
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: ingress-nginx
     app.kubernetes.io/name: ingress-nginx
   name: nginx
-  annotations:
-    ingressclass.kubernetes.io/is-default-class: "true"
 spec:
   controller: k8s.io/ingress-nginx
 ---
