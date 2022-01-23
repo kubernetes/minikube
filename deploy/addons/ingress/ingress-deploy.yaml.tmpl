@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-//ref: https://github.com/kubernetes/ingress-nginx/blob/main/deploy/static/provider/kind/deploy.yaml
+# ref: https://github.com/kubernetes/ingress-nginx/blob/main/deploy/static/provider/kind/deploy.yaml
 
 apiVersion: v1
 kind: Namespace
@@ -443,7 +443,6 @@ spec:
         - --validating-webhook=:8443
         - --validating-webhook-certificate=/usr/local/certificates/cert
         - --validating-webhook-key=/usr/local/certificates/key
-        - --publish-status-address=localhost
         {{- if .CustomIngressCert}}
         - --default-ssl-certificate={{ .CustomIngressCert }}
         {{- end}}
