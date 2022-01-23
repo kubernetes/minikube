@@ -25,8 +25,8 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine/log"
-	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	"libvirt.org/go/libvirt"
 )
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
