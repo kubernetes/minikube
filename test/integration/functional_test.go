@@ -247,7 +247,9 @@ func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage str
 }
 
 // runImageList is a helper function to run 'image ls' command test.
-func runImageList(ctx context.Context, t *testing.T, profile, testName, format string, expectedResult []string) {
+func runImageList(ctx context.Context, t *testing.T, profile, testName, format, expectedFormat string) {
+	expectedResult := expectedImageFormat(expectedFormat)
+
 	// docs: Make sure image listing works by `minikube image ls`
 	t.Run(testName, func(t *testing.T) {
 		MaybeParallel(t)
@@ -272,6 +274,13 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format s
 	})
 }
 
+func expectedImageFormat(format string) []string {
+	return []string{
+		fmt.Sprintf(format, "k8s.gcr.io/pause"),
+		fmt.Sprintf(format, "k8s.gcr.io/kube-apiserver"),
+	}
+}
+
 // validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	// docs(skip): Skips on `none` driver as image loading is not supported
@@ -283,10 +292,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
 
-	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListShort", "short", "%s")
+	runImageList(ctx, t, profile, "ImageListTable", "table", "| %s")
+	runImageList(ctx, t, profile, "ImageListJson", "json", "[\"%s")
+	runImageList(ctx, t, profile, "ImageListYaml", "yaml", "- %s")
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {
