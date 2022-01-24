@@ -217,8 +217,8 @@ github.com/cilium/ebpf v0.6.2/go.mod h1:4tRaxcgiL706VnOzHOdBlY8IEAIdxINsQBcU4xJJ
 github.com/circonus-labs/circonus-gometrics v2.3.1+incompatible/go.mod h1:nmEj6Dob7S7YxXgwXpfOuvO54S+tGdZdw9fuRZt25Ag=
 github.com/circonus-labs/circonusllhist v0.1.3/go.mod h1:kMXHVDlOchFAehlya5ePtbp5jckzBHf4XRpQvBOLI+I=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
-github.com/cloudevents/sdk-go/v2 v2.6.1 h1:yHtzgmeBvc0TZx1nrnvYXov1CSvkQyvhEhNMs8Z5Mmk=
-github.com/cloudevents/sdk-go/v2 v2.6.1/go.mod h1:nlXhgFkf0uTopxmRXalyMwS2LG70cRGPrxzmjJgSG0U=
+github.com/cloudevents/sdk-go/v2 v2.8.0 h1:kmRaLbsafZmidZ0rZ6h7WOMqCkRMcVTLV5lxV/HKQ9Y=
+github.com/cloudevents/sdk-go/v2 v2.8.0/go.mod h1:GpCBmUj7DIRiDhVvsK5d6WCbgTWs8DxAWTRtAwQmIXs=
 github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 h1:Yg2hDs4b13Evkpj42FU2idX2cVXVFqQSheXYKM86Qsk=
 github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21/go.mod h1:MgJyK38wkzZbiZSKeIeFankxxSA8gayko/nr5x5bgBA=
 github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 h1:tuijfIjZyjZaHq9xDUh0tNitwXshJpbLkqMOJv4H3do=
