@@ -28,7 +28,7 @@ import (
 func uploadTarball(tarballFilename, k8sVer string) error {
 	// Upload tarball to GCS
 	hostPath := path.Join("out/", tarballFilename)
-	gcsDest := fmt.Sprintf("gs://%s/%s/%s", download.PreloadBucket, download.PreloadVersion, k8sVer)
+	gcsDest := fmt.Sprintf("gs://%s/%s/%s/", download.PreloadBucket, download.PreloadVersion, k8sVer)
 	cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
 	fmt.Printf("Running: %v\n", cmd.Args)
 	if output, err := cmd.CombinedOutput(); err != nil {
