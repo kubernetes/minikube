@@ -949,7 +949,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s) expect Docker Windows
 	timeout := Seconds(5)
 	if runtime.GOOS == "windows" && DockerDriver() {
-		timeout = Seconds(20)
+		timeout = Seconds(10)
 	}
 	mctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
@@ -970,7 +970,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	dctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	// docs: Run `minikube start --dry-run`
 	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
