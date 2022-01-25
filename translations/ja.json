@@ -324,7 +324,7 @@
 	"If present, writes to the provided file instead of stdout.": "",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "",
-	"If set, disables optimizations that improve minikube performance. The optimizations applied are decreasing CoreDNS replicas from 2 to 1 and increasing kubeadm housekeeping-interval from 10s to 5m. Defaults to false.": "",
+	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1 and increasing kubeadm housekeeping-interval from 10s to 5m. Defaults to false.": "",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "",
 	"If set, force the container runtime to use systemd as cgroup manager. Defaults to false.": "",
 	"If set, install addons. Defaults to true.": "",
