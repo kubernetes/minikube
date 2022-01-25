@@ -37,10 +37,14 @@ func TestGuestEnvironment(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	t.Run("Setup", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false", "--disable-optimizations=true"}, StartArgs()...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
+		}
+
+		if strings.Contains(rr.Stderr.String(), "kubelet.housekeeping-interval=5m") {
+			t.Error("--disable-optimizations=true is not working, optimizations found")
 		}
 	})
 
