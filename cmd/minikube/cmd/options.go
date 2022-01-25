@@ -31,7 +31,7 @@ var optionsCmd = &cobra.Command{
 	Use:    "options",
 	Short:  "Show a list of global command-line options (applies to all commands).",
 	Long:   "Show a list of global command-line options (applies to all commands).",
-	Hidden: true,
+	Hidden: false,
 	Run:    runOptions,
 }
 

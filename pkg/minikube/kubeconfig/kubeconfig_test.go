@@ -17,7 +17,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -229,7 +228,7 @@ func TestUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, err := ioutil.TempDir("", "")
+			tmpDir, err := os.MkdirTemp("", "")
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
@@ -242,7 +241,7 @@ func TestUpdate(t *testing.T) {
 
 			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
+				if err := os.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
@@ -460,7 +459,7 @@ func TestEmptyConfig(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	dir, err := ioutil.TempDir("", ".kube")
+	dir, err := os.MkdirTemp("", ".kube")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -537,7 +536,7 @@ func Test_Endpoint(t *testing.T) {
 // tempFile creates a temporary with the provided bytes as its contents.
 // The caller is responsible for deleting file after use.
 func tempFile(t *testing.T, data []byte) string {
-	tmp, err := ioutil.TempFile("", "kubeconfig")
+	tmp, err := os.CreateTemp("", "kubeconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +559,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(constants.APIServerPort)
+	cluster.Server = "https://192.168.59.100:" + strconv.Itoa(constants.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 

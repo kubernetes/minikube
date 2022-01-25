@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -166,5 +165,5 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 	if err := os.Remove(fp); err != nil {
 		klog.Warningf("error removing %s", fp)
 	}
-	return ioutil.WriteFile(fp, contents, 0o644)
+	return os.WriteFile(fp, contents, 0o644)
 }

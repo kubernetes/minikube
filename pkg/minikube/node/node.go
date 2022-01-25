@@ -32,12 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-// TODO: Share these between cluster and node packages
-const (
-	mountString = "mount-string"
-	createMount = "mount"
-)
-
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 	profiles, err := config.ListValidProfiles()

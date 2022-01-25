@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"flag"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/olekukonko/tablewriter"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -58,6 +60,8 @@ func main() {
 	}
 
 	values, totals, names := values(apps)
+
+	outputMarkdownTable(values, totals, names)
 
 	if err := createChart(*chartPath, values, totals, names); err != nil {
 		log.Fatal(err)
@@ -153,6 +157,34 @@ func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
 	values := []plotter.Values{cmdValues, apiValues, k8sValues, dnsSvcValues, appValues, dnsAnsValues}
 
 	return values, totals, names
+}
+
+func outputMarkdownTable(categories []plotter.Values, totals []float64, names []string) {
+	headers := append([]string{""}, names...)
+	c := [][]string{}
+	fields := []string{"Command Exec", "API Server Answering", "Kubernetes SVC", "DNS SVC", "App Running", "DNS Answering"}
+	for i, values := range categories {
+		row := []string{fields[i]}
+		for _, value := range values {
+			row = append(row, fmt.Sprintf("%.3f", value))
+		}
+		c = append(c, row)
+	}
+	totalStrings := []string{"Total"}
+	for _, t := range totals {
+		totalStrings = append(totalStrings, fmt.Sprintf("%.3f", t))
+	}
+	c = append(c, totalStrings)
+	b := new(bytes.Buffer)
+	t := tablewriter.NewWriter(b)
+	t.SetAutoWrapText(false)
+	t.SetHeader(headers)
+	t.SetAutoFormatHeaders(false)
+	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	t.SetCenterSeparator("|")
+	t.AppendBulk(c)
+	t.Render()
+	fmt.Println(b.String())
 }
 
 func createChart(chartPath string, values []plotter.Values, totals []float64, names []string) error {

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -55,10 +54,11 @@ var (
 	dockerFile string
 	buildEnv   []string
 	buildOpt   []string
+	format     string
 )
 
 func saveFile(r io.Reader) (string, error) {
-	tmp, err := ioutil.TempFile("", "build.*.tar")
+	tmp, err := os.CreateTemp("", "build.*.tar")
 	if err != nil {
 		return "", err
 	}
@@ -184,7 +184,7 @@ var saveImageCmd = &cobra.Command{
 			output = args[1]
 
 			if args[1] == "-" {
-				tmp, err := ioutil.TempFile("", "image.*.tar")
+				tmp, err := os.CreateTemp("", "image.*.tar")
 				if err != nil {
 					exit.Error(reason.GuestImageSave, "Failed to get temp", err)
 				}
@@ -332,7 +332,7 @@ $ minikube image ls
 			exit.Error(reason.Usage, "loading profile", err)
 		}
 
-		if err := machine.ListImages(profile); err != nil {
+		if err := machine.ListImages(profile, format); err != nil {
 			exit.Error(reason.GuestImageList, "Failed to list images", err)
 		}
 	},
@@ -397,6 +397,7 @@ func init() {
 	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
 	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")
 	imageCmd.AddCommand(saveImageCmd)
+	listImageCmd.Flags().StringVar(&format, "format", "short", "Format output. One of: short|table|json|yaml")
 	imageCmd.AddCommand(listImageCmd)
 	imageCmd.AddCommand(tagImageCmd)
 	imageCmd.AddCommand(pushImageCmd)

@@ -12,7 +12,7 @@
     "DockerEnv": null,
     "InsecureRegistry": null,
     "RegistryMirror": null,
-    "HostOnlyCIDR": "192.168.99.1/24",
+    "HostOnlyCIDR": "192.168.59.1/24",
     "HypervVirtualSwitch": "",
     "KVMNetwork": "default",
     "KVMQemuURI": "qemu:///system",
@@ -45,7 +45,7 @@
     "Nodes": [
         {
             "Name": "m01",
-            "IP": "192.168.99.136",
+            "IP": "192.168.59.136",
             "Port": 8443,
             "KubernetesVersion": "v1.15.0",
             "ControlPlane": true,

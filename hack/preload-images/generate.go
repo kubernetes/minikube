@@ -122,7 +122,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 	sm := sysinit.New(runner)
 
-	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
+	if err := bsutil.TransferBinaries(kcfg, runner, sm, ""); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// Create image tarball
@@ -135,12 +135,12 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 func verifyStorage(containerRuntime string) error {
 	if containerRuntime == "docker" || containerRuntime == "containerd" {
-		if err := verifyDockerStorage(); err != nil {
+		if err := retry.Expo(verifyDockerStorage, 100*time.Microsecond, time.Minute*2); err != nil {
 			return errors.Wrap(err, "Docker storage type is incompatible")
 		}
 	}
 	if containerRuntime == "cri-o" {
-		if err := verifyPodmanStorage(); err != nil {
+		if err := retry.Expo(verifyPodmanStorage, 100*time.Microsecond, time.Minute*2); err != nil {
 			return errors.Wrap(err, "Podman storage type is incompatible")
 		}
 	}

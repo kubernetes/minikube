@@ -20,7 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"runtime"
 	"testing"
 
@@ -36,7 +36,7 @@ func getSHAFromURL(url string) (string, error) {
 		return "", err
 	}
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return "", err
 	}

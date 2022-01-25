@@ -16,13 +16,48 @@ However if `kubectl` is not installed locally, minikube already includes kubectl
 minikube kubectl -- <kubectl commands>
 ```
 
-You can also `alias kubectl="minikube kubectl --"` for easier usage.
+{{% tabs %}}
+
+{{% linuxtab %}}
+You can also alias kubectl for easier usage.
+
+```shell
+alias kubectl="minikube kubectl --"
+```
 
 Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
 
 ```shell
 ln -s $(which minikube) /usr/local/bin/kubectl
 ```
+
+{{% /linuxtab %}}
+
+{{% mactab %}}
+You can also alias kubectl for easier usage.
+
+```shell
+alias kubectl="minikube kubectl --"
+```
+
+Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
+
+```shell
+ln -s $(which minikube) /usr/local/bin/kubectl
+```
+
+{{% /mactab %}}
+
+{{% windowstab %}}
+You can also alias kubectl for easier usage.
+
+```shell
+function kubectl { minikube kubectl -- $args }
+```
+
+{{% /windowstab %}}
+
+{{% /tabs %}}
 
 Get pods
 

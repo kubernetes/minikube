@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -67,7 +66,7 @@ func TestSetOK(t *testing.T) {
 
 func createTestConfig(t *testing.T) {
 	t.Helper()
-	td, err := ioutil.TempDir("", "config")
+	td, err := os.MkdirTemp("", "config")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}

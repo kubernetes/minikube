@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+  annotations:
+    # needed for k8s < v1.18: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#deprecating-the-ingress-class-annotation
+    kubernetes.io/ingress.class: nginx
+  labels:
+    integration-test: ingress
+spec:
+  rules:
+  - host: nginx.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          serviceName: nginx
+          servicePort: 80

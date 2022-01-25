@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
 
 // TestCertOptions makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
@@ -70,13 +72,39 @@ func TestCertOptions(t *testing.T) {
 	}
 
 	// verify that the apiserver is serving on port 8555
+	if NeedsPortForward() { // in case of docker/podman on non-linux the port will be a "random assigned port" in kubeconfig
+		bin := "docker"
+		if PodmanDriver() {
+			bin = "podman"
+		}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "config", "view"))
-	if err != nil {
-		t.Errorf("failed to get kubectl config. args %q : %v", rr.Command(), err)
+		port, err := oci.ForwardedPort(bin, profile, 8555)
+		if err != nil {
+			t.Errorf("failed to inspect container for the port %v", err)
+		}
+		if port == 0 {
+			t.Errorf("expected to get a non-zero forwarded port but got %d", port)
+		}
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "config", "view"))
+		if err != nil {
+			t.Errorf("failed to get kubectl config. args %q : %v", rr.Command(), err)
+		}
+		if !strings.Contains(rr.Stdout.String(), "8555") {
+			t.Errorf("Kubeconfig apiserver server port incorrect. Output of \n 'kubectl config view' = %q", rr.Output())
+		}
 	}
+
+	// Also check the kubeconfig inside minikube using SSH
+	// located at /etc/kubernetes/admin.conf
+	args = []string{"ssh", "-p", profile, "--", "sudo cat /etc/kubernetes/admin.conf"}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed to SSH to minikube with args: %q : %v", rr.Command(), err)
+	}
+
 	if !strings.Contains(rr.Stdout.String(), "8555") {
-		t.Errorf("apiserver server port incorrect. Output of 'kubectl config view' = %q", rr.Output())
+		t.Errorf("Internal minikube kubeconfig (admin.conf) does not containe the right api port. %s", rr.Output())
 	}
 
 }

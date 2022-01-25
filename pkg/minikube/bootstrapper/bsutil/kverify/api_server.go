@@ -21,9 +21,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -36,13 +37,13 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
@@ -237,7 +238,7 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(hostname, fmt.Sprint(port)))
 	klog.Infof("Checking apiserver healthz at %s ...", url)
-	cert, err := ioutil.ReadFile(localpath.CACert())
+	cert, err := os.ReadFile(localpath.CACert())
 	if err != nil {
 		klog.Infof("ca certificate: %v", err)
 		return state.Stopped, err
@@ -257,7 +258,7 @@ func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		klog.Warningf("unable to read response body: %s", err)
 	}

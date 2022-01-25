@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -161,7 +160,7 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 
 	if e.sudo {
 		// write to temp location ...
-		tmpfile, err := ioutil.TempFile("", "minikube")
+		tmpfile, err := os.CreateTemp("", "minikube")
 		if err != nil {
 			return errors.Wrapf(err, "error creating tempfile")
 		}
@@ -219,4 +218,8 @@ func (e *execRunner) Remove(f assets.CopyableFile) error {
 		return nil
 	}
 	return os.Remove(dst)
+}
+
+func (e *execRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, fmt.Errorf("execRunner does not support ReadableFile - you could be the first to add it")
 }

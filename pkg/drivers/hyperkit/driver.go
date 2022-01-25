@@ -22,7 +22,6 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -366,7 +365,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-	bs, err := ioutil.ReadFile(pidFile)
+	bs, err := os.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}
@@ -427,7 +426,6 @@ func (d *Driver) extractKernel(isoPath string) error {
 	}{
 		{"/boot/bzimage", "bzimage"},
 		{"/boot/initrd", "initrd"},
-		{"/isolinux/isolinux.cfg", "isolinux.cfg"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
 		if err := ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {

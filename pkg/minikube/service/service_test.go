@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -365,9 +364,9 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 	}{
 		{
 			description:                     "no https for http schemed with no https option",
-			bareURLString:                   "http://192.168.99.100:30563",
+			bareURLString:                   "http://192.168.59.100:30563",
 			https:                           false,
-			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
+			expectedHTTPSFormattedURLString: "http://192.168.59.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
@@ -379,9 +378,9 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 		},
 		{
 			description:                     "https for http schemed with https option",
-			bareURLString:                   "http://192.168.99.100:30563",
+			bareURLString:                   "http://192.168.59.100:30563",
 			https:                           true,
-			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
+			expectedHTTPSFormattedURLString: "https://192.168.59.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
@@ -569,7 +568,7 @@ func TestGetCoreClient(t *testing.T) {
 	mockK8sConfig := `apiVersion: v1
 clusters:
 - cluster:
-    server: https://192.168.99.102:8443
+    server: https://192.168.59.102:8443
   name: minikube
 contexts:
 - context:
@@ -612,7 +611,7 @@ users:
 		t.Run(test.description, func(t *testing.T) {
 			mockK8sConfigByte := []byte(test.config)
 			mockK8sConfigPath := test.kubeconfigPath
-			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 			defer os.Remove(mockK8sConfigPath)
 			if err != nil {
 				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)

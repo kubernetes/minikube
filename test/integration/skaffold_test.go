@@ -22,7 +22,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -122,7 +121,7 @@ func TestSkaffold(t *testing.T) {
 
 // installSkaffold installs the latest release of skaffold
 func installSkaffold() (f *os.File, err error) {
-	tf, err := ioutil.TempFile("", "skaffold.exe")
+	tf, err := os.CreateTemp("", "skaffold.exe")
 	if err != nil {
 		return tf, err
 	}

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -140,6 +139,10 @@ func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
 }
 
+func (k *kicRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, fmt.Errorf("kicRunner does not support ReadableFile - you could be the first to add it")
+}
+
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
@@ -192,7 +195,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "determining temp directory")
 	}
 
-	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
+	tf, err := os.CreateTemp(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
 	}

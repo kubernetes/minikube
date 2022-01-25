@@ -29,6 +29,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -71,6 +72,21 @@ func TestGetKubernetesVersion(t *testing.T) {
 			description:     "kubernetes-version given as 'latest', no config",
 			expectedVersion: constants.NewestKubernetesVersion,
 			paramVersion:    "latest",
+		},
+		{
+			description:     "kubernetes-version given as 'LATEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "LATEST",
+		},
+		{
+			description:     "kubernetes-version given as 'newest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "newest",
+		},
+		{
+			description:     "kubernetes-version given as 'NEWEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "NEWEST",
 		},
 	}
 
@@ -432,10 +448,11 @@ func TestValidateRuntime(t *testing.T) {
 }
 
 func TestValidatePorts(t *testing.T) {
-	var tests = []struct {
+	type portTest struct {
 		ports    []string
 		errorMsg string
-	}{
+	}
+	var tests = []portTest{
 		{
 			ports:    []string{"test:80"},
 			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [test:80]",
@@ -445,13 +462,23 @@ func TestValidatePorts(t *testing.T) {
 			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80]",
 		},
 		{
-			ports:    []string{"80:80"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
-		},
-		{
 			ports:    []string{"8080:80", "6443:443"},
 			errorMsg: "",
 		},
+		{
+			ports:    []string{"127.0.0.1:80:80"},
+			errorMsg: "",
+		},
+		{
+			ports:    []string{"1000.0.0.1:80:80"},
+			errorMsg: "Sorry, the IP address provided with --ports flag is invalid: 1000.0.0.1",
+		},
+	}
+	if detect.IsMicrosoftWSL() {
+		tests = append(tests, portTest{
+			ports:    []string{"80:80"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
+		})
 	}
 	for _, test := range tests {
 		t.Run(strings.Join(test.ports, ","), func(t *testing.T) {

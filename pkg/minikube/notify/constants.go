@@ -21,4 +21,9 @@ const (
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	// GithubMinikubeBetaReleasesURL is the URL of the minikube Github beta releases JSON file
 	GithubMinikubeBetaReleasesURL = "https://storage.googleapis.com/minikube/releases-beta.json"
+
+	// GithubMinikubeReleasesAliyunURL is the URL of the minikube github releases JSON file from Aliyun Mirror
+	GithubMinikubeReleasesAliyunURL = "https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/releases.json"
+	// GithubMinikubeBetaReleasesAliyunURL is the URL of the minikube Github beta releases JSON file
+	GithubMinikubeBetaReleasesAliyunURL = "https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/releases-beta.json"
 )

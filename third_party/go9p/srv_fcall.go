@@ -193,12 +193,6 @@ func (srv *Srv) walk(req *SrvReq) {
 		return
 	}
 
-	/* we can't walk open files */
-	if fid.opened {
-		req.RespondError(Ebaduse)
-		return
-	}
-
 	if tc.Fid != tc.Newfid {
 		req.Newfid = conn.FidNew(tc.Newfid)
 		if req.Newfid == nil {

@@ -32,7 +32,7 @@ import (
 
 const vboxConfig = `
 {
-        "IPAddress": "192.168.99.101",
+        "IPAddress": "192.168.59.101",
         "MachineName": "minikube",
         "SSHUser": "docker",
         "SSHPort": 33627,
@@ -50,7 +50,7 @@ const vboxConfig = `
         "Boot2DockerURL": "file:///home/sundarp/.minikube/cache/iso/minikube-v1.0.6.iso",
         "Boot2DockerImportVM": "",
         "HostDNSResolver": false,
-        "HostOnlyCIDR": "192.168.99.1/24",
+        "HostOnlyCIDR": "192.168.59.1/24",
         "HostOnlyNicType": "82540EM",
         "HostOnlyPromiscMode": "deny",
         "UIType": "headless",

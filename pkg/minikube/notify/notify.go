@@ -19,8 +19,8 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -45,6 +45,11 @@ var (
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() {
 	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath)
+}
+
+// MaybePrintUpdateTextFromAliyunMirror prints update text if needed, from Aliyun mirror
+func MaybePrintUpdateTextFromAliyunMirror() {
+	maybePrintUpdateText(GithubMinikubeReleasesAliyunURL, GithubMinikubeBetaReleasesAliyunURL, lastUpdateCheckFilePath)
 }
 
 func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
@@ -185,7 +190,7 @@ func writeTimeToFile(path string, inputTime time.Time) error {
 }
 
 func timeFromFileIfExists(path string) time.Time {
-	lastUpdateCheckTime, err := ioutil.ReadFile(path)
+	lastUpdateCheckTime, err := os.ReadFile(path)
 	if err != nil {
 		return time.Time{}
 	}

@@ -16,8 +16,10 @@
 
 set -e
 
+DRIVER="$1"
 # container-runtime (docker or containerd)
-RUNTIME="$1"
+RUNTIME="$2"
+BUCKET="s3://time-to-k8s"
 
 install_minikube() {
         make
@@ -27,28 +29,34 @@ install_minikube() {
 run_benchmark() {
         ( cd ./hack/benchmark/time-to-k8s/time-to-k8s-repo/ &&
                 git submodule update --init &&
-                go run . --config "../public-chart/$RUNTIME-benchmark.yaml" --iterations 10 --output ./output.csv )
+                go run . --config "../public-chart/$DRIVER-$RUNTIME-benchmark.yaml" --iterations 10 --output ./output.csv )
 }
 
 generate_chart() {
-        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./chart.png --past-runs ./runs.json
+        go run ./hack/benchmark/time-to-k8s/public-chart/generate-chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --daily-chart ./daily-chart.png --weekly-chart ./weekly-chart.png --past-runs ./runs.json
+}
+
+copy() {
+	aws s3 cp "$1" "$2"
 }
 
 cleanup() {
 	rm ./runs.json
 	rm ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv
-	rm ./chart.png
+	rm ./daily-chart.png
+	rm ./weekly-chart.png
 }
 
-gsutil -m cp "gs://minikube-time-to-k8s/$RUNTIME-runs.json" ./runs.json
+copy "$BUCKET/$DRIVER-$RUNTIME-runs.json" ./runs.json
 
 install_minikube
 
 run_benchmark
 generate_chart
 
-gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$RUNTIME-runs.json"
-gsutil -m cp ./runs.json "gs://minikube-time-to-k8s/$(date +'%Y-%m-%d')-$RUNTIME.json"
-gsutil -m cp ./chart.png "gs://minikube-time-to-k8s/$RUNTIME-chart.png"
+copy ./runs.json "$BUCKET/$DRIVER-$RUNTIME-runs.json"
+copy ./runs.json "$BUCKET/$(date +'%Y-%m-%d')-$DRIVER-$RUNTIME.json"
+copy ./daily-chart.png "$BUCKET/$DRIVER-$RUNTIME-chart.png"
+copy ./weekly-chart.png "$BUCKET/$DRIVER-$RUNTIME-weekly-chart.png"
 
 cleanup

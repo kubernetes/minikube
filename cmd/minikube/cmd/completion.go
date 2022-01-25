@@ -273,6 +273,7 @@ __minikube_convert_bash_to_zsh() {
 	-e "s/${LWORD}compopt${RWORD}/__minikube_compopt/g" \
 	-e "s/${LWORD}declare${RWORD}/__minikube_declare/g" \
 	-e "s/\\\$(type${RWORD}/\$(__minikube_type/g" \
+	-e "s/aliashash\[\"\([a-z]*\)\"\]/aliashash[\1]/g" \
 	<<'BASH_COMPLETION_EOF'
 `
 
@@ -292,7 +293,7 @@ __minikube_convert_bash_to_zsh() {
 	}
 
 	buf := new(bytes.Buffer)
-	err = cmd.GenZshCompletion(buf)
+	err = cmd.GenBashCompletion(buf)
 	if err != nil {
 		return errors.Wrap(err, "Error generating zsh completion")
 	}

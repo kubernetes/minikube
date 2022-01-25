@@ -19,7 +19,6 @@ package storageclass
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -229,7 +228,7 @@ func TestGetStoragev1(t *testing.T) {
 			err:         true,
 		},
 	}
-	configFile, err := ioutil.TempFile("/tmp", "")
+	configFile, err := os.CreateTemp("/tmp", "")
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -255,7 +254,7 @@ func TestGetStoragev1(t *testing.T) {
 func setK8SConfig(config, kubeconfigPath string) error {
 	mockK8sConfigByte := []byte(config)
 	mockK8sConfigPath := kubeconfigPath
-	err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+	err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 	if err != nil {
 		return fmt.Errorf("Unexpected error when writing to file %v. Error: %v", kubeconfigPath, err)
 	}

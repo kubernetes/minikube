@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"runtime"
@@ -37,7 +36,7 @@ import (
 )
 
 func installRelease(version string) (f *os.File, err error) {
-	tf, err := ioutil.TempFile("", fmt.Sprintf("minikube-%s.*.exe", version))
+	tf, err := os.CreateTemp("", fmt.Sprintf("minikube-%s.*.exe", version))
 	if err != nil {
 		return tf, err
 	}
@@ -117,7 +116,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 			}
 		}
 		// using a fresh kubeconfig for this test
-		legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+		legacyKubeConfig, err := os.CreateTemp("", "legacy_kubeconfig")
 		if err != nil {
 			t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
 		}
@@ -155,10 +154,14 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	desiredLegacyVersion := legacyVersion()
-	tf, err := installRelease(desiredLegacyVersion)
-	if err != nil {
-		t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
-	}
+	var tf *os.File
+	t.Run("Setup", func(t *testing.T) {
+		var err error
+		tf, err = installRelease(desiredLegacyVersion)
+		if err != nil {
+			t.Fatalf("%s release installation failed: %v", desiredLegacyVersion, err)
+		}
+	})
 	defer os.Remove(tf.Name())
 
 	t.Run("Upgrade", func(t *testing.T) {
@@ -176,7 +179,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 				}
 			}
 			// using a fresh kubeconfig for this test
-			legacyKubeConfig, err := ioutil.TempFile("", "legacy_kubeconfig")
+			legacyKubeConfig, err := os.CreateTemp("", "legacy_kubeconfig")
 			if err != nil {
 				t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
 			}
@@ -193,7 +196,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			t.Fatalf("legacy %s start failed: %v", desiredLegacyVersion, err)
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
+		rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "stop"))
 		if err != nil {
 			t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
 		}

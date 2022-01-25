@@ -188,6 +188,7 @@ func (d *Driver) Create() error {
 			klog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
 		}
 	}()
+	waitForPreload.Wait()
 	if pErr == oci.ErrInsufficientDockerStorage {
 		return pErr
 	}
@@ -200,7 +201,6 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	waitForPreload.Wait()
 	return nil
 }
 

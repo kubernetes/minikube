@@ -21,8 +21,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -84,6 +86,22 @@ func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
 	return cmd
 }
 
+func suppressDockerMessage() bool {
+	envKey := "MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE"
+	env := os.Getenv(envKey)
+	if env == "" {
+		return false
+	}
+	suppress, err := strconv.ParseBool(env)
+	if err != nil {
+		msg := fmt.Sprintf("failed to parse bool from the %s env, defaulting to 'false'; received: %s: %v", envKey, env, err)
+		klog.Warning(msg)
+		out.Styled(style.Warning, msg)
+		return false
+	}
+	return suppress
+}
+
 // runCmd runs a command exec.Command against docker daemon or podman
 func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	cmd = PrefixCmd(cmd)
@@ -135,7 +153,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)
-	if warn {
+	if warn && !out.JSON && !suppressDockerMessage() {
 		if elapsed > warnTime {
 			warnLock.Lock()
 			_, ok := alreadyWarnedCmds[rr.Command()]

@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -147,11 +148,50 @@ func enableIPForwarding(cr CommandRunner) error {
 	return nil
 }
 
+// enableRootless enables configurations for running CRI-O in Rootless Docker.
+//
+// 1. Create /etc/systemd/system/crio.service.d/10-rootless.conf to set _CRIO_ROOTLESS=1
+// 2. Create /etc/crio/crio.conf.d/10-fuse-overlayfs.conf to enable fuse-overlayfs
+// 3. Reload systemd
+//
+// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri
+func (r *CRIO) enableRootless() error {
+	files := map[string]string{
+		"/etc/systemd/system/crio.service.d/10-rootless.conf": `[Service]
+Environment="_CRIO_ROOTLESS=1"
+`,
+		"/etc/crio/crio.conf.d/10-fuse-overlayfs.conf": `[crio]
+storage_driver = "overlay"
+storage_option = ["overlay.mount_program=/usr/local/bin/fuse-overlayfs"]
+`,
+	}
+	for target, content := range files {
+		targetDir := filepath.Dir(target)
+		c := exec.Command("sudo", "mkdir", "-p", targetDir)
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return errors.Wrapf(err, "failed to create directory %q", targetDir)
+		}
+		asset := assets.NewMemoryAssetTarget([]byte(content), target, "0644")
+		err := r.Runner.Copy(asset)
+		asset.Close()
+		if err != nil {
+			return errors.Wrapf(err, "failed to create %q", target)
+		}
+	}
+	// reload systemd to apply our changes on /etc/systemd
+	if err := r.Init.Reload("crio"); err != nil {
+		return err
+	}
+	if r.Init.Active("crio") {
+		if err := r.Init.Restart("crio"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Enable idempotently enables CRIO on a host
 func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
-	if inUserNamespace {
-		return errors.New("inUserNamespace must not be true for cri-o (yet)")
-	}
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -171,6 +211,12 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 			return err
 		}
 	}
+	if inUserNamespace {
+		if err := r.enableRootless(); err != nil {
+			return err
+		}
+	}
+	// NOTE: before we start crio explicitly here, crio might be already started automatically
 	return r.Init.Start("crio")
 }
 
@@ -194,13 +240,8 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 }
 
 // ListImages returns a list of images managed by this container runtime
-func (r *CRIO) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("sudo", "podman", "images", "--format", "{{.Repository}}:{{.Tag}}")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "podman images")
-	}
-	return strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n"), nil
+func (r *CRIO) ListImages(ListImagesOptions) ([]ListImage, error) {
+	return listCRIImages(r.Runner)
 }
 
 // LoadImage loads an image into this runtime
@@ -418,16 +459,6 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
-	}
-	type crictlImages struct {
-		Images []struct {
-			ID          string      `json:"id"`
-			RepoTags    []string    `json:"repoTags"`
-			RepoDigests []string    `json:"repoDigests"`
-			Size        string      `json:"size"`
-			UID         interface{} `json:"uid"`
-			Username    string      `json:"username"`
-		} `json:"images"`
 	}
 
 	var jsonImages crictlImages

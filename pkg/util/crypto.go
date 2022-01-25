@@ -23,7 +23,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
@@ -67,7 +66,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 // GenerateSignedCert generates a signed certificate and key
 func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string, expiration time.Duration) error {
 	klog.Infof("Generating cert %s with IP's: %s", certPath, ips)
-	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
+	signerCertBytes, err := os.ReadFile(signerCertPath)
 	if err != nil {
 		return errors.Wrap(err, "Error reading file: signerCertPath")
 	}
@@ -79,7 +78,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	if err != nil {
 		return errors.Wrap(err, "Error parsing certificate: decodedSignerCert.Bytes")
 	}
-	signerKeyBytes, err := ioutil.ReadFile(signerKeyPath)
+	signerKeyBytes, err := os.ReadFile(signerKeyPath)
 	if err != nil {
 		return errors.Wrap(err, "Error reading file: signerKeyPath")
 	}
@@ -118,7 +117,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 }
 
 func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
-	keyBytes, err := ioutil.ReadFile(keyPath)
+	keyBytes, err := os.ReadFile(keyPath)
 	if err == nil {
 		decodedKey, _ := pem.Decode(keyBytes)
 		if decodedKey != nil {

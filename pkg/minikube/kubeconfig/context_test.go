@@ -17,7 +17,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,7 +49,7 @@ func TestDeleteContext(t *testing.T) {
 }
 
 func TestSetCurrentContext(t *testing.T) {
-	f, err := ioutil.TempFile("/tmp", "kubeconfig")
+	f, err := os.CreateTemp("/tmp", "kubeconfig")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}

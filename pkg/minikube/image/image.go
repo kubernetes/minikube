@@ -19,7 +19,6 @@ package image
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -204,6 +203,7 @@ func imagePathInCache(img string) string {
 	return f
 }
 
+// UploadCachedImage uploads cached image
 func UploadCachedImage(imgName string) error {
 	tag, err := name.NewTag(imgName, name.WeakValidation)
 	if err != nil {
@@ -289,7 +289,7 @@ func cleanImageCacheDir() error {
 			return nil
 		}
 		// If directory is empty, delete it
-		entries, err := ioutil.ReadDir(path)
+		entries, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}
@@ -332,7 +332,6 @@ func fixRemoteImageName(ref name.Reference, imgName string) (name.Reference, str
 		image = strings.TrimPrefix(image, "k8s-minikube/")
 		image = strings.TrimPrefix(image, "kubernetesui/")
 		image = strings.TrimPrefix(image, "coredns/")
-		image = strings.ReplaceAll(image, "coredns:v", "coredns:")
 		remoteRef, err := name.ParseReference(aliyunMirror+image, name.WeakValidation)
 		if err != nil {
 			return nil, "", err

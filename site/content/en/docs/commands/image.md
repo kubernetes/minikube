@@ -196,6 +196,12 @@ $ minikube image ls
 
 ```
 
+### Options
+
+```
+      --format string   Format output. One of: short|table|json|yaml (default "short")
+```
+
 ### Options inherited from parent commands
 
 ```

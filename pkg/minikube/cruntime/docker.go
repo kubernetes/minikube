@@ -17,6 +17,7 @@ limitations under the License.
 package cruntime
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -39,6 +41,9 @@ import (
 
 // KubernetesContainerPrefix is the prefix of each Kubernetes container
 const KubernetesContainerPrefix = "k8s_"
+
+const InternalDockerCRISocket = "/var/run/dockershim.sock"
+const ExternalDockerCRISocket = "/var/run/cri-dockerd.sock"
 
 // ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
@@ -64,6 +69,7 @@ type Docker struct {
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
 	UseCRI            bool
+	CRIService        string
 }
 
 // Name is a human readable name for Docker
@@ -92,7 +98,7 @@ func (r *Docker) SocketPath() string {
 	if r.Socket != "" {
 		return r.Socket
 	}
-	return "/var/run/dockershim.sock"
+	return InternalDockerCRISocket
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -143,7 +149,20 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		return r.Init.Restart("docker")
 	}
 
-	return r.Init.Start("docker")
+	if err := r.Init.Start("docker"); err != nil {
+		return err
+	}
+
+	if r.CRIService != "" {
+		if err := r.Init.Enable(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Start(r.CRIService); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Restart restarts Docker on a host
@@ -153,6 +172,14 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
+	if r.CRIService != "" {
+		if err := r.Init.Stop(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Disable(r.CRIService); err != nil {
+			return err
+		}
+	}
 	klog.Info("disabling docker service ...")
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
@@ -183,22 +210,43 @@ func (r *Docker) ImageExists(name string, sha string) bool {
 }
 
 // ListImages returns a list of images managed by this container runtime
-func (r *Docker) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}")
+func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
+	c := exec.Command("docker", "images", "--no-trunc", "--format", "{{json .}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker images")
 	}
-	short := strings.Split(rr.Stdout.String(), "\n")
-	imgs := []string{}
-	for _, img := range short {
+	type dockerImage struct {
+		ID         string `json:"ID"`
+		Repository string `json:"Repository"`
+		Tag        string `json:"Tag"`
+		Size       string `json:"Size"`
+	}
+	images := strings.Split(rr.Stdout.String(), "\n")
+	result := []ListImage{}
+	for _, img := range images {
 		if img == "" {
 			continue
 		}
-		img = addDockerIO(img)
-		imgs = append(imgs, img)
+
+		var jsonImage dockerImage
+		if err := json.Unmarshal([]byte(img), &jsonImage); err != nil {
+			return nil, errors.Wrap(err, "Image convert problem")
+		}
+		size, err := units.FromHumanSize(jsonImage.Size)
+		if err != nil {
+			return nil, errors.Wrap(err, "Image size convert problem")
+		}
+
+		repoTag := fmt.Sprintf("%s:%s", jsonImage.Repository, jsonImage.Tag)
+		result = append(result, ListImage{
+			ID:          strings.TrimPrefix(jsonImage.ID, "sha256:"),
+			RepoDigests: []string{},
+			RepoTags:    []string{addDockerIO(repoTag)},
+			Size:        fmt.Sprintf("%d", size),
+		})
 	}
-	return imgs, nil
+	return result, nil
 }
 
 // LoadImage loads an image into this runtime

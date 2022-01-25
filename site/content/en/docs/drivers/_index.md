@@ -28,7 +28,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Hyperkit]({{<ref "hyperkit.md">}}) - VM
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
 * [Parallels]({{<ref "parallels.md">}}) - VM
-* [VMware]({{<ref "vmware.md">}}) - VM
+* [VMware Fusion]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
 ## Windows
@@ -36,5 +36,5 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Hyper-V]({{<ref "hyperv.md">}}) - VM (preferred)
 * [Docker]({{<ref "docker.md">}}) - VM + Container (preferred)
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
-* [VMware]({{<ref "vmware.md">}}) - VM
+* [VMware Workstation]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh

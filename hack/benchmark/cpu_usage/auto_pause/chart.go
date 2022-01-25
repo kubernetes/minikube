@@ -54,10 +54,10 @@ func main() {
 
 func execute() error {
 	// sessionID is generated and used at cpu usage benchmark
-	sessionID := os.Args[1]
-	if len(sessionID) == 0 {
+	if len(os.Args) <= 1 || len(os.Args[1]) == 0 {
 		return errors.New("Please identify sessionID")
 	}
+	sessionID := os.Args[1]
 
 	// Create plot instance
 	p := plot.New()

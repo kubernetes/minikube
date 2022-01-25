@@ -39,7 +39,7 @@ func TestKubectlCommand(t *testing.T) {
 			description: "disable an addon",
 			files:       []string{"a", "b"},
 			enable:      false,
-			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete -f a -f b",
+			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete --ignore-not-found -f a -f b",
 		},
 	}
 

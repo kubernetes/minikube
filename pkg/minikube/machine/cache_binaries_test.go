@@ -18,7 +18,6 @@ package machine
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	minikubeHome, err := os.MkdirTemp("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
@@ -122,7 +121,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.version, func(t *testing.T) {
 			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
-			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper, nil)
+			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper, nil, "")
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
 			}
@@ -148,7 +147,7 @@ func TestExcludedBinariesNotDownloaded(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	minikubeHome, err := os.MkdirTemp("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
@@ -161,7 +160,7 @@ func TestExcludedBinariesNotDownloaded(t *testing.T) {
 		}
 	}()
 
-	if err := CacheBinariesForBootstrapper("v1.16.0", clusterBootstrapper, []string{binaryToExclude}); err != nil {
+	if err := CacheBinariesForBootstrapper("v1.16.0", clusterBootstrapper, []string{binaryToExclude}, ""); err != nil {
 		t.Errorf("Failed to cache binaries: %v", err)
 	}
 }

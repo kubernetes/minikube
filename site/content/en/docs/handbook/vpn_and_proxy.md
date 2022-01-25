@@ -20,7 +20,7 @@ If a HTTP proxy is required to access the internet, you may need to pass the pro
 
 The NO_PROXY variable here is important: Without setting it, minikube may not be able to access resources within the VM. minikube uses two IP ranges, which should not go through the proxy:
 
-* **192.168.99.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* **192.168.59.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
 * **192.168.39.0/24**: Used by the minikube kvm2 driver.
 * **192.168.49.0/24**: Used by the minikube docker driver's first cluster.
 * **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
@@ -34,7 +34,7 @@ One important note: If NO_PROXY is required by non-Kubernetes applications, such
 ```shell
 export HTTP_PROXY=http://<proxy hostname:port>
 export HTTPS_PROXY=https://<proxy hostname:port>
-export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.0/24,192.168.39.0/24
+export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.59.0/24,192.168.39.0/24
 
 minikube start
 ```
@@ -46,7 +46,7 @@ To make the exported variables permanent, consider adding the declarations to ~/
 ```shell
 set HTTP_PROXY=http://<proxy hostname:port>
 set HTTPS_PROXY=https://<proxy hostname:port>
-set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.0/24,192.168.39.0/24
+set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.59.0/24,192.168.39.0/24
 
 minikube start
 ```
@@ -107,7 +107,7 @@ The supplied value of `HTTPS_PROXY` is probably incorrect. Verify that this valu
 
 minikube requires access from the host to the following IP ranges:
 
-* **192.168.99.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* **192.168.59.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
 * **192.168.39.0/24**: Used by the minikube kvm2 driver.
 * **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 

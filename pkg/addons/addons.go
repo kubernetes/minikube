@@ -179,10 +179,21 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
 	}
 
+	// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19
+	if strings.HasPrefix(name, "ingress") && enable {
+		if err := supportLegacyIngress(addon, *cc); err != nil {
+			return err
+		}
+	}
+
 	// Persist images even if the machine is running so starting gets the correct images.
 	images, customRegistries, err := assets.SelectAndPersistImages(addon, cc)
 	if err != nil {
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
+	}
+
+	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
 	}
 
 	mName := config.MachineName(*cc, cp)
@@ -213,7 +224,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries)
+	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
@@ -223,13 +234,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 		if driver.IsKIC(cc.Driver) {
 			if runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 				out.Styled(style.Tip, `After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"`)
-			} else if driver.BareMetal(cc.Driver) {
-				out.WarningT(`Due to networking limitations of driver {{.driver_name}}, {{.addon_name}} addon is not fully supported. Try using a different driver.`,
-					out.V{"driver_name": cc.Driver, "addon_name": name})
 			}
-		}
-		if err := supportLegacyIngress(cc); err != nil {
-			return false, err
 		}
 	}
 
@@ -266,7 +271,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	}
 
 	// If the gcp-auth credentials haven't been mounted in, don't start the pods
-	if name == "gcp-auth" {
+	if name == "gcp-auth" && enable {
 		rr, err := runner.RunCmd(exec.Command("cat", credentialsPath))
 		if err != nil || rr.Stdout.String() == "" {
 			return true, nil
@@ -289,30 +294,36 @@ func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable boo
 	return false
 }
 
-// maintain backwards compatibility with k8s < v1.19
-// by replacing images with old versions if custom ones are not already provided
-func supportLegacyIngress(cc *config.ClusterConfig) error {
+// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19 by replacing default addons' images with compatible versions
+func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	v, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
 	if semver.MustParseRange("<1.19.0")(v) {
-		imgs := map[string]string{
-			// https://github.com/kubernetes/ingress-nginx/blob/f3c50698d98299b1a61f83cb6c4bb7de0b71fb4b/deploy/static/provider/kind/deploy.yaml#L327
-			"IngressController": "ingress-nginx/controller:v0.49.0@sha256:e9707504ad0d4c119036b6d41ace4a33596139d3feb9ccb6617813ce48c3eeef",
-			// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
-			"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-			"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
-		}
-		if cc.CustomAddonImages == nil {
-			cc.CustomAddonImages = map[string]string{}
-		}
-		for name, path := range imgs {
-			if _, exists := cc.CustomAddonImages[name]; !exists {
-				cc.CustomAddonImages[name] = path
+		if addon.Name() == "ingress" {
+			addon.Images = map[string]string{
+				// https://github.com/kubernetes/ingress-nginx/blob/0a2ec01eb4ec0e1b29c4b96eb838a2e7bfe0e9f6/deploy/static/provider/kind/deploy.yaml#L328
+				"IngressController": "ingress-nginx/controller:v0.49.3@sha256:35fe394c82164efa8f47f3ed0be981b3f23da77175bbb8268a9ae438851c8324",
+				// issues: https://github.com/kubernetes/ingress-nginx/issues/7418 and https://github.com/jet/kube-webhook-certgen/issues/30
+				"KubeWebhookCertgenCreate": "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
+				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 			}
+			addon.Registries = map[string]string{
+				"IngressController": "k8s.gcr.io",
+			}
+			return nil
 		}
+		if addon.Name() == "ingress-dns" {
+			addon.Images = map[string]string{
+				"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+			}
+			addon.Registries = nil
+			return nil
+		}
+		return fmt.Errorf("supportLegacyIngress called for unexpected addon %q - nothing to do here", addon.Name())
 	}
+
 	return nil
 }
 

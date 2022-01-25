@@ -69,6 +69,8 @@ type CommandRunner interface {
 	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -111,7 +113,7 @@ type Manager interface {
 	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
 	// ListImages returns a list of images managed by this container runtime
-	ListImages(ListImagesOptions) ([]string, error)
+	ListImages(ListImagesOptions) ([]ListImage, error)
 
 	// RemoveImage remove image based on name
 	RemoveImage(string) error
@@ -166,6 +168,13 @@ type ListContainersOptions struct {
 type ListImagesOptions struct {
 }
 
+type ListImage struct {
+	ID          string   `json:"id" yaml:"id"`
+	RepoDigests []string `json:"repoDigests" yaml:"repoDigests"`
+	RepoTags    []string `json:"repoTags" yaml:"repoTags"`
+	Size        string   `json:"size" yaml:"size"`
+}
+
 // ErrContainerRuntimeNotRunning is thrown when container runtime is not running
 var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
 
@@ -199,13 +208,21 @@ func New(c Config) (Manager, error) {
 
 	switch c.Type {
 	case "", "docker":
+		sp := c.Socket
+		cs := ""
+		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
+		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
+			sp = ExternalDockerCRISocket
+			cs = "cri-docker.socket"
+		}
 		return &Docker{
-			Socket:            c.Socket,
+			Socket:            sp,
 			Runner:            c.Runner,
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
-			UseCRI:            (c.Socket != ""), // !dockershim
+			UseCRI:            (sp != ""), // !dockershim
+			CRIService:        cs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{

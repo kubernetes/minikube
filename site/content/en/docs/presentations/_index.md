@@ -105,6 +105,13 @@ Presentations about the minikube project, mostly from the Kubernetes blog and th
   * "Minikube and Three Different Local Kubernetes Learning Environments"
   * Anders Björklund & Predrag Rogic
 
+### KubeCon NA 2021 (Los Angeles, California)
+
+* <https://www.youtube.com/watch?v=GHczvbzuVvc> (47:47)
+  * "A Deep Dive Into 5 years of Minikube"
+  * Medya Ghazizadeh
+
+
 ## Other conferences
 
 ### Helm Summit EU 2019 (Amsterdam, The Netherlands)

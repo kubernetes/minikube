@@ -46,7 +46,8 @@ const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
 	containerdConfigFile     = "/etc/containerd/config.toml"
-	containerdConfigTemplate = `root = "/var/lib/containerd"
+	containerdConfigTemplate = `version = 2
+root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
 [grpc]
@@ -76,9 +77,9 @@ oom_score = 0
   address = "/run/containerd-fuse-overlayfs.sock"
 
 [plugins]
-  [plugins.cgroups]
+  [plugins."io.containerd.monitor.v1.cgroups"]
     no_prometheus = false
-  [plugins.cri]
+  [plugins."io.containerd.grpc.v1.cri"]
     stream_server_address = ""
     stream_server_port = "10010"
     enable_selinux = false
@@ -88,37 +89,36 @@ oom_score = 0
     max_container_log_line_size = 16384
     restrict_oom_score_adj = {{ .RestrictOOMScoreAdj }}
 
-	[plugins."io.containerd.grpc.v1.cri"]
-      [plugins."io.containerd.grpc.v1.cri".containerd]
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-            runtime_type = "io.containerd.runc.v2"
-            [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-              SystemdCgroup = {{ .SystemdCgroup }}
-
-    [plugins.cri.containerd]
+    [plugins."io.containerd.grpc.v1.cri".containerd]
+      discard_unpacked_layers = true
       snapshotter = "{{ .Snapshotter }}"
-      [plugins.cri.containerd.default_runtime]
+      [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
         runtime_type = "io.containerd.runc.v2"
-      [plugins.cri.containerd.untrusted_workload_runtime]
+      [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
         runtime_root = ""
-    [plugins.cri.cni]
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+          runtime_type = "io.containerd.runc.v2"
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+            SystemdCgroup = {{ .SystemdCgroup }}
+
+    [plugins."io.containerd.grpc.v1.cri".cni]
       bin_dir = "/opt/cni/bin"
       conf_dir = "{{.CNIConfDir}}"
       conf_template = ""
-    [plugins.cri.registry]
-      [plugins.cri.registry.mirrors]
-        [plugins.cri.registry.mirrors."docker.io"]
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
           endpoint = ["https://registry-1.docker.io"]
         {{ range .InsecureRegistry -}}
-        [plugins.cri.registry.mirrors."{{. -}}"]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{. -}}"]
           endpoint = ["http://{{. -}}"]
         {{ end -}}
-  [plugins.diff-service]
+  [plugins."io.containerd.service.v1.diff-service"]
     default = ["walking"]
-  [plugins.scheduler]
+  [plugins."io.containerd.gc.v1.scheduler"]
     pause_threshold = 0.02
     deletion_threshold = 0
     mutation_threshold = 100
@@ -283,21 +283,8 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 }
 
 // ListImages lists images managed by this container runtime
-func (r *Containerd) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "list", "--quiet")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "ctr images list")
-	}
-	all := strings.Split(rr.Stdout.String(), "\n")
-	imgs := []string{}
-	for _, img := range all {
-		if img == "" || strings.Contains(img, "sha256:") {
-			continue
-		}
-		imgs = append(imgs, img)
-	}
-	return imgs, nil
+func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
+	return listCRIImages(r.Runner)
 }
 
 // LoadImage loads an image into this runtime
@@ -592,16 +579,6 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
-	}
-	type crictlImages struct {
-		Images []struct {
-			ID          string      `json:"id"`
-			RepoTags    []string    `json:"repoTags"`
-			RepoDigests []string    `json:"repoDigests"`
-			Size        string      `json:"size"`
-			UID         interface{} `json:"uid"`
-			Username    string      `json:"username"`
-		} `json:"images"`
 	}
 
 	var jsonImages crictlImages
