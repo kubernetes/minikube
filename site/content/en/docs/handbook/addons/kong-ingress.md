@@ -23,7 +23,9 @@ Kong Ingress Controller (KIC) running on your minikube server.
 Enable Kong Ingress Controller via `minikube` command.
 
 ```bash
-$ minikube addon enable kong
+$ minikube addons enable kong
+
+🌟  The 'kong' addon is enabled
 ```
 
 > Note: this process could take up to five minutes the first time.
