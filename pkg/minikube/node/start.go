@@ -96,6 +96,8 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		return nil, err
 	}
 	if stopk8s {
+		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
+		configureRuntimes(starter.Runner, *starter.Cfg, nv)
 		configureMounts(&wg, *starter.Cfg)
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
