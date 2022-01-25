@@ -162,3 +162,4 @@ endif # BR2_TARGET_GRUB2
 comment "grub2 needs a toolchain w/ wchar"
 	depends on BR2_TARGET_GRUB2_ARCH_SUPPORTS
 	depends on !BR2_USE_WCHAR
+  
