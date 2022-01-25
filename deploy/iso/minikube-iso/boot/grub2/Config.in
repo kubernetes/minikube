@@ -1,0 +1,164 @@
+config BR2_TARGET_GRUB2_ARCH_SUPPORTS
+	bool
+	default y if BR2_i386
+	default y if BR2_x86_64
+	default y if BR2_arm
+	default y if BR2_aarch64
+	depends on BR2_USE_MMU
+
+config BR2_TARGET_GRUB2
+	bool "grub2"
+	depends on BR2_TARGET_GRUB2_ARCH_SUPPORTS
+	depends on BR2_USE_WCHAR
+	select BR2_TARGET_GRUB2_I386_PC if \
+		!BR2_TARGET_GRUB2_HAS_PTF && \
+		(BR2_i386 || BR2_x86_64)
+	select BR2_TARGET_GRUB2_ARM_UBOOT if \
+		!BR2_TARGET_GRUB2_HAS_PTF && \
+		BR2_arm
+	select BR2_TARGET_GRUB2_ARM64_EFI if BR2_aarch64
+	help
+	  GNU GRUB is a Multiboot boot loader. It was derived from
+	  GRUB, the GRand Unified Bootloader, which was originally
+	  designed and implemented by Erich Stefan Boleyn. GRUB 2 has
+	  replaced what was formerly known as GRUB (i.e. version
+	  0.9x), which has, in turn, become GRUB Legacy.
+
+	  Amongst others, GRUB2 offers EFI support, which GRUB Legacy
+	  doesn't provide.
+
+	  For additional notes on using Grub 2 with Buildroot, see
+	  boot/grub2/readme.txt
+
+	  http://www.gnu.org/software/grub/
+
+if BR2_TARGET_GRUB2
+
+config BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
+	bool
+
+config BR2_TARGET_GRUB2_HAS_EFI_BOOT
+	bool
+
+config BR2_TARGET_GRUB2_HAS_PTF
+	bool
+
+config BR2_TARGET_GRUB2_I386_PC
+	bool "i386-pc"
+	depends on BR2_i386 || BR2_x86_64
+	select BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
+	help
+	  Select this option if the platform you're targetting is a
+	  x86 or x86-64 legacy BIOS based platform.
+
+config BR2_TARGET_GRUB2_I386_EFI
+	bool "i386-efi"
+	depends on BR2_i386 || BR2_x86_64
+	select BR2_TARGET_GRUB2_HAS_PTF
+	select BR2_TARGET_GRUB2_HAS_EFI_BOOT
+	help
+	  Select this option if the platform you're targetting has a
+	  32 bits EFI BIOS. Note that some x86-64 platforms use a 32
+	  bits EFI BIOS, and this option should be used in this case.
+
+config BR2_TARGET_GRUB2_X86_64_EFI
+	bool "x86-64-efi"
+	depends on BR2_x86_64
+	select BR2_TARGET_GRUB2_HAS_PTF
+	select BR2_TARGET_GRUB2_HAS_EFI_BOOT
+	help
+	  Select this option if the platform you're targetting has a
+	  64 bits EFI BIOS.
+
+config BR2_TARGET_GRUB2_ARM_UBOOT
+	bool "arm-uboot"
+	depends on BR2_arm
+	select BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
+	help
+	  Select this option if the platform you're targetting is an
+	  ARM u-boot platform, and you want to boot Grub 2 as an u-boot
+	  compatible image.
+
+config BR2_TARGET_GRUB2_ARM_EFI
+	bool "arm-efi"
+	depends on BR2_arm
+	select BR2_TARGET_GRUB2_HAS_PTF
+	select BR2_TARGET_GRUB2_HAS_EFI_BOOT
+	help
+	  Select this option if the platform you're targetting is an
+	  ARM platform and you want to boot Grub 2 as an EFI
+	  application.
+
+config BR2_TARGET_GRUB2_ARM64_EFI
+	bool "arm64-efi"
+	depends on BR2_aarch64
+	select BR2_TARGET_GRUB2_HAS_EFI_BOOT
+	help
+	  Select this option if the platform you're targetting is an
+	  Aarch64 platform and you want to boot Grub 2 as an EFI
+	  application.
+
+if BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
+
+comment "Options for the x86 legacy BIOS or ARM U-Boot support"
+
+config BR2_TARGET_GRUB2_BOOT_PARTITION
+	string "boot partition"
+	default "hd0,msdos1"
+	help
+	  Specify the partition where the /boot/grub/grub.cfg file is
+	  located. Use 'hd0,msdos1' for the first partition of the
+	  first disk if using a legacy partition table, or 'hd0,gpt1'
+	  if using GPT partition table.
+
+config BR2_TARGET_GRUB2_BUILTIN_MODULES_PC
+	string "builtin modules"
+	default BR2_TARGET_GRUB2_BUILTIN_MODULES if BR2_TARGET_GRUB2_BUILTIN_MODULES != "" # legacy
+	default "boot linux ext2 fat squash4 part_msdos part_gpt normal biosdisk" if BR2_TARGET_GRUB2_I386_PC
+	default "linux ext2 fat part_msdos normal" if BR2_TARGET_GRUB2_ARM_UBOOT
+
+config BR2_TARGET_GRUB2_BUILTIN_CONFIG_PC
+	string "builtin config"
+	default BR2_TARGET_GRUB2_BUILTIN_CONFIG if BR2_TARGET_GRUB2_BUILTIN_CONFIG != "" # legacy
+	help
+	  Path to a Grub 2 configuration file that will be embedded
+	  into the Grub image itself. This allows to set the root
+	  device and other configuration parameters, but however menu
+	  entries cannot be described in this embedded configuration.
+
+endif # BR2_TARGET_GRUB2_HAS_LEGACY_BOOT
+
+if BR2_TARGET_GRUB2_HAS_EFI_BOOT
+
+comment "Options for the EFI BIOS or ARM EFI support"
+
+config BR2_TARGET_GRUB2_BUILTIN_MODULES_EFI
+	string "builtin modules"
+	default BR2_TARGET_GRUB2_BUILTIN_MODULES if BR2_TARGET_GRUB2_BUILTIN_MODULES != "" # legacy
+	default "boot linux ext2 fat squash4 part_msdos part_gpt normal efi_gop"
+
+config BR2_TARGET_GRUB2_BUILTIN_CONFIG_EFI
+	string "builtin config"
+	default BR2_TARGET_GRUB2_BUILTIN_CONFIG if BR2_TARGET_GRUB2_BUILTIN_CONFIG != "" # legacy
+	help
+	  Path to a Grub 2 configuration file that will be embedded
+	  into the Grub image itself. This allows to set the root
+	  device and other configuration parameters, but however menu
+	  entries cannot be described in this embedded configuration.
+
+endif # BR2_TARGET_GRUB2_HAS_EFI_BOOT
+
+config BR2_TARGET_GRUB2_INSTALL_TOOLS
+	bool "install tools"
+	help
+	  Install support tools to interact with GNU GRUB Multiboot
+	  boot loader.
+
+	  This will also install the Grub 2 loadable modules to the
+	  target.
+
+endif # BR2_TARGET_GRUB2
+
+comment "grub2 needs a toolchain w/ wchar"
+	depends on BR2_TARGET_GRUB2_ARCH_SUPPORTS
+	depends on !BR2_USE_WCHAR

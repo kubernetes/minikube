@@ -18,4 +18,20 @@ set -e
 
 BOARD_DIR=$(dirname "$0")
 
+if [ -e "$BOARD_DIR/iso/x86_64/grub.cfg" ]
+then
+    echo "ABC 1A"
+else
+    echo "ABC 1B"
+fi
+
+cp -f "$BOARD_DIR/iso/x86_64/grub.cfg" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
+
+if [ -e "$BOARD_DIR/grub.cfg" ]
+then
+    echo "ABC 2A"
+else
+    echo "ABC 2B"
+fi
+
 cp -f "$BOARD_DIR/grub.cfg" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
