@@ -146,7 +146,7 @@ func makePreload(cfg preloadCfg) error {
 		fmt.Printf("skip upload of %q\n", tf)
 		return nil
 	}
-	if err := uploadTarball(tf); err != nil {
+	if err := uploadTarball(tf, kv); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr))
 	}
 	return nil
