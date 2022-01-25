@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -11,13 +11,13 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  criSocket: /run/containerd/containerd.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
@@ -33,14 +33,12 @@ scheduler:
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
-dns:
-  type: CoreDNS
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.19.0
+kubernetesVersion: v1.23.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
