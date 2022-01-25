@@ -192,7 +192,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
-	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that improve minikube performance. Defaults to false.")
+	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that improve minikube performance. The optimizations applied are decreasing CoreDNS replicas from 2 to 1 and increasing kubeadm housekeeping-interval from 10s to 5m. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
