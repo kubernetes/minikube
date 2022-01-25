@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/log"
-	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
+	"libvirt.org/go/libvirt"
 )
 
 // Replace with hardcoded range with CIDR
