@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
+	klog "k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/network"
 )
 
@@ -123,7 +123,9 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
 	}
-	args = append(args, fmt.Sprintf("--label=%s=%s --label=%s=%s", CreatedByLabelKey, "true", ProfileLabelKey, profile), name)
+
+	args = append(args, fmt.Sprintf("--label=%s=%s", ProfileLabelKey, profile))
+	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
