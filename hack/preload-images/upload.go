@@ -47,6 +47,7 @@ func uploadArmTarballs(preloadsDir string) error {
 	if len(files) == 0 {
 		return fmt.Errorf("no preload files found")
 	}
+	// remove trailing whitespace entry
 	files = files[:len(files)-1]
 	for _, file := range files {
 		preloadVersion, k8sVersion := getVersionsFromFilename(file)
