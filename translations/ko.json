@@ -774,6 +774,7 @@
 	"Unable to push cached images: {{.error}}": "",
 	"Unable to remove machine directory": "",
 	"Unable to remove machine directory: %v": "머신 디렉토리를 제거할 수 없습니다: %v",
+	"Unable to restart cluster, will reset it: {{.error}}": "",
 	"Unable to safely downgrade existing Kubernetes v{{.old}} cluster to v{{.new}}": "",
 	"Unable to start VM. Please investigate and run 'minikube delete' if possible": "가상 머신을 시작할 수 없습니다. 확인 후 가능하면 'minikube delete' 를 실행하세요",
 	"Unable to stop VM": "가상 머신을 중지할 수 없습니다",
