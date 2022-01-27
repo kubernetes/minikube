@@ -14,7 +14,7 @@ body:
     attributes:
       label: Attach the log file
       description: |
-        Tip: Run `minikube logs --file=log.txt` then drag & drop `log.txt` file to the browser.
+        Tip: Run `minikube logs --file=log.txt` then drag & drop `log.txt` file to the browser. Warning! Make sure your redact any secrets from your environment. 
     validations:
       required: true
   - type: dropdown
