@@ -554,6 +554,30 @@ func ListContainersByLabel(ctx context.Context, ociBin string, label string, war
 	return names, err
 }
 
+// ListImagesRepository returns all the images names
+func ListImagesRepository(ctx context.Context, ociBin string) ([]string, error) {
+	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "images", "--format", "{{.Repository}}:{{.Tag}}"))
+	if err != nil {
+		return nil, err
+	}
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
+	var names []string
+	for s.Scan() {
+		n := strings.TrimSpace(s.Text())
+		if n != "" {
+			// add docker.io prefix to image name
+			if !strings.Contains(n, ".io/") {
+				n = "docker.io/" + n
+			}
+			names = append(names, n)
+		}
+	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
 // to make sure it points to the docker daemon installed by user.
 func PointToHostDockerDaemon() error {

@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -34,6 +35,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -145,6 +147,60 @@ func deleteContainersAndVolumes(ctx context.Context, ociBin string) {
 	}
 }
 
+// kicbaseImages returns kicbase images
+func kicbaseImages(ctx context.Context, ociBin string) ([]string, error) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		return nil, nil
+	}
+
+	// create list of possible kicbase images
+	kicImages := []string{kic.BaseImage}
+	kicImages = append(kicImages, kic.FallbackImages...)
+
+	kicImagesRepo := []string{}
+	for _, img := range kicImages {
+		kicImagesRepo = append(kicImagesRepo, strings.Split(img, ":")[0])
+	}
+
+	allImages, err := oci.ListImagesRepository(ctx, ociBin)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, img := range allImages {
+		for _, kicImg := range kicImagesRepo {
+			if kicImg == strings.Split(img, ":")[0] {
+				result = append(result, img)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
+// printDeleteImagesCommand prints command which remove images
+func printDeleteImagesCommand(ociBin string, imageNames []string) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		return
+	}
+
+	if len(imageNames) > 0 {
+		out.Styled(style.Command, `{{.ociBin}} rmi {{.images}}`, out.V{"ociBin": ociBin, "images": strings.Join(imageNames, " ")})
+	}
+}
+
+// printDeleteImageInfo prints info about removing kicbase images
+func printDeleteImageInfo(dockerImageNames, podmanImageNames []string) {
+	if len(dockerImageNames) == 0 && len(podmanImageNames) == 0 {
+		return
+	}
+
+	out.Styled(style.Notice, `Kicbase images have not been deleted. To delete images run:`)
+	printDeleteImagesCommand(oci.Docker, dockerImageNames)
+	printDeleteImagesCommand(oci.Podman, podmanImageNames)
+}
+
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
@@ -213,6 +269,16 @@ func runDelete(cmd *cobra.Command, args []string) {
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge {
 		purgeMinikubeDirectory()
+
+		dockerImageNames, err := kicbaseImages(delCtx, oci.Docker)
+		if err != nil {
+			klog.Warningf("error fetching docker images: %v", err)
+		}
+		podmanImageNames, err := kicbaseImages(delCtx, oci.Podman)
+		if err != nil {
+			klog.Warningf("error fetching podman images: %v", err)
+		}
+		printDeleteImageInfo(dockerImageNames, podmanImageNames)
 	}
 }
 
