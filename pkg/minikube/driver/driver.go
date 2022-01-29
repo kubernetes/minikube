@@ -258,7 +258,7 @@ func FlagDefaults(name string) FlagHints {
 	}
 
 	fh.CacheImages = false
-	// if specifc linux add this option for systemd work on none driver
+	// if specific linux add this option for systemd work on none driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
 		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)

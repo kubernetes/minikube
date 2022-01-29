@@ -108,7 +108,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
 		var legacyEnv []string
 		// replace the global KUBECONFIG with a fresh kubeconfig
-		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
+		// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extensions" block
 		// see: https://github.com/kubernetes/minikube/issues/10210
 		for _, e := range os.Environ() {
 			if !strings.Contains(e, "KUBECONFIG") { // get all global envs except the Kubeconfig which is used by new versions of minikubes
@@ -171,7 +171,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			c := exec.CommandContext(ctx, tf.Name(), args...)
 			var legacyEnv []string
 			// replace the global KUBECONFIG with a fresh kubeconfig
-			// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extenions" block
+			// because for minikube<1.17.0 it can not read the new kubeconfigs that have extra "Extensions" block
 			// see: https://github.com/kubernetes/minikube/issues/10210
 			for _, e := range os.Environ() {
 				if !strings.Contains(e, "KUBECONFIG") { // get all global envs except the Kubeconfig which is used by new versions of minikubes

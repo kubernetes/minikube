@@ -250,7 +250,7 @@ func createWeeklyChart(benchmarks []benchmark, chartOutputPath string) {
 			if i == len(benchmarks) {
 				break
 			}
-			// try running this benchmark again, this is needed incase there's a week without any benchmarks
+			// try running this benchmark again, this is needed in case there's a week without any benchmarks
 			i--
 			continue
 		}

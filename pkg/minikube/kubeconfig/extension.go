@@ -34,7 +34,7 @@ type Extension struct {
 	LastUpdate       string `json:"last-update"`
 }
 
-// NewExtension returns a minikube formated kubeconfig's extension block to idenity clusters and contexts
+// NewExtension returns a minikube formatted kubeconfig's extension block to idenity clusters and contexts
 func NewExtension() *Extension {
 	return &Extension{
 		Provider: "minikube.sigs.k8s.io",

@@ -131,7 +131,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
 	modifiable := true
-	pr, _, err := ghc.PullRequests.Create(ctx, owner, repo, &github.NewPullRequest{
+	pr, _, err := ghc.pull requests.Create(ctx, owner, repo, &github.NewPullRequest{
 		Title:               github.String(title),
 		Head:                github.String(*fork.Owner.Login + ":" + prBranch),
 		Base:                github.String(base),
@@ -144,7 +144,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	return pr, nil
 }
 
-// ghFindPR returns URL of the PR if found in the given GitHub ower/repo base and any error occurred.
+// ghFindPR returns URL of the PR if found in the given GitHub owner/repo base and any error occurred.
 func ghFindPR(ctx context.Context, title, owner, repo, base, token string) (url string, err error) {
 	ghc := ghClient(ctx, token)
 

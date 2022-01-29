@@ -597,7 +597,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		return host, exists, nil
 	}
 	klog.Warningf("error starting host: %v", err)
-	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
+	// NOTE: People get very cranky if you delete their preexisting VM. Only delete new ones.
 	if !exists {
 		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {

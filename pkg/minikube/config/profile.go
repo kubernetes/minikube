@@ -231,7 +231,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // ListValidProfiles returns profiles in minikube home dir
-// Unlike `ListProfiles` this function doens't try to get profile from container
+// Unlike `ListProfiles` this function doesn't try to get profile from container
 func ListValidProfiles(miniHome ...string) (ps []*Profile, err error) {
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
