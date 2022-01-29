@@ -96,6 +96,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		return nil, err
 	}
 	if stopk8s {
+		out.Step(style.Docker, "Preparing Docker 20.10.12 ...")
 		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
 		configureRuntimes(starter.Runner, *starter.Cfg, nv)
 		configureMounts(&wg, *starter.Cfg)
