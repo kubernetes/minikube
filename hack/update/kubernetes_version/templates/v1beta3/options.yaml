@@ -1,8 +1,8 @@
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 12345
+  bindPort: 8443
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -11,36 +11,37 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /run/containerd/containerd.sock
+  criSocket: /var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta2
+apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    fail-no-swap: "true"
 controllerManager:
   extraArgs:
     allocate-node-cidrs: "true"
+    kube-api-burst: "32"
     leader-elect: "false"
 scheduler:
   extraArgs:
     leader-elect: "false"
+    scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: control-plane.minikube.internal:12345
-dns:
-  type: CoreDNS
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.19.0
+kubernetesVersion: v1.23.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
@@ -72,3 +73,4 @@ conntrack:
   tcpEstablishedTimeout: 0s
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_close"
   tcpCloseWaitTimeout: 0s
+mode: "iptables"
