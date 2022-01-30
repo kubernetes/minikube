@@ -1533,19 +1533,22 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
+	if nvs.Major > newestVersion.Major {
+		out.WarningT("Specified Major version of Kubernetes {{.specifiedMajor}} is newer than the newest supported Major version: {{.newestMajor}}", out.V{"specifiedMajor": nvs.Major, "newestMajor": newestVersion.Major})
+		if !viper.GetBool(force) {
+			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
+		}
+		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+	}
+	if nvs.GT(newestVersion) {
+		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+	}
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}
 		exitIfNotForced(reason.KubernetesTooOld, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
-	}
-	if nvs.GT(newestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
-		if !viper.GetBool(force) {
-			out.WarningT("You can force an unsupported Kubernetes version via the --force flag if it exists")
-		}
-		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 
 	// If the version of Kubernetes has a known issue, print a warning out to the screen
