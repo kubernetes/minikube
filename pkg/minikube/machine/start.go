@@ -241,14 +241,14 @@ func postStartValidations(h *host.Host, drvName string) {
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
-		klog.Warningf("error getting percentage of /var that is free: %v", err)
+		exit.Message(kind, "Error getting percentage of /var that is free: {{.v}}", out.V{"v": err})
 	}
 
 	availableGiB, err := DiskAvailable(r, "/var")
 	if err != nil {
-		klog.Warningf("error getting GiB of /var that is available: %v", err)
+		exit.Message(kind, "Error getting GiB of /var that is available: {{.v}}", out.V{"v": err})
 	}
-	thresholdGiB := 20
+	const thresholdGiB = 20
 
 	if percentageFull >= 99 && availableGiB < thresholdGiB {
 		exit.Message(
@@ -297,7 +297,7 @@ func DiskAvailable(cr command.Runner, dir string) (int, error) {
 	return strconv.Atoi(gib)
 }
 
-// postStart are functions shared between startHost and fixHost
+// postStartSetup are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	klog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()
