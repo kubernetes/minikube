@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"k8s.io/minikube/cmd/minikube/cmd"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // TestPause tests minikube pause functionality
