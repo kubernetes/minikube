@@ -254,7 +254,7 @@ var Addons = map[string]*Addon{
 			"istio-operator.yaml",
 			"0640"),
 	}, false, "istio-provisioner", "third-party (istio)", map[string]string{
-		"IstioOperator": "istio/operator:1.5.0@sha256:25a6398ed4996a5313767ceb63768d503c266f63506ad3074b30eef6b5b5167e",
+		"IstioOperator": "istio/operator:1.12.2@sha256:42c7609872882cb88728a1592561b4046dac6d05b6002cbdc815b84c86a24f08",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioAssets,
