@@ -39,6 +39,11 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+func showVersionInfoWithoutK8s(cr cruntime.Manager)	{
+	version, _ := cr.Version()
+	out.Step(cr.Style(), "Preparing {{.runtime}} {{.runtimeVersion}} ...", out.V{"runtime": cr.Name(), "runtimeVersion": version})
+}
+
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	register.Reg.SetStep(register.PreparingKubernetes)
