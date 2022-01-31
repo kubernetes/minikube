@@ -168,7 +168,7 @@ func (r *Containerd) Version() (string, error) {
 	c := exec.Command("containerd", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrapf(err, "containerd check version.")
+		return "", errors.Wrapf(err, "containerd check version")
 	}
 	version, err := parseContainerdVersion(rr.Stdout.String())
 	if err != nil {
