@@ -254,7 +254,7 @@ var Addons = map[string]*Addon{
 			"istio-operator.yaml",
 			"0640"),
 	}, false, "istio-provisioner", "third-party (istio)", map[string]string{
-		"IstioOperator": "istio/operator:1.5.0@sha256:25a6398ed4996a5313767ceb63768d503c266f63506ad3074b30eef6b5b5167e",
+		"IstioOperator": "istio/operator:1.12.2@sha256:42c7609872882cb88728a1592561b4046dac6d05b6002cbdc815b84c86a24f08",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioAssets,
@@ -263,6 +263,16 @@ var Addons = map[string]*Addon{
 			"istio-default-profile.yaml",
 			"0640"),
 	}, false, "istio", "third-party (istio)", nil, nil),
+	"kong": NewAddon([]*BinAsset{
+		MustBinAsset(addons.KongAssets,
+			"kong/kong-ingress-controller.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"kong-ingress-controller.yaml",
+			"0640"),
+	}, false, "kong", "third-party (Kong HQ)", map[string]string{
+		"Kong":        "kong:2.7@sha256:4d3e93207305ace881fe9e95ac27717b6fbdd9e0ec1873c34e94908a4f4c9335",
+		"KongIngress": "kong/kubernetes-ingress-controller:2.1.1@sha256:60e4102ab2da7f61e9c478747f0762d06a6166b5f300526b237ed7354c3cb4c8",
+	}, nil),
 	"kubevirt": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KubevirtAssets,
 			"kubevirt/pod.yaml.tmpl",
