@@ -162,7 +162,7 @@ func ContainerRuntime() string {
 			return strings.TrimPrefix(s, flag)
 		}
 	}
-	return constants.DefaultContainerRuntime
+	return constants.Docker
 }
 
 // arm64Platform returns true if running on arm64/* platform
