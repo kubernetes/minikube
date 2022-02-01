@@ -194,7 +194,7 @@ func (r *Containerd) Active() bool {
 func (r *Containerd) Available() error {
 	c := exec.Command("which", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "check containerd availability.")
+		return errors.Wrap(err, "check containerd availability")
 	}
 	return nil
 }
@@ -232,7 +232,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generate containerd cfg.")
+		return errors.Wrap(err, "generate containerd cfg")
 	}
 	return nil
 }
@@ -425,7 +425,7 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "buildctl build.")
+		return errors.Wrap(err, "buildctl build")
 	}
 	return nil
 }
