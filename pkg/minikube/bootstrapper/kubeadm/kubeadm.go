@@ -37,6 +37,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -61,6 +62,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
@@ -396,10 +398,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
-		if reconfigure := k.needsReconfigure(cfg); !reconfigure {
+		klog.Infof("found existing configuration files, will attempt cluster restart")
+		rerr := k.restartControlPlane(cfg)
+		if rerr == nil {
 			return nil
 		}
 
+		out.ErrT(style.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			klog.Warningf("delete failed: %v", err)
 		}
@@ -558,21 +563,71 @@ func (k *Bootstrapper) ensureServiceStarted(svc string) error {
 }
 
 // needsReconfigure returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
+func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
+	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
+		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
+		return true
+	}
+	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
+	apiStatusTimeout := 3000 * time.Millisecond
+	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
+	if err != nil {
+		klog.Infof("needs reconfigure: apiserver error: %v", err)
+		return true
+	}
+	if st != state.Running {
+		klog.Infof("needs reconfigure: apiserver in state %s", st)
+		return true
+	}
+
+	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
+		klog.Infof("needs reconfigure: %v", err)
+		return true
+	}
+
+	if err := kverify.APIServerVersionMatch(client, version); err != nil {
+		klog.Infof("needs reconfigure: %v", err)
+		return true
+	}
+
+	// DANGER: This log message is hard-coded in an integration test!
+	klog.Infof("The running cluster does not require reconfiguration: %s", hostname)
+	return false
+}
+
+// restartCluster restarts the Kubernetes cluster configured by kubeadm
+func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
+	klog.Infof("restartCluster start")
+
+	start := time.Now()
+	defer func() {
+		klog.Infof("restartCluster took %s", time.Since(start))
+	}()
+
+	k8sVersion, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+
+	phase := "alpha"
+	controlPlane := "controlplane"
+	if k8sVersion.GTE(semver.MustParse("1.13.0")) {
+		phase = "init"
+		controlPlane = "control-plane"
+	}
+
 	if err := k.createCompatSymlinks(); err != nil {
 		klog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
-		klog.Warningf("needs reconfigure: primary control plane error: %v", err)
-		return true
+		return errors.Wrap(err, "primary control plane")
 	}
 
 	hostname, _, port, err := driver.ControlPlaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
-		klog.Warningf("needs reconfigure: control plane error: %v", err)
-		return true
+		return errors.Wrap(err, "control plane")
 	}
 
 	// Save the costly tax of reinstalling Kubernetes if the only issue is a missing kube context
@@ -583,40 +638,125 @@ func (k *Bootstrapper) needsReconfigure(cfg config.ClusterConfig) bool {
 
 	client, err := k.client(hostname, port)
 	if err != nil {
-		klog.Warningf("needs reconfigure: getting k8s client error: %v", err)
-		return true
+		return errors.Wrap(err, "getting k8s client")
 	}
 
+	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
 
-	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
-		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
-		return true
+	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
+		klog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
+		return nil
 	}
-	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
-	apiStatusTimeout := 3 * time.Second
-	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
+
+	if err := k.stopKubeSystem(cfg); err != nil {
+		klog.Warningf("Failed to stop kube-system containers: port conflicts may arise: %v", err)
+	}
+
+	if err := sysinit.New(k.c).Stop("kubelet"); err != nil {
+		klog.Warningf("Failed to stop kubelet, this might cause upgrade errors: %v", err)
+	}
+
+	if err := k.clearStaleConfigs(cfg); err != nil {
+		return errors.Wrap(err, "clearing stale configs")
+	}
+
+	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
+		return errors.Wrap(err, "cp")
+	}
+
+	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
+	cmds := []string{
+		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
+		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
+		fmt.Sprintf("%s phase kubelet-start --config %s", baseCmd, conf),
+		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, conf),
+		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, conf),
+	}
+
+	klog.Infof("reconfiguring cluster from %s", conf)
+	// Run commands one at a time so that it is easier to root cause failures.
+	for _, c := range cmds {
+		if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+			klog.Errorf("%s failed - will try once more: %v", c, err)
+
+			if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c)); err != nil {
+				return errors.Wrap(err, "run")
+			}
+		}
+	}
+
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		klog.Warningf("needs reconfigure: apiserver error: %v", err)
-		return true
-	}
-	if st != state.Running {
-		klog.Warningf("needs reconfigure: apiserver in state %s", st.String())
-		return true
+		return errors.Wrap(err, "runtime")
 	}
 
-	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		klog.Warningf("needs reconfigure: %v", err)
-		return true
+	// We must ensure that the apiserver is healthy before proceeding
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	if err := kverify.APIServerVersionMatch(client, cfg.KubernetesConfig.KubernetesVersion); err != nil {
-		klog.Warningf("needs reconfigure: %v", err)
-		return true
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver health")
 	}
 
-	klog.Infof("%s: %s", constants.ReconfigurationNotRequired, hostname)
-	return false
+	// because reboots clear /etc/cni
+	if err := k.applyCNI(cfg); err != nil {
+		return errors.Wrap(err, "apply cni")
+	}
+
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "system pods")
+	}
+
+	if err := kverify.NodePressure(client); err != nil {
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
+	}
+
+	// This can fail during upgrades if the old pods have not shut down yet
+	addonPhase := func() error {
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
+		return err
+	}
+	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
+		klog.Warningf("addon install failed, wil retry: %v", err)
+		return errors.Wrap(err, "addons")
+	}
+
+	// must be called after applyCNI and `kubeadm phase addon all` (ie, coredns redeploy)
+	if cfg.VerifyComponents[kverify.ExtraKey] {
+		// after kubelet is restarted (with 'kubeadm init phase kubelet-start' above),
+		// it appears as to be immediately Ready as well as all kube-system pods (last observed state),
+		// then (after ~10sec) it realises it has some changes to apply, implying also pods restarts,
+		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
+		klog.Info("waiting for restarted kubelet to initialise ...")
+		start := time.Now()
+		wait := func() error {
+			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
+			if err != nil {
+				return err
+			}
+			for _, pod := range pods.Items {
+				if ready, _ := kverify.IsPodReady(&pod); !ready {
+					return nil
+				}
+			}
+			return fmt.Errorf("kubelet not initialised")
+		}
+		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		klog.Infof("kubelet initialised")
+		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
+
+		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
+			return errors.Wrap(err, "extra")
+		}
+	}
+
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
+		klog.Warningf("unable to adjust resource limits: %v", err)
+	}
+
+	return nil
 }
 
 // JoinCluster adds new node to an existing cluster.
@@ -904,6 +1044,27 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		// retry up to make sure SA is created
 		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+	return nil
+}
+
+// stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
+func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
+	klog.Info("stopping kube-system containers ...")
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "new cruntime")
+	}
+
+	ids, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		return errors.Wrap(err, "list")
+	}
+
+	if len(ids) > 0 {
+		if err := cr.StopContainers(ids); err != nil {
+			return errors.Wrap(err, "stop")
 		}
 	}
 	return nil

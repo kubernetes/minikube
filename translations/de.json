@@ -767,6 +767,7 @@
 	"Unable to pull images, which may be OK: {{.error}}": "Bilder können nicht abgerufen werden, was möglicherweise kein Problem darstellt: {{.error}}",
 	"Unable to push cached images: {{.error}}": "Kann gecachete Image nicht veröffentlichen (push): {{.error}}",
 	"Unable to remove machine directory": "Kann Maschinen Verzeichnis nicht entfernen",
+	"Unable to restart cluster, will reset it: {{.error}}": "",
 	"Unable to safely downgrade existing Kubernetes v{{.old}} cluster to v{{.new}}": "Kann existierenden Kubernetes v{{.old}} Cluster nicht auf Version v{{.new}} downgraden",
 	"Unable to stop VM": "Kann VM nicht stoppen",
 	"Unable to update {{.driver}} driver: {{.error}}": "Kann Treiber {{.driver}} nicht aktualisieren: {{.error}}",
