@@ -41,7 +41,7 @@ import (
 
 const (
 	// CRIOConfFile is the path to the CRI-O configuration
-	crioConfigFile = "/etc/crio/crio.conf"
+	crioConfigFile = "/etc/crio/crio.conf.d/02-crio.conf"
 )
 
 // CRIO contains CRIO runtime state
@@ -57,7 +57,7 @@ type CRIO struct {
 func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
 	pauseImage := images.Pause(kv, imageRepository)
 
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "generateCRIOConfig")
 	}
@@ -73,8 +73,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 }
 
 func (r *CRIO) forceSystemd() error {
-	// remove `cgroup_manager` since cri-o defaults to `systemd` if nothing set
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^cgroup_manager = .*$||' -i %s", crioConfigFile))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cgroup_manager = .*$|cgroup_manager = \"systemd\"|' -i %s", crioConfigFile))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "force systemd")
 	}

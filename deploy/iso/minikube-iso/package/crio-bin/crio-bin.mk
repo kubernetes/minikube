@@ -39,6 +39,7 @@ endef
 define CRIO_BIN_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/usr/share/containers/oci/hooks.d
 	mkdir -p $(TARGET_DIR)/etc/containers/oci/hooks.d
+	mkdir -p $(TARGET_DIR)/etc/crio/crio.conf.d
 
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/crio \
@@ -55,6 +56,9 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm644 \
 		$(CRIO_BIN_PKGDIR)/registries.conf \
 		$(TARGET_DIR)/etc/containers/registries.conf
+	$(INSTALL) -Dm644 \
+		$(CRIO_BIN_PKGDIR)/02-crio.conf \
+		$(TARGET_DIR)/etc/crio/crio.conf.d/02-crio.conf
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
 	echo 'CRIO_OPTIONS="--log-level=debug"' > $(TARGET_DIR)/etc/sysconfig/crio
