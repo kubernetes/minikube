@@ -184,10 +184,6 @@ var (
 
 	// ISOCacheDir is the path to the virtual machine image cache directory
 	ISOCacheDir = localpath.MakeMiniPath("cache", "iso")
-	// KICCacheDir is the path to the container node image cache directory
-	KICCacheDir = localpath.MakeMiniPath("cache", "kic")
-	// ImageCacheDir is the path to the container image cache directory
-	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{

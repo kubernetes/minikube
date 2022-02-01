@@ -26,6 +26,7 @@ import (
 
 	"github.com/klauspost/cpuid"
 	"golang.org/x/sys/cpu"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // RuntimeOS returns the runtime operating system
@@ -112,4 +113,14 @@ func DockerInstalledViaSnap() bool {
 func GithubActionRunner() bool {
 	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
 	return os.Getenv("GITHUB_ACTIONS") == "true"
+}
+
+// ImageCacheDir returns the path to the container image cache directory for the current architecture
+func ImageCacheDir() string {
+	return filepath.Join(localpath.MakeMiniPath("cache", "images"), runtime.GOARCH)
+}
+
+// KICCacheDir returns the path to the container node image cache directory for the current architecture
+func KICCacheDir() string {
+	return filepath.Join(localpath.MakeMiniPath("cache", "kic"), runtime.GOARCH)
 }
