@@ -960,8 +960,12 @@ func dashboardURL(b *bufio.Reader) (string, error) {
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
-	// dry-run mode should always be able to finish quickly (<5s)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	// dry-run mode should always be able to finish quickly (<5s) expect Docker Windows
+	timeout := Seconds(5)
+	if runtime.GOOS == "windows" && DockerDriver() {
+		timeout = Seconds(10)
+	}
+	mctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// docs: Run `minikube start --dry-run --memory 250MB`
@@ -980,7 +984,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 		}
 	}
 
-	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	dctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	// docs: Run `minikube start --dry-run`
 	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
@@ -999,8 +1003,12 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 // validateInternationalLanguage asserts that the language used can be changed with environment variables
 func validateInternationalLanguage(ctx context.Context, t *testing.T, profile string) {
-	// dry-run mode should always be able to finish quickly (<5s)
-	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
+	// dry-run mode should always be able to finish quickly (<5s) except Docker Windows
+	timeout := Seconds(5)
+	if runtime.GOOS == "windows" && DockerDriver() {
+		timeout = Seconds(10)
+	}
+	mctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	// Too little memory!
