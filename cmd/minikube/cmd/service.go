@@ -93,7 +93,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 		}
 
 		if driver.NeedsPortForward(co.Config.Driver) {
-			startKicServiceTunnel(svc, cname)
+			startKicServiceTunnel(svc, cname, co.Config.Driver)
 			return
 		}
 
@@ -111,7 +111,7 @@ func init() {
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 }
 
-func startKicServiceTunnel(svc, configName string) {
+func startKicServiceTunnel(svc, configName, driverName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
@@ -120,7 +120,7 @@ func startKicServiceTunnel(svc, configName string) {
 		exit.Error(reason.InternalKubernetesClient, "error creating clientset", err)
 	}
 
-	port, err := oci.ForwardedPort(oci.Docker, configName, 22)
+	port, err := oci.ForwardedPort(driverName, configName, 22)
 	if err != nil {
 		exit.Error(reason.DrvPortForward, "error getting ssh port", err)
 	}
