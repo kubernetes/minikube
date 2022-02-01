@@ -68,8 +68,9 @@ const testStatus = {
   SKIPPED: "Skipped"
 }
 
-async function loadTestData() {
-  const response = await fetch("data.csv", {
+async function loadTestData(period) {
+  const file = period === "last90" ? "data-last-90.csv" : "data.csv";
+  const response = await fetch(file, {
     headers: {
       "Cache-Control": "max-age=3600,must-revalidate",
     }
@@ -664,6 +665,9 @@ function displayEnvironmentChart(testData, environmentName) {
 }
 
 async function init() {
+  const query = parseUrlQuery(window.location.search);
+  const desiredTest = query.test, desiredEnvironment = query.env || "", desiredPeriod = query.period || "";
+
   google.charts.load('current', { 'packages': ['corechart'] });
   let testData, responseDate;
   try {
@@ -671,15 +675,12 @@ async function init() {
     // Only store the test data (at index 1) into `testData`.
     [testData, responseDate] = (await Promise.all([
       new Promise(resolve => google.charts.setOnLoadCallback(resolve)),
-      loadTestData()
+      loadTestData(desiredPeriod)
     ]))[1];
   } catch (err) {
     displayError(err);
     return;
   }
-
-  const query = parseUrlQuery(window.location.search);
-  const desiredTest = query.test, desiredEnvironment = query.env || "";
 
   if (desiredTest === undefined) {
     displayEnvironmentChart(testData, desiredEnvironment);
@@ -688,6 +689,19 @@ async function init() {
   }
   document.querySelector('#data_date_container').style.display = 'block';
   document.querySelector('#data_date').innerText = responseDate.toLocaleString();
+  let periodDisplay, newURL;
+
+  // we're going to take the current page URL (desiredPeriod) and modify it to create the link to the other page
+  if (desiredPeriod === 'last90') {
+    // remove '&period=last90' to make a link to the all-time data page
+    otherPeriodURL = window.location.href.replace(/&?period=last90/gi, '');
+    periodDisplay = `Currently viewing last 90 days of data: <a href="` + otherPeriodURL + `">View all-time data</a>`;
+  } else {
+    // add '&period=last90' to make a link to the last 90 days page
+    otherPeriodURL = window.location.href + '&period=last90';
+    periodDisplay = `Currently viewing all-time data: <a href="` + otherPeriodURL + `">View last 90 days of data</a>`;
+  }
+  document.querySelector('#period_display').innerHTML = periodDisplay;
 }
 
 init();

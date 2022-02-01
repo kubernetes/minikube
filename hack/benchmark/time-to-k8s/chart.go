@@ -177,6 +177,7 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 	c = append(c, totalStrings)
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
+	t.SetAutoWrapText(false)
 	t.SetHeader(headers)
 	t.SetAutoFormatHeaders(false)
 	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})

@@ -165,12 +165,6 @@ func ContainerRuntime() string {
 	return constants.DefaultContainerRuntime
 }
 
-// GithubActionRunner returns true if running inside a github action runner
-func GithubActionRunner() bool {
-	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
-	return os.Getenv("GITHUB_ACTIONS") == "true"
-}
-
 // arm64Platform returns true if running on arm64/* platform
 func arm64Platform() bool {
 	return runtime.GOARCH == "arm64"

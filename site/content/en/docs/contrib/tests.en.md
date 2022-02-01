@@ -11,6 +11,9 @@ makes sure the --download-only parameter in minikube start caches the appropriat
 ## TestDownloadOnlyKic
 makes sure --download-only caches the docker driver images as well.
 
+## TestBinaryMirror
+tests functionality of --binary-mirror flag
+
 ## TestOffline
 makes sure minikube works without internet, once the user has cached the necessary images.
 This test has to run after TestDownloadOnly.

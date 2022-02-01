@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/log"
-	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
+	"libvirt.org/go/libvirt"
 )
 
 // Replace with hardcoded range with CIDR
@@ -478,9 +478,19 @@ func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterf
 	}
 	defer func() { _ = dom.Free() }()
 
-	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
-	if err != nil {
-		return nil, fmt.Errorf("failed listing network interface addresses of domain %s: %w", domain, err)
+	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+	if ifs == nil {
+		if err != nil {
+			log.Debugf("failed listing network interface addresses of domain %s(source=arp): %w", domain, err)
+		} else {
+			log.Debugf("No network interface addresses found for domain %s(source=arp)", domain)
+		}
+		log.Debugf("trying to list again with source=lease")
+
+		ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+		if err != nil {
+			return nil, fmt.Errorf("failed listing network interface addresses of domain %s(source=lease): %w", domain, err)
+		}
 	}
 
 	return ifs, nil

@@ -208,13 +208,21 @@ func New(c Config) (Manager, error) {
 
 	switch c.Type {
 	case "", "docker":
+		sp := c.Socket
+		cs := ""
+		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
+		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
+			sp = ExternalDockerCRISocket
+			cs = "cri-docker.socket"
+		}
 		return &Docker{
-			Socket:            c.Socket,
+			Socket:            sp,
 			Runner:            c.Runner,
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
-			UseCRI:            (c.Socket != ""), // !dockershim
+			UseCRI:            (sp != ""), // !dockershim
+			CRIService:        cs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{

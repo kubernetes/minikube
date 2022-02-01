@@ -33,7 +33,7 @@ func driverWithChecksumURL(name string, v semver.Version) string {
 	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
 }
 func driverWithArchAndChecksumURL(name string, v semver.Version) string {
-	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s-%s/%s", v, runtime.GOARCH, name)
+	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s-%s", v, name, runtime.GOARCH)
 	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
 }
 

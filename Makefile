@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 24
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 25
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.24.0-1640253061-13195
+ISO_VERSION ?= v1.25.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,7 +33,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.17.5
+GO_VERSION ?= 1.17.6
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.24.0
 
@@ -438,7 +438,7 @@ e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.ex
 checksum: ## Generate checksums
 	for f in out/minikube.iso out/minikube-linux-amd64 out/minikube-linux-arm \
 		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
-		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
+		 out/minikube-darwin-amd64 out/minikube-darwin-arm64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2-amd64 out/docker-machine-driver-kvm2-arm64 \
 		 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \

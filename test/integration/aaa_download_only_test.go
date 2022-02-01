@@ -24,8 +24,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -245,5 +249,71 @@ func TestDownloadOnlyKic(t *testing.T) {
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
+	}
+}
+
+// createSha256File is a helper function which creates sha256 checksum file from given file
+func createSha256File(filePath string) error {
+	dat, _ := os.ReadFile(filePath)
+	sum := sha256.Sum256(dat)
+
+	f, err := os.Create(filePath + ".sha256")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(fmt.Sprintf("%x", sum[:]))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// TestBinaryMirror tests functionality of --binary-mirror flag
+func TestBinaryMirror(t *testing.T) {
+	profile := UniqueProfileName("binary-mirror")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+	defer Cleanup(t, profile, cancel)
+
+	tmpDir, err := ioutil.TempDir("", "kb_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Start test server which will serve binary files
+	ts := httptest.NewServer(
+		http.FileServer(http.Dir(tmpDir)),
+	)
+	defer ts.Close()
+
+	binaryName := "kubectl"
+	if runtime.GOOS == "windows" {
+		binaryName = "kubectl.exe"
+	}
+	binaryPath, err := download.Binary(binaryName, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH, "")
+	if err != nil {
+		t.Errorf("Failed to download binary: %+v", err)
+	}
+
+	newBinaryDir := filepath.Join(tmpDir, constants.DefaultKubernetesVersion, "bin", runtime.GOOS, runtime.GOARCH)
+	if err := os.MkdirAll(newBinaryDir, os.ModePerm); err != nil {
+		t.Errorf("Failed to create %s directories", newBinaryDir)
+	}
+
+	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
+	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
+		t.Errorf("Failed to move binary file: %+v", err)
+	}
+	if err := createSha256File(newBinaryPath); err != nil {
+		t.Errorf("Failed to generate sha256 checksum file: %+v", err)
+	}
+
+	args := append([]string{"start", "--download-only", "-p", profile, "--alsologtostderr", "--binary-mirror", ts.URL}, StartArgs()...)
+
+	cmd := exec.CommandContext(ctx, Target(), args...)
+	if _, err := Run(t, cmd); err != nil {
+		t.Errorf("start with --binary-mirror failed %q : %v", args, err)
 	}
 }

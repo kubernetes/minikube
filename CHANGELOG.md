@@ -1,5 +1,122 @@
 # Release Notes
 
+## Version 1.25.1 - 2022-01-20
+
+* Resolved regression breaking `minikube start` with hyperkit driver [#13418](https://github.com/kubernetes/minikube/pull/13418)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Steven Powell
+
+Thank you to our triage members for this release!
+
+- klaases (13 comments)
+- RA489 (12 comments)
+- spowelljr (7 comments)
+- afbjorklund (6 comments)
+- sharifelgamal (2 comments)
+
+## Version 1.25.0 - 2022-01-18
+
+Features:
+* New flag "--binary-mirror" to override mirror URL downloading (kubectl, kubelet, & kubeadm) [#12804](https://github.com/kubernetes/minikube/pull/12804)
+* Add format flag to the `image ls` command [#12996](https://github.com/kubernetes/minikube/pull/12996)
+* Add all mount flags to start command [#12930](https://github.com/kubernetes/minikube/pull/12930)
+* Auto set config to support btrfs storage driver [#12990](https://github.com/kubernetes/minikube/pull/12990)
+* Support CRI-O runtime with Rootless Docker driver (`--driver=docker --container-runtime=cri-o`) [#12900](https://github.com/kubernetes/minikube/pull/12900)
+* Allow custom cert for ingress to be overwritten [#12897](https://github.com/kubernetes/minikube/pull/12897)
+* Allow ppc64le & armv7 with Docker driver [#13124](https://github.com/kubernetes/minikube/pull/13124)
+
+Minor Improvements:
+* Support DOCKER_HOST not being numeric IP [#13300](https://github.com/kubernetes/minikube/pull/13300)
+* Support mounting with the --no-kubernetes flag [#13144](https://github.com/kubernetes/minikube/pull/13144)
+* Support changing apiserver-ips when restarting minikube [#12692](https://github.com/kubernetes/minikube/pull/12692)
+
+Bug fixes:
+* Fix ingress for k8s v1.19 [#13173](https://github.com/kubernetes/minikube/pull/13173)
+* Fix mounting with VMware #12426 [#13000](https://github.com/kubernetes/minikube/pull/13000)
+* Fix `Bad file descriptor` on mount [#13013](https://github.com/kubernetes/minikube/pull/13013)
+* Fix `docker-env` with new PowerShell versions [#12870](https://github.com/kubernetes/minikube/pull/12870)
+
+Version Upgrades:
+* Upgrade Docker, from v20.10.8 to v20.10.11
+* Upgrade containerd, from v1.4.9 to v1.4.12
+* Upgrade cri-o from v1.22.0 to v1.22.1 [#13059](https://github.com/kubernetes/minikube/pull/13059)
+* Update gcp-auth-webhook image to v0.0.8 [#13185](https://github.com/kubernetes/minikube/pull/13185)
+
+Deprecation:
+* mount: Remove `--mode` flag [#13162](https://github.com/kubernetes/minikube/pull/13162)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Akira Yoshiyama
+- Anders F Björklund
+- Ashwin901
+- Carl Chesser
+- Daehyeok Mun
+- Davanum Srinivas
+- Dimitris Aragiorgis
+- Emilano Vazquez
+- Eugene Kalinin
+- Frank Schwichtenberg
+- James Yin
+- Jan Klippel
+- Jeff MAURY
+- Joey Klaas
+- Marcus Puckett
+- Medya Ghazizadeh
+- Nikhil Sharma
+- Nikolay Nikolaev
+- Oleksii Prudkyi
+- Pablo Caderno
+- Piotr Resztak
+- Predrag Rogic
+- Rahil Patel
+- Sergio Galvan
+- Sharif Elgamal
+- Steven Powell
+- Tian Yang
+- Toshiaki Inukai
+- Vishal Jain
+- Zvi Cahana
+- gamba47
+- rahil-p
+- srikrishnabh93@gmail.com
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (65 comments)
+- medyagh (64 comments)
+- t-inu (46 comments)
+- atoato88 (39 comments)
+- sharifelgamal (39 comments)
+- klaases (17 comments)
+- afbjorklund (8 comments)
+- s-kawamura-w664 (8 comments)
+- yosshy (6 comments)
+- neolit123 (3 comments)
+- AkihiroSuda (1 comments)
+- dims (1 comments)
+- dobegor (1 comments)
+- dytyniuk (1 comments)
+- inductor (1 comments)
+- rmohr (1 comments)
+
+Thank you to our triage members for this release!
+
+- spowelljr (48 comments)
+- afbjorklund (44 comments)
+- RA489 (37 comments)
+- medyagh (33 comments)
+- sharifelgamal (25 comments)
+
 ## Version 1.24.0 - 2021-11-04
 
 Features:

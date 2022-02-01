@@ -43,6 +43,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util/retry"
@@ -67,7 +68,7 @@ var apiPortTest = 8441
 // Store the proxy session so we can clean it up at the end
 var mitm *StartSession
 
-var runCorpProxy = GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
+var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
@@ -246,7 +247,9 @@ func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage str
 }
 
 // runImageList is a helper function to run 'image ls' command test.
-func runImageList(ctx context.Context, t *testing.T, profile, testName, format string, expectedResult []string) {
+func runImageList(ctx context.Context, t *testing.T, profile, testName, format, expectedFormat string) {
+	expectedResult := expectedImageFormat(expectedFormat)
+
 	// docs: Make sure image listing works by `minikube image ls`
 	t.Run(testName, func(t *testing.T) {
 		MaybeParallel(t)
@@ -271,6 +274,13 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format s
 	})
 }
 
+func expectedImageFormat(format string) []string {
+	return []string{
+		fmt.Sprintf(format, "k8s.gcr.io/pause"),
+		fmt.Sprintf(format, "k8s.gcr.io/kube-apiserver"),
+	}
+}
+
 // validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	// docs(skip): Skips on `none` driver as image loading is not supported
@@ -278,14 +288,14 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("image commands are not available on the none driver")
 	}
 	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
 
-	runImageList(ctx, t, profile, "ImageListShort", "short", []string{"k8s.gcr.io/pause", "docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListTable", "table", []string{"| k8s.gcr.io/pause", "| docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListJson", "json", []string{"[\"k8s.gcr.io/pause", "[\"docker.io/kubernetesui/dashboard"})
-	runImageList(ctx, t, profile, "ImageListYaml", "yaml", []string{"- k8s.gcr.io/pause", "- docker.io/kubernetesui/dashboard"})
+	runImageList(ctx, t, profile, "ImageListShort", "short", "%s")
+	runImageList(ctx, t, profile, "ImageListTable", "table", "| %s")
+	runImageList(ctx, t, profile, "ImageListJson", "json", "[\"%s")
+	runImageList(ctx, t, profile, "ImageListYaml", "yaml", "- %s")
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {
@@ -754,7 +764,11 @@ func validateExtraConfig(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure the specified `--extra-config` is correctly returned
 	expectedExtraOptions := "apiserver.enable-admission-plugins=NamespaceAutoProvision"
+	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
+		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
+	}
 
+	expectedExtraOptions = "kubelet.housekeeping-interval=5m"
 	if !strings.Contains(afterCfg.Config.KubernetesConfig.ExtraOptions.String(), expectedExtraOptions) {
 		t.Errorf("expected ExtraOptions to contain %s but got %s", expectedExtraOptions, afterCfg.Config.KubernetesConfig.ExtraOptions.String())
 	}
@@ -1034,7 +1048,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// docs: Run `minikube cache add` and make sure we can build and add a local image to the cache
 		t.Run("add_local", func(t *testing.T) {
-			if GithubActionRunner() && runtime.GOOS == "darwin" {
+			if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 				t.Skipf("skipping this test because Docker can not run in macos on github action free version. https://github.community/t/is-it-possible-to-install-and-configure-docker-on-macos-runner/16981")
 			}
 
@@ -2062,7 +2076,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 	// Use more memory so that we may reliably fit MySQL and nginx
 	memoryFlag := "--memory=4000"
 	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
-	if GithubActionRunner() && VirtualboxDriver() {
+	if detect.GithubActionRunner() && VirtualboxDriver() {
 		memoryFlag = "--memory=6000"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.

@@ -44,7 +44,7 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v16"
+	PreloadVersion = "v17"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
@@ -90,7 +90,7 @@ func TarballPath(k8sVersion, containerRuntime string) string {
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
 func remoteTarballURL(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("https://%s/%s/%s", downloadHost, PreloadBucket, TarballName(k8sVersion, containerRuntime))
+	return fmt.Sprintf("https://%s/%s/%s/%s/%s", downloadHost, PreloadBucket, PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
 }
 
 func setPreloadState(k8sVersion, containerRuntime string, value bool) {
@@ -236,7 +236,8 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 // getChecksum returns the MD5 checksum of the preload tarball
 var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
+	filename := fmt.Sprintf("%s/%s/%s", PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
+	attrs, err := getStorageAttrs(filename)
 	if err != nil {
 		return nil, err
 	}

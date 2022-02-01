@@ -95,6 +95,8 @@ type ClusterConfig struct {
 	MountPort               uint16
 	MountType               string
 	MountUID                string
+	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
+	DisableOptimizations    bool
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

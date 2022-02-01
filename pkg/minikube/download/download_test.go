@@ -61,7 +61,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if _, err := Binary("kubectl", "v1.20.2", "linux", "amd64"); err != nil {
+		if _, err := Binary("kubectl", "v1.20.2", "linux", "amd64", ""); err != nil {
 			t.Errorf("Failed to download binary: %+v", err)
 		}
 		group.Done()
