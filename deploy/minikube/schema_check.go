@@ -52,6 +52,7 @@ func validateSchema(schemaPathString, docPathString string) {
 
 	if err = sch.Validate(v); err != nil {
 		fmt.Printf("The document %s is invalid, see errors:\n%#v", docPathString, err)
+		return
 	}
 
 	fmt.Printf("The document %s is valid\n", docPathString)
