@@ -28,7 +28,9 @@ import (
 
 func main() {
 	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases.json")
+	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases-beta.json")
 	validateSchema("deploy/minikube/schema-v2.json", "deploy/minikube/releases-v2.json")
+	validateSchema("deploy/minikube/schema-v2.json", "deploy/minikube/releases-beta-v2.json")
 	os.Exit(0)
 }
 
@@ -49,7 +51,7 @@ func validateSchema(schemaPathString, docPathString string) {
 	}
 
 	if err = sch.Validate(v); err != nil {
-		log.Fatalf("%#v", err)
+		fmt.Printf("The document %s is invalid, see errors:\n%#v", docPathString, err)
 	}
 
 	fmt.Printf("The document %s is valid\n", docPathString)

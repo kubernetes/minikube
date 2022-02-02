@@ -59,7 +59,7 @@ func main() {
 	flag.Parse()
 
 	if *releasesFile == "" || *version == "" {
-		fmt.Println("The releaeses-file & version flags are required and cannot be empty")
+		fmt.Println("The releases-file & version flags are required and cannot be empty")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
