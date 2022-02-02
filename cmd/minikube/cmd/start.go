@@ -1299,7 +1299,7 @@ func validateRuntime(rtime string) error {
 	}
 
 	if (rtime == "crio" || rtime == "cri-o") && (strings.HasPrefix(runtime.GOARCH, "ppc64") || detect.RuntimeArch() == "arm" || strings.HasPrefix(detect.RuntimeArch(), "arm/")) {
-		return errors.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details.", rtime, runtime.GOARCH)
+		return errors.Errorf("The %s runtime is not compatible with the %s architecture. See https://github.com/cri-o/cri-o/issues/2467 for more details", rtime, runtime.GOARCH)
 	}
 
 	if !validRuntime {

@@ -59,7 +59,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generateCRIOConfig.")
+		return errors.Wrap(err, "generateCRIOConfig")
 	}
 
 	if cni.Network != "" {
@@ -97,7 +97,7 @@ func (r *CRIO) Version() (string, error) {
 	c := exec.Command("crio", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrap(err, "crio version.")
+		return "", errors.Wrap(err, "crio version")
 	}
 
 	// crio version 1.13.0
@@ -118,7 +118,7 @@ func (r *CRIO) SocketPath() string {
 func (r *CRIO) Available() error {
 	c := exec.Command("which", "crio")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check crio available.")
+		return errors.Wrapf(err, "check crio available")
 	}
 	return nil
 }
