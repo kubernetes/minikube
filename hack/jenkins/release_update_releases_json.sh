@@ -40,7 +40,8 @@ git checkout -b "jenkins-releases.json-${TAGNAME}"
 git status
 
 if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME" --legacy
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta-v2.json --version "$TAGNAME"
 
   git add -A
   git commit -m "Update releases-beta.json to include ${TAGNAME}"
@@ -53,7 +54,8 @@ if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   # Upload file to GCS so that minikube can see the new version
   gsutil cp deploy/minikube/releases-beta.json gs://minikube/releases-beta.json
 else
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME" --legacy
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-v2.json --version "$TAGNAME"
 
   #Update the front page of our documentation
   now=$(date +"%b %d, %Y")
