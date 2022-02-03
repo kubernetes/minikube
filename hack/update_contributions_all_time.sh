@@ -34,6 +34,18 @@ if ! [[ -x "${DIR}/pullsheet" ]]; then
   install_pullsheet
 fi
 
+TMP_TOKEN=$(mktemp)
+gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$TMP_TOKEN"
+if [ ! -s "$TMP_TOKEN" ]; then
+  echo "Failed to acquire token from 'gh auth'. Ensure 'gh' is authenticated." 1>&2
+  exit 1
+fi
+# Ensure the token is deleted when the script exits, so the token is not leaked.
+function cleanup_token() {
+  rm -f "$TMP_TOKEN"
+}
+trap cleanup_token EXIT
+
 echo "Generating leaderboard for all-time"
 printf -- "---\ntitle: \"All-time\"\nlinkTitle: \"All-time\"\nweight: -99999999\n---\n" > "$destination/all-time.html"
 $DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --logtostderr=false --stderrthreshold=2 \
