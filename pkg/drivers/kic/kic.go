@@ -158,7 +158,7 @@ func (d *Driver) Create() error {
 		} else {
 			// The conflicting container name was not created by minikube
 			// user has a container that conflicts with minikube profile name, will not delete users container.
-			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent.", params.Name)
+			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent", params.Name)
 		}
 	}
 

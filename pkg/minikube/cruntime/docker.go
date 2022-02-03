@@ -254,7 +254,7 @@ func (r *Docker) LoadImage(path string) error {
 	klog.Infof("Loading image: %s", path)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "loadimage docker.")
+		return errors.Wrap(err, "loadimage docker")
 	}
 	return nil
 }
@@ -267,7 +267,7 @@ func (r *Docker) PullImage(name string) error {
 	}
 	c := exec.Command("docker", "pull", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "pull image docker.")
+		return errors.Wrap(err, "pull image docker")
 	}
 	return nil
 }
@@ -277,7 +277,7 @@ func (r *Docker) SaveImage(name string, path string) error {
 	klog.Infof("Saving image %s: %s", name, path)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, path))
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "saveimage docker.")
+		return errors.Wrap(err, "saveimage docker")
 	}
 	return nil
 }
@@ -290,7 +290,7 @@ func (r *Docker) RemoveImage(name string) error {
 	}
 	c := exec.Command("docker", "rmi", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "remove image docker.")
+		return errors.Wrap(err, "remove image docker")
 	}
 	return nil
 }
@@ -300,7 +300,7 @@ func (r *Docker) TagImage(source string, target string) error {
 	klog.Infof("Tagging image %s: %s", source, target)
 	c := exec.Command("docker", "tag", source, target)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "tag image docker.")
+		return errors.Wrap(err, "tag image docker")
 	}
 	return nil
 }
@@ -326,14 +326,14 @@ func (r *Docker) BuildImage(src string, file string, tag string, push bool, env 
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "buildimage docker.")
+		return errors.Wrap(err, "buildimage docker")
 	}
 	if tag != "" && push {
 		c := exec.Command("docker", "push", tag)
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if _, err := r.Runner.RunCmd(c); err != nil {
-			return errors.Wrap(err, "pushimage docker.")
+			return errors.Wrap(err, "pushimage docker")
 		}
 	}
 	return nil
@@ -344,7 +344,7 @@ func (r *Docker) PushImage(name string) error {
 	klog.Infof("Pushing image: %s", name)
 	c := exec.Command("docker", "push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "push image docker.")
+		return errors.Wrap(err, "push image docker")
 	}
 	return nil
 }
@@ -422,7 +422,7 @@ func (r *Docker) KillContainers(ids []string) error {
 	args := append([]string{"rm", "-f"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "Killing containers docker.")
+		return errors.Wrap(err, "killing containers docker")
 	}
 	return nil
 }

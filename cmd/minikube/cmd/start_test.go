@@ -112,6 +112,7 @@ func TestMirrorCountry(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	checkRepository = checkRepoMock
 	k8sVersion := constants.DefaultKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
 		description     string
 		k8sVersion      string
@@ -157,7 +158,7 @@ func TestMirrorCountry(t *testing.T) {
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
 			viper.SetDefault(kvmNUMACount, 1)
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, driver.Mock)
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, driver.Mock)
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -179,6 +180,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 		}
 	}()
 	k8sVersion := constants.NewestKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
 		description  string
 		proxy        string
@@ -226,7 +228,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 
 			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
 			proxy.SetDockerEnv()
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
