@@ -188,6 +188,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	validateKubernetesVersion(existing)
+	validateContainerRuntime(existing)
 
 	ds, alts, specified := selectDriver(existing)
 	if cmd.Flag(kicBaseImage).Changed {
@@ -270,7 +271,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.Error(reason.GuestStart, "failed to start node", err)
 	}
 
-	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
+	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Node.ContainerRuntime, starter.Cfg.Name); err != nil {
 		klog.Errorf("kubectl info: %v", err)
 	}
 }
@@ -302,7 +303,8 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	k8sVersion := getKubernetesVersion(existing)
-	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
+	rtime := getContainerRuntime(existing)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
@@ -381,6 +383,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 						Worker:            true,
 						ControlPlane:      false,
 						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+						ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
 					}
 					out.Ln("") // extra newline for clarity on the command line
 					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
@@ -439,15 +442,15 @@ func displayEnviron(env []string) {
 	}
 }
 
-func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, machineName string) error {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName string) error {
 	if k8sVersion == constants.NoKubernetesVersion {
 		register.Reg.SetStep(register.Done)
 		out.Step(style.Ready, "Done! minikube is ready without Kubernetes!")
 
 		// Runtime message.
 		boxConfig := box.Config{Py: 1, Px: 4, Type: "Round", Color: "Green"}
-		switch viper.GetString(containerRuntime) {
-		case constants.DefaultContainerRuntime:
+		switch rtime {
+		case constants.Docker:
 			out.BoxedWithConfig(boxConfig, style.Tip, "Things to try without Kubernetes ...", `- "minikube ssh" to SSH into minikube's node.
 - "minikube docker-env" to point your docker-cli to the docker inside minikube.
 - "minikube image" to build images without docker.`)
@@ -1183,9 +1186,10 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
-		runtime := viper.GetString(containerRuntime)
-		if runtime != "docker" {
-			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
+		// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
+		rtime := viper.GetString(containerRuntime)
+		if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime(getKubernetesVersion(nil)) {
+			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": rtime})
 		}
 
 		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
@@ -1285,6 +1289,10 @@ func validateRuntime(rtime string) error {
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
 
+	if rtime == constants.DefaultContainerRuntime {
+		return nil
+	}
+
 	var validRuntime bool
 	for _, option := range validOptions {
 		if rtime == option {
@@ -1308,9 +1316,31 @@ func validateRuntime(rtime string) error {
 	return nil
 }
 
+func getContainerRuntime(old *config.ClusterConfig) string {
+	paramRuntime := viper.GetString(containerRuntime)
+
+	// try to load the old version first if the user didn't specify anything
+	if paramRuntime == constants.DefaultContainerRuntime && old != nil {
+		paramRuntime = old.KubernetesConfig.ContainerRuntime
+	}
+
+	if paramRuntime == constants.DefaultContainerRuntime {
+		k8sVersion := getKubernetesVersion(old)
+		paramRuntime = defaultRuntime(k8sVersion)
+	}
+
+	return paramRuntime
+}
+
+// defaultRuntime returns the default container runtime
+func defaultRuntime(k8sVersion string) string {
+	// minikube default
+	return constants.Docker
+}
+
 // if container runtime is not docker, check that cni is not disabled
 func validateCNI(cmd *cobra.Command, runtime string) {
-	if runtime == "docker" {
+	if runtime == constants.Docker {
 		return
 	}
 	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
@@ -1458,6 +1488,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
 		cp.KubernetesVersion = getKubernetesVersion(&cc)
+		cp.ContainerRuntime = getContainerRuntime(&cc)
 		if err != nil {
 			return cc, config.Node{}, err
 		}
@@ -1467,6 +1498,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
 			n.KubernetesVersion = getKubernetesVersion(&cc)
+			n.ContainerRuntime = getContainerRuntime(&cc)
 			nodes = append(nodes, n)
 		}
 		cc.Nodes = nodes
@@ -1477,6 +1509,7 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
+		ContainerRuntime:  getContainerRuntime(&cc),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
@@ -1570,6 +1603,17 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 	if defaultVersion.GT(nvs) {
 		out.Styled(style.New, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}", out.V{"prefix": version.VersionPrefix, "new": defaultVersion})
+	}
+}
+
+// validateContainerRuntime ensures that the container runtime is reasonable
+func validateContainerRuntime(old *config.ClusterConfig) {
+	if old == nil || old.KubernetesConfig.ContainerRuntime == "" {
+		return
+	}
+
+	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
+		klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
 	}
 }
 
