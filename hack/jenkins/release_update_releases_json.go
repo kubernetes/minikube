@@ -53,29 +53,43 @@ func (r *releases) UnmarshalJSON(p []byte) error {
 }
 
 func main() {
+	legacy := flag.Bool("legacy", false, "Updated the releases file using the legacy format")
 	releasesFile := flag.String("releases-file", "", "The path to the releases file")
 	version := flag.String("version", "", "The version of minikube to create the entry for")
 	flag.Parse()
 
 	if *releasesFile == "" || *version == "" {
-		fmt.Println("All flags are required and cannot be empty")
+		fmt.Println("The releases-file & version flags are required and cannot be empty")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	r, err := getReleases(*releasesFile)
-	if err != nil {
-		log.Fatal(err)
+	if *legacy {
+		if err := updateReleasesLegacy(*releasesFile, *version); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
-	e := createBareRelease(*version)
+	if err := updateReleases(*releasesFile, *version); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func updateReleases(releasesFile, version string) error {
+	r, err := getReleases(releasesFile)
+	if err != nil {
+		return err
+	}
+
+	e := createBareRelease(version)
 
 	shaMap := getSHAMap(&e.Checksums)
 	for os, archs := range shaMap {
 		for arch, sumVars := range archs {
 			sha, err := getSHA(os, arch)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 			for _, sumVar := range sumVars {
 				*sumVar = sha
@@ -86,9 +100,10 @@ func main() {
 
 	r.Releases = append([]release{e}, r.Releases...)
 
-	if err := updateJSON(*releasesFile, r); err != nil {
-		log.Fatal(err)
+	if err := updateJSON(releasesFile, r); err != nil {
+		return err
 	}
+	return nil
 }
 
 func getReleases(path string) (releases, error) {
@@ -152,6 +167,97 @@ func getSHA(operatingSystem, arch string) (string, error) {
 }
 
 func updateJSON(path string, r releases) error {
+	b, err := json.MarshalIndent(r.Releases, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal releases to JSON: %v", err)
+	}
+
+	if err := os.WriteFile(path, b, 0644); err != nil {
+		return fmt.Errorf("failed to write JSON to file: %v", err)
+	}
+	return nil
+}
+
+type releaseLegacy struct {
+	Checksums *operatingSystems `json:"checksums,omitempty"`
+	Name      string            `json:"name"`
+}
+
+type releasesLegacy struct {
+	Releases []releaseLegacy
+}
+
+func (r *releasesLegacy) UnmarshalJSON(p []byte) error {
+	return json.Unmarshal(p, &r.Releases)
+}
+
+func updateReleasesLegacy(releasesFile, version string) error {
+	r, err := getReleasesLegacy(releasesFile)
+	if err != nil {
+		return err
+	}
+
+	e := createBareReleaseLegacy(version)
+
+	shaMap := getSHAMapLegacy(e.Checksums)
+	for os, archs := range shaMap {
+		for arch, sumVars := range archs {
+			sha, err := getSHA(os, arch)
+			if err != nil {
+				return err
+			}
+			for _, sumVar := range sumVars {
+				*sumVar = sha
+			}
+
+		}
+	}
+
+	r.Releases = append([]releaseLegacy{e}, r.Releases...)
+
+	if err := updateJSONLegacy(releasesFile, r); err != nil {
+		return err
+	}
+	return nil
+}
+
+func getReleasesLegacy(path string) (releasesLegacy, error) {
+	r := releasesLegacy{}
+
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return r, fmt.Errorf("failed to read in releases file %q: %v", path, err)
+	}
+
+	if err := json.Unmarshal(b, &r); err != nil {
+		return r, fmt.Errorf("failed to unmarshal releases file: %v", err)
+	}
+
+	return r, nil
+}
+
+func createBareReleaseLegacy(name string) releaseLegacy {
+	return releaseLegacy{
+		Checksums: &operatingSystems{},
+		Name:      name,
+	}
+}
+
+func getSHAMapLegacy(c *operatingSystems) map[string]map[string][]*string {
+	return map[string]map[string][]*string{
+		"darwin": {
+			"amd64": {&c.Darwin},
+		},
+		"linux": {
+			"amd64": {&c.Linux},
+		},
+		"windows": {
+			"amd64": {&c.Windows},
+		},
+	}
+}
+
+func updateJSONLegacy(path string, r releasesLegacy) error {
 	b, err := json.MarshalIndent(r.Releases, "", "    ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal releases to JSON: %v", err)

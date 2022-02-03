@@ -68,7 +68,6 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.1
-	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v1.0.0-RC1
@@ -98,6 +97,8 @@ require (
 	libvirt.org/go/libvirt v1.7010.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
+
+require github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
@@ -185,8 +186,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
