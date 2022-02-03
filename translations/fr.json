@@ -666,6 +666,7 @@
 	"The path on the file system where the testing docs in markdown need to be saved": "Le chemin sur le système de fichiers où les documents de test en markdown doivent être enregistrés",
 	"The podman service within '{{.cluster}}' is not active": "Le service podman dans '{{.cluster}}' n'est pas actif",
 	"The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/": "La commande podman-env est incompatible avec les clusters multi-nœuds. Utilisez le module 'registry' : https://minikube.sigs.k8s.io/docs/handbook/registry/",
+	"The podman-env command is only compatible with the \"crio\" runtime, but this cluster was configured to use the \"{{.runtime}}\" runtime.": "",
 	"The requested memory allocation of {{.requested}}MiB does not leave room for system overhead (total system memory: {{.system_limit}}MiB). You may face stability issues.": "L'allocation de mémoire demandée de {{.requested}}MiB ne laisse pas de place pour la surcharge système (mémoire système totale : {{.system_limit}}MiB). Vous pouvez rencontrer des problèmes de stabilité.",
 	"The service namespace": "L'espace de nom du service",
 	"The service/ingress {{.resource}} requires privileged ports to be exposed: {{.ports}}": "Le service/ingress {{.resource}} nécessite l'exposition des ports privilégiés : {{.ports}}",
