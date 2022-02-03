@@ -560,6 +560,8 @@
 	"Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'": "Désolé, {{.driver}} n'autorise pas la modification des montages après la création du conteneur (montage précédent : '{{.old}}', nouveau montage : '{{.new}})'",
 	"Source {{.path}} can not be empty": "La source {{.path}} ne peut pas être vide",
 	"Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}": "La version spécifiée de Kubernetes {{.specified}} est inférieure à la plus ancienne version prise en charge : {{.oldest}}",
+	"Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}": "",
+	"Specified Major version of Kubernetes {{.specifiedMajor}} is newer than the newest supported Major version: {{.newestMajor}}": "",
 	"Specify --kubernetes-version in v\u003cmajor\u003e.\u003cminor.\u003cbuild\u003e form. example: 'v1.1.14'": "Spécifiez --kubernetes-version avec la forme v\u003cmajor\u003e.\u003cminor.\u003cbuild\u003e. exemple : 'v1.1.14'",
 	"Specify an alternate --host-only-cidr value, such as 172.16.0.1/24": "Spécifiez une autre valeur --host-only-cidr, telle que 172.16.0.1/24",
 	"Specify arbitrary flags to pass to the Docker daemon. (format: key=value)": "Spécifie des indicateurs arbitraires à transmettre au daemon Docker (format : clé = valeur).",
