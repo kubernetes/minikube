@@ -36,7 +36,7 @@ jobs:
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: leaderboard-all-time
-          push-to-fork: minikube-bot/minikube
+          push-to-fork: spowelljr/minikube
           base: master
           delete-branch: true
           title: 'Update leaderboard all-time'
