@@ -115,7 +115,7 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
-// ImageCacheDir returns the path to the container image cache directory for the current architecture
+// ImageCacheDir returns the path to the container image cache directory in minikube home folder for the current architecture
 func ImageCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "images"), runtime.GOARCH)
 }
