@@ -805,6 +805,7 @@
 	"The path on the file system where the testing docs in markdown need to be saved": "",
 	"The podman service within '{{.cluster}}' is not active": "",
 	"The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/": "",
+	"The podman-env command is only compatible with the \"crio\" runtime, but this cluster was configured to use the \"{{.runtime}}\" runtime.": "",
 	"The requested memory allocation of {{.requested}}MiB does not leave room for system overhead (total system memory: {{.system_limit}}MiB). You may face stability issues.": "",
 	"The service namespace": "",
 	"The service/ingress {{.resource}} requires privileged ports to be exposed: {{.ports}}": "",
