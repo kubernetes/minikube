@@ -715,7 +715,11 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 
 	// This can fail during upgrades if the old pods have not shut down yet
 	addonPhase := func() error {
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
+		addons := "all"
+		if cfg.KubernetesConfig.ExtraOptions.Exists("kubeadm.skip-phases=addon/kube-proxy") {
+			addons = "coredns"
+		}
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
 		return err
 	}
 	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
