@@ -34,6 +34,9 @@ if ! [[ -x "${DIR}/pullsheet" ]]; then
   install_pullsheet
 fi
 
+destination="$DIR/../site/content/en/docs/contrib/leaderboard"
+mkdir -p "$destination"
+
 TMP_TOKEN=$(mktemp)
 gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$TMP_TOKEN"
 if [ ! -s "$TMP_TOKEN" ]; then
