@@ -31,44 +31,7 @@ minikube profiles are meant to be isolated from one another, with their own sett
 
 ## Can I use minikube as a Docker Desktop replacement?
 
-minikube's VM includes a Docker daemon running inside Linux for free, so you can use 
-`minikube docker-env` to point your terminal's Docker CLI to the Docker inside minikube.
-
-{{% tabs %}}
-{{% tab "bash/zsh" %}}
-```
-eval $(minikube -p <profile> docker-env)
-```
-{{% /tab %}}
-{{% tab PowerShell %}}
-```
-& minikube -p <profile> docker-env --shell powershell | Invoke-Expression
-```
-{{% /tab %}}
-{{% tab cmd %}}
-```
-@FOR /f "tokens=*" %i IN ('minikube -p <profile> docker-env --shell cmd') DO @%i
-```
-{{% /tab %}}
-{{% tab fish %}}
-```
-minikube -p <profile> docker-env | source
-```
-{{% /tab %}}
-{{% tab tcsh %}}
-```
-eval `minikube -p <profile> docker-env`
-```
-{{% /tab %}}
-{{% /tabs %}}
-
-Note: this only works with the "docker" container runtime, not with e.g. "containerd"
-
-You would need to start minikube with a VM driver, instead of docker, such as hyperkit on macOS and Hyper-V on Windows.
-```
-minikube start --container-runtime=docker --vm=true
-```
-Alternatively, you can use `minikube image build`  instead of `minikube docker-env` and `docker build`.
+Yes! Follow our tutorial on [Using minikube as a Docker Desktop Replacement]({{< ref "/docs/tutorials/docker_desktop_replacement" >}}).
 
 ## Can I start minikube without Kubernetes running?
 
