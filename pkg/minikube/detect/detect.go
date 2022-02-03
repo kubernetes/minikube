@@ -115,12 +115,17 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
-// ImageCacheDir returns the path to the container image cache directory in minikube home folder for the current architecture
+// ImageCacheDir returns the path in the minikube home directory to the container image cache for the current architecture
 func ImageCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "images"), runtime.GOARCH)
 }
 
-// KICCacheDir returns the path to the container node image cache directory for the current architecture
+// KICCacheDir returns the path in the minikube home directory to the container node cache for the current architecture
 func KICCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "kic"), runtime.GOARCH)
+}
+
+// ISOCacheDir returns the path in the minikube home directory to the virtual machine image cache for the current architecture
+func ISOCacheDir() string {
+	return filepath.Join(localpath.MakeMiniPath("cache", "iso"), runtime.GOARCH)
 }

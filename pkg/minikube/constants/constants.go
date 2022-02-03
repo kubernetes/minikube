@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 var (
@@ -180,9 +179,6 @@ var (
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
-
-	// ISOCacheDir is the path to the virtual machine image cache directory
-	ISOCacheDir = localpath.MakeMiniPath("cache", "iso")
 
 	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{
