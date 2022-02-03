@@ -795,7 +795,7 @@ update-leaderboard:
 
 .PHONY: update-leaderboard-all-time
 update-leaderboard-all-time:
-        hack/update_contributions_all_time.sh
+	hack/update_contributions_all_time.sh
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
 	$(if $(quiet),@echo "  CP       $@")
