@@ -49,7 +49,7 @@ function cleanup_token() {
 }
 trap cleanup_token EXIT
 
-echo "Generating leaderboard for all-time"
-printf -- "---\ntitle: \"All-time\"\nlinkTitle: \"All-time\"\nweight: -99999999\n---\n" > "$destination/all-time.html"
-$DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since 2010-01-01 --logtostderr=false --stderrthreshold=2 \
-    | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/all-time.html"
+echo "Generating leaderboard for 2016"
+printf -- "---\ntitle: \"2016\"\nlinkTitle: \"2016\"\nweight: -99992016\n---\n" > "$destination/2016.html"
+$DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since 2016-01-01 --until 2016-12-31 --logtostderr=false --stderrthreshold=2 \
+    | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/2016.html"
