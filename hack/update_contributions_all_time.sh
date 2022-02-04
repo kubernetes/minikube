@@ -51,5 +51,5 @@ trap cleanup_token EXIT
 
 echo "Generating leaderboard for all-time"
 printf -- "---\ntitle: \"All-time\"\nlinkTitle: \"All-time\"\nweight: -99999999\n---\n" > "$destination/all-time.html"
-$DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --logtostderr=false --stderrthreshold=2 \
+$DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since 2010-01-01 --logtostderr=false --stderrthreshold=2 \
     | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/all-time.html"
