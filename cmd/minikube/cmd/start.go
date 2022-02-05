@@ -286,6 +286,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
+	validateNoAddonsForNoKubernetes()
 	if driverName == oci.Docker {
 		validateDockerStorageDriver(driverName)
 	}
@@ -1651,4 +1652,12 @@ func exitGuestProvision(err error) {
 		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning guest", err)
+}
+
+func validateNoAddonsForNoKubernetes() {
+	if ClusterConfig, err := config.Load(ClusterFlagValue()); err == nil {
+		if ClusterConfig.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+			exit.Message(reason.Usage, "Cannot enable addons with --no-kubernetes passed")
+		}
+	}
 }

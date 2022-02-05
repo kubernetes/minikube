@@ -40,6 +40,11 @@ var addonsEnableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons enable ADDON_NAME")
 		}
+		if ClusterConfig, err := config.Load(ClusterFlagValue()); err == nil {
+			if ClusterConfig.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+				exit.Message(reason.Usage, "Cannot enable addons with --no-kubernetes passed")
+			}
+		}
 		addon := args[0]
 		// replace heapster as metrics-server because heapster is deprecated
 		if addon == "heapster" {
@@ -62,7 +67,7 @@ var addonsEnableCmd = &cobra.Command{
 			}
 			out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
-	minikube{{.profileArg}} addons enable metrics-server	
+	minikube{{.profileArg}} addons enable metrics-server
 
 `, out.V{"profileArg": tipProfileArg})
 
