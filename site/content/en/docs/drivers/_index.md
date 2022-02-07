@@ -31,6 +31,14 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [VMware Fusion]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
+### macOS M1 (Silicon)
+
+The following drivers support macOS M1 users:
+* Docker
+
+You can also follow along with experimental driver options:
+* [Podman]({{<ref "podman.md">}}) 
+
 ## Windows
 
 * [Hyper-V]({{<ref "hyperv.md">}}) - VM (preferred)
