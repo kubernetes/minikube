@@ -24,6 +24,7 @@ Usage: from the root minikube directory, go run cmd/extract/extract.go
 package main
 
 import (
+	"flag"
 	"os"
 	"strings"
 
@@ -31,6 +32,20 @@ import (
 )
 
 func main() {
+	flag.Parse()
+	if flag.NArg() < 1 {
+		panic("pass in 'strings' or 'addons' as parameter")
+	}
+	if flag.Arg(0) == "strings" {
+		parseStrings()
+	} else if flag.Arg(0) == "addons" {
+		parseAddons()
+	} else {
+		panic("pass in 'strings' or 'addons' as parameter")
+	}
+}
+
+func parseStrings() {
 	paths := []string{"cmd", "pkg"}
 	functions := []string{"translate.T"}
 	outDir := "translations"
@@ -51,4 +66,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func parseAddons() {
+	extract.AddonImages()
 }

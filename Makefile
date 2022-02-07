@@ -411,7 +411,7 @@ out/coverage.html: out/coverage.out
 
 .PHONY: extract 
 extract: ## extract internationalization words for translations
-	go run cmd/extract/extract.go
+	go run cmd/extract/extract.go strings
 
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
