@@ -28,8 +28,8 @@ RUN cd ./cmd/auto-pause/ && go build
 # cri-dockerd static
 FROM golang:1.16
 RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
-    cd cri-dockerd && git checkout 542e27dee12db61d6e96d2a83a20359474a5efa2 && \
-    cd src && env CGO_ENABLED=0 go build -o cri-dockerd
+    cd cri-dockerd && git checkout a4d1895a2659ea9974bd7528a706592ab8b74181 && \
+    cd src && env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
