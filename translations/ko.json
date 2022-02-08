@@ -422,6 +422,7 @@
 	"Message Size: {{.size}}": "메시지 사이즈: {{.size}}",
 	"Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.": "Minikube 는 개발용으로 최적화된 싱글 노드 쿠버네티스 클러스터 제공 및 관리 CLI 툴입니다",
 	"Minikube is a tool for managing local Kubernetes clusters.": "Minikube 는 로컬 쿠버네티스 클러스터 관리 툴입니다",
+	"Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}": "",
 	"Modify persistent configuration values": "",
 	"More information: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities": "",
 	"Most users should use the newer 'docker' driver instead, which does not require root!": "",
