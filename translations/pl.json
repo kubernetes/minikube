@@ -411,6 +411,7 @@
 	"Log into the minikube environment (for debugging)": "Zaloguj się do środowiska minikube (do debugowania)",
 	"Manage images": "Zarządzaj obrazami",
 	"Message Size: {{.size}}": "Rozmiar wiadomości: {{.size}}",
+	"Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}": "",
 	"Modify persistent configuration values": "Modyfikuj globalne opcje konfiguracyjne",
 	"More information: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities": "Więcej informacji: https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities",
 	"Most users should use the newer 'docker' driver instead, which does not require root!": "Większość użytkowników powinna używać nowszego sterownika docker, ktory nie wymaga uruchamiania z poziomu roota!",

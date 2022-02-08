@@ -30,6 +30,12 @@ spec:
   scope: Namespaced
   versions:
   - name: v1alpha1
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
     served: true
     storage: true
     subresources:
