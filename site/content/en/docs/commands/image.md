@@ -124,11 +124,11 @@ minikube image help [command] [flags]
 
 ## minikube image load
 
-Load a image into minikube
+Load an image into minikube
 
 ### Synopsis
 
-Load a image into minikube
+Load an image into minikube
 
 ```shell
 minikube image load IMAGE | ARCHIVE | - [flags]
