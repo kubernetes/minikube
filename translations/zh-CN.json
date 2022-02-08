@@ -483,6 +483,7 @@
 	"Manage images": "",
 	"Message Size: {{.size}}": "",
 	"Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.": "Minikube 是一个命令行工具，它提供和管理针对开发工作流程优化的单节点 Kubernetes 集群。",
+	"Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}": "",
 	"Modify minikube config": "修改 minikube 配置",
 	"Modify minikube's kubernetes addons": "修改 minikube 的 kubernetes 插件",
 	"Modify persistent configuration values": "",
