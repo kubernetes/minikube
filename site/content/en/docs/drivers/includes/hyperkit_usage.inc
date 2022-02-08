@@ -6,13 +6,7 @@
 ## HyperKit installation
 
 * If Docker for Desktop is installed, you already have HyperKit
-* Otherwise, if you have [Brew Package Manager](https://brew.sh/), run:
-
-```shell
-brew install hyperkit
-```
-
-* As a final alternative, you may [Install HyperKit from GitHub](https://github.com/moby/hyperkit)
+* Otherwise minikube downloads HyperKit automatically to a suitable version if missing (on the host), there is no need to manually upgrade the driver
 
 ## Usage
 
