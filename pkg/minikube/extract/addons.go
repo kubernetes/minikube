@@ -17,11 +17,15 @@ limitations under the License.
 package extract
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+	"path"
+	"unicode"
+	"unicode/utf8"
+
+	"gopkg.in/yaml.v2"
 )
 
 func AddonImages() error {
@@ -31,16 +35,49 @@ func AddonImages() error {
 		return err
 	}
 
+	addonToImages := make(map[string]interface{})
+	currentAddon := ""
 	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 	if err != nil {
 		return err
 	}
-
 	ast.Inspect(file, func(x ast.Node) bool {
 		if kvp, ok := x.(*ast.KeyValueExpr); ok {
-			fmt.Println(kvp.Key)
+			if key, ok := kvp.Key.(*ast.BasicLit); ok {
+				k := key.Value[1 : len(key.Value)-1]
+				first, _ := utf8.DecodeRuneInString(k)
+				if unicode.IsLower(first) {
+					// This is an addon name
+					currentAddon = k
+				} else if unicode.IsUpper(first) {
+					// This is a variable name pointing to an image
+					if v, ok := kvp.Value.(*ast.BasicLit); ok {
+						val := v.Value[1 : len(v.Value)-1]
+						if _, ok := addonToImages[currentAddon]; !ok {
+							// This is the first image we've found for this addon
+							addonToImages[currentAddon] = map[string]string{k: val}
+						} else {
+							ca := addonToImages[currentAddon].(map[string]string)
+							if i, ok := ca[k]; ok {
+								// We have an explicit registry definition, prepend it to the image already in the map
+								i = path.Join(val, i)
+								ca[k] = i
+							} else {
+								// This is a new image to append to the list for this addon
+								ca[k] = val
+							}
+							addonToImages[currentAddon] = ca
+						}
+					}
+				}
+			}
 		}
 		return true
 	})
-	return nil
+
+	y, err := yaml.Marshal(addonToImages)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile("hack/addons/addons.yaml", y, 0777)
 }
