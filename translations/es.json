@@ -394,7 +394,7 @@
 	"Lists all valid default values for PROPERTY_NAME": "",
 	"Lists all valid minikube profiles and detects all possible invalid profiles.": "",
 	"Lists the URLs for the services in your local cluster": "",
-	"Load a image into minikube": "",
+	"Load an image into minikube": "",
 	"Local folders to share with Guest via NFS mounts (hyperkit driver only)": "Carpetas locales que se compartirán con el invitado mediante activaciones de NFS (solo con el controlador de hyperkit)",
 	"Local proxy ignored: not passing {{.name}}={{.value}} to docker env.": "",
 	"Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)": "Ubicación del socket de VPNKit que se utiliza para ofrecer funciones de red. Si se deja en blanco, se inhabilita VPNKitSock de Hyperkit; si se define como \"auto\", se utiliza Docker para las conexiones de VPNKit en Mac. Con cualquier otro valor, se utiliza el VSock especificado (solo con el controlador de hyperkit)",
