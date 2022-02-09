@@ -29,6 +29,10 @@ eval set -- "$opts"
 
 GENIMAGE_TMP="${BUILD_DIR}/genimage.tmp"
 
+echo "*** $1 ************************"
+echo "*** $2 ***"
+echo "${BUILD_DIR}"
+
 while true ; do
 	case "$1" in
 	-c)
@@ -42,7 +46,7 @@ while true ; do
 	esac
 done
 
-[ -n "${GENIMAGE_CFG}" ] || die "Missing argument"
+# [ -n "${GENIMAGE_CFG}" ] || die "Missing argument"
 
 # Pass an empty rootpath. genimage makes a full copy of the given rootpath to
 # ${GENIMAGE_TMP}/root so passing TARGET_DIR would be a waste of time and disk
@@ -59,5 +63,7 @@ genimage \
 	--tmppath "${GENIMAGE_TMP}"    \
 	--inputpath "${BINARIES_DIR}"  \
 	--outputpath "${BINARIES_DIR}" \
-	--config "${GENIMAGE_CFG}"
+	--config "./genimage-efi.cfg"
+
+	#"${GENIMAGE_CFG}"
   
