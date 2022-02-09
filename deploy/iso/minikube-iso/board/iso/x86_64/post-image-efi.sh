@@ -19,6 +19,8 @@
 
 set -e
 
+echo "2*** I am inside post-image-efi.sh"
+
 GENIMAGE_CFG="$2"
 
 support/scripts/genimage.sh -c "$GENIMAGE_CFG"

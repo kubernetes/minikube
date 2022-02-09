@@ -16,7 +16,11 @@
 
 set -e
 
+echo "1*** I am inside post-build.sh"
+
 BOARD_DIR=$(dirname "$0")
+
+echo "1a*** ${BOARD_DIR}"
 
 # Detect boot strategy, EFI or BIOS
 if [ -d "$BINARIES_DIR/efi-part/" ]; then
