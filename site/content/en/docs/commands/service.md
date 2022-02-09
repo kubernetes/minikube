@@ -20,6 +20,7 @@ minikube service [flags] SERVICE
 ### Options
 
 ```
+      --all                Prints URL and port-forwards (if needed) all services in a namespace
       --format string      Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --https              Open the service URL with https instead of http (defaults to "false")
       --interval int       The initial time interval for each check that wait performs in seconds (default 1)

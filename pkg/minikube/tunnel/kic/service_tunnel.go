@@ -73,11 +73,9 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 }
 
 // Stop ...
-func (t *ServiceTunnel) Stop() error {
+func (t *ServiceTunnel) Stop() {
 	err := t.sshConn.stop()
 	if err != nil {
-		return errors.Wrap(err, "stopping ssh tunnel")
+		klog.Warningf("Failed to stop ssh tunnel", err)
 	}
-
-	return nil
 }

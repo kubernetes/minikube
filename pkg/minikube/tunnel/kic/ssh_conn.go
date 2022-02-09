@@ -18,6 +18,7 @@ package kic
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 
@@ -159,7 +160,12 @@ func (c *sshConn) stop() error {
 	if c.activeConn {
 		c.activeConn = false
 		out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
-		return c.cmd.Process.Kill()
+		err := c.cmd.Process.Kill()
+		if err == os.ErrProcessDone {
+			// No need to return an error here
+			return nil
+		}
+		return err
 	}
 	out.Step(style.Stopping, "Stopped tunnel for service {{.service}}.", out.V{"service": c.service})
 	return nil
