@@ -65,7 +65,8 @@ genimage \
 	--tmppath "${GENIMAGE_TMP}"    \
 	--inputpath "${BINARIES_DIR}"  \
 	--outputpath "${BINARIES_DIR}" \
-	--config "./genimage-efi.cfg"
+	--config "${GENIMAGE_CFG}"
 
 	#"${GENIMAGE_CFG}"
+	"./genimage-efi.cfg"
   
