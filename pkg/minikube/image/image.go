@@ -36,7 +36,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -198,7 +198,7 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 
 // imagePathInCache returns path in local cache directory
 func imagePathInCache(img string) string {
-	f := filepath.Join(constants.ImageCacheDir, img)
+	f := filepath.Join(detect.ImageCacheDir(), img)
 	f = localpath.SanitizeCacheDir(f)
 	return f
 }
@@ -278,7 +278,7 @@ func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, err
 }
 
 func cleanImageCacheDir() error {
-	err := filepath.Walk(constants.ImageCacheDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(localpath.MakeMiniPath("cache", "images"), func(path string, info os.FileInfo, err error) error {
 		// If error is not nil, it's because the path was already deleted and doesn't exist
 		// Move on to next path
 		if err != nil {

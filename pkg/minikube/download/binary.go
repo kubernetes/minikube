@@ -55,7 +55,7 @@ func binaryWithChecksumURL(binaryName, version, osName, archName, binaryURL stri
 
 // Binary will download a binary onto the host
 func Binary(binary, version, osName, archName, binaryURL string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", osName, version)
+	targetDir := localpath.MakeMiniPath("cache", osName, archName, version)
 	targetFilepath := path.Join(targetDir, binary)
 	targetLock := targetFilepath + ".lock"
 
