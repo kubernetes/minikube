@@ -34,10 +34,10 @@ var (
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.23.2"
+	DefaultKubernetesVersion = "v1.23.3"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.23.3-rc.0"
+	NewestKubernetesVersion = "v1.23.4-rc.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.16.0"
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
@@ -60,8 +60,10 @@ const (
 	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// Docker is the default name and spelling for the docker container runtime
+	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
-	DefaultContainerRuntime = "docker"
+	DefaultContainerRuntime = ""
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
@@ -141,9 +143,6 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
-
-	// ReconfigurationNotRequired is the message logged when reconfiguration is not required
-	ReconfigurationNotRequired = "The running cluster does not require reconfiguration"
 )
 
 var (

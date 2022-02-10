@@ -3,11 +3,11 @@ module k8s.io/minikube
 go 1.17
 
 require (
-	cloud.google.com/go/storage v1.19.0
+	cloud.google.com/go/storage v1.20.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
 	github.com/Delta456/box-cli-maker/v2 v2.2.2
 	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.21.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.0.0
 	github.com/Microsoft/hcsshim v0.8.17 // indirect
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
@@ -19,7 +19,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.8.0
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/docker/docker v20.10.11+incompatible
+	github.com/docker/docker v20.10.12+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
@@ -64,27 +64,26 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.21.12
+	github.com/shirou/gopsutil/v3 v3.22.1
 	github.com/spf13/cobra v1.3.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.1
-	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/otel v1.0.0-RC1
-	go.opentelemetry.io/otel/sdk v1.0.0-RC1
-	go.opentelemetry.io/otel/trace v1.0.0-RC1
+	go.opentelemetry.io/otel v1.3.0
+	go.opentelemetry.io/otel/sdk v1.3.0
+	go.opentelemetry.io/otel/trace v1.3.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
 	golang.org/x/mod v0.5.1
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
+	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a
 	golang.org/x/term v0.0.0-20210406210042-72f3dc4e9b72
 	golang.org/x/text v0.3.7
 	gonum.org/v1/plot v0.10.0
-	google.golang.org/api v0.65.0
+	google.golang.org/api v0.68.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.22.4
@@ -99,9 +98,11 @@ require (
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
+require github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
+
 require (
 	cloud.google.com/go v0.100.2 // indirect
-	cloud.google.com/go/compute v0.1.0 // indirect
+	cloud.google.com/go/compute v1.2.0 // indirect
 	cloud.google.com/go/iam v0.1.1 // indirect
 	cloud.google.com/go/monitoring v1.1.0 // indirect
 	cloud.google.com/go/trace v1.0.0 // indirect
@@ -130,7 +131,8 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-fonts/liberation v0.2.0 // indirect
 	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
-	github.com/go-logr/logr v1.2.0 // indirect
+	github.com/go-logr/logr v1.2.1 // indirect
+	github.com/go-logr/stdr v1.2.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-pdf/fpdf v0.5.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -185,8 +187,6 @@ require (
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	github.com/ulikunitz/xz v0.5.8 // indirect
-	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
-	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
@@ -197,7 +197,7 @@ require (
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220118154757-00ab72f36ad5 // indirect
+	google.golang.org/genproto v0.0.0-20220204002441-d6cc3cc0770e // indirect
 	google.golang.org/grpc v1.43.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

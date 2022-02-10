@@ -26,12 +26,12 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.29@sha256:be897edc9ed473a9678010f390a0092f488f6a1c30865f571c3b6388f9f56f9b")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.29-1644344181-13531@sha256:02c921df998f95e849058af14de7045efc3954d90320967418a0d1f182bbc0b2")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
-      --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
+      --container-runtime string          The container runtime to be used. Valid options: docker, cri-o, containerd (default: auto)
       --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
@@ -68,9 +68,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.25.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.25.0/minikube-v1.25.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.25.0.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13531/minikube-v1.25.0-1644344644-13531.iso,https://github.com/kubernetes/minikube/releases/download/v1.25.0-1644344644-13531/minikube-v1.25.0-1644344644-13531.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.25.0-1644344644-13531.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.2, 'latest' for v1.23.3-rc.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.3, 'latest' for v1.23.4-rc.0). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")

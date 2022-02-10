@@ -436,6 +436,8 @@ var (
 	KubernetesInstallFailedRuntimeNotRunning = Kind{ID: "K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING", ExitCode: ExRuntimeNotRunning}
 	// an outdated Kubernetes version was specified for minikube to use
 	KubernetesTooOld = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
+	// a too new Kubernetes version was specified for minikube to use
+	KubernetesTooNew = Kind{ID: "K8S_NEW_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
 	// minikube was unable to safely downgrade installed Kubernetes version
 	KubernetesDowngrade = Kind{
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",

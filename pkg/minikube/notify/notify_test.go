@@ -95,7 +95,7 @@ func TestShouldCheckURLBetaVersion(t *testing.T) {
 }
 
 type URLHandlerCorrect struct {
-	releases Releases
+	releases []Release
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {

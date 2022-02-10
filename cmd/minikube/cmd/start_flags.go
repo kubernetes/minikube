@@ -160,7 +160,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
-	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
+	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
@@ -274,7 +274,7 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
@@ -286,7 +286,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, drvName)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -444,7 +444,7 @@ func getCNIConfig(cmd *cobra.Command) string {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -526,7 +526,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			APIServerIPs:           apiServerIPs,
 			DNSDomain:              viper.GetString(dnsDomain),
 			FeatureGates:           viper.GetString(featureGates),
-			ContainerRuntime:       viper.GetString(containerRuntime),
+			ContainerRuntime:       rtime,
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
@@ -549,7 +549,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.Rootless {
-			if cc.KubernetesConfig.ContainerRuntime == "docker" {
+			if cc.KubernetesConfig.ContainerRuntime == constants.Docker {
 				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
 			}
 			// KubeletInUserNamespace feature gate is essential for rootless driver.
@@ -728,6 +728,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+	}
+	if cmd.Flags().Changed(containerRuntime) {
+		cc.KubernetesConfig.ContainerRuntime = getContainerRuntime(existing)
 	}
 
 	if cmd.Flags().Changed("extra-config") {

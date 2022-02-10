@@ -40,33 +40,37 @@ git checkout -b "jenkins-releases.json-${TAGNAME}"
 git status
 
 if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME" --legacy
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta-v2.json --version "$TAGNAME"
 
   git add -A
-  git commit -m "Update releases-beta.json to include ${TAGNAME}"
+  git commit -m "Update releases-beta.json & releases-beta-v2.json to include ${TAGNAME}"
   git remote add minikube-bot git@github.com:minikube-bot/minikube.git
   git push -f minikube-bot jenkins-releases.json-${TAGNAME}
 
   # Send PR from minikube-bot/minikube to kubernetes/minikube
-  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases-beta.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
+  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases-beta.json & releases-beta-v2.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
 
   # Upload file to GCS so that minikube can see the new version
   gsutil cp deploy/minikube/releases-beta.json gs://minikube/releases-beta.json
+  gsutil cp deploy/minikube/releases-beta-v2.json gs://minikube/releases-beta-v2.json
 else
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME" --legacy
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-v2.json --version "$TAGNAME"
 
   #Update the front page of our documentation
   now=$(date +"%b %d, %Y")
   sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
 
   git add -A
-  git commit -m "Update releases.json to include ${TAGNAME}"
+  git commit -m "Update releases.json & releases-v2.json to include ${TAGNAME}"
   git remote add minikube-bot git@github.com:minikube-bot/minikube.git
   git push -f minikube-bot jenkins-releases.json-${TAGNAME}
 
   # Send PR from minikube-bot/minikube to kubernetes/minikube
-  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
+  curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update releases.json & releases-v2.json to include ${TAGNAME}\",\"head\": \"minikube-bot:jenkins-releases.json-${TAGNAME}\",\"base\": \"master\"}" https://api.github.com/repos/kubernetes/minikube/pulls
 
   # Upload file to GCS so that minikube can see the new version
   gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
+  gsutil cp deploy/minikube/releases-v2.json gs://minikube/releases-v2.json
 fi
