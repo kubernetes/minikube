@@ -27,7 +27,7 @@ GENIMAGE_CFG="$2"
 echo "2a*** ${2}"
 echo "2b*** ${GENIMAGE_CFG}"
 
-support/scripts/genimage.sh -c "$GENIMAGE_CFG"
+# support/scripts/genimage.sh -c "$GENIMAGE_CFG"
 
 cd "$BINARIES_DIR"
 mkdir -p root/boot
