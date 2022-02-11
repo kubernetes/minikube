@@ -35,7 +35,7 @@ cp bzImage root/boot/vmlinuz
 cp rootfs.cpio.gz root/boot/initrd.img
 mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
-cp efiboot.img root/EFI/BOOT/
+# cp efiboot.img root/EFI/BOOT/
 
 mkisofs \
    -o boot.iso \
@@ -43,7 +43,7 @@ mkisofs \
    -hide-rr-moved \
    -no-emul-boot \
    -eltorito-platform=efi \
-   -eltorito-boot EFI/BOOT/efiboot.img \
+   # -eltorito-boot EFI/BOOT/efiboot.img \
    -V "EFIBOOTISO" \
    -A "EFI Boot ISO" \
    root
