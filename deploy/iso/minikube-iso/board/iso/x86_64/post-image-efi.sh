@@ -20,6 +20,7 @@
 set -e
 
 echo "2*** I am inside post-image-efi.sh"
+pwd
 
 # GENIMAGE_CFG="./genimage-efi.cfg"
 # GENIMAGE_CFG="$2"
@@ -30,6 +31,8 @@ echo "2*** I am inside post-image-efi.sh"
 # support/scripts/genimage.sh -c "$GENIMAGE_CFG"
 
 cd "$BINARIES_DIR"
+echo "BINARIES_DIR: $BINARIES_DIR"
+ls -lah
 mkdir -p root/boot
 cp bzImage root/boot/vmlinuz
 cp rootfs.cpio.gz root/boot/initrd.img
@@ -37,18 +40,32 @@ mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
 # cp efiboot.img root/EFI/BOOT/
 
+echo "2c*** mkisofs"
+ls -lah
+
 mkisofs \
    -o boot.iso \
    -R -J -v -d -N \
    -hide-rr-moved \
    -no-emul-boot \
    -eltorito-platform=efi \
-   # -eltorito-boot EFI/BOOT/efiboot.img \
+   -eltorito-boot EFI/BOOT/efiboot.img \
    -V "EFIBOOTISO" \
    -A "EFI Boot ISO" \
    root
 cd -
 
+# -eltorito-boot EFI/BOOT/efiboot.img \
+
+# make the new iso and put in root.
+#  mkisofs
+#    -o /new.iso
+#    -b isolinux/isolinux.bin \
+#    -c isolinux/boot.cat
+#    -no-emul-boot
+#    -boot-load-size 4 \
+#    -boot-info-table 
+#    -J -R -V disks .
 
 # set -e
 
