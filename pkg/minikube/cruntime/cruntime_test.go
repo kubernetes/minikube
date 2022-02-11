@@ -37,7 +37,6 @@ func TestName(t *testing.T) {
 		runtime string
 		want    string
 	}{
-		{"", "Docker"},
 		{"docker", "Docker"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},
@@ -152,14 +151,14 @@ func TestKubeletOptions(t *testing.T) {
 		{"docker", map[string]string{"container-runtime": "docker"}},
 		{"crio", map[string]string{
 			"container-runtime":          "remote",
-			"container-runtime-endpoint": "/var/run/crio/crio.sock",
-			"image-service-endpoint":     "/var/run/crio/crio.sock",
+			"container-runtime-endpoint": ExternalCRIOCRISocket, // TODO: unix://
+			"image-service-endpoint":     ExternalCRIOCRISocket, // TODO: unix://
 			"runtime-request-timeout":    "15m",
 		}},
 		{"containerd", map[string]string{
 			"container-runtime":          "remote",
-			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
-			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
+			"container-runtime-endpoint": "unix://" + ExternalContainerdCRISocket,
+			"image-service-endpoint":     "unix://" + ExternalContainerdCRISocket,
 			"runtime-request-timeout":    "15m",
 		}},
 	}

@@ -42,6 +42,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
+const ExternalContainerdCRISocket = "/run/containerd/containerd.sock"
+
 const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
@@ -182,7 +184,7 @@ func (r *Containerd) SocketPath() string {
 	if r.Socket != "" {
 		return r.Socket
 	}
-	return "/run/containerd/containerd.sock"
+	return ExternalContainerdCRISocket
 }
 
 // Active returns if containerd is active on the host

@@ -209,11 +209,11 @@ func New(c Config) (Manager, error) {
 	switch c.Type {
 	case "", "docker":
 		sp := c.Socket
-		cs := ""
+		cs := InternalDockerCRIService
 		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
 		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
 			sp = ExternalDockerCRISocket
-			cs = "cri-docker.socket"
+			cs = ExternalDockerCRIService
 		}
 		return &Docker{
 			Socket:            sp,

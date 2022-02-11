@@ -39,6 +39,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
+const ExternalCRIOCRISocket = "/var/run/crio/crio.sock"
+
 const (
 	// CRIOConfFile is the path to the CRI-O configuration
 	crioConfigFile = "/etc/crio/crio.conf.d/02-crio.conf"

@@ -43,7 +43,9 @@ import (
 const KubernetesContainerPrefix = "k8s_"
 
 const InternalDockerCRISocket = "/var/run/dockershim.sock"
+const InternalDockerCRIService = "" // none needed
 const ExternalDockerCRISocket = "/var/run/cri-dockerd.sock"
+const ExternalDockerCRIService = "cri-docker.socket"
 
 // ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
