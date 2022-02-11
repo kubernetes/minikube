@@ -38,7 +38,10 @@ cp bzImage root/boot/vmlinuz
 cp rootfs.cpio.gz root/boot/initrd.img
 mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
-# cp efiboot.img root/EFI/BOOT/
+
+# Create an empty boot image.
+dd if=/dev/zero of=EFI/BOOT/efiboot.img bs=512 count=2880
+cp efiboot.img root/EFI/BOOT/
 
 echo "2c*** mkisofs"
 ls -lah
@@ -49,7 +52,7 @@ mkisofs \
    -hide-rr-moved \
    -no-emul-boot \
    -eltorito-platform=efi \
-   -eltorito-boot EFI/BOOT/efiboot.img \
+   -eltorito-boot root/EFI/BOOT/efiboot.img \
    -V "EFIBOOTISO" \
    -A "EFI Boot ISO" \
    root
