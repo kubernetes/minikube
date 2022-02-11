@@ -22,10 +22,10 @@ set -e
 echo "2*** I am inside post-image-efi.sh"
 
 # GENIMAGE_CFG="./genimage-efi.cfg"
-GENIMAGE_CFG="$2"
+# GENIMAGE_CFG="$2"
 
-echo "2a*** ${2}"
-echo "2b*** ${GENIMAGE_CFG}"
+# echo "2a*** ${2}"
+# echo "2b*** ${GENIMAGE_CFG}"
 
 # support/scripts/genimage.sh -c "$GENIMAGE_CFG"
 
