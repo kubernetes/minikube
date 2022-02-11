@@ -33,6 +33,7 @@ minikube start [flags]
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used. Valid options: docker, cri-o, containerd (default: auto)
       --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
+      --cri-service string                The cri service to be started.
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors

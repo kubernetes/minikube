@@ -103,6 +103,14 @@ func (r *Docker) SocketPath() string {
 	return InternalDockerCRISocket
 }
 
+// SocketService returns the extra service needed for Docker
+func (r *Docker) SocketService() string {
+	if r.CRIService != "" {
+		return r.CRIService
+	}
+	return InternalDockerCRIService
+}
+
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
 	_, err := exec.LookPath("docker")

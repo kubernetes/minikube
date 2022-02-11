@@ -56,29 +56,62 @@ func TestName(t *testing.T) {
 	}
 }
 
-func TestDefaultDockerSocketPath(t *testing.T) {
+func TestDefaultCRISocket(t *testing.T) {
 	var tests = []struct {
+		runtime string
 		version string
 		want    string
 	}{
-		{"1.20.0", InternalDockerCRISocket},
-		{"1.21.3", InternalDockerCRISocket},
-		{"1.23.0", InternalDockerCRISocket},
-		{"1.24.0-alpha.0", ExternalDockerCRISocket},
-		{"1.24.0-beta.0", ExternalDockerCRISocket},
-		{"1.24.6", ExternalDockerCRISocket},
+		{"docker", "1.23.0", InternalDockerCRISocket},
+		{"docker", "1.24.0-alpha.0", InternalDockerCRISocket},
+		{"docker", "1.24.0-alpha.1", InternalDockerCRISocket},
+		{"docker", "1.24.0-alpha.2", ExternalDockerCRISocket},
+		{"docker", "1.24.0-alpha.3", ExternalDockerCRISocket},
+		{"docker", "1.24.0-beta.0", ExternalDockerCRISocket},
+		{"docker", "1.24.0", ExternalDockerCRISocket},
+		{"crio", "1.23.0", ExternalCRIOCRISocket},
+		{"crio", "1.24.0", ExternalCRIOCRISocket},
+		{"containerd", "1.23.0", ExternalContainerdCRISocket},
+		{"containerd", "1.24.0", ExternalContainerdCRISocket},
 	}
 	for _, tc := range tests {
-		runtime := "docker"
 		version := semver.MustParse(tc.version)
-		t.Run(runtime, func(t *testing.T) {
-			r, err := New(Config{Type: runtime, KubernetesVersion: version})
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime, KubernetesVersion: version})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.version, err)
 			}
 			got := r.SocketPath()
 			if got != tc.want {
 				t.Errorf("SocketPath(%s) = %q, want: %q", tc.version, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDefaultCRIService(t *testing.T) {
+	var tests = []struct {
+		runtime string
+		version string
+		want    string
+	}{
+		{"docker", "1.23.0", InternalDockerCRIService},
+		{"crio", "1.23.0", ""},
+		{"containerd", "1.23.0", ""},
+		{"docker", "1.24.0", ExternalDockerCRIService},
+		{"crio", "1.24.0", ""},
+		{"containerd", "1.24.0", ""},
+	}
+	for _, tc := range tests {
+		version := semver.MustParse(tc.version)
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime, KubernetesVersion: version})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.version, err)
+			}
+			got := r.SocketService()
+			if got != tc.want {
+				t.Errorf("Service(%s) = %q, want: %q", tc.version, got, tc.want)
 			}
 		})
 	}
@@ -146,16 +179,23 @@ func TestCGroupDriver(t *testing.T) {
 func TestKubeletOptions(t *testing.T) {
 	var tests = []struct {
 		runtime string
+		version string
 		want    map[string]string
 	}{
-		{"docker", map[string]string{"container-runtime": "docker"}},
-		{"crio", map[string]string{
+		{"docker", "1.23.0", map[string]string{"container-runtime": "docker"}},
+		{"docker", "1.24.0", map[string]string{
+			"container-runtime":          "remote",
+			"container-runtime-endpoint": ExternalDockerCRISocket, // TODO: unix://
+			"image-service-endpoint":     ExternalDockerCRISocket, // TODO: unix://
+			"runtime-request-timeout":    "15m",
+		}},
+		{"crio", "1.24.0", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": ExternalCRIOCRISocket, // TODO: unix://
 			"image-service-endpoint":     ExternalCRIOCRISocket, // TODO: unix://
 			"runtime-request-timeout":    "15m",
 		}},
-		{"containerd", map[string]string{
+		{"containerd", "1.24.0", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix://" + ExternalContainerdCRISocket,
 			"image-service-endpoint":     "unix://" + ExternalContainerdCRISocket,
@@ -164,7 +204,8 @@ func TestKubeletOptions(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
-			r, err := New(Config{Type: tc.runtime})
+			version := semver.MustParse(tc.version)
+			r, err := New(Config{Type: tc.runtime, KubernetesVersion: version})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}

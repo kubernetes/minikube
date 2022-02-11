@@ -110,6 +110,7 @@ type KubernetesConfig struct {
 	DNSDomain           string
 	ContainerRuntime    string
 	CRISocket           string
+	CRIService          string
 	NetworkPlugin       string
 	FeatureGates        string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
 	ServiceCIDR         string // the subnet which Kubernetes services will be deployed to

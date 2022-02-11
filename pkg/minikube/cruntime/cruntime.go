@@ -96,6 +96,8 @@ type Manager interface {
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
+	// SocketService returns the extra service needed for a given runtime
+	SocketService() string
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
@@ -144,6 +146,8 @@ type Config struct {
 	Type string
 	// Custom path to a socket file
 	Socket string
+	// Extra service to run for CRI
+	Service string
 	// Runner is the CommandRunner object to execute commands with
 	Runner CommandRunner
 	// ImageRepository image repository to download image from
@@ -209,9 +213,9 @@ func New(c Config) (Manager, error) {
 	switch c.Type {
 	case "", "docker":
 		sp := c.Socket
-		cs := InternalDockerCRIService
+		cs := c.Service
 		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
-		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
+		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.2")) {
 			sp = ExternalDockerCRISocket
 			cs = ExternalDockerCRIService
 		}

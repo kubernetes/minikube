@@ -59,6 +59,7 @@ const (
 	hostOnlyCIDR            = "host-only-cidr"
 	containerRuntime        = "container-runtime"
 	criSocket               = "cri-socket"
+	criService              = "cri-service"
 	networkPlugin           = "network-plugin"
 	enableDefaultCNI        = "enable-default-cni"
 	cniFlag                 = "cni"
@@ -173,6 +174,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
 	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
+	startCmd.Flags().String(criService, "", "The cri service to be started.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
 	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
@@ -528,6 +530,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			FeatureGates:           viper.GetString(featureGates),
 			ContainerRuntime:       rtime,
 			CRISocket:              viper.GetString(criSocket),
+			CRIService:             viper.GetString(criService),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        getRepository(cmd, k8sVersion),

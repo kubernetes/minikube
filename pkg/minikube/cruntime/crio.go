@@ -115,6 +115,12 @@ func (r *CRIO) SocketPath() string {
 	return "/var/run/crio/crio.sock"
 }
 
+// SocketService returns the extra service needed for CRIO
+func (r *CRIO) SocketService() string {
+	// crio _is_ the extra CRI service, for podman
+	return ""
+}
+
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
 	c := exec.Command("which", "crio")

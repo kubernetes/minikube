@@ -187,6 +187,12 @@ func (r *Containerd) SocketPath() string {
 	return ExternalContainerdCRISocket
 }
 
+// SocketService returns the extra service needed for containerd
+func (r *Containerd) SocketService() string {
+	// handled by cri plugin now, not cri-containerd
+	return ""
+}
+
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
 	return r.Init.Active("containerd")

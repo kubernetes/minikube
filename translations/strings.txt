@@ -617,6 +617,7 @@
 	"The control plane node \"{{.name}}\" does not exist.": "",
 	"The control plane node is not running (state={{.state}})": "",
 	"The control plane node must be running for this command": "",
+	"The cri service to be started.": "",
 	"The cri socket path to be used.": "",
 	"The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/": "",
 	"The docker-env command is only compatible with the \"docker\" runtime, but this cluster was configured to use the \"{{.runtime}}\" runtime.": "",
