@@ -40,7 +40,7 @@ RUN apt-get install -y --no-install-recommends \
 				dumb-init \
 				golang-go \
 				libpcre3-dev \
-				mkisofs \
+				genisoimage \
 				libconfuse-dev \
 				automake \
 				libtool \

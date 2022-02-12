@@ -42,17 +42,28 @@ cp efi-part/EFI/BOOT/* root/EFI/BOOT/
 echo "2c*** mkisofs"
 ls -lah
 
-mkisofs \
+genisoimage \
    -o boot.iso \
    -R -J -v -d -N \
    -hide-rr-moved \
    -no-emul-boot \
-   -eltorito-platform=efi \
-   -eltorito-boot /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \ \
+   -eltorito-boot /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \
    -V "EFIBOOTISO" \
    -A "EFI Boot ISO" \
    root
 cd -
+
+# genisoimage \
+#    -o boot.iso \
+#    -R -J -v -d -N \
+#    -hide-rr-moved \
+#    -no-emul-boot \
+#    -eltorito-platform=efi \
+#    -eltorito-boot /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \ \
+#    -V "EFIBOOTISO" \
+#    -A "EFI Boot ISO" \
+#    root
+# cd -
 
 # -eltorito-boot EFI/BOOT/efiboot.img \
 # -eltorito-boot /usr/share/qemu-efi-aarch64/QEMU_EFI.fd \
@@ -71,7 +82,7 @@ cd -
 
 # set -e
 
-UUID=$(dumpe2fs "$BINARIES_DIR/rootfs.ext2" 2>/dev/null | sed -n 's/^Filesystem UUID: *\(.*\)/\1/p')
-sed -i "s/UUID_TMP/$UUID/g" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
-sed "s/UUID_TMP/$UUID/g" board/pc/genimage-efi.cfg > "$BINARIES_DIR/genimage-efi.cfg"
-support/scripts/genimage.sh -c "$BINARIES_DIR/genimage-efi.cfg"
+# UUID=$(dumpe2fs "$BINARIES_DIR/rootfs.ext2" 2>/dev/null | sed -n 's/^Filesystem UUID: *\(.*\)/\1/p')
+# sed -i "s/UUID_TMP/$UUID/g" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
+# sed "s/UUID_TMP/$UUID/g" board/pc/genimage-efi.cfg > "$BINARIES_DIR/genimage-efi.cfg"
+# support/scripts/genimage.sh -c "$BINARIES_DIR/genimage-efi.cfg"
