@@ -1,57 +1,69 @@
-# Copyright 2016 The Kubernetes Authors All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+FROM debian:stretch
 
-FROM ubuntu:18.04
+#LABEL maintainer="Buildroot mailing list <buildroot@buildroot.org>" \
+#      vendor="Buildroot" \
+#description="Container with everything needed to run Buildroot"
 
-RUN apt-get update \
-	&& apt-get install -y apt dpkg apt-utils ca-certificates software-properties-common \
-	&& add-apt-repository -y ppa:longsleep/golang-backports \
-	&& apt-get upgrade -y \
-	&& apt-get install -y \
-		build-essential \
-		git \
-		wget \
-		cpio \
-		python \
-		unzip \
-		bc \
-		gcc-multilib \
-		automake \
-		libtool \
-		gnupg2 \
-		p7zip-full \
-		locales \
-		rsync \
-		dumb-init \
-		golang-go \
-		libpcre3-dev \
-		mkisofs \
-		qemu-system-arm \
-		qemu-system-x86 \
-		libconfuse-dev \
-	&& rm -rf /var/lib/apt/lists/*
+# Setup environment
+ENV DEBIAN_FRONTEND noninteractive
 
-RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-ENV LANG en_US.utf8
+# The container has no package lists, so need to update first
+RUN dpkg --add-architecture i386 && \
+    apt-get update -y
+RUN apt-get install -y --no-install-recommends \
+        bc \
+        build-essential \
+        bzr \
+        ca-certificates \
+        cmake \
+        cpio \
+        cvs \
+        file \
+        g++-multilib \
+        git \
+        libc6:i386 \
+        libncurses5-dev \
+        locales \
+        mercurial \
+        python3 \
+        python3-flake8 \
+        python3-nose2 \
+        python3-pexpect \
+        qemu-system-arm \
+        qemu-system-x86 \
+        rsync \
+        subversion \
+        unzip \
+        wget \
+        gcc-multilib \
+				p7zip-full \
+				dumb-init \
+				golang-go \
+				libpcre3-dev \
+				mkisofs \
+				libconfuse-dev \
+				automake \
+				libtool \
+				gnupg2 \
+        && \
+    apt-get -y autoremove && \
+    apt-get -y clean
 
-# Build genimage (required by some targets to generate disk images)
-RUN wget -O - https://github.com/pengutronix/genimage/releases/download/v14/genimage-14.tar.xz | tar -C /tmp -xJ && \
-	cd /tmp/genimage-14 && \
-	./configure && \
-	make -j$(nproc) && \
-	make install && \
-	rm -rf /tmp/genimage-14
+# To be able to generate a toolchain with locales, enable one UTF-8 locale
+RUN sed -i 's/# \(en_US.UTF-8\)/\1/' /etc/locale.gen && \
+    /usr/sbin/locale-gen
+
+RUN useradd -ms /bin/bash br-user && \
+    mkdir -p /home/br-user/.buildroot-ccache && \
+    chown -R br-user:br-user /home/br-user
+
+# Persist the build cache between builds
+VOLUME ["/home/br-user/.buildroot-ccache"]
+
+USER br-user
+WORKDIR /home/br-user
+ENV HOME /home/br-user
+ENV LC_ALL en_US.UTF-8
 
 # dumb init will allow us to interrupt the build with ^C
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
