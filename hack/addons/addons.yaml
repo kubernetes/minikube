@@ -30,7 +30,7 @@ gvisor:
 helm-tiller:
   Tiller: ghcr.io/helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f
 ingress:
-  IngressController: k8s.gcr.io/ingress-nginx/controller:v1.1.0@sha256:f766669fdcf3dc26347ed273a55e754b427eb4411ee075a53f30718b4499076a
+  IngressController: k8s.gcr.io/ingress-nginx/controller:v1.1.1@sha256:0bc88eb15f9e7f84e8e56c14fa5735aaa488b840983f87bd79b1054190e660de
   KubeWebhookCertgenCreate: k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
   KubeWebhookCertgenPatch: k8s.gcr.io/ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660
 ingress-dns:
@@ -69,7 +69,7 @@ registry-aliases:
 registry-creds:
   RegistryCreds: upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605
 storage-provisioner:
-  StorageProvisioner: gcr.io
+  StorageProvisioner: gcr.io/k8s-minikube/storage-provisioner:v5
 storage-provisioner-gluster:
   GlusterfileProvisioner: gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223
   GlusterfsServer: quay.io/nixpanic/glusterfs-server:pr_fake-disk@sha256:3c58ae9d4e2007758954879d3f4095533831eb757c64ca6a0e32d1fc53fb6034

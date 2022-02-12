@@ -58,10 +58,18 @@ func CreateDstDownloadMock(src, dst string) error {
 	return err
 }
 
+func downloadWithProgressBar(src string, dst string) error {
+	return download(src, dst, true)
+}
+
+func downloadNoProgressBar(src string, dst string) error {
+	return download(src, dst, false)
+}
+
 // download is a well-configured atomic download function
-func download(src string, dst string) error {
+func download(src string, dst string, progressBar bool) error {
 	var clientOptions []getter.ClientOption
-	if out.IsTerminal(os.Stdout) && !detect.GithubActionRunner() {
+	if progressBar && !detect.GithubActionRunner() {
 		progress := getter.WithProgress(DefaultProgressBar)
 		if out.JSON {
 			progress = getter.WithProgress(DefaultJSONOutput)

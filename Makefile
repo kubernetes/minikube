@@ -289,7 +289,7 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) minikube_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
@@ -412,6 +412,10 @@ out/coverage.html: out/coverage.out
 .PHONY: extract 
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go strings
+
+.PHONY: addon-list
+addon-list: ## generate a YAML file of all addons with their corresponding default images
+	go run -ldflags="$(MINIKUBE_LDFLAGS)" cmd/extract/extract.go addons
 
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform

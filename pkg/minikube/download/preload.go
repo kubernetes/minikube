@@ -199,7 +199,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
 	}
 
-	if err := download(url, targetPath); err != nil {
+	if err := downloadWithProgressBar(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 

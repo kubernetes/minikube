@@ -17,6 +17,7 @@ limitations under the License.
 package extract
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -26,6 +27,7 @@ import (
 	"unicode/utf8"
 
 	"gopkg.in/yaml.v2"
+	"k8s.io/minikube/pkg/version"
 )
 
 func AddonImages() error {
@@ -46,11 +48,17 @@ func AddonImages() error {
 			if key, ok := kvp.Key.(*ast.BasicLit); ok {
 				k := key.Value[1 : len(key.Value)-1]
 				first, _ := utf8.DecodeRuneInString(k)
+				// This is an addon name
 				if unicode.IsLower(first) {
-					// This is an addon name
 					currentAddon = k
 				} else if unicode.IsUpper(first) {
 					// This is a variable name pointing to an image
+
+					// Special-case storage-provisioner since it's hard to parse
+					if k == "StorageProvisioner" {
+						addonToImages[currentAddon] = map[string]string{k: fmt.Sprintf("gcr.io/k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion())}
+						return true
+					}
 					if v, ok := kvp.Value.(*ast.BasicLit); ok {
 						val := v.Value[1 : len(v.Value)-1]
 						if _, ok := addonToImages[currentAddon]; !ok {

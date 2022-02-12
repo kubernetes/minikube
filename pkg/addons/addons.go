@@ -18,8 +18,10 @@ package addons
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -30,6 +32,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -38,8 +41,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -59,6 +64,38 @@ var Refresh = false
 
 // ErrSkipThisAddon is a special error that tells us to not error out, but to also not mark the addon as enabled
 var ErrSkipThisAddon = errors.New("skipping this addon")
+
+type AddonSecurityError struct {
+	Status ImageStatus
+}
+
+func (e AddonSecurityError) Error() string {
+	cveStr := ""
+	for _, c := range e.Status.CVEs {
+		cveStr += "\n" + c.Name + "\n"
+		cveStr += "Severity: " + c.Severity + "\n"
+		cveStr += "Package: " + c.PackageName + "\n"
+		cveStr += "Fixed in version: " + c.UpdatedVersion + "\n"
+	}
+	return fmt.Sprintf("This addon has known security vulnerabilities. Please upgrade the images or build new ones with updated packages.\nYou can bypass this check by passing in custom images with the --images and --registries parameters. See https://minikube.sigs.k8s.io/docs/handbook/addons/custom-images/ for more details.\nImage: %s\nCVEs: %s", e.Status.Image, cveStr)
+}
+
+type AddonStatus struct {
+	Enabled bool          `json:"enabled"`
+	Images  []ImageStatus `json:"images"`
+}
+
+type ImageStatus struct {
+	Image string `json:"image"`
+	CVEs  []CVE  `json:"cves"`
+}
+
+type CVE struct {
+	Name           string `json:"name"`
+	Severity       string `json:"severity"`
+	UpdatedVersion string `json:"updatedVersion"`
+	PackageName    string `json:"packageName"`
+}
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
 func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
@@ -102,6 +139,10 @@ func SetAndSave(profile string, name string, value string) error {
 		return errors.Wrap(err, "loading profile")
 	}
 
+	if err := securityCheck(cc, name, value); err != nil {
+		return errors.Wrap(err, "security check")
+	}
+
 	if err := RunCallbacks(cc, name, value); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
 			return err
@@ -115,6 +156,52 @@ func SetAndSave(profile string, name string, value string) error {
 
 	klog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
 	return config.Write(profile, cc)
+}
+
+func securityCheck(cc *config.ClusterConfig, addonName string, value string) error {
+	// Always allow disabling an addon
+	if value != "true" {
+		return nil
+	}
+
+	// --force always wins, please don't use unless absolutely necessary
+	if Force {
+		return nil
+	}
+
+	// Allow users to pass in custom images
+	// This check is totally broken, uncomment when fixed.
+	/*if cc.CustomAddonImages != nil || cc.CustomAddonRegistries != nil {
+		return nil
+	}*/
+
+	// Pull the down the file with security info
+	err := download.AddonStatus()
+	if err != nil {
+		// If we fail to find the file, don't error out, just continue
+		return err
+	}
+
+	// Parse the yaml into well-defined structs
+	statusFile, err := os.ReadFile(filepath.Join(localpath.MiniPath(), "addons", "status.yaml"))
+	if err != nil {
+		return err
+	}
+
+	statuses := make(map[string]AddonStatus)
+	err = yaml.Unmarshal(statusFile, statuses)
+	if err != nil {
+		return err
+	}
+
+	for addon, status := range statuses {
+		if addon == addonName {
+			if !status.Enabled {
+				return AddonSecurityError{Status: status.Images[0]}
+			}
+		}
+	}
+	return nil
 }
 
 // Runs all the validation or callback functions and collects errors

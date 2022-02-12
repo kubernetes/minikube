@@ -77,7 +77,7 @@ func Binary(binary, version, osName, archName, binaryURL string) (string, error)
 		return targetFilepath, nil
 	}
 
-	if err := download(url, targetFilepath); err != nil {
+	if err := downloadWithProgressBar(url, targetFilepath); err != nil {
 		return "", errors.Wrapf(err, "download failed: %s", url)
 	}
 

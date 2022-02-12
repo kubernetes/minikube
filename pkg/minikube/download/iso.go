@@ -138,5 +138,5 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 		urlWithChecksum = isoURL
 	}
 
-	return download(urlWithChecksum, dst)
+	return downloadWithProgressBar(urlWithChecksum, dst)
 }
