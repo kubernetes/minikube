@@ -6,7 +6,7 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.6'
+  GO_VERSION: '1.17.7'
 jobs:
   time-to-k8s-public-chart-docker:
     if: github.repository == 'kubernetes/minikube'
