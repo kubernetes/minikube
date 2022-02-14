@@ -16,20 +16,10 @@
 
 set -e
 
-echo "1*** I am inside post-build.sh"
+echo "2*** post-image-efi.sh"
+pwd
 
-BOARD_DIR=$(dirname "$0")
-
-echo "1a*** ${BOARD_DIR}"
-
-# Detect boot strategy, EFI or BIOS
-if [ -d "$BINARIES_DIR/efi-part/" ]; then
-    echo "boot strategy: UEFI"
-    cp -f "$BOARD_DIR/grub-efi.cfg" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
-else
-    echo "boot strategy: BIOS"
-    cp -f "$BOARD_DIR/grub-bios.cfg" "$TARGET_DIR/boot/grub/grub.cfg"
-
-    # Copy grub 1st stage to binaries, required for genimage
-    cp -f "$HOST_DIR/lib/grub/i386-pc/boot.img" "$BINARIES_DIR"
-fi
+UUID=$(dumpe2fs "$BINARIES_DIR/rootfs.ext2" 2>/dev/null | sed -n 's/^Filesystem UUID: *\(.*\)/\1/p')
+sed -i "s/UUID_TMP/$UUID/g" "$BINARIES_DIR/efi-part/EFI/BOOT/grub.cfg"
+sed "s/UUID_TMP/$UUID/g" board/pc/genimage-efi.cfg > "$BINARIES_DIR/genimage-efi.cfg"
+support/scripts/genimage.sh -c "$BINARIES_DIR/genimage-efi.cfg"
