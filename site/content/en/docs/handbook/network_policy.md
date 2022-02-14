@@ -9,6 +9,8 @@ aliases:
   - /docs/reference/network_policy
 ---
 
+Minikube allows users to create and test network policies in the local Kubernetes cluster. This is useful since it allows the network policies to be, considered, built, and evaluated during the application development, as an integral part of the process rather than "bolted on" at the end of development.
+
 [Kubernetes NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) allow the control of pod network traffic passing through the cluster, at the the IP address or port level (OSI layer 3 or 4). The linked page provides much more information about the functionality and implementation.
 
 However, the [prerequisites](https://kubernetes.io/docs/concepts/services-networking/network-policies/#prerequisites) note that Network policies are implemented by the Container Network Interface (CNI) network plugin. Therefore to use or test network policies in any Kubernetes cluster, you must be using a networking solution which supports NetworkPolicy. Creating a NetworkPolicy resource without a controller that implements it will have no effect.
@@ -24,7 +26,7 @@ However, Minikube can support [NetworkPolicies](https://kubernetes.io/docs/conce
 
 ## Enabling Calico on a Minikube cluster
 
-It is possible to replace the CNI on a running Minikube cluster, but it is probably easiest to follow the instructions on the [Get Started!]({{<ref "/docs/start/" >}}) page to build the Minikube cluster with Calico installed from the outset.
+It is possible to replace the CNI on a running Minikube cluster, but it is significantly easier to simply append the `--cni calico` flag to the `minikube start` command when following the instructions on the [Get Started!]({{<ref "/docs/start/" >}}) page to build the Minikube cluster with Calico installed from the outset.
 
 ## Kubernetes Network Policy example
 
