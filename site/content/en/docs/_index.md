@@ -20,8 +20,7 @@ minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows
 * Deploy as a VM, a container, or on bare-metal
 * Multiple container runtimes (CRI-O, containerd, docker)
 * Direct API endpoint for blazing fast [image load and build]({{< ref "/docs/handbook/pushing.md" >}})
-* Support for creating and testing [network policy]({{< ref "docs/handbook/network_policy.md" >}}) (both Kubernetes and Calico network policy)
-* Advanced features such as [LoadBalancer]({{< ref "/docs/handbook/accessing.md#loadbalancer-access" >}}), filesystem mounts, and FeatureGates
+* Advanced features such as [LoadBalancer]({{< ref "/docs/handbook/accessing.md#loadbalancer-access" >}}), filesystem mounts, FeatureGates, and [network policy]({{< ref "docs/handbook/network_policy.md" >}})
 * [Addons]({{< ref "/docs/handbook/deploying.md#addons" >}}) for easily installed Kubernetes applications
 * Supports common [CI environments](https://github.com/minikube-ci/examples)
 
