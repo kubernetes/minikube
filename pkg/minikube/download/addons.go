@@ -18,9 +18,12 @@ package download
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -32,10 +35,43 @@ func addonListURL() string {
 	return fmt.Sprintf("https://%s/minikube-builds/addons/%s/addons.yaml", downloadHost, version.GetVersion())
 }
 
-func AddonStatus() error {
-	return downloadNoProgressBar(addonStatusURL(), filepath.Join(localpath.MiniPath(), "addons", "status.yaml"))
+func AddonStatus() (map[string]util.AddonStatus, error) {
+	statuses := make(map[string]util.AddonStatus)
+	fileLocation := filepath.Join(localpath.MiniPath(), "addons", "status.yaml")
+	err := downloadNoProgressBar(addonStatusURL(), fileLocation)
+	if err != nil {
+		return statuses, err
+	}
+	statusFile, err := os.ReadFile(fileLocation)
+	if err != nil {
+		return statuses, err
+	}
+
+	err = yaml.Unmarshal(statusFile, statuses)
+	if err != nil {
+		return statuses, err
+	}
+
+	return statuses, nil
 }
 
-func AddonList() error {
-	return downloadWithProgressBar(addonListURL(), filepath.Join(localpath.MiniPath(), "addons", "addons.yaml"))
+func AddonList() (map[string]interface{}, error) {
+	fileLocation := filepath.Join(localpath.MiniPath(), "addons", "addons.yaml")
+	addonMap := make(map[string]interface{})
+
+	err := downloadWithProgressBar(addonListURL(), fileLocation)
+	if err != nil {
+		return addonMap, err
+	}
+
+	addonsFile, err := os.ReadFile(fileLocation)
+	if err != nil {
+		return addonMap, err
+	}
+	err = yaml.Unmarshal(addonsFile, addonMap)
+	if err != nil {
+		return addonMap, err
+	}
+
+	return addonMap, nil
 }

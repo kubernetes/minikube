@@ -20,16 +20,14 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util"
 )
 
 var addonsScan = &cobra.Command{
@@ -38,38 +36,22 @@ var addonsScan = &cobra.Command{
 	Long:   "Scans all minikube addon images for security vulnerabilites",
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := download.AddonList()
+		addonMap, err := download.AddonList()
 		if err != nil {
-			exit.Error(reason.InternalAddonScan, "downloading formatted addon list", err)
-		}
-		addonsFile, err := os.ReadFile(filepath.Join(localpath.MiniPath(), "addons", "addons.yaml"))
-		if err != nil {
-			exit.Error(reason.InternalAddonScan, "reading formatted addon list", err)
-		}
-		addonMap := make(map[string]interface{})
-		err = yaml.Unmarshal(addonsFile, addonMap)
-		if err != nil {
-			exit.Error(reason.InternalAddonScan, "unmarshalling formatted addon list", err)
+			exit.Error(reason.InternalAddonScan, "getting addon list", err)
 		}
 
-		oldStatusMap := make(map[string]addons.AddonStatus)
-		err = download.AddonStatus()
+		oldStatusMap, err := download.AddonStatus()
 		// If we can't find the old status file, we can just proceed
-		if err == nil {
-			statusFile, err := os.ReadFile(filepath.Join(localpath.MiniPath(), "addons", "status.yaml"))
-			if err == nil {
-				err = yaml.Unmarshal(statusFile, oldStatusMap)
-				if err != nil {
-					klog.Warningf("unmarshalling formatted addon list failed: %v", err)
-				}
-			}
+		if err != nil {
+			klog.Warningf("failed to get old addon status list: %v", err)
 		}
 
-		addonStatus := make(map[string]addons.AddonStatus)
+		addonStatus := make(map[string]util.AddonStatus)
 		for a, i := range addonMap {
 			klog.Infof("scanning addon %s", a)
 			images := i.(map[interface{}]interface{})
-			status := addons.AddonStatus{Enabled: true, Manual: false, ManualReason: "", Images: []addons.ImageStatus{}}
+			status := util.AddonStatus{Enabled: true, Manual: false, ManualReason: "", Images: []util.ImageStatus{}}
 			if s, ok := oldStatusMap[a]; ok {
 				if !s.Enabled && s.Manual {
 					// Addon was manually disabled, respect that
@@ -80,7 +62,7 @@ var addonsScan = &cobra.Command{
 			}
 			for _, image := range images {
 				klog.Infof("scanning image %s for addon %s", image, a)
-				imageStatus := addons.ImageStatus{Image: image.(string), CVEs: []addons.CVE{}}
+				imageStatus := util.ImageStatus{Image: image.(string), CVEs: []util.CVE{}}
 				snyk := exec.Command("snyk", "container", "test", image.(string), "--json", "--severity-threshold=high")
 				out, err := snyk.Output()
 				if err == nil {
@@ -113,7 +95,7 @@ var addonsScan = &cobra.Command{
 						if uv, ok := vuln["nearestFixedInVersion"].(string); ok {
 							updatedVersion = uv
 						}
-						cve := addons.CVE{
+						cve := util.CVE{
 							Name:           vuln["title"].(string),
 							PackageName:    vuln["packageName"].(string),
 							Severity:       vuln["severity"].(string),
@@ -128,17 +110,21 @@ var addonsScan = &cobra.Command{
 			}
 			addonStatus[a] = status
 		}
-		statusYaml, err := yaml.Marshal(addonStatus)
-		if err != nil {
-			exit.Error(reason.InternalAddonScan, "marshalling addon status list", err)
-		}
-		err = os.WriteFile("hack/addons/status.yaml", statusYaml, 0777)
-		if err != nil {
-			exit.Error(reason.InternalAddonScan, "writing addon status list", err)
-		}
+		writeStatusYAML(addonStatus)
 	},
 }
 
 func init() {
 	AddonsCmd.AddCommand(addonsScan)
+}
+
+func writeStatusYAML(addonStatus map[string]util.AddonStatus) {
+	statusYaml, err := yaml.Marshal(addonStatus)
+	if err != nil {
+		exit.Error(reason.InternalAddonScan, "marshalling addon status list", err)
+	}
+	err = os.WriteFile("hack/addons/status.yaml", statusYaml, 0777)
+	if err != nil {
+		exit.Error(reason.InternalAddonScan, "writing addon status list", err)
+	}
 }

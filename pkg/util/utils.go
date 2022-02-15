@@ -109,3 +109,22 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return semver.Make(version[1:])
 }
+
+type AddonStatus struct {
+	Enabled      bool          `json:"enabled"`
+	Manual       bool          `json:"manual"`
+	ManualReason string        `json:"reason"`
+	Images       []ImageStatus `json:"images"`
+}
+
+type ImageStatus struct {
+	Image string `json:"image"`
+	CVEs  []CVE  `json:"cves"`
+}
+
+type CVE struct {
+	Name           string `json:"name"`
+	Severity       string `json:"severity"`
+	UpdatedVersion string `json:"updatedVersion"`
+	PackageName    string `json:"packageName"`
+}

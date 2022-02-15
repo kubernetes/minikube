@@ -18,10 +18,8 @@ package addons
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -32,7 +30,6 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -44,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -66,7 +62,7 @@ var Refresh = false
 var ErrSkipThisAddon = errors.New("skipping this addon")
 
 type AddonSecurityError struct {
-	Status AddonStatus
+	Status util.AddonStatus
 }
 
 func (e AddonSecurityError) Error() string {
@@ -88,25 +84,6 @@ func (e AddonSecurityError) Error() string {
 		msg += cveStr
 	}
 	return msg
-}
-
-type AddonStatus struct {
-	Enabled      bool          `json:"enabled"`
-	Manual       bool          `json:"manual"`
-	ManualReason string        `json:"reason"`
-	Images       []ImageStatus `json:"images"`
-}
-
-type ImageStatus struct {
-	Image string `json:"image"`
-	CVEs  []CVE  `json:"cves"`
-}
-
-type CVE struct {
-	Name           string `json:"name"`
-	Severity       string `json:"severity"`
-	UpdatedVersion string `json:"updatedVersion"`
-	PackageName    string `json:"packageName"`
 }
 
 // RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
@@ -188,23 +165,14 @@ func securityCheck(cc *config.ClusterConfig, addonName string, value string) err
 	}*/
 
 	// Pull the down the file with security info
-	err := download.AddonStatus()
+	statuses, err := download.AddonStatus()
 	if err != nil {
 		// If we fail to find the file, don't error out, just continue
-		return err
+		klog.Warningf("failed to get addons status: %v", err)
+		return nil
 	}
 
 	// Parse the yaml into well-defined structs
-	statusFile, err := os.ReadFile(filepath.Join(localpath.MiniPath(), "addons", "status.yaml"))
-	if err != nil {
-		return err
-	}
-
-	statuses := make(map[string]AddonStatus)
-	err = yaml.Unmarshal(statusFile, statuses)
-	if err != nil {
-		return err
-	}
 
 	for addon, status := range statuses {
 		if addon == addonName {
