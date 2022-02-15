@@ -65,6 +65,7 @@ type AddonSecurityError struct {
 	Status util.AddonStatus
 }
 
+// TODO: make this easier for the string extractor to parse
 func (e AddonSecurityError) Error() string {
 	if e.Status.Manual {
 		return fmt.Sprintf("This addon has been disabled for the following reason: %s", e.Status.ManualReason)

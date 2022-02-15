@@ -67,10 +67,10 @@ var (
 )
 
 func usage() {
-	exit.Message(reason.Usage, "Usage: minikube addons toggle dashboard off --reason=\"I don't like it\"")
+	exit.Message(reason.Usage, "Usage: minikube addons toggle ambassador off --reason=\"it is broken\"")
 }
 
 func init() {
-	addonsToggle.Flags().StringVar(&toggleReason, "reason", "", "Reasons the addon was toggled. Required of toggle off.")
+	addonsToggle.Flags().StringVar(&toggleReason, "reason", "", "Reasons the addon was toggled. Required for toggle off.")
 	AddonsCmd.AddCommand(addonsToggle)
 }
