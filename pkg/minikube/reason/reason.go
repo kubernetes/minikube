@@ -77,6 +77,8 @@ var (
 	InternalAddonDisable = Kind{ID: "MK_ADDON_DISABLE", ExitCode: ExProgramError}
 	// minikube could not enable an addon, e.g. dashboard addon
 	InternalAddonEnable = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
+	// minikube could not scan addons successfully
+	InternalAddonScan = Kind{ID: "MK_ADDON_SCAN", ExitCode: ExProgramError}
 	// minikube failed to update internal configuration, such as the cached images config map
 	InternalAddConfig = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
 	// minikube failed to create a cluster bootstrapper

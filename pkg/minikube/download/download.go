@@ -69,7 +69,7 @@ func downloadNoProgressBar(src string, dst string) error {
 // download is a well-configured atomic download function
 func download(src string, dst string, progressBar bool) error {
 	var clientOptions []getter.ClientOption
-	if progressBar && !detect.GithubActionRunner() {
+	if out.IsTerminal(os.Stdout) && progressBar && !detect.GithubActionRunner() {
 		progress := getter.WithProgress(DefaultProgressBar)
 		if out.JSON {
 			progress = getter.WithProgress(DefaultJSONOutput)

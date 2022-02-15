@@ -1,5 +1,7 @@
 ambassador:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: quay.io/datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed
     cves:
@@ -37,6 +39,8 @@ ambassador:
       packagename: systemd-libs
 auto-pause:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gcr.io/k8s-minikube/auto-pause-hook:v0.0.2@sha256:c76be418df5ca9c66d0d11c2c68461acbf4072c1cdfc17e64729c5ef4d5a4128
     cves:
@@ -286,6 +290,8 @@ auto-pause:
       packagename: zlib
 csi-hostpath-driver:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: k8s.gcr.io/sig-storage/hostpathplugin:v1.6.0@sha256:b526bd29630261eceecf2d38c84d4f340a424d57e1e2661111e2649a4663b659
     cves:
@@ -311,10 +317,286 @@ csi-hostpath-driver:
       packagename: openssl
 dashboard:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 efk:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
+  - image: k8s.gcr.io/fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97
+    cves:
+    - name: CVE-2019-3462
+      severity: high
+      updatedversion: 1.4.9
+      packagename: apt
+    - name: Out-of-bounds Write
+      severity: critical
+      updatedversion: ""
+      packagename: bzip2
+    - name: Information Exposure
+      severity: high
+      updatedversion: ""
+      packagename: gcc-6
+    - name: Reachable Assertion
+      severity: high
+      updatedversion: ""
+      packagename: glibc
+    - name: Use After Free
+      severity: critical
+      updatedversion: ""
+      packagename: glibc
+    - name: Integer Overflow or Wraparound
+      severity: critical
+      updatedversion: ""
+      packagename: glibc
+    - name: Buffer Overflow
+      severity: critical
+      updatedversion: ""
+      packagename: glibc
+    - name: Improper Data Handling
+      severity: high
+      updatedversion: ""
+      packagename: glibc
+    - name: Out-of-bounds Read
+      severity: critical
+      updatedversion: ""
+      packagename: glibc
+    - name: Untrusted Search Path
+      severity: high
+      updatedversion: 2.24-11+deb9u4
+      packagename: glibc
+    - name: Out-of-Bounds
+      severity: critical
+      updatedversion: 2.24-11+deb9u4
+      packagename: glibc
+    - name: Missing Release of Resource after Effective Lifetime
+      severity: high
+      updatedversion: 2.24-11+deb9u4
+      packagename: glibc
+    - name: Use of Incorrectly-Resolved Name or Reference
+      severity: high
+      updatedversion: 2.1.18-8~deb9u2
+      packagename: gnupg2
+    - name: Cross-site Request Forgery (CSRF)
+      severity: high
+      updatedversion: ""
+      packagename: gnupg2
+    - name: Use of a Broken or Risky Cryptographic Algorithm
+      severity: high
+      updatedversion: 1.1.0k-1~deb9u1
+      packagename: openssl
+    - name: Key Management Errors
+      severity: high
+      updatedversion: 1.1.0j-1~deb9u1
+      packagename: openssl
+    - name: Improper Verification of Cryptographic Signature
+      severity: high
+      updatedversion: ""
+      packagename: perl
+    - name: Link Following
+      severity: high
+      updatedversion: 5.24.1-3+deb9u4
+      packagename: perl
+    - name: HTTP Request Smuggling
+      severity: high
+      updatedversion: 2.3.3-1+deb9u9
+      packagename: ruby2.3
+    - name: XML External Entity (XXE) Injection
+      severity: high
+      updatedversion: ""
+      packagename: ruby2.3
+    - name: Arbitrary Command Injection
+      severity: high
+      updatedversion: 2.3.3-1+deb9u10
+      packagename: ruby2.3
+    - name: Inadequate Encryption Strength
+      severity: high
+      updatedversion: 2.3.3-1+deb9u10
+      packagename: ruby2.3
+    - name: Reliance on Cookies without Validation and Integrity Checking
+      severity: high
+      updatedversion: 2.3.3-1+deb9u11
+      packagename: ruby2.3
+    - name: CVE-2021-41817
+      severity: high
+      updatedversion: 2.3.3-1+deb9u11
+      packagename: ruby2.3
+    - name: Resource Exhaustion
+      severity: high
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Use of Externally-Controlled Format String
+      severity: critical
+      updatedversion: 2.3.3-1+deb9u2
+      packagename: ruby2.3
+    - name: Improper Authentication
+      severity: high
+      updatedversion: 2.3.3-1+deb9u2
+      packagename: ruby2.3
+    - name: CVE-2018-16395
+      severity: critical
+      updatedversion: 2.3.3-1+deb9u4
+      packagename: ruby2.3
+    - name: CVE-2018-16396
+      severity: high
+      updatedversion: 2.3.3-1+deb9u4
+      packagename: ruby2.3
+    - name: OS Command Injection
+      severity: high
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Directory Traversal
+      severity: high
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Improper Input Validation
+      severity: high
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Deserialization of Untrusted Data
+      severity: critical
+      updatedversion: 2.3.3-1+deb9u2
+      packagename: ruby2.3
+    - name: Loop with Unreachable Exit Condition ('Infinite Loop')
+      severity: high
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Arbitrary Code Injection
+      severity: critical
+      updatedversion: 2.3.3-1+deb9u3
+      packagename: ruby2.3
+    - name: Arbitrary Argument Injection
+      severity: high
+      updatedversion: 2.3.3-1+deb9u6
+      packagename: ruby2.3
+    - name: Improper Privilege Management
+      severity: high
+      updatedversion: 1:4.4-4.1+deb9u1
+      packagename: shadow
+    - name: Allocation of Resources Without Limits or Throttling
+      severity: high
+      updatedversion: 232-25+deb9u7
+      packagename: systemd
+    - name: Incorrect Authorization
+      severity: high
+      updatedversion: 232-25+deb9u11
+      packagename: systemd
+    - name: Privilege Chaining
+      severity: high
+      updatedversion: ""
+      packagename: systemd
+    - name: Access Restriction Bypass
+      severity: high
+      updatedversion: ""
+      packagename: util-linux
+    - name: CVE-2018-7738
+      severity: high
+      updatedversion: 2.29.2-1+deb9u1
+      packagename: util-linux
+  - image: docker.elastic.co/kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f
+    cves:
+    - name: Use After Free
+      severity: high
+      updatedversion: 32:9.9.4-51.el7_4.2
+      packagename: bind-license
+    - name: Reachable Assertion
+      severity: high
+      updatedversion: 32:9.9.4-61.el7_5.1
+      packagename: bind-license
+    - name: Allocation of Resources Without Limits or Throttling
+      severity: high
+      updatedversion: 32:9.9.4-74.el7_6.1
+      packagename: bind-license
+    - name: Resource Exhaustion
+      severity: high
+      updatedversion: 32:9.11.4-16.P2.el7_8.6
+      packagename: bind-license
+    - name: Buffer Overflow
+      severity: high
+      updatedversion: 32:9.11.4-26.P2.el7_9.4
+      packagename: bind-license
+    - name: Improper Resource Shutdown or Release
+      severity: high
+      updatedversion: 1:1.10.24-14.el7_8
+      packagename: dbus
+    - name: Information Exposure
+      severity: high
+      updatedversion: 0:033-502.el7_4.1
+      packagename: dracut
+    - name: Out-of-bounds Write
+      severity: high
+      updatedversion: 0:2.8-14.el7_9.1
+      packagename: freetype
+    - name: Incorrect Conversion between Numeric Types
+      severity: high
+      updatedversion: 0:2.56.1-9.el7_9
+      packagename: glib2
+    - name: Use of Incorrectly-Resolved Name or Reference
+      severity: high
+      updatedversion: 0:2.0.22-5.el7_5
+      packagename: gnupg2
+    - name: Out-of-Bounds
+      severity: high
+      updatedversion: 0:3.44.0-7.el7_7
+      packagename: nss
+    - name: NULL Pointer Dereference
+      severity: high
+      updatedversion: 1:1.0.2k-21.el7_9
+      packagename: openssl-libs
+    - name: Integer Overflow or Wraparound
+      severity: high
+      updatedversion: 0:3.3.10-17.el7_5.2
+      packagename: procps-ng
+    - name: CVE-2019-9636
+      severity: high
+      updatedversion: 0:2.7.5-77.el7_6
+      packagename: python
+    - name: Credentials Management
+      severity: high
+      updatedversion: 0:2.7.5-80.el7_6
+      packagename: python
+    - name: OS Command Injection
+      severity: high
+      updatedversion: 2:7.4.160-6.el7_6
+      packagename: vim-minimal
+    - name: Directory Traversal
+      severity: high
+      updatedversion: 0:1.1.31-46.el7_5
+      packagename: yum-plugin-fastestmirror
+    - name: HTTP Request Smuggling
+      severity: high
+      updatedversion: ""
+      packagename: node
+    - name: Improper Certificate Validation
+      severity: high
+      updatedversion: ""
+      packagename: node
+    - name: Privilege Escalation
+      severity: high
+      updatedversion: ""
+      packagename: node
+    - name: Out-of-bounds Read
+      severity: high
+      updatedversion: ""
+      packagename: node
+    - name: DNS rebinding
+      severity: high
+      updatedversion: 6.14.0
+      packagename: node
+    - name: Error Handling
+      severity: critical
+      updatedversion: 6.12.2
+      packagename: node
+    - name: Denial of Service (DoS)
+      severity: high
+      updatedversion: 6.14.3
+      packagename: node
+    - name: Unprotected Primary Channel
+      severity: high
+      updatedversion: 6.15.0
+      packagename: node
   - image: k8s.gcr.io/elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2
     cves:
     - name: Use After Free
@@ -769,280 +1051,10 @@ efk:
       severity: high
       updatedversion: 0:1.1.31-46.el7_5
       packagename: yum-plugin-fastestmirror
-  - image: k8s.gcr.io/fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97
-    cves:
-    - name: CVE-2019-3462
-      severity: high
-      updatedversion: 1.4.9
-      packagename: apt
-    - name: Out-of-bounds Write
-      severity: critical
-      updatedversion: ""
-      packagename: bzip2
-    - name: Information Exposure
-      severity: high
-      updatedversion: ""
-      packagename: gcc-6
-    - name: Reachable Assertion
-      severity: high
-      updatedversion: ""
-      packagename: glibc
-    - name: Use After Free
-      severity: critical
-      updatedversion: ""
-      packagename: glibc
-    - name: Integer Overflow or Wraparound
-      severity: critical
-      updatedversion: ""
-      packagename: glibc
-    - name: Buffer Overflow
-      severity: critical
-      updatedversion: ""
-      packagename: glibc
-    - name: Improper Data Handling
-      severity: high
-      updatedversion: ""
-      packagename: glibc
-    - name: Out-of-bounds Read
-      severity: critical
-      updatedversion: ""
-      packagename: glibc
-    - name: Untrusted Search Path
-      severity: high
-      updatedversion: 2.24-11+deb9u4
-      packagename: glibc
-    - name: Out-of-Bounds
-      severity: critical
-      updatedversion: 2.24-11+deb9u4
-      packagename: glibc
-    - name: Missing Release of Resource after Effective Lifetime
-      severity: high
-      updatedversion: 2.24-11+deb9u4
-      packagename: glibc
-    - name: Use of Incorrectly-Resolved Name or Reference
-      severity: high
-      updatedversion: 2.1.18-8~deb9u2
-      packagename: gnupg2
-    - name: Cross-site Request Forgery (CSRF)
-      severity: high
-      updatedversion: ""
-      packagename: gnupg2
-    - name: Use of a Broken or Risky Cryptographic Algorithm
-      severity: high
-      updatedversion: 1.1.0k-1~deb9u1
-      packagename: openssl
-    - name: Key Management Errors
-      severity: high
-      updatedversion: 1.1.0j-1~deb9u1
-      packagename: openssl
-    - name: Improper Verification of Cryptographic Signature
-      severity: high
-      updatedversion: ""
-      packagename: perl
-    - name: Link Following
-      severity: high
-      updatedversion: 5.24.1-3+deb9u4
-      packagename: perl
-    - name: HTTP Request Smuggling
-      severity: high
-      updatedversion: 2.3.3-1+deb9u9
-      packagename: ruby2.3
-    - name: XML External Entity (XXE) Injection
-      severity: high
-      updatedversion: ""
-      packagename: ruby2.3
-    - name: Arbitrary Command Injection
-      severity: high
-      updatedversion: 2.3.3-1+deb9u10
-      packagename: ruby2.3
-    - name: Inadequate Encryption Strength
-      severity: high
-      updatedversion: 2.3.3-1+deb9u10
-      packagename: ruby2.3
-    - name: CVE-2021-41819
-      severity: high
-      updatedversion: 2.3.3-1+deb9u11
-      packagename: ruby2.3
-    - name: CVE-2021-41817
-      severity: high
-      updatedversion: 2.3.3-1+deb9u11
-      packagename: ruby2.3
-    - name: Resource Exhaustion
-      severity: high
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Use of Externally-Controlled Format String
-      severity: critical
-      updatedversion: 2.3.3-1+deb9u2
-      packagename: ruby2.3
-    - name: Improper Authentication
-      severity: high
-      updatedversion: 2.3.3-1+deb9u2
-      packagename: ruby2.3
-    - name: CVE-2018-16395
-      severity: critical
-      updatedversion: 2.3.3-1+deb9u4
-      packagename: ruby2.3
-    - name: CVE-2018-16396
-      severity: high
-      updatedversion: 2.3.3-1+deb9u4
-      packagename: ruby2.3
-    - name: OS Command Injection
-      severity: high
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Directory Traversal
-      severity: high
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Improper Input Validation
-      severity: high
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Deserialization of Untrusted Data
-      severity: critical
-      updatedversion: 2.3.3-1+deb9u2
-      packagename: ruby2.3
-    - name: Loop with Unreachable Exit Condition ('Infinite Loop')
-      severity: high
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Arbitrary Code Injection
-      severity: critical
-      updatedversion: 2.3.3-1+deb9u3
-      packagename: ruby2.3
-    - name: Arbitrary Argument Injection
-      severity: high
-      updatedversion: 2.3.3-1+deb9u6
-      packagename: ruby2.3
-    - name: Improper Privilege Management
-      severity: high
-      updatedversion: 1:4.4-4.1+deb9u1
-      packagename: shadow
-    - name: Allocation of Resources Without Limits or Throttling
-      severity: high
-      updatedversion: 232-25+deb9u7
-      packagename: systemd
-    - name: Incorrect Authorization
-      severity: high
-      updatedversion: 232-25+deb9u11
-      packagename: systemd
-    - name: Privilege Chaining
-      severity: high
-      updatedversion: ""
-      packagename: systemd
-    - name: Access Restriction Bypass
-      severity: high
-      updatedversion: ""
-      packagename: util-linux
-    - name: CVE-2018-7738
-      severity: high
-      updatedversion: 2.29.2-1+deb9u1
-      packagename: util-linux
-  - image: docker.elastic.co/kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f
-    cves:
-    - name: Use After Free
-      severity: high
-      updatedversion: 32:9.9.4-51.el7_4.2
-      packagename: bind-license
-    - name: Reachable Assertion
-      severity: high
-      updatedversion: 32:9.9.4-61.el7_5.1
-      packagename: bind-license
-    - name: Allocation of Resources Without Limits or Throttling
-      severity: high
-      updatedversion: 32:9.9.4-74.el7_6.1
-      packagename: bind-license
-    - name: Resource Exhaustion
-      severity: high
-      updatedversion: 32:9.11.4-16.P2.el7_8.6
-      packagename: bind-license
-    - name: Buffer Overflow
-      severity: high
-      updatedversion: 32:9.11.4-26.P2.el7_9.4
-      packagename: bind-license
-    - name: Improper Resource Shutdown or Release
-      severity: high
-      updatedversion: 1:1.10.24-14.el7_8
-      packagename: dbus
-    - name: Information Exposure
-      severity: high
-      updatedversion: 0:033-502.el7_4.1
-      packagename: dracut
-    - name: Out-of-bounds Write
-      severity: high
-      updatedversion: 0:2.8-14.el7_9.1
-      packagename: freetype
-    - name: Incorrect Conversion between Numeric Types
-      severity: high
-      updatedversion: 0:2.56.1-9.el7_9
-      packagename: glib2
-    - name: Use of Incorrectly-Resolved Name or Reference
-      severity: high
-      updatedversion: 0:2.0.22-5.el7_5
-      packagename: gnupg2
-    - name: Out-of-Bounds
-      severity: high
-      updatedversion: 0:3.44.0-7.el7_7
-      packagename: nss
-    - name: NULL Pointer Dereference
-      severity: high
-      updatedversion: 1:1.0.2k-21.el7_9
-      packagename: openssl-libs
-    - name: Integer Overflow or Wraparound
-      severity: high
-      updatedversion: 0:3.3.10-17.el7_5.2
-      packagename: procps-ng
-    - name: CVE-2019-9636
-      severity: high
-      updatedversion: 0:2.7.5-77.el7_6
-      packagename: python
-    - name: Credentials Management
-      severity: high
-      updatedversion: 0:2.7.5-80.el7_6
-      packagename: python
-    - name: OS Command Injection
-      severity: high
-      updatedversion: 2:7.4.160-6.el7_6
-      packagename: vim-minimal
-    - name: Directory Traversal
-      severity: high
-      updatedversion: 0:1.1.31-46.el7_5
-      packagename: yum-plugin-fastestmirror
-    - name: HTTP Request Smuggling
-      severity: high
-      updatedversion: ""
-      packagename: node
-    - name: Improper Certificate Validation
-      severity: high
-      updatedversion: ""
-      packagename: node
-    - name: Privilege Escalation
-      severity: high
-      updatedversion: ""
-      packagename: node
-    - name: Out-of-bounds Read
-      severity: high
-      updatedversion: ""
-      packagename: node
-    - name: DNS rebinding
-      severity: high
-      updatedversion: 6.14.0
-      packagename: node
-    - name: Error Handling
-      severity: critical
-      updatedversion: 6.12.2
-      packagename: node
-    - name: Denial of Service (DoS)
-      severity: high
-      updatedversion: 6.14.3
-      packagename: node
-    - name: Unprotected Primary Channel
-      severity: high
-      updatedversion: 6.15.0
-      packagename: node
 freshpod:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gcr.io/google-samples/freshpod:v0.0.1@sha256:b9efde5b509da3fd2959519c4147b653d0c5cefe8a00314e2888e35ecbcb46f9
     cves:
@@ -1055,10 +1067,14 @@ freshpod:
       updatedversion: 1.1.18-r4
       packagename: musl
 gcp-auth:
-  enabled: true
+  enabled: false
+  manual: true
+  manualreason: doo doo head
   images: []
 gvisor:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gcr.io/k8s-minikube/gvisor-addon:3@sha256:23eb17d48a66fc2b09c31454fb54ecae520c3e9c9197ef17fcb398b4f31d505a
     cves:
@@ -1092,6 +1108,8 @@ gvisor:
       packagename: openssl
 helm-tiller:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: ghcr.io/helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f
     cves:
@@ -1121,9 +1139,13 @@ helm-tiller:
       packagename: openssl
 ingress:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 ingress-dns:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gcr.io/k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f
     cves:
@@ -1133,9 +1155,13 @@ ingress-dns:
       packagename: busybox
 istio-provisioner:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 kong:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: kong:2.7@sha256:4d3e93207305ace881fe9e95ac27717b6fbdd9e0ec1873c34e94908a4f4c9335
     cves:
@@ -1149,6 +1175,8 @@ kong:
       packagename: expat
 kubevirt:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887
     cves:
@@ -1222,6 +1250,8 @@ kubevirt:
       packagename: systemd
 logviewer:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405
     cves:
@@ -1231,6 +1261,8 @@ logviewer:
       packagename: musl
 metallb:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502
     cves:
@@ -1278,9 +1310,13 @@ metallb:
       packagename: openssl
 metrics-server:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 nvidia-driver-installer:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: k8s.gcr.io/minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01
     cves:
@@ -1306,6 +1342,8 @@ nvidia-driver-installer:
       packagename: systemd
 nvidia-gpu-device-plugin:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: nvidia/k8s-device-plugin:1.0.0-beta4@sha256:94d46bf513cbc43c4d77a364e4bbd409d32d89c8e686e12551cc3eb27c259b90
     cves:
@@ -1367,12 +1405,18 @@ nvidia-gpu-device-plugin:
       packagename: util-linux
 olm:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 portainer:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 registry:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gcr.io/google_containers/kube-registry-proxy:0.4@sha256:1040f25a5273de0d72c54865a8efd47e3292de9fb8e5353e3fa76736b854f2da
     cves:
@@ -1624,6 +1668,8 @@ registry:
       packagename: openssl
 registry-aliases:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: alpine:3.11@sha256:0bd0e9e03a022c3b0226667621da84fc9bf562a9056130424b5bfbd8bcb0397f
     cves:
@@ -1687,6 +1733,8 @@ registry-aliases:
       packagename: systemd-libs
 registry-creds:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605
     cves:
@@ -1696,9 +1744,13 @@ registry-creds:
       packagename: openssl
 storage-provisioner:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []
 storage-provisioner-gluster:
   enabled: false
+  manual: false
+  manualreason: ""
   images:
   - image: gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223
     cves:
@@ -1780,4 +1832,6 @@ storage-provisioner-gluster:
       packagename: yum-plugin-fastestmirror
 volumesnapshots:
   enabled: true
+  manual: false
+  manualreason: ""
   images: []

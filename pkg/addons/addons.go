@@ -66,23 +66,35 @@ var Refresh = false
 var ErrSkipThisAddon = errors.New("skipping this addon")
 
 type AddonSecurityError struct {
-	Status ImageStatus
+	Status AddonStatus
 }
 
 func (e AddonSecurityError) Error() string {
-	cveStr := ""
-	for _, c := range e.Status.CVEs {
-		cveStr += "\n" + c.Name + "\n"
-		cveStr += "Severity: " + c.Severity + "\n"
-		cveStr += "Package: " + c.PackageName + "\n"
-		cveStr += "Fixed in version: " + c.UpdatedVersion + "\n"
+	if e.Status.Manual {
+		return fmt.Sprintf("This addon has been disabled for the following reason: %s", e.Status.ManualReason)
 	}
-	return fmt.Sprintf("This addon has known security vulnerabilities. Please upgrade the images or build new ones with updated packages.\nYou can bypass this check by passing in custom images with the --images and --registries parameters. See https://minikube.sigs.k8s.io/docs/handbook/addons/custom-images/ for more details.\nImage: %s\nCVEs: %s", e.Status.Image, cveStr)
+
+	msg := "This addon has known security vulnerabilities. Please upgrade the images or build new ones with updated packages.\nYou can bypass this check by passing in custom images with the --images and --registries parameters. See https://minikube.sigs.k8s.io/docs/handbook/addons/custom-images/ for more details.\n"
+	for _, i := range e.Status.Images {
+		msg += "\nImage: " + i.Image + "\n"
+
+		cveStr := ""
+		for _, c := range i.CVEs {
+			cveStr += "\n" + c.Name + "\n"
+			cveStr += "Severity: " + c.Severity + "\n"
+			cveStr += "Package: " + c.PackageName + "\n"
+			cveStr += "Fixed in version: " + c.UpdatedVersion + "\n"
+		}
+		msg += cveStr
+	}
+	return msg
 }
 
 type AddonStatus struct {
-	Enabled bool          `json:"enabled"`
-	Images  []ImageStatus `json:"images"`
+	Enabled      bool          `json:"enabled"`
+	Manual       bool          `json:"manual"`
+	ManualReason string        `json:"reason"`
+	Images       []ImageStatus `json:"images"`
 }
 
 type ImageStatus struct {
@@ -197,7 +209,7 @@ func securityCheck(cc *config.ClusterConfig, addonName string, value string) err
 	for addon, status := range statuses {
 		if addon == addonName {
 			if !status.Enabled {
-				return AddonSecurityError{Status: status.Images[0]}
+				return AddonSecurityError{Status: status}
 			}
 		}
 	}
