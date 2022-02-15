@@ -177,9 +177,8 @@ func securityCheck(addonName string, value string) error {
 		if addon == addonName {
 			if !status.Enabled {
 				return AddonSecurityError{Status: status}
-			} else {
-				break
 			}
+			break
 		}
 	}
 	return nil
