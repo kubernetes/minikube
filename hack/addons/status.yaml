@@ -1067,9 +1067,9 @@ freshpod:
       updatedversion: 1.1.18-r4
       packagename: musl
 gcp-auth:
-  enabled: false
-  manual: true
-  manualreason: doo doo head
+  enabled: true
+  manual: false
+  manualreason: ""
   images: []
 gvisor:
   enabled: false
