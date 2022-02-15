@@ -164,7 +164,7 @@ func securityCheck(addonName string, value string) error {
 		return nil
 	}*/
 
-	// Pull the down the file with security info
+	// Pull down the security status info
 	statuses, err := download.AddonStatus()
 	if err != nil {
 		// If we fail to find the file, don't error out, just continue
@@ -172,12 +172,12 @@ func securityCheck(addonName string, value string) error {
 		return nil
 	}
 
-	// Parse the yaml into well-defined structs
-
 	for addon, status := range statuses {
 		if addon == addonName {
 			if !status.Enabled {
 				return AddonSecurityError{Status: status}
+			} else {
+				break
 			}
 		}
 	}
