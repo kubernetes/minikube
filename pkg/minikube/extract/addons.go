@@ -87,5 +87,5 @@ func AddonImages() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("hack/addons/addons.yaml", y, 0777)
+	return os.WriteFile("out/addons.yaml", y, 0777)
 }

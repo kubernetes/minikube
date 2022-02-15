@@ -96,6 +96,9 @@ cp "out/minikube-${RPM_VERSION}-0.aarch64.rpm" out/minikube-latest.aarch64.rpm
 
 gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 
+make addon-list
+gsutil cp out/addons.yaml "gs://$BUCKET/addons/$TAGNAME/addons.yaml"
+
 # Update "latest" release for non-beta/non-alpha builds
 if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"

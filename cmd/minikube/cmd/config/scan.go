@@ -123,7 +123,7 @@ func writeStatusYAML(addonStatus map[string]util.AddonStatus) {
 	if err != nil {
 		exit.Error(reason.InternalAddonScan, "marshalling addon status list", err)
 	}
-	err = os.WriteFile("hack/addons/status.yaml", statusYaml, 0777)
+	err = os.WriteFile("out/status.yaml", statusYaml, 0777)
 	if err != nil {
 		exit.Error(reason.InternalAddonScan, "writing addon status list", err)
 	}
