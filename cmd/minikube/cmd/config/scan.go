@@ -32,8 +32,8 @@ import (
 
 var addonsScan = &cobra.Command{
 	Use:    "scan",
-	Short:  "Scans all minikube addon images for security vulnerabilites",
-	Long:   "Scans all minikube addon images for security vulnerabilites",
+	Short:  "Scans all minikube addon images for security vulnerabilities",
+	Long:   "Scans all minikube addon images for security vulnerabilities",
 	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 		addonMap, err := download.AddonList()
@@ -66,7 +66,7 @@ var addonsScan = &cobra.Command{
 				snyk := exec.Command("snyk", "container", "test", image.(string), "--json", "--severity-threshold=high")
 				out, err := snyk.Output()
 				if err == nil {
-					klog.Infof("no vulnerabilites found for %s", image)
+					klog.Infof("no vulnerabilities found for %s", image)
 					continue
 				}
 				outmap := make(map[string]interface{})

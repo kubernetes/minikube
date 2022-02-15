@@ -69,5 +69,8 @@ func parseStrings() {
 }
 
 func parseAddons() {
-	extract.AddonImages()
+	err := extract.AddonImages()
+	if err != nil {
+		panic(err)
+	}
 }

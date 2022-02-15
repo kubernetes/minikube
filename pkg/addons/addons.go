@@ -128,7 +128,7 @@ func SetAndSave(profile string, name string, value string) error {
 		return errors.Wrap(err, "loading profile")
 	}
 
-	if err := securityCheck(cc, name, value); err != nil {
+	if err := securityCheck(name, value); err != nil {
 		return errors.Wrap(err, "security check")
 	}
 
@@ -147,7 +147,7 @@ func SetAndSave(profile string, name string, value string) error {
 	return config.Write(profile, cc)
 }
 
-func securityCheck(cc *config.ClusterConfig, addonName string, value string) error {
+func securityCheck(addonName string, value string) error {
 	// Always allow disabling an addon
 	if value != "true" {
 		return nil
