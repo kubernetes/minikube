@@ -48,8 +48,8 @@ func AddonImages() error {
 			if key, ok := kvp.Key.(*ast.BasicLit); ok {
 				k := key.Value[1 : len(key.Value)-1]
 				first, _ := utf8.DecodeRuneInString(k)
-				// This is an addon name
 				if unicode.IsLower(first) {
+					// This is an addon name
 					currentAddon = k
 				} else if unicode.IsUpper(first) {
 					// This is a variable name pointing to an image
