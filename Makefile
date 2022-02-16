@@ -292,7 +292,7 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
+	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube.iso
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
@@ -322,7 +322,7 @@ iso_in_docker:
 		$(ISO_BUILD_IMAGE) /bin/bash
 
 test-iso:
-	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/boot.iso"
 
 .PHONY: test-pkg
 test-pkg/%: ## Trigger packaging test
