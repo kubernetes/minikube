@@ -1,7 +1,7 @@
 # Architecture
-BR2_x86_64=y
+BR2_aarch64=y
 
-# Toolchain
+# Toolchainmv
 BR2_TOOLCHAIN_BUILDROOT_WCHAR=y
 
 # System
@@ -16,13 +16,13 @@ BR2_PACKAGE_HOST_MTOOLS=y
 
 # Bootloader
 BR2_TARGET_GRUB2=y
-BR2_TARGET_GRUB2_X86_64_EFI=y
+BR2_TARGET_GRUB2_ARM64_EFI=y
 BR2_TARGET_GRUB2_BUILTIN_CONFIG="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/grub-stub.cfg"
 BR2_TARGET_GRUB2_BUILTIN_MODULES="boot linux ext2 fat squash4 part_msdos part_gpt normal efi_gop udf iso9660 search search_fs_file search_fs_uuid search_label"
 
 # Filesystem / image
 BR2_TARGET_ROOTFS_CPIO=y
-BR2_TARGET_ROOTFS_CPIO_GZIP=y
+BR2_TARGET_ROOTFS_CPIO_GZIP=y # here (maybe)
 BR2_ROOTFS_POST_BUILD_SCRIPT="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/post-build.sh"
 BR2_ROOTFS_POST_IMAGE_SCRIPT="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/post-image.sh"
 BR2_ROOTFS_POST_SCRIPT_ARGS="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/iso/x86_64/genimage.cfg"
@@ -47,7 +47,7 @@ BR2_PACKAGE_ACPID=y
 
 # Minikube
 
-config BR2_PACKAGE_VBOX_GUEST=y
+BR2_PACKAGE_VBOX_GUEST=n
 
 BR2_OPTIMIZE_2=y
 BR2_GLOBAL_PATCH_DIR="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/coreos/minikube/patches"
@@ -64,7 +64,7 @@ BR2_SYSTEM_BIN_SH_BASH=y
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/coreos/minikube/users"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/coreos/minikube/rootfs-overlay"
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
-BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/coreos/minikube/linux_defconfig"
+BR2_LINUX_KERNEL_CUSTOM_CONFIG_FILE="$(BR2_EXTERNAL_MINIKUBE_PATH)/board/coreos/minikube/linux_arm_defconfig"
 BR2_LINUX_KERNEL_LZ4=y
 BR2_LINUX_KERNEL_NEEDS_HOST_LIBELF=y
 BR2_PACKAGE_GZIP=y
