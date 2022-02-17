@@ -24,7 +24,7 @@ However, minikube can support [NetworkPolicies](https://kubernetes.io/docs/conce
 * deny rules
 * more flexible match rules
 
-## Enabling Calico on a Minikube cluster
+## Enabling Calico on a minikube cluster
 
 It is possible to replace the CNI on a running Minikube cluster, but it is significantly easier to simply append the `--cni calico` flag to the `minikube start` command when following the instructions on the [Get Started!]({{<ref "/docs/start/" >}}) page to build the Minikube cluster with Calico installed from the outset.
 
