@@ -17,7 +17,7 @@ However, the [prerequisites](https://kubernetes.io/docs/concepts/services-networ
 
 A vanilla minikube installation (`minikube start`) does not support any NetworkPolicies, since the default CNI, [Kindnet](https://github.com/aojea/kindnet), does not support Network Policies, [by design](https://github.com/kubernetes-sigs/kind/issues/842#issuecomment-528824670).
 
-However, Minikube can support [NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) if a supported CNI, such as [Calico](https://projectcalico.docs.tigera.io/about/about-calico), is installed. In addition, in this scenario both [Kubernetes network policy](https://projectcalico.docs.tigera.io/security/kubernetes-network-policy) and [Calico network policy](https://projectcalico.docs.tigera.io/security/calico-network-policy) are supported.
+However, minikube can support [NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) if a supported CNI, such as [Calico](https://projectcalico.docs.tigera.io/about/about-calico), is installed. In addition, in this scenario both [Kubernetes network policy](https://projectcalico.docs.tigera.io/security/kubernetes-network-policy) and [Calico network policy](https://projectcalico.docs.tigera.io/security/calico-network-policy) are supported.
 
 **Calico network policy** provides a richer set of policy capabilities than **Kubernetes network policy** including:
 * policy ordering/priority
