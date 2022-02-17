@@ -15,7 +15,7 @@ minikube allows users to create and test network policies in the local Kubernete
 
 However, the [prerequisites](https://kubernetes.io/docs/concepts/services-networking/network-policies/#prerequisites) note that Network policies are implemented by the Container Network Interface (CNI) network plugin. Therefore to use or test network policies in any Kubernetes cluster, you must be using a networking solution which supports NetworkPolicy. Creating a NetworkPolicy resource without a controller that implements it will have no effect.
 
-A vanilla Minikube installation (`minikube start`) does not support any NetworkPolicies, since the default CNI, [Kindnet](https://github.com/aojea/kindnet), does not support Network Policies, [by design](https://github.com/kubernetes-sigs/kind/issues/842#issuecomment-528824670).
+A vanilla minikube installation (`minikube start`) does not support any NetworkPolicies, since the default CNI, [Kindnet](https://github.com/aojea/kindnet), does not support Network Policies, [by design](https://github.com/kubernetes-sigs/kind/issues/842#issuecomment-528824670).
 
 However, Minikube can support [NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) if a supported CNI, such as [Calico](https://projectcalico.docs.tigera.io/about/about-calico), is installed. In addition, in this scenario both [Kubernetes network policy](https://projectcalico.docs.tigera.io/security/kubernetes-network-policy) and [Calico network policy](https://projectcalico.docs.tigera.io/security/calico-network-policy) are supported.
 
