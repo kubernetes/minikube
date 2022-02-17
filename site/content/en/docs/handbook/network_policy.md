@@ -11,7 +11,7 @@ aliases:
 
 Minikube allows users to create and test network policies in the local Kubernetes cluster. This is useful since it allows the network policies to be, considered, built, and evaluated during the application development, as an integral part of the process rather than "bolted on" at the end of development.
 
-[Kubernetes NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) allow the control of pod network traffic passing through the cluster, at the the IP address or port level (OSI layer 3 or 4). The linked page provides much more information about the functionality and implementation.
+[Kubernetes NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/) allow the control of pod network traffic passing through the cluster, at the IP address or port level (OSI layer 3 or 4). The linked page provides much more information about the functionality and implementation.
 
 However, the [prerequisites](https://kubernetes.io/docs/concepts/services-networking/network-policies/#prerequisites) note that Network policies are implemented by the Container Network Interface (CNI) network plugin. Therefore to use or test network policies in any Kubernetes cluster, you must be using a networking solution which supports NetworkPolicy. Creating a NetworkPolicy resource without a controller that implements it will have no effect.
 
