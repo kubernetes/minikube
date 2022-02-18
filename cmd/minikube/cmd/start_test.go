@@ -347,6 +347,14 @@ func TestValidateImageRepository(t *testing.T) {
 			validImageRepository: "auto",
 		},
 		{
+			imageRepository:      "$$$$invalid",
+			validImageRepository: "auto",
+		},
+		{
+			imageRepository:      "",
+			validImageRepository: "auto",
+		},
+		{
 			imageRepository:      "http://registry.test.com/google_containers/",
 			validImageRepository: "registry.test.com/google_containers",
 		},
@@ -368,6 +376,10 @@ func TestValidateImageRepository(t *testing.T) {
 		},
 		{
 			imageRepository:      "https://registry.test.com:6666/google_containers",
+			validImageRepository: "registry.test.com:6666/google_containers",
+		},
+		{
+			imageRepository:      "registry.test.com:6666/google_containers",
 			validImageRepository: "registry.test.com:6666/google_containers",
 		},
 	}
