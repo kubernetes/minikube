@@ -15,7 +15,7 @@ Please send a PR to suggest any improvements to it.
 ## (#1) GUI
 
 - [ ] Be able to start, stop, pause, and delete clusters via a GUI
-- [ ] Application avaiable for all supported platforms: Linux, macOS, Windows
+- [ ] Application available for all supported platforms: Linux, macOS, Windows
 
 ## (#2) Documentation
 
