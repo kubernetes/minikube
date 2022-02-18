@@ -15,6 +15,7 @@ Please send a PR to suggest any improvements to it.
 ## (#1) GUI
 
 - [ ] Be able to start, stop, pause, and delete clusters via a GUI
+- [ ] Application available for all supported platforms: Linux, macOS, Windows
 
 ## (#2) Documentation
 
@@ -27,8 +28,11 @@ Please send a PR to suggest any improvements to it.
 - [ ] Add Linux VM support
 - [ ] Add Mac M1 VM support
 
-## (#4) Reduce Docker Desktop Dependency	
+## (#4) Docker
+- [ ] Remove the Docker Desktop requirement on Mac and Windows
+- [ ] Continue supporting Docker as a container runtime (with CRI)
 
 ## (#5) libmachine Refactor
 
-- [ ] Prototype post-libmachine implementation of minikube
+- [ ] Add new driver (with QEMU) to replace HyperKit, primarly for Mac arm64
+- [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
