@@ -711,6 +711,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.FeatureGates, featureGates)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ContainerRuntime, containerRuntime)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRISocket, criSocket)
+	updateStringFromFlag(cmd, &cc.KubernetesConfig.CRIService, criService)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.NetworkPlugin, networkPlugin)
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
