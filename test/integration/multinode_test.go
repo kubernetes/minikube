@@ -23,9 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -181,11 +179,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}
 
-	tmpDir, err := ioutil.TempDir("", "mk_cp_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	srcPath := cpTestLocalPath()
 	dstPath := cpTestMinikubePath()

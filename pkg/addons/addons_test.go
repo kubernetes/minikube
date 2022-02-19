@@ -30,19 +30,8 @@ import (
 
 func createTestProfile(t *testing.T) string {
 	t.Helper()
-	td, err := os.MkdirTemp("", "profile")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
-
-	t.Cleanup(func() {
-		err := os.RemoveAll(td)
-		t.Logf("remove path %q", td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	})
-	err = os.Setenv(localpath.MinikubeHome, td)
+	td := t.TempDir()
+	err := os.Setenv(localpath.MinikubeHome, td)
 	if err != nil {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}

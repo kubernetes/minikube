@@ -80,20 +80,11 @@ func TestParseKubernetesVersion(t *testing.T) {
 }
 
 func TestChownR(t *testing.T) {
-	testDir, err := os.MkdirTemp(os.TempDir(), "")
+	testDir := t.TempDir()
+	_, err := os.Create(testDir + "/TestChownR")
 	if nil != err {
 		return
 	}
-	_, err = os.Create(testDir + "/TestChownR")
-	if nil != err {
-		return
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(testDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", testDir)
-		}
-	}()
 
 	cases := []struct {
 		name          string
@@ -133,21 +124,11 @@ func TestChownR(t *testing.T) {
 }
 
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
-	testDir, err := os.MkdirTemp(os.TempDir(), "")
+	testDir := t.TempDir()
+	_, err := os.Create(testDir + "/TestChownR")
 	if nil != err {
 		return
 	}
-	_, err = os.Create(testDir + "/TestChownR")
-	if nil != err {
-		return
-	}
-
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(testDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", testDir)
-		}
-	}()
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 		err = os.Setenv("CHANGE_MINIKUBE_NONE_USER", "1")

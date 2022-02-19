@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -1637,11 +1636,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
 
 	// copy from node
-	tmpDir, err := ioutil.TempDir("", "mk_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
 	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
@@ -2010,10 +2005,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 		}
 	}()
 
-	mitmDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return errors.Wrap(err, "create temp dir")
-	}
+	mitmDir := t.TempDir()
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {

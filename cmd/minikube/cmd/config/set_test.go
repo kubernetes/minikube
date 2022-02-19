@@ -66,12 +66,9 @@ func TestSetOK(t *testing.T) {
 
 func createTestConfig(t *testing.T) {
 	t.Helper()
-	td, err := os.MkdirTemp("", "config")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
+	td := t.TempDir()
 
-	err = os.Setenv(localpath.MinikubeHome, td)
+	err := os.Setenv(localpath.MinikubeHome, td)
 	if err != nil {
 		t.Fatalf("error setting up test environment. could not set %s due to %+v", localpath.MinikubeHome, err)
 	}

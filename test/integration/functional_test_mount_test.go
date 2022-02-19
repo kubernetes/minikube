@@ -59,16 +59,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	}
 
 	t.Run("any-port", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "mounttest")
-		defer func() { // clean up tempdir
-			err := os.RemoveAll(tempDir)
-			if err != nil {
-				t.Errorf("failed to clean up %q temp folder.", tempDir)
-			}
-		}()
-		if err != nil {
-			t.Fatalf("Unexpected error while creating tempDir: %v", err)
-		}
+		tempDir := t.TempDir()
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
@@ -208,16 +199,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 	})
 	t.Run("specific-port", func(t *testing.T) {
-		tempDir, err := os.MkdirTemp("", "mounttest")
-		defer func() { // clean up tempdir
-			err := os.RemoveAll(tempDir)
-			if err != nil {
-				t.Errorf("failed to clean up %q temp folder.", tempDir)
-			}
-		}()
-		if err != nil {
-			t.Fatalf("Unexpected error while creating tempDir: %v", err)
-		}
+		tempDir := t.TempDir()
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
