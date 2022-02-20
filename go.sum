@@ -756,6 +756,8 @@ github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 h1:6E+4a0GO5zZEnZ81pIr0yLvtUWk2if982qA3F3QD6H4=
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
+github.com/machine-drivers/docker-machine-driver-qemu v0.1.0 h1:r5bMzOqca0dZuCkn/8vCM8QNpdsLPCVZ6VP5z/IU0HM=
+github.com/machine-drivers/docker-machine-driver-qemu v0.1.0/go.mod h1:1gevpWYcs2Gmvt9G9T6AbeRw9tGnQdQiKt56B7n2X7g=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.5 h1:51GqJ84u9EBATnn8rWsHNavcuRPlCLnDmvjzZVuliwY=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.5/go.mod h1:dTnTzUH3uzhMo0ddV1zRjGYWcVhQWwqiHPxz5l+HPd0=
 github.com/machine-drivers/machine v0.7.1-0.20211105063445-78a84df85426 h1:gVDPCmqwvHQ4ox/9svvnkomYJAAiV59smbPdTK4DIm4=

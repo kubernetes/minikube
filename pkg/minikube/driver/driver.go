@@ -46,6 +46,8 @@ const (
 	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
+	// QEMU driver
+	QEMU = "qemu"
 	// VirtualBox driver
 	VirtualBox = "virtualbox"
 	// HyperKit driver
