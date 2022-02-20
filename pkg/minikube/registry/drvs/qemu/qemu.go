@@ -19,6 +19,7 @@ package qemu
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -59,6 +60,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		DiskSize:       cc.DiskSize,
 		Memory:         cc.Memory,
 		CPU:            cc.CPUs,
+		EnginePort:     2376,
+		FirstQuery:     true,
+		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.img", name)),
 	}, nil
 }
 
