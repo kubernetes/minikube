@@ -94,6 +94,8 @@ type Manager interface {
 	CGroupDriver() (string, error)
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions() map[string]string
+	// UsingCRI returns if this container runtime is using external CRI
+	UsingCRI() bool
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
 	// SocketService returns the extra service needed for a given runtime

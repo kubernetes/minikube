@@ -95,6 +95,11 @@ func (r *Docker) Version() (string, error) {
 	return strings.Split(rr.Stdout.String(), "\n")[0], nil
 }
 
+// UsingCRI returns if this container runtime is using CRI
+func (r *Docker) UsingCRI() bool {
+	return r.UseCRI
+}
+
 // SocketPath returns the path to the socket file for Docker
 func (r *Docker) SocketPath() string {
 	if r.Socket != "" {

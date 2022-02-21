@@ -179,6 +179,11 @@ func (r *Containerd) Version() (string, error) {
 	return version, nil
 }
 
+// UsingCRI returns if this container runtime is using CRI
+func (r *Containerd) UsingCRI() bool {
+	return true
+}
+
 // SocketPath returns the path to the socket file for containerd
 func (r *Containerd) SocketPath() string {
 	if r.Socket != "" {

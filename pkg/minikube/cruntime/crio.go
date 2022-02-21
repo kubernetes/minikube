@@ -107,6 +107,11 @@ func (r *CRIO) Version() (string, error) {
 	return strings.Replace(line, "crio version ", "", 1), nil
 }
 
+// UsingCRI returns if this container runtime is using CRI
+func (r *CRIO) UsingCRI() bool {
+	return true
+}
+
 // SocketPath returns the path to the socket file for CRIO
 func (r *CRIO) SocketPath() string {
 	if r.Socket != "" {
