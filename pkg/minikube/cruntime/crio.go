@@ -112,7 +112,7 @@ func (r *CRIO) SocketPath() string {
 	if r.Socket != "" {
 		return r.Socket
 	}
-	return "/var/run/crio/crio.sock"
+	return ExternalCRIOCRISocket
 }
 
 // SocketService returns the extra service needed for CRIO
