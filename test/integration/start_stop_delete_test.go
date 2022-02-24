@@ -256,8 +256,8 @@ func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile strin
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-	} else if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
-		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
+	} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(9)); err != nil {
+		t.Errorf("failed waiting for busybox pod post-stop-start: %v", err)
 	}
 
 }
