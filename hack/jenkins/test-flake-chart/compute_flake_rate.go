@@ -168,8 +168,8 @@ func filterRecentEntries(splitEntries splitEntryMap, dateCutoff time.Time) split
 	filteredEntries := make(splitEntryMap)
 
 	for environment, environmentSplit := range splitEntries {
-		// Ignore arm64 tests until they're back under control
-		if strings.Contains(environment, "arm64") {
+		// Ignore kvm crio tests until they're back under control
+		if environment == "KVM_Linux_crio" {
 			continue
 		}
 		for test, testSplit := range environmentSplit {
