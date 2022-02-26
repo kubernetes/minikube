@@ -1408,32 +1408,39 @@ func validateRegistryMirror() {
 // args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
 // also "<hostname>[:<port>]"
 func validateImageRepository(imageRepo string) (validImageRepo string) {
+	expression := regexp.MustCompile(`^(?:(\w+)\:\/\/)?([-a-zA-Z0-9]{1,}(?:\.[-a-zA-Z]{1,}){0,})(?:\:(\d+))?(\/.*)?$`)
 
 	if strings.ToLower(imageRepo) == "auto" {
-		validImageRepo = "auto"
+		imageRepo = "auto"
 	}
-	URL, err := url.Parse(imageRepo)
 
-	if err != nil {
-		klog.Errorln("Error Parsing URL: ", err)
+	if !expression.MatchString(imageRepo) {
+		klog.Errorln("Provided repository is not a valid URL. Defaulting to \"auto\"")
+		imageRepo = "auto"
 	}
 
 	var imageRepoPort string
+	groups := expression.FindStringSubmatch(imageRepo)
 
-	if URL.Port() != "" && strings.Contains(imageRepo, ":"+URL.Port()) {
-		imageRepoPort = ":" + URL.Port()
+	scheme := groups[1]
+	hostname := groups[2]
+	port := groups[3]
+	path := groups[4]
+
+	if port != "" && strings.Contains(imageRepo, ":"+port) {
+		imageRepoPort = ":" + port
 	}
 
 	// tips when imageRepo ended with a trailing /.
 	if strings.HasSuffix(imageRepo, "/") {
-		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kuberentes, removed automatically")
+		out.Infof("The --image-repository flag your provided ended with a trailing / that could cause conflict in kubernetes, removed automatically")
 	}
 	// tips when imageRepo started with scheme such as http(s).
-	if URL.Scheme != "" {
-		out.Infof("The --image-repository flag your provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": URL.Scheme})
+	if scheme != "" {
+		out.Infof("The --image-repository flag you provided contains Scheme: {{.scheme}}, which will be removed automatically", out.V{"scheme": scheme})
 	}
 
-	validImageRepo = URL.Hostname() + imageRepoPort + strings.TrimSuffix(URL.Path, "/")
+	validImageRepo = hostname + imageRepoPort + strings.TrimSuffix(path, "/")
 
 	return validImageRepo
 }

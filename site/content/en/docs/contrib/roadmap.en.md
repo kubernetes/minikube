@@ -6,53 +6,33 @@ description: >
   Development Roadmap
 ---
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2021, divided by how they apply to our [guiding principles]({{< ref "/docs/contrib/principles" >}})
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2022, divided by how they apply to our [guiding principles]({{< ref "/docs/contrib/principles" >}})
 
 Please send a PR to suggest any improvements to it.
 
-# 2021
+# 2022
 
-## (#1) Inclusive and community-driven
+## (#1) GUI
 
-- [x] Maintainers from 4 countries, 4 companies
-- [x] Enhancements approved by a community-driven process
-- [ ] Installation documentation in 5+ written languages
+- [ ] Be able to start, stop, pause, and delete clusters via a GUI
+- [ ] Application available for all supported platforms: Linux, macOS, Windows
 
-## (#2) User-friendly
+## (#2) Documentation
 
-- [ ] Automatic installation of hypervisor dependencies
-- [ ] Graphical User Interface
-- [ ] Built-in 3rd Party ecosystem with 50+ entries
+- [ ] Consolidate Kubernetes documentation that references minikube
+- [ ] Delete outdated documentation
+- [ ] Add documentation for new features
 
-## (#3) Support all Kubernetes features
+## (#3) ARM64 Support
 
-- [x] Multi-node
-- [ ] IPv6
-- [ ] Usage documentation for 3 leading CNI providers
-- [ ] Automatically publish conformance test results after a release
+- [ ] Add Linux VM support
+- [ ] Add Mac M1 VM support
 
-## (#4) Cross-platform
+## (#4) Docker
+- [ ] Remove the Docker Desktop requirement on Mac and Windows
+- [ ] Continue supporting Docker as a container runtime (with CRI)
 
-- [x] VM-free deployment to containers (Docker, Podman)
-- [x] Windows as a first-class citizen
-- [x] WSL2 support (no additional VM required)
-- [ ] Firecracker VM support
-- [x] Generic (SSH) driver support
+## (#5) libmachine Refactor
 
-## (#5) Reliable
-
-- [ ] Resource alerts
-- [ ] Time synchronization on HyperKit
-- [ ] Prototype post-libmachine implementation of minikube
-
-## (#6) High Performance
-
-- [x] Startup latency under 30s
-- [x] Pause support
-- [x] <25% CPU overhead on a single core
-- [ ] Kernel-assisted mounts (CIFS, NFS) by default
-
-## (#7) Developer Focused
-
-- [x] Container build integration
-- [ ] Documented workflow for Kubernetes development
+- [ ] Add new driver (with QEMU) to replace HyperKit, primarly for Mac arm64
+- [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes

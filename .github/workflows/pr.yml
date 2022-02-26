@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.6'
+  GO_VERSION: '1.17.7'
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
@@ -140,7 +140,7 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -343,7 +343,7 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=10m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))

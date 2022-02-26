@@ -53,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -897,7 +898,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadCachedImages(&cfg, k.c, images, constants.ImageCacheDir, false); err != nil {
+		if err := machine.LoadCachedImages(&cfg, k.c, images, detect.ImageCacheDir(), false); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}

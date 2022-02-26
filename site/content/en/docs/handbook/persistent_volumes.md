@@ -1,7 +1,7 @@
 ---
 title: "Persistent Volumes"
 linkTitle: "Persistent Volumes"
-weight: 10
+weight: 11
 date: 2019-08-01
 description: >
   About persistent volumes (hostPath)

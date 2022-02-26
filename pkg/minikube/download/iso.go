@@ -28,7 +28,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
@@ -40,7 +40,7 @@ const fileScheme = "file"
 // DefaultISOURLs returns a list of ISO URL's to consult by default, in priority order
 func DefaultISOURLs() []string {
 	v := version.GetISOVersion()
-	isoBucket := "minikube-builds/iso/13531"
+	isoBucket := "minikube/iso"
 	return []string{
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", isoBucket, v),
 		fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s.iso", v, v),
@@ -75,7 +75,7 @@ func localISOPath(u *url.URL) string {
 		return u.String()
 	}
 
-	return filepath.Join(constants.ISOCacheDir, path.Base(u.Path))
+	return filepath.Join(detect.ISOCacheDir(), path.Base(u.Path))
 }
 
 // ISO downloads and returns the path to the downloaded ISO
