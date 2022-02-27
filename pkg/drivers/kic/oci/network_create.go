@@ -31,9 +31,9 @@ import (
 	"k8s.io/minikube/pkg/network"
 )
 
-// firstSubnetAddr subnet to be used on first kic cluster
+// defaultFirstSubnetAddr is a first subnet to be used on first kic cluster
 // it is one octet more than the one used by KVM to avoid possible conflict
-const firstSubnetAddr = "192.168.49.0"
+const defaultFirstSubnetAddr = "192.168.49.0"
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
@@ -53,8 +53,16 @@ func defaultBridgeName(ociBin string) string {
 	}
 }
 
+func firstSubnetAddr(subnet string) string {
+	if subnet == "" {
+		return defaultFirstSubnetAddr
+	}
+
+	return subnet
+}
+
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
+func CreateNetwork(ociBin, networkName, subnet string) (net.IP, error) {
 	defaultBridgeName := defaultBridgeName(ociBin)
 	if networkName == defaultBridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
@@ -76,7 +84,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	}
 
 	// retry up to 5 times to create container network
-	for attempts, subnetAddr := 0, firstSubnetAddr; attempts < 5; attempts++ {
+	for attempts, subnetAddr := 0, firstSubnetAddr(subnet); attempts < 5; attempts++ {
 		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
 		var subnet *network.Parameters
