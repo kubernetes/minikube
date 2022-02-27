@@ -284,7 +284,7 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 
 // DiskAvailable returns the available capacity of dir in the VM/container in GiB
 func DiskAvailable(cr command.Runner, dir string) (int, error) {
-	if s := os.Getenv(constants.TestDiskUsedEnv); s != "" {
+	if s := os.Getenv(constants.TestDiskAvailableEnv); s != "" {
 		return strconv.Atoi(s)
 	}
 	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -BG %s | awk 'NR==2{print $4}'", dir)))
