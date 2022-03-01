@@ -73,7 +73,7 @@ type testEntry struct {
 	duration    float32
 }
 
-// A map with keys of (environment, test_name) to values of slcies of TestEntry.
+// A map with keys of (environment, test_name) to values of slices of TestEntry.
 type splitEntryMap map[string]map[string][]testEntry
 
 // Reads CSV `file` and consumes each line to be a single TestEntry.
@@ -168,6 +168,10 @@ func filterRecentEntries(splitEntries splitEntryMap, dateCutoff time.Time) split
 	filteredEntries := make(splitEntryMap)
 
 	for environment, environmentSplit := range splitEntries {
+		// Ignore kvm crio tests until they're back under control
+		if environment == "KVM_Linux_crio" {
+			continue
+		}
 		for test, testSplit := range environmentSplit {
 			for _, entry := range testSplit {
 				if !entry.date.Before(dateCutoff) {
