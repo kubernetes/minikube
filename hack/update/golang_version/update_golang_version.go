@@ -154,6 +154,11 @@ func main() {
 	if err != nil || stable == "" || stableMM == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
+	// skip rc versions
+	if strings.Contains(stable, "rc") {
+		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
+		return
+	}
 	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
 
