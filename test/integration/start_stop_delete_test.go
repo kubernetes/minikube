@@ -205,6 +205,17 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 	if !strings.Contains(deploymentInfo, " fake.domain/k8s.gcr.io/echoserver:1.4") {
 		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
+
+	// Disable the addon and enable it with the correct image to prevent errors
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "metrics-server", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to disable metrics-server addon. args %q: %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to enable metrics-server addon. args %q: %v", rr.Command(), err)
+	}
 }
 
 // validateStop tests minikube stop
@@ -231,6 +242,17 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=k8s.gcr.io/echoserver:1.4"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
+	}
+
+	// Disable the addon and enable it with the correct image to prevent errors
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to disable dashboard addon. args %q: %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to enable dashboard addon. args %q: %v", rr.Command(), err)
 	}
 
 }
@@ -271,15 +293,6 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 	}
 	if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 		t.Errorf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
-	}
-
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "deploy/dashboard-metrics-scraper", "-n", "kubernetes-dashboard"))
-	if err != nil {
-		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
-	}
-	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
