@@ -40,15 +40,17 @@ const domainTmpl = `
   {{end}}
   </cpu>
   <os>
-    <type>hvm</type>
+    <type machine="q35">hvm</type>  
+    <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
+    <nvram>/usr/share/OVMF/OVMF_VARS.fd</nvram>s
     <boot dev='cdrom'/>
     <boot dev='hd'/>
-    <bootmenu enable='no'/>
+    <bootmenu enable='yes'/>
   </os>
   <devices>
     <disk type='file' device='cdrom'>
       <source file='{{.ISO}}'/>
-      <target dev='hdc' bus='scsi'/>
+      <target dev='sdc' bus='sata'/>
       <readonly/>
     </disk>
     <disk type='file' device='disk'>
