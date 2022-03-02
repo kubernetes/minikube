@@ -194,21 +194,21 @@ void Window::createTrayIcon()
 
 void Window::startMinikube()
 {
-    QStringList args = {"start", "-p", selectedCluster()};
+    QStringList args = { "start", "-p", selectedCluster() };
     sendMinikubeCommand(args);
     updateClusters();
 }
 
 void Window::stopMinikube()
 {
-    QStringList args = {"stop", "-p", selectedCluster()};
+    QStringList args = { "stop", "-p", selectedCluster() };
     sendMinikubeCommand(args);
     updateClusters();
 }
 
 void Window::deleteMinikube()
 {
-    QStringList args = {"delete", "-p", selectedCluster()};
+    QStringList args = { "delete", "-p", selectedCluster() };
     sendMinikubeCommand(args);
     updateClusters();
 }
@@ -224,7 +224,7 @@ void Window::updateClusters()
 ClusterList Window::getClusters()
 {
     ClusterList clusters;
-    QStringList args = {"profile", "list", "-o", "json"};
+    QStringList args = { "profile", "list", "-o", "json" };
     QString text;
     bool success = sendMinikubeCommand(args, text);
     QStringList lines;
@@ -456,7 +456,7 @@ void Window::askName()
     int code = dialog.exec();
     profile = profileField.text();
     if (code == QDialog::Accepted) {
-        QStringList arg = {"start", "-p", profile};
+        QStringList arg = { "start", "-p", profile };
         sendMinikubeCommand(arg);
     } else if (code == QDialog::Rejected) {
         askCustom();
@@ -495,10 +495,21 @@ void Window::askCustom()
     int code = dialog.exec();
     if (code == QDialog::Accepted) {
         driver = driverComboBox->itemText(driverComboBox->currentIndex());
-        containerRuntime = containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
+        containerRuntime =
+                containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
         cpus = cpuField.text().toInt();
         memory = memoryField.text().toInt();
-        QStringList args = {"start", "-p", profile, "--driver", driver, "--container-runtime", containerRuntime, "--cpus", QString::number(cpus), "--memory", QString::number(memory)};
+        QStringList args = { "start",
+                             "-p",
+                             profile,
+                             "--driver",
+                             driver,
+                             "--container-runtime",
+                             containerRuntime,
+                             "--cpus",
+                             QString::number(cpus),
+                             "--memory",
+                             QString::number(memory) };
         sendMinikubeCommand(args);
     }
 }
@@ -544,7 +555,7 @@ void Window::sshConsole()
         }
     }
 
-    QStringList arguments = {"-e", QString("%1 ssh -p %2").arg(program, selectedCluster())};
+    QStringList arguments = { "-e", QString("%1 ssh -p %2").arg(program, selectedCluster()) };
     QProcess *process = new QProcess(this);
     process->start(QStandardPaths::findExecutable(terminal), arguments);
 #endif
@@ -556,7 +567,7 @@ void Window::dashboardBrowser()
 
     QString program = minikubePath();
     QProcess *process = new QProcess(this);
-    QStringList arguments = {"dashboard", "-p", selectedCluster()};
+    QStringList arguments = { "dashboard", "-p", selectedCluster() };
     process->start(program, arguments);
 
     dashboardProcess = process;
