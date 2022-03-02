@@ -94,7 +94,7 @@ k8s.gcr.io/coredns/coredns:v1.8.4
 func TestAuxiliary(t *testing.T) {
 	want := []string{
 		"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"docker.io/kubernetesui/dashboard:v2.3.1",
+		"docker.io/kubernetesui/dashboard:v2.5.0",
 		"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 	}
 	got := auxiliary("")
@@ -106,7 +106,7 @@ func TestAuxiliary(t *testing.T) {
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
 		"test.mirror/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"test.mirror/kubernetesui/dashboard:v2.3.1",
+		"test.mirror/kubernetesui/dashboard:v2.5.0",
 		"test.mirror/kubernetesui/metrics-scraper:v1.0.7",
 	}
 	got := auxiliary("test.mirror")
