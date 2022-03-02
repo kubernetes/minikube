@@ -78,6 +78,13 @@
 #include <QHeaderView>
 #include <QFormLayout>
 #include <QDialogButtonBox>
+#include <QStandardPaths>
+
+#ifndef QT_NO_TERMWIDGET
+#include <QApplication>
+#include <QMainWindow>
+#include "qtermwidget.h"
+#endif
 
 //! [0]
 Window::Window()
@@ -87,12 +94,16 @@ Window::Window()
     createActions();
     createTrayIcon();
 
+    connect(sshButton, &QAbstractButton::clicked, this, &Window::sshConsole);
+    connect(dashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
     connect(startButton, &QAbstractButton::clicked, this, &Window::startMinikube);
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
     connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &Window::messageClicked);
+
+    dashboardProcess = 0;
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(clusterGroupBox);
@@ -154,6 +165,16 @@ void Window::createActions()
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+}
+
+static QString minikubePath()
+{
+    QString program = QStandardPaths::findExecutable("minikube");
+    if (program.isEmpty()) {
+        QStringList paths = { "/usr/local/bin" };
+        program = QStandardPaths::findExecutable("minikube", paths);
+    }
+    return program;
 }
 
 void Window::createTrayIcon()
@@ -319,19 +340,27 @@ void Window::createClusterGroupBox()
     deleteButton = new QPushButton(tr("Delete"));
     refreshButton = new QPushButton(tr("Refresh"));
     createButton = new QPushButton(tr("Create"));
+    sshButton = new QPushButton(tr("SSH"));
+    dashboardButton = new QPushButton(tr("Dashboard"));
 
     updateButtons();
 
-    QHBoxLayout *clusterButtonLayout = new QHBoxLayout;
-    clusterButtonLayout->addWidget(startButton);
-    clusterButtonLayout->addWidget(stopButton);
-    clusterButtonLayout->addWidget(deleteButton);
-    clusterButtonLayout->addWidget(refreshButton);
-    clusterButtonLayout->addWidget(createButton);
+    QHBoxLayout *topButtonLayout = new QHBoxLayout;
+    topButtonLayout->addWidget(createButton);
+    topButtonLayout->addWidget(refreshButton);
+    topButtonLayout->addSpacing(340);
+
+    QHBoxLayout *bottomButtonLayout = new QHBoxLayout;
+    bottomButtonLayout->addWidget(startButton);
+    bottomButtonLayout->addWidget(stopButton);
+    bottomButtonLayout->addWidget(deleteButton);
+    bottomButtonLayout->addWidget(sshButton);
+    bottomButtonLayout->addWidget(dashboardButton);
 
     QVBoxLayout *clusterLayout = new QVBoxLayout;
+    clusterLayout->addLayout(topButtonLayout);
     clusterLayout->addWidget(clusterListView);
-    clusterLayout->addLayout(clusterButtonLayout);
+    clusterLayout->addLayout(bottomButtonLayout);
     clusterGroupBox->setLayout(clusterLayout);
 }
 
@@ -342,6 +371,8 @@ void Window::updateButtons()
         startButton->setEnabled(false);
         stopButton->setEnabled(false);
         deleteButton->setEnabled(false);
+        sshButton->setEnabled(false);
+        dashboardButton->setEnabled(false);
         return;
     }
     deleteButton->setEnabled(true);
@@ -349,6 +380,8 @@ void Window::updateButtons()
     if (clusterHash.status() == "Running") {
         startButton->setEnabled(false);
         stopButton->setEnabled(true);
+        sshButton->setEnabled(true);
+        dashboardButton->setEnabled(true);
     } else {
         startButton->setEnabled(true);
         stopButton->setEnabled(false);
@@ -374,7 +407,10 @@ bool Window::sendMinikubeCommand(QStringList cmds)
 
 bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
 {
-    QString program = "minikube";
+    QString program = minikubePath();
+    if (program.isEmpty()) {
+        return false;
+    }
     QStringList arguments;
     arguments << cmds;
     bool success;
@@ -418,6 +454,7 @@ void Window::askName()
     form.addRow(&buttonBox);
 
     int code = dialog.exec();
+    profile = profileField.text();
     if (code == QDialog::Accepted) {
         QStringList arg = {"start", "-p", profile};
         sendMinikubeCommand(arg);
@@ -470,6 +507,68 @@ void Window::initMachine()
 {
     askName();
     updateClusters();
+}
+
+void Window::sshConsole()
+{
+    QString program = minikubePath();
+#ifndef QT_NO_TERMWIDGET
+    QMainWindow *mainWindow = new QMainWindow();
+    int startnow = 0; // set shell program first
+
+    QTermWidget *console = new QTermWidget(startnow);
+
+    QFont font = QApplication::font();
+    font.setFamily("Monospace");
+    font.setPointSize(10);
+
+    console->setTerminalFont(font);
+    console->setColorScheme("Tango");
+    console->setShellProgram(program);
+    QStringList args = { "ssh" };
+    console->setArgs(args);
+    console->startShellProgram();
+
+    QObject::connect(console, SIGNAL(finished()), mainWindow, SLOT(close()));
+
+    mainWindow->setWindowTitle(nameLabel->text());
+    mainWindow->resize(800, 400);
+    mainWindow->setCentralWidget(console);
+    mainWindow->show();
+#else
+    QString terminal = qEnvironmentVariable("TERMINAL");
+    if (terminal.isEmpty()) {
+        terminal = "x-terminal-emulator";
+        if (QStandardPaths::findExecutable(terminal).isEmpty()) {
+            terminal = "xterm";
+        }
+    }
+
+    QStringList arguments = {"-e", QString("%1 ssh -p %2").arg(program, selectedCluster())};
+    QProcess *process = new QProcess(this);
+    process->start(QStandardPaths::findExecutable(terminal), arguments);
+#endif
+}
+
+void Window::dashboardBrowser()
+{
+    dashboardClose();
+
+    QString program = minikubePath();
+    QProcess *process = new QProcess(this);
+    QStringList arguments = {"dashboard", "-p", selectedCluster()};
+    process->start(program, arguments);
+
+    dashboardProcess = process;
+    dashboardProcess->waitForStarted();
+}
+
+void Window::dashboardClose()
+{
+    if (dashboardProcess) {
+        dashboardProcess->terminate();
+        dashboardProcess->waitForFinished();
+    }
 }
 
 #endif

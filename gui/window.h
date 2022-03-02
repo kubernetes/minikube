@@ -73,6 +73,7 @@ class QPushButton;
 class QSpinBox;
 class QTextEdit;
 class QTableView;
+class QProcess;
 QT_END_NAMESPACE
 
 #include "cluster.h"
@@ -93,6 +94,7 @@ protected:
 private slots:
     void messageClicked();
     void updateButtons();
+    void dashboardClose();
 
 private:
     void createActionGroupBox();
@@ -117,6 +119,11 @@ private:
     QComboBox *driverComboBox;
     QComboBox *containerRuntimeComboBox;
     void initMachine();
+    void sshConsole();
+    void dashboardBrowser();
+    QPushButton *sshButton;
+    QPushButton *dashboardButton;
+    QProcess *dashboardProcess;
 
     QPushButton *startButton;
     QPushButton *stopButton;
