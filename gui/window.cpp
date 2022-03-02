@@ -1,5 +1,8 @@
 /****************************************************************************
 **
+** Copyright 2022 The Kubernetes Authors All rights reserved.
+**
+** Copyright (C) 2021 Anders F Björklund
 ** Copyright (C) 2016 The Qt Company Ltd.
 ** Contact: https://www.qt.io/licensing/
 **

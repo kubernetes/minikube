@@ -20,5 +20,3 @@ $ ./systray
 ----
 
 See <https://doc.qt.io/qt-5/qtwidgets-desktop-systray-example.html>
-
-minikube logo from the <https://github.com/kubernetes/minikube> project.
