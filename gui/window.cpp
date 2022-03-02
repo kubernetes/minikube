@@ -82,7 +82,7 @@
 //! [0]
 Window::Window()
 {
-    createInstanceGroupBox();
+    createClusterGroupBox();
 
     createActions();
     createTrayIcon();
@@ -90,12 +90,12 @@ Window::Window()
     connect(startButton, &QAbstractButton::clicked, this, &Window::startMinikube);
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
-    connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateInstances);
+    connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
     connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &Window::messageClicked);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(instanceGroupBox);
+    mainLayout->addWidget(clusterGroupBox);
     setLayout(mainLayout);
 
     trayIcon->show();
@@ -173,36 +173,36 @@ void Window::createTrayIcon()
 
 void Window::startMinikube()
 {
-    QStringList args = {"start", "-p", selectedInstance()};
+    QStringList args = {"start", "-p", selectedCluster()};
     sendMinikubeCommand(args);
-    updateInstances();
+    updateClusters();
 }
 
 void Window::stopMinikube()
 {
-    QStringList args = {"stop", "-p", selectedInstance()};
+    QStringList args = {"stop", "-p", selectedCluster()};
     sendMinikubeCommand(args);
-    updateInstances();
+    updateClusters();
 }
 
 void Window::deleteMinikube()
 {
-    QStringList args = {"delete", "-p", selectedInstance()};
+    QStringList args = {"delete", "-p", selectedCluster()};
     sendMinikubeCommand(args);
-    updateInstances();
+    updateClusters();
 }
 
-void Window::updateInstances()
+void Window::updateClusters()
 {
-    QString instance = selectedInstance();
-    instanceModel->setInstances(getInstances());
-    setSelectedInstance(instance);
+    QString cluster = selectedCluster();
+    clusterModel->setClusters(getClusters());
+    setSelectedCluster(cluster);
     updateButtons();
 }
 
-InstanceList Window::getInstances()
+ClusterList Window::getClusters()
 {
-    InstanceList instances;
+    ClusterList clusters;
     QStringList args = {"profile", "list", "-o", "json"};
     QString text;
     bool success = sendMinikubeCommand(args, text);
@@ -234,47 +234,47 @@ InstanceList Window::getInstances()
                 if (name.isEmpty()) {
                     continue;
                 }
-                Instance instance(name);
+                Cluster cluster(name);
                 if (obj.contains("Status")) {
                     QString status = obj["Status"].toString();
-                    instance.setStatus(status);
+                    cluster.setStatus(status);
                 }
                 if (!obj.contains("Config")) {
-                    instances << instance;
+                    clusters << cluster;
                     continue;
                 }
                 QJsonObject config = obj["Config"].toObject();
                 if (config.contains("CPUs")) {
                     int cpus = config["CPUs"].toInt();
-                    instance.setCpus(cpus);
+                    cluster.setCpus(cpus);
                 }
                 if (config.contains("Memory")) {
                     int memory = config["Memory"].toInt();
-                    instance.setMemory(memory);
+                    cluster.setMemory(memory);
                 }
                 if (config.contains("Driver")) {
                     QString driver = config["Driver"].toString();
-                    instance.setDriver(driver);
+                    cluster.setDriver(driver);
                 }
                 if (!config.contains("KubernetesConfig")) {
-                    instances << instance;
+                    clusters << cluster;
                     continue;
                 }
                 QJsonObject k8sConfig = config["KubernetesConfig"].toObject();
                 if (k8sConfig.contains("ContainerRuntime")) {
                     QString containerRuntime = k8sConfig["ContainerRuntime"].toString();
-                    instance.setContainerRuntime(containerRuntime);
+                    cluster.setContainerRuntime(containerRuntime);
                 }
-                instances << instance;
+                clusters << cluster;
             }
         }
     }
-    return instances;
+    return clusters;
 }
 
-QString Window::selectedInstance()
+QString Window::selectedCluster()
 {
-    QModelIndex index = instanceListView->currentIndex();
+    QModelIndex index = clusterListView->currentIndex();
     QVariant variant = index.data(Qt::DisplayRole);
     if (variant.isNull()) {
         return QString();
@@ -282,37 +282,37 @@ QString Window::selectedInstance()
     return variant.toString();
 }
 
-void Window::setSelectedInstance(QString instance)
+void Window::setSelectedCluster(QString cluster)
 {
-    QAbstractItemModel *model = instanceListView->model();
+    QAbstractItemModel *model = clusterListView->model();
     QModelIndex start = model->index(0, 0);
-    QModelIndexList index = model->match(start, Qt::DisplayRole, instance);
+    QModelIndexList index = model->match(start, Qt::DisplayRole, cluster);
     if (index.size() == 0) {
         return;
     }
-    instanceListView->setCurrentIndex(index[0]);
+    clusterListView->setCurrentIndex(index[0]);
 }
 
-void Window::createInstanceGroupBox()
+void Window::createClusterGroupBox()
 {
-    instanceGroupBox = new QGroupBox(tr("Instances"));
+    clusterGroupBox = new QGroupBox(tr("Clusters"));
 
-    InstanceList instances = getInstances();
-    instanceModel = new InstanceModel(instances);
+    ClusterList clusters = getClusters();
+    clusterModel = new ClusterModel(clusters);
 
-    instanceListView = new QTableView();
-    instanceListView->setModel(instanceModel);
-    instanceListView->setSelectionMode(QAbstractItemView::SingleSelection);
-    instanceListView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    instanceListView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    instanceListView->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    instanceListView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
-    instanceListView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
-    instanceListView->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
-    instanceListView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
-    setSelectedInstance("default");
+    clusterListView = new QTableView();
+    clusterListView->setModel(clusterModel);
+    clusterListView->setSelectionMode(QAbstractItemView::SingleSelection);
+    clusterListView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    clusterListView->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+    clusterListView->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    setSelectedCluster("default");
 
-    connect(instanceListView, SIGNAL(clicked(QModelIndex)), this, SLOT(updateButtons()));
+    connect(clusterListView, SIGNAL(clicked(QModelIndex)), this, SLOT(updateButtons()));
 
     startButton = new QPushButton(tr("Start"));
     stopButton = new QPushButton(tr("Stop"));
@@ -322,31 +322,31 @@ void Window::createInstanceGroupBox()
 
     updateButtons();
 
-    QHBoxLayout *instanceButtonLayout = new QHBoxLayout;
-    instanceButtonLayout->addWidget(startButton);
-    instanceButtonLayout->addWidget(stopButton);
-    instanceButtonLayout->addWidget(deleteButton);
-    instanceButtonLayout->addWidget(refreshButton);
-    instanceButtonLayout->addWidget(createButton);
+    QHBoxLayout *clusterButtonLayout = new QHBoxLayout;
+    clusterButtonLayout->addWidget(startButton);
+    clusterButtonLayout->addWidget(stopButton);
+    clusterButtonLayout->addWidget(deleteButton);
+    clusterButtonLayout->addWidget(refreshButton);
+    clusterButtonLayout->addWidget(createButton);
 
-    QVBoxLayout *instanceLayout = new QVBoxLayout;
-    instanceLayout->addWidget(instanceListView);
-    instanceLayout->addLayout(instanceButtonLayout);
-    instanceGroupBox->setLayout(instanceLayout);
+    QVBoxLayout *clusterLayout = new QVBoxLayout;
+    clusterLayout->addWidget(clusterListView);
+    clusterLayout->addLayout(clusterButtonLayout);
+    clusterGroupBox->setLayout(clusterLayout);
 }
 
 void Window::updateButtons()
 {
-    QString inst = selectedInstance();
-    if (inst.isEmpty()) {
+    QString cluster = selectedCluster();
+    if (cluster.isEmpty()) {
         startButton->setEnabled(false);
         stopButton->setEnabled(false);
         deleteButton->setEnabled(false);
         return;
     }
     deleteButton->setEnabled(true);
-    Instance instance = getInstanceHash()[inst];
-    if (instance.status() == "Running") {
+    Cluster clusterHash = getClusterHash()[cluster];
+    if (clusterHash.status() == "Running") {
         startButton->setEnabled(false);
         stopButton->setEnabled(true);
     } else {
@@ -355,15 +355,15 @@ void Window::updateButtons()
     }
 }
 
-InstanceHash Window::getInstanceHash()
+ClusterHash Window::getClusterHash()
 {
-    InstanceList instances = getInstances();
-    InstanceHash instanceHash;
-    for (int i = 0; i < instances.size(); i++) {
-        Instance instance = instances.at(i);
-        instanceHash[instance.name()] = instance;
+    ClusterList clusters = getClusters();
+    ClusterHash clusterHash;
+    for (int i = 0; i < clusters.size(); i++) {
+        Cluster cluster = clusters.at(i);
+        clusterHash[cluster.name()] = cluster;
     }
-    return instanceHash;
+    return clusterHash;
 }
 
 bool Window::sendMinikubeCommand(QStringList cmds)
@@ -404,7 +404,7 @@ static QString containerRuntime = "";
 void Window::askName()
 {
     QDialog dialog;
-    dialog.setWindowTitle(tr("Create minikube Instance"));
+    dialog.setWindowTitle(tr("Create minikube Cluster"));
     dialog.setModal(true);
 
     QFormLayout form(&dialog);
@@ -429,7 +429,7 @@ void Window::askName()
 void Window::askCustom()
 {
     QDialog dialog;
-    dialog.setWindowTitle(tr("Create minikube Instance"));
+    dialog.setWindowTitle(tr("Set Cluster Values"));
     dialog.setModal(true);
 
     QFormLayout form(&dialog);
@@ -469,7 +469,7 @@ void Window::askCustom()
 void Window::initMachine()
 {
     askName();
-    updateInstances();
+    updateClusters();
 }
 
 #endif

@@ -51,95 +51,70 @@
 **
 ****************************************************************************/
 
-#include "instance.h"
+#ifndef CLUSTER_H
+#define CLUSTER_H
 
-#include <QStringList>
+#include <QAbstractListModel>
+#include <QString>
+#include <QList>
+#include <QMap>
 
-void InstanceModel::setInstances(const InstanceList &instances)
+//! [0]
+class Cluster
 {
-    beginResetModel();
-    instanceList = instances;
-    endResetModel();
-}
-
-int InstanceModel::rowCount(const QModelIndex &) const
-{
-    return instanceList.count();
-}
-
-int InstanceModel::columnCount(const QModelIndex &) const
-{
-    return 6;
-}
-
-static QStringList binaryAbbrs = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
-
-QVariant InstanceModel::data(const QModelIndex &index, int role) const
-{
-    if (!index.isValid())
-        return QVariant();
-
-    if (index.row() >= instanceList.size())
-        return QVariant();
-    if (index.column() >= 6)
-        return QVariant();
-
-    if (role == Qt::TextAlignmentRole) {
-        switch (index.column()) {
-        case 0:
-            return QVariant(Qt::AlignLeft | Qt::AlignVCenter);
-        case 1:
-            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
-        case 2:
-            // fall-through
-        case 3:
-            // fall-through
-        case 4:
-            // fall-through
-        case 5:
-            return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
-        }
+public:
+    Cluster() : Cluster("") { }
+    Cluster(const QString &name)
+        : m_name(name), m_status(""), m_driver(""), m_container_runtime(""), m_cpus(0), m_memory(0)
+    {
     }
-    if (role == Qt::DisplayRole) {
-        Instance instance = instanceList.at(index.row());
-        switch (index.column()) {
-        case 0:
-            return instance.name();
-        case 1:
-            return instance.status();
-        case 2:
-            return instance.driver();
-        case 3:
-            return instance.containerRuntime();
-        case 4:
-            return QString::number(instance.cpus());
-        case 5:
-            return QString::number(instance.memory());
-        }
-    }
-    return QVariant();
-}
 
-QVariant InstanceModel::headerData(int section, Qt::Orientation orientation, int role) const
+    QString name() const { return m_name; }
+    QString status() const { return m_status; }
+    void setStatus(QString status) { m_status = status; }
+    QString driver() const { return m_driver; }
+    void setDriver(QString driver) { m_driver = driver; }
+    QString containerRuntime() const { return m_container_runtime; }
+    void setContainerRuntime(QString containerRuntime) { m_container_runtime = containerRuntime; }
+    int cpus() const { return m_cpus; }
+    void setCpus(int cpus) { m_cpus = cpus; }
+    int memory() const { return m_memory; }
+    void setMemory(int memory) { m_memory = memory; }
+
+private:
+    QString m_name;
+    QString m_status;
+    QString m_driver;
+    QString m_container_runtime;
+    int m_cpus;
+    int m_memory;
+};
+//! [0]
+
+typedef QList<Cluster> ClusterList;
+typedef QHash<QString, Cluster> ClusterHash;
+
+//! [1]
+class ClusterModel : public QAbstractListModel
 {
-    if (role != Qt::DisplayRole)
-        return QVariant();
+    Q_OBJECT
 
-    if (orientation == Qt::Horizontal) {
-        switch (section) {
-        case 0:
-            return tr("Name");
-        case 1:
-            return tr("Status");
-        case 2:
-            return tr("Driver");
-        case 3:
-            return tr("Container Runtime");
-        case 4:
-            return tr("CPUs");
-        case 5:
-            return tr("Memory (MB)");
-        }
+public:
+    ClusterModel(const ClusterList &clusters, QObject *parent = nullptr)
+        : QAbstractListModel(parent), clusterList(clusters)
+    {
     }
-    return QVariant(); // QStringLiteral("Row %1").arg(section);
-}
+
+    void setClusters(const ClusterList &clusters);
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role) const override;
+    QVariant headerData(int section, Qt::Orientation orientation,
+                        int role = Qt::DisplayRole) const override;
+
+private:
+    ClusterList clusterList;
+};
+//! [1]
+
+#endif // CLUSTER_H

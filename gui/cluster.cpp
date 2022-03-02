@@ -51,70 +51,95 @@
 **
 ****************************************************************************/
 
-#ifndef INSTANCE_H
-#define INSTANCE_H
+#include "cluster.h"
 
-#include <QAbstractListModel>
-#include <QString>
-#include <QList>
-#include <QMap>
+#include <QStringList>
 
-//! [0]
-class Instance
+void ClusterModel::setClusters(const ClusterList &clusters)
 {
-public:
-    Instance() : Instance("") { }
-    Instance(const QString &name)
-        : m_name(name), m_status(""), m_driver(""), m_container_runtime(""), m_cpus(0), m_memory(0)
-    {
-    }
+    beginResetModel();
+    clusterList = clusters;
+    endResetModel();
+}
 
-    QString name() const { return m_name; }
-    QString status() const { return m_status; }
-    void setStatus(QString status) { m_status = status; }
-    QString driver() const { return m_driver; }
-    void setDriver(QString driver) { m_driver = driver; }
-    QString containerRuntime() const { return m_container_runtime; }
-    void setContainerRuntime(QString containerRuntime) { m_container_runtime = containerRuntime; }
-    int cpus() const { return m_cpus; }
-    void setCpus(int cpus) { m_cpus = cpus; }
-    int memory() const { return m_memory; }
-    void setMemory(int memory) { m_memory = memory; }
-
-private:
-    QString m_name;
-    QString m_status;
-    QString m_driver;
-    QString m_container_runtime;
-    int m_cpus;
-    int m_memory;
-};
-//! [0]
-
-typedef QList<Instance> InstanceList;
-typedef QHash<QString, Instance> InstanceHash;
-
-//! [1]
-class InstanceModel : public QAbstractListModel
+int ClusterModel::rowCount(const QModelIndex &) const
 {
-    Q_OBJECT
+    return clusterList.count();
+}
 
-public:
-    InstanceModel(const InstanceList &instances, QObject *parent = nullptr)
-        : QAbstractListModel(parent), instanceList(instances)
-    {
+int ClusterModel::columnCount(const QModelIndex &) const
+{
+    return 6;
+}
+
+static QStringList binaryAbbrs = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
+
+QVariant ClusterModel::data(const QModelIndex &index, int role) const
+{
+    if (!index.isValid())
+        return QVariant();
+
+    if (index.row() >= clusterList.size())
+        return QVariant();
+    if (index.column() >= 6)
+        return QVariant();
+
+    if (role == Qt::TextAlignmentRole) {
+        switch (index.column()) {
+        case 0:
+            return QVariant(Qt::AlignLeft | Qt::AlignVCenter);
+        case 1:
+            return QVariant(Qt::AlignRight | Qt::AlignVCenter);
+        case 2:
+            // fall-through
+        case 3:
+            // fall-through
+        case 4:
+            // fall-through
+        case 5:
+            return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
+        }
     }
+    if (role == Qt::DisplayRole) {
+        Cluster cluster = clusterList.at(index.row());
+        switch (index.column()) {
+        case 0:
+            return cluster.name();
+        case 1:
+            return cluster.status();
+        case 2:
+            return cluster.driver();
+        case 3:
+            return cluster.containerRuntime();
+        case 4:
+            return QString::number(cluster.cpus());
+        case 5:
+            return QString::number(cluster.memory());
+        }
+    }
+    return QVariant();
+}
 
-    void setInstances(const InstanceList &instances);
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
-    QVariant headerData(int section, Qt::Orientation orientation,
-                        int role = Qt::DisplayRole) const override;
+QVariant ClusterModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (role != Qt::DisplayRole)
+        return QVariant();
 
-private:
-    InstanceList instanceList;
-};
-//! [1]
-
-#endif // INSTANCE_H
+    if (orientation == Qt::Horizontal) {
+        switch (section) {
+        case 0:
+            return tr("Name");
+        case 1:
+            return tr("Status");
+        case 2:
+            return tr("Driver");
+        case 3:
+            return tr("Container Runtime");
+        case 4:
+            return tr("CPUs");
+        case 5:
+            return tr("Memory (MB)");
+        }
+    }
+    return QVariant(); // QStringLiteral("Row %1").arg(section);
+}

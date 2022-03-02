@@ -1,7 +1,7 @@
 HEADERS       = window.h \
-    instance.h
+    cluster.h
 SOURCES       = main.cpp \
-                instance.cpp \
+                cluster.cpp \
                 window.cpp
 RESOURCES     = systray.qrc
 

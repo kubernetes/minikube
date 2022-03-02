@@ -75,7 +75,7 @@ class QTextEdit;
 class QTableView;
 QT_END_NAMESPACE
 
-#include "instance.h"
+#include "cluster.h"
 
 //! [0]
 class Window : public QDialog
@@ -101,17 +101,17 @@ private:
     void startMinikube();
     void stopMinikube();
     void deleteMinikube();
-    InstanceList getInstances();
-    QString selectedInstance();
-    void setSelectedInstance(QString instance);
-    QTableView *instanceListView;
-    void createInstanceGroupBox();
-    QGroupBox *instanceGroupBox;
-    InstanceModel *instanceModel;
-    InstanceHash getInstanceHash();
+    ClusterList getClusters();
+    QString selectedCluster();
+    void setSelectedCluster(QString cluster);
+    QTableView *clusterListView;
+    void createClusterGroupBox();
+    QGroupBox *clusterGroupBox;
+    ClusterModel *clusterModel;
+    ClusterHash getClusterHash();
     bool sendMinikubeCommand(QStringList cmds);
     bool sendMinikubeCommand(QStringList cmds, QString &text);
-    void updateInstances();
+    void updateClusters();
     void askCustom();
     void askName();
     QComboBox *driverComboBox;
