@@ -294,6 +294,19 @@ minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/b
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube.iso
 
+minikube_arm_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
+	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
+		mkdir -p $(BUILD_DIR); \
+		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
+	fi;
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_arm_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube_arm.iso
+
+
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
 iso-menuconfig: ## Configure buildroot configuration
