@@ -380,7 +380,9 @@ void Window::updateButtons()
     if (clusterHash.status() == "Running") {
         startButton->setEnabled(false);
         stopButton->setEnabled(true);
+#if __linux__
         sshButton->setEnabled(true);
+#endif
         dashboardButton->setEnabled(true);
     } else {
         startButton->setEnabled(true);
