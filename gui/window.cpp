@@ -474,8 +474,17 @@ void Window::askCustom()
     QFormLayout form(&dialog);
     driverComboBox = new QComboBox;
     driverComboBox->addItem("docker");
-    driverComboBox->addItem("hyperv");
+#if __linux__
+    driverComboBox->addItem("kvm2");
+#elif __APPLE__
     driverComboBox->addItem("hyperkit");
+    driverComboBox->addItem("parallels");
+#else
+    driverComboBox->addItem("hyperv");
+#endif
+    driverComboBox->addItem("virtualbox");
+    driverComboBox->addItem("vmware");
+    driverComboBox->addItem("podman");
     form.addRow(new QLabel(tr("Driver")), driverComboBox);
     containerRuntimeComboBox = new QComboBox;
     containerRuntimeComboBox->addItem("docker");
