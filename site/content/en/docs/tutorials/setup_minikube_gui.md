@@ -8,6 +8,7 @@ date: 2022-02-25
 ## Overview
 
 - This guide will show you how to setup the minikube GUI
+- **WARNING!** This GUI is a prototype and therefore may be unstable or contain bugs. Please use at your own risk, we are not responsible for damages.
 
 ## Before You Begin
 

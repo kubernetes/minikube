@@ -4,6 +4,7 @@ SOURCES       = main.cpp \
                 cluster.cpp \
                 window.cpp
 RESOURCES     = systray.qrc
+ICON          = images/minikube.icns
 
 QT += widgets
 requires(qtConfig(combobox))
