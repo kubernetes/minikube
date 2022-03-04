@@ -28,7 +28,7 @@ func TestAddRepoTagToImageName(t *testing.T) {
 		want    string
 	}{
 		{"kubernetesui/dashboard:v2.5.0", "docker.io/kubernetesui/dashboard:v2.5.0"},
-		{"kubernetesui/metrics-scraper:v1.0.4", "docker.io/kubernetesui/metrics-scraper:v1.0.4"},
+		{"kubernetesui/metrics-scraper:v1.0.7", "docker.io/kubernetesui/metrics-scraper:v1.0.7"},
 		{"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(), "gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion()},
 	}
 	for _, tc := range tests {
