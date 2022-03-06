@@ -241,12 +241,12 @@ func postStartValidations(h *host.Host, drvName string) {
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
-		exit.Message(kind, "Error getting percentage of /var that is free: {{.v}}", out.V{"v": err})
+		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
 
 	availableGiB, err := DiskAvailable(r, "/var")
 	if err != nil {
-		exit.Message(kind, "Error getting GiB of /var that is available: {{.v}}", out.V{"v": err})
+		klog.Warningf("error getting GiB of /var that is available: %v", err)
 	}
 	const thresholdGiB = 20
 
