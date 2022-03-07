@@ -57,12 +57,13 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 	p := plot.New()
 	p.Title.Text = "CPU utilization to go from 0 to successful Kubernetes deployment"
 	p.Y.Label.Text = "CPU utilization"
+	setYMax(p, values)
 
 	w := vg.Points(20)
 
 	barsA, err := plotter.NewBarChart(values[0], w)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	barsA.LineStyle.Width = vg.Length(0)
 	barsA.Color = plotutil.Color(0)
@@ -70,7 +71,7 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 
 	barsB, err := plotter.NewBarChart(values[1], w)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	barsB.LineStyle.Width = vg.Length(0)
 	barsB.Color = plotutil.Color(1)
@@ -78,7 +79,7 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 
 	barsC, err := plotter.NewBarChart(values[2], w)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	barsC.LineStyle.Width = vg.Length(0)
 	barsC.Color = plotutil.Color(2)
@@ -99,4 +100,17 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 	data.CPUChart = chartPath
 
 	return nil
+}
+
+func setYMax(p *plot.Plot, values []plotter.Values) {
+	ymax := 0.0
+	for _, value := range values {
+		for _, v := range value {
+			if v > ymax {
+				ymax = v
+			}
+		}
+	}
+
+	p.Y.Max = ymax + 5
 }

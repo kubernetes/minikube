@@ -66,7 +66,7 @@ func main() {
 	apps := make(map[string]runs)
 
 	if err := readInCSV(*csvPath, apps); err != nil {
-		log.Fatal(err)
+		log.Fatalf("fail to readin cvs file with err %s", err)
 	}
 
 	runningTime, cpuMdPlot, cpuChartPlot, totals, names := values(apps)
@@ -76,7 +76,7 @@ func main() {
 
 	// chart for running time
 	if err := createChart(*imagePath+"-time.png", runningTime, totals, names); err != nil {
-		log.Fatal(err)
+		log.Fatalf("fail to create running time chart with err %s", err)
 	}
 
 	// markdown table for cpu utilization
@@ -84,7 +84,7 @@ func main() {
 
 	// chart for cpu utilization
 	if err := createCPUChart(*imagePath+"-cpu.png", cpuChartPlot, names); err != nil {
-		log.Fatal(err)
+		log.Fatalf("fail to create CPU chart with err %s", err)
 	}
 
 	// generate page and save
@@ -96,11 +96,11 @@ func main() {
 
 	f, err := os.Create(*pagePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("fail to create file under path %s, with err %s", *pagePath, err)
 	}
 
 	if err = tmpl.Execute(f, data); err != nil {
-		log.Fatal(err)
+		log.Fatalf("fail to populate the page with err %s", err)
 	}
 
 	f.Close()

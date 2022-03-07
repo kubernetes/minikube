@@ -74,7 +74,7 @@ func readInCSV(csvPath string, apps map[string]runs) error {
 
 		values := []float64{}
 
-		// 8-13 contain the run results
+		// 8-16 contain the run results
 		for i := 8; i <= 16; i++ {
 			v, err := strconv.ParseFloat(d[i], 64)
 			if err != nil {
