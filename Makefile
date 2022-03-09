@@ -282,7 +282,7 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube_iso: deploy/iso/minikube-iso/board/minikube/x64_64/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+minikube_iso: deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
 	echo $(shell git log --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
