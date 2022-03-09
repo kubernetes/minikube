@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.25.0-1645046644-13612
+ISO_VERSION ?= v1.25.2
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -282,14 +282,15 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
+minikube_iso: deploy/iso/minikube-iso/board/minikube/x64_64/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
+	echo $(shell git log --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_x86_64_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube.iso
@@ -318,7 +319,7 @@ iso-menuconfig: ## Configure buildroot configuration
 linux-menuconfig:  ## Configure Linux kernel configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/x86_64/linux_x86_64_defconfig
 
 out/minikube.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
@@ -930,7 +931,7 @@ out/mkcmp:
 
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
+deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
 	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
 
 

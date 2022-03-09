@@ -424,8 +424,8 @@ func (d *Driver) extractKernel(isoPath string) error {
 		pathInIso string
 		destPath  string
 	}{
-		{"/boot/vmlinuz", "bzimage"},
-		{"/boot/initrd.img", "initrd"},
+		{"/boot/vmlinuz", "vmlinuz"},
+		{"/boot/initrd.img", "initrd.img"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
 		if err := ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
