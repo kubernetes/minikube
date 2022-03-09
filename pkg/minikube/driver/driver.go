@@ -21,7 +21,6 @@ import (
 	"os"
 	"runtime"
 	"sort"
-	"strconv"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -344,20 +343,4 @@ func SetLibvirtURI(v string) {
 	klog.Infof("Setting default libvirt URI to %s", v)
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
 
-}
-
-// IndexFromMachineName returns the order of the container based on it is name
-func IndexFromMachineName(machineName string) int {
-	// minikube or offline-docker-20210314040449-6655 or minion-m02
-	sp := strings.Split(machineName, "-")
-	m := sp[len(sp)-1]             // minikube or 6655 or m02
-	if strings.HasPrefix(m, "m") { // likely minion node
-		m = strings.TrimPrefix(m, "m")
-		i, err := strconv.Atoi(m)
-		if err != nil {
-			return 1 // master node
-		}
-		return i // minion node
-	}
-	return 1 // master node
 }

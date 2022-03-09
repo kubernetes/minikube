@@ -97,6 +97,57 @@ func TestKicExistingNetwork(t *testing.T) {
 	}
 }
 
+// TestKicExistingNetworkNonFirstContainer verifies the docker driver and run with an existing network
+func TestKicExistingNetworkNonFirstContainer(t *testing.T) {
+	if !KicDriver() {
+		t.Skip("only runs with docker driver")
+	}
+	// create custom network
+	networkName := "existing-network"
+	if _, err := oci.CreateNetwork(oci.Docker, networkName); err != nil {
+		t.Fatalf("error creating network: %v", err)
+	}
+	defer func() {
+		if err := oci.DeleteKICNetworks(oci.Docker); err != nil {
+			t.Logf("error deleting kic network, may need to delete manually: %v", err)
+		}
+	}()
+	profile := UniqueProfileName("existing-network")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer Cleanup(t, profile, cancel)
+
+	verifyNetworkExists(ctx, t, networkName)
+
+	// create first container
+	containerName := "first-container"
+	containerImage := "busybox"
+	runArgs := []string{
+		"--rm",
+		"-d",
+		"--name", containerName,
+		"--network", networkName,
+		"--entrypoint", "sleep",
+	}
+	containerArgs := []string{
+		"infinity",
+	}
+	if err := oci.CreateContainer(oci.Docker, containerImage, oci.WithRunArgs(runArgs...), oci.WithContainerArgs(containerArgs...)); err != nil {
+		t.Fatalf("error creating container: %v", err)
+	}
+	defer func() {
+		if err := oci.DeleteContainer(ctx, oci.Docker, containerName); err != nil {
+			t.Logf("error deleting container, may need to delete manually: %v", err)
+		}
+	}()
+
+	startArgs := []string{"start", "-p", profile, fmt.Sprintf("--network=%s", networkName)}
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("%v failed: %v\n%v", rr.Command(), err, rr.Output())
+	}
+}
+
 func verifyNetworkExists(ctx context.Context, t *testing.T, networkName string) {
 	c := exec.CommandContext(ctx, "docker", "network", "ls", "--format", "{{.Name}}")
 	rr, err := Run(t, c)

@@ -40,7 +40,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -96,15 +95,6 @@ func (d *Driver) Create() error {
 		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
 	} else if gateway != nil {
 		params.Network = networkName
-		ip := gateway.To4()
-		// calculate the container IP based on guessing the machine index
-		index := driver.IndexFromMachineName(d.NodeConfig.MachineName)
-		if int(ip[3])+index > 255 {
-			return fmt.Errorf("too many machines to calculate an IP")
-		}
-		ip[3] += byte(index)
-		klog.Infof("calculated static IP %q for the %q container", ip.String(), d.NodeConfig.MachineName)
-		params.IP = ip.String()
 	}
 	drv := d.DriverName()
 

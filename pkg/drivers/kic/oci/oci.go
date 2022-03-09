@@ -181,10 +181,9 @@ func CreateContainerNode(p CreateParams) error {
 		// label th enode wuth the node ID
 		"--label", p.NodeLabel,
 	}
-	// to provide a static IP
-	if p.Network != "" && p.IP != "" {
+	// to provide a network
+	if p.Network != "" {
 		runArgs = append(runArgs, "--network", p.Network)
-		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
 	memcgSwap := hasMemorySwapCgroup()
@@ -256,7 +255,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	if err := createContainer(p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
+	if err := CreateContainer(p.OCIBinary, p.Image, WithRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
 		return errors.Wrap(err, "create container")
 	}
 
@@ -296,7 +295,7 @@ func CreateContainerNode(p CreateParams) error {
 }
 
 // CreateContainer creates a container with "docker/podman run"
-func createContainer(ociBin string, image string, opts ...createOpt) error {
+func CreateContainer(ociBin string, image string, opts ...createOpt) error {
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -512,11 +511,20 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	return result
 }
 
-// withRunArgs sets the args for docker run
+// WithRunArgs sets the args for docker run
 // as in the args portion of `docker run args... image containerArgs...`
-func withRunArgs(args ...string) createOpt {
+func WithRunArgs(args ...string) createOpt {
 	return func(r *createOpts) *createOpts {
 		r.RunArgs = args
+		return r
+	}
+}
+
+// WithRunArgs sets the containerArgs
+// as in the args portion of `docker run args... image containerArgs...`
+func WithContainerArgs(args ...string) createOpt {
+	return func(r *createOpts) *createOpts {
+		r.ContainerArgs = args
 		return r
 	}
 }
