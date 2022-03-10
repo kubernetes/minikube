@@ -73,7 +73,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.202
+KERNEL_VERSION ?= 5.15.6
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v1.44.2
