@@ -19,13 +19,14 @@ package cni
 import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 // Disabled is a CNI manager than does nothing
 type Disabled struct {
 	cc config.ClusterConfig
+	cr cruntime.Manager
 }
 
 // String returns a string representation
@@ -35,7 +36,7 @@ func (c Disabled) String() string {
 
 // Apply enables the CNI
 func (c Disabled) Apply(r Runner) error {
-	if driver.IsKIC(c.cc.Driver) && c.cc.KubernetesConfig.ContainerRuntime != constants.Docker {
+	if driver.IsKIC(c.cc.Driver) && c.cr.UsingCNI() {
 		klog.Warningf("CNI is recommended for %q driver and %q runtime - expect networking issues", c.cc.Driver, c.cc.KubernetesConfig.ContainerRuntime)
 	}
 

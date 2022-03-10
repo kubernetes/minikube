@@ -261,7 +261,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	kw.Close()
 	wg.Wait()
 
-	if err := k.applyCNI(cfg, true); err != nil {
+	if err := k.applyCNI(cfg, r, true); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 
@@ -335,13 +335,13 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 }
 
 // applyCNI applies CNI to a cluster. Needs to be done every time a VM is powered up.
-func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, registerStep ...bool) error {
+func (k *Bootstrapper) applyCNI(cfg config.ClusterConfig, cr cruntime.Manager, registerStep ...bool) error {
 	regStep := false
 	if len(registerStep) > 0 {
 		regStep = registerStep[0]
 	}
 
-	cnm, err := cni.New(&cfg)
+	cnm, err := cni.New(&cfg, &cr)
 	if err != nil {
 		return errors.Wrap(err, "cni config")
 	}
@@ -702,7 +702,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// because reboots clear /etc/cni
-	if err := k.applyCNI(cfg); err != nil {
+	if err := k.applyCNI(cfg, cr); err != nil {
 		return errors.Wrap(err, "apply cni")
 	}
 

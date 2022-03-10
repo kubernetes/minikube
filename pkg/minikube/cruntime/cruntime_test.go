@@ -56,7 +56,7 @@ func TestName(t *testing.T) {
 	}
 }
 
-func TestDefaultCRI(t *testing.T) {
+func TestDefaultCRIAndCNI(t *testing.T) {
 	var tests = []struct {
 		runtime string
 		version string
@@ -79,6 +79,10 @@ func TestDefaultCRI(t *testing.T) {
 			got := r.UsingCRI()
 			if got != tc.want {
 				t.Errorf("CRI(%s) = %v, want: %v", tc.version, got, tc.want)
+			}
+			got = r.UsingCNI()
+			if got != tc.want {
+				t.Errorf("CNI(%s) = %v, want: %v", tc.version, got, tc.want)
 			}
 		})
 	}

@@ -192,6 +192,21 @@ func (r *Containerd) SocketService() string {
 	return ""
 }
 
+// UsingCNI returns if this container runtime is using CNI
+func (r *Containerd) UsingCNI() bool {
+	return true
+}
+
+// SetCNIConfDir sets the CNI config directory for this runtime
+func (r *Containerd) SetCNIConfDir(path string) {
+	r.CNIConfDir = path
+}
+
+// SetCNINetwork sets the CNI network name for this runtime
+func (r *Containerd) SetCNINetwork(name string) {
+	r.CNINetwork = name
+}
+
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
 	return r.Init.Active("containerd")
@@ -207,7 +222,7 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, inUserNamespace bool) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, cniConfDir string, inUserNamespace bool) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
@@ -229,7 +244,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		PodInfraContainerImage: pauseImage,
 		SystemdCgroup:          forceSystemd,
 		InsecureRegistry:       insecureRegistry,
-		CNIConfDir:             cni.ConfDir,
+		CNIConfDir:             cniConfDir,
 		RestrictOOMScoreAdj:    inUserNamespace,
 		Snapshotter:            snapshotter,
 	}
@@ -254,7 +269,7 @@ func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry, inUserNamespace); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry, r.CNIConfDir, inUserNamespace); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

@@ -278,11 +278,19 @@ func ClusterFlagValue() string {
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
 func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
+	version, err := pkgutil.ParseKubernetesVersion(k8sVersion)
+	if err != nil {
+		return cc, config.Node{}, errors.Wrap(err, "parsing Kubernetes version")
+	}
+	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, KubernetesVersion: version})
+	if err != nil {
+		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
+	}
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
 
 		// identify appropriate cni then configure cruntime accordingly
-		_, err := cni.New(&cc)
+		_, err := cni.New(&cc, &r)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")
 		}
@@ -290,7 +298,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
 		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName)
 
-		cnm, err := cni.New(&cc)
+		cnm, err := cni.New(&cc, &r)
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "cni")
 		}
@@ -302,11 +310,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	}
 
 	klog.Infof("config:\n%+v", cc)
-
-	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
-	if err != nil {
-		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
-	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	// doing this for both new config and existing, in case proxy changed since previous start

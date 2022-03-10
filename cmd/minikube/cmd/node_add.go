@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -66,7 +68,9 @@ var nodeAddCmd = &cobra.Command{
 				cc.Memory = 2200
 			}
 
-			if !cc.MultiNodeRequested || cni.IsDisabled(*cc) {
+			version, _ := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+			r, _ := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, KubernetesVersion: version})
+			if !cc.MultiNodeRequested || cni.IsDisabled(*cc, r) {
 				warnAboutMultiNodeCNI()
 			}
 		}

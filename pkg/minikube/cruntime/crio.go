@@ -50,7 +50,7 @@ type CRIO struct {
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version, cniNetwork string) error {
 	pauseImage := images.Pause(kv, imageRepository)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
@@ -58,9 +58,9 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 		return errors.Wrap(err, "generateCRIOConfig")
 	}
 
-	if cni.Network != "" {
-		klog.Infof("Updating CRIO to use the custom CNI network %q", cni.Network)
-		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cni.Network, crioConfigFile))); err != nil {
+	if cniNetwork != "" {
+		klog.Infof("Updating CRIO to use the custom CNI network %q", cniNetwork)
+		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cniNetwork, crioConfigFile))); err != nil {
 			return errors.Wrap(err, "update network_dir")
 		}
 	}
@@ -118,6 +118,21 @@ func (r *CRIO) SocketPath() string {
 func (r *CRIO) SocketService() string {
 	// crio _is_ the extra CRI service, for podman
 	return ""
+}
+
+// UsingCNI returns if this container runtime is using CNI
+func (r *CRIO) UsingCNI() bool {
+	return true
+}
+
+// SetCNIConfDir sets the CNI config directory for this runtime
+func (r *CRIO) SetCNIConfDir(path string) {
+	r.CNIConfDir = path
+}
+
+// SetCNINetwork sets the CNI network name for this runtime
+func (r *CRIO) SetCNINetwork(name string) {
+	r.CNINetwork = name
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -206,7 +221,7 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, r.CNINetwork); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

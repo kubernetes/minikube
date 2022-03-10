@@ -66,6 +66,7 @@ type Docker struct {
 	*Runtime
 	UseCRI     bool
 	CRIService string
+	UseCNI     bool
 }
 
 // Name is a human readable name for Docker
@@ -108,6 +109,21 @@ func (r *Docker) SocketService() string {
 		return r.CRIService
 	}
 	return InternalDockerCRIService
+}
+
+// UsingCNI returns if this container runtime is using CNI
+func (r *Docker) UsingCNI() bool {
+	return r.UseCNI
+}
+
+// SetCNIConfDir sets the CNI config directory for this runtime
+func (r *Docker) SetCNIConfDir(path string) {
+	r.CNIConfDir = path
+}
+
+// SetCNINetwork sets the CNI network name for this runtime
+func (r *Docker) SetCNINetwork(name string) {
+	r.CNINetwork = name
 }
 
 // Available returns an error if it is not possible to use this runtime on a host

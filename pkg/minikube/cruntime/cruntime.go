@@ -79,6 +79,8 @@ type Runtime struct {
 	ImageRepository   string
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
+	CNIConfDir        string
+	CNINetwork        string
 }
 
 // Manager is a common interface for container runtimes
@@ -108,6 +110,13 @@ type Manager interface {
 	SocketPath() string
 	// SocketService returns the extra service needed for a given runtime
 	SocketService() string
+
+	// UsingCNI returns if this container runtime is using external CNI
+	UsingCNI() bool
+	// SetCNIConfDir sets the CNI config directory
+	SetCNIConfDir(string)
+	// SetCNINetwork sets the CNI network name
+	SetCNINetwork(string)
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
@@ -238,6 +247,7 @@ func New(c Config) (Manager, error) {
 				Init:              sm,
 			},
 			UseCRI:     (sp != ""), // !dockershim
+			UseCNI:     (sp != ""), // !dockershim
 			CRIService: cs,
 		}, nil
 	case "crio", "cri-o":
