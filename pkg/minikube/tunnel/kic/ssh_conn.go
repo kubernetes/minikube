@@ -30,11 +30,12 @@ import (
 )
 
 type sshConn struct {
-	name       string
-	service    string
-	cmd        *exec.Cmd
-	ports      []int
-	activeConn bool
+	name           string
+	service        string
+	cmd            *exec.Cmd
+	ports          []int
+	activeConn     bool
+	suppressStdOut bool
 }
 
 func createSSHConn(name, sshPort, sshKey string, resourcePorts []int32, resourceIP string, resourceName string) *sshConn {
@@ -139,7 +140,9 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 }
 
 func (c *sshConn) startAndWait() error {
-	out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+	if !c.suppressStdOut {
+		out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+	}
 
 	err := c.cmd.Start()
 	if err != nil {
@@ -159,7 +162,9 @@ func (c *sshConn) startAndWait() error {
 func (c *sshConn) stop() error {
 	if c.activeConn {
 		c.activeConn = false
-		out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+		if !c.suppressStdOut {
+			out.Step(style.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+		}
 		err := c.cmd.Process.Kill()
 		if err == os.ErrProcessDone {
 			// No need to return an error here
@@ -167,6 +172,8 @@ func (c *sshConn) stop() error {
 		}
 		return err
 	}
-	out.Step(style.Stopping, "Stopped tunnel for service {{.service}}.", out.V{"service": c.service})
+	if !c.suppressStdOut {
+		out.Step(style.Stopping, "Stopped tunnel for service {{.service}}.", out.V{"service": c.service})
+	}
 	return nil
 }

@@ -7,7 +7,7 @@ on:
   release:
     types: [published]
 env:
-  GO_VERSION: '1.17.6'
+  GO_VERSION: '1.17.7'
 jobs:
   update-leaderboard:
     runs-on: ubuntu-20.04

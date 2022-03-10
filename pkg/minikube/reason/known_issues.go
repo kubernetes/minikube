@@ -404,7 +404,7 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 		Kind: Kind{
 			ID:       "PR_HYPERV_MODULE_NOT_INSTALLED",
 			ExitCode: ExProviderNotFound,
-			Advice:   "Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools-All'",
+			Advice:   "Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools -All'",
 			Issues:   []int{9040},
 			URL:      "https://www.altaro.com/hyper-v/install-hyper-v-powershell-module/",
 		},

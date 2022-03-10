@@ -143,6 +143,7 @@ func TestFunctional(t *testing.T) {
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
 			{"ServiceCmd", validateServiceCmd},
+			{"ServiceCmdConnect", validateServiceCmdConnect},
 			{"AddonsCmd", validateAddonsCmd},
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
@@ -1399,6 +1400,14 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	})
 }
 
+func killContext(cmdContext *exec.Cmd, killDelay time.Duration, t *testing.T) {
+	time.Sleep(killDelay)
+	err := cmdContext.Process.Signal(os.Interrupt)
+	if err != nil {
+		t.Error("Failed to sent interrupt to proc", err)
+	}
+}
+
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -1460,17 +1469,15 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
+	// docs: Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
+	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
 	if NeedsPortForward() {
-		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
+		go killContext(cmdContext, 2*time.Second, t)
 	}
 
-	// docs: Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
-	if err != nil {
+	rr, err = Run(t, cmdContext)
+	if err != nil && !strings.Contains(err.Error(), "interrupt") {
 		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
-	}
-	if rr.Stderr.String() != "" {
-		t.Errorf("expected stderr to be empty but got *%q* . args %q", rr.Stderr, rr.Command())
 	}
 
 	splits := strings.Split(rr.Stdout.String(), "|")
@@ -1491,17 +1498,26 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected scheme for %s to be 'https' but got %q", endpoint, u.Scheme)
 	}
 
+	cmdContext = exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
+	if NeedsPortForward() {
+		go killContext(cmdContext, 2*time.Second, t)
+	}
 	// docs: Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}"))
-	if err != nil {
+	rr, err = Run(t, cmdContext)
+	if err != nil && !strings.Contains(err.Error(), "interrupt") {
 		t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
 	}
+
 	if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
 		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
 	}
 
+	cmdContext = exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url")
+	if NeedsPortForward() {
+		go killContext(cmdContext, 2*time.Second, t)
+	}
 	// docs: Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
+	rr, err = Run(t, cmdContext)
 	if err != nil {
 		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
 	}
@@ -1517,8 +1533,71 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if u.Scheme != "http" {
 		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
+}
 
-	t.Logf("Attempting to fetch %s ...", endpoint)
+func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	defer func() {
+		if t.Failed() {
+			t.Logf("service test failed - dumping debug information")
+			t.Logf("-----------------------service failure post-mortem--------------------------------")
+			ctx, cancel := context.WithTimeout(context.Background(), Minutes(2))
+			defer cancel()
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", "hello-node-connect"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node pod describe:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=hello-node-connect"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node logs:\n%s", rr.Stdout)
+
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "svc", "hello-node-connect"))
+			if err != nil {
+				t.Logf("%q failed: %v", rr.Command(), err)
+			}
+			t.Logf("hello-node svc describe:\n%s", rr.Stdout)
+		}
+	}()
+
+	var rr *RunResult
+	var err error
+	// docs: Create a new `k8s.gcr.io/echoserver` deployment
+	// k8s.gcr.io/echoserver is not multi-arch
+	if arm64Platform() {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+	} else {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=k8s.gcr.io/echoserver:1.8"))
+	}
+
+	if err != nil {
+		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node-connect", "--type=NodePort", "--port=8080"))
+	if err != nil {
+		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node-connect", Minutes(10)); err != nil {
+		t.Fatalf("failed waiting for hello-node pod: %v", err)
+	}
+
+	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node-connect", "--url")
+	if NeedsPortForward() {
+		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
+	}
+	// docs: Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
+	rr, err = Run(t, cmdContext)
+	if err != nil {
+		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
+	}
+
+	endpoint := strings.TrimSpace(rr.Stdout.String())
+	t.Logf("found endpoint for hello-node-connect: %s", endpoint)
 
 	// docs: Make sure we can hit the endpoint URL with an HTTP GET request
 	fetch := func() error {

@@ -1,6 +1,6 @@
 ---
 title: "File Sync"
-weight: 12
+weight: 13
 description: >
   How to sync files into minikube
 aliases:
