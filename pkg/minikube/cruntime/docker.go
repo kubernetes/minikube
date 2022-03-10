@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -36,7 +35,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // KubernetesContainerPrefix is the prefix of each Kubernetes container
@@ -65,13 +63,9 @@ func (e *ErrISOFeature) Error() string {
 
 // Docker contains Docker runtime state
 type Docker struct {
-	Socket            string
-	Runner            CommandRunner
-	ImageRepository   string
-	KubernetesVersion semver.Version
-	Init              sysinit.Manager
-	UseCRI            bool
-	CRIService        string
+	*Runtime
+	UseCRI     bool
+	CRIService string
 }
 
 // Name is a human readable name for Docker

@@ -34,12 +34,10 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 const ExternalContainerdCRISocket = "/run/containerd/containerd.sock"
@@ -131,12 +129,8 @@ oom_score = 0
 
 // Containerd contains containerd runtime state
 type Containerd struct {
-	Socket            string
-	Runner            CommandRunner
-	ImageRepository   string
-	KubernetesVersion semver.Version
-	Init              sysinit.Manager
-	InsecureRegistry  []string
+	*Runtime
+	InsecureRegistry []string
 }
 
 // Name is a human readable name for containerd

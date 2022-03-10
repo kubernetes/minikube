@@ -31,12 +31,10 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 const ExternalCRIOCRISocket = "/var/run/crio/crio.sock"
@@ -48,11 +46,7 @@ const (
 
 // CRIO contains CRIO runtime state
 type CRIO struct {
-	Socket            string
-	Runner            CommandRunner
-	ImageRepository   string
-	KubernetesVersion semver.Version
-	Init              sysinit.Manager
+	*Runtime
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf

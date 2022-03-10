@@ -73,6 +73,14 @@ type CommandRunner interface {
 	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
+type Runtime struct {
+	Socket            string
+	Runner            CommandRunner
+	ImageRepository   string
+	KubernetesVersion semver.Version
+	Init              sysinit.Manager
+}
+
 // Manager is a common interface for container runtimes
 type Manager interface {
 	// Name is a human readable name for a runtime
@@ -222,30 +230,36 @@ func New(c Config) (Manager, error) {
 			cs = ExternalDockerCRIService
 		}
 		return &Docker{
-			Socket:            sp,
-			Runner:            c.Runner,
-			ImageRepository:   c.ImageRepository,
-			KubernetesVersion: c.KubernetesVersion,
-			Init:              sm,
-			UseCRI:            (sp != ""), // !dockershim
-			CRIService:        cs,
+			Runtime: &Runtime{
+				Socket:            sp,
+				Runner:            c.Runner,
+				ImageRepository:   c.ImageRepository,
+				KubernetesVersion: c.KubernetesVersion,
+				Init:              sm,
+			},
+			UseCRI:     (sp != ""), // !dockershim
+			CRIService: cs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{
-			Socket:            c.Socket,
-			Runner:            c.Runner,
-			ImageRepository:   c.ImageRepository,
-			KubernetesVersion: c.KubernetesVersion,
-			Init:              sm,
+			Runtime: &Runtime{
+				Socket:            c.Socket,
+				Runner:            c.Runner,
+				ImageRepository:   c.ImageRepository,
+				KubernetesVersion: c.KubernetesVersion,
+				Init:              sm,
+			},
 		}, nil
 	case "containerd":
 		return &Containerd{
-			Socket:            c.Socket,
-			Runner:            c.Runner,
-			ImageRepository:   c.ImageRepository,
-			KubernetesVersion: c.KubernetesVersion,
-			Init:              sm,
-			InsecureRegistry:  c.InsecureRegistry,
+			Runtime: &Runtime{
+				Socket:            c.Socket,
+				Runner:            c.Runner,
+				ImageRepository:   c.ImageRepository,
+				KubernetesVersion: c.KubernetesVersion,
+				Init:              sm,
+			},
+			InsecureRegistry: c.InsecureRegistry,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
