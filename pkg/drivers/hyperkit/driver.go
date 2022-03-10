@@ -207,8 +207,8 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 	}
 
 	// TODO: handle the rest of our settings.
-	h.Kernel = d.ResolveStorePath("bzimage")
-	h.Initrd = d.ResolveStorePath("initrd")
+	h.Kernel = d.ResolveStorePath("vmlinuz")
+	h.Initrd = d.ResolveStorePath("initrd.img")
 	h.VMNet = true
 	h.ISOImages = []string{d.ResolveStorePath(isoFilename)}
 	h.Console = hyperkit.ConsoleFile

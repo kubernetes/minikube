@@ -22,8 +22,8 @@ support/scripts/genimage.sh -c "$GENIMAGE_CFG"
 
 cd "$BINARIES_DIR"
 mkdir -p root/boot
-cp bzImage root/boot/bzimage
-cp rootfs.cpio.gz root/boot/initrd
+cp bzImage root/boot/vmlinuz
+cp rootfs.cpio.gz root/boot/initrd.img
 mkdir -p root/EFI/BOOT
 cp efi-part/EFI/BOOT/* root/EFI/BOOT/
 cp efiboot.img root/EFI/BOOT/
