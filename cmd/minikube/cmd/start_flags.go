@@ -303,9 +303,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			return cc, config.Node{}, errors.Wrap(err, "cni")
 		}
 
-		if _, ok := cnm.(cni.Disabled); !ok {
-			klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
-			cc.KubernetesConfig.NetworkPlugin = "cni"
+		// NetworkPlugin was removed with dockershim (1.24)
+		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+			if _, ok := cnm.(cni.Disabled); !ok {
+				klog.Infof("Found %q CNI - setting NetworkPlugin=cni", cnm)
+				cc.KubernetesConfig.NetworkPlugin = "cni"
+			}
 		}
 	}
 
