@@ -209,18 +209,20 @@ func configureCNI(cc *config.ClusterConfig, cr *cruntime.Manager, cnm Manager) e
 			return nil
 		}
 
-		// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
-		eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
-		if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
-			klog.Infof("auto-setting extra-config to %q", eo)
-			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
-				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+		if !(*cr).UsingCNI() {
+			// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
+			eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
+			if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
+				klog.Infof("auto-setting extra-config to %q", eo)
+				if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
+					return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+				}
+				(*cr).SetCNIConfDir(CustomConfDir)
+				klog.Infof("extra-config set to %q", eo)
+			} else {
+				// respect user-specified custom CNI Config Directory
+				(*cr).SetCNIConfDir(cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet"))
 			}
-			(*cr).SetCNIConfDir(CustomConfDir)
-			klog.Infof("extra-config set to %q", eo)
-		} else {
-			// respect user-specified custom CNI Config Directory
-			(*cr).SetCNIConfDir(cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet"))
 		}
 	}
 	return nil
