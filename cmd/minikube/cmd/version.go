@@ -158,24 +158,19 @@ func supportedKubernetesVersions(minver, maxver string, prereleases bool) (relea
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range rls {
-			// extract version from release name (eg, "Kubernetes v1.22.0-beta.2" => "v1.22.0-beta.2")
-			v := r.GetName()
-			t := strings.Fields(v)
-			if len(t) > 1 {
-				v = t[len(t)-1]
-			}
-			if !semver.IsValid(v) {
+		for _, rl := range rls {
+			ver := rl.GetTagName()
+			if !semver.IsValid(ver) {
 				continue
 			}
-			if !prereleases && r.GetPrerelease() {
+			if !prereleases && rl.GetPrerelease() {
 				continue
 			}
 			// skip out-of-range versions
-			if (minver != "" && semver.Compare(minver, v) == 1) || (maxver != "" && semver.Compare(v, maxver) == 1) {
+			if (minver != "" && semver.Compare(minver, ver) == 1) || (maxver != "" && semver.Compare(ver, maxver) == 1) {
 				continue
 			}
-			releases = append(releases, v)
+			releases = append(releases, ver)
 		}
 		if resp.NextPage == 0 {
 			break
