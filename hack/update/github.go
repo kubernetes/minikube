@@ -26,7 +26,7 @@ import (
 	"golang.org/x/mod/semver"
 	"golang.org/x/oauth2"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v43/github"
 	"k8s.io/klog/v2"
 )
 
@@ -36,7 +36,7 @@ const (
 	ghListPerPage = 100
 
 	// ghSearchLimit limits the number of searched items to be <= N * ghListPerPage.
-	ghSearchLimit = 100
+	ghSearchLimit = 300
 )
 
 var (
@@ -55,13 +55,13 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	ghc := ghClient(ctx, token)
 
 	// get base branch
-	baseBranch, _, err := ghc.Repositories.GetBranch(ctx, owner, repo, base)
+	baseBranch, _, err := ghc.Repositories.GetBranch(ctx, owner, repo, base, true)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get base branch: %w", err)
 	}
 
 	// get base commit
-	baseCommit, _, err := ghc.Repositories.GetCommit(ctx, owner, repo, *baseBranch.Commit.SHA)
+	baseCommit, _, err := ghc.Repositories.GetCommit(ctx, owner, repo, *baseBranch.Commit.SHA, &github.ListOptions{PerPage: ghListPerPage})
 	if err != nil {
 		return nil, fmt.Errorf("unable to get base commit: %w", err)
 	}
@@ -216,12 +216,12 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge s
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
 	for (opts.Page+1)*ghListPerPage <= ghSearchLimit {
-		rls, resp, err := ghc.Repositories.ListTags(ctx, owner, repo, opts)
+		rls, resp, err := ghc.Repositories.ListReleases(ctx, owner, repo, opts)
 		if err != nil {
 			return "", "", "", err
 		}
 		for _, rl := range rls {
-			ver := *rl.Name
+			ver := rl.GetTagName()
 			if !semver.IsValid(ver) {
 				continue
 			}
