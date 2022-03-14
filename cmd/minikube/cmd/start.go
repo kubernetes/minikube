@@ -1585,10 +1585,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 	if nvs.GT(newestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube version --kubernetes` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
 	}
 	if nvs.LT(oldestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube version --kubernetes` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}

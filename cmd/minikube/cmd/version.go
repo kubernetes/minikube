@@ -17,19 +17,14 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"os/exec"
 	"sort"
 	"strings"
 
-	"github.com/google/go-github/v43/github"
 	"github.com/spf13/cobra"
-	"golang.org/x/mod/semver"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,7 +36,6 @@ var (
 	versionOutput          string
 	shortVersion           bool
 	listComponentsVersions bool
-	listKubernetesVersions bool
 )
 
 var versionCmd = &cobra.Command{
@@ -88,16 +82,6 @@ var versionCmd = &cobra.Command{
 
 		}
 
-		if listKubernetesVersions && !shortVersion {
-			skv, err := supportedKubernetesVersions(constants.OldestKubernetesVersion, constants.NewestKubernetesVersion, true)
-			if err != nil {
-				klog.Warningf("Unable to get supported Kubernetes versions: {{.error}}", out.V{"error": err})
-				data["supportedKubernetesVersions"] = []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion}
-			} else {
-				data["supportedKubernetesVersions"] = skv
-			}
-		}
-
 		switch versionOutput {
 		case "":
 			if !shortVersion {
@@ -141,49 +125,8 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-// supportedKubernetesVersions returns reverse-sort supported Kubernetes releases from GitHub that are in [minver, maxver] range, optionally including prereleases, and any error occurred.
-func supportedKubernetesVersions(minver, maxver string, prereleases bool) (releases []string, err error) {
-	ghc := github.NewClient(nil)
-
-	if (minver != "" && !semver.IsValid(minver)) || (maxver != "" && !semver.IsValid(maxver)) {
-		return nil, fmt.Errorf("invalid release version(s) semver format: %q or %q", minver, maxver)
-	}
-	if minver != "" && maxver != "" && semver.Compare(minver, maxver) == 1 {
-		return nil, fmt.Errorf("invalid release versions range: min(%s) > max(%s)", minver, maxver)
-	}
-
-	opts := &github.ListOptions{PerPage: 100}
-	for (opts.Page+1)*100 <= 300 {
-		rls, resp, err := ghc.Repositories.ListReleases(context.Background(), "kubernetes", "kubernetes", opts)
-		if err != nil {
-			return nil, err
-		}
-		for _, rl := range rls {
-			ver := rl.GetTagName()
-			if !semver.IsValid(ver) {
-				continue
-			}
-			if !prereleases && rl.GetPrerelease() {
-				continue
-			}
-			// skip out-of-range versions
-			if (minver != "" && semver.Compare(minver, ver) == 1) || (maxver != "" && semver.Compare(ver, maxver) == 1) {
-				continue
-			}
-			releases = append(releases, ver)
-		}
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
-	}
-	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == 1 })
-	return releases, nil
-}
-
 func init() {
 	versionCmd.Flags().StringVarP(&versionOutput, "output", "o", "", "One of 'yaml' or 'json'.")
 	versionCmd.Flags().BoolVar(&shortVersion, "short", false, "Print just the version number.")
 	versionCmd.Flags().BoolVar(&listComponentsVersions, "components", false, "list versions of all components included with minikube. (the cluster must be running)")
-	versionCmd.Flags().BoolVar(&listKubernetesVersions, "kubernetes", false, "list all Kubernetes versions supported by this minikube version.")
 }
