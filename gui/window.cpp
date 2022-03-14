@@ -89,6 +89,8 @@
 //! [0]
 Window::Window()
 {
+    trayIconIcon = new QIcon(":/images/minikube.png");
+    checkForMinikube();
     createClusterGroupBox();
 
     createActions();
@@ -184,8 +186,6 @@ void Window::createTrayIcon()
     trayIconMenu->addAction(restoreAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(quitAction);
-
-    trayIconIcon = new QIcon(":/images/minikube.png");
 
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setContextMenu(trayIconMenu);
@@ -443,6 +443,7 @@ void Window::askName()
 {
     QDialog dialog;
     dialog.setWindowTitle(tr("Create minikube Cluster"));
+    dialog.setWindowIcon(*trayIconIcon);
     dialog.setModal(true);
 
     QFormLayout form(&dialog);
@@ -469,6 +470,7 @@ void Window::askCustom()
 {
     QDialog dialog;
     dialog.setWindowTitle(tr("Set Cluster Values"));
+    dialog.setWindowIcon(*trayIconIcon);
     dialog.setModal(true);
 
     QFormLayout form(&dialog);
@@ -591,6 +593,36 @@ void Window::dashboardClose()
         dashboardProcess->terminate();
         dashboardProcess->waitForFinished();
     }
+}
+
+void Window::checkForMinikube()
+{
+    QString program = minikubePath();
+    if (!program.isEmpty()) {
+        return;
+    }
+
+    QDialog dialog;
+    dialog.setWindowTitle(tr("minikube"));
+    dialog.setWindowIcon(*trayIconIcon);
+    dialog.setModal(true);
+    QFormLayout form(&dialog);
+    QLabel *message = new QLabel(this);
+    message->setText("minikube was not found on the path.\nPlease follow the install instructions "
+                     "below to install minikube first.\n");
+    form.addWidget(message);
+    QLabel *link = new QLabel(this);
+    link->setOpenExternalLinks(true);
+    link->setText("<a "
+                  "href='https://minikube.sigs.k8s.io/docs/start/'>https://minikube.sigs.k8s.io/"
+                  "docs/start/</a>");
+    form.addWidget(link);
+    QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+    buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    form.addRow(&buttonBox);
+    dialog.exec();
+    exit(EXIT_FAILURE);
 }
 
 #endif
