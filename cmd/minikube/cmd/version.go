@@ -51,7 +51,7 @@ var versionCmd = &cobra.Command{
 	Run: func(command *cobra.Command, args []string) {
 		minikubeVersion := version.GetVersion()
 		gitCommitID := version.GetGitCommitID()
-		data := map[string]string{
+		data := map[string]interface{}{
 			"minikubeVersion": minikubeVersion,
 			"commit":          gitCommitID,
 		}
@@ -92,9 +92,9 @@ var versionCmd = &cobra.Command{
 			skv, err := supportedKubernetesVersions(constants.OldestKubernetesVersion, constants.NewestKubernetesVersion, true)
 			if err != nil {
 				klog.Warningf("Unable to get supported Kubernetes versions: {{.error}}", out.V{"error": err})
-				data["supportedKubernetesVersions"] = fmt.Sprintf("[%s..%s]", constants.OldestKubernetesVersion, constants.NewestKubernetesVersion)
+				data["supportedKubernetesVersions"] = []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion}
 			} else {
-				data["supportedKubernetesVersions"] = fmt.Sprintf("%v", skv)
+				data["supportedKubernetesVersions"] = skv
 			}
 		}
 
