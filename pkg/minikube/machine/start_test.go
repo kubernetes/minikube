@@ -139,8 +139,7 @@ func TestDiskUsed(t *testing.T) {
 			t.Logf("err: %v\n", err)
 			t.Logf("got: %v\n", got)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DiskUsed() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("DiskUsed() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if got != tt.want {
 				t.Errorf("DiskUsed() = %v, want %v", got, tt.want)
@@ -188,8 +187,7 @@ func TestDiskAvailable(t *testing.T) {
 			got, err := DiskAvailable(tt.args.cr, tt.args.dir)
 			t.Logf("err: %v\n", err)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DiskAvailable() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("DiskAvailable() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if got != tt.want {
 				t.Errorf("DiskAvailable() = %v, want %v", got, tt.want)
