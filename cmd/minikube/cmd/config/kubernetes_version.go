@@ -25,7 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// supportedKubernetesVersions returns reverse-sort supported Kubernetes releases from GitHub that are in [constants.OldestKubernetesVersion, constants.NewestKubernetesVersion] range, excluding prereleases.
+// supportedKubernetesVersions returns reverse-sort supported Kubernetes releases from GitHub that are in [constants.OldestKubernetesVersion, constants.NewestKubernetesVersion] range, including prereleases.
 // in case it cannot get it from GitHub, in addition to [constants.NewestKubernetesVersion, constants.OldestKubernetesVersion], 'constants.DefaultKubernetesVersion' is also returned if different from 'constants.NewestKubernetesVersion'.
 func supportedKubernetesVersions() (releases []string) {
 	minver := constants.OldestKubernetesVersion
@@ -48,10 +48,6 @@ func supportedKubernetesVersions() (releases []string) {
 		for _, rl := range rls {
 			ver := rl.GetTagName()
 			if !semver.IsValid(ver) {
-				continue
-			}
-			// skip pre-release versions
-			if rl.GetPrerelease() {
 				continue
 			}
 			// skip out-of-range versions
