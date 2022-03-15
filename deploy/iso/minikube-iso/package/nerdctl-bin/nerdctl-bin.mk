@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-NERDCTL_BIN_VERSION = v0.17.0
-NERDCTL_BIN_COMMIT = 9ec475aeb69209b9b2a3811aee0923e2eafd1644
+NERDCTL_BIN_VERSION = v0.17.1
+NERDCTL_BIN_COMMIT = 20233c26d26f11ca73a9a775fba87ca884ab14d2
 NERDCTL_BIN_SITE = https://github.com/containerd/nerdctl/releases/download/$(NERDCTL_BIN_VERSION)
 NERDCTL_BIN_SOURCE = nerdctl-$(subst v,,$(NERDCTL_BIN_VERSION))-linux-amd64.tar.gz
 NERDCTL_BIN_STRIP_COMPONENTS = 0
