@@ -35,7 +35,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20220316
 
-ARG BUILDKIT_VERSION="v0.9.3"
+ARG BUILDKIT_VERSION="v0.10.0"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.22"
@@ -146,8 +146,8 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && tar -C /usr/local -xzvf /tmp/buildkit.tgz \
     && rm -rf /tmp/buildkit.tgz \
     && mkdir -p /usr/local/lib/systemd/system \
-    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.service "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/buildkit.service" \
-    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.socket "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/buildkit.socket" \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.service "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/system/buildkit.service" \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.socket "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/system/buildkit.socket" \
     && mkdir -p /etc/buildkit \
     && echo "[worker.oci]\n  enabled = false\n[worker.containerd]\n  enabled = true\n  namespace = \"k8s.io\"" > /etc/buildkit/buildkitd.toml \
     && chmod 755 /usr/local/bin/buildctl \
