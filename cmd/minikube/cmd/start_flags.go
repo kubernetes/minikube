@@ -134,6 +134,7 @@ const (
 	certExpiration          = "cert-expiration"
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
+	disableMetrics          = "disable-metrics"
 )
 
 var (
@@ -192,7 +193,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
-	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1 and increasing kubeadm housekeeping-interval from 10s to 5m. Defaults to false.")
+	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
+	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -386,7 +388,7 @@ func getExtraOptions() config.ExtraOptionSlice {
 	if detect.IsCloudShell() {
 		options = append(options, "kubelet.cgroups-per-qos=false", "kubelet.enforce-node-allocatable=\"\"")
 	}
-	if !viper.GetBool(disableOptimizations) {
+	if viper.GetBool(disableMetrics) {
 		options = append(options, "kubelet.housekeeping-interval=5m")
 	}
 	for _, eo := range options {
@@ -517,6 +519,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MountUID:                viper.GetString(mountUID),
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
+		DisableMetrics:          viper.GetBool(disableMetrics),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
