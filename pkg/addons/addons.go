@@ -159,14 +159,10 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name, val string) error {
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
-		// if addon.Name() == "gcp-auth" {
-		// 	return nil
-		// }
 		switch addon.Name() {
 		case "gcp-auth", "storage-provisioner", "default-storageclass":
 			return nil
 		}
-		// klog.Warningf("addon %s should already be in state %s", name, val)
 		out.WarningT("addon {{.name}} is already set to {{.val}}", out.V{"name": name, "val": val})
 		if !enable {
 			return nil

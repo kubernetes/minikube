@@ -207,10 +207,7 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 	}
 
 	// TODO: handle the rest of our settings.
-
-	fmt.Printf("abc xyz")
-	// h.Kernel = d.ResolveStorePath("bzimage")
-	h.Kernel = d.ResolveStorePath("vmlinuz")
+	h.Kernel = d.ResolveStorePath("bzimage")
 	h.Initrd = d.ResolveStorePath("initrd")
 	h.VMNet = true
 	h.ISOImages = []string{d.ResolveStorePath(isoFilename)}
@@ -423,14 +420,11 @@ func (d *Driver) Stop() error {
 }
 
 func (d *Driver) extractKernel(isoPath string) error {
-	log.Infof("abc123a")
-	fmt.Print("abc333")
 	for _, f := range []struct {
 		pathInIso string
 		destPath  string
 	}{
-		// {"/boot/bzimage", "bzimage"},
-		{"/boot/vmlinuz", "bzimage"},
+		{"/boot/bzimage", "bzimage"},
 		{"/boot/initrd", "initrd"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
