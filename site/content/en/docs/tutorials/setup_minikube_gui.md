@@ -19,11 +19,21 @@ date: 2022-02-25
 ## Steps
 
 {{% tabs %}}
-{{% tab macOS %}}
+{{% mactab %}}
+{{% tabs %}}
+{{% tab Stable %}}
 1. Download the zipped folder
 ```shell
 curl -LO https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-mac.zip
 ```
+{{% /tab %}}
+{{% tab Nightly %}}
+1. Download the zipped folder
+```shell
+curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-mac.zip
+```
+{{% /tab %}}
+{{% /tabs %}}
 
 2. Unzip
 ```shell
@@ -40,12 +50,22 @@ open dist/systray.app
 ![Mac unverified developer](/images/gui/mac.png)
 
 5. Open System Preferences and go to Security & Privacy -> General and click "Open Anyway".
-{{% /tab %}}
-{{% tab Windows %}}
+{{% /mactab %}}
+{{% windowstab %}}
+{{% tabs %}}
+{{% tab Stable %}}
 1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-windows.zip) (faster)
 ```shell
 Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-windows.zip' -UseBasicParsing
 ```
+{{% /tab %}}
+{{% tab Nightly %}}
+1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip) (faster)
+```shell
+Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip' -UseBasicParsing
+```
+{{% /tab %}}
+{{% /tabs %}}
 
 2. Unzip
 ```shell
@@ -60,12 +80,22 @@ Expand-Archive minikube-gui-windows.zip
 4. If you see the following, click `More info` and then `Run anyway`
 
 ![Windows unreconized app](/images/gui/windows.png)
-{{% /tab %}}
-{{% tab Linux %}}
+{{% /windowstab %}}
+{{% linuxtab %}}
+{{% tabs %}}
+{{% tab Stable %}}
 1. Download the zipped folder
 ```shell
 curl -LO https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-linux.zip
 ```
+{{% /tab %}}
+{{% tab Nightly %}}
+1. Download the zipped folder
+```shell
+curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-linux.zip
+```
+{{% /tab %}}
+{{% /tabs %}}
 
 2. Unzip
 ```shell
@@ -76,6 +106,6 @@ unzip minikube-gui-linux.zip
 ```shell
 dist/systray
 ```
-{{% /tab %}}
+{{% /linuxtab %}}
 {{% /tabs %}}
 
