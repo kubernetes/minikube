@@ -45,7 +45,7 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.4
 # the go version on the line below is for the ISO and does not need to be updated often
 GOLANG_OPTIONS = GO_VERSION=1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
-BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
+BUILDROOT_OPTIONS = BR2_EXTERNAL=$(PWD)/deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
 # Get git commit id
@@ -290,7 +290,7 @@ minikube_iso: deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/b
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_x86_64_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) minikube_x86_64_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
 	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube.iso
