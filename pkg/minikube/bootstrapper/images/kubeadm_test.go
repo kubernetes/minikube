@@ -43,7 +43,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.4.3-0",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.5.0",
+			"docker.io/kubernetesui/dashboard:v2.5.1",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.16.1", "mirror.k8s.io", false, []string{
@@ -55,7 +55,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/etcd:3.3.15-0",
 			"mirror.k8s.io/pause:3.1",
 			"mirror.k8s.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"mirror.k8s.io/kubernetesui/dashboard:v2.5.0",
+			"mirror.k8s.io/kubernetesui/dashboard:v2.5.1",
 			"mirror.k8s.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.15.0", "", false, []string{
@@ -67,7 +67,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.5.0",
+			"docker.io/kubernetesui/dashboard:v2.5.1",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.14.0", "", false, []string{
@@ -79,7 +79,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.5.0",
+			"docker.io/kubernetesui/dashboard:v2.5.1",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.13.0", "", false, []string{
@@ -91,7 +91,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.5.0",
+			"docker.io/kubernetesui/dashboard:v2.5.1",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.12.0", "", false, []string{
@@ -103,7 +103,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-			"docker.io/kubernetesui/dashboard:v2.5.0",
+			"docker.io/kubernetesui/dashboard:v2.5.1",
 			"docker.io/kubernetesui/metrics-scraper:v1.0.7",
 		}},
 		{"v1.11.0", "", true, nil},
