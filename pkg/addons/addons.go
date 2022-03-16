@@ -149,7 +149,7 @@ func SetBool(cc *config.ClusterConfig, name string, val string) error {
 }
 
 // EnableOrDisableAddon updates addon status executing any commands necessary
-func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
+func EnableOrDisableAddon(cc *config.ClusterConfig, name, val string) error {
 	klog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
@@ -159,10 +159,15 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
-		if addon.Name() == "gcp-auth" {
+		// if addon.Name() == "gcp-auth" {
+		// 	return nil
+		// }
+		switch addon.Name() {
+		case "gcp-auth", "storage-provisioner", "default-storageclass":
 			return nil
 		}
-		klog.Warningf("addon %s should already be in state %v", name, val)
+		// klog.Warningf("addon %s should already be in state %s", name, val)
+		out.WarningT("addon {{.name}} is already set to {{.val}}", out.V{"name": name, "val": val})
 		if !enable {
 			return nil
 		}

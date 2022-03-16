@@ -103,6 +103,7 @@ func runPause() {
 	mu.Lock()
 	defer mu.Unlock()
 	if runtimePaused {
+		out.Step(style.AddonEnable, "Auto-pause is already enabled.")
 		return
 	}
 
