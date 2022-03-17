@@ -44,6 +44,7 @@ ARG CRIO_VERSION="1.22"
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
 COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY deploy/kicbase/containerd.toml /etc/containerd/containerd.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
