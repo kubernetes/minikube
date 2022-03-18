@@ -30,18 +30,20 @@ import (
 
 // ServiceTunnel ...
 type ServiceTunnel struct {
-	sshPort string
-	sshKey  string
-	v1Core  typed_core.CoreV1Interface
-	sshConn *sshConn
+	sshPort        string
+	sshKey         string
+	v1Core         typed_core.CoreV1Interface
+	sshConn        *sshConn
+	suppressStdOut bool
 }
 
 // NewServiceTunnel ...
-func NewServiceTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface) *ServiceTunnel {
+func NewServiceTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface, suppressStdOut bool) *ServiceTunnel {
 	return &ServiceTunnel{
-		sshPort: sshPort,
-		sshKey:  sshKey,
-		v1Core:  v1Core,
+		sshPort:        sshPort,
+		sshKey:         sshKey,
+		v1Core:         v1Core,
+		suppressStdOut: suppressStdOut,
 	}
 }
 
@@ -58,6 +60,7 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	}
 
 	go func() {
+		t.sshConn.suppressStdOut = t.suppressStdOut
 		err = t.sshConn.startAndWait()
 		if err != nil {
 			klog.Errorf("error starting ssh tunnel: %v", err)
