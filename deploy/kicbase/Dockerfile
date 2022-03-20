@@ -33,7 +33,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210401
+FROM ubuntu:focal-20220316
 
 ARG BUILDKIT_VERSION="v0.9.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
