@@ -17,6 +17,11 @@ minikube start supports some VirtualBox specific flags:
 
 * **`--host-only-cidr`**: The CIDR to be used for the minikube VM (default "192.168.59.1/24")
   * On Linux, Mac OS X and Oracle Solaris with VirtualBox >= 6.1.28, [only IP addresses in the 192.68.56.0/21 range are allowed for host-only networking by default](https://www.virtualbox.org/manual/ch06.html#network_hostonly). Passing a disallowed value to `--host-only-cidr` will result in a VirtualBox access denied error: `VBoxManage: error: Code E_ACCESSDENIED (0x80070005) - Access denied (extended info not available)`.
+
+Unable to start VM: This computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory 
+step1: The virtualization disable in the BIOS can be checked in windows by simply opening the task manger go to >" Performance " > " CPU " and check whether virtualization is enabled or not if disabled then Enable virtualization in BIOS.
+
+step2: If the error is still faced then add: 
 * **`--no-vtx-check`**: Disable checking for the availability of hardware virtualization
 
 ## Issues
