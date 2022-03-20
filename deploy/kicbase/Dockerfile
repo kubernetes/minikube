@@ -19,7 +19,7 @@
 
 
 # multi-tage docker build so we can build auto-pause for arm64
-FROM golang:1.16
+FROM golang:1.17
 WORKDIR /src
 # becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
 ADD . .
