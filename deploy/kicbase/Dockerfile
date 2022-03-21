@@ -19,7 +19,7 @@
 
 
 # multi-tage docker build so we can build auto-pause for arm64
-FROM golang:1.16
+FROM golang:1.17
 WORKDIR /src
 # becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
 ADD . .
@@ -33,7 +33,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210401
+FROM ubuntu:focal-20220316
 
 ARG BUILDKIT_VERSION="v0.9.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
