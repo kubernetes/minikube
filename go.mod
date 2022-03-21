@@ -86,13 +86,13 @@ require (
 	google.golang.org/api v0.71.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.23.4
-	k8s.io/apimachinery v0.23.4
-	k8s.io/client-go v0.23.4
+	k8s.io/api v0.23.5
+	k8s.io/apimachinery v0.23.5
+	k8s.io/client-go v0.23.5
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.23.4
+	k8s.io/component-base v0.23.5
 	k8s.io/klog/v2 v2.40.1
-	k8s.io/kubectl v0.22.2
+	k8s.io/kubectl v0.23.5
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	libvirt.org/go/libvirt v1.7010.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
