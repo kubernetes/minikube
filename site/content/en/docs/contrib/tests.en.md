@@ -291,6 +291,12 @@ Steps:
 - Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 - Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
+
+#### validateServiceCmdConnect
+
+Steps:
+- Create a new `k8s.gcr.io/echoserver` deployment
+- Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 - Make sure we can hit the endpoint URL with an HTTP GET request
 
 #### validateAddonsCmd

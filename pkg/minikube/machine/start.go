@@ -34,6 +34,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -233,17 +234,36 @@ func postStartValidations(h *host.Host, drvName string) {
 		return
 	}
 
+	if viper.GetBool("force") {
+		return
+	}
+
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
-	if percentageFull >= 99 {
-		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+
+	availableGiB, err := DiskAvailable(r, "/var")
+	if err != nil {
+		klog.Warningf("error getting GiB of /var that is available: %v", err)
+	}
+	const thresholdGiB = 20
+
+	if percentageFull >= 99 && availableGiB < thresholdGiB {
+		exit.Message(
+			kind,
+			`{{.n}} is out of disk space! (/var is at {{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 
-	if percentageFull >= 85 {
-		out.WarnReason(kind, `{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+	if percentageFull >= 85 && availableGiB < thresholdGiB {
+		out.WarnReason(
+			kind,
+			`{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 }
 
@@ -262,7 +282,22 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 	return strconv.Atoi(percentage)
 }
 
-// postStart are functions shared between startHost and fixHost
+// DiskAvailable returns the available capacity of dir in the VM/container in GiB
+func DiskAvailable(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestDiskAvailableEnv); s != "" {
+		return strconv.Atoi(s)
+	}
+	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -BG %s | awk 'NR==2{print $4}'", dir)))
+	if err != nil {
+		klog.Warningf("error running df -BG /var: %v\n%v", err, output.Output())
+		return 0, err
+	}
+	gib := strings.TrimSpace(output.Stdout.String())
+	gib = strings.Trim(gib, "G")
+	return strconv.Atoi(gib)
+}
+
+// postStartSetup are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	klog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()

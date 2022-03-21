@@ -121,6 +121,7 @@ private:
     void initMachine();
     void sshConsole();
     void dashboardBrowser();
+    void checkForMinikube();
     QPushButton *sshButton;
     QPushButton *dashboardButton;
     QProcess *dashboardProcess;

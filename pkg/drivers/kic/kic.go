@@ -260,7 +260,7 @@ func (d *Driver) prepareSSH() error {
 			icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
 
 			if icaclsCmdErr != nil {
-				return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
+				return errors.Wrap(icaclsCmdErr, fmt.Sprintf("unable to execute icacls to set permissions: %s", icaclsCmdOut))
 			}
 
 			if !strings.Contains(string(icaclsCmdOut), "Successfully processed 1 files; Failed processing 0 files") {
