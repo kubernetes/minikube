@@ -54,6 +54,7 @@ The `--container-runtime` flag must be set to "containerd" or "cri-o".
 - Cross platform (linux, macOS, Windows)
 - No hypervisor required when run on Linux
 - Experimental support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
+- --no-vtx-check: Disable checking for the availability of hardware virtualization
 
 ## Known Issues
 
