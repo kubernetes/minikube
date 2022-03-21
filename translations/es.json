@@ -549,7 +549,7 @@
 	"Run a kubectl binary matching the cluster version": "",
 	"Run minikube from the C: drive.": "",
 	"Run the Kubernetes client, download it if necessary. Remember -- after kubectl!\n\nThis will run the Kubernetes client (kubectl) with the same version as the cluster\n\nNormally it will download a binary matching the host operating system and architecture,\nbut optionally you can also run it directly on the control plane over the ssh connection.\nThis can be useful if you cannot run kubectl locally for some reason, like unsupported\nhost. Please be aware that when using --ssh all paths will apply to the remote machine.": "",
-	"Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools-All'": "",
+	"Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools -All'": "",
 	"Run: 'kubectl delete clusterrolebinding kubernetes-dashboard'": "",
 	"Run: 'minikube delete --all' to clean up all the abandoned networks.": "",
 	"Run: 'sudo chown $USER $HOME/.kube/config \u0026\u0026 chmod 600 $HOME/.kube/config'": "",
