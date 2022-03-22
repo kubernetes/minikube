@@ -19,7 +19,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.8.0
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/docker/docker v20.10.12+incompatible
+	github.com/docker/docker v20.10.13+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
