@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.17
 
 require (
-	cloud.google.com/go/storage v1.20.0
+	cloud.google.com/go/storage v1.21.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
 	github.com/Delta456/box-cli-maker/v2 v2.2.2
 	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
