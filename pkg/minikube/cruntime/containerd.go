@@ -45,26 +45,13 @@ import (
 const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
-	containerdConfigFile     = "/etc/containerd/containerd.conf.d/02-containerd.conf"
-	containerdConfigTemplate = `version = 2
-[plugins."io.containerd.grpc.v1.cri"]
-  sandbox_image = "{{ .PodInfraContainerImage }}"
-  restrict_oom_score_adj = {{ .InUserNamespace }}
-
-  [plugins."io.containerd.grpc.v1.cri".containerd]
-    {{ if .InUserNamespace }}
-    snapshotter = "fuse-overlayfs"
-    {{ end }}
-    [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-      SystemdCgroup = {{ .SystemdCgroup }}
-
-  [plugins."io.containerd.grpc.v1.cri".cni]
-    conf_dir = "{{.CNIConfDir}}"
-
-  {{ range .InsecureRegistry -}}
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{. -}}"]
-    endpoint = ["http://{{. -}}"]
-  {{ end -}}
+	containerdConfigFile         = "/etc/containerd/config.toml"
+	containerdImportedConfigFile = "/etc/containerd/containerd.conf.d/02-containerd.conf"
+	containerdConfigTemplate     = `version = 2
+{{ range .InsecureRegistry -}}
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{. -}}"]
+  endpoint = ["http://{{. -}}"]
+{{ end -}}
 `
 )
 
@@ -140,26 +127,34 @@ func (r *Containerd) Available() error {
 	return nil
 }
 
-// generateContainerdConfig sets up /etc/containerd/containerd.conf.d/02-containerd.conf
+// generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
 func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, inUserNamespace bool) error {
-	cPath := containerdConfigFile
-	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
+	pauseImage := images.Pause(kv, imageRepository)
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*sandbox_image = .*$|sandbox_image = \"%s\"|' -i %s", pauseImage, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update sandbox_image")
+	}
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = \"%t\"|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update restrict_oom_score_adj")
+	}
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = \"%t\"|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update SystemdCgroup")
+	}
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update conf_dir")
+	}
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*snapshotter = \"overlayfs\"|snapshotter = \"fuse-overlayfs\"|' -i %s", containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update snapshotter")
+	}
+
+	cPath := containerdImportedConfigFile
+	t, err := template.New("02-containerd.conf").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.Pause(kv, imageRepository)
 	opts := struct {
-		PodInfraContainerImage string
-		SystemdCgroup          bool
-		InsecureRegistry       []string
-		CNIConfDir             string
-		InUserNamespace        bool
+		InsecureRegistry []string
 	}{
-		PodInfraContainerImage: pauseImage,
-		SystemdCgroup:          forceSystemd,
-		InsecureRegistry:       insecureRegistry,
-		CNIConfDir:             cni.ConfDir,
-		InUserNamespace:        inUserNamespace,
+		InsecureRegistry: insecureRegistry,
 	}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
