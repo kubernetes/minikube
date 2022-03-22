@@ -70,9 +70,9 @@ require (
 	github.com/spf13/viper v1.10.1
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/otel v1.4.1
+	go.opentelemetry.io/otel v1.5.0
 	go.opentelemetry.io/otel/sdk v1.4.0
-	go.opentelemetry.io/otel/trace v1.4.1
+	go.opentelemetry.io/otel/trace v1.5.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
@@ -86,15 +86,15 @@ require (
 	google.golang.org/api v0.71.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.23.4
-	k8s.io/apimachinery v0.23.4
-	k8s.io/client-go v0.23.4
+	k8s.io/api v0.23.5
+	k8s.io/apimachinery v0.23.5
+	k8s.io/client-go v0.23.5
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.23.4
+	k8s.io/component-base v0.23.5
 	k8s.io/klog/v2 v2.40.1
-	k8s.io/kubectl v0.22.2
+	k8s.io/kubectl v0.23.5
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
-	libvirt.org/go/libvirt v1.7010.0
+	libvirt.org/go/libvirt v1.8001.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
