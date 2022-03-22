@@ -91,7 +91,7 @@ require (
 	k8s.io/client-go v0.23.5
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.23.5
-	k8s.io/klog/v2 v2.40.1
+	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubectl v0.23.5
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed
 	libvirt.org/go/libvirt v1.8001.0
