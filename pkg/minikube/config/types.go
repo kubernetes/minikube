@@ -97,6 +97,7 @@ type ClusterConfig struct {
 	MountUID                string
 	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
 	DisableOptimizations    bool
+	DisableMetrics          bool
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
