@@ -133,10 +133,10 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*sandbox_image = .*$|sandbox_image = \"%s\"|' -i %s", pauseImage, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update sandbox_image")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = \"%t\"|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = %t|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update restrict_oom_score_adj")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = \"%t\"|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = %t|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update SystemdCgroup")
 	}
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
