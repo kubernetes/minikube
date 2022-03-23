@@ -35,11 +35,7 @@ _testmain.go
 
 #iso version file
 deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
-deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
 deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/VERSION
-deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/CHANGELOG
-
-
 
 /minikube
 
