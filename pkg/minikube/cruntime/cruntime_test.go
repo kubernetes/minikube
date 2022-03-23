@@ -56,7 +56,7 @@ func TestName(t *testing.T) {
 	}
 }
 
-func TestDefaultCRIAndCNI(t *testing.T) {
+func TestDefaultCRI(t *testing.T) {
 	var tests = []struct {
 		runtime string
 		version string
@@ -80,7 +80,31 @@ func TestDefaultCRIAndCNI(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("CRI(%s) = %v, want: %v", tc.version, got, tc.want)
 			}
-			got = r.UsingCNI()
+		})
+	}
+}
+
+func TestDefaultCNI(t *testing.T) {
+	var tests = []struct {
+		runtime string
+		version string
+		want    bool
+	}{
+		{"docker", "1.23.0", false}, // dockershim
+		{"crio", "1.23.0", true},
+		{"containerd", "1.23.0", true},
+		{"docker", "1.24.0", false}, // cri-dockerd
+		{"crio", "1.24.0", true},
+		{"containerd", "1.24.0", true},
+	}
+	for _, tc := range tests {
+		version := semver.MustParse(tc.version)
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime, KubernetesVersion: version})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.version, err)
+			}
+			got := r.UsingCNI()
 			if got != tc.want {
 				t.Errorf("CNI(%s) = %v, want: %v", tc.version, got, tc.want)
 			}

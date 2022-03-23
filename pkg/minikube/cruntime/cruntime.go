@@ -247,7 +247,7 @@ func New(c Config) (Manager, error) {
 				Init:              sm,
 			},
 			UseCRI:     (sp != ""), // !dockershim
-			UseCNI:     (sp != ""), // !dockershim
+			UseCNI:     false,
 			CRIService: cs,
 		}, nil
 	case "crio", "cri-o":
