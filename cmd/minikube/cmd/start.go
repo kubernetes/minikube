@@ -1245,7 +1245,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateInsecureRegistry()
 }
 
-// This function validates that the --ports are not below 1024 for the host and not outside range
+// validatePorts validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
 	_, portBindingsMap, err := nat.ParsePortSpecs(ports)
 	if err != nil {
