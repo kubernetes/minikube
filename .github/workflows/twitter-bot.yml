@@ -10,7 +10,7 @@ jobs:
   twitter-release:
     runs-on: ubuntu-20.04
     steps:
-      - uses: ethomson/send-tweet-action@v1
+      - uses: ethomson/send-tweet-action@288f9339e0412e3038dce350e0da5ecdf12133a6 # v1
         with:
           status: "minikube ${GITHUB_REF_NAME} was just released! Check it out: https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md"
           consumer-key: ${{ secrets.TWITTER_API_KEY }}
