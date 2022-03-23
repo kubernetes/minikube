@@ -142,8 +142,10 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*snapshotter = \"overlayfs\"|snapshotter = \"fuse-overlayfs\"|' -i %s", containerdConfigFile))); err != nil {
-		return errors.Wrap(err, "update snapshotter")
+	if inUserNamespace {
+		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*snapshotter = \"overlayfs\"|snapshotter = \"fuse-overlayfs\"|' -i %s", containerdConfigFile))); err != nil {
+			return errors.Wrap(err, "update snapshotter")
+		}
 	}
 
 	cPath := containerdImportedConfigFile
