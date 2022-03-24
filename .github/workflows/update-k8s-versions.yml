@@ -31,7 +31,7 @@ jobs:
           echo "::set-output name=changes::$c"
       - name: Create PR
         if: ${{ steps.bumpk8s.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@18f7dc018cc2cd597073088f7c7591b9d1c02672 # v3
+        uses: peter-evans/create-pull-request@d6d5519d05f5814158ef015b8448f2f74648c421 # v3
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: bump default/newest kubernetes versions
