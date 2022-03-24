@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -118,7 +118,7 @@ jobs:
           docker ps || true
           echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -219,7 +219,7 @@ jobs:
           docker ps || true
           echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -325,7 +325,7 @@ jobs:
           podman ps || true
           echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -413,7 +413,7 @@ jobs:
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -525,7 +525,7 @@ jobs:
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@bfdd3570ce990073878bf10f6b2d79082de49492 # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
