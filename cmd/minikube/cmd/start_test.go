@@ -464,6 +464,8 @@ func TestValidateRuntime(t *testing.T) {
 func TestValidatePorts(t *testing.T) {
 	isMicrosoftWSL := detect.IsMicrosoftWSL()
 	type portTest struct {
+		// isTarget indicates whether or not the test case is covered
+		// because validatePorts behaves differently depending on whether process is running in WSL in windows or not.
 		isTarget bool
 		ports    []string
 		errorMsg string
