@@ -2,7 +2,7 @@ version = 2
 root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
-imports = ["/etc/containerd/containerd.conf.d/02-containerd.conf"]
+# imports
 
 [grpc]
   address = "/run/containerd/containerd.sock"
