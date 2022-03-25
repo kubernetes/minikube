@@ -60,6 +60,7 @@
 	"Another minikube instance is downloading dependencies... ": "",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "",
 	"At least needs control plane nodes to enable addon": "",
+	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "",
 	"Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}": "",
 	"Available Commands": "",
