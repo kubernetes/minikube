@@ -146,11 +146,6 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^# imports|%s|' -i %s", imports, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
-	if inUserNamespace {
-		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*snapshotter = \"overlayfs\"|snapshotter = \"fuse-overlayfs\"|' -i %s", containerdConfigFile))); err != nil {
-			return errors.Wrap(err, "update snapshotter")
-		}
-	}
 
 	cPath := containerdImportedConfigFile
 	t, err := template.New("02-containerd.conf").Parse(containerdConfigTemplate)
