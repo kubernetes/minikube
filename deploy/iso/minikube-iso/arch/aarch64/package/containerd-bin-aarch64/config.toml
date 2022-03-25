@@ -24,12 +24,6 @@ oom_score = 0
 [cgroup]
   path = ""
 
-[proxy_plugins]
-# fuse-overlayfs is used for rootless
-[proxy_plugins."fuse-overlayfs"]
-  type = "snapshot"
-  address = "/run/containerd-fuse-overlayfs.sock"
-
 [plugins]
   [plugins."io.containerd.monitor.v1.cgroups"]
     no_prometheus = false
