@@ -33,8 +33,8 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5 # v2
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -46,7 +46,7 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v2
+      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: minikube_binaries
           path: out
@@ -115,13 +115,13 @@ jobs:
           hostname || true
           echo "--------------------------"
       # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab # v2
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
 
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95 # v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
 
@@ -167,7 +167,7 @@ jobs:
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v2
+      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: functional_docker_ubuntu_arm64
           path: minikube_binaries/report
@@ -204,14 +204,14 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all extra reports
-        uses: actions/download-artifact@9fde3de0b74bd6bc202952485c264b551a4f9405 # v2-preview
+        uses: actions/download-artifact@9fde3de0b74bd6bc202952485c264b551a4f9405
       - name: upload all extra reports
         shell: bash {0}
         continue-on-error: true
         run: |
           mkdir -p all_reports
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535 # v2
+      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
         with:
           name: all_reports
           path: all_reports
