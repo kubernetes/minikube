@@ -67,6 +67,7 @@
 	"Another minikube instance is downloading dependencies... ": "別の minikube のインスタンスが、依存関係をダウンロードしています... ",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "別のプログラムが、minikube に必要なファイルを使用しています。Hyper-V を使用している場合は、Hyper-V マネージャー内から minikube VM を停止してみてください",
 	"At least needs control plane nodes to enable addon": "アドオンを有効にするには、少なくともコントロールプレーンノードが必要です",
+	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "{{.driver}} ドライバーが自動的に選択されました",
 	"Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}": "{{.driver}} ドライバーが自動的に選択されました。他の選択肢: {{.alternates}}",
 	"Available Commands": "利用可能なコマンド",
