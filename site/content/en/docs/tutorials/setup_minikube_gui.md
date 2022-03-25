@@ -24,7 +24,7 @@ date: 2022-02-25
 {{% tab Stable %}}
 1. Download the zipped folder
 ```shell
-curl -LO https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-mac.zip
+curl -LO https://storage.googleapis.com/minikube-gui/latest/minikube-gui-mac.zip
 ```
 {{% /tab %}}
 {{% tab Nightly %}}
@@ -56,7 +56,7 @@ open dist/systray.app
 {{% tab Stable %}}
 1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-windows.zip) (faster)
 ```shell
-Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-windows.zip' -UseBasicParsing
+Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/latest/minikube-gui-windows.zip' -UseBasicParsing
 ```
 {{% /tab %}}
 {{% tab Nightly %}}
@@ -86,7 +86,7 @@ Expand-Archive minikube-gui-windows.zip
 {{% tab Stable %}}
 1. Download the zipped folder
 ```shell
-curl -LO https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-linux.zip
+curl -LO https://storage.googleapis.com/minikube-gui/latest/minikube-gui-linux.zip
 ```
 {{% /tab %}}
 {{% tab Nightly %}}
