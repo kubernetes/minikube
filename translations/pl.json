@@ -67,6 +67,7 @@
 	"Another minikube instance is downloading dependencies... ": "Inny program minikube już pobiera zależności...",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "Inny program używa pliku wymaganego przez minikube. Jeśli używasz Hyper-V, spróbuj zatrzymać maszynę wirtualną minikube z poziomu managera Hyper-V",
 	"At least needs control plane nodes to enable addon": "Wymaga węzłów z płaszczyzny kontrolnej do włączenia addona",
+	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "Automatycznie wybrano sterownik {{.driver}}",
 	"Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}": "Automatycznie wybrano sterownik {{.driver}}. Inne możliwe sterowniki: {{.alternates}}",
 	"Available Commands": "Dostępne polecenia",
