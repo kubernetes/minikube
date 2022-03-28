@@ -282,30 +282,19 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube_iso: deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
-	echo $(shell git log --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
+minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*))
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
+	echo $(shell git log --no-merges --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/CHANGELOG
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) minikube_x86_64_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube.iso
-
-minikube_iso_arm64: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
-	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
-		mkdir -p $(BUILD_DIR); \
-		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
-		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
-	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_arm64_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube_arm64.iso
+	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube-$(GOARCH).iso
 
 
 # Change buildroot configuration for the minikube ISO
@@ -323,7 +312,8 @@ linux-menuconfig:  ## Configure Linux kernel configuration
 
 out/minikube.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
-	$(MAKE) minikube_iso
+	$(MAKE) minikube-iso-x86_64
+	$(MAKE) minikube-iso-aarch64
 else
 	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
@@ -790,9 +780,11 @@ push-gvisor-addon-image: gvisor-addon-image
 	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
-release-iso: minikube_iso checksum  ## Build and release .iso file
-	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
-	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+release-iso: minikube-iso-x86_64 minikube-iso-aarch64 checksum  ## Build and release .iso files
+	gsutil cp out/minikube-amd64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso
+	gsutil cp out/minikube-amd64.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso.sha256
+	gsutil cp out/minikube-arm64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
+	gsutil cp out/minikube-arm64.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso.sha256
 
 .PHONY: release-minikube
 release-minikube: out/minikube checksum ## Minikube release
@@ -931,8 +923,8 @@ out/mkcmp:
 
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
-	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
+	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
 
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook
