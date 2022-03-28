@@ -13,7 +13,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 {{% tab "Standard Docker" %}}
 ## Requirements
 
-- [Install Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc) 18.09 or higher
+- [Install Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc) 18.09 or higher (20.10 or higher is recommended)
 - amd64 or arm64 system.
 - If using WSL complete [these steps]({{<ref "/docs/tutorials/wsl_docker_driver">}}) first
 
@@ -34,6 +34,7 @@ minikube config set driver docker
 ## Requirements
 - Docker 20.10 or higher, see https://rootlesscontaine.rs/getting-started/docker/
 - Cgroup v2 delegation, see https://rootlesscontaine.rs/getting-started/common/cgroup2/
+- Kernel 5.11 or later (5.13 or later is recommended when SELinux is enabled), see https://rootlesscontaine.rs/how-it-works/overlayfs/
 
 ## Usage
 

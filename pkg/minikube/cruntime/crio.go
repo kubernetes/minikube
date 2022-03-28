@@ -150,18 +150,13 @@ func enableIPForwarding(cr CommandRunner) error {
 // enableRootless enables configurations for running CRI-O in Rootless Docker.
 //
 // 1. Create /etc/systemd/system/crio.service.d/10-rootless.conf to set _CRIO_ROOTLESS=1
-// 2. Create /etc/crio/crio.conf.d/10-fuse-overlayfs.conf to enable fuse-overlayfs
-// 3. Reload systemd
+// 2. Reload systemd
 //
 // See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri
 func (r *CRIO) enableRootless() error {
 	files := map[string]string{
 		"/etc/systemd/system/crio.service.d/10-rootless.conf": `[Service]
 Environment="_CRIO_ROOTLESS=1"
-`,
-		"/etc/crio/crio.conf.d/10-fuse-overlayfs.conf": `[crio]
-storage_driver = "overlay"
-storage_option = ["overlay.mount_program=/usr/local/bin/fuse-overlayfs"]
 `,
 	}
 	for target, content := range files {
@@ -211,6 +206,14 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		}
 	}
 	if inUserNamespace {
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
 		if err := r.enableRootless(); err != nil {
 			return err
 		}
