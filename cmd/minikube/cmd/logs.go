@@ -19,14 +19,17 @@ package cmd
 import (
 	"os"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -73,6 +76,10 @@ var logsCmd = &cobra.Command{
 
 		logs.OutputOffline(numberOfLines, logOutput)
 
+		if shouldSoftFail() {
+			return
+		}
+
 		co := mustload.Running(ClusterFlagValue())
 
 		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
@@ -103,6 +110,30 @@ var logsCmd = &cobra.Command{
 			out.WarningT("{{.error}}", out.V{"error": err})
 		}
 	},
+}
+
+// shouldSoftFail returns true if the user specifies the --file flag and the host isn't running
+// This is to prevent outputting the message 'The control plane node must be running for this command' which confuses
+// many users while gathering logs to report their issue as the message makes them think the log file wasn't generated
+func shouldSoftFail() bool {
+	if fileOutput == "" {
+		return false
+	}
+
+	api, cc := mustload.Partial(ClusterFlagValue())
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		return false
+	}
+
+	machineName := config.MachineName(*cc, cp)
+	hs, err := machine.Status(api, machineName)
+	if err != nil {
+		return false
+	}
+
+	return hs != state.Running.String()
 }
 
 func init() {
