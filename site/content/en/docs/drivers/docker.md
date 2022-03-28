@@ -34,6 +34,7 @@ minikube config set driver docker
 ## Requirements
 - Docker 20.10 or higher, see https://rootlesscontaine.rs/getting-started/docker/
 - Cgroup v2 delegation, see https://rootlesscontaine.rs/getting-started/common/cgroup2/
+- Kernel 5.11 or later (5.13 or later is recommended when SELinux is enabled), see https://rootlesscontaine.rs/how-it-works/overlayfs/
 
 ## Usage
 

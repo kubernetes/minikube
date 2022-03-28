@@ -66,6 +66,7 @@
 	"Another minikube instance is downloading dependencies... ": "Otra instancia de minikube esta descargando dependencias...",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "Otro programa está usando un archivo requerido por minikube. Si estas usando Hyper-V, intenta detener la máquina virtual de minikube desde el administrador de Hyper-V",
 	"At least needs control plane nodes to enable addon": "Al menos se necesita un nodo de plano de control para habilitar el addon",
+	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "Controlador {{.driver}} seleccionado automáticamente",
 	"Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}": "Controlador {{.driver}} seleccionado automáticamente. Otras opciones: {{.alternates}}",
 	"Available Commands": "Comandos disponibles",
