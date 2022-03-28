@@ -76,7 +76,7 @@ var logsCmd = &cobra.Command{
 
 		logs.OutputOffline(numberOfLines, logOutput)
 
-		if shouldSoftFail() {
+		if shouldSilentFail() {
 			return
 		}
 
@@ -112,10 +112,10 @@ var logsCmd = &cobra.Command{
 	},
 }
 
-// shouldSoftFail returns true if the user specifies the --file flag and the host isn't running
+// shouldSilentFail returns true if the user specifies the --file flag and the host isn't running
 // This is to prevent outputting the message 'The control plane node must be running for this command' which confuses
 // many users while gathering logs to report their issue as the message makes them think the log file wasn't generated
-func shouldSoftFail() bool {
+func shouldSilentFail() bool {
 	if fileOutput == "" {
 		return false
 	}
