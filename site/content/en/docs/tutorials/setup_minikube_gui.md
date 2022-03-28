@@ -54,7 +54,7 @@ open dist/systray.app
 {{% windowstab %}}
 {{% tabs %}}
 {{% tab Stable %}}
-1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/v0.0.1/minikube-gui-windows.zip) (faster)
+1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/latest/minikube-gui-windows.zip) (faster)
 ```shell
 Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/latest/minikube-gui-windows.zip' -UseBasicParsing
 ```
