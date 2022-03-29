@@ -67,6 +67,9 @@ tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon 
 
 #### validateYakdAddon
 
+#### validateVolcanoAddon
+tests the Volcano addon, makes sure the Volcano is installed into cluster.
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
