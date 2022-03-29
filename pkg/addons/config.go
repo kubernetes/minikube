@@ -182,6 +182,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableGCPAuth, EnableOrDisableAddon, verifyGCPAuthAddon},
 	},
 	{
+		name:      "volcano",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "volumesnapshots",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},

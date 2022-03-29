@@ -50,6 +50,9 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 #### validateCloudSpannerAddon
 tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
+#### validateVolcanoAddon
+tests the Volcano addon, makes sure the Volcano is installed into cluster.
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 

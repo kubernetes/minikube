@@ -128,6 +128,10 @@ var (
 	//go:embed gcp-auth/*.tmpl
 	GcpAuthAssets embed.FS
 
+	// Volcano assets for volcano addon
+	//go:embed volcano/*.tmpl
+	VolcanoAssets embed.FS
+
 	// VolumeSnapshotsAssets assets for volumesnapshots addon
 	//go:embed volumesnapshots/*.tmpl
 	VolumeSnapshotsAssets embed.FS
