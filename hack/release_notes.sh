@@ -28,21 +28,10 @@ function cleanup_token() {
 }
 trap cleanup_token EXIT
 
-install_release_notes_helper() {
-  release_notes_workdir="$(mktemp -d)"
-  trap 'rm -rf -- ${release_notes_workdir}' RETURN
-
-  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
-  cd "${release_notes_workdir}"
-  go mod init release-notes
-  GOBIN="$DIR" go get github.com/corneliusweig/release-notes
-  GOBIN="$DIR" go get github.com/google/pullsheet
-  cd -
-}
-
 if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing release-notes'
-  install_release_notes_helper
+  go install github.com/corneliusweig/release-notes@latest
+  go install github.com/google/pullsheet@latest
 fi
 
 git pull https://github.com/kubernetes/minikube.git master --tags
