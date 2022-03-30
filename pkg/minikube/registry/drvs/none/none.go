@@ -60,10 +60,6 @@ func status() registry.State {
 		return registry.State{Running: true, Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
-	if _, err := exec.LookPath("docker"); err != nil {
-		return registry.State{Running: true, Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
-	}
-
 	u, err := user.Current()
 	if err != nil {
 		return registry.State{Running: true, Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
