@@ -645,6 +645,7 @@
 	"The KVM default network name. (kvm2 driver only)": "Der KVM Standard-Netzwerk-Name. (Nur kvm2-Treiber)",
 	"The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.": "Der KVM Treiber ist nicht in der Lage die alte VM erneut zu starten. Bitte starte 'minikube delete' um die VM zu löschen udn versuche es erneut.",
 	"The KVM network name. (kvm2 driver only)": "Der KVM-Netzwerkname. (Nur kvm2-Treiber)",
+	"The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534": "",
 	"The VM driver crashed. Run 'minikube start --alsologtostderr -v=8' to see the VM driver error message": "Der VM Treiber ist abgestürzt. Starte 'minikube start --alsologtostderr -v=8' um die Fehlermeldung des VM Treibers zu sehen",
 	"The VM driver exited with an error, and may be corrupt. Run 'minikube start' with --alsologtostderr -v=8 to see the error": "Der VM Treiber wurde mit Fehler beendet und ist möglicherweise defekt. Führe 'minikube start' mit --alsologtostderr -v=8 aus um den Fehler zu sehen",
 	"The VM that minikube is configured for no longer exists. Run 'minikube delete'": "Die VM, für welche Minikube konfiguriert wurde, existiert nicht mehr. Führe 'minikube delete' aus",
