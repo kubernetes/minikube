@@ -626,6 +626,7 @@
 	"The KVM QEMU connection URI. (kvm2 driver only)": "URI de connexion QEMU de la KVM (pilote kvm2 uniquement).",
 	"The KVM default network name. (kvm2 driver only)": "Le nom de réseau par défaut de KVM. (pilote kvm2 uniquement)",
 	"The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.": "Le pilote KVM est incapable de ressusciter cette ancienne VM. Veuillez exécuter `minikube delete` pour la supprimer et réessayer.",
+	"The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534": "",
 	"The VM driver crashed. Run 'minikube start --alsologtostderr -v=8' to see the VM driver error message": "Le pilote VM s'est écrasé. Exécutez 'minikube start --alsologtostderr -v=8' pour voir le message d'erreur du pilote VM",
 	"The VM driver exited with an error, and may be corrupt. Run 'minikube start' with --alsologtostderr -v=8 to see the error": "Le pilote VM s'est terminé avec une erreur et est peut-être corrompu. Exécutez 'minikube start' avec --alsologtostderr -v=8 pour voir l'erreur",
 	"The VM that minikube is configured for no longer exists. Run 'minikube delete'": "La machine virtuelle pour laquelle minikube est configuré n'existe plus. Exécutez 'minikube delete'",
