@@ -91,11 +91,6 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if driver.BareMetal(driverName) {
-		klog.Infof("%s is local, skipping auth/time setup (requires ssh)", driverName)
-		return h, nil
-	}
-
 	return h, nil
 }
 
