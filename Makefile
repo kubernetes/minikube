@@ -868,6 +868,7 @@ else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOARCH=arm64 \
 	go build \
+		-buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
 		-tags "libvirt.1.3.1 without_lxc" \
