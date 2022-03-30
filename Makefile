@@ -93,7 +93,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
-BUILD_DIR ?= ./out
+BUILD_DIR ?= $(CUR_DIR)/out
 $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
@@ -291,10 +291,10 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) minikube_$*_defconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	mv $(BUILD_DIR)/buildroot/output/images/boot.iso $(BUILD_DIR)/minikube-$(GOARCH).iso
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
+	mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(GOARCH).iso
 
 
 # Change buildroot configuration for the minikube ISO
