@@ -64,6 +64,7 @@ type Config struct {
 	KubernetesVersion string            // Kubernetes version to install
 	ContainerRuntime  string            // container runtime kic is running
 	Network           string            //  network to run with kic
+	Subnet            string            // subnet to be used on kic cluster
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress     string            // IP Address to listen to
 }
