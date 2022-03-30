@@ -93,7 +93,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
-BUILD_DIR ?= $(CUR_DIR)/out
+BUILD_DIR ?= $(PWD)/out
 $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
