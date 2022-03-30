@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -213,7 +214,16 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 }
 
 var podmanInspectGetter = func(name string) (*RunResult, error) {
-	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
+	v, err := podmanVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "podman version")
+	}
+	format := `{{range .}}{{if eq .Driver "bridge"}}{{(index .Subnets 0).Subnet}},{{(index .Subnets 0).Gateway}}{{end}}{{end}}`
+	if v.LT(semver.Version{Major: 4, Minor: 0, Patch: 0}) {
+		// format was changed in Podman 4.0.0: https://github.com/kubernetes/minikube/issues/13861#issuecomment-1082639236
+		format = `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`
+	}
+	cmd := exec.Command(Podman, "network", "inspect", name, "--format", format)
 	return runCmd(cmd)
 }
 
