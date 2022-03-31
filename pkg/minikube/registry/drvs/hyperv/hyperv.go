@@ -1,5 +1,4 @@
 //go:build windows
-// +build windows
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -99,7 +98,7 @@ func status() registry.State {
 		cmd := exec.CommandContext(ctx, path, "-NoProfile", "-NonInteractive", "@(Get-Wmiobject Win32_ComputerSystem).HypervisorPresent")
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-		 	wmiError:= fmt.Errorf("%s failed:\n%s ", strings.Join(cmd.Args, " "), out)
+			wmiError := fmt.Errorf("%s failed:\n%s ", strings.Join(cmd.Args, " "), out)
 			errorMessage := fmt.Errorf("%s\n%s", cimError, wmiError)
 			fixMessage := "Start PowerShell as an Administrator"
 			return registry.State{Installed: false, Running: true, Error: errorMessage, Fix: fixMessage, Doc: docURL}
