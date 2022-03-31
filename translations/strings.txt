@@ -576,6 +576,7 @@
 	"Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the \"start\" command.": "",
 	"Stops a node in a cluster.": "",
 	"Stops a running local Kubernetes cluster": "",
+	"Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)": "",
 	"Successfully added {{.name}} to {{.cluster}}!": "",
 	"Successfully deleted all profiles": "",
 	"Successfully mounted {{.sourcePath}} to {{.destinationPath}}": "",

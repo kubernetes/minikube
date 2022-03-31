@@ -607,6 +607,7 @@
 	"Stops a local Kubernetes cluster. This command stops the underlying VM or container, but keeps user data intact. The cluster can be started again with the \"start\" command.": "ローカルの Kubernetes クラスターを停止します。このコマンドは下位層の VM またはコンテナーを停止しますが、ユーザーデータは損なわれずに保持します。クラスターは「start」コマンドで再起動できます。",
 	"Stops a node in a cluster.": "クラスター中のノードを停止します。",
 	"Stops a running local Kubernetes cluster": "ローカル Kubernetes クラスターを停止します",
+	"Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)": "",
 	"Successfully added {{.name}} to {{.cluster}}!": "{{.cluster}} への {{.name}} 追加に成功しました！",
 	"Successfully deleted all profiles": "全てのプロファイルの削除に成功しました",
 	"Successfully mounted {{.sourcePath}} to {{.destinationPath}}": "{{.destinationPath}} への {{.sourcePath}} のマウントに成功しました",
