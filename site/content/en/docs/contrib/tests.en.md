@@ -440,6 +440,9 @@ verifies the docker driver works with a custom network
 ## TestKicExistingNetwork
 verifies the docker driver and run with an existing network
 
+## TestKicCustomSubnet
+verifies the docker/podman driver works with a custom subnet
+
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
 

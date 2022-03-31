@@ -631,6 +631,7 @@
 	"Stops a node in a cluster.": "",
 	"Stops a running local Kubernetes cluster": "",
 	"Stops a running local kubernetes cluster": "Zatrzymuje lokalny klaster kubernetesa",
+	"Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)": "",
 	"Successfully added {{.name}} to {{.cluster}}!": "",
 	"Successfully deleted all profiles": "",
 	"Successfully mounted {{.sourcePath}} to {{.destinationPath}}": "Pomyślnie zamontowano {{.sourcePath}} do {{.destinationPath}}",
