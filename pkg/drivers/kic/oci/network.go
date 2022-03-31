@@ -158,12 +158,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	var v semver.Version
 
 	if ociBin == Podman {
-		rr, err = runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
-		if err != nil {
-			return 0, errors.Wrapf(err, "podman version")
-		}
-		output := strings.TrimSpace(rr.Stdout.String())
-		v, err = semver.Make(output)
+		v, err = podmanVersion()
 		if err != nil {
 			return 0, errors.Wrapf(err, "podman version")
 		}
