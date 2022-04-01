@@ -17,8 +17,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.2
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/cloudevents/sdk-go/v2 v2.9.0
-	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
-	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/docker v20.10.14+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
@@ -98,7 +96,10 @@ require (
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
-require github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
+require (
+	github.com/Xuanwo/go-locale v1.1.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
+)
 
 require (
 	cloud.google.com/go v0.100.2 // indirect
