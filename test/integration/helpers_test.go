@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -522,7 +521,7 @@ func cpTestLocalPath() string {
 
 func cpTestReadText(ctx context.Context, t *testing.T, profile, node, path string) string {
 	if node == "" {
-		expected, err := ioutil.ReadFile(path)
+		expected, err := os.ReadFile(path)
 		if err != nil {
 			t.Errorf("failed to read test file 'testdata/cp-test.txt' : %v", err)
 		}

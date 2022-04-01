@@ -25,7 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -1710,7 +1709,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
 
 	// copy from node
-	tmpDir, err := ioutil.TempDir("", "mk_test")
+	tmpDir, err := os.MkdirTemp("", "mk_test")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -180,7 +179,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}
 
-	tmpDir, err := ioutil.TempDir("", "mk_cp_test")
+	tmpDir, err := os.MkdirTemp("", "mk_cp_test")
 	if err != nil {
 		t.Fatal(err)
 	}
