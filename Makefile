@@ -283,7 +283,6 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
 minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*))
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	echo $(shell git log --no-merges --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/CHANGELOG
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
@@ -294,7 +293,7 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
-	mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(GOARCH).iso
+	ARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(ARCH).iso
 
 
 # Change buildroot configuration for the minikube ISO
@@ -924,6 +923,7 @@ out/mkcmp:
 
 # auto pause binary to be used for ISO
 deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
+	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
 	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
 
 
