@@ -293,7 +293,7 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
-	ARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(ARCH).iso
+	mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(subst x86_64,amd64,$(subst aarch64,arm64,$*)).iso
 
 
 # Change buildroot configuration for the minikube ISO
