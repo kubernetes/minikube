@@ -29,8 +29,7 @@ import (
 )
 
 func TestSetupCerts(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	k8s := config.ClusterConfig{
 		CertExpiration: constants.DefaultCertExpiration,

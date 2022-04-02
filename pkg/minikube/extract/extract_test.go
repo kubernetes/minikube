@@ -32,16 +32,7 @@ func TestExtract(t *testing.T) {
 	// The function we care about
 	functions := []string{"extract.PrintToScreen"}
 
-	tempdir, err := os.MkdirTemp("", "temptestdata")
-	if err != nil {
-		t.Fatalf("Creating temp dir: %v", err)
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(tempdir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", tempdir)
-		}
-	}()
+	tempdir := t.TempDir()
 
 	src, err := os.ReadFile("testdata/test.json")
 	if err != nil {

@@ -1059,10 +1059,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Skipf("docker is not installed, skipping local image test")
 			}
 
-			dname, err := os.MkdirTemp("", profile)
-			if err != nil {
-				t.Fatalf("Cannot create temp dir: %v", err)
-			}
+			dname := t.TempDir()
 
 			message := []byte("FROM scratch\nADD Dockerfile /x")
 			err = os.WriteFile(filepath.Join(dname, "Dockerfile"), message, 0644)
@@ -1241,10 +1238,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateLogsFileCmd asserts "logs --file" command functionality
 func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
-	dname, err := os.MkdirTemp("", profile)
-	if err != nil {
-		t.Fatalf("Cannot create temp dir: %v", err)
-	}
+	dname := t.TempDir()
 	logFileName := filepath.Join(dname, "logs.txt")
 
 	// docs: Run `minikube logs --file logs.txt` to save the logs to a local file
@@ -1709,11 +1703,7 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
 
 	// copy from node
-	tmpDir, err := os.MkdirTemp("", "mk_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
 	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
@@ -2082,10 +2072,7 @@ func startProxyWithCustomCerts(ctx context.Context, t *testing.T) error {
 		}
 	}()
 
-	mitmDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		return errors.Wrap(err, "create temp dir")
-	}
+	mitmDir := t.TempDir()
 
 	_, err = Run(t, exec.CommandContext(ctx, "tar", "xzf", "mitmproxy-6.0.2-linux.tar.gz", "-C", mitmDir))
 	if err != nil {

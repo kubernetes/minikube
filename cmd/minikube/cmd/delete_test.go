@@ -63,20 +63,9 @@ func fileNames(path string) ([]string, error) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	td, err := os.MkdirTemp("", "single")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
+	td := t.TempDir()
 
-	t.Cleanup(func() {
-		err := os.RemoveAll(td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	})
-
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-single", td)
-	if err != nil {
+	if err := copy.Copy("../../../pkg/minikube/config/testdata/delete-single", td); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
@@ -97,8 +86,7 @@ func TestDeleteProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = os.Setenv(localpath.MinikubeHome, td)
-			if err != nil {
+			if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 				t.Errorf("setenv: %v", err)
 			}
 
@@ -169,24 +157,13 @@ func deleteContextTest() error {
 }
 
 func TestDeleteAllProfiles(t *testing.T) {
-	td, err := os.MkdirTemp("", "all")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	}()
+	td := t.TempDir()
 
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td)
-	if err != nil {
+	if err := copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
-	err = os.Setenv(localpath.MinikubeHome, td)
-	if err != nil {
+	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}
 

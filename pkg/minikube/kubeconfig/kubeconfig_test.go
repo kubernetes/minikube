@@ -228,16 +228,7 @@ func TestUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "")
-			if err != nil {
-				t.Fatalf("Error making temp directory %v", err)
-			}
-			defer func() { // clean up tempdir
-				err := os.RemoveAll(tmpDir)
-				if err != nil {
-					t.Errorf("failed to clean up temp folder  %q", tmpDir)
-				}
-			}()
+			tmpDir := t.TempDir()
 
 			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
@@ -245,7 +236,7 @@ func TestUpdate(t *testing.T) {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
-			err = Update(test.cfg)
+			err := Update(test.cfg)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -459,16 +450,7 @@ func TestEmptyConfig(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	dir, err := os.MkdirTemp("", ".kube")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := os.RemoveAll(dir)
-		if err != nil {
-			t.Errorf("Failed to remove dir %q: %v", dir, err)
-		}
-	}()
+	dir := t.TempDir()
 
 	// setup minikube config
 	expected := api.NewConfig()
@@ -476,8 +458,7 @@ func TestNewConfig(t *testing.T) {
 
 	// write actual
 	filename := filepath.Join(dir, "config")
-	err = writeToFile(expected, filename)
-	if err != nil {
+	if err := writeToFile(expected, filename); err != nil {
 		t.Fatal(err)
 	}
 

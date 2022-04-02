@@ -274,11 +274,7 @@ func TestBinaryMirror(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
-	tmpDir, err := os.MkdirTemp("", "kb_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Start test server which will serve binary files
 	ts := httptest.NewServer(
