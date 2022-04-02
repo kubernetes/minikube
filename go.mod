@@ -155,7 +155,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/machine-drivers/docker-machine-driver-qemu v0.1.1-0.20180730160045-1d6b42f755d0
+	github.com/machine-drivers/docker-machine-driver-qemu v0.1.1-0.20220331133007-0324171328f7
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
