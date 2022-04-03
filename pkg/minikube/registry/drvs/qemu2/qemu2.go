@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package qemu
+package qemu2
 
 import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/docker/machine/libmachine/drivers"
-	drvqemu "github.com/machine-drivers/docker-machine-driver-qemu"
+	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -32,12 +33,13 @@ import (
 )
 
 const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu2/"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.QEMU,
+		Name:     driver.QEMU2,
+		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
 		Default:  true,
@@ -47,9 +49,25 @@ func init() {
 	}
 }
 
+func qemuSystemProgram() (string, error) {
+	arch := runtime.GOARCH
+	switch arch {
+	case "amd64":
+		return "qemu-system-x86_64", nil
+	case "arm64":
+		return "qemu-system-aarch64", nil
+	default:
+		return "", fmt.Errorf("unknown arch: %s", arch)
+	}
+}
+
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
-	return drvqemu.Driver{
+	qemuSystem, err := qemuSystemProgram()
+	if err != nil {
+		return nil, err
+	}
+	return qemu.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
@@ -62,11 +80,21 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		EnginePort:     2376,
 		FirstQuery:     true,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.img", name)),
+		Program:        qemuSystem,
+		VirtioDrives:   false,
+		Network:        "user",
+		CacheMode:      "default",
+		IOMode:         "threads",
 	}, nil
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("qemu-system-x86_64")
+	qemuSystem, err := qemuSystemProgram()
+	if err != nil {
+		return registry.State{Error: err, Doc: docURL}
+	}
+
+	_, err = exec.LookPath(qemuSystem)
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
