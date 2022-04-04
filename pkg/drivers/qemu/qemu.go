@@ -88,7 +88,6 @@ func (d *Driver) GetMachineName() string {
 
 func (d *Driver) GetSSHHostname() (string, error) {
 	return "localhost", nil
-	//return d.GetIP()
 }
 
 func (d *Driver) GetSSHKeyPath() string {
@@ -412,12 +411,9 @@ func (d *Driver) Start() error {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
-		//if err := cmdStart(d.Program, startCmd...); err != nil {
-		//	return err
 	}
 	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
 
-	//return ssh.WaitForTCP(fmt.Sprintf("localhost:%d", d.SSHPort))
 	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
 }
 
@@ -444,12 +440,6 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 		}
 	}
 	return stdout.String(), stderrStr, err
-}
-
-func cmdStart(cmdStr string, args ...string) error {
-	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %v %v", cmdStr, strings.Join(args, " "))
-	return cmd.Start()
 }
 
 func (d *Driver) Stop() error {
@@ -519,10 +509,6 @@ func (d *Driver) Upgrade() error {
 	return fmt.Errorf("hosts without a driver cannot be upgraded")
 }
 
-//func (d *Driver) GetSSHCommand(args ...string) (*exec.Cmd, error) {
-//	return ssh.GetSSHCommand("localhost", d.SSHPort, "docker", d.sshKeyPath(), args...), nil
-//}
-
 func (d *Driver) sshKeyPath() string {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 	return filepath.Join(machineDir, "id_rsa")
@@ -577,14 +563,14 @@ func (d *Driver) generateDiskImage(size int) error {
 	if err := tw.WriteHeader(file); err != nil {
 		return err
 	}
-	if _, err := tw.Write([]byte(pubKey)); err != nil {
+	if _, err := tw.Write(pubKey); err != nil {
 		return err
 	}
 	file = &tar.Header{Name: ".ssh/authorized_keys2", Size: int64(len(pubKey)), Mode: 0644}
 	if err := tw.WriteHeader(file); err != nil {
 		return err
 	}
-	if _, err := tw.Write([]byte(pubKey)); err != nil {
+	if _, err := tw.Write(pubKey); err != nil {
 		return err
 	}
 	if err := tw.Close(); err != nil {
@@ -619,10 +605,16 @@ func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 	ccRoot := filepath.Join(machineDir, "cloud-config")
-	os.MkdirAll(ccRoot, 0755)
+	err = os.MkdirAll(ccRoot, 0755)
+	if err != nil {
+		return "", err
+	}
 
 	userDataDir := filepath.Join(ccRoot, "openstack/latest")
-	os.MkdirAll(userDataDir, 0755)
+	err = os.MkdirAll(userDataDir, 0755)
+	if err != nil {
+		return "", err
+	}
 
 	writeFile := filepath.Join(userDataDir, "user_data")
 	if err := ioutil.WriteFile(writeFile, userdata, 0644); err != nil {
@@ -663,7 +655,10 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 
 	var initialResponse qmpInitialResponse
-	json.Unmarshal(buf[:nr], &initialResponse)
+	err = json.Unmarshal(buf[:nr], &initialResponse)
+	if err != nil {
+		return nil, err
+	}
 
 	// run 'qmp_capabilities' to switch to command mode
 	// { "execute": "qmp_capabilities" }
