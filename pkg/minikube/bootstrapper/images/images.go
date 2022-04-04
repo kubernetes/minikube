@@ -121,7 +121,7 @@ func dashboardFrontend(repo string) string {
 		repo = "docker.io"
 	}
 	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "kubernetesui", "dashboard:v2.3.1")
+	return path.Join(repo, "kubernetesui", "dashboard:v2.5.1")
 }
 
 // dashboardMetrics returns the image used for the dashboard metrics scraper
