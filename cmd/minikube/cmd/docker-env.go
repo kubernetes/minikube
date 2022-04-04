@@ -38,6 +38,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -290,11 +291,13 @@ var dockerEnvCmd = &cobra.Command{
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
-		if driver.NeedsPortForward(driverName) {
+		if driver.NeedsPortForward(driverName) && driver.IsKIC(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.Message(reason.DrvPortForward, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
+		} else if driver.NeedsPortForward(driverName) && driverName == driver.QEMU2 {
+			port = d.(*qemu.Driver).EnginePort
 		}
 
 		hostname, err := d.GetSSHHostname()
