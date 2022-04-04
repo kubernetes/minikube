@@ -18,6 +18,7 @@ package qemu2
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -61,9 +62,37 @@ func qemuSystemProgram() (string, error) {
 	}
 }
 
+func qemuFirmwarePath() (string, error) {
+	arch := runtime.GOARCH
+	switch arch {
+	case "amd64":
+		return "/usr/share/OVMF/OVMF_CODE.fd", nil
+	case "arm64":
+		return "/usr/share/AAVMF/AAVMF_CODE.fd", nil
+	default:
+		return "", fmt.Errorf("unknown arch: %s", arch)
+	}
+}
+
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	qemuSystem, err := qemuSystemProgram()
+	if err != nil {
+		return nil, err
+	}
+	var qemuMachine string
+	var qemuCPU string
+	switch runtime.GOARCH {
+	case "amd64":
+		qemuMachine = "" // default
+		qemuCPU = ""     // default
+	case "arm64":
+		qemuMachine = "virt"
+		qemuCPU = "cortex-a72"
+	default:
+		return nil, fmt.Errorf("unknown arch: %s", runtime.GOARCH)
+	}
+	qemuFirmware, err := qemuFirmwarePath()
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +110,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		FirstQuery:     true,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.img", name)),
 		Program:        qemuSystem,
+		BIOS:           runtime.GOARCH != "arm64",
+		MachineType:    qemuMachine,
+		CPUType:        qemuCPU,
+		Firmware:       qemuFirmware,
 		VirtioDrives:   false,
 		Network:        "user",
 		CacheMode:      "default",
@@ -97,6 +130,15 @@ func status() registry.State {
 	_, err = exec.LookPath(qemuSystem)
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
+	}
+
+	qemuFirmware, err := qemuFirmwarePath()
+	if err != nil {
+		return registry.State{Error: err, Doc: docURL}
+	}
+
+	if _, err := os.Stat(qemuFirmware); err != nil && runtime.GOARCH == "arm64" {
+		return registry.State{Error: err, Fix: "Install uefi firmware", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true, Running: true}

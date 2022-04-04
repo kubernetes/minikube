@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -58,6 +59,10 @@ type Driver struct {
 	DiskSize         int
 	CPU              int
 	Program          string
+	BIOS             bool
+	CPUType          string
+	MachineType      string
+	Firmware         string
 	Display          bool
 	DisplayType      string
 	Nographic        bool
@@ -133,6 +138,7 @@ func (d *Driver) GetURL() (string, error) {
 
 func NewDriver(hostName, storePath string) drivers.Driver {
 	return &Driver{
+		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser:     defaultSSHUser,
@@ -330,6 +336,26 @@ func (d *Driver) Start() error {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
+
+	if d.MachineType != "" {
+		startCmd = append(startCmd,
+			"-M", d.MachineType,
+		)
+	}
+	if d.CPUType != "" {
+		startCmd = append(startCmd,
+			"-cpu", d.CPUType,
+		)
+	}
+
+	if !d.BIOS {
+		if d.Firmware != "" {
+			startCmd = append(startCmd,
+				"-drive", fmt.Sprintf("file=%s,readonly,format=raw,if=pflash", d.Firmware))
+		} else {
+			return fmt.Errorf("unknown firmware")
+		}
+	}
 
 	if d.Display {
 		if d.DisplayType != "" {
