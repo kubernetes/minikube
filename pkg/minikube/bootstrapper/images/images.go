@@ -104,8 +104,6 @@ func auxiliary(mirror string) []string {
 	// Note: changing this list requires bumping the preload version
 	return []string{
 		storageProvisioner(mirror),
-		dashboardFrontend(mirror),
-		dashboardMetrics(mirror),
 		// NOTE: kindnet is also used when the Docker driver is used with a non-Docker runtime
 	}
 }
@@ -113,24 +111,6 @@ func auxiliary(mirror string) []string {
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
 	return path.Join(minikubeRepo(mirror), "storage-provisioner:"+version.GetStorageProvisionerVersion())
-}
-
-// dashboardFrontend returns the image used for the dashboard frontend
-func dashboardFrontend(repo string) string {
-	if repo == "" {
-		repo = "docker.io"
-	}
-	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "kubernetesui", "dashboard:v2.5.1")
-}
-
-// dashboardMetrics returns the image used for the dashboard metrics scraper
-func dashboardMetrics(repo string) string {
-	if repo == "" {
-		repo = "docker.io"
-	}
-	// See 'dashboard-metrics-scraper' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "kubernetesui", "metrics-scraper:v1.0.7")
 }
 
 // KindNet returns the image used for kindnet
