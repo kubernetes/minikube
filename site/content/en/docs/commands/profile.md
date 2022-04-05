@@ -46,10 +46,10 @@ Help about any command
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type profile help [path to command] for full details.
+Simply type help [path to command] for full details.
 
 ```shell
-minikube profile help [command] [flags]
+minikube help profile
 ```
 
 ### Options inherited from parent commands

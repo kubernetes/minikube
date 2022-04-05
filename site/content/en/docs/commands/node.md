@@ -122,10 +122,10 @@ Help about any command
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type node help [path to command] for full details.
+Simply type help [path to command] for full details.
 
 ```shell
-minikube node help [command] [flags]
+minikube help node
 ```
 
 ### Options inherited from parent commands

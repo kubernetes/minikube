@@ -135,10 +135,10 @@ Help about any command
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type completion help [path to command] for full details.
+Simply type help [path to command] for full details.
 
 ```shell
-minikube completion help [command] [flags]
+minikube help completion
 ```
 
 ### Options inherited from parent commands

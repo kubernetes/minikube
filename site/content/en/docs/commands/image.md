@@ -94,10 +94,10 @@ Help about any command
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type image help [path to command] for full details.
+Simply type help [path to command] for full details.
 
 ```shell
-minikube image help [command] [flags]
+minikube help image
 ```
 
 ### Options inherited from parent commands
