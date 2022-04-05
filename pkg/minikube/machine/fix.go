@@ -87,6 +87,15 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, nil
 	}
 
+	// Tunnel apiserver to guest, if needed
+	if cc.APIServerPort != 0 {
+		args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", cc.APIServerPort)}
+		err := CreateSSHShell(api, *cc, *n, args, false)
+		if err != nil {
+			klog.Warningf("apiserver tunnel failed: %v", err)
+		}
+	}
+
 	if err := postStartSetup(h, *cc); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}

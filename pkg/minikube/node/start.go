@@ -253,15 +253,6 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, err
 	}
 
-	// Tunnel apiserver to guest, if needed
-	if starter.Cfg.APIServerPort != 0 {
-		args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", starter.Cfg.APIServerPort)}
-		err := machine.CreateSSHShell(starter.MachineAPI, *starter.Cfg, *starter.Node, args, false)
-		if err != nil {
-			klog.Warningf("apiserver tunnel failed: %v", err)
-		}
-	}
-
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
@@ -561,7 +552,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
-	if driver.IsQEMU(host.Driver.DriverName()) {
+	if driver.IsQEMU(host.Driver.DriverName()) && cfg.APIServerPort == 0 {
 		apiServerPort, err := getPort()
 		if err != nil {
 			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
