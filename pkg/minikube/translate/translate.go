@@ -19,11 +19,9 @@ package translate
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"runtime"
 	"strings"
 
-	"github.com/cloudfoundry-attic/jibber_jabber"
+	"github.com/Xuanwo/go-locale"
 	"golang.org/x/text/language"
 
 	"k8s.io/klog/v2"
@@ -62,20 +60,11 @@ func T(s string) string {
 
 // DetermineLocale finds the system locale and sets the preferred language for output appropriately.
 func DetermineLocale() {
-	var locale string
-	// Allow windows users to overload the same env vars as unix users
-	if runtime.GOOS == "windows" {
-		locale = os.Getenv("LC_ALL")
+	tag, err := locale.Detect()
+	if err != nil {
+		klog.V(1).Infof("Getting system locale failed: %v", err)
 	}
-	if locale == "" {
-		var err error
-		locale, err = jibber_jabber.DetectIETF()
-		if err != nil {
-			klog.V(1).Infof("Getting system locale failed: %v", err)
-			locale = ""
-		}
-	}
-	SetPreferredLanguage(locale)
+	SetPreferredLanguage(tag)
 
 	// Load translations for preferred language into memory.
 	p := preferredLanguage.String()
@@ -102,30 +91,11 @@ func DetermineLocale() {
 
 }
 
-// setPreferredLanguageTag configures which language future messages should use.
-func setPreferredLanguageTag(l language.Tag) {
+// SetPreferredLanguage configures which language future messages should use.
+func SetPreferredLanguage(tag language.Tag) {
 	// output message only if verbosity level is set and we still haven't got all the flags parsed in main()
-	klog.V(1).Infof("Setting Language to %s ...", l)
-	preferredLanguage = l
-}
-
-// SetPreferredLanguage configures which language future messages should use, based on a LANG string.
-func SetPreferredLanguage(s string) {
-	// "C" is commonly used to denote a neutral POSIX locale. See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap07.html#tag_07_02
-	if s == "" || s == "C" {
-		setPreferredLanguageTag(defaultLanguage)
-		return
-	}
-	// Handles "de_DE" or "de_DE.utf8"
-	// We don't process encodings, since Rob Pike invented utf8 and we're mostly stuck with it.
-	// Fallback to the default language if not detected
-	parts := strings.Split(s, ".")
-	l, err := language.Parse(parts[0])
-	if err != nil {
-		setPreferredLanguageTag(defaultLanguage)
-		return
-	}
-	setPreferredLanguageTag(l)
+	klog.V(1).Infof("Setting Language to %s ...", tag)
+	preferredLanguage = tag
 }
 
 // GetPreferredLanguage returns the preferred language tag.
