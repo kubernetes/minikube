@@ -80,20 +80,10 @@ func TestParseKubernetesVersion(t *testing.T) {
 }
 
 func TestChownR(t *testing.T) {
-	testDir, err := os.MkdirTemp(os.TempDir(), "")
-	if nil != err {
+	testDir := t.TempDir()
+	if _, err := os.Create(testDir + "/TestChownR"); err != nil {
 		return
 	}
-	_, err = os.Create(testDir + "/TestChownR")
-	if nil != err {
-		return
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(testDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", testDir)
-		}
-	}()
 
 	cases := []struct {
 		name          string
@@ -122,7 +112,7 @@ func TestChownR(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err = ChownR(testDir+"/TestChownR", c.uid, c.gid)
+			err := ChownR(testDir+"/TestChownR", c.uid, c.gid)
 			fileInfo, _ := os.Stat(testDir + "/TestChownR")
 			fileSys := fileInfo.Sys()
 			if (nil != err) != c.expectedError || ((false == c.expectedError) && (fileSys.(*syscall.Stat_t).Gid != uint32(c.gid) || fileSys.(*syscall.Stat_t).Uid != uint32(c.uid))) {
@@ -133,25 +123,13 @@ func TestChownR(t *testing.T) {
 }
 
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
-	testDir, err := os.MkdirTemp(os.TempDir(), "")
-	if nil != err {
+	testDir := t.TempDir()
+	if _, err := os.Create(testDir + "/TestChownR"); nil != err {
 		return
 	}
-	_, err = os.Create(testDir + "/TestChownR")
-	if nil != err {
-		return
-	}
-
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(testDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", testDir)
-		}
-	}()
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		err = os.Setenv("CHANGE_MINIKUBE_NONE_USER", "1")
-		if nil != err {
+		if err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "1"); nil != err {
 			t.Error("failed to set env: CHANGE_MINIKUBE_NONE_USER")
 		}
 	}
@@ -187,7 +165,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err = MaybeChownDirRecursiveToMinikubeUser(c.dir)
+			err := MaybeChownDirRecursiveToMinikubeUser(c.dir)
 			if (nil != err) != c.expectedError {
 				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
 			}
