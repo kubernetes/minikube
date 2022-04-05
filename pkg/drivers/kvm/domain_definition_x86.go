@@ -42,7 +42,7 @@ const domainTmpl = `
   <os>
     <type machine="q35">hvm</type>  
     <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
-    <nvram>/usr/share/OVMF/OVMF_VARS.fd</nvram>s
+    <nvram>/usr/share/OVMF/OVMF_VARS.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='yes'/>
