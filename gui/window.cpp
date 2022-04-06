@@ -194,9 +194,14 @@ void Window::createTrayIcon()
 
 void Window::startMinikube()
 {
-    QStringList args = { "start", "-p", selectedCluster() };
-    sendMinikubeCommand(args);
+    QString text;
+    QStringList args = { "start", "-p", selectedCluster(), "-o", "json" };
+    bool success = sendMinikubeCommand(args, text);
     updateClusters();
+    if (success) {
+        return;
+    }
+    outputFailedStart(text);
 }
 
 void Window::stopMinikube()
@@ -415,18 +420,18 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     }
     QStringList arguments;
     arguments << cmds;
-    bool success;
 
     QProcess *process = new QProcess(this);
     process->start(program, arguments);
     this->setCursor(Qt::WaitCursor);
-    success = process->waitForFinished(300 * 1000);
+    bool timedOut = process->waitForFinished(300 * 1000);
+    int exitCode = process->exitCode();
+    bool success = !timedOut && exitCode == 0;
     this->unsetCursor();
 
+    text = process->readAllStandardOutput();
     if (success) {
-        text = process->readAllStandardOutput();
     } else {
-        qDebug() << process->readAllStandardOutput();
         qDebug() << process->readAllStandardError();
     }
     delete process;
@@ -459,8 +464,13 @@ void Window::askName()
     int code = dialog.exec();
     profile = profileField.text();
     if (code == QDialog::Accepted) {
-        QStringList arg = { "start", "-p", profile };
-        sendMinikubeCommand(arg);
+        QStringList arg = { "start", "-p", profile, "-o", "json" };
+        QString text;
+        bool success = sendMinikubeCommand(arg, text);
+        if (success) {
+            return;
+        }
+        outputFailedStart(text);
     } else if (code == QDialog::Rejected) {
         askCustom();
     }
@@ -522,8 +532,87 @@ void Window::askCustom()
                              "--cpus",
                              QString::number(cpus),
                              "--memory",
-                             QString::number(memory) };
-        sendMinikubeCommand(args);
+                             QString::number(memory),
+                             "-o",
+                             "json"
+                           };
+        QString text;
+        bool success = sendMinikubeCommand(args, text);
+        if (success) {
+            return;
+        }
+        outputFailedStart(text);
+    }
+}
+
+void Window::outputFailedStart(QString text) {
+    QStringList lines;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    lines = text.split("\n", Qt::SkipEmptyParts);
+#else
+    lines = text.split("\n", QString::SkipEmptyParts);
+#endif
+    for (int i = 0; i < lines.size(); i++) {
+        QString line = lines.at(i);
+        QJsonParseError error;
+        QJsonDocument json = QJsonDocument::fromJson(line.toUtf8(), &error);
+        if (json.isNull() || !json.isObject()) {
+            continue;
+        }
+        QJsonObject par = json.object();
+        QJsonObject data = par["data"].toObject();
+        if (!data.contains("exitcode")) {
+            continue;
+        }
+        QString advice = data["advice"].toString();
+        QString message = data["message"].toString();
+        QString name = data["name"].toString();
+        QString url = data["url"].toString();
+        QString issues = data["issues"].toString();
+
+        QDialog dialog;
+        dialog.setWindowTitle(tr("minikube start failed"));
+        dialog.setWindowIcon(*trayIconIcon);
+        dialog.setFixedWidth(600);
+        dialog.setModal(true);
+        QFormLayout form(&dialog);
+        QLabel *errorCodeLabel = new QLabel(this);
+        errorCodeLabel->setWordWrap(true);
+        if (!name.isEmpty()) {
+            errorCodeLabel->setText("Error Code: " + name);
+            form.addRow(errorCodeLabel);
+        }
+        QLabel *adviceLabel = new QLabel(this);
+        adviceLabel->setWordWrap(true);
+        if (!advice.isEmpty()) {
+            adviceLabel->setText("Advice: " + advice);
+            form.addRow(adviceLabel);
+        }
+        QLabel *messageLabel = new QLabel(this);
+        messageLabel->setWordWrap(true);
+        if (!message.isEmpty()) {
+            messageLabel->setText("Error message: " + message);
+            form.addRow(messageLabel);
+        }
+        QLabel *urlLabel = new QLabel(this);
+        urlLabel->setOpenExternalLinks(true);
+        urlLabel->setWordWrap(true);
+        if (!url.isEmpty()) {
+            urlLabel->setText("Link to documentation: <a href='" + url + "'>" + url + "</a>");
+            form.addRow(urlLabel);
+        }
+        QLabel *linkLabel = new QLabel(this);
+        linkLabel->setOpenExternalLinks(true);
+        urlLabel->setWordWrap(true);
+        if (!issues.isEmpty()) {
+            urlLabel->setText("Link to related issue: <a href='" + issues + "'>" + issues + "</a>");
+            form.addRow(urlLabel);
+        }
+        QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+        buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+        connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        form.addRow(&buttonBox);
+        dialog.exec();
     }
 }
 

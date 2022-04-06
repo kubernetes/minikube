@@ -122,6 +122,7 @@ private:
     void sshConsole();
     void dashboardBrowser();
     void checkForMinikube();
+    void outputFailedStart(QString text);
     QPushButton *sshButton;
     QPushButton *dashboardButton;
     QProcess *dashboardProcess;
