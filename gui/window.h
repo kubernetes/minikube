@@ -100,7 +100,8 @@ private:
     void createActionGroupBox();
     void createActions();
     void createTrayIcon();
-    void startMinikube();
+    void startMinikube(QStringList args);
+    void startSelectedMinikube();
     void stopMinikube();
     void deleteMinikube();
     ClusterList getClusters();

@@ -98,7 +98,7 @@ Window::Window()
 
     connect(sshButton, &QAbstractButton::clicked, this, &Window::sshConsole);
     connect(dashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
-    connect(startButton, &QAbstractButton::clicked, this, &Window::startMinikube);
+    connect(startButton, &QAbstractButton::clicked, this, &Window::startSelectedMinikube);
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
@@ -192,16 +192,23 @@ void Window::createTrayIcon()
     trayIcon->setIcon(*trayIconIcon);
 }
 
-void Window::startMinikube()
+void Window::startMinikube(QStringList moreArgs)
 {
     QString text;
-    QStringList args = { "start", "-p", selectedCluster(), "-o", "json" };
+    QStringList args = { "start", "-o", "json" };
+    args << moreArgs;
     bool success = sendMinikubeCommand(args, text);
     updateClusters();
     if (success) {
         return;
     }
     outputFailedStart(text);
+}
+
+void Window::startSelectedMinikube()
+{
+    QStringList args = { "-p", selectedCluster() };
+    return startMinikube(args);
 }
 
 void Window::stopMinikube()
@@ -464,13 +471,8 @@ void Window::askName()
     int code = dialog.exec();
     profile = profileField.text();
     if (code == QDialog::Accepted) {
-        QStringList arg = { "start", "-p", profile, "-o", "json" };
-        QString text;
-        bool success = sendMinikubeCommand(arg, text);
-        if (success) {
-            return;
-        }
-        outputFailedStart(text);
+        QStringList args = { "-p", profile };
+        startMinikube(args);
     } else if (code == QDialog::Rejected) {
         askCustom();
     }
@@ -522,8 +524,7 @@ void Window::askCustom()
                 containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
         cpus = cpuField.text().toInt();
         memory = memoryField.text().toInt();
-        QStringList args = { "start",
-                             "-p",
+        QStringList args = { "-p",
                              profile,
                              "--driver",
                              driver,
@@ -532,16 +533,9 @@ void Window::askCustom()
                              "--cpus",
                              QString::number(cpus),
                              "--memory",
-                             QString::number(memory),
-                             "-o",
-                             "json"
+                             QString::number(memory)
                            };
-        QString text;
-        bool success = sendMinikubeCommand(args, text);
-        if (success) {
-            return;
-        }
-        outputFailedStart(text);
+        startMinikube(args);
     }
 }
 
