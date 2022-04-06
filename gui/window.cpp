@@ -533,13 +533,13 @@ void Window::askCustom()
                              "--cpus",
                              QString::number(cpus),
                              "--memory",
-                             QString::number(memory)
-                           };
+                             QString::number(memory) };
         startMinikube(args);
     }
 }
 
-void Window::outputFailedStart(QString text) {
+void Window::outputFailedStart(QString text)
+{
     QStringList lines;
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
     lines = text.split("\n", Qt::SkipEmptyParts);
