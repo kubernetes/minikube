@@ -1,5 +1,4 @@
 //go:build linux && amd64
-// +build linux,amd64
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -42,7 +41,7 @@ const domainTmpl = `
   <os>
     <type machine="q35">hvm</type>  
     <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
-    <nvram>/usr/share/OVMF/OVMF_VARS.fd</nvram>
+    <nvram>/usr/share/OVMF/OVMF_VARS.ms.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='yes'/>
