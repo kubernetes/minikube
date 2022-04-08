@@ -574,7 +574,7 @@ void Window::outputFailedStart(QString text)
         QFormLayout form(&dialog);
         createLabel("Error Code", name, &form, false);
         createLabel("Advice", advice, &form, false);
-        QLabel* errorMessage = createLabel("Error Message", message, &form, false);
+        QLabel *errorMessage = createLabel("Error Message", message, &form, false);
         errorMessage->setFont(QFont("Courier", 10));
         errorMessage->setStyleSheet("background-color:white;");
         createLabel("Link to documentation", url, &form, true);
@@ -594,7 +594,7 @@ void Window::outputFailedStart(QString text)
     }
 }
 
-QLabel* Window::createLabel(QString title, QString text, QFormLayout *form, bool isLink)
+QLabel *Window::createLabel(QString title, QString text, QFormLayout *form, bool isLink)
 {
     QLabel *label = new QLabel(this);
     if (!text.isEmpty()) {

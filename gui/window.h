@@ -125,7 +125,7 @@ private:
     void dashboardBrowser();
     void checkForMinikube();
     void outputFailedStart(QString text);
-    QLabel* createLabel(QString title, QString text, QFormLayout *form, bool isLink);
+    QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
     QPushButton *sshButton;
     QPushButton *dashboardButton;
     QProcess *dashboardProcess;
