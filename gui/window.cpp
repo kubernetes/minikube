@@ -79,6 +79,8 @@
 #include <QFormLayout>
 #include <QDialogButtonBox>
 #include <QStandardPaths>
+#include <QDir>
+#include <QFontDialog>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
@@ -570,44 +572,41 @@ void Window::outputFailedStart(QString text)
         dialog.setFixedWidth(600);
         dialog.setModal(true);
         QFormLayout form(&dialog);
-        QLabel *errorCodeLabel = new QLabel(this);
-        errorCodeLabel->setWordWrap(true);
-        if (!name.isEmpty()) {
-            errorCodeLabel->setText("Error Code: " + name);
-            form.addRow(errorCodeLabel);
-        }
-        QLabel *adviceLabel = new QLabel(this);
-        adviceLabel->setWordWrap(true);
-        if (!advice.isEmpty()) {
-            adviceLabel->setText("Advice: " + advice);
-            form.addRow(adviceLabel);
-        }
-        QLabel *messageLabel = new QLabel(this);
-        messageLabel->setWordWrap(true);
-        if (!message.isEmpty()) {
-            messageLabel->setText("Error message: " + message);
-            form.addRow(messageLabel);
-        }
-        QLabel *urlLabel = new QLabel(this);
-        urlLabel->setOpenExternalLinks(true);
-        urlLabel->setWordWrap(true);
-        if (!url.isEmpty()) {
-            urlLabel->setText("Link to documentation: <a href='" + url + "'>" + url + "</a>");
-            form.addRow(urlLabel);
-        }
-        QLabel *linkLabel = new QLabel(this);
-        linkLabel->setOpenExternalLinks(true);
-        urlLabel->setWordWrap(true);
-        if (!issues.isEmpty()) {
-            urlLabel->setText("Link to related issue: <a href='" + issues + "'>" + issues + "</a>");
-            form.addRow(urlLabel);
-        }
+        createLabel("Error Code", name, &form, false);
+        createLabel("Advice", advice, &form, false);
+        QLabel* errorMessage = createLabel("Error Message", message, &form, false);
+        errorMessage->setFont(QFont("Courier", 10));
+        errorMessage->setStyleSheet("background-color:white;");
+        createLabel("Link to documentation", url, &form, true);
+        createLabel("Link to related issue", issues, &form, true);
+        // Enabling once https://github.com/kubernetes/minikube/issues/13925 is fixed
+        // QLabel *fileLabel = new QLabel(this);
+        // fileLabel->setOpenExternalLinks(true);
+        // fileLabel->setWordWrap(true);
+        // QString logFile = QDir::homePath() + "/.minikube/logs/lastStart.txt";
+        // fileLabel->setText("<a href='file:///" + logFile + "'>View log file</a>");
+        // form.addRow(fileLabel);
         QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
         buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
         connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
         form.addRow(&buttonBox);
         dialog.exec();
     }
+}
+
+QLabel* Window::createLabel(QString title, QString text, QFormLayout *form, bool isLink)
+{
+    QLabel *label = new QLabel(this);
+    if (!text.isEmpty()) {
+        form->addRow(label);
+    }
+    if (isLink) {
+        label->setOpenExternalLinks(true);
+        text = "<a href='" + text + "'>" + text + "</a>";
+    }
+    label->setWordWrap(true);
+    label->setText(title + ": " + text);
+    return label;
 }
 
 void Window::initMachine()

@@ -55,6 +55,7 @@
 #define WINDOW_H
 
 #include <QSystemTrayIcon>
+#include <QFormLayout>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -124,6 +125,7 @@ private:
     void dashboardBrowser();
     void checkForMinikube();
     void outputFailedStart(QString text);
+    QLabel* createLabel(QString title, QString text, QFormLayout *form, bool isLink);
     QPushButton *sshButton;
     QPushButton *dashboardButton;
     QProcess *dashboardProcess;
