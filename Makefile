@@ -292,6 +292,8 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
+		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
