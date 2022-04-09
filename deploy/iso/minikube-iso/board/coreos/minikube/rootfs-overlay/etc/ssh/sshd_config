@@ -117,3 +117,8 @@ Subsystem	sftp	/usr/libexec/sftp-server
 #	AllowTcpForwarding no
 #	PermitTTY no
 #	ForceCommand cvs server
+
+# Temporarily accept ssh-rsa algorithm for openssh >= 8.8,
+# until most ssh clients could deprecate ssh-rsa.
+HostkeyAlgorithms +ssh-rsa
+PubkeyAcceptedAlgorithms +ssh-rsa
