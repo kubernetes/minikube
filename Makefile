@@ -42,7 +42,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2021.02.10
+BUILDROOT_BRANCH ?= 2021.02.11
 # the go version on the line below is for the ISO and does not need to be updated often
 GOLANG_OPTIONS = GO_VERSION=1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
@@ -73,7 +73,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.224
+KERNEL_VERSION ?= 4.19.232
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v1.45.2
