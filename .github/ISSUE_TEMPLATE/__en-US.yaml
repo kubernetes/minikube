@@ -15,6 +15,8 @@ body:
       label: Attach the log file
       description: |
         Tip: Run `minikube logs --file=log.txt` then drag & drop `log.txt` file to the browser.
+        **WARNING:** If you're using the HyperKit driver, please look through your logs and remove any environment variables that may contain sensitive information (ex. access tokens or secrets).
+        All environment variables will be stripped as of minikube `1.26.0` but any prior versions will have to be removed manually.
     validations:
       required: true
   - type: dropdown

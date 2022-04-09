@@ -37,12 +37,10 @@ run_benchmark() {
 		go run . --config local-kubernetes.yaml --iterations 10 --output output.csv )
 }
 
-generate_chart() {
-	go run ./hack/benchmark/time-to-k8s/chart.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --output ./site/static/images/benchmarks/timeToK8s/"$1".png >> ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
-}
 
+# create page and generate chart inside the code
 create_page() {
-	printf -- "---\ntitle: \"%s Benchmark\"\nlinkTitle: \"%s Benchmark\"\nweight: -$(date +'%Y%m%d')\n---\n\n![time-to-k8s](/images/benchmarks/timeToK8s/%s.png)\n" "$1" "$1" "$1" > ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
+	go run ./hack/benchmark/time-to-k8s/*.go --csv ./hack/benchmark/time-to-k8s/time-to-k8s-repo/output.csv --image ./site/static/images/benchmarks/timeToK8s/"$1" --page ./site/content/en/docs/benchmarks/timeToK8s/"$1".md
 }
 
 cleanup() {
@@ -56,5 +54,4 @@ install_minikube
 VERSION=$(minikube version --short)
 run_benchmark
 create_page "$VERSION"
-generate_chart "$VERSION"
 cleanup

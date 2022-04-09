@@ -121,6 +121,7 @@ const (
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
 	network                 = "network"
+	subnet                  = "subnet"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 	sshIPAddress            = "ssh-ip-address"
@@ -251,6 +252,7 @@ func initDriverFlags() {
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
+	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -470,6 +472,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
+		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),

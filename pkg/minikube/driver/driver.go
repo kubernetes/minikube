@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -221,7 +223,7 @@ func FullName(name string) string {
 		}
 		return "Docker"
 	default:
-		return strings.Title(name)
+		return cases.Title(language.Und).String(name)
 	}
 }
 

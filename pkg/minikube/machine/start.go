@@ -86,14 +86,18 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
 	}
+	var h *host.Host
 	if !exists {
 		klog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
-		h, err := createHost(api, cfg, n)
+		h, err = createHost(api, cfg, n)
+	} else {
+		klog.Infoln("Skipping create...Using existing machine configuration")
+		h, err = fixHost(api, cfg, n)
+	}
+	if err != nil {
 		return h, exists, err
 	}
-	klog.Infoln("Skipping create...Using existing machine configuration")
-	h, err := fixHost(api, cfg, n)
-	return h, exists, err
+	return h, exists, ensureSyncedGuestClock(h, cfg.Driver)
 }
 
 // engineOptions returns docker engine options for the dockerd running inside minikube

@@ -5,12 +5,13 @@ metadata:
   labels:
     kubernetes.io/minikube-addons: metrics-server
     addonmanager.kubernetes.io/mode: Reconcile
+    k8s-app: metrics-server
 spec:
+  group: metrics.k8s.io
+  groupPriorityMinimum: 100
+  insecureSkipTLSVerify: true
   service:
     name: metrics-server
     namespace: kube-system
-  group: metrics.k8s.io
   version: v1beta1
-  insecureSkipTLSVerify: true
-  groupPriorityMinimum: 100
   versionPriority: 100
