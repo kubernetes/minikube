@@ -4,7 +4,7 @@
 #
 ########################################################################
 
-FALCO_MODULE_VERSION = 0.31.0
+FALCO_MODULE_VERSION = 0.31.1
 FALCO_MODULE_SITE = https://github.com/falcosecurity/falco/archive
 FALCO_MODULE_SOURCE = $(FALCO_MODULE_VERSION).tar.gz
 FALCO_MODULE_DEPENDENCIES += ncurses libyaml
@@ -12,7 +12,7 @@ FALCO_MODULE_LICENSE = Apache-2.0
 FALCO_MODULE_LICENSE_FILES = COPYING
 
 # see cmake/modules/falcosecurity-libs.cmake
-FALCO_MODULE_FALCOSECURITY_LIBS_VERSION = 319368f1ad778691164d33d59945e00c5752cd27
+FALCO_MODULE_FALCOSECURITY_LIBS_VERSION = b7eb0dd65226a8dc254d228c8d950d07bf3521d2
 FALCO_MODULE_EXTRA_DOWNLOADS = https://github.com/falcosecurity/libs/archive/$(FALCO_MODULE_FALCOSECURITY_LIBS_VERSION).tar.gz
 
 define FALCO_MODULE_FALCOSECURITY_LIBS_SRC
