@@ -59,16 +59,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := os.MkdirTemp("", tc.name)
-		if err != nil {
-			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
-		}
-		defer func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				t.Errorf("Failed to remove dir %q: %v", dir, err)
-			}
-		}()
+		dir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -128,16 +119,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := os.MkdirTemp("", tc.name)
-		if err != nil {
-			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
-		}
-		defer func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				t.Errorf("Failed to remove dir %q: %v", dir, err)
-			}
-		}()
+		dir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -212,15 +194,10 @@ func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(tc.name, tc.path)
+			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(t, tc.name, tc.path)
 			if err != nil {
 				t.Fatalf("Failed to prepare tempdir. test: %s, got: %v", tc.name, err)
 			}
-			defer func() {
-				if err := os.RemoveAll(mkDir); err != nil {
-					t.Errorf("Failed to remove mkDir %q: %v", mkDir, err)
-				}
-			}()
 
 			cmd := exec.Command(Target(), "start", "--download-only", "--interactive=false", "--driver=hyperkit")
 			cmd.Stdout = os.Stdout
@@ -265,15 +242,11 @@ func driverVersion(path string) (string, error) {
 
 // prepareTempMinikubeDirWithHyperkitDriver creates a temp .minikube directory
 // with structure essential to testing of hyperkit driver updates
-func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, string, error) {
-	temp, err := os.MkdirTemp("", name)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create tempdir: %v", err)
-	}
+func prepareTempMinikubeDirWithHyperkitDriver(t *testing.T, name, driver string) (string, string, error) {
+	temp := t.TempDir()
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
-	err = os.MkdirAll(mkBinDir, 0777)
-	if err != nil {
+	if err := os.MkdirAll(mkBinDir, 0777); err != nil {
 		return "", "", fmt.Errorf("failed to prepare tempdir: %v", err)
 	}
 

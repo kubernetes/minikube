@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
@@ -27,7 +26,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -276,11 +274,7 @@ func TestBinaryMirror(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
-	tmpDir, err := ioutil.TempDir("", "kb_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Start test server which will serve binary files
 	ts := httptest.NewServer(

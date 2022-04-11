@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
@@ -735,4 +736,13 @@ func IsExternalDaemonHost(driver string) bool {
 		}
 	}
 	return false
+}
+
+func podmanVersion() (semver.Version, error) {
+	rr, err := runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
+	if err != nil {
+		return semver.Version{}, errors.Wrapf(err, "podman version")
+	}
+	output := strings.TrimSpace(rr.Stdout.String())
+	return semver.Make(output)
 }

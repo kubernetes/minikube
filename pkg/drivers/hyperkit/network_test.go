@@ -1,5 +1,4 @@
 //go:build darwin
-// +build darwin
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -50,8 +49,7 @@ var validLeases = []byte(`{
 }`)
 
 func Test_getIpAddressFromFile(t *testing.T) {
-	tmpdir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tmpdir)
+	tmpdir := tests.MakeTempDir(t)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
 	if err := os.WriteFile(dhcpFile, validLeases, 0644); err != nil {
