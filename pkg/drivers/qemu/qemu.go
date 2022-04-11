@@ -72,6 +72,7 @@ type Driver struct {
 	Boot2DockerURL   string
 	NetworkInterface string
 	NetworkAddress   string
+	NetworkSocket    string
 	NetworkBridge    string
 	CaCertPath       string
 	PrivateKeyPath   string
@@ -401,6 +402,10 @@ func (d *Driver) Start() error {
 	} else if d.Network == "tap" {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
+		)
+	} else if d.Network == "vde" {
+		startCmd = append(startCmd,
+			"-nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket),
 		)
 	} else if d.Network == "bridge" {
 		startCmd = append(startCmd,
