@@ -888,7 +888,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOARCH=$* GOOS=linux \
+	$(Q)GOARCH=$* \
 	go build \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
