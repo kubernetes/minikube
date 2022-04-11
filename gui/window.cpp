@@ -79,6 +79,8 @@
 #include <QFormLayout>
 #include <QDialogButtonBox>
 #include <QStandardPaths>
+#include <QDir>
+#include <QFontDialog>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
@@ -98,7 +100,7 @@ Window::Window()
 
     connect(sshButton, &QAbstractButton::clicked, this, &Window::sshConsole);
     connect(dashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
-    connect(startButton, &QAbstractButton::clicked, this, &Window::startMinikube);
+    connect(startButton, &QAbstractButton::clicked, this, &Window::startSelectedMinikube);
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
@@ -192,11 +194,23 @@ void Window::createTrayIcon()
     trayIcon->setIcon(*trayIconIcon);
 }
 
-void Window::startMinikube()
+void Window::startMinikube(QStringList moreArgs)
 {
-    QStringList args = { "start", "-p", selectedCluster() };
-    sendMinikubeCommand(args);
+    QString text;
+    QStringList args = { "start", "-o", "json" };
+    args << moreArgs;
+    bool success = sendMinikubeCommand(args, text);
     updateClusters();
+    if (success) {
+        return;
+    }
+    outputFailedStart(text);
+}
+
+void Window::startSelectedMinikube()
+{
+    QStringList args = { "-p", selectedCluster() };
+    return startMinikube(args);
 }
 
 void Window::stopMinikube()
@@ -415,18 +429,18 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     }
     QStringList arguments;
     arguments << cmds;
-    bool success;
 
     QProcess *process = new QProcess(this);
     process->start(program, arguments);
     this->setCursor(Qt::WaitCursor);
-    success = process->waitForFinished(300 * 1000);
+    bool timedOut = process->waitForFinished(300 * 1000);
+    int exitCode = process->exitCode();
+    bool success = !timedOut && exitCode == 0;
     this->unsetCursor();
 
+    text = process->readAllStandardOutput();
     if (success) {
-        text = process->readAllStandardOutput();
     } else {
-        qDebug() << process->readAllStandardOutput();
         qDebug() << process->readAllStandardError();
     }
     delete process;
@@ -459,8 +473,8 @@ void Window::askName()
     int code = dialog.exec();
     profile = profileField.text();
     if (code == QDialog::Accepted) {
-        QStringList arg = { "start", "-p", profile };
-        sendMinikubeCommand(arg);
+        QStringList args = { "-p", profile };
+        startMinikube(args);
     } else if (code == QDialog::Rejected) {
         askCustom();
     }
@@ -512,8 +526,7 @@ void Window::askCustom()
                 containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
         cpus = cpuField.text().toInt();
         memory = memoryField.text().toInt();
-        QStringList args = { "start",
-                             "-p",
+        QStringList args = { "-p",
                              profile,
                              "--driver",
                              driver,
@@ -523,8 +536,77 @@ void Window::askCustom()
                              QString::number(cpus),
                              "--memory",
                              QString::number(memory) };
-        sendMinikubeCommand(args);
+        startMinikube(args);
     }
+}
+
+void Window::outputFailedStart(QString text)
+{
+    QStringList lines;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    lines = text.split("\n", Qt::SkipEmptyParts);
+#else
+    lines = text.split("\n", QString::SkipEmptyParts);
+#endif
+    for (int i = 0; i < lines.size(); i++) {
+        QString line = lines.at(i);
+        QJsonParseError error;
+        QJsonDocument json = QJsonDocument::fromJson(line.toUtf8(), &error);
+        if (json.isNull() || !json.isObject()) {
+            continue;
+        }
+        QJsonObject par = json.object();
+        QJsonObject data = par["data"].toObject();
+        if (!data.contains("exitcode")) {
+            continue;
+        }
+        QString advice = data["advice"].toString();
+        QString message = data["message"].toString();
+        QString name = data["name"].toString();
+        QString url = data["url"].toString();
+        QString issues = data["issues"].toString();
+
+        QDialog dialog;
+        dialog.setWindowTitle(tr("minikube start failed"));
+        dialog.setWindowIcon(*trayIconIcon);
+        dialog.setFixedWidth(600);
+        dialog.setModal(true);
+        QFormLayout form(&dialog);
+        createLabel("Error Code", name, &form, false);
+        createLabel("Advice", advice, &form, false);
+        QLabel *errorMessage = createLabel("Error Message", message, &form, false);
+        errorMessage->setFont(QFont("Courier", 10));
+        errorMessage->setStyleSheet("background-color:white;");
+        createLabel("Link to documentation", url, &form, true);
+        createLabel("Link to related issue", issues, &form, true);
+        // Enabling once https://github.com/kubernetes/minikube/issues/13925 is fixed
+        // QLabel *fileLabel = new QLabel(this);
+        // fileLabel->setOpenExternalLinks(true);
+        // fileLabel->setWordWrap(true);
+        // QString logFile = QDir::homePath() + "/.minikube/logs/lastStart.txt";
+        // fileLabel->setText("<a href='file:///" + logFile + "'>View log file</a>");
+        // form.addRow(fileLabel);
+        QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+        buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+        connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        form.addRow(&buttonBox);
+        dialog.exec();
+    }
+}
+
+QLabel *Window::createLabel(QString title, QString text, QFormLayout *form, bool isLink)
+{
+    QLabel *label = new QLabel(this);
+    if (!text.isEmpty()) {
+        form->addRow(label);
+    }
+    if (isLink) {
+        label->setOpenExternalLinks(true);
+        text = "<a href='" + text + "'>" + text + "</a>";
+    }
+    label->setWordWrap(true);
+    label->setText(title + ": " + text);
+    return label;
 }
 
 void Window::initMachine()
