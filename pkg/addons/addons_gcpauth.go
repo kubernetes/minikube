@@ -45,10 +45,11 @@ import (
 )
 
 const (
-	credentialsPath = "/var/lib/minikube/google_application_credentials.json"
-	projectPath     = "/var/lib/minikube/google_cloud_project"
-	secretName      = "gcp-auth"
-	namespaceName   = "gcp-auth"
+	credentialsPath    = "/var/lib/minikube/google_application_credentials.json"
+	projectPath        = "/var/lib/minikube/google_cloud_project"
+	secretName         = "gcp-auth"
+	namespaceName      = "gcp-auth"
+	disableCheckEnvVar = "CLOUDSDK_COMPONENT_MANAGER_DISABLE_UPDATE_CHECK"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
@@ -64,6 +65,20 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 }
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
+	// Disable the gcloud update check if the env var isn't already set
+	if _, c := os.LookupEnv(disableCheckEnvVar); !c {
+		err := os.Setenv(disableCheckEnvVar, "1")
+		defer func() {
+			err := os.Unsetenv(disableCheckEnvVar)
+			if err != nil {
+				klog.Warningf("failed to unset %s", disableCheckEnvVar)
+			}
+		}()
+		if err != nil {
+			return errors.Wrap(err, "set env var")
+		}
+	}
+
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
