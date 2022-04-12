@@ -46,6 +46,9 @@ docker context use rootless
 minikube start --driver=docker --container-runtime=containerd
 ```
 
+Unlike Podman driver, it is not necessary to set the `rootless` property of minikube (`minikube config set rootless true`).
+When the `rootless` property is explicitly set but the current Docker host is not rootless, minikube fails with an error.
+
 The `--container-runtime` flag must be set to "containerd" or "cri-o".
 {{% /tab %}}
 {{% /tabs %}}
