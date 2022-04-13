@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Get-Process "*Docker Desktop*" | Stop-Process
+if (Get-Process "*Docker Desktop*") {
+  Write-Host "Docker is already running!"
+  exit 0
+}
 
 $attempt = 1
 while($attempt -le 10) {

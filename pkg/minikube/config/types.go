@@ -82,14 +82,24 @@ type ClusterConfig struct {
 	ExposedPorts            []string // Only used by the docker and podman driver
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
+	Subnet                  string   // only used by the docker and podman driver
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration
 	Mount                   bool
 	MountString             string
-	// AutoPauseTime is used to specify how often minikube needs to check to autopause
-	// cluster.
-	AutoPauseTime time.Duration
+	Mount9PVersion          string
+	MountGID                string
+	MountIP                 string
+	MountMSize              int
+	MountOptions            []string
+	MountPort               uint16
+	MountType               string
+	MountUID                string
+	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
+	DisableOptimizations    bool
+	DisableMetrics          bool
+	AutoPauseTime time.Duration // AutoPauseTime is used to specify how often minikube needs to check to autopause cluster.
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -129,6 +139,7 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
+	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
 }

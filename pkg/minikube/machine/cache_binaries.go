@@ -43,7 +43,7 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 }
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
-func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string) error {
+func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string, binariesURL string) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
 	var g errgroup.Group
@@ -53,7 +53,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, ex
 		}
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			if _, err := download.Binary(bin, version, "linux", detect.EffectiveArch()); err != nil {
+			if _, err := download.Binary(bin, version, "linux", detect.EffectiveArch(), binariesURL); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil

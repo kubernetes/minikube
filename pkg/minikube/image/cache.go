@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
@@ -48,7 +48,7 @@ var errCacheImageDoesntExist = &cacheError{errors.New("the image you are trying 
 // DeleteFromCacheDir deletes tar files stored in cache dir
 func DeleteFromCacheDir(images []string) error {
 	for _, image := range images {
-		path := filepath.Join(constants.ImageCacheDir, image)
+		path := filepath.Join(detect.ImageCacheDir(), image)
 		path = localpath.SanitizeCacheDir(path)
 		klog.Infoln("Deleting image in cache at ", path)
 		if err := os.Remove(path); err != nil {

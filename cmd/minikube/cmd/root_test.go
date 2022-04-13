@@ -34,8 +34,7 @@ func runCommand(f func(*cobra.Command, []string)) {
 
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	runCommand(RootCmd.PersistentPreRun)
 

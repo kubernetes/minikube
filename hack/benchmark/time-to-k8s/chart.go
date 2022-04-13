@@ -17,14 +17,14 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
-	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strconv"
 
+	"github.com/olekukonko/tablewriter"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -43,25 +43,12 @@ type run struct {
 type runs struct {
 	version string
 	runs    []run
+	cpus    []cpu
 }
 
-func main() {
-	csvPath := flag.String("csv", "", "path to the CSV file")
-	chartPath := flag.String("output", "", "path to output the chart to")
-	flag.Parse()
-
-	// map of the apps (minikube, kind, k3d) and their runs
-	apps := make(map[string]runs)
-
-	if err := readInCSV(*csvPath, apps); err != nil {
-		log.Fatal(err)
-	}
-
-	values, totals, names := values(apps)
-
-	if err := createChart(*chartPath, values, totals, names); err != nil {
-		log.Fatal(err)
-	}
+type cpu struct {
+	cpuPct  float64 // percentage
+	cpuTime float64 // second
 }
 
 func readInCSV(csvPath string, apps map[string]runs) error {
@@ -87,8 +74,8 @@ func readInCSV(csvPath string, apps map[string]runs) error {
 
 		values := []float64{}
 
-		// 8-13 contain the run results
-		for i := 8; i <= 13; i++ {
+		// 8-16 contain the run results
+		for i := 8; i <= 16; i++ {
 			v, err := strconv.ParseFloat(d[i], 64)
 			if err != nil {
 				return err
@@ -96,6 +83,7 @@ func readInCSV(csvPath string, apps map[string]runs) error {
 			values = append(values, v)
 		}
 		newRun := run{values[0], values[1], values[2], values[3], values[4], values[5]}
+		newCPU := cpu{values[6], values[8]}
 
 		// get the app from the map and add the new run to it
 		name := d[0]
@@ -104,14 +92,18 @@ func readInCSV(csvPath string, apps map[string]runs) error {
 			k = runs{version: d[5]}
 		}
 		k.runs = append(k.runs, newRun)
+		k.cpus = append(k.cpus, newCPU)
 		apps[name] = k
 	}
 
 	return nil
 }
 
-func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
+func values(apps map[string]runs) ([]plotter.Values, []plotter.Values, []plotter.Values, []float64, []string) {
 	var cmdValues, apiValues, k8sValues, dnsSvcValues, appValues, dnsAnsValues plotter.Values
+	var cpuPctValues, cpuTimeValues plotter.Values
+	var cpuMinikube, cpuKind, cpuK3d plotter.Values
+
 	names := []string{}
 	totals := []float64{}
 
@@ -119,6 +111,8 @@ func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
 	for _, name := range []string{"minikube", "kind", "k3d"} {
 		app := apps[name]
 		var cmd, api, k8s, dnsSvc, appRun, dnsAns float64
+		var cpuPct, cpuTime float64
+
 		names = append(names, app.version)
 
 		for _, l := range app.runs {
@@ -130,6 +124,11 @@ func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
 			dnsAns += l.dnsAns
 		}
 
+		for _, l := range app.cpus {
+			cpuPct += l.cpuPct
+			cpuTime += l.cpuTime
+		}
+
 		c := float64(len(app.runs))
 
 		cmdAvg := cmd / c
@@ -138,6 +137,9 @@ func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
 		dnsSvcAvg := dnsSvc / c
 		appAvg := appRun / c
 		dnsAnsAvg := dnsAns / c
+
+		cpuPctAvg := cpuPct / c
+		cpuTimeAvg := cpuTime / c
 
 		cmdValues = append(cmdValues, cmdAvg)
 		apiValues = append(apiValues, apiAvg)
@@ -148,11 +150,60 @@ func values(apps map[string]runs) ([]plotter.Values, []float64, []string) {
 
 		total := cmdAvg + apiAvg + k8sAvg + dnsSvcAvg + appAvg + dnsAnsAvg
 		totals = append(totals, total)
+
+		cpuPctValues = append(cpuPctValues, cpuPctAvg)
+		cpuTimeValues = append(cpuTimeValues, cpuTimeAvg)
+
+		cpuSummary := []float64{cpuPctAvg, cpuTimeAvg}
+
+		switch name {
+		case "minikube":
+			cpuMinikube = cpuSummary
+		case "kind":
+			cpuKind = cpuSummary
+		case "k3d":
+			cpuK3d = cpuSummary
+		}
+
 	}
 
-	values := []plotter.Values{cmdValues, apiValues, k8sValues, dnsSvcValues, appValues, dnsAnsValues}
+	runningTime := []plotter.Values{cmdValues, apiValues, k8sValues, dnsSvcValues, appValues, dnsAnsValues}
 
-	return values, totals, names
+	// for markdown table, row is either cpu utilization or cpu time, col is process name
+	cpu := []plotter.Values{cpuPctValues, cpuTimeValues}
+
+	// row is process name, col is either cpu utilization, or cpu time
+	cpureverse := []plotter.Values{cpuMinikube, cpuKind, cpuK3d}
+
+	return runningTime, cpu, cpureverse, totals, names
+}
+
+func outputMarkdownTable(categories []plotter.Values, totals []float64, names []string) {
+	headers := append([]string{""}, names...)
+	c := [][]string{}
+	fields := []string{"Command Exec", "API Server Answering", "Kubernetes SVC", "DNS SVC", "App Running", "DNS Answering"}
+	for i, values := range categories {
+		row := []string{fields[i]}
+		for _, value := range values {
+			row = append(row, fmt.Sprintf("%.3f", value))
+		}
+		c = append(c, row)
+	}
+	totalStrings := []string{"Total"}
+	for _, t := range totals {
+		totalStrings = append(totalStrings, fmt.Sprintf("%.3f", t))
+	}
+	c = append(c, totalStrings)
+	b := new(bytes.Buffer)
+	t := tablewriter.NewWriter(b)
+	t.SetAutoWrapText(false)
+	t.SetHeader(headers)
+	t.SetAutoFormatHeaders(false)
+	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	t.SetCenterSeparator("|")
+	t.AppendBulk(c)
+	t.Render()
+	data.TimeMarkdown = b.String()
 }
 
 func createChart(chartPath string, values []plotter.Values, totals []float64, names []string) error {
@@ -220,7 +271,13 @@ func createChart(chartPath string, values []plotter.Values, totals []float64, na
 
 	p.Add(l)
 
-	return p.Save(12*vg.Inch, 8*vg.Inch, chartPath)
+	if err := p.Save(12*vg.Inch, 8*vg.Inch, chartPath); err != nil {
+		return err
+	}
+
+	data.TimeChart = chartPath
+
+	return nil
 }
 
 func createBars(values plotter.Values, index int) (*plotter.BarChart, error) {

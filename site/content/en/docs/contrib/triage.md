@@ -153,9 +153,9 @@ A sample response to ask for more info:
 
 > I don’t yet have a clear way to replicate this issue. Do you mind adding some additional details. Here is additional information that would be helpful:
 >
-> \*  The exact `minikube start` command line used
+> \* The exact `minikube start` command line used
 >
-> \*  The full output of the `minikube start` command, preferably with `--alsologtostderr -v=4` for extra logging.
+> \* The full output of the `minikube start` command, preferably with `--alsologtostderr -v=4` for extra logging.
 >
 > \* The full output of `minikube logs`
 >
@@ -209,18 +209,15 @@ Then: Label with `triage/duplicate` and close the issue.
 
 If an issue hasn't been active for more than four weeks, and the author has been pinged at least once, then the issue can be closed.
 
->Hey @author -- hopefully it's OK if I close this - there wasn't enough information to make it actionable, and some time has already passed. If you are able to provide additional details, you may reopen it at any point by adding /reopen to your comment.
+>Hi @author – is this issue still occurring? Are additional details available? If so, please feel free to re-open the issue by commenting with `/reopen`. This issue will be closed as additional information was unavailable and some time has passed.
 >
->Here is additional information that may be helpful to us:
+>Additional information that may be helpful:
 >
->\* Whether the issue occurs with the latest minikube release
+> \* Whether the issue occurs with the latest minikube release
 >
->\* The exact `minikube start` command line used
+> \* The exact minikube start command line used
 >
->\* The full output of the `minikube start` command, preferably with `--alsologtostderr -v=3` for extra logging.
->
->\* The full output of `minikube logs`
->
+> \* Attach the full output of minikube logs, run `minikube logs --file=logs.txt` to create a log file
 >
 >Thank you for sharing your experience!
 

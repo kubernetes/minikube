@@ -59,7 +59,7 @@ func CachedDaemonInfo(ociBin string) (SysInfo, error) {
 func DaemonInfo(ociBin string) (SysInfo, error) {
 	if ociBin == Podman {
 		p, err := podmanSystemInfo()
-		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os, Swarm: false, StorageDriver: p.Store.GraphDriverName}
+		cachedSysInfo = &SysInfo{CPUs: p.Host.Cpus, TotalMemory: p.Host.MemTotal, OSType: p.Host.Os, Swarm: false, Rootless: p.Host.Security.Rootless, StorageDriver: p.Store.GraphDriverName}
 		return *cachedSysInfo, err
 	}
 	d, err := dockerSystemInfo()
@@ -213,8 +213,10 @@ type podmanSysInfo struct {
 		Hostname    string `json:"hostname"`
 		Kernel      string `json:"kernel"`
 		Os          string `json:"os"`
-		Rootless    bool   `json:"rootless"`
-		Uptime      string `json:"uptime"`
+		Security    struct {
+			Rootless bool `json:"rootless"`
+		} `json:"security"`
+		Uptime string `json:"uptime"`
 	} `json:"host"`
 	Registries struct {
 		Search []string `json:"search"`

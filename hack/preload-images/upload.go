@@ -20,19 +20,55 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
-func uploadTarball(tarballFilename string) error {
+func uploadTarball(tarballFilename, k8sVer string) error {
 	// Upload tarball to GCS
 	hostPath := path.Join("out/", tarballFilename)
-	gcsDest := fmt.Sprintf("gs://%s", download.PreloadBucket)
+	gcsDest := fmt.Sprintf("gs://%s/%s/%s/", download.PreloadBucket, download.PreloadVersion, k8sVer)
 	cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
 	fmt.Printf("Running: %v\n", cmd.Args)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
 	}
 	return nil
+}
+
+func uploadArmTarballs(preloadsDir string) error {
+	b, err := exec.Command("ls", preloadsDir).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to read files: %v\n%s", err, string(b))
+	}
+	files := strings.Split(string(b), "\n")
+	if len(files) == 0 {
+		return fmt.Errorf("no preload files found")
+	}
+	// remove trailing whitespace entry
+	files = files[:len(files)-1]
+	for _, file := range files {
+		preloadVersion, k8sVersion := getVersionsFromFilename(file)
+		hostPath := path.Join(preloadsDir, file)
+		gcsDest := fmt.Sprintf("gs://%s/%s/%s/", download.PreloadBucket, preloadVersion, k8sVersion)
+		cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
+		fmt.Printf("Running: %v\n", cmd.Args)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
+		}
+	}
+	return nil
+}
+
+func getVersionsFromFilename(filename string) (string, string) {
+	parts := strings.Split(filename, "-")
+	preloadVersion := parts[3]
+	k8sVersion := parts[4]
+	// this check is for "-rc" and "-beta" versions that would otherwise be stripped off
+	if len(parts) == 9 {
+		k8sVersion += fmt.Sprintf("-%s", parts[5])
+	}
+	return preloadVersion, k8sVersion
 }

@@ -1,5 +1,4 @@
 //go:build windows && integration
-// +build windows,integration
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.

@@ -49,6 +49,9 @@ var addonsEnableCmd = &cobra.Command{
 		if addon == "ambassador" {
 			out.Styled(style.Warning, "The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73")
 		}
+		if addon == "olm" {
+			out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
+		}
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")

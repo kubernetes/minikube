@@ -11,6 +11,9 @@ makes sure the --download-only parameter in minikube start caches the appropriat
 ## TestDownloadOnlyKic
 makes sure --download-only caches the docker driver images as well.
 
+## TestBinaryMirror
+tests functionality of --binary-mirror flag
+
 ## TestOffline
 makes sure minikube works without internet, once the user has cached the necessary images.
 This test has to run after TestDownloadOnly.
@@ -91,7 +94,6 @@ Steps:
 runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 
 Steps:
-- Make sure image listing works by `minikube image ls`
 - Make sure image building works by `minikube image build`
 - Make sure image loading from Docker daemon works by `minikube image load --daemon`
 - Try to load image already loaded and make sure `minikube image load --daemon` works
@@ -289,6 +291,12 @@ Steps:
 - Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 - Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
+
+#### validateServiceCmdConnect
+
+Steps:
+- Create a new `k8s.gcr.io/echoserver` deployment
+- Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 - Make sure we can hit the endpoint URL with an HTTP GET request
 
 #### validateAddonsCmd
@@ -432,6 +440,9 @@ verifies the docker driver works with a custom network
 ## TestKicExistingNetwork
 verifies the docker driver and run with an existing network
 
+## TestKicCustomSubnet
+verifies the docker/podman driver works with a custom subnet
+
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
 
@@ -511,8 +522,32 @@ should fail if hairpinMode is off
 tests starting minikube without Kubernetes,
 for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube
 
+#### validateStartNoK8sWithVersion
+expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+
+Steps:
+- start minikube with no kubernetes.
+
+#### validateStartWithK8S
+starts a minikube cluster with Kubernetes started/configured.
+
+Steps:
+- start minikube with Kubernetes.
+- return an error if Kubernetes is not running.
+
+#### validateStartWithStopK8s
+starts a minikube cluster while stopping Kubernetes.
+
+Steps:
+- start minikube with no Kubernetes.
+- return an error if Kubernetes is not stopped.
+- delete minikube profile.
+
 #### validateStartNoK8S
 starts a minikube cluster without kubernetes started/configured
+
+Steps:
+- start minikube with no Kubernetes.
 
 #### validateK8SNotRunning
 validates that there is no kubernetes running inside minikube
@@ -524,7 +559,7 @@ validates that minikube is stopped after a --no-kubernetes start
 validates that profile list works with --no-kubernetes
 
 #### validateStartNoArgs
-valides that minikube start with no args works
+validates that minikube start with no args works.
 
 ## TestChangeNoneUser
 tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected

@@ -404,7 +404,7 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 		Kind: Kind{
 			ID:       "PR_HYPERV_MODULE_NOT_INSTALLED",
 			ExitCode: ExProviderNotFound,
-			Advice:   "Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools-All'",
+			Advice:   "Run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V-Tools -All'",
 			Issues:   []int{9040},
 			URL:      "https://www.altaro.com/hyper-v/install-hyper-v-powershell-module/",
 		},
@@ -1052,6 +1052,15 @@ var guestIssues = []match{
 			Issues:   []int{11235},
 		},
 		Regexp: re(`'/var/lib/dpkg': No such file or directory`),
+	},
+	{
+		Kind: Kind{
+			ID:       "GUEST_STORAGE_DRIVER_BTRFS",
+			ExitCode: ExGuestUnsupported,
+			Advice:   "minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\"LocalStorageCapacityIsolation=false\"`",
+			Issues:   []int{7923},
+		},
+		Regexp: re(`unsupported graph driver: btrfs`),
 	},
 	{
 		Kind: Kind{

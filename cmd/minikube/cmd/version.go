@@ -54,16 +54,17 @@ var versionCmd = &cobra.Command{
 			co := mustload.Running(ClusterFlagValue())
 			runner := co.CP.Runner
 			versionCMDS := map[string]*exec.Cmd{
-				"docker":     exec.Command("docker", "--version"),
-				"dockerd":    exec.Command("dockerd", "--version"),
-				"containerd": exec.Command("containerd", "--version"),
-				"crio":       exec.Command("crio", "--version"),
-				"podman":     exec.Command("sudo", "podman", "--version"),
-				"crictl":     exec.Command("sudo", "crictl", "--version"),
-				"buildctl":   exec.Command("buildctl", "--version"),
-				"ctr":        exec.Command("ctr", "--version"),
-				"runc":       exec.Command("runc", "--version"),
-				"crun":       exec.Command("crun", "--version"),
+				"docker":      exec.Command("docker", "--version"),
+				"dockerd":     exec.Command("dockerd", "--version"),
+				"cri-dockerd": exec.Command("cri-dockerd", "--version"),
+				"containerd":  exec.Command("containerd", "--version"),
+				"crio":        exec.Command("crio", "--version"),
+				"podman":      exec.Command("sudo", "podman", "--version"),
+				"crictl":      exec.Command("sudo", "crictl", "--version"),
+				"buildctl":    exec.Command("buildctl", "--version"),
+				"ctr":         exec.Command("ctr", "--version"),
+				"runc":        exec.Command("runc", "--version"),
+				"crun":        exec.Command("crun", "--version"),
 			}
 			for k, v := range versionCMDS {
 				rr, err := runner.RunCmd(v)

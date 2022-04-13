@@ -33,6 +33,7 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${DRIVER}-${CONTAINER_RUNTIME}-${MIN
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
+export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
 
 readonly TIMEOUT=${1:-120m}
 

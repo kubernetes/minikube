@@ -70,12 +70,6 @@ oom_score = 0
 [cgroup]
   path = ""
 
-[proxy_plugins]
-# fuse-overlayfs is used for rootless
-[proxy_plugins."fuse-overlayfs"]
-  type = "snapshot"
-  address = "/run/containerd-fuse-overlayfs.sock"
-
 [plugins]
   [plugins."io.containerd.monitor.v1.cgroups"]
     no_prometheus = false
@@ -168,7 +162,7 @@ func (r *Containerd) Version() (string, error) {
 	c := exec.Command("containerd", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrapf(err, "containerd check version.")
+		return "", errors.Wrapf(err, "containerd check version")
 	}
 	version, err := parseContainerdVersion(rr.Stdout.String())
 	if err != nil {
@@ -194,7 +188,7 @@ func (r *Containerd) Active() bool {
 func (r *Containerd) Available() error {
 	c := exec.Command("which", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "check containerd availability.")
+		return errors.Wrap(err, "check containerd availability")
 	}
 	return nil
 }
@@ -208,9 +202,6 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	}
 	pauseImage := images.Pause(kv, imageRepository)
 	snapshotter := "overlayfs"
-	if inUserNamespace {
-		snapshotter = "fuse-overlayfs"
-	}
 	opts := struct {
 		PodInfraContainerImage string
 		SystemdCgroup          bool
@@ -232,13 +223,23 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generate containerd cfg.")
+		return errors.Wrap(err, "generate containerd cfg")
 	}
 	return nil
 }
 
 // Enable idempotently enables containerd on a host
 func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+	if inUserNamespace {
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
+	}
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -252,12 +253,6 @@ func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
-	}
-
-	if inUserNamespace {
-		if err := r.Init.EnableNow("containerd-fuse-overlayfs"); err != nil {
-			return err
-		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
@@ -283,21 +278,8 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 }
 
 // ListImages lists images managed by this container runtime
-func (r *Containerd) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "list", "--quiet")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "ctr images list")
-	}
-	all := strings.Split(rr.Stdout.String(), "\n")
-	imgs := []string{}
-	for _, img := range all {
-		if img == "" || strings.Contains(img, "sha256:") {
-			continue
-		}
-		imgs = append(imgs, img)
-	}
-	return imgs, nil
+func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
+	return listCRIImages(r.Runner)
 }
 
 // LoadImage loads an image into this runtime
@@ -438,7 +420,7 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "buildctl build.")
+		return errors.Wrap(err, "buildctl build")
 	}
 	return nil
 }
@@ -592,16 +574,6 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
-	}
-	type crictlImages struct {
-		Images []struct {
-			ID          string      `json:"id"`
-			RepoTags    []string    `json:"repoTags"`
-			RepoDigests []string    `json:"repoDigests"`
-			Size        string      `json:"size"`
-			UID         interface{} `json:"uid"`
-			Username    string      `json:"username"`
-		} `json:"images"`
 	}
 
 	var jsonImages crictlImages

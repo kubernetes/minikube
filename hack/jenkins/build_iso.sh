@@ -43,16 +43,25 @@ else
 	export ISO_BUCKET
 fi
 
-make release-iso | tee iso-logs.txt
-# Abort with error message if above command failed
-ec=$?
-if [ $ec -gt 0 ]; then
-	if [ "$release" = false ]; then
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
-		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
-		"
+if [ "$release" = false ]; then
+	# Build a new ISO for the PR
+	make release-iso | tee iso-logs.txt
+	# Abort with error message if above command failed
+	ec=$?
+	if [ $ec -gt 0 ]; then
+		if [ "$release" = false ]; then
+			gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
+			See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+			"
+		fi
+		exit $ec
 	fi
-	exit $ec
+else
+	# Copy the most recently built PR ISO for release
+	CURRENT_ISO_VERSION=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
+	CURRENT_ISO_BUCKET=$(egrep "isoBucket :=" pkg/minikube/download/iso.go | cut -d " " -f 3 | cut -d '"' -f 2)
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}.iso
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}.iso.sha256
 fi
 
 git config user.name "minikube-bot"

@@ -81,7 +81,7 @@ var tunnelCmd = &cobra.Command{
 
 		if driver.NeedsPortForward(co.Config.Driver) {
 
-			port, err := oci.ForwardedPort(oci.Docker, cname, 22)
+			port, err := oci.ForwardedPort(co.Config.Driver, cname, 22)
 			if err != nil {
 				exit.Error(reason.DrvPortForward, "error getting ssh port", err)
 			}

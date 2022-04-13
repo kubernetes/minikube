@@ -1,5 +1,4 @@
 //go:build darwin && !cgo
-// +build darwin,!cgo
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

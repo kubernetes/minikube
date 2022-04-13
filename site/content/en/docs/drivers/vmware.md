@@ -11,7 +11,7 @@ The vmware driver supports virtualization across all VMware based hypervisors.
 
 {{% tabs %}}
 {{% mactab %}}
-{{% readfile file="/docs/drivers/includes/vmware_macos_usage.inc" %}} vmware_windows_usage.inc
+{{% readfile file="/docs/drivers/includes/vmware_macos_usage.inc" %}}
 {{% /mactab %}}
 {{% linuxtab %}}
 No documentation is available yet.

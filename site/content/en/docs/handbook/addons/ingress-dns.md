@@ -61,6 +61,8 @@ minikube addons enable ingress-dns
 {{% tabs %}}
 {{% linuxtab %}}
 
+## Linux OS with resolvconf
+
 Update the file `/etc/resolvconf/resolv.conf.d/base` to have the following contents.
 
 ```
@@ -86,15 +88,34 @@ If your Linux OS does not use `systemctl`, run the following commands.
 
 See https://linux.die.net/man/5/resolver
 
-When you are using Network Manager with the `dnsmasq` plugin, you can add an additional configuration file, but you need
-to restart NetworkManager to activate the change.
+## Linux OS with Network Manager
+
+Network Manager can run integrated caching DNS server - `dnsmasq` plugin and can be configured to use separate nameservers per domain. 
+
+Edit /etc/NetworkManager/NetworkManager.conf and set `dns=dnsmasq`
+
+```
+[main]
+dns=dnsmasq
+```
+Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
+
+Configure dnsmasq to handle .test domain 
 
 ```bash
+sudo mkdir /etc/NetworkManager/dnsmasq.d/
 echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
-systemctl restart NetworkManager.service
 ```
 
-Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
+Restart Network Manager
+```
+systemctl restart NetworkManager.service
+```
+Ensure your /etc/resolv.conf  contains only single nameserver
+```bash
+cat /etc/resolv.conf | grep nameserver
+nameserver 127.0.0.1
+```
 
 {{% /linuxtab %}}
 
@@ -133,6 +154,49 @@ Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClie
 
 {{% /windowstab %}}
 {{% /tabs %}}
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>(optional) Configure in-cluster DNS server to resolve local DNS names inside cluster</h2>
+
+Sometimes it's useful to access other applications inside cluster via ingress and by their local DNS name - microservices/APIs/tests. 
+In such case ingress-dns addon should be used by in-cluster DNS server - [CoreDNS](https://coredns.io/) to resolve local DNS names.  
+
+Edit your CoreDNS config
+```sh
+kubectl edit configmap coredns -n kube-system
+```
+and add block for your local domain 
+```
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+
+```
+Replace `192.168.99.169` with your `minikube ip`.
+
+The final ConfigMap should look like:
+```yaml
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+...
+    }
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+kind: ConfigMap
+metadata:
+...
+```
+See https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/
 
 ## Testing
 

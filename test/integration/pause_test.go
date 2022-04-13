@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2020 The Kubernetes Authors All rights reserved.
@@ -58,6 +57,9 @@ func TestPause(t *testing.T) {
 
 			if ctx.Err() == context.DeadlineExceeded {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			if t.Failed() {
+				t.Fatalf("Previous test failed, not running dependent tests")
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
@@ -173,7 +175,7 @@ func validateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("expected to see error and volume %q to not exist after deletion but got no error and this output: %s", rr.Command(), rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, "sudo", bin, "network", "ls"))
+		rr, err = Run(t, exec.CommandContext(ctx, bin, "network", "ls"))
 		if err != nil {
 			t.Errorf("failed to get list of networks: %v", err)
 		}

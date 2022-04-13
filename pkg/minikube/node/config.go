@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -51,22 +52,20 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 // configureMounts configures any requested filesystem mounts
-func configureMounts(wg *sync.WaitGroup, mount bool, mountString string) {
+func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 	wg.Add(1)
 	defer wg.Done()
 
-	if !mount {
+	if !cc.Mount || driver.IsKIC(cc.Driver) {
 		return
 	}
 
-	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": mountString})
+	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountString})
 	path := os.Args[0]
-	mountDebugVal := 0
-	if klog.V(8).Enabled() {
-		mountDebugVal = 1
-	}
 	profile := viper.GetString("profile")
-	mountCmd := exec.Command(path, "mount", "-p", profile, fmt.Sprintf("--v=%d", mountDebugVal), mountString)
+
+	args := generateMountArgs(profile, cc)
+	mountCmd := exec.Command(path, args...)
 	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
 	if klog.V(8).Enabled() {
 		mountCmd.Stdout = os.Stdout
@@ -78,4 +77,34 @@ func configureMounts(wg *sync.WaitGroup, mount bool, mountString string) {
 	if err := lock.WriteFile(filepath.Join(localpath.Profile(profile), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0o644); err != nil {
 		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
+}
+
+func generateMountArgs(profile string, cc config.ClusterConfig) []string {
+	mountDebugVal := 0
+	if klog.V(8).Enabled() {
+		mountDebugVal = 1
+	}
+
+	args := []string{"mount", cc.MountString}
+	flags := []struct {
+		name  string
+		value string
+	}{
+		{"profile", profile},
+		{"v", fmt.Sprintf("%d", mountDebugVal)},
+		{constants.Mount9PVersionFlag, cc.Mount9PVersion},
+		{constants.MountGIDFlag, cc.MountGID},
+		{constants.MountIPFlag, cc.MountIP},
+		{constants.MountMSizeFlag, fmt.Sprintf("%d", cc.MountMSize)},
+		{constants.MountPortFlag, fmt.Sprintf("%d", cc.MountPort)},
+		{constants.MountTypeFlag, cc.MountType},
+		{constants.MountUIDFlag, cc.MountUID},
+	}
+	for _, flag := range flags {
+		args = append(args, fmt.Sprintf("--%s", flag.name), flag.value)
+	}
+	for _, option := range cc.MountOptions {
+		args = append(args, fmt.Sprintf("--%s", constants.MountOptionsFlag), option)
+	}
+	return args
 }

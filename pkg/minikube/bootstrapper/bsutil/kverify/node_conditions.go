@@ -27,8 +27,8 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // NodeCondition represents a favorable or unfavorable node condition.

@@ -68,9 +68,14 @@ func TestBetaReleasesJSON(t *testing.T) {
 }
 
 func checkReleases(t *testing.T, rs notify.Releases) {
-	for _, r := range rs {
+	for _, r := range rs.Releases {
 		fmt.Printf("Checking release: %s\n", r.Name)
-		for platform, sha := range r.Checksums {
+		checksums := map[string]string{
+			"darwin":  r.Checksums.Darwin,
+			"linux":   r.Checksums.Linux,
+			"windows": r.Checksums.Windows,
+		}
+		for platform, sha := range checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
 			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, runtime.GOARCH))
 			if err != nil {

@@ -3,8 +3,8 @@
 # containerd
 #
 ################################################################################
-CONTAINERD_BIN_VERSION = v1.4.9
-CONTAINERD_BIN_COMMIT = e25210fe30a0a703442421b0f60afac609f950a3
+CONTAINERD_BIN_VERSION = v1.5.11
+CONTAINERD_BIN_COMMIT = 3df54a852345ae127d1fa3092b95168e4a88e2f8
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/archive
 CONTAINERD_BIN_SOURCE = $(CONTAINERD_BIN_VERSION).tar.gz
 CONTAINERD_BIN_DEPENDENCIES = host-go libgpgme

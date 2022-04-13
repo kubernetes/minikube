@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2021 The Kubernetes Authors All rights reserved.
@@ -21,6 +20,8 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -45,6 +46,9 @@ func TestNoKubernetes(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
+			{"StartNoK8sWithVersion", validateStartNoK8sWithVersion},
+			{"StartWithK8s", validateStartWithK8S},
+			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
 			{"ProfileList", validateProfileListNoK8S},
@@ -70,10 +74,64 @@ func TestNoKubernetes(t *testing.T) {
 	})
 }
 
+// validateStartNoK8sWithVersion expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
+func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// docs: start minikube with no kubernetes.
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--kubernetes-version=1.20"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err == nil {
+		t.Fatalf("expected an error but none was thrown with args: %q", rr.Command())
+	}
+}
+
+// validateStartWithK8S starts a minikube cluster with Kubernetes started/configured.
+func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// docs: start minikube with Kubernetes.
+	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
+
+	// docs: return an error if Kubernetes is not running.
+	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Running" {
+		t.Errorf("Kubernetes status, got: %s, want: Running", k8sStatus)
+	}
+}
+
+// validateStartWithStopK8s starts a minikube cluster while stopping Kubernetes.
+func validateStartWithStopK8s(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// docs: start minikube with no Kubernetes.
+	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
+
+	// docs: return an error if Kubernetes is not stopped.
+	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Stopped" {
+		t.Errorf("Kubernetes status, got: %s, want: Stopped", k8sStatus)
+	}
+
+	// docs: delete minikube profile.
+	args = []string{"delete", "-p", profile}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to delete minikube profile with args: %q : %v", rr.Command(), err)
+	}
+}
+
 // validateStartNoK8S starts a minikube cluster without kubernetes started/configured
 func validateStartNoK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
+	// docs: start minikube with no Kubernetes.
 	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -125,7 +183,7 @@ func validateProfileListNoK8S(ctx context.Context, t *testing.T, profile string)
 
 }
 
-// validateStartNoArgs valides that minikube start with no args works
+// validateStartNoArgs validates that minikube start with no args works.
 func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -134,5 +192,22 @@ func validateStartNoArgs(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+}
 
+// getK8sStatus returns whether Kubernetes is running.
+func getK8sStatus(ctx context.Context, t *testing.T, profile string) string {
+	// Run `minikube status` as JSON output.
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
+	// We expect Kubernetes config to come back as configured, since we started Kubernetes in a previous test.
+	if err != nil && rr.ExitCode != 2 {
+		t.Errorf("failed to run minikube status with json output. args %q : %v", rr.Command(), err)
+	}
+
+	// Unmarshal JSON output.
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("failed to decode json from minikube status. args %q. %v", rr.Command(), err)
+	}
+	return fmt.Sprintf("%s", jsonObject["Kubelet"])
 }

@@ -150,6 +150,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if version.GTE(semver.MustParse("1.17.0")) {
 		configTmpl = ktmpl.V1Beta2
 	}
+
+	// v1beta3 isn't required until v1.23.
+	if version.GTE(semver.MustParse("1.23.0")) {
+		configTmpl = ktmpl.V1Beta3
+	}
 	klog.Infof("kubeadm options: %+v", opts)
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err

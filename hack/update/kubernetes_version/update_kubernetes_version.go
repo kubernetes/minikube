@@ -28,6 +28,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -56,55 +57,55 @@ var (
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-api-port.yaml": {
-			Content: update.Loadf("templates/v1beta2/containerd-api-port.yaml"),
+			Content: update.Loadf("templates/v1beta3/containerd-api-port.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-pod-network-cidr.yaml": {
-			Content: update.Loadf("templates/v1beta2/containerd-pod-network-cidr.yaml"),
+			Content: update.Loadf("templates/v1beta3/containerd-pod-network-cidr.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd.yaml": {
-			Content: update.Loadf("templates/v1beta2/containerd.yaml"),
+			Content: update.Loadf("templates/v1beta3/containerd.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio-options-gates.yaml": {
-			Content: update.Loadf("templates/v1beta2/crio-options-gates.yaml"),
+			Content: update.Loadf("templates/v1beta3/crio-options-gates.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio.yaml": {
-			Content: update.Loadf("templates/v1beta2/crio.yaml"),
+			Content: update.Loadf("templates/v1beta3/crio.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/default.yaml": {
-			Content: update.Loadf("templates/v1beta2/default.yaml"),
+			Content: update.Loadf("templates/v1beta3/default.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/dns.yaml": {
-			Content: update.Loadf("templates/v1beta2/dns.yaml"),
+			Content: update.Loadf("templates/v1beta3/dns.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/image-repository.yaml": {
-			Content: update.Loadf("templates/v1beta2/image-repository.yaml"),
+			Content: update.Loadf("templates/v1beta3/image-repository.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/options.yaml": {
-			Content: update.Loadf("templates/v1beta2/options.yaml"),
+			Content: update.Loadf("templates/v1beta3/options.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
@@ -137,7 +138,9 @@ func main() {
 		klog.Fatalf("Unable to get Kubernetes versions: %v", err)
 	}
 	data := Data{StableVersion: stable, LatestVersion: latest, LatestVersionMM: latestMM, LatestVersionP0: latestP0}
-	klog.Infof("Kubernetes versions: 'stable' is %s and 'latest' is %s", data.StableVersion, data.LatestVersion)
+
+	// Print PR title for Github action.
+	fmt.Printf("Bump Kubernetes version default: %s and latest: %s\n", data.StableVersion, data.LatestVersion)
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
@@ -145,7 +148,7 @@ func main() {
 // k8sVersion returns Kubernetes versions.
 func k8sVersions(ctx context.Context, owner, repo string) (stable, latest, latestMM, latestP0 string, err error) {
 	// get Kubernetes versions from GitHub Releases
-	stable, latest, err = update.GHReleases(ctx, owner, repo)
+	stable, latest, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) || !semver.IsValid(latest) {
 		return "", "", "", "", err
 	}

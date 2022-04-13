@@ -89,7 +89,7 @@ minikube start --extra-config=kubeadm.ignore-preflight-errors=SystemVerification
 
 ## Runtime configuration
 
-The default container runtime in minikube is Docker. You can select it explicitly by using:
+The default container runtime in minikube varies. You can select one explicitly by using:
 
 ```shell
 minikube start --container-runtime=docker
@@ -99,6 +99,8 @@ Other options available are:
 
 * [containerd](https://github.com/containerd/containerd)
 * [cri-o](https://github.com/cri-o/cri-o)
+
+See <https://kubernetes.io/docs/setup/production-environment/container-runtimes/>
 
 ## Environment variables
 
@@ -114,13 +116,11 @@ Some features can only be accessed by minikube specific environment variables, h
 
 * **MINIKUBE_IN_STYLE** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
 
-* **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
-
-* **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
-
 * **CHANGE_MINIKUBE_NONE_USER** - (bool) automatically change ownership of ~/.minikube to the value of $SUDO_USER
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
+
+* **MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE** - (bool) suppresses Docker performance warnings when Docker is slow
 
 ### Example: Disabling emoji
 

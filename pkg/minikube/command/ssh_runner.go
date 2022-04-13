@@ -52,6 +52,49 @@ type SSHRunner struct {
 	s *ssh.Session
 }
 
+type sshReadableFile struct {
+	length      int
+	sourcePath  string
+	permissions string
+	sess        *ssh.Session
+	modTime     time.Time
+	reader      io.Reader
+}
+
+// GetLength returns lentgh of file
+func (s *sshReadableFile) GetLength() int {
+	return s.length
+}
+
+// GetSourcePath returns asset name
+func (s *sshReadableFile) GetSourcePath() string {
+	return s.sourcePath
+}
+
+// GetPermissions returns permissions
+func (s *sshReadableFile) GetPermissions() string {
+	return s.permissions
+}
+
+func (s *sshReadableFile) GetModTime() (time.Time, error) {
+	return s.modTime, nil
+}
+
+func (s *sshReadableFile) Read(p []byte) (int, error) {
+	if s.GetLength() == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
+	return s.reader.Read(p)
+}
+
+func (s *sshReadableFile) Seek(offset int64, whence int) (int64, error) {
+	return 0, fmt.Errorf("Seek is not implemented for sshReadableFile")
+}
+
+func (s *sshReadableFile) Close() error {
+	return s.sess.Close()
+}
+
 // NewSSHRunner returns a new SSHRunner that will run commands
 // through the ssh.Client provided.
 func NewSSHRunner(d drivers.Driver) *SSHRunner {
@@ -454,4 +497,57 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 		return fmt.Errorf("%s: %s", scp, err)
 	}
 	return g.Wait()
+}
+
+// ReadableFile returns assets.ReadableFile for the sourcePath (via `stat` command)
+func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	klog.V(4).Infof("NewsshReadableFile: %s -> %s", sourcePath)
+
+	if !strings.HasPrefix(sourcePath, "/") {
+		return nil, fmt.Errorf("sourcePath must be an absolute Path. Relative Path is not allowed")
+	}
+
+	// get file size and modtime of the destination
+	rr, err := s.RunCmd(exec.Command("stat", "-c", "%#a %s %y", sourcePath))
+	if err != nil {
+		return nil, err
+	}
+
+	stdout := strings.TrimSpace(rr.Stdout.String())
+	outputs := strings.SplitN(stdout, " ", 3)
+
+	permission := outputs[0]
+	size, err := strconv.Atoi(outputs[1])
+	if err != nil {
+		return nil, err
+	}
+
+	modTime, err := time.Parse(layout, outputs[2])
+	if err != nil {
+		return nil, err
+	}
+
+	sess, err := s.session()
+	if err != nil {
+		return nil, errors.Wrap(err, "NewSession")
+	}
+
+	r, err := sess.StdoutPipe()
+	if err != nil {
+		return nil, errors.Wrap(err, "StdOutPipe")
+	}
+
+	cmd := fmt.Sprintf("cat %s", sourcePath)
+	if err := sess.Start(cmd); err != nil {
+		return nil, err
+	}
+
+	return &sshReadableFile{
+		length:      size,
+		sourcePath:  sourcePath,
+		permissions: permission,
+		reader:      r,
+		modTime:     modTime,
+		sess:        sess,
+	}, nil
 }

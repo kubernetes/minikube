@@ -1,7 +1,7 @@
 ---
 title: "Mounting filesystems"
 date: 2017-01-05
-weight: 11
+weight: 12
 description: >
   How to mount a host directory into the VM
 aliases:

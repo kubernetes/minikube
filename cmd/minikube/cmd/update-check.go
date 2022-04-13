@@ -36,11 +36,11 @@ var updateCheckCmd = &cobra.Command{
 			exit.Error(reason.InetVersionUnavailable, "Unable to fetch latest version info", err)
 		}
 
-		if len(r) < 1 {
+		if len(r.Releases) < 1 {
 			exit.Message(reason.InetVersionEmpty, "Update server returned an empty list")
 		}
 
 		out.Ln("CurrentVersion: %s", version.GetVersion())
-		out.Ln("LatestVersion: %s", r[0].Name)
+		out.Ln("LatestVersion: %s", r.Releases[0].Name)
 	},
 }

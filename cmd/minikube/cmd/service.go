@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
@@ -30,7 +31,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
@@ -50,6 +50,7 @@ const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
 
 var (
 	namespace          string
+	all                bool
 	https              bool
 	serviceURLMode     bool
 	serviceURLFormat   string
@@ -62,7 +63,7 @@ var (
 var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
 	Short: "Returns a URL to connect to a service",
-	Long:  `Returns the Kubernetes URL for a service in your local cluster. In the case of multiple URLs they will be printed one at a time.`,
+	Long:  `Returns the Kubernetes URL(s) for service(s) in your local cluster. In the case of multiple URLs they will be printed one at a time.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
@@ -73,37 +74,84 @@ var serviceCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 || len(args) > 1 {
-			exit.Message(reason.Usage, "You must specify a service name")
+		if len(args) == 0 && !all || (len(args) > 0 && all) {
+			exit.Message(reason.Usage, "You must specify service name(s) or --all")
 		}
 
-		svc := args[0]
+		svcArgs := make(map[string]bool)
+		for _, v := range args {
+			svcArgs[v] = true
+		}
 
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
-
-		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		var services service.URLs
+		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
-			var s *service.SVCNotFoundError
-			if errors.As(err, &s) {
-				exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
-You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
+			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			os.Exit(reason.ExSvcUnavailable)
+		}
+
+		if len(args) >= 1 {
+			var newServices service.URLs
+			for _, svc := range services {
+				if _, ok := svcArgs[svc.Name]; ok {
+					newServices = append(newServices, svc)
+				}
 			}
-			exit.Error(reason.SvcTimeout, "Error opening service", err)
+			services = newServices
 		}
 
-		if driver.NeedsPortForward(co.Config.Driver) {
-			startKicServiceTunnel(svc, cname)
-			return
+		if services == nil || len(services) == 0 {
+			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
 		}
 
-		openURLs(svc, urls)
+		var data [][]string
+		for _, svc := range services {
+			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, https, wait, interval)
+
+			if err != nil {
+				var s *service.SVCNotFoundError
+				if errors.As(err, &s) {
+					exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+				}
+				exit.Error(reason.SvcTimeout, "Error opening service", err)
+			}
+
+			if len(openUrls) == 0 {
+				data = append(data, []string{svc.Namespace, svc.Name, "No node port"})
+			} else {
+				servicePortNames := strings.Join(svc.PortNames, "\n")
+				serviceURLs := strings.Join(openUrls, "\n")
+
+				// if we are running Docker on OSX we empty the internal service URLs
+				if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+					serviceURLs = ""
+				}
+
+				data = append(data, []string{svc.Namespace, svc.Name, servicePortNames, serviceURLs})
+
+				if serviceURLMode && !driver.NeedsPortForward(co.Config.Driver) {
+					out.String(fmt.Sprintf("%s\n", serviceURLs))
+				}
+			}
+		}
+
+		if driver.NeedsPortForward(co.Config.Driver) && services != nil {
+			startKicServiceTunnel(services, cname, co.Config.Driver)
+		} else if !serviceURLMode {
+			openURLs(data)
+		}
 	},
 }
 
 func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the Kubernetes service URL in the CLI instead of opening it in the default browser")
+	serviceCmd.Flags().BoolVar(&all, "all", false, "Forwards all services in a namespace (defaults to \"false\")")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http (defaults to \"false\")")
 	serviceCmd.Flags().IntVar(&wait, "wait", service.DefaultWait, "Amount of time to wait for a service in seconds")
 	serviceCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
@@ -111,7 +159,7 @@ func init() {
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 }
 
-func startKicServiceTunnel(svc, configName string) {
+func startKicServiceTunnel(services service.URLs, configName, driverName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
@@ -120,41 +168,90 @@ func startKicServiceTunnel(svc, configName string) {
 		exit.Error(reason.InternalKubernetesClient, "error creating clientset", err)
 	}
 
-	port, err := oci.ForwardedPort(oci.Docker, configName, 22)
-	if err != nil {
-		exit.Error(reason.DrvPortForward, "error getting ssh port", err)
-	}
-	sshPort := strconv.Itoa(port)
-	sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
+	var data [][]string
+	for _, svc := range services {
+		port, err := oci.ForwardedPort(driverName, configName, 22)
+		if err != nil {
+			exit.Error(reason.DrvPortForward, "error getting ssh port", err)
+		}
+		sshPort := strconv.Itoa(port)
+		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
 
-	serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1())
-	urls, err := serviceTunnel.Start(svc, namespace)
-	if err != nil {
-		exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
+		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), serviceURLMode)
+		urls, err := serviceTunnel.Start(svc.Name, namespace)
+
+		if err != nil {
+			exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
+		}
+		// mutate response urls to HTTPS if needed
+		urls, err = mutateURLs(svc.Name, urls)
+
+		if err != nil {
+			exit.Error(reason.SvcTunnelStart, "error creatings urls", err)
+		}
+
+		defer serviceTunnel.Stop()
+		svc.URLs = urls
+		data = append(data, []string{namespace, svc.Name, "", strings.Join(urls, "\n")})
 	}
 
-	// wait for tunnel to come up
 	time.Sleep(1 * time.Second)
 
-	data := [][]string{{namespace, svc, "", strings.Join(urls, "\n")}}
-	service.PrintServiceList(os.Stdout, data)
+	if !serviceURLMode {
+		service.PrintServiceList(os.Stdout, data)
+	} else {
+		for _, row := range data {
+			out.String(fmt.Sprintf("%s\n", row[3]))
+		}
+	}
 
-	openURLs(svc, urls)
+	if !serviceURLMode {
+		openURLs(data)
+	}
+
 	out.WarningT("Because you are using a Docker driver on {{.operating_system}}, the terminal needs to be open to run it.", out.V{"operating_system": runtime.GOOS})
 
 	<-ctrlC
-
-	err = serviceTunnel.Stop()
-	if err != nil {
-		exit.Error(reason.SvcTunnelStop, "error stopping tunnel", err)
-	}
 }
 
-func openURLs(svc string, urls []string) {
-	for _, u := range urls {
-		_, err := url.Parse(u)
+func mutateURLs(serviceName string, urls []string) ([]string, error) {
+	formattedUrls := make([]string, 0)
+	for _, rawURL := range urls {
+		var doc bytes.Buffer
+		parsedURL, err := url.Parse(rawURL)
 		if err != nil {
-			klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+			exit.Error(reason.SvcTunnelStart, "No valid URL found for tunnel.", err)
+		}
+		port, err := strconv.Atoi(parsedURL.Port())
+		if err != nil {
+			exit.Error(reason.SvcTunnelStart, "No valid port found for tunnel.", err)
+		}
+		err = serviceURLTemplate.Execute(&doc, struct {
+			IP   string
+			Port int32
+			Name string
+		}{
+			parsedURL.Hostname(),
+			int32(port),
+			serviceName,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		httpsURL, _ := service.OptionallyHTTPSFormattedURLString(doc.String(), https)
+		formattedUrls = append(formattedUrls, httpsURL)
+	}
+
+	return formattedUrls, nil
+}
+
+func openURLs(urls [][]string) {
+	for _, u := range urls {
+		_, err := url.Parse(u[3])
+		if err != nil {
+			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
 			out.String(fmt.Sprintf("%s\n", u))
 			continue
 		}
@@ -164,8 +261,8 @@ func openURLs(svc string, urls []string) {
 			continue
 		}
 
-		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
-		if err := browser.OpenURL(u); err != nil {
+		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": u[1]})
+		if err := browser.OpenURL(u[3]); err != nil {
 			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
 		}
 	}

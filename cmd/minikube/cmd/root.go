@@ -72,6 +72,12 @@ var RootCmd = &cobra.Command{
 			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": userName})
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
+		// viper maps $MINIKUBE_ROOTLESS to "rootless" property automatically, but it does not do vice versa,
+		// so we map "rootless" property to $MINIKUBE_ROOTLESS expliclity here.
+		// $MINIKUBE_ROOTLESS is referred by KIC runner, which is decoupled from viper.
+		if viper.GetBool(config.Rootless) {
+			os.Setenv(constants.MinikubeRootlessEnv, "true")
+		}
 	},
 }
 
@@ -95,7 +101,7 @@ func Execute() {
 	}
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		out.Infof("You are trying to run amd64 binary on M1 system. Please consider running darwin/arm64 binary instead (Download at {{.url}}.)",
+		out.Boxed("You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}",
 			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
@@ -206,6 +212,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 	RootCmd.PersistentFlags().String(config.UserFlag, "", "Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.")
+	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
 
 	groups := templates.CommandGroups{
 		{

@@ -85,6 +85,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-kubadm-constants.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/update-golang-version.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
@@ -148,6 +153,11 @@ func main() {
 	stable, stableMM, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
+	}
+	// skip rc versions
+	if strings.Contains(stable, "rc") {
+		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
+		return
 	}
 	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)

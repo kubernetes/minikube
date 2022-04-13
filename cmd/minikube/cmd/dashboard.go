@@ -98,7 +98,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(style.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectlVersion, cname, dashboardExposedPort)
+		p, hostPort, err := kubectlProxy(kubectlVersion, co.Config.BinaryMirror, cname, dashboardExposedPort)
 		if err != nil {
 			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
@@ -132,7 +132,7 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(kubectlVersion string, contextName string, port int) (*exec.Cmd, string, error) {
+func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, port int) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 
 	kubectlArgs := []string{"--context", contextName, "proxy", "--port", strconv.Itoa(port)}
@@ -140,7 +140,7 @@ func kubectlProxy(kubectlVersion string, contextName string, port int) (*exec.Cm
 	var cmd *exec.Cmd
 	if kubectl, err := exec.LookPath("kubectl"); err == nil {
 		cmd = exec.Command(kubectl, kubectlArgs...)
-	} else if cmd, err = KubectlCommand(kubectlVersion, kubectlArgs...); err != nil {
+	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, kubectlArgs...); err != nil {
 		return nil, "", err
 	}
 

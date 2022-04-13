@@ -1,5 +1,4 @@
 //go:build linux
-// +build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -25,8 +24,8 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine/log"
-	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	"libvirt.org/go/libvirt"
 )
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
@@ -46,7 +45,7 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 func getConnection(connectionURI string) (*libvirt.Connect, error) {
 	conn, err := libvirt.NewConnect(connectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "error connecting to libvirt socket.")
+		return nil, errors.Wrap(err, "connecting to libvirt socket")
 	}
 
 	return conn, nil

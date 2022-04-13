@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -43,10 +44,27 @@ import (
 
 const (
 	// nineP is the value of --type used for the 9p filesystem.
-	nineP               = "9p"
-	defaultMountVersion = "9p2000.L"
-	defaultMsize        = 262144
+	nineP                     = "9p"
+	defaultMount9PVersion     = "9p2000.L"
+	mount9PVersionDescription = "Specify the 9p version that the mount should use"
+	defaultMountGID           = "docker"
+	mountGIDDescription       = "Default group id used for the mount"
+	defaultMountIP            = ""
+	mountIPDescription        = "Specify the ip that the mount should be setup on"
+	defaultMountMSize         = 262144
+	mountMSizeDescription     = "The number of bytes to use for 9p packet payload"
+	mountOptionsDescription   = "Additional mount options, such as cache=fscache"
+	defaultMountPort          = 0
+	mountPortDescription      = "Specify the port that the mount should be setup on, where 0 means any free port."
+	defaultMountType          = nineP
+	mountTypeDescription      = "Specify the mount filesystem type (supported types: 9p)"
+	defaultMountUID           = "docker"
+	mountUIDDescription       = "Default user id used for the mount"
 )
+
+func defaultMountOptions() []string {
+	return []string{}
+}
 
 // placeholders for flag values
 var (
@@ -59,7 +77,6 @@ var (
 	gid          string
 	mSize        int
 	options      []string
-	mode         uint
 )
 
 // supportedFilesystems is a map of filesystem types to not warn against.
@@ -146,7 +163,6 @@ var mountCmd = &cobra.Command{
 			Version: mountVersion,
 			MSize:   mSize,
 			Port:    port,
-			Mode:    os.FileMode(mode),
 			Options: map[string]string{},
 		}
 
@@ -174,7 +190,6 @@ var mountCmd = &cobra.Command{
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
 		out.Infof("Version:      {{.version}}", out.V{"version": cfg.Version})
 		out.Infof("Message Size: {{.size}}", out.V{"size": cfg.MSize})
-		out.Infof("Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
 		out.Infof("Options:      {{.options}}", out.V{"options": cfg.Options})
 		out.Infof("Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
@@ -218,16 +233,15 @@ var mountCmd = &cobra.Command{
 }
 
 func init() {
-	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
-	mountCmd.Flags().Uint16Var(&mountPort, "port", 0, "Specify the port that the mount should be setup on, where 0 means any free port.")
-	mountCmd.Flags().StringVar(&mountType, "type", nineP, "Specify the mount filesystem type (supported types: 9p)")
-	mountCmd.Flags().StringVar(&mountVersion, "9p-version", defaultMountVersion, "Specify the 9p version that the mount should use")
+	mountCmd.Flags().StringVar(&mountIP, constants.MountIPFlag, defaultMountIP, mountIPDescription)
+	mountCmd.Flags().Uint16Var(&mountPort, constants.MountPortFlag, defaultMountPort, mountPortDescription)
+	mountCmd.Flags().StringVar(&mountType, constants.MountTypeFlag, defaultMountType, mountTypeDescription)
+	mountCmd.Flags().StringVar(&mountVersion, constants.Mount9PVersionFlag, defaultMount9PVersion, mount9PVersionDescription)
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
-	mountCmd.Flags().StringVar(&uid, "uid", "docker", "Default user id used for the mount")
-	mountCmd.Flags().StringVar(&gid, "gid", "docker", "Default group id used for the mount")
-	mountCmd.Flags().UintVar(&mode, "mode", 0o755, "File permissions used for the mount")
-	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
-	mountCmd.Flags().IntVar(&mSize, "msize", defaultMsize, "The number of bytes to use for 9p packet payload")
+	mountCmd.Flags().StringVar(&uid, constants.MountUIDFlag, defaultMountUID, mountUIDDescription)
+	mountCmd.Flags().StringVar(&gid, constants.MountGIDFlag, defaultMountGID, mountGIDDescription)
+	mountCmd.Flags().StringSliceVar(&options, constants.MountOptionsFlag, defaultMountOptions(), mountOptionsDescription)
+	mountCmd.Flags().IntVar(&mSize, constants.MountMSizeFlag, defaultMountMSize, mountMSizeDescription)
 }
 
 // getPort uses the requested port or asks the kernel for a free open port that is ready to use

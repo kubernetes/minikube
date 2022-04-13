@@ -18,22 +18,27 @@ package main
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/go-github/v36/github"
 
 	"k8s.io/klog/v2"
 )
 
-// recentK8sVersions returns the most recent k8s version, usually around 30
+// recentK8sVersions returns the most recent k8s version, usually around 100.
 func recentK8sVersions() ([]string, error) {
+	const k8s = "kubernetes"
 	client := github.NewClient(nil)
-	k8s := "kubernetes"
-	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{})
+	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{PerPage: 100})
 	if err != nil {
 		return nil, err
 	}
 	var releases []string
 	for _, r := range list {
+		// Exclude "alpha" releases.
+		if strings.Contains(r.GetTagName(), "alpha") {
+			continue
+		}
 		releases = append(releases, r.GetTagName())
 	}
 	klog.InfoS("Got releases", "releases", releases)
