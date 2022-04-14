@@ -46,6 +46,7 @@ Address: 192.168.99.169
 <h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Start minikube</h2>
 
 ```bash
+# Note: On MacOS you MUST use `minikube start --driver hyperkit` or ingress-dns will not work
 minikube start
 ```
 
