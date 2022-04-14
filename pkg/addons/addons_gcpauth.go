@@ -119,7 +119,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		return r.Copy(f)
 	}
 
-	// We're currently assuming gCloud is installed and in the user's path
+	// We're currently assuming gcloud is installed and in the user's path
 	proj, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(proj) > 0 {
 		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, readPermission)
