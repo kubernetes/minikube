@@ -185,3 +185,18 @@ webhooks:
     apiVersions: ["*"]
     resources: ["serviceaccounts"]
     scope: "*"
+- name: gcp-auth-mutate-ns.k8s.io
+  failurePolicy: Ignore
+  sideEffects: None
+  admissionReviewVersions: ["v1","v1beta1"]
+  clientConfig:
+    service:
+      name: gcp-auth
+      namespace: gcp-auth
+      path: "/mutate/ns"
+  rules:
+  - operations: ["CREATE"]
+    apiGroups: ["*"]
+    apiVersions: ["*"]
+    resources: ["namespaces"]
+    scope: "*"
