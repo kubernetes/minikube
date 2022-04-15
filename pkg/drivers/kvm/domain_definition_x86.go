@@ -44,7 +44,7 @@ const domainTmpl = `
     <nvram>/usr/share/OVMF/OVMF_VARS.ms.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
-    <bootmenu enable='yes'/>
+    <bootmenu enable='no'/>
   </os>
   <devices>
     <disk type='file' device='cdrom'>

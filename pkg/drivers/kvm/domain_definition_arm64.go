@@ -39,9 +39,9 @@ const domainTmpl = `
   </cpu>
 
   <os>
- 	<loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
-    <nvram>/var/lib/libvirt/qemu/nvram/ubuntu_VARS.fd</nvram>  
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
+    <loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
+    <nvram>/usr/share/AAVMF/AAVMF_VARS.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='no'/>
