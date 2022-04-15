@@ -148,7 +148,6 @@ private:
     ClusterModel *clusterModel;
     QTableView *clusterListView;
 
-
     // Create cluster
     void askCustom();
     void askName();
