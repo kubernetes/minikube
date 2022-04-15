@@ -128,7 +128,7 @@ void Window::createBasicView()
     QPushButton *advancedViewButton = new QPushButton(tr("Advanced View"));
 
     QVBoxLayout *buttonLayout = new QVBoxLayout;
-    QGroupBox *catBox = new QGroupBox(tr("Clusters"));
+    QGroupBox *catBox = new QGroupBox();
     catBox->setLayout(buttonLayout);
     buttonLayout->addWidget(basicStartButton);
     buttonLayout->addWidget(basicStopButton);
