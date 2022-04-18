@@ -59,7 +59,6 @@
 #include <QList>
 #include <QMap>
 
-//! [0]
 class Cluster
 {
 public:
@@ -89,12 +88,10 @@ private:
     int m_cpus;
     int m_memory;
 };
-//! [0]
 
 typedef QList<Cluster> ClusterList;
 typedef QHash<QString, Cluster> ClusterHash;
 
-//! [1]
 class ClusterModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -115,6 +112,5 @@ public:
 private:
     ClusterList clusterList;
 };
-//! [1]
 
 #endif // CLUSTER_H
