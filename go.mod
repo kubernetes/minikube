@@ -28,7 +28,7 @@ require (
 	github.com/google/slowjam v1.0.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-getter v1.5.11
-	github.com/hashicorp/go-retryablehttp v0.7.0
+	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
@@ -98,6 +98,7 @@ require (
 
 require (
 	github.com/Xuanwo/go-locale v1.1.0
+	github.com/docker/go-connections v0.4.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 )
 
@@ -126,7 +127,6 @@ require (
 	github.com/docker/cli v20.10.7+incompatible // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.3 // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
