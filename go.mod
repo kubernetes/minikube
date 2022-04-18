@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/storage v1.22.0
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.10
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.11
 	github.com/Delta456/box-cli-maker/v2 v2.2.2
 	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.4.0
