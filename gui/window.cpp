@@ -519,7 +519,7 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     if (program.isEmpty()) {
         return false;
     }
-    QStringList arguments;
+    QStringList arguments = { "--user", "minikube-gui" };
     arguments << cmds;
 
     QProcess *process = new QProcess(this);
