@@ -78,6 +78,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.DiskSize = cfg.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
+	d.Generation = 2
 	return d, nil
 }
 
