@@ -215,7 +215,7 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
-	github.com/docker/machine => github.com/sharifelgamal/machine v0.0.0-20220419202400-e2ce4b7254c7
+	github.com/docker/machine => github.com/sharifelgamal/machine v0.0.0-20220419205601-627ad498e1ba
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )
