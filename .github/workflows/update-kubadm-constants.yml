@@ -6,7 +6,7 @@ on:
     - cron: "0 6 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.1'
 permissions:
   contents: read
 
@@ -29,7 +29,7 @@ jobs:
           echo "::set-output name=changes::$c"
       - name: Create PR
         if: ${{ steps.bumpKubAdmConsts.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@f1a7646cead32c950d90344a4fb5d4e926972a8f
+        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: update image constants for kubeadm images

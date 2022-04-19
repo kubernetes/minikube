@@ -79,6 +79,9 @@
 #include <QFormLayout>
 #include <QDialogButtonBox>
 #include <QStandardPaths>
+#include <QDir>
+#include <QFontDialog>
+#include <QStackedWidget>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
@@ -86,49 +89,101 @@
 #include "qtermwidget.h"
 #endif
 
-//! [0]
 Window::Window()
 {
     trayIconIcon = new QIcon(":/images/minikube.png");
     checkForMinikube();
+    isBasicView = true;
+
+    stackedWidget = new QStackedWidget;
+    QVBoxLayout *layout = new QVBoxLayout;
+    dashboardProcess = 0;
+
     createClusterGroupBox();
 
     createActions();
     createTrayIcon();
 
+    createBasicView();
+    createAdvancedView();
+    trayIcon->show();
+    updateButtons();
+    layout->addWidget(stackedWidget);
+    setLayout(layout);
+    resize(200, 250);
+
+    setWindowTitle(tr("minikube"));
+    setWindowIcon(*trayIconIcon);
+}
+
+void Window::createBasicView()
+{
+    basicStartButton = new QPushButton(tr("Start"));
+    basicStopButton = new QPushButton(tr("Stop"));
+    basicDeleteButton = new QPushButton(tr("Delete"));
+    basicRefreshButton = new QPushButton(tr("Refresh"));
+    basicSSHButton = new QPushButton(tr("SSH"));
+    basicDashboardButton = new QPushButton(tr("Dashboard"));
+    QPushButton *advancedViewButton = new QPushButton(tr("Advanced View"));
+
+    QVBoxLayout *buttonLayout = new QVBoxLayout;
+    QGroupBox *catBox = new QGroupBox();
+    catBox->setLayout(buttonLayout);
+    buttonLayout->addWidget(basicStartButton);
+    buttonLayout->addWidget(basicStopButton);
+    buttonLayout->addWidget(basicDeleteButton);
+    buttonLayout->addWidget(basicRefreshButton);
+    buttonLayout->addWidget(basicSSHButton);
+    buttonLayout->addWidget(basicDashboardButton);
+    buttonLayout->addWidget(advancedViewButton);
+    catBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(catBox);
+
+    connect(basicSSHButton, &QAbstractButton::clicked, this, &Window::sshConsole);
+    connect(basicDashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
+    connect(basicStartButton, &QAbstractButton::clicked, this, &Window::startSelectedMinikube);
+    connect(basicStopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
+    connect(basicDeleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
+    connect(basicRefreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
+    connect(advancedViewButton, &QAbstractButton::clicked, this, &Window::toAdvancedView);
+}
+
+void Window::toAdvancedView()
+{
+    isBasicView = false;
+    stackedWidget->setCurrentIndex(1);
+    resize(600, 400);
+}
+
+void Window::toBasicView()
+{
+    isBasicView = true;
+    stackedWidget->setCurrentIndex(0);
+    resize(200, 250);
+}
+
+void Window::createAdvancedView()
+{
     connect(sshButton, &QAbstractButton::clicked, this, &Window::sshConsole);
     connect(dashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
-    connect(startButton, &QAbstractButton::clicked, this, &Window::startMinikube);
+    connect(startButton, &QAbstractButton::clicked, this, &Window::startSelectedMinikube);
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
     connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &Window::messageClicked);
 
-    dashboardProcess = 0;
-
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addWidget(clusterGroupBox);
-    setLayout(mainLayout);
-
-    trayIcon->show();
-
-    setWindowTitle(tr("minikube"));
-    setWindowIcon(*trayIconIcon);
-    resize(600, 400);
+    clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(clusterGroupBox);
 }
-//! [0]
 
-//! [1]
 void Window::setVisible(bool visible)
 {
     minimizeAction->setEnabled(visible);
     restoreAction->setEnabled(!visible);
     QDialog::setVisible(visible);
 }
-//! [1]
 
-//! [2]
 void Window::closeEvent(QCloseEvent *event)
 {
 #ifdef Q_OS_OSX
@@ -146,16 +201,13 @@ void Window::closeEvent(QCloseEvent *event)
         event->ignore();
     }
 }
-//! [2]
 
-//! [6]
 void Window::messageClicked()
 {
     QMessageBox::information(0, tr("Systray"),
                              tr("Sorry, I already gave what help I could.\n"
                                 "Maybe you should try asking a human?"));
 }
-//! [6]
 
 void Window::createActions()
 {
@@ -192,11 +244,23 @@ void Window::createTrayIcon()
     trayIcon->setIcon(*trayIconIcon);
 }
 
-void Window::startMinikube()
+void Window::startMinikube(QStringList moreArgs)
 {
-    QStringList args = { "start", "-p", selectedCluster() };
-    sendMinikubeCommand(args);
+    QString text;
+    QStringList args = { "start", "-o", "json" };
+    args << moreArgs;
+    bool success = sendMinikubeCommand(args, text);
     updateClusters();
+    if (success) {
+        return;
+    }
+    outputFailedStart(text);
+}
+
+void Window::startSelectedMinikube()
+{
+    QStringList args = { "-p", selectedCluster() };
+    return startMinikube(args);
 }
 
 void Window::stopMinikube()
@@ -226,15 +290,13 @@ ClusterList Window::getClusters()
     ClusterList clusters;
     QStringList args = { "profile", "list", "-o", "json" };
     QString text;
-    bool success = sendMinikubeCommand(args, text);
+    sendMinikubeCommand(args, text);
     QStringList lines;
-    if (success) {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
-        lines = text.split("\n", Qt::SkipEmptyParts);
+    lines = text.split("\n", Qt::SkipEmptyParts);
 #else
-        lines = text.split("\n", QString::SkipEmptyParts);
+    lines = text.split("\n", QString::SkipEmptyParts);
 #endif
-    }
     for (int i = 0; i < lines.size(); i++) {
         QString line = lines.at(i);
         QJsonParseError error;
@@ -243,58 +305,67 @@ ClusterList Window::getClusters()
             qDebug() << error.errorString();
             continue;
         }
-        if (json.isObject()) {
-            QJsonObject par = json.object();
-            QJsonArray a = par["valid"].toArray();
-            for (int j = 0; j < a.size(); j++) {
-                QJsonObject obj = a[j].toObject();
-                QString name;
-                if (obj.contains("Name")) {
-                    name = obj["Name"].toString();
-                }
-                if (name.isEmpty()) {
-                    continue;
-                }
-                Cluster cluster(name);
-                if (obj.contains("Status")) {
-                    QString status = obj["Status"].toString();
-                    cluster.setStatus(status);
-                }
-                if (!obj.contains("Config")) {
-                    clusters << cluster;
-                    continue;
-                }
-                QJsonObject config = obj["Config"].toObject();
-                if (config.contains("CPUs")) {
-                    int cpus = config["CPUs"].toInt();
-                    cluster.setCpus(cpus);
-                }
-                if (config.contains("Memory")) {
-                    int memory = config["Memory"].toInt();
-                    cluster.setMemory(memory);
-                }
-                if (config.contains("Driver")) {
-                    QString driver = config["Driver"].toString();
-                    cluster.setDriver(driver);
-                }
-                if (!config.contains("KubernetesConfig")) {
-                    clusters << cluster;
-                    continue;
-                }
-                QJsonObject k8sConfig = config["KubernetesConfig"].toObject();
-                if (k8sConfig.contains("ContainerRuntime")) {
-                    QString containerRuntime = k8sConfig["ContainerRuntime"].toString();
-                    cluster.setContainerRuntime(containerRuntime);
-                }
-                clusters << cluster;
-            }
+        if (!json.isObject()) {
+            continue;
+        }
+        QJsonObject par = json.object();
+        QJsonArray a = par["valid"].toArray();
+        QJsonArray b = par["invalid"].toArray();
+        for (int i = 0; i < b.size(); i++) {
+            a.append(b[i]);
+        }
+        for (int i = 0; i < a.size(); i++) {
+            QJsonObject obj = a[i].toObject();
+            Cluster cluster = createClusterObject(obj);
+            clusters << cluster;
         }
     }
     return clusters;
 }
 
+Cluster Window::createClusterObject(QJsonObject obj)
+{
+    QString name;
+    if (obj.contains("Name")) {
+        name = obj["Name"].toString();
+    }
+    Cluster cluster(name);
+    if (obj.contains("Status")) {
+        QString status = obj["Status"].toString();
+        cluster.setStatus(status);
+    }
+    if (!obj.contains("Config")) {
+        return cluster;
+    }
+    QJsonObject config = obj["Config"].toObject();
+    if (config.contains("CPUs")) {
+        int cpus = config["CPUs"].toInt();
+        cluster.setCpus(cpus);
+    }
+    if (config.contains("Memory")) {
+        int memory = config["Memory"].toInt();
+        cluster.setMemory(memory);
+    }
+    if (config.contains("Driver")) {
+        QString driver = config["Driver"].toString();
+        cluster.setDriver(driver);
+    }
+    if (!config.contains("KubernetesConfig")) {
+        return cluster;
+    }
+    QJsonObject k8sConfig = config["KubernetesConfig"].toObject();
+    if (k8sConfig.contains("ContainerRuntime")) {
+        QString containerRuntime = k8sConfig["ContainerRuntime"].toString();
+        cluster.setContainerRuntime(containerRuntime);
+    }
+    return cluster;
+}
+
 QString Window::selectedCluster()
 {
+    if (isBasicView) {
+        return "minikube";
+    }
     QModelIndex index = clusterListView->currentIndex();
     QVariant variant = index.data(Qt::DisplayRole);
     if (variant.isNull()) {
@@ -342,12 +413,13 @@ void Window::createClusterGroupBox()
     createButton = new QPushButton(tr("Create"));
     sshButton = new QPushButton(tr("SSH"));
     dashboardButton = new QPushButton(tr("Dashboard"));
-
-    updateButtons();
+    QPushButton *basicViewButton = new QPushButton(tr("Basic View"));
+    connect(basicViewButton, &QAbstractButton::clicked, this, &Window::toBasicView);
 
     QHBoxLayout *topButtonLayout = new QHBoxLayout;
     topButtonLayout->addWidget(createButton);
     topButtonLayout->addWidget(refreshButton);
+    topButtonLayout->addWidget(basicViewButton);
     topButtonLayout->addSpacing(340);
 
     QHBoxLayout *bottomButtonLayout = new QHBoxLayout;
@@ -365,6 +437,40 @@ void Window::createClusterGroupBox()
 }
 
 void Window::updateButtons()
+{
+    if (isBasicView) {
+        updateBasicButtons();
+    } else {
+        updateAdvancedButtons();
+    }
+}
+
+void Window::updateBasicButtons()
+{
+    Cluster *cluster = new Cluster();
+    ClusterList list = getClusters();
+    for (int i = 0; i < list.length(); i++) {
+        Cluster curr = list[i];
+        if (curr.name() != "minikube") {
+            continue;
+        }
+        cluster = &curr;
+        break;
+    }
+    bool exists = cluster->name() == "minikube";
+    bool isRunning = exists && cluster->status() == "Running";
+    basicStartButton->setEnabled(isRunning == false);
+    basicStopButton->setEnabled(isRunning == true);
+    basicDeleteButton->setEnabled(exists == true);
+    basicDashboardButton->setEnabled(isRunning == true);
+#if __linux__
+    basicSSHButton->setEnabled(isRunning == true);
+#else
+    basicSSHButton->setEnabled(false);
+#endif
+}
+
+void Window::updateAdvancedButtons()
 {
     QString cluster = selectedCluster();
     if (cluster.isEmpty()) {
@@ -413,20 +519,21 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     if (program.isEmpty()) {
         return false;
     }
-    QStringList arguments;
+    QStringList arguments = { "--user", "minikube-gui" };
     arguments << cmds;
-    bool success;
 
     QProcess *process = new QProcess(this);
     process->start(program, arguments);
     this->setCursor(Qt::WaitCursor);
-    success = process->waitForFinished(300 * 1000);
+    bool timedOut = process->waitForFinished(300 * 1000);
+    int exitCode = process->exitCode();
+    bool success = !timedOut && exitCode == 0;
     this->unsetCursor();
 
+    text = process->readAllStandardOutput();
     if (success) {
-        text = process->readAllStandardOutput();
     } else {
-        qDebug() << process->readAllStandardOutput();
+        qDebug() << text;
         qDebug() << process->readAllStandardError();
     }
     delete process;
@@ -459,8 +566,8 @@ void Window::askName()
     int code = dialog.exec();
     profile = profileField.text();
     if (code == QDialog::Accepted) {
-        QStringList arg = { "start", "-p", profile };
-        sendMinikubeCommand(arg);
+        QStringList args = { "-p", profile };
+        startMinikube(args);
     } else if (code == QDialog::Rejected) {
         askCustom();
     }
@@ -512,8 +619,7 @@ void Window::askCustom()
                 containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
         cpus = cpuField.text().toInt();
         memory = memoryField.text().toInt();
-        QStringList args = { "start",
-                             "-p",
+        QStringList args = { "-p",
                              profile,
                              "--driver",
                              driver,
@@ -523,8 +629,77 @@ void Window::askCustom()
                              QString::number(cpus),
                              "--memory",
                              QString::number(memory) };
-        sendMinikubeCommand(args);
+        startMinikube(args);
     }
+}
+
+void Window::outputFailedStart(QString text)
+{
+    QStringList lines;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    lines = text.split("\n", Qt::SkipEmptyParts);
+#else
+    lines = text.split("\n", QString::SkipEmptyParts);
+#endif
+    for (int i = 0; i < lines.size(); i++) {
+        QString line = lines.at(i);
+        QJsonParseError error;
+        QJsonDocument json = QJsonDocument::fromJson(line.toUtf8(), &error);
+        if (json.isNull() || !json.isObject()) {
+            continue;
+        }
+        QJsonObject par = json.object();
+        QJsonObject data = par["data"].toObject();
+        if (!data.contains("exitcode")) {
+            continue;
+        }
+        QString advice = data["advice"].toString();
+        QString message = data["message"].toString();
+        QString name = data["name"].toString();
+        QString url = data["url"].toString();
+        QString issues = data["issues"].toString();
+
+        QDialog dialog;
+        dialog.setWindowTitle(tr("minikube start failed"));
+        dialog.setWindowIcon(*trayIconIcon);
+        dialog.setFixedWidth(600);
+        dialog.setModal(true);
+        QFormLayout form(&dialog);
+        createLabel("Error Code", name, &form, false);
+        createLabel("Advice", advice, &form, false);
+        QLabel *errorMessage = createLabel("Error Message", message, &form, false);
+        errorMessage->setFont(QFont("Courier", 10));
+        errorMessage->setStyleSheet("background-color:white;");
+        createLabel("Link to documentation", url, &form, true);
+        createLabel("Link to related issue", issues, &form, true);
+        // Enabling once https://github.com/kubernetes/minikube/issues/13925 is fixed
+        // QLabel *fileLabel = new QLabel(this);
+        // fileLabel->setOpenExternalLinks(true);
+        // fileLabel->setWordWrap(true);
+        // QString logFile = QDir::homePath() + "/.minikube/logs/lastStart.txt";
+        // fileLabel->setText("<a href='file:///" + logFile + "'>View log file</a>");
+        // form.addRow(fileLabel);
+        QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+        buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+        connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        form.addRow(&buttonBox);
+        dialog.exec();
+    }
+}
+
+QLabel *Window::createLabel(QString title, QString text, QFormLayout *form, bool isLink)
+{
+    QLabel *label = new QLabel(this);
+    if (!text.isEmpty()) {
+        form->addRow(label);
+    }
+    if (isLink) {
+        label->setOpenExternalLinks(true);
+        text = "<a href='" + text + "'>" + text + "</a>";
+    }
+    label->setWordWrap(true);
+    label->setText(title + ": " + text);
+    return label;
 }
 
 void Window::initMachine()
@@ -549,7 +724,7 @@ void Window::sshConsole()
     console->setTerminalFont(font);
     console->setColorScheme("Tango");
     console->setShellProgram(program);
-    QStringList args = { "ssh" };
+    QStringList args = { "ssh", "-p", selectedCluster() };
     console->setArgs(args);
     console->startShellProgram();
 

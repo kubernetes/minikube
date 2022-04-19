@@ -38,8 +38,8 @@ const allFlag = "all"
 // cacheCmd represents the cache command
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
-	Short: "Add, delete, or push a local image into minikube",
-	Long:  "Add, delete, or push a local image into minikube",
+	Short: "Manage cache for images",
+	Long:  "Add an image into minikube as a local cache, or delete, reload the cached images",
 }
 
 // addCacheCmd represents the cache add command

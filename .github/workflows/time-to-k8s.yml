@@ -5,7 +5,7 @@ on:
     types: [released]
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.1'
 permissions:
   contents: read
 
@@ -26,7 +26,7 @@ jobs:
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh
           echo "::set-output name=version::$(minikube version --short)"
     - name: Create PR
-      uses: peter-evans/create-pull-request@f1a7646cead32c950d90344a4fb5d4e926972a8f
+      uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
       with:
         token: ${{ secrets.MINIKUBE_BOT_PAT }}
         commit-message: add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}

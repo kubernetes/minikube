@@ -6,7 +6,7 @@ on:
       - "translations/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18'
+  GO_VERSION: '1.18.1'
 permissions:
   contents: read
 

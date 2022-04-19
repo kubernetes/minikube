@@ -34,6 +34,7 @@ import (
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -941,7 +942,7 @@ func validateUser(drvName string) {
 		return
 	}
 
-	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
+	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges. If you wish to continue as root, use --force.`, out.V{"driver_name": drvName})
 	out.ErrT(style.Tip, "If you are running minikube within a VM, consider using --driver=none:")
 	out.ErrT(style.Documentation, "  {{.url}}", out.V{"url": "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"})
 
@@ -1246,26 +1247,22 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateInsecureRegistry()
 }
 
-// This function validates that the --ports are not below 1024 for the host and not outside range
+// validatePorts validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
-	for _, portDuplet := range ports {
-		parts := strings.Split(portDuplet, ":")
-		if len(parts) > 2 {
-			ip := parts[0]
-			if net.ParseIP(ip) == nil {
-				return errors.Errorf("Sorry, the IP address provided with --ports flag is invalid: %s", ip)
-			}
-			parts = parts[1:]
-		}
-		for i, port := range parts {
-			p, err := strconv.Atoi(port)
+	_, portBindingsMap, err := nat.ParsePortSpecs(ports)
+	if err != nil {
+		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s (%v)", ports, err)
+	}
+	for _, portBindings := range portBindingsMap {
+		for _, portBinding := range portBindings {
+			p, err := strconv.Atoi(portBinding.HostPort)
 			if err != nil {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
 			}
 			if p > 65535 || p < 1 {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
 			}
-			if detect.IsMicrosoftWSL() && p < 1024 && i == 0 {
+			if detect.IsMicrosoftWSL() && p < 1024 {
 				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
 			}
 		}
