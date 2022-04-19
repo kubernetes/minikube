@@ -95,7 +95,7 @@ var (
 	InternalConfigUnset = Kind{ID: "MK_CONFIG_UNSET", ExitCode: ExProgramError}
 	// minikube failed to view current config values
 	InternalConfigView = Kind{ID: "MK_CONFIG_VIEW", ExitCode: ExProgramError}
-	// minikybe failed to delete an internal configuration, such as a cached image
+	// minikube failed to delete an internal configuration, such as a cached image
 	InternalDelConfig = Kind{ID: "MK_DEL_CONFIG", ExitCode: ExProgramError}
 	// minikube failed to generate script to activate minikube docker-env
 	InternalDockerScript = Kind{ID: "MK_DOCKER_SCRIPT", ExitCode: ExProgramError}
