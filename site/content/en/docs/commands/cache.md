@@ -1,17 +1,17 @@
 ---
 title: "cache"
 description: >
-  Add, delete, or push a local image into minikube
+  Manage cache for images
 ---
 
 
 ## minikube cache
 
-Add, delete, or push a local image into minikube
+Manage cache for images
 
 ### Synopsis
 
-Add, delete, or push a local image into minikube
+Add an image into minikube as a local cache, or delete, reload the cached images
 
 ### Options inherited from parent commands
 
