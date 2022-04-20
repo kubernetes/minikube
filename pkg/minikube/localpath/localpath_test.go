@@ -28,16 +28,7 @@ import (
 )
 
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
-	path, err := os.MkdirTemp("", "repwindl2vn")
-	if err != nil {
-		t.Fatalf("Error make tmp directory: %v", err)
-	}
-	defer func(path string) { // clean up tempdir
-		err := os.RemoveAll(path)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", path)
-		}
-	}(path)
+	path := t.TempDir()
 
 	if runtime.GOOS != "windows" {
 		// Replace to fake func.

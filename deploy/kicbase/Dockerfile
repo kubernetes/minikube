@@ -19,7 +19,7 @@
 
 
 # multi-tage docker build so we can build auto-pause for arm64
-FROM golang:1.16
+FROM golang:1.17
 WORKDIR /src
 # becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
 ADD . .
@@ -33,7 +33,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210401
+FROM ubuntu:focal-20220316
 
 ARG BUILDKIT_VERSION="v0.9.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -126,9 +126,7 @@ RUN clean-install \
     openssh-server \
     dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0 \
-    # fuse3 is required for fuse-overlayfs
-    fuse3
+    libglib2.0-0
 
 # install docker
 # use the bionic packages for arm32
@@ -138,19 +136,6 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io
-
-# install fuse-overlayfs (used by rootless; apt-get version is old)
-RUN curl -sSL --retry 5 --output /usr/local/bin/fuse-overlayfs https://github.com/containers/fuse-overlayfs/releases/download/${FUSE_OVERLAYFS_VERSION}/fuse-overlayfs-$(uname -m) \
-  && chmod +x  /usr/local/bin/fuse-overlayfs
-
-# install containerd-fuse-overlayfs (used by rootless)
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
- && echo "Installing containerd-fuse-overlayfs..." \
-    && export CONTAINERD_FUSE_OVERLAYFS_BASE_URL="https://github.com/containerd/fuse-overlayfs-snapshotter/releases/download/v${CONTAINERD_FUSE_OVERLAYFS_VERSION}" \
-    && curl -sSL --retry 5 --output /tmp/containerd-fuse-overlayfs.tgz "${CONTAINERD_FUSE_OVERLAYFS_BASE_URL}/containerd-fuse-overlayfs-${CONTAINERD_FUSE_OVERLAYFS_VERSION}-linux-${ARCH}.tar.gz" \
-    && tar -C /usr/local/bin -xzvf /tmp/containerd-fuse-overlayfs.tgz \
-    && rm -rf /tmp/containerd-fuse-overlayfs.tgz
-COPY deploy/kicbase/containerd-fuse-overlayfs.service /etc/systemd/system/containerd-fuse-overlayfs.service
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \

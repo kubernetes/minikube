@@ -1,5 +1,4 @@
 //go:build gendocs
-// +build gendocs
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

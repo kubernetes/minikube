@@ -26,15 +26,10 @@ import (
 )
 
 func TestGenerateTestDocs(t *testing.T) {
-	tempdir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatalf("creating temp dir failed: %v", err)
-	}
-	defer os.RemoveAll(tempdir)
+	tempdir := t.TempDir()
 	docPath := filepath.Join(tempdir, "tests.md")
 
-	err = generate.TestDocs(docPath, "../../../test/integration")
-	if err != nil {
+	if err := generate.TestDocs(docPath, "../../../test/integration"); err != nil {
 		t.Fatalf("error generating test docs: %v", err)
 	}
 	actualContents, err := os.ReadFile(docPath)

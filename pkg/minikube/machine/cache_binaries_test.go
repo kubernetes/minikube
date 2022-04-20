@@ -88,17 +88,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := os.MkdirTemp("/tmp", "")
-	if err != nil {
-		t.Fatalf("error during creating tmp dir: %v", err)
-	}
-
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(minikubeHome)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
-		}
-	}()
+	minikubeHome := t.TempDir()
 
 	var tc = []struct {
 		version, clusterBootstrapper string
@@ -147,18 +137,8 @@ func TestExcludedBinariesNotDownloaded(t *testing.T) {
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
-	minikubeHome, err := os.MkdirTemp("/tmp", "")
-	if err != nil {
-		t.Fatalf("error during creating tmp dir: %v", err)
-	}
+	minikubeHome := t.TempDir()
 	os.Setenv("MINIKUBE_HOME", minikubeHome)
-
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(minikubeHome)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
-		}
-	}()
 
 	if err := CacheBinariesForBootstrapper("v1.16.0", clusterBootstrapper, []string{binaryToExclude}, ""); err != nil {
 		t.Errorf("Failed to cache binaries: %v", err)

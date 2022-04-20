@@ -111,8 +111,7 @@ func TestLocalClientNewHost(t *testing.T) {
 }
 
 func TestRunNotDriver(t *testing.T) {
-	tempDir := testutil.MakeTempDir()
-	defer testutil.RemoveTempDir(tempDir)
+	testutil.MakeTempDir(t)
 	StartDriver()
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")
@@ -122,8 +121,7 @@ func TestRunNotDriver(t *testing.T) {
 func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
-	tempDir := testutil.MakeTempDir()
-	defer testutil.RemoveTempDir(tempDir)
+	testutil.MakeTempDir(t)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
 	os.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)

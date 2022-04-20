@@ -1,5 +1,4 @@
 //go:build integration && linux
-// +build integration,linux
 
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.

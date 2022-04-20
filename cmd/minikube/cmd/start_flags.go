@@ -121,6 +121,7 @@ const (
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
 	network                 = "network"
+	subnet                  = "subnet"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 	sshIPAddress            = "ssh-ip-address"
@@ -134,6 +135,7 @@ const (
 	certExpiration          = "cert-expiration"
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
+	disableMetrics          = "disable-metrics"
 )
 
 var (
@@ -192,7 +194,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
-	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1 and increasing kubeadm housekeeping-interval from 10s to 5m. Defaults to false.")
+	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
+	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -249,6 +252,7 @@ func initDriverFlags() {
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
+	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -386,7 +390,7 @@ func getExtraOptions() config.ExtraOptionSlice {
 	if detect.IsCloudShell() {
 		options = append(options, "kubelet.cgroups-per-qos=false", "kubelet.enforce-node-allocatable=\"\"")
 	}
-	if !viper.GetBool(disableOptimizations) {
+	if viper.GetBool(disableMetrics) {
 		options = append(options, "kubelet.housekeeping-interval=5m")
 	}
 	for _, eo := range options {
@@ -468,6 +472,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
+		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
@@ -517,6 +522,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MountUID:                viper.GetString(mountUID),
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
+		DisableMetrics:          viper.GetBool(disableMetrics),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -549,12 +555,22 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.Rootless {
+			out.Styled(style.Notice, "Using rootless {{.driver_name}} driver", out.V{"driver_name": driver.FullName(drvName)})
 			if cc.KubernetesConfig.ContainerRuntime == constants.Docker {
 				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
 			}
 			// KubeletInUserNamespace feature gate is essential for rootless driver.
 			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		} else {
+			if oci.IsRootlessForced() {
+				if driver.IsDocker(drvName) {
+					exit.Message(reason.Usage, "Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .")
+				} else {
+					exit.Message(reason.Usage, "Using rootless driver was required, but the current driver does not seem rootless")
+				}
+			}
+			out.Styled(style.Notice, "Using {{.driver_name}} driver with the root privilege", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.StorageDriver == "btrfs" {
 			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
