@@ -34,6 +34,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/docker"
@@ -685,7 +686,7 @@ func dockerConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin str
 	if networkPlugin == "cni" {
 		args += " --cni-bin-dir=" + CNIBinDir
 		args += " --cni-cache-dir=" + CNICacheDir
-		args += " --cni-conf-dir=" + CNIConfDir
+		args += " --cni-conf-dir=" + cni.ConfDir
 	}
 
 	opts := struct {
