@@ -336,3 +336,14 @@ func CheckKernelCompatibility(cr CommandRunner, major, minor int) error {
 	}
 	return nil
 }
+
+func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
+	// Only supported for Docker with cri-dockerd
+	if r.Name() != "Docker" {
+		if networkPlugin != "cni" {
+			return fmt.Errorf("unknown network plugin: %s", networkPlugin)
+		}
+		return nil
+	}
+	return dockerConfigureNetworkPlugin(r, cr, networkPlugin)
+}
