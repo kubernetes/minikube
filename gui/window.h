@@ -174,6 +174,7 @@ private:
     QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
 
     void checkForMinikube();
+    void restoreWindow();
     QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
