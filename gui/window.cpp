@@ -224,10 +224,16 @@ void Window::createActions()
     connect(minimizeAction, &QAction::triggered, this, &QWidget::hide);
 
     restoreAction = new QAction(tr("&Restore"), this);
-    connect(restoreAction, &QAction::triggered, this, &QWidget::showNormal);
+    connect(restoreAction, &QAction::triggered, this, &Window::restoreWindow);
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+}
+
+void Window::restoreWindow()
+{
+    QWidget::showNormal();
+    updateClusters();
 }
 
 static QString minikubePath()
