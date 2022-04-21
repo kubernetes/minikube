@@ -30,7 +30,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
 
@@ -84,6 +86,7 @@ var loadImageCmd = &cobra.Command{
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
 		}
 		// Cache and load images into container runtime
+		out.Step(style.Caching, `Caching and loading image into the container runtime.`)
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
@@ -92,6 +95,7 @@ var loadImageCmd = &cobra.Command{
 		if pull {
 			// Pull image from remote registry, without doing any caching except in container runtime.
 			// This is similar to daemon.Image but it is done by the container runtime in the cluster.
+			out.Step(style.Pulling, `Pulling image from remote repository.`)
 			if err := machine.PullImages(args, profile); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to pull image", err)
 			}
@@ -125,6 +129,7 @@ var loadImageCmd = &cobra.Command{
 		}
 
 		if args[0] == "-" {
+			out.Step(style.Waiting, `Loading image from standard input stream.`)
 			tmp, err := saveFile(os.Stdin)
 			if err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to save stdin", err)
@@ -135,12 +140,14 @@ var loadImageCmd = &cobra.Command{
 		if imgDaemon || imgRemote {
 			image.UseDaemon(imgDaemon)
 			image.UseRemote(imgRemote)
+			out.Step(style.Caching, `Caching and loading images to all profiles.`)
 			if err := machine.CacheAndLoadImages(args, []*config.Profile{profile}, overwrite); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
 		} else if local {
 			// Load images from local files, without doing any caching or checks in container runtime
 			// This is similar to tarball.Image but it is done by the container runtime in the cluster.
+			out.Step(style.Waiting, `Loading images to all profiles.`)
 			if err := machine.DoLoadImages(args, []*config.Profile{profile}, "", overwrite); err != nil {
 				exit.Error(reason.GuestImageLoad, "Failed to load image", err)
 			}
