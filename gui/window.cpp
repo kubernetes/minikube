@@ -82,6 +82,7 @@
 #include <QDir>
 #include <QFontDialog>
 #include <QStackedWidget>
+#include <QProcessEnvironment>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
@@ -114,6 +115,14 @@ Window::Window()
 
     setWindowTitle(tr("minikube"));
     setWindowIcon(*trayIconIcon);
+}
+
+QProcessEnvironment Window::setMacEnv()
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    QString path = env.value("PATH");
+    env.insert("PATH", path + ":/usr/local/bin");
+    return env;
 }
 
 void Window::createBasicView()
@@ -523,6 +532,12 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     arguments << cmds;
 
     QProcess *process = new QProcess(this);
+#if __APPLE__
+    if (env.isEmpty()) {
+        env = setMacEnv();
+    }
+    process->setProcessEnvironment(env);
+#endif
     process->start(program, arguments);
     this->setCursor(Qt::WaitCursor);
     bool timedOut = process->waitForFinished(300 * 1000);

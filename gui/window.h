@@ -57,6 +57,7 @@
 #include <QSystemTrayIcon>
 #include <QFormLayout>
 #include <QStackedWidget>
+#include <QProcessEnvironment>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -166,12 +167,14 @@ private:
     void dashboardBrowser();
     Cluster createClusterObject(QJsonObject obj);
     QProcess *dashboardProcess;
+    QProcessEnvironment env;
 
     // Error messaging
     void outputFailedStart(QString text);
     QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
 
     void checkForMinikube();
+    QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
 };
