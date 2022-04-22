@@ -397,6 +397,12 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
+	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
+		}
+	}
+
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
 	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
 	if err != nil {
