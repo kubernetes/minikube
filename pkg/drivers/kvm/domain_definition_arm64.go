@@ -24,8 +24,9 @@ const domainTmpl = `
   <memory unit='MiB'>{{.Memory}}</memory>
   <vcpu>{{.CPU}}</vcpu>
   <features>
-	<acpi/>                                                                        
-    <gic version='3'/>   
+    <acpi/>
+    <apic/>
+    <pae/>
     {{if .Hidden}}
     <kvm>
       <hidden state='on'/>
@@ -37,7 +38,6 @@ const domainTmpl = `
   {{.NUMANodeXML}}
   {{end}}
   </cpu>
-
   <os>
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
     <loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
@@ -49,7 +49,7 @@ const domainTmpl = `
   <devices>
     <disk type='file' device='cdrom'>
       <source file='{{.ISO}}'/>
-      <target dev='hdc' bus='scsi'/>
+      <target dev='sdc' bus='sata'/>
       <readonly/>
     </disk>
     <disk type='file' device='disk'>
