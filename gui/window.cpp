@@ -373,6 +373,10 @@ Cluster Window::createClusterObject(QJsonObject obj)
         QString containerRuntime = k8sConfig["ContainerRuntime"].toString();
         cluster.setContainerRuntime(containerRuntime);
     }
+    if (k8sConfig.contains("KubernetesVersion")) {
+        QString k8sVersion = k8sConfig["KubernetesVersion"].toString();
+        cluster.setK8sVersion(k8sVersion);
+    }
     return cluster;
 }
 
@@ -417,6 +421,7 @@ void Window::createClusterGroupBox()
     clusterListView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     clusterListView->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
     clusterListView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(6, QHeaderView::ResizeToContents);
     setSelectedCluster("default");
 
     connect(clusterListView, SIGNAL(clicked(QModelIndex)), this, SLOT(updateButtons()));
