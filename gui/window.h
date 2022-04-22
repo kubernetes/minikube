@@ -154,6 +154,7 @@ private:
     void askName();
     QComboBox *driverComboBox;
     QComboBox *containerRuntimeComboBox;
+    QComboBox *k8sVersionComboBox;
 
     // Commands
     void startMinikube(QStringList args);

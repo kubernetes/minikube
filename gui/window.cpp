@@ -566,6 +566,7 @@ static int cpus = 2;
 static int memory = 2400;
 static QString driver = "";
 static QString containerRuntime = "";
+static QString k8sVersion = "";
 
 void Window::askName()
 {
@@ -603,24 +604,21 @@ void Window::askCustom()
 
     QFormLayout form(&dialog);
     driverComboBox = new QComboBox;
-    driverComboBox->addItem("docker");
+    driverComboBox->addItems({ "docker", "virtualbox", "vmware", "podman" });
 #if __linux__
     driverComboBox->addItem("kvm2");
 #elif __APPLE__
-    driverComboBox->addItem("hyperkit");
-    driverComboBox->addItem("parallels");
+    driverComboBox->addItems({ "hyperkit", "parallels" });
 #else
     driverComboBox->addItem("hyperv");
 #endif
-    driverComboBox->addItem("virtualbox");
-    driverComboBox->addItem("vmware");
-    driverComboBox->addItem("podman");
     form.addRow(new QLabel(tr("Driver")), driverComboBox);
     containerRuntimeComboBox = new QComboBox;
-    containerRuntimeComboBox->addItem("docker");
-    containerRuntimeComboBox->addItem("containerd");
-    containerRuntimeComboBox->addItem("crio");
+    containerRuntimeComboBox->addItems({ "docker", "containerd", "crio" });
     form.addRow(new QLabel(tr("Container Runtime")), containerRuntimeComboBox);
+    k8sVersionComboBox = new QComboBox;
+    k8sVersionComboBox->addItems({ "stable", "latest", "none" });
+    form.addRow(new QLabel(tr("Kubernetes Version")), k8sVersionComboBox);
     QLineEdit cpuField(QString::number(cpus), &dialog);
     form.addRow(new QLabel(tr("CPUs")), &cpuField);
     QLineEdit memoryField(QString::number(memory), &dialog);
@@ -638,6 +636,10 @@ void Window::askCustom()
         driver = driverComboBox->itemText(driverComboBox->currentIndex());
         containerRuntime =
                 containerRuntimeComboBox->itemText(containerRuntimeComboBox->currentIndex());
+        k8sVersion = k8sVersionComboBox->itemText(k8sVersionComboBox->currentIndex());
+        if (k8sVersion == "none") {
+            k8sVersion = "v0.0.0";
+        }
         cpus = cpuField.text().toInt();
         memory = memoryField.text().toInt();
         QStringList args = { "-p",
@@ -646,6 +648,8 @@ void Window::askCustom()
                              driver,
                              "--container-runtime",
                              containerRuntime,
+                             "--kubernetes-version",
+                             k8sVersion,
                              "--cpus",
                              QString::number(cpus),
                              "--memory",
