@@ -556,6 +556,7 @@
 	"Setting profile failed": "Échec de la définition du profil",
 	"Show a list of global command-line options (applies to all commands).": "Affiche une liste des options de ligne de commande globales (s'applique à toutes les commandes).",
 	"Show only log entries which point to known problems": "Afficher uniquement les entrées de journal qui pointent vers des problèmes connus",
+	"Show only the audit logs": "",
 	"Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.": "Affichez uniquement les entrées de journal les plus récentes et imprimez en continu de nouvelles entrées au fur et à mesure qu'elles sont ajoutées au journal.",
 	"Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)": "Simulez le nombre de nœuds numa dans minikube, la plage de nombre de nœuds numa pris en charge est de 1 à 8 (pilote kvm2 uniquement)",
 	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "Changement de contexte kubectl ignoré pour {{.profile_name}} car --keep-context a été défini.",
