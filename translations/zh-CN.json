@@ -314,6 +314,7 @@
 	"Failed to check main repository and mirrors for images": "",
 	"Failed to check main repository and mirrors for images for images": "无法检测主仓库和镜像仓库中的镜像",
 	"Failed to configure metallb IP {{.profile}}": "",
+	"Failed to configure network plugin": "",
 	"Failed to create file": "",
 	"Failed to create runtime": "",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "",
