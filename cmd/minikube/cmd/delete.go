@@ -207,7 +207,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Message(reason.Usage, "Usage: minikube delete")
 	}
-	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Deleting)
 	download.CleanUpOlderPreloads()
