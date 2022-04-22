@@ -245,6 +245,7 @@
 	"Failed to change permissions for {{.minikube_dir_path}}: {{.error}}": "{{.minikube_dir_path}} に対する権限の変更に失敗しました: {{.error}}",
 	"Failed to check main repository and mirrors for images": "メインリポジトリーとミラーのイメージのチェックに失敗しました",
 	"Failed to configure metallb IP {{.profile}}": "metallb IP {{.profile}} の設定に失敗しました",
+	"Failed to configure network plugin": "",
 	"Failed to create file": "ファイルの作成に失敗しました",
 	"Failed to create runtime": "ランタイムの作成に失敗しました",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "{{.name}} クラスターを削除できませんでしたが、処理を続行します。",
