@@ -573,6 +573,7 @@
 	"Setting profile failed": "プロファイルの設定に失敗しました",
 	"Show a list of global command-line options (applies to all commands).": "(全コマンドに適用される) グローバルコマンドラインオプションの一覧を表示します。",
 	"Show only log entries which point to known problems": "既知の問題を示すログエントリーのみ表示します",
+	"Show only the audit logs": "",
 	"Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.": "直近のジャーナルエントリーのみ表示し、ジャーナルに追加された新しいエントリーを連続して表示します。",
 	"Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)": "minikube 中の NUMA ノードカウントをシミュレートします (対応 NUMA ノードカウント範囲は 1～8 (kvm2 ドライバーのみ))",
 	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "--keep-context が設定されたので、{{.profile_name}} 用 kubectl コンテキストの切替をスキップしました。",
