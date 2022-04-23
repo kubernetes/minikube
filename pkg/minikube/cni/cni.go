@@ -24,6 +24,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -211,18 +213,27 @@ func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
 			Network = "kindnet"
 			return nil
 		}
-		// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
-		eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
-		if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
-			klog.Infof("auto-setting extra-config to %q", eo)
-			if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
-				return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+		version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+		if err != nil {
+			return err
+		}
+		// The CNI configuration is handled by CRI in 1.24+
+		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+			// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
+			eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
+			if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
+				klog.Infof("auto-setting extra-config to %q", eo)
+				if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
+					return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
+				}
+				ConfDir = CustomConfDir
+				klog.Infof("extra-config set to %q", eo)
+			} else {
+				// respect user-specified custom CNI Config Directory
+				ConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
 			}
-			ConfDir = CustomConfDir
-			klog.Infof("extra-config set to %q", eo)
 		} else {
-			// respect user-specified custom CNI Config Directory
-			ConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
+			ConfDir = CustomConfDir
 		}
 	}
 	return nil
