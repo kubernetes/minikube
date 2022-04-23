@@ -6,13 +6,16 @@ on:
       - "translations/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.7'
+  GO_VERSION: '1.18.1'
+permissions:
+  contents: read
+
 jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true

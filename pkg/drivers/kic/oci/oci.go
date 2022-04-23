@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
@@ -162,9 +163,6 @@ func CreateContainerNode(p CreateParams) error {
 		// including some ones docker would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
-		// enable /dev/fuse explicitly for fuse-overlayfs
-		// (Rootless Docker does not automatically mount /dev/fuse with --privileged)
-		"--device", "/dev/fuse",
 		"--security-opt", "seccomp=unconfined", //  ignore seccomp
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
@@ -314,7 +312,7 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
 	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
-	if ociBin == Podman && runtime.GOOS == "linux" {
+	if ociBin == Podman && runtime.GOOS == "linux" && !IsRootlessForced() {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -344,7 +342,7 @@ func StartContainer(ociBin string, container string) error {
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
 	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
-	if ociBin == Podman && runtime.GOOS == "linux" {
+	if ociBin == Podman && runtime.GOOS == "linux" && !IsRootlessForced() {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -738,4 +736,13 @@ func IsExternalDaemonHost(driver string) bool {
 		}
 	}
 	return false
+}
+
+func podmanVersion() (semver.Version, error) {
+	rr, err := runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
+	if err != nil {
+		return semver.Version{}, errors.Wrapf(err, "podman version")
+	}
+	output := strings.TrimSpace(rr.Stdout.String())
+	return semver.Make(output)
 }

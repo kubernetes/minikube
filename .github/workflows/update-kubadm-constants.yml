@@ -6,13 +6,16 @@ on:
     - cron: "0 6 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.7'
+  GO_VERSION: '1.18.1'
+permissions:
+  contents: read
+
 jobs:
   bump-k8s-versions:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -26,7 +29,7 @@ jobs:
           echo "::set-output name=changes::$c"
       - name: Create PR
         if: ${{ steps.bumpKubAdmConsts.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: update image constants for kubeadm images

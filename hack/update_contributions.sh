@@ -18,20 +18,9 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-install_pullsheet() {
-  pullsheet_workdir="$(mktemp -d)"
-  trap 'rm -rf -- ${pullsheet_workdir}' RETURN
-
-  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
-  cd "${pullsheet_workdir}"
-  go mod init ps
-  GOBIN="$DIR" go get github.com/google/pullsheet
-  cd -
-}
-
 if ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing pullsheet'
-  install_pullsheet
+  go install github.com/google/pullsheet@latest
 fi
 
 git fetch --tags -f

@@ -122,6 +122,7 @@ const (
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
 	network                 = "network"
+	subnet                  = "subnet"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 	sshIPAddress            = "ssh-ip-address"
@@ -253,6 +254,7 @@ func initDriverFlags() {
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
+	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -478,6 +480,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
+		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
@@ -561,12 +564,22 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.Rootless {
+			out.Styled(style.Notice, "Using rootless {{.driver_name}} driver", out.V{"driver_name": driver.FullName(drvName)})
 			if cc.KubernetesConfig.ContainerRuntime == constants.Docker {
 				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
 			}
 			// KubeletInUserNamespace feature gate is essential for rootless driver.
 			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		} else {
+			if oci.IsRootlessForced() {
+				if driver.IsDocker(drvName) {
+					exit.Message(reason.Usage, "Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .")
+				} else {
+					exit.Message(reason.Usage, "Using rootless driver was required, but the current driver does not seem rootless")
+				}
+			}
+			out.Styled(style.Notice, "Using {{.driver_name}} driver with the root privilege", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.StorageDriver == "btrfs" {
 			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")

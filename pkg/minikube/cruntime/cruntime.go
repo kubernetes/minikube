@@ -20,6 +20,7 @@ package cruntime
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -345,4 +346,34 @@ func CheckCompatibility(cr Manager) error {
 		return errors.Wrap(err, "Failed to check container runtime version")
 	}
 	return compatibleWithVersion(cr.Name(), v)
+}
+
+// CheckKernelCompatibility returns an error when the kernel is older than the specified version.
+func CheckKernelCompatibility(cr CommandRunner, major, minor int) error {
+	expected := fmt.Sprintf("%d.%d", major, minor)
+	unameRes, err := cr.RunCmd(exec.Command("uname", "-r"))
+	if err != nil {
+		return err
+	}
+	actual := strings.TrimSpace(unameRes.Stdout.String())
+	sortRes, err := cr.RunCmd(exec.Command("sh", "-euc", fmt.Sprintf(`(echo %s; echo %s) | sort -V | head -n1`, actual, expected)))
+	if err != nil {
+		return err
+	}
+	comparison := strings.TrimSpace(sortRes.Stdout.String())
+	if comparison != expected {
+		return NewErrServiceVersion("kernel", expected, actual)
+	}
+	return nil
+}
+
+func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
+	// Only supported for Docker with cri-dockerd
+	if r.Name() != "Docker" {
+		if networkPlugin != "cni" {
+			return fmt.Errorf("unknown network plugin: %s", networkPlugin)
+		}
+		return nil
+	}
+	return dockerConfigureNetworkPlugin(r, cr, networkPlugin)
 }

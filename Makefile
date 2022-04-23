@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.25.2
+ISO_VERSION ?= v1.25.2-1649577058-13659
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,7 +33,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.17.7
+GO_VERSION ?= 1.18.1
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.24.0
 
@@ -76,7 +76,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 4.19.202
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.45.0
+GOLINT_VERSION ?= v1.45.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -868,6 +868,7 @@ else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOARCH=arm64 \
 	go build \
+		-buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
 		-tags "libvirt.1.3.1 without_lxc" \

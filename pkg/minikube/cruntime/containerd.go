@@ -70,12 +70,6 @@ oom_score = 0
 [cgroup]
   path = ""
 
-[proxy_plugins]
-# fuse-overlayfs is used for rootless
-[proxy_plugins."fuse-overlayfs"]
-  type = "snapshot"
-  address = "/run/containerd-fuse-overlayfs.sock"
-
 [plugins]
   [plugins."io.containerd.monitor.v1.cgroups"]
     no_prometheus = false
@@ -230,9 +224,6 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	}
 	pauseImage := images.Pause(kv, imageRepository)
 	snapshotter := "overlayfs"
-	if inUserNamespace {
-		snapshotter = "fuse-overlayfs"
-	}
 	opts := struct {
 		PodInfraContainerImage string
 		SystemdCgroup          bool
@@ -261,6 +252,16 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 
 // Enable idempotently enables containerd on a host
 func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+	if inUserNamespace {
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
+	}
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -274,12 +275,6 @@ func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
-	}
-
-	if inUserNamespace {
-		if err := r.Init.EnableNow("containerd-fuse-overlayfs"); err != nil {
-			return err
-		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'

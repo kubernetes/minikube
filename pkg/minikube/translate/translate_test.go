@@ -27,32 +27,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-func TestSetPreferredLanguage(t *testing.T) {
-	var tests = []struct {
-		input string
-		want  language.Tag
-	}{
-		{"", language.AmericanEnglish},
-		{"C", language.AmericanEnglish},
-		{"zh", language.Chinese},
-		{"fr_FR.utf8", language.French},
-		{"zzyy.utf8", language.AmericanEnglish},
-	}
-	for _, tc := range tests {
-		t.Run(tc.input, func(t *testing.T) {
-			// Set something so that we can assert change.
-			SetPreferredLanguage(tc.input)
-
-			want, _ := tc.want.Base()
-			got, _ := GetPreferredLanguage().Base()
-			if got != want {
-				t.Errorf("SetPreferredLanguage(%s) = %q, want %q", tc.input, got, want)
-			}
-		})
-	}
-
-}
-
 func TestT(t *testing.T) {
 	var tests = []struct {
 		description, input, expected string

@@ -82,6 +82,7 @@ type ClusterConfig struct {
 	ExposedPorts            []string // Only used by the docker and podman driver
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
+	Subnet                  string   // only used by the docker and podman driver
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration

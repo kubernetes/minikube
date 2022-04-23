@@ -28,10 +28,11 @@ import (
 	"time"
 
 	gcr_config "github.com/GoogleCloudPlatform/docker-credential-gcr/config"
-	"github.com/pkg/errors"
-	"golang.org/x/oauth2/google"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/pkg/errors"
+	"golang.org/x/oauth2/google"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -49,10 +50,13 @@ const (
 	projectPath     = "/var/lib/minikube/google_cloud_project"
 	secretName      = "gcp-auth"
 	namespaceName   = "gcp-auth"
+
+	// readPermission correlates to read-only file system permissions
+	readPermission = "0444"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
-func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) error {
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -86,8 +90,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// Create a registry secret in every namespace we can find
 	// Always create the pull secret, no matter where we are
-	err = createPullSecret(cfg, creds)
-	if err != nil {
+	if err := createPullSecret(cfg, creds); err != nil {
 		return errors.Wrap(err, "pull secret")
 	}
 
@@ -98,29 +101,28 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	if creds.JSON == nil {
-		out.WarningT("You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.")
+		out.WarningT("You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file in order to continue. The image pull secret has been imported.")
 		return nil
 	}
 
 	// Actually copy the creds over
-	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
+	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, readPermission)
 
-	err = r.Copy(f)
-	if err != nil {
+	if err := r.Copy(f); err != nil {
 		return err
 	}
 
 	// First check if the project env var is explicitly set
 	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectEnv != "" {
-		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, "0444")
+		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, readPermission)
 		return r.Copy(f)
 	}
 
 	// We're currently assuming gcloud is installed and in the user's path
 	proj, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(proj) > 0 {
-		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, "0444")
+		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, readPermission)
 		return r.Copy(f)
 	}
 
@@ -132,7 +134,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 	// Copy an empty file in to avoid errors about missing files
-	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
+	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
 	return r.Copy(emptyFile)
 
 }
@@ -155,7 +157,7 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 			return err
 		}
 
-		dockercfg := ""
+		var dockercfg string
 		registries := append(gcr_config.DefaultGCRRegistries[:], gcr_config.DefaultARRegistries[:]...)
 		for _, reg := range registries {
 			dockercfg += fmt.Sprintf(`"https://%s":{"username":"oauth2accesstoken","password":"%s","email":"none"},`, reg, token.AccessToken)
@@ -289,8 +291,7 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 				_, err = pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
 			}
 
-			_, err = pods.Create(context.TODO(), &p, metav1.CreateOptions{})
-			if err != nil {
+			if _, err := pods.Create(context.TODO(), &p, metav1.CreateOptions{}); err != nil {
 				return err
 			}
 		}
@@ -304,15 +305,14 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
-	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, "0444")
+	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, readPermission)
 	err := r.Remove(creds)
 	if err != nil {
 		return err
 	}
 
-	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
-	err = r.Remove(project)
-	if err != nil {
+	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
+	if err := r.Remove(project); err != nil {
 		return err
 	}
 
@@ -332,8 +332,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 			continue
 		}
 		secrets := client.Secrets(n.Name)
-		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
-		if err != nil {
+		if err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{}); err != nil {
 			klog.Infof("error deleting secret: %v", err)
 		}
 
@@ -347,8 +346,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 			for i, ps := range sa.ImagePullSecrets {
 				if ps.Name == secretName {
 					sa.ImagePullSecrets = append(sa.ImagePullSecrets[:i], sa.ImagePullSecrets[i+1:]...)
-					_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
-					if err != nil {
+					if _, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{}); err != nil {
 						return err
 					}
 					break
@@ -360,7 +358,7 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	return nil
 }
 
-func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -372,14 +370,12 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 		return ErrSkipThisAddon
 	}
 
-	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
-	if err != nil {
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
 		return err
 	}
 
 	if Refresh {
-		err = refreshExistingPods(cc)
-		if err != nil {
+		if err := refreshExistingPods(cc); err != nil {
 			return err
 		}
 	}

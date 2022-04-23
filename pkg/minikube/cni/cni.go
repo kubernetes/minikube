@@ -24,6 +24,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -209,7 +211,12 @@ func configureCNI(cc *config.ClusterConfig, cr *cruntime.Manager, cnm Manager) e
 			return nil
 		}
 
-		if !(*cr).UsingCNI() {
+		version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+		if err != nil {
+			return err
+		}
+		// The CNI configuration is handled by CRI in 1.24+
+		if version.LT(semver.MustParse("1.24.0-alpha.2")) && !(*cr).UsingCNI() {
 			// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
 			eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
 			if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
@@ -223,6 +230,8 @@ func configureCNI(cc *config.ClusterConfig, cr *cruntime.Manager, cnm Manager) e
 				// respect user-specified custom CNI Config Directory
 				(*cr).SetCNIConfDir(cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet"))
 			}
+		} else {
+			(*cr).SetCNIConfDir(CustomConfDir)
 		}
 	}
 	return nil

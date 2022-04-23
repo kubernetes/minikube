@@ -163,6 +163,10 @@ var settings = []Setting{
 		name: "native-ssh",
 		set:  SetBool,
 	},
+	{
+		name: config.Rootless,
+		set:  SetBool,
+	},
 }
 
 // ConfigCmd represents the config command

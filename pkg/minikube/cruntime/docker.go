@@ -17,12 +17,15 @@ limitations under the License.
 package cruntime
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	units "github.com/docker/go-units"
@@ -689,4 +692,52 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 // ImagesPreloaded returns true if all images have been preloaded
 func (r *Docker) ImagesPreloaded(images []string) bool {
 	return dockerImagesPreloaded(r.Runner, images)
+}
+
+const (
+	CNIBinDir   = "/opt/cni/bin"
+	CNIConfDir  = "/etc/cni/net.d"
+	CNICacheDir = "/var/lib/cni/cache"
+)
+
+func dockerConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
+	if networkPlugin == "" {
+		// no-op plugin
+		return nil
+	}
+
+	args := ""
+	if networkPlugin == "cni" {
+		args += " --cni-bin-dir=" + CNIBinDir
+		args += " --cni-cache-dir=" + CNICacheDir
+		args += " --cni-conf-dir=" + r.(*Docker).CNIConfDir
+	}
+
+	opts := struct {
+		NetworkPlugin  string
+		ExtraArguments string
+	}{
+		NetworkPlugin:  networkPlugin,
+		ExtraArguments: args,
+	}
+
+	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
+	var CRIDockerServiceConfTemplate = template.Must(template.New("criDockerServiceConfTemplate").Parse(`[Service]
+ExecStart=
+ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plugin={{.NetworkPlugin}}{{.ExtraArguments}}`))
+
+	b := bytes.Buffer{}
+	if err := CRIDockerServiceConfTemplate.Execute(&b, opts); err != nil {
+		return errors.Wrap(err, "failed to execute template")
+	}
+	criDockerService := b.Bytes()
+	c := exec.Command("sudo", "mkdir", "-p", filepath.Dir(CRIDockerServiceConfFile))
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "failed to create directory")
+	}
+	svc := assets.NewMemoryAssetTarget(criDockerService, CRIDockerServiceConfFile, "0644")
+	if err := cr.Copy(svc); err != nil {
+		return errors.Wrap(err, "failed to copy template")
+	}
+	return nil
 }
