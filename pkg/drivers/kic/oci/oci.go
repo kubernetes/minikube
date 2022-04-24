@@ -187,6 +187,11 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	if runtime.GOOS == "linux" {
+		// make sure directory exists, to avoid docker creating it as the root user
+		if err := os.MkdirAll(detect.ImageCacheDir(), 0755); err != nil {
+			return errors.Wrap(err, "mkdir cache")
+		}
+
 		// bind-mount the image cache, for faster loading of cached images (without scp)
 		runArgs = append(runArgs, "-v", fmt.Sprintf("%s:/cache", detect.ImageCacheDir()))
 	}
