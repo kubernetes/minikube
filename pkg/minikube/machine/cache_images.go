@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -43,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -51,6 +53,9 @@ import (
 
 // loadRoot is where images should be loaded from within the guest VM
 var loadRoot = path.Join(vmpath.GuestPersistentDir, "images")
+
+// cacheRoot is where images should be loaded from within the guest container
+var cacheRoot = "/cache"
 
 // loadImageLock is used to serialize image loads to avoid overloading the guest VM
 var loadImageLock sync.Mutex
@@ -112,6 +117,10 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 			err := timedNeedsTransfer(imgClient, image, cr, 10*time.Second)
 			if err == nil {
 				return nil
+			}
+			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
+				klog.Infof("%q needs load: %v", image, err)
+				return volumeLoadCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
 			}
 			klog.Infof("%q needs transfer: %v", image, err)
 			return transferAndLoadCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
@@ -313,6 +322,48 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 	}
 
 	klog.Infof("Transferred and loaded %s from cache", src)
+	return nil
+}
+
+// volumeLoadCachedImage loads a single image directly from the mounted cache
+func volumeLoadCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+	src := filepath.Join(cacheDir, imgName)
+	src = localpath.SanitizeCacheDir(src)
+	return volumeLoadImage(cr, k8s, src, imgName, cacheDir)
+}
+
+// volumeLoadImage loads the image directly from the mounted cache directory
+func volumeLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string, imgName string, cacheDir string) error {
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	if err := removeExistingImage(r, src, imgName); err != nil {
+		return err
+	}
+
+	klog.Infof("Loading image from: %s", src)
+	if _, err := os.Stat(src); err != nil {
+		return err
+	}
+	relative, err := filepath.Rel(cacheDir, src)
+	if err != nil {
+		return err
+	}
+
+	// host cacheDir is mounted at cacheRoot
+	dst := path.Join(cacheRoot, relative)
+
+	loadImageLock.Lock()
+	defer loadImageLock.Unlock()
+
+	err = r.LoadImage(dst)
+	if err != nil {
+		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
+	}
+
+	klog.Infof("Loaded %s from cache", src)
 	return nil
 }
 

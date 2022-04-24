@@ -36,6 +36,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -183,6 +184,11 @@ func CreateContainerNode(p CreateParams) error {
 	if p.Network != "" && p.IP != "" {
 		runArgs = append(runArgs, "--network", p.Network)
 		runArgs = append(runArgs, "--ip", p.IP)
+	}
+
+	if runtime.GOOS == "linux" {
+		// bind-mount the image cache, for faster loading of cached images (without scp)
+		runArgs = append(runArgs, "-v", fmt.Sprintf("%s:/cache", detect.ImageCacheDir()))
 	}
 
 	memcgSwap := hasMemorySwapCgroup()
