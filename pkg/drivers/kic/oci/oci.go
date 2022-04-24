@@ -141,6 +141,34 @@ func hasMemorySwapCgroup() bool {
 	return memcgSwap
 }
 
+func hasCPUCfsPeriod() bool {
+	cpuCfsPeriod := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
+			cpuCfsPeriod = false
+		}
+		if !cpuCfsPeriod {
+			// requires CONFIG_CFS_BANDWIDTH
+			klog.Warning("Your kernel does not support CPU cfs period or the cgroup is not mounted.")
+		}
+	}
+	return cpuCfsPeriod
+}
+
+func hasCPUCfsQuota() bool {
+	cpuCfsQuota := true
+	if runtime.GOOS == "linux" {
+		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
+			cpuCfsQuota = false
+		}
+		if !cpuCfsQuota {
+			// requires CONFIG_CFS_BANDWIDTH
+			klog.Warning("Your kernel does not support CPU cfs quota or the cgroup is not mounted.")
+		}
+	}
+	return cpuCfsQuota
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
@@ -196,9 +224,6 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "-v", fmt.Sprintf("%s:/cache", detect.ImageCacheDir()))
 	}
 
-	memcgSwap := hasMemorySwapCgroup()
-	memcg := HasMemoryCgroup()
-
 	// https://www.freedesktop.org/wiki/Software/systemd/ContainerInterface/
 	var virtualization string
 	if p.OCIBinary == Podman { // enable execing in /var
@@ -215,6 +240,8 @@ func CreateContainerNode(p CreateParams) error {
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
 	}
 
+	memcgSwap := hasMemorySwapCgroup()
+	memcg := HasMemoryCgroup()
 	if memcg {
 		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 	}
@@ -223,21 +250,8 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
 
-	cpuCfsPeriod := true
-	cpuCfsQuota := true
-	if runtime.GOOS == "linux" {
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_period_us"); os.IsNotExist(err) {
-			cpuCfsPeriod = false
-		}
-		if _, err := os.Stat("/sys/fs/cgroup/cpu/cpu.cfs_quota_us"); os.IsNotExist(err) {
-			cpuCfsQuota = false
-		}
-		if !cpuCfsPeriod || !cpuCfsQuota {
-			// requires CONFIG_CFS_BANDWIDTH
-			klog.Warning("Your kernel does not support CPU cfs period/quota or the cgroup is not mounted.")
-		}
-	}
-
+	cpuCfsPeriod := hasCPUCfsPeriod()
+	cpuCfsQuota := hasCPUCfsQuota()
 	if cpuCfsPeriod && cpuCfsQuota {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
 	}
