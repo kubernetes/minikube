@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -401,6 +402,9 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
+			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
+				return volumeSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
+			}
 			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
 		})
 	}
@@ -555,6 +559,54 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 	}
 
 	klog.Infof("Transferred and saved %s to cache", dst)
+	return nil
+}
+
+// volumeSaveCachedImage saves a single image from the cache
+func volumeSaveCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+	dst := filepath.Join(cacheDir, imgName)
+	dst = localpath.SanitizeCacheDir(dst)
+	return volumeSaveImage(cr, k8s, dst, imgName, cacheDir)
+}
+
+// volumeSaveImage saves a single image
+func volumeSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst string, imgName string, cacheDir string) error {
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	if !r.ImageExists(imgName, "") {
+		return errors.Errorf("image %s not found", imgName)
+	}
+
+	klog.Infof("Saving image to: %s", dst)
+	filename := filepath.Base(dst)
+
+	src := path.Join(cacheRoot, filename)
+	args := append([]string{"rm", "-f"}, src)
+	if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return err
+	}
+	err = r.SaveImage(imgName, src)
+	if err != nil {
+		return errors.Wrapf(err, "%s save %s", r.Name(), src)
+	}
+
+	user, err := user.Current()
+	if err != nil {
+		return err
+	}
+	args = append([]string{"chown", user.Uid}, src)
+	if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return err
+	}
+	args = append([]string{"chmod", "0644"}, src)
+	if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return err
+	}
+
+	klog.Infof("Saved %s to cache", dst)
 	return nil
 }
 
