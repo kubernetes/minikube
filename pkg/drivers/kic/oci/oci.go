@@ -205,14 +205,6 @@ func CreateContainerNode(p CreateParams) error {
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 
-		if memcgSwap {
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
-
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-
 		virtualization = "podman" // VIRTUALIZATION_PODMAN
 	}
 	if p.OCIBinary == Docker {
@@ -220,15 +212,15 @@ func CreateContainerNode(p CreateParams) error {
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
-		if memcg {
-			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
-		}
-		if memcgSwap {
-			// Disable swap by setting the value to match
-			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
-		}
-
 		virtualization = "docker" // VIRTUALIZATION_DOCKER
+	}
+
+	if memcg {
+		runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
+	}
+	if memcgSwap {
+		// Disable swap by setting the value to match
+		runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 	}
 
 	cpuCfsPeriod := true
