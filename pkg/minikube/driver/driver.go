@@ -130,6 +130,11 @@ func IsKIC(name string) bool {
 	return name == Docker || name == Podman
 }
 
+// ISKIC checks if the driver is using an external host
+func IsExternal(name string) bool {
+	return oci.IsExternalDaemonHost(name)
+}
+
 // IsDocker checks if the driver docker
 func IsDocker(name string) bool {
 	return name == Docker

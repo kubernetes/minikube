@@ -186,7 +186,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS == "linux" && !IsExternalDaemonHost(p.OCIBinary) {
 		// make sure directory exists, to avoid docker creating it as the root user
 		if err := os.MkdirAll(detect.ImageCacheDir(), 0755); err != nil {
 			return errors.Wrap(err, "mkdir cache")

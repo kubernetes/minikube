@@ -119,7 +119,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 			if err == nil {
 				return nil
 			}
-			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
+			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" && !driver.IsExternal(cc.Driver) {
 				klog.Infof("%q needs load: %v", image, err)
 				return volumeLoadCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
 			}
@@ -402,7 +402,7 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" {
+			if driver.IsKIC(cc.Driver) && runtime.GOOS == "linux" && !driver.IsExternal(cc.Driver) {
 				return volumeSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
 			}
 			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
