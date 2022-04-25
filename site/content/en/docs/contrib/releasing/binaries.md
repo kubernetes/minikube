@@ -85,7 +85,7 @@ After job completion, click "Console Output" to verify that the release complete
 
 The release script updates https://storage.googleapis.com/minikube/releases.json - which is used by the minikube binary to check for updates, and is live immediately.
 
-minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and Github in sync.
+minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and GitHub in sync.
 
 ## Package managers which include minikube
 
