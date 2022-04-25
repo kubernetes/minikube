@@ -66,7 +66,7 @@ sh hack/tag_release.sh 1.<minor>.<patch>
 
 ## Build the Release
 
-This step uses the git tag to publish new binaries to GCS and create a github release:
+This step uses the git tag to publish new binaries to GCS and create a GitHub release:
 
 * Navigate to the minikube "Release" jenkins job
 * Ensure that you are logged in (top right)
