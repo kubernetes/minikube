@@ -85,7 +85,7 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.23.5
-	k8s.io/apimachinery v0.23.5
+	k8s.io/apimachinery v0.23.6
 	k8s.io/client-go v0.23.5
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.23.5
