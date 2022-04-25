@@ -180,7 +180,6 @@ void Window::createAdvancedView()
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
-    connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &Window::messageClicked);
 
     clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     stackedWidget->addWidget(clusterGroupBox);
@@ -230,10 +229,33 @@ void Window::createActions()
     connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 }
 
+void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason) {
+    case QSystemTrayIcon::Trigger:
+    case QSystemTrayIcon::DoubleClick:
+        Window::restoreWindow();
+        break;
+    default:;
+    }
+}
+
 void Window::restoreWindow()
 {
+    bool wasVisible = isVisible();
     QWidget::showNormal();
+    activateWindow();
+    if (wasVisible) {
+        return;
+    }
+    // without this delay window doesn't render until updateClusters() completes
+    delay();
     updateClusters();
+}
+
+void Window::delay()
+{
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 static QString minikubePath()
@@ -257,6 +279,8 @@ void Window::createTrayIcon()
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setContextMenu(trayIconMenu);
     trayIcon->setIcon(*trayIconIcon);
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this, &Window::iconActivated);
 }
 
 void Window::startMinikube(QStringList moreArgs)

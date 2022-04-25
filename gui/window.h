@@ -102,6 +102,7 @@ private:
     // Tray icon
     void createTrayIcon();
     void createActions();
+    void iconActivated(QSystemTrayIcon::ActivationReason reason);
     QAction *minimizeAction;
     QAction *restoreAction;
     QAction *quitAction;
@@ -179,6 +180,7 @@ private:
     QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
+    void delay();
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
