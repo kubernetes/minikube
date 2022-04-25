@@ -113,14 +113,9 @@ private:
     void createBasicView();
     void toBasicView();
     void updateBasicButtons();
-    void basicStartMinikube();
-    void basicStopMinikube();
-    void basicDeleteMinikube();
-    void basicRefreshMinikube();
-    void basicSSHMinikube();
-    void basicDashboardMinikube();
     QPushButton *basicStartButton;
     QPushButton *basicStopButton;
+    QPushButton *basicPauseButton;
     QPushButton *basicDeleteButton;
     QPushButton *basicRefreshButton;
     QPushButton *basicSSHButton;
@@ -133,6 +128,7 @@ private:
     void updateAdvancedButtons();
     QPushButton *startButton;
     QPushButton *stopButton;
+    QPushButton *pauseButton;
     QPushButton *deleteButton;
     QPushButton *refreshButton;
     QPushButton *createButton;
@@ -141,9 +137,9 @@ private:
     QGroupBox *clusterGroupBox;
 
     // Cluster table
-    QString selectedCluster();
-    void setSelectedCluster(QString cluster);
-    ClusterHash getClusterHash();
+    QString selectedClusterName();
+    void setSelectedClusterName(QString cluster);
+    Cluster selectedCluster();
     ClusterList getClusters();
     void updateClusters();
     ClusterModel *clusterModel;
@@ -160,6 +156,9 @@ private:
     void startMinikube(QStringList args);
     void startSelectedMinikube();
     void stopMinikube();
+    void pauseMinikube();
+    void unpauseMinikube();
+    void pauseOrUnpauseMinikube();
     void deleteMinikube();
     bool sendMinikubeCommand(QStringList cmds);
     bool sendMinikubeCommand(QStringList cmds, QString &text);
