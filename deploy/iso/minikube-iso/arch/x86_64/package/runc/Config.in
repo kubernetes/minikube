@@ -1,5 +1,6 @@
-config BR2_PACKAGE_RUNC_MASTER
-	bool "runc-master"
+config BR2_PACKAGE_RUNC
+	bool "runc"
+	depends on BR2_x86_64
 	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
 	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
 	depends on BR2_TOOLCHAIN_HAS_THREADS
