@@ -16,7 +16,7 @@ CNI_PLUGINS_MAKE_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=0 \
 	GO111MODULE=off \
-	GOARCH=amd64
+	GOARCH=arm64
 
 CNI_PLUGINS_BUILDFLAGS = -a -ldflags '-extldflags -static -X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(CNI_PLUGINS_VERSION)'
 
