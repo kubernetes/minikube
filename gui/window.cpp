@@ -232,6 +232,15 @@ void Window::createActions()
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
+
+    startAction = new QAction(tr("Start"), this);
+    connect(startAction, &QAction::triggered, this, &Window::startSelectedMinikube);
+
+    pauseAction = new QAction(tr("Pause"), this);
+    connect(pauseAction, &QAction::triggered, this, &Window::pauseOrUnpauseMinikube);
+
+    stopAction = new QAction(tr("Stop"), this);
+    connect(stopAction, &QAction::triggered, this, &Window::stopMinikube);
 }
 
 void Window::restoreWindow()
@@ -253,6 +262,10 @@ static QString minikubePath()
 void Window::createTrayIcon()
 {
     trayIconMenu = new QMenu(this);
+    trayIconMenu->addAction(startAction);
+    trayIconMenu->addAction(pauseAction);
+    trayIconMenu->addAction(stopAction);
+    trayIconMenu->addSeparator();
     trayIconMenu->addAction(minimizeAction);
     trayIconMenu->addAction(restoreAction);
     trayIconMenu->addSeparator();
@@ -478,11 +491,26 @@ void Window::createClusterGroupBox()
 
 void Window::updateButtons()
 {
+    Cluster cluster = selectedCluster();
     if (isBasicView) {
-        updateBasicButtons();
+        updateBasicButtons(cluster);
     } else {
-        updateAdvancedButtons();
+        updateAdvancedButtons(cluster);
     }
+    updateTrayActions(cluster);
+}
+
+void Window::updateTrayActions(Cluster cluster)
+{
+    bool isRunning = cluster.status() == "Running";
+    bool isPaused = cluster.status() == "Paused";
+    pauseAction->setEnabled(isRunning || isPaused);
+    stopAction->setEnabled(isRunning || isPaused);
+    QString pauseLabel = tr("Pause");
+    if (isPaused) {
+        pauseLabel = tr("Unpause");
+    }
+    pauseAction->setText(pauseLabel);
 }
 
 Cluster Window::selectedCluster()
@@ -500,9 +528,8 @@ Cluster Window::selectedCluster()
     return clusterHash[clusterName];
 }
 
-void Window::updateBasicButtons()
+void Window::updateBasicButtons(Cluster cluster)
 {
-    Cluster cluster = selectedCluster();
     bool exists = !cluster.isEmpty();
     bool isRunning = cluster.status() == "Running";
     bool isPaused = cluster.status() == "Paused";
@@ -532,9 +559,8 @@ void Window::pauseOrUnpauseMinikube()
     pauseMinikube();
 }
 
-void Window::updateAdvancedButtons()
+void Window::updateAdvancedButtons(Cluster cluster)
 {
-    Cluster cluster = selectedCluster();
     bool exists = !cluster.isEmpty();
     bool isRunning = cluster.status() == "Running";
     bool isPaused = cluster.status() == "Paused";
