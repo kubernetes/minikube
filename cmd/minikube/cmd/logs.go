@@ -50,6 +50,8 @@ var (
 	showProblems bool
 	// fileOutput is where to write logs to. If omitted, writes to stdout.
 	fileOutput string
+	// auditLogs only shows the audit logs
+	auditLogs bool
 )
 
 // logsCmd represents the logs command
@@ -73,7 +75,13 @@ var logsCmd = &cobra.Command{
 				exit.Error(reason.Usage, "Failed to create file", err)
 			}
 		}
-
+		if auditLogs {
+			err := logs.OutputAudit(numberOfLines)
+			if err != nil {
+				klog.Errorf("failed to output audit logs: %v", err)
+			}
+			return
+		}
 		logs.OutputOffline(numberOfLines, logOutput)
 
 		if shouldSilentFail() {
@@ -91,7 +99,6 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.Error(reason.InternalNewRuntime, "Unable to get runtime", err)
 		}
-
 		if followLogs {
 			err := logs.Follow(cr, bs, *co.Config, co.CP.Runner, logOutput)
 			if err != nil {
@@ -142,4 +149,5 @@ func init() {
 	logsCmd.Flags().IntVarP(&numberOfLines, "length", "n", 60, "Number of lines back to go within the log")
 	logsCmd.Flags().StringVar(&nodeName, "node", "", "The node to get logs from. Defaults to the primary control plane.")
 	logsCmd.Flags().StringVar(&fileOutput, "file", "", "If present, writes to the provided file instead of stdout.")
+	logsCmd.Flags().BoolVar(&auditLogs, "audit", false, "Show only the audit logs")
 }

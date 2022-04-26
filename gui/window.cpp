@@ -391,6 +391,10 @@ Cluster Window::createClusterObject(QJsonObject obj)
         QString containerRuntime = k8sConfig["ContainerRuntime"].toString();
         cluster.setContainerRuntime(containerRuntime);
     }
+    if (k8sConfig.contains("KubernetesVersion")) {
+        QString k8sVersion = k8sConfig["KubernetesVersion"].toString();
+        cluster.setK8sVersion(k8sVersion);
+    }
     return cluster;
 }
 
@@ -435,6 +439,7 @@ void Window::createClusterGroupBox()
     clusterListView->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
     clusterListView->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
     clusterListView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
+    clusterListView->horizontalHeader()->setSectionResizeMode(6, QHeaderView::ResizeToContents);
     setSelectedClusterName("default");
 
     connect(clusterListView, SIGNAL(clicked(QModelIndex)), this, SLOT(updateButtons()));
@@ -725,13 +730,12 @@ void Window::outputFailedStart(QString text)
         errorMessage->setStyleSheet("background-color:white;");
         createLabel("Link to documentation", url, &form, true);
         createLabel("Link to related issue", issues, &form, true);
-        // Enabling once https://github.com/kubernetes/minikube/issues/13925 is fixed
-        // QLabel *fileLabel = new QLabel(this);
-        // fileLabel->setOpenExternalLinks(true);
-        // fileLabel->setWordWrap(true);
-        // QString logFile = QDir::homePath() + "/.minikube/logs/lastStart.txt";
-        // fileLabel->setText("<a href='file:///" + logFile + "'>View log file</a>");
-        // form.addRow(fileLabel);
+        QLabel *fileLabel = new QLabel(this);
+        fileLabel->setOpenExternalLinks(true);
+        fileLabel->setWordWrap(true);
+        QString logFile = QDir::homePath() + "/.minikube/logs/lastStart.txt";
+        fileLabel->setText("<a href='file:///" + logFile + "'>View log file</a>");
+        form.addRow(fileLabel);
         QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
         buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
         connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);

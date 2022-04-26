@@ -20,6 +20,7 @@ minikube logs [flags]
 ### Options
 
 ```
+      --audit         Show only the audit logs
       --file string   If present, writes to the provided file instead of stdout.
   -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
   -n, --length int    Number of lines back to go within the log (default 60)
