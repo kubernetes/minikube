@@ -69,7 +69,7 @@ int ClusterModel::rowCount(const QModelIndex &) const
 
 int ClusterModel::columnCount(const QModelIndex &) const
 {
-    return 6;
+    return 7;
 }
 
 static QStringList binaryAbbrs = { "B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB" };
@@ -81,7 +81,7 @@ QVariant ClusterModel::data(const QModelIndex &index, int role) const
 
     if (index.row() >= clusterList.size())
         return QVariant();
-    if (index.column() >= 6)
+    if (index.column() >= 7)
         return QVariant();
 
     if (role == Qt::TextAlignmentRole) {
@@ -97,6 +97,8 @@ QVariant ClusterModel::data(const QModelIndex &index, int role) const
         case 4:
             // fall-through
         case 5:
+            // fall-through
+        case 6:
             return QVariant(Qt::AlignHCenter | Qt::AlignVCenter);
         }
     }
@@ -112,8 +114,10 @@ QVariant ClusterModel::data(const QModelIndex &index, int role) const
         case 3:
             return cluster.containerRuntime();
         case 4:
-            return QString::number(cluster.cpus());
+            return cluster.k8sVersion();
         case 5:
+            return QString::number(cluster.cpus());
+        case 6:
             return QString::number(cluster.memory());
         }
     }
@@ -136,8 +140,10 @@ QVariant ClusterModel::headerData(int section, Qt::Orientation orientation, int 
         case 3:
             return tr("Container Runtime");
         case 4:
-            return tr("CPUs");
+            return tr("Kubernetes Version");
         case 5:
+            return tr("CPUs");
+        case 6:
             return tr("Memory (MB)");
         }
     }
