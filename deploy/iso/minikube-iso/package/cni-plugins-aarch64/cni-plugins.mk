@@ -5,29 +5,14 @@
 ################################################################################
 
 CNI_PLUGINS_VERSION = v0.8.5
-CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/archive
-CNI_PLUGINS_SOURCE = $(CNI_PLUGINS_VERSION).tar.gz
+CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_VERSION)
+CNI_PLUGINS_SOURCE = cni-plugins-linux-arm64-$(CNI_PLUGINS_VERSION).tgz
 CNI_PLUGINS_LICENSE = Apache-2.0
 CNI_PLUGINS_LICENSE_FILES = LICENSE
 
-CNI_PLUGINS_DEPENDENCIES = host-go
-
-CNI_PLUGINS_MAKE_ENV = \
-	$(GO_TARGET_ENV) \
-	CGO_ENABLED=0 \
-	GO111MODULE=off \
-	GOARCH=arm64
-
-CNI_PLUGINS_BUILDFLAGS = -a -ldflags '-extldflags -static -X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(CNI_PLUGINS_VERSION)'
-
-
-define CNI_PLUGINS_BUILD_CMDS
-	(cd $(@D); $(CNI_PLUGINS_MAKE_ENV) ./build_linux.sh $(CNI_PLUGINS_BUILDFLAGS))
-endef
-
 define CNI_PLUGINS_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/bandwidth \
+		$(@D)/bandwidth \
 		$(TARGET_DIR)/opt/cni/bin/bandwidth
 
 	ln -sf \
@@ -35,7 +20,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/bandwidth
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/bridge \
+		$(@D)/bridge \
 		$(TARGET_DIR)/opt/cni/bin/bridge
 
 	ln -sf \
@@ -43,7 +28,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/bridge
 	
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/vlan \
+		$(@D)/vlan \
 		$(TARGET_DIR)/opt/cni/bin/vlan
 
 	ln -sf \
@@ -51,7 +36,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/vlan
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/tuning \
+		$(@D)/tuning \
 		$(TARGET_DIR)/opt/cni/bin/tuning
 
 	ln -sf \
@@ -59,7 +44,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/tuning
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/ptp \
+		$(@D)/ptp \
 		$(TARGET_DIR)/opt/cni/bin/ptp
 
 	ln -sf \
@@ -67,7 +52,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/ptp
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/portmap \
+		$(@D)/portmap \
 		$(TARGET_DIR)/opt/cni/bin/portmap
 
 	ln -sf \
@@ -75,7 +60,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/portmap
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/macvlan \
+		$(@D)/macvlan \
 		$(TARGET_DIR)/opt/cni/bin/macvlan
 
 	ln -sf \
@@ -83,7 +68,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/macvlan
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/loopback \
+		$(@D)/loopback \
 		$(TARGET_DIR)/opt/cni/bin/loopback
 
 	ln -sf \
@@ -91,7 +76,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/loopback
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/ipvlan \
+		$(@D)/ipvlan \
 		$(TARGET_DIR)/opt/cni/bin/ipvlan
 
 	ln -sf \
@@ -99,7 +84,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/ipvlan
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/host-local \
+		$(@D)/host-local \
 		$(TARGET_DIR)/opt/cni/bin/host-local
 
 	ln -sf \
@@ -107,7 +92,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/host-local
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/flannel \
+		$(@D)/flannel \
 		$(TARGET_DIR)/opt/cni/bin/flannel
 
 	ln -sf \
@@ -116,7 +101,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/dhcp \
+		$(@D)/dhcp \
 		$(TARGET_DIR)/opt/cni/bin/dhcp
 
 	ln -sf \
@@ -124,7 +109,7 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/dhcp
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/firewall \
+		$(@D)/firewall \
 		$(TARGET_DIR)/opt/cni/bin/firewall
 
 	ln -sf \
