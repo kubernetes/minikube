@@ -125,7 +125,7 @@ var (
 	AmbassadorAssets embed.FS
 
 	// GcpAuthAssets assets for gcp-auth addon
-	//go:embed gcp-auth/*.tmpl
+	//go:embed gcp-auth/*.yaml
 	GcpAuthAssets embed.FS
 
 	// VolumeSnapshotsAssets assets for volumesnapshots addon
