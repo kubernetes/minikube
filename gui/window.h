@@ -102,9 +102,13 @@ private:
     // Tray icon
     void createTrayIcon();
     void createActions();
+    void updateTrayActions(Cluster cluster);
     QAction *minimizeAction;
     QAction *restoreAction;
     QAction *quitAction;
+    QAction *startAction;
+    QAction *pauseAction;
+    QAction *stopAction;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QIcon *trayIconIcon;
@@ -112,7 +116,7 @@ private:
     // Basic view
     void createBasicView();
     void toBasicView();
-    void updateBasicButtons();
+    void updateBasicButtons(Cluster cluster);
     QPushButton *basicStartButton;
     QPushButton *basicStopButton;
     QPushButton *basicPauseButton;
@@ -125,7 +129,7 @@ private:
     void createAdvancedView();
     void toAdvancedView();
     void createClusterGroupBox();
-    void updateAdvancedButtons();
+    void updateAdvancedButtons(Cluster cluster);
     QPushButton *startButton;
     QPushButton *stopButton;
     QPushButton *pauseButton;
