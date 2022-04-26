@@ -1,4 +1,4 @@
-config BR2_PACKAGE_CNI_PLUGINS
+config BR2_PACKAGE_CNI_PLUGINS_AARCH64
 	bool "cni-plugins"
 	default y
 	depends on BR2_aarch64

@@ -1,4 +1,4 @@
-config BR2_PACKAGE_CONTAINERD_BIN
+config BR2_PACKAGE_CONTAINERD_BIN_AARCH64
 	bool "containerd-bin"
 	default y
 	depends on BR2_aarch64

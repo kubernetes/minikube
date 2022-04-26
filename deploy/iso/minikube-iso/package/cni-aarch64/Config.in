@@ -1,4 +1,4 @@
-config BR2_PACKAGE_CNI
+config BR2_PACKAGE_CNI_AARCH64
 	bool "cni"
 	default y
 	depends on BR2_aarch64
