@@ -87,6 +87,7 @@ public:
     void setCpus(int cpus) { m_cpus = cpus; }
     int memory() const { return m_memory; }
     void setMemory(int memory) { m_memory = memory; }
+    bool isEmpty() { return m_name.isEmpty(); }
 
 private:
     QString m_name;
