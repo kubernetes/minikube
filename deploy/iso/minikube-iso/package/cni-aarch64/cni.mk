@@ -19,7 +19,7 @@ CNI_MAKE_ENV = \
 	GO111MODULE=off \
 	GOPATH="$(CNI_GOPATH)" \
 	GOBIN="$(CNI_GOPATH)/bin" \
-	PATH=$(CNI_GOPATH)/bin:$(BR_PATH)
+	PATH=$(CNI_GOPATH)/bin:$(BR_PATH) \
 	GOARCH=arm64
 
 CNI_BUILDFLAGS = -a --ldflags '-extldflags \"-static\"'
