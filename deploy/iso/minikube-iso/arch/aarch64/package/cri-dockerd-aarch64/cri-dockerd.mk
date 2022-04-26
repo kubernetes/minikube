@@ -20,7 +20,8 @@ CRI_DOCKERD_ENV = \
 	GO111MODULE=on \
 	GOPATH="$(CRI_DOCKERD_GOPATH)" \
 	GOBIN="$(CRI_DOCKERD_GOPATH)/bin" \
-	PATH=$(CRI_DOCKERD_GOPATH)/bin:$(BR_PATH)
+	PATH=$(CRI_DOCKERD_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=arm64
 
 CRI_DOCKERD_COMPILE_SRC = $(CRI_DOCKERD_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_REV)'"
