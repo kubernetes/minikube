@@ -20,7 +20,7 @@ CNI_MAKE_ENV = \
 	GOPATH="$(CNI_GOPATH)" \
 	GOBIN="$(CNI_GOPATH)/bin" \
 	PATH=$(CNI_GOPATH)/bin:$(BR_PATH)
-	GOARCH=amd64
+	GOARCH=arm64
 
 CNI_BUILDFLAGS = -a --ldflags '-extldflags \"-static\"'
 
