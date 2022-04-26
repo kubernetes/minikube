@@ -1,4 +1,4 @@
-config BR2_PACKAGE_DOCKER_BIN_AARCH64
+config BR2_PACKAGE_DOCKER_BIN
 	bool "docker-bin"
 	default y
 	depends on BR2_aarch64
