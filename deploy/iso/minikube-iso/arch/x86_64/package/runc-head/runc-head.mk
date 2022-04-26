@@ -21,7 +21,7 @@ RUNC_HEAD_MAKE_ENV = \
 	GOPATH="$(RUNC_HEAD_GOPATH)" \
 	GOBIN="$(RUNC_HEAD_GOPATH)/bin" \
 	PATH=$(RUNC_HEAD_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=arm64
+	GOARCH=amd64
 
 RUNC_HEAD_COMPILE_SRC = $(RUNC_HEAD_GOPATH)/src/github.com/opencontainers/runc
 

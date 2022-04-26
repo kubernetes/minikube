@@ -1,5 +1,5 @@
-config BR2_PACKAGE_RUNC
-	bool "runc"
+config BR2_PACKAGE_RUNC_HEAD
+	bool "runc-head"
 	depends on BR2_x86_64
 	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
 	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
