@@ -145,10 +145,11 @@ private:
     QString selectedClusterName();
     void setSelectedClusterName(QString cluster);
     Cluster selectedCluster();
-    ClusterList getClusters();
-    void updateClusters();
+    void updateClusterList();
+    void updateClustersTable();
     ClusterModel *clusterModel;
     QTableView *clusterListView;
+    ClusterList clusterList;
 
     // Create cluster
     void askCustom();
@@ -180,6 +181,8 @@ private:
 
     void checkForMinikube();
     void restoreWindow();
+    QString getPauseLabel(bool isPaused);
+    QString getStartLabel(bool isRunning);
     QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;

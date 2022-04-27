@@ -156,7 +156,7 @@ void Window::createBasicView()
     connect(basicStopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(basicPauseButton, &QAbstractButton::clicked, this, &Window::pauseOrUnpauseMinikube);
     connect(basicDeleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
-    connect(basicRefreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
+    connect(basicRefreshButton, &QAbstractButton::clicked, this, &Window::updateClustersTable);
     connect(advancedViewButton, &QAbstractButton::clicked, this, &Window::toAdvancedView);
 }
 
@@ -165,6 +165,7 @@ void Window::toAdvancedView()
     isBasicView = false;
     stackedWidget->setCurrentIndex(1);
     resize(600, 400);
+    updateButtons();
 }
 
 void Window::toBasicView()
@@ -172,6 +173,7 @@ void Window::toBasicView()
     isBasicView = true;
     stackedWidget->setCurrentIndex(0);
     resize(200, 250);
+    updateButtons();
 }
 
 void Window::createAdvancedView()
@@ -182,7 +184,7 @@ void Window::createAdvancedView()
     connect(stopButton, &QAbstractButton::clicked, this, &Window::stopMinikube);
     connect(pauseButton, &QAbstractButton::clicked, this, &Window::pauseOrUnpauseMinikube);
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
-    connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClusters);
+    connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClustersTable);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
 
     clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
@@ -263,7 +265,7 @@ void Window::restoreWindow()
     }
     // without this delay window doesn't render until updateClusters() completes
     delay();
-    updateClusters();
+    updateClustersTable();
 }
 
 void Window::delay()
@@ -306,7 +308,7 @@ void Window::startMinikube(QStringList moreArgs)
     QStringList args = { "start", "-o", "json" };
     args << moreArgs;
     bool success = sendMinikubeCommand(args, text);
-    updateClusters();
+    updateClustersTable();
     if (success) {
         return;
     }
@@ -323,39 +325,40 @@ void Window::stopMinikube()
 {
     QStringList args = { "stop", "-p", selectedClusterName() };
     sendMinikubeCommand(args);
-    updateClusters();
+    updateClustersTable();
 }
 
 void Window::pauseMinikube()
 {
     QStringList args = { "pause", "-p", selectedClusterName() };
     sendMinikubeCommand(args);
-    updateClusters();
+    updateClustersTable();
 }
 
 void Window::unpauseMinikube()
 {
     QStringList args = { "unpause", "-p", selectedClusterName() };
     sendMinikubeCommand(args);
-    updateClusters();
+    updateClustersTable();
 }
 
 void Window::deleteMinikube()
 {
     QStringList args = { "delete", "-p", selectedClusterName() };
     sendMinikubeCommand(args);
-    updateClusters();
+    updateClustersTable();
 }
 
-void Window::updateClusters()
+void Window::updateClustersTable()
 {
     QString cluster = selectedClusterName();
-    clusterModel->setClusters(getClusters());
+    updateClusterList();
+    clusterModel->setClusters(clusterList);
     setSelectedClusterName(cluster);
     updateButtons();
 }
 
-ClusterList Window::getClusters()
+void Window::updateClusterList()
 {
     ClusterList clusters;
     QStringList args = { "profile", "list", "-o", "json" };
@@ -390,7 +393,7 @@ ClusterList Window::getClusters()
             clusters << cluster;
         }
     }
-    return clusters;
+    clusterList = clusters;
 }
 
 Cluster Window::createClusterObject(QJsonObject obj)
@@ -441,7 +444,7 @@ QString Window::selectedClusterName()
         return "minikube";
     }
     QModelIndex index = clusterListView->currentIndex();
-    QVariant variant = index.data(Qt::DisplayRole);
+    QVariant variant = index.siblingAtColumn(0).data(Qt::DisplayRole);
     if (variant.isNull()) {
         return QString();
     }
@@ -463,7 +466,8 @@ void Window::createClusterGroupBox()
 {
     clusterGroupBox = new QGroupBox(tr("Clusters"));
 
-    ClusterList clusters = getClusters();
+    updateClusterList();
+    ClusterList clusters = clusterList;
     clusterModel = new ClusterModel(clusters);
 
     clusterListView = new QTableView();
@@ -530,11 +534,8 @@ void Window::updateTrayActions(Cluster cluster)
     bool isPaused = cluster.status() == "Paused";
     pauseAction->setEnabled(isRunning || isPaused);
     stopAction->setEnabled(isRunning || isPaused);
-    QString pauseLabel = tr("Pause");
-    if (isPaused) {
-        pauseLabel = tr("Unpause");
-    }
-    pauseAction->setText(pauseLabel);
+    pauseAction->setText(getPauseLabel(isRunning));
+    startAction->setText(getStartLabel(isRunning));
 }
 
 Cluster Window::selectedCluster()
@@ -543,7 +544,7 @@ Cluster Window::selectedCluster()
     if (clusterName.isEmpty()) {
         return Cluster();
     }
-    ClusterList clusters = getClusters();
+    ClusterList clusters = clusterList;
     ClusterHash clusterHash;
     for (int i = 0; i < clusters.size(); i++) {
         Cluster cluster = clusters.at(i);
@@ -566,11 +567,24 @@ void Window::updateBasicButtons(Cluster cluster)
 #else
     basicSSHButton->setEnabled(false);
 #endif
-    QString pauseLabel = tr("Pause");
+    basicPauseButton->setText(getPauseLabel(isPaused));
+    basicStartButton->setText(getStartLabel(isRunning));
+}
+
+QString Window::getPauseLabel(bool isPaused)
+{
     if (isPaused) {
-        pauseLabel = tr("Unpause");
+        return tr("Unpause");
     }
-    basicPauseButton->setText(pauseLabel);
+    return tr("Pause");
+}
+
+QString Window::getStartLabel(bool isRunning)
+{
+    if (isRunning) {
+        return tr("Reload");
+    }
+    return tr("Start");
 }
 
 void Window::pauseOrUnpauseMinikube()
@@ -598,11 +612,8 @@ void Window::updateAdvancedButtons(Cluster cluster)
 #else
     sshButton->setEnabled(false);
 #endif
-    QString pauseLabel = tr("Pause");
-    if (isPaused) {
-        pauseLabel = tr("Unpause");
-    }
-    pauseButton->setText(pauseLabel);
+    pauseButton->setText(getPauseLabel(isPaused));
+    startButton->setText(getStartLabel(isRunning));
 }
 
 bool Window::sendMinikubeCommand(QStringList cmds)
@@ -812,7 +823,7 @@ QLabel *Window::createLabel(QString title, QString text, QFormLayout *form, bool
 void Window::initMachine()
 {
     askName();
-    updateClusters();
+    updateClustersTable();
 }
 
 void Window::sshConsole()
