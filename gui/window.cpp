@@ -491,13 +491,6 @@ void Window::createClusterGroupBox()
     clusterLayout->addWidget(clusterListView);
     clusterLayout->addLayout(bottomButtonLayout);
     clusterGroupBox->setLayout(clusterLayout);
-
-    startButton->setEnabled(false);
-    stopButton->setEnabled(false);
-    pauseButton->setEnabled(false);
-    deleteButton->setEnabled(false);
-    sshButton->setEnabled(false);
-    dashboardButton->setEnabled(false);
 }
 
 void Window::updateButtons()
