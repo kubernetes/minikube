@@ -27,12 +27,12 @@ CRI_DOCKERD_COMPILE_SRC = $(CRI_DOCKERD_GOPATH)/src/github.com/Mirantis/cri-dock
 CRI_DOCKERD_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_REV)'"
 
 define CRI_DOCKERD_BUILD_CMDS
-	$(CRI_DOCKERD_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_VER) REVISION=$(CRI_DOCKERD_REV) static-linux
+	$(CRI_DOCKERD_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D)/packaging/statuc VERSION=$(CRI_DOCKERD_VER) REVISION=$(CRI_DOCKERD_REV) cross-arm
 endef
 
 define CRI_DOCKERD_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
-		$(@D)/packaging/static/build/linux/cri-dockerd/cri-dockerd \
+		$(@D)/packaging/static/build/arm/cri-dockerd/cri-dockerd \
 		$(TARGET_DIR)/usr/bin/cri-dockerd
 endef
 
