@@ -1,4 +1,4 @@
-config BR2_PACKAGE_PODMAN
+config BR2_PACKAGE_PODMAN_AARCH64
 	bool "podman"
 	default y
 	depends on BR2_aarch64

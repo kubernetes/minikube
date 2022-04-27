@@ -1,4 +1,4 @@
-config BR2_PACKAGE_CRIO_BIN
+config BR2_PACKAGE_CRIO_BIN_AARCH64
 	bool "crio-bin"
 	default y
 	depends on BR2_aarch64

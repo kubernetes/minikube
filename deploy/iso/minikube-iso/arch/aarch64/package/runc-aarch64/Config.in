@@ -1,4 +1,4 @@
-config BR2_PACKAGE_RUNC_HEAD
+config BR2_PACKAGE_RUNC_HEAD_AARCH64
 	bool "runc-head"
 	depends on BR2_aarch64
 	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
