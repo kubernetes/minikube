@@ -294,9 +294,9 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) O=$(BUILD_DIR)/buildroot/output-$* host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) O=$(BUILD_DIR)/buildroot/output-$*
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	mv $(BUILD_DIR)/buildroot/output-$*/images/boot.iso $(BUILD_DIR)/minikube-$(subst x86_64,amd64,$(subst aarch64,arm64,$*)).iso
 
 
