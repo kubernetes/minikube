@@ -243,6 +243,18 @@ void Window::createActions()
 
     stopAction = new QAction(tr("Stop"), this);
     connect(stopAction, &QAction::triggered, this, &Window::stopMinikube);
+
+    statusAction = new QAction(tr("Status:"), this);
+    statusAction->setEnabled(false);
+}
+
+void Window::updateStatus(Cluster cluster)
+{
+    QString status = cluster.status();
+    if (status.isEmpty()) {
+        status = "Stopped";
+    }
+    statusAction->setText("Status: " + status);
 }
 
 void Window::restoreWindow()
@@ -264,6 +276,8 @@ static QString minikubePath()
 void Window::createTrayIcon()
 {
     trayIconMenu = new QMenu(this);
+    trayIconMenu->addAction(statusAction);
+    trayIconMenu->addSeparator();
     trayIconMenu->addAction(startAction);
     trayIconMenu->addAction(pauseAction);
     trayIconMenu->addAction(stopAction);
@@ -502,6 +516,7 @@ void Window::updateButtons()
         updateAdvancedButtons(cluster);
     }
     updateTrayActions(cluster);
+    updateStatus(cluster);
 }
 
 void Window::updateTrayActions(Cluster cluster)

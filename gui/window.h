@@ -102,6 +102,7 @@ private:
     // Tray icon
     void createTrayIcon();
     void createActions();
+    void updateStatus(Cluster cluster);
     void updateTrayActions(Cluster cluster);
     QAction *minimizeAction;
     QAction *restoreAction;
@@ -109,6 +110,7 @@ private:
     QAction *startAction;
     QAction *pauseAction;
     QAction *stopAction;
+    QAction *statusAction;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QIcon *trayIconIcon;
