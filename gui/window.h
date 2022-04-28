@@ -104,6 +104,7 @@ private:
     void createActions();
     void updateStatus(Cluster cluster);
     void updateTrayActions(Cluster cluster);
+    void iconActivated(QSystemTrayIcon::ActivationReason reason);
     QAction *minimizeAction;
     QAction *restoreAction;
     QAction *quitAction;
@@ -148,9 +149,12 @@ private:
     Cluster selectedCluster();
     void updateClusterList();
     void updateClustersTable();
+    void showLoading();
+    void hideLoading();
     ClusterModel *clusterModel;
     QTableView *clusterListView;
     ClusterList clusterList;
+    QLabel *loading;
 
     // Create cluster
     void askCustom();
@@ -187,6 +191,8 @@ private:
     QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
+    void delay();
+    int getCenter(int widgetSize, int parentSize);
 };
 
 #endif // QT_NO_SYSTEMTRAYICON

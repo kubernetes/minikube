@@ -186,7 +186,6 @@ void Window::createAdvancedView()
     connect(deleteButton, &QAbstractButton::clicked, this, &Window::deleteMinikube);
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClustersTable);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
-    connect(trayIcon, &QSystemTrayIcon::messageClicked, this, &Window::messageClicked);
 
     clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     stackedWidget->addWidget(clusterGroupBox);
@@ -257,10 +256,33 @@ void Window::updateStatus(Cluster cluster)
     statusAction->setText("Status: " + status);
 }
 
+void Window::iconActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason) {
+    case QSystemTrayIcon::Trigger:
+    case QSystemTrayIcon::DoubleClick:
+        Window::restoreWindow();
+        break;
+    default:;
+    }
+}
+
 void Window::restoreWindow()
 {
+    bool wasVisible = isVisible();
     QWidget::showNormal();
+    activateWindow();
+    if (wasVisible) {
+        return;
+    }
+    // without this delay window doesn't render until updateClusters() completes
+    delay();
     updateClustersTable();
+}
+
+void Window::delay()
+{
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 }
 
 static QString minikubePath()
@@ -290,6 +312,8 @@ void Window::createTrayIcon()
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setContextMenu(trayIconMenu);
     trayIcon->setIcon(*trayIconIcon);
+
+    connect(trayIcon, &QSystemTrayIcon::activated, this, &Window::iconActivated);
 }
 
 void Window::startMinikube(QStringList moreArgs)
@@ -341,11 +365,37 @@ void Window::deleteMinikube()
 
 void Window::updateClustersTable()
 {
+    showLoading();
     QString cluster = selectedClusterName();
     updateClusterList();
     clusterModel->setClusters(clusterList);
     setSelectedClusterName(cluster);
     updateButtons();
+    loading->setHidden(true);
+    clusterListView->setEnabled(true);
+    hideLoading();
+}
+
+void Window::showLoading()
+{
+    clusterListView->setEnabled(false);
+    loading->setHidden(false);
+    loading->raise();
+    int width = getCenter(loading->width(), clusterListView->width());
+    int height = getCenter(loading->height(), clusterListView->height());
+    loading->move(width, height);
+    delay();
+}
+
+void Window::hideLoading()
+{
+    loading->setHidden(true);
+    clusterListView->setEnabled(true);
+}
+
+int Window::getCenter(int widgetSize, int parentSize)
+{
+    return parentSize / 2 - widgetSize / 2;
 }
 
 void Window::updateClusterList()
@@ -505,6 +555,13 @@ void Window::createClusterGroupBox()
     clusterLayout->addWidget(clusterListView);
     clusterLayout->addLayout(bottomButtonLayout);
     clusterGroupBox->setLayout(clusterLayout);
+
+    QFont *loadingFont = new QFont();
+    loadingFont->setPointSize(30);
+    loading = new QLabel("Loading...");
+    loading->setFont(*loadingFont);
+    loading->setParent(clusterListView);
+    loading->setHidden(true);
 }
 
 void Window::updateButtons()
