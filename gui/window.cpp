@@ -201,7 +201,7 @@ void Window::setVisible(bool visible)
 
 void Window::closeEvent(QCloseEvent *event)
 {
-#ifdef Q_OS_OSX
+#if __APPLE__
     if (!event->spontaneous() || !isVisible()) {
         return;
     }
@@ -538,7 +538,7 @@ void Window::updateBasicButtons(Cluster cluster)
     basicPauseButton->setEnabled(isRunning || isPaused);
     basicDeleteButton->setEnabled(exists);
     basicDashboardButton->setEnabled(isRunning);
-#if __linux__
+#if __linux__ || __APPLE__
     basicSSHButton->setEnabled(exists);
 #else
     basicSSHButton->setEnabled(false);
@@ -583,7 +583,7 @@ void Window::updateAdvancedButtons(Cluster cluster)
     pauseButton->setEnabled(isRunning || isPaused);
     deleteButton->setEnabled(exists);
     dashboardButton->setEnabled(isRunning);
-#if __linux__
+#if __linux__ || __APPLE__
     sshButton->setEnabled(exists);
 #else
     sshButton->setEnabled(false);
@@ -828,6 +828,14 @@ void Window::sshConsole()
     mainWindow->resize(800, 400);
     mainWindow->setCentralWidget(console);
     mainWindow->show();
+#elif __APPLE__
+    QString command = program + " ssh -p " + selectedClusterName();
+    QStringList arguments = { "-e", "tell app \"Terminal\"",
+                              "-e", "activate",
+                              "-e", "do script \"" + command + "\"",
+                              "-e", "end tell" };
+    QProcess *process = new QProcess(this);
+    process->start("/usr/bin/osascript", arguments);
 #else
     QString terminal = qEnvironmentVariable("TERMINAL");
     if (terminal.isEmpty()) {
