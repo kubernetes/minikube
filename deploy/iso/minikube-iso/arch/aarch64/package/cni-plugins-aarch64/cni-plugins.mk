@@ -4,13 +4,13 @@
 #
 ################################################################################
 
-CNI_PLUGINS_VERSION = v0.8.5
-CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_VERSION)
-CNI_PLUGINS_SOURCE = cni-plugins-linux-arm64-$(CNI_PLUGINS_VERSION).tgz
-CNI_PLUGINS_LICENSE = Apache-2.0
-CNI_PLUGINS_LICENSE_FILES = LICENSE
+CNI_PLUGINS_AARCH64_VERSION = v0.8.5
+CNI_PLUGINS_AARCH64_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_AARCH64_VERSION)
+CNI_PLUGINS_AARCH64_SOURCE = cni-plugins-linux-arm64-$(CNI_PLUGINS_AARCH64_VERSION).tgz
+CNI_PLUGINS_AARCH64_LICENSE = Apache-2.0
+CNI_PLUGINS_AARCH64_LICENSE_FILES = LICENSE
 
-define CNI_PLUGINS_INSTALL_TARGET_CMDS
+define CNI_PLUGINS_AARCH64_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/bandwidth \
 		$(TARGET_DIR)/opt/cni/bin/bandwidth

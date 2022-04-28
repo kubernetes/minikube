@@ -4,12 +4,12 @@
 #
 ################################################################################
 
-CRICTL_BIN_VERSION = v1.21.0
-CRICTL_BIN_SITE = https://github.com/kubernetes-sigs/cri-tools/releases/download/$(CRICTL_BIN_VERSION)
-CRICTL_BIN_SOURCE = crictl-$(CRICTL_BIN_VERSION)-linux-arm64.tar.gz
-CRICTL_BIN_STRIP_COMPONENTS = 0
+CRICTL_BIN_AARCH64_VERSION = v1.21.0
+CRICTL_BIN_AARCH64_SITE = https://github.com/kubernetes-sigs/cri-tools/releases/download/$(CRICTL_BIN_AARCH64_VERSION)
+CRICTL_BIN_AARCH64_SOURCE = crictl-$(CRICTL_BIN_AARCH64_VERSION)-linux-arm64.tar.gz
+CRICTL_BIN_AARCH64_STRIP_COMPONENTS = 0
 
-define CRICTL_BIN_INSTALL_TARGET_CMDS
+define CRICTL_BIN_AARCH64_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/crictl \
 		$(TARGET_DIR)/usr/bin/crictl
