@@ -50,16 +50,16 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/ctr \
 		$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/config.toml \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/config.toml \
 		$(TARGET_DIR)/etc/containerd/config.toml
 endef
 
 define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/containerd.service \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/containerd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/containerd.service
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/50-minikube.preset \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/50-minikube.preset \
 		$(TARGET_DIR)/usr/lib/systemd/system-preset/50-minikube.preset
 endef
 

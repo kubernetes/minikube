@@ -48,16 +48,16 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/pinns \
 		$(TARGET_DIR)/usr/bin/pinns
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/crio.conf \
+		$(CRIO_BIN_AARCH64_PKGDIR)/crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/policy.json \
+		$(CRIO_BIN_AARCH64_PKGDIR)/policy.json \
 		$(TARGET_DIR)/etc/containers/policy.json
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/registries.conf \
+		$(CRIO_BIN_AARCH64_PKGDIR)/registries.conf \
 		$(TARGET_DIR)/etc/containers/registries.conf
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/02-crio.conf \
+		$(CRIO_BIN_AARCH64_PKGDIR)/02-crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf.d/02-crio.conf
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
@@ -67,10 +67,10 @@ endef
 define CRIO_BIN_INSTALL_INIT_SYSTEMD
 	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.systemd DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/crio.service \
+		$(CRIO_BIN_AARCH64_PKGDIR)/crio.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio.service
 	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/crio-wipe.service \
+		$(CRIO_BIN_AARCH64_PKGDIR)/crio-wipe.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio-wipe.service
 	$(call link-service,crio.service)
 	$(call link-service,crio-shutdown.service)

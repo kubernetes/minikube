@@ -61,10 +61,10 @@ define PODMAN_INSTALL_INIT_SYSTEMD
 
 	# Allow running podman-remote as a user in the group "podman"
 	$(INSTALL) -D -m 644 \
-			$(PODMAN_PKGDIR)/override.conf \
+			$(PODMAN_AARCH64_PKGDIR)/override.conf \
 			$(TARGET_DIR)/usr/lib/systemd/system/podman.socket.d/override.conf
 	$(INSTALL) -D -m 644 \
-			$(PODMAN_PKGDIR)/podman.conf \
+			$(PODMAN_AARCH64_PKGDIR)/podman.conf \
 			$(TARGET_DIR)/usr/lib/tmpfiles.d/podman.conf
 endef
 

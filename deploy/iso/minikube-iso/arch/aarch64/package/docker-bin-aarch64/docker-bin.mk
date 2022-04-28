@@ -38,7 +38,7 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 	# https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker
 
 	$(INSTALL) -Dm644 \
-		$(DOCKER_BIN_PKGDIR)/daemon.json \
+		$(DOCKER_BIN_AARCH64_PKGDIR)/daemon.json \
 		$(TARGET_DIR)/etc/docker/daemon.json
 endef
 
@@ -48,7 +48,7 @@ define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
 
 	$(INSTALL) -D -m 644 \
-		$(DOCKER_BIN_PKGDIR)/forward.conf \
+		$(DOCKER_BIN_AARCH64_PKGDIR)/forward.conf \
 		$(TARGET_DIR)/etc/sysctl.d/forward.conf
 endef
 
