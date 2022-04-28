@@ -39,7 +39,7 @@ CLOSE_ISSUE_THRESHOLD=20
 
 "${DIR}/../installers/check_install_gh.sh" || true
 
-# Get a list of issues from Github and extract only those that look like flake issues.
+# Get a list of issues from GitHub and extract only those that look like flake issues.
 # Sort by test name for later usage.
 EXISTING_ISSUES_LIST=$(mktemp)
 gh issue list -L 10000 -s all -A "minikube-bot" -l kind/failing-test \
