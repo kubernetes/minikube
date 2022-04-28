@@ -288,6 +288,7 @@ minikube-iso-arm64: minikube-iso-aarch64
 minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	echo $(shell git log --no-merges --pretty='format:%H %s' | head -1) >> deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/CHANGELOG
+	echo 'source "$$BR2_EXTERNAL_MINIKUBE_PATH/arch/$*/package/Config.in"' >> deploy/iso/minikube-iso/Config.in
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
