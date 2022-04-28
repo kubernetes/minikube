@@ -763,8 +763,13 @@ void Window::outputFailedStart(QString text)
         createLabel("Error Code", name, &form, false);
         createLabel("Advice", advice, &form, false);
         QLabel *errorMessage = createLabel("Error Message", message, &form, false);
-        errorMessage->setFont(QFont("Courier", 10));
-        errorMessage->setStyleSheet("background-color:white;");
+        int pointSize = errorMessage->font().pointSize();
+        errorMessage->setFont(QFont("Courier", pointSize));
+        errorMessage->setAutoFillBackground(true);
+        QPalette pal = errorMessage->palette();
+        QColor color = pal.window().color().lighter();
+        pal.setColor(errorMessage->backgroundRole(), color);
+        errorMessage->setPalette(pal);
         createLabel("Link to documentation", url, &form, true);
         createLabel("Link to related issue", issues, &form, true);
         QLabel *fileLabel = new QLabel(this);
