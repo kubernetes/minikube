@@ -44,7 +44,7 @@ endef
 
 define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL)/package/docker-bin/docker.socket \
+		$(DOCKER_BIN_PKGDIR)/docker.socket \
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
 
 	$(INSTALL) -D -m 644 \

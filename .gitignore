@@ -28,6 +28,7 @@ _testmain.go
 
 /deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause
 /deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/usr/bin/auto-pause
+/deploy/iso/minikube-iso/Config.in
 /deploy/kicbase/auto-pause
 /deploy/addons/auto-pause/auto-pause-hook
 /out
