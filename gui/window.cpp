@@ -422,14 +422,17 @@ void Window::updateClusterList()
             continue;
         }
         QJsonObject par = json.object();
-        QJsonArray a = par["valid"].toArray();
-        QJsonArray b = par["invalid"].toArray();
-        for (int i = 0; i < b.size(); i++) {
-            a.append(b[i]);
-        }
-        for (int i = 0; i < a.size(); i++) {
-            QJsonObject obj = a[i].toObject();
+        QJsonArray valid = par["valid"].toArray();
+        QJsonArray invalid = par["invalid"].toArray();
+        for (int i = 0; i < valid.size(); i++) {
+            QJsonObject obj = valid[i].toObject();
             Cluster cluster = createClusterObject(obj);
+            clusters << cluster;
+        }
+        for (int i = 0; i < invalid.size(); i++) {
+            QJsonObject obj = invalid[i].toObject();
+            Cluster cluster = createClusterObject(obj);
+            cluster.setStatus("Invalid");
             clusters << cluster;
         }
     }
