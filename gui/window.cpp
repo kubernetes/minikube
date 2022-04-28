@@ -351,11 +351,37 @@ void Window::deleteMinikube()
 
 void Window::updateClustersTable()
 {
+    showLoading();
     QString cluster = selectedClusterName();
     updateClusterList();
     clusterModel->setClusters(clusterList);
     setSelectedClusterName(cluster);
     updateButtons();
+    loading->setHidden(true);
+    clusterListView->setEnabled(true);
+    hideLoading();
+}
+
+void Window::showLoading()
+{
+    clusterListView->setEnabled(false);
+    loading->setHidden(false);
+    loading->raise();
+    int width = getCenter(loading->width(), clusterListView->width());
+    int height = getCenter(loading->height(), clusterListView->height());
+    loading->move(width, height);
+    delay();
+}
+
+void Window::hideLoading()
+{
+    loading->setHidden(true);
+    clusterListView->setEnabled(true);
+}
+
+int Window::getCenter(int widgetSize, int parentSize)
+{
+    return parentSize / 2 - widgetSize / 2;
 }
 
 void Window::updateClusterList()
@@ -515,6 +541,13 @@ void Window::createClusterGroupBox()
     clusterLayout->addWidget(clusterListView);
     clusterLayout->addLayout(bottomButtonLayout);
     clusterGroupBox->setLayout(clusterLayout);
+
+    QFont *loadingFont = new QFont();
+    loadingFont->setPointSize(30);
+    loading = new QLabel("Loading...");
+    loading->setFont(*loadingFont);
+    loading->setParent(clusterListView);
+    loading->setHidden(true);
 }
 
 void Window::updateButtons()

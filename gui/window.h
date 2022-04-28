@@ -147,9 +147,12 @@ private:
     Cluster selectedCluster();
     void updateClusterList();
     void updateClustersTable();
+    void showLoading();
+    void hideLoading();
     ClusterModel *clusterModel;
     QTableView *clusterListView;
     ClusterList clusterList;
+    QLabel *loading;
 
     // Create cluster
     void askCustom();
@@ -187,6 +190,7 @@ private:
     QStackedWidget *stackedWidget;
     bool isBasicView;
     void delay();
+    int getCenter(int widgetSize, int parentSize);
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
