@@ -1,6 +1,6 @@
-menu "System tools"
+menu "System tools aarch64"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/buildkit-bin-aarch64/Config.in"
-    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/runc-aarch64/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/runc-master-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/crio-bin-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/crictl-bin-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/docker-bin-aarch64/Config.in"
