@@ -22,7 +22,7 @@
 # VERSION_MINOR: The minor version of the tag to be released.
 # VERSION_BUILD: The build version of the tag to be released.
 # BUCKET: The GCP bucket the build files should be uploaded to.
-# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
+# GITHUB_TOKEN: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"

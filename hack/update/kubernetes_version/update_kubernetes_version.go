@@ -139,7 +139,7 @@ func main() {
 	}
 	data := Data{StableVersion: stable, LatestVersion: latest, LatestVersionMM: latestMM, LatestVersionP0: latestP0}
 
-	// Print PR title for Github action.
+	// Print PR title for GitHub action.
 	fmt.Printf("Bump Kubernetes version default: %s and latest: %s\n", data.StableVersion, data.LatestVersion)
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)

@@ -20,7 +20,7 @@
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The Github API access token. Injected by the Jenkins credential provider.
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -x
 

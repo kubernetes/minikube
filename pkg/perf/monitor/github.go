@@ -28,7 +28,7 @@ import (
 )
 
 // Client provides the context and client with necessary auth
-// for interacting with the Github API
+// for interacting with the GitHub API
 type Client struct {
 	ctx context.Context
 	*github.Client

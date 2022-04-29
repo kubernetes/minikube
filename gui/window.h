@@ -102,9 +102,16 @@ private:
     // Tray icon
     void createTrayIcon();
     void createActions();
+    void updateStatus(Cluster cluster);
+    void updateTrayActions(Cluster cluster);
+    void iconActivated(QSystemTrayIcon::ActivationReason reason);
     QAction *minimizeAction;
     QAction *restoreAction;
     QAction *quitAction;
+    QAction *startAction;
+    QAction *pauseAction;
+    QAction *stopAction;
+    QAction *statusAction;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QIcon *trayIconIcon;
@@ -112,15 +119,10 @@ private:
     // Basic view
     void createBasicView();
     void toBasicView();
-    void updateBasicButtons();
-    void basicStartMinikube();
-    void basicStopMinikube();
-    void basicDeleteMinikube();
-    void basicRefreshMinikube();
-    void basicSSHMinikube();
-    void basicDashboardMinikube();
+    void updateBasicButtons(Cluster cluster);
     QPushButton *basicStartButton;
     QPushButton *basicStopButton;
+    QPushButton *basicPauseButton;
     QPushButton *basicDeleteButton;
     QPushButton *basicRefreshButton;
     QPushButton *basicSSHButton;
@@ -130,9 +132,10 @@ private:
     void createAdvancedView();
     void toAdvancedView();
     void createClusterGroupBox();
-    void updateAdvancedButtons();
+    void updateAdvancedButtons(Cluster cluster);
     QPushButton *startButton;
     QPushButton *stopButton;
+    QPushButton *pauseButton;
     QPushButton *deleteButton;
     QPushButton *refreshButton;
     QPushButton *createButton;
@@ -141,13 +144,17 @@ private:
     QGroupBox *clusterGroupBox;
 
     // Cluster table
-    QString selectedCluster();
-    void setSelectedCluster(QString cluster);
-    ClusterHash getClusterHash();
-    ClusterList getClusters();
-    void updateClusters();
+    QString selectedClusterName();
+    void setSelectedClusterName(QString cluster);
+    Cluster selectedCluster();
+    void updateClusterList();
+    void updateClustersTable();
+    void showLoading();
+    void hideLoading();
     ClusterModel *clusterModel;
     QTableView *clusterListView;
+    ClusterList clusterList;
+    QLabel *loading;
 
     // Create cluster
     void askCustom();
@@ -160,6 +167,9 @@ private:
     void startMinikube(QStringList args);
     void startSelectedMinikube();
     void stopMinikube();
+    void pauseMinikube();
+    void unpauseMinikube();
+    void pauseOrUnpauseMinikube();
     void deleteMinikube();
     bool sendMinikubeCommand(QStringList cmds);
     bool sendMinikubeCommand(QStringList cmds, QString &text);
@@ -176,9 +186,13 @@ private:
 
     void checkForMinikube();
     void restoreWindow();
+    QString getPauseLabel(bool isPaused);
+    QString getStartLabel(bool isRunning);
     QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
+    void delay();
+    int getCenter(int widgetSize, int parentSize);
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
