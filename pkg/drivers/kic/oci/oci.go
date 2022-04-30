@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,6 +32,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/opencontainers/runc/libcontainer/cgroups"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -39,6 +41,20 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
+
+func findCgroupMountpoints() (map[string]string, error) {
+	cgMounts, err := cgroups.GetCgroupMounts(false)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse cgroup information: %v", err)
+	}
+	mps := make(map[string]string)
+	for _, m := range cgMounts {
+		for _, ss := range m.Subsystems {
+			mps[ss] = m.Mountpoint
+		}
+	}
+	return mps, nil
+}
 
 // DeleteContainersByLabel deletes all containers that have a specific label
 // if there no containers found with the given 	label, it will return nil
@@ -112,29 +128,43 @@ func PrepareContainerNode(p CreateParams) error {
 func HasMemoryCgroup() bool {
 	memcg := true
 	if runtime.GOOS == "linux" {
-		var memory string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
+		cgMounts, err := findCgroupMountpoints()
+		if err != nil {
+			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
+			memcg = false
 		}
-		if _, err := os.Stat(memory); os.IsNotExist(err) {
+		_, ok := cgMounts["memory"]
+		if !ok {
 			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
 			memcg = false
 		}
 	}
 	return memcg
 }
+func cgroupEnabled(mountPoint, name string) bool {
+	_, err := os.Stat(path.Join(mountPoint, name))
+	return err == nil
+}
 
 func hasMemorySwapCgroup() bool {
 	memcgSwap := true
 	if runtime.GOOS == "linux" {
-		var memoryswap string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
-		}
-		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
+		cgMounts, err := findCgroupMountpoints()
+		if err != nil {
 			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
 			memcgSwap = false
+		}
+		mountPoint, ok := cgMounts["memory"]
+		if !ok {
+			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+		}
+
+		swapLimit := cgroupEnabled(mountPoint, "memory.memsw.limit_in_bytes")
+		if !swapLimit {
+			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
+			memcgSwap = false
+
 		}
 	}
 	return memcgSwap
