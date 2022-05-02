@@ -22,7 +22,7 @@ require (
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
-	github.com/google/go-cmp v0.5.7
+	github.com/google/go-cmp v0.5.8
 	github.com/google/go-containerregistry v0.6.0
 	github.com/google/go-github/v36 v36.0.0
 	github.com/google/slowjam v1.0.0
@@ -62,15 +62,15 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/russross/blackfriday v1.5.3-0.20200218234912-41c5fccfd6f6 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.3
+	github.com/shirou/gopsutil/v3 v3.22.4
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.11.0
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/otel v1.6.3
+	go.opentelemetry.io/otel v1.7.0
 	go.opentelemetry.io/otel/sdk v1.6.3
-	go.opentelemetry.io/otel/trace v1.6.3
+	go.opentelemetry.io/otel/trace v1.7.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
 	golang.org/x/exp v0.0.0-20210220032938-85be41e4509f
@@ -81,7 +81,7 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/text v0.3.7
 	gonum.org/v1/plot v0.11.0
-	google.golang.org/api v0.75.0
+	google.golang.org/api v0.77.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.23.6
