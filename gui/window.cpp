@@ -83,12 +83,15 @@
 #include <QFontDialog>
 #include <QStackedWidget>
 #include <QProcessEnvironment>
+#include <QNetworkAccessManager>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
 #include <QMainWindow>
 #include "qtermwidget.h"
 #endif
+
+const QVersionNumber version = QVersionNumber::fromString("0.0.1");
 
 Window::Window()
 {
@@ -115,6 +118,7 @@ Window::Window()
 
     setWindowTitle(tr("minikube"));
     setWindowIcon(*trayIconIcon);
+    checkForUpdates();
 }
 
 QProcessEnvironment Window::setMacEnv()
@@ -910,10 +914,8 @@ void Window::sshConsole()
     mainWindow->show();
 #elif __APPLE__
     QString command = program + " ssh -p " + selectedClusterName();
-    QStringList arguments = { "-e", "tell app \"Terminal\"",
-                              "-e", "activate",
-                              "-e", "do script \"" + command + "\"",
-                              "-e", "end tell" };
+    QStringList arguments = { "-e", "tell app \"Terminal\"",         "-e", "activate",
+                              "-e", "do script \"" + command + "\"", "-e", "end tell" };
     QProcess *process = new QProcess(this);
     process->start("/usr/bin/osascript", arguments);
 #else
@@ -980,6 +982,65 @@ void Window::checkForMinikube()
     form.addRow(&buttonBox);
     dialog.exec();
     exit(EXIT_FAILURE);
+}
+
+void Window::checkForUpdates()
+{
+    QString releases = getRequest("https://storage.googleapis.com/minikube-gui/releases.json");
+    QJsonObject latestRelease =
+            QJsonDocument::fromJson(releases.toUtf8()).array().first().toObject();
+    QString latestReleaseVersion = latestRelease["name"].toString();
+    QVersionNumber latestReleaseVersionNumber = QVersionNumber::fromString(latestReleaseVersion);
+    if (version >= latestReleaseVersionNumber) {
+        return;
+    }
+    QJsonObject links = latestRelease["links"].toObject();
+    QString link;
+#if __linux__
+    link = links["linux"].toString();
+#elif __APPLE__
+    link = links["darwin"].toString();
+#else
+    link = links["windows"].toString();
+#endif
+    notifyUpdate(latestReleaseVersion, link);
+}
+
+void Window::notifyUpdate(QString latest, QString link)
+{
+    QDialog dialog;
+    dialog.setWindowTitle(tr("minikube GUI Update Available"));
+    dialog.setWindowIcon(*trayIconIcon);
+    dialog.setModal(true);
+    QFormLayout form(&dialog);
+    QLabel *msgLabel = new QLabel(this);
+    msgLabel->setText("Version " + latest
+                      + " of minikube GUI is now available!\n\nDownload the update from:");
+    form.addWidget(msgLabel);
+    QLabel *linkLabel = new QLabel(this);
+    linkLabel->setOpenExternalLinks(true);
+    linkLabel->setText("<a href=\"" + link + "\">" + link + "</a>");
+    form.addWidget(linkLabel);
+    QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+    buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    form.addRow(&buttonBox);
+    dialog.exec();
+}
+
+QString Window::getRequest(QString url)
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=](QNetworkReply *reply) {
+        if (reply->error()) {
+            qDebug() << reply->errorString();
+        }
+    });
+    QNetworkReply *resp = manager->get(QNetworkRequest(QUrl(url)));
+    QEventLoop loop;
+    connect(resp, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+    return resp->readAll();
 }
 
 #endif

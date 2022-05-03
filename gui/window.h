@@ -58,6 +58,9 @@
 #include <QFormLayout>
 #include <QStackedWidget>
 #include <QProcessEnvironment>
+#include <QVersionNumber>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -193,6 +196,9 @@ private:
     bool isBasicView;
     void delay();
     int getCenter(int widgetSize, int parentSize);
+    void checkForUpdates();
+    QString getRequest(QString url);
+    void notifyUpdate(QString latest, QString link);
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
