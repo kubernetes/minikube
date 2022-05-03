@@ -995,14 +995,15 @@ void Window::checkForUpdates()
         return;
     }
     QJsonObject links = latestRelease["links"].toObject();
-    QString link;
+    QString key;
 #if __linux__
-    link = links["linux"].toString();
+    key = "linux";
 #elif __APPLE__
-    link = links["darwin"].toString();
+    key = "darwin";
 #else
-    link = links["windows"].toString();
+    key = "windows";
 #endif
+    QString link = links[key].toString();
     notifyUpdate(latestReleaseVersion, link);
 }
 
