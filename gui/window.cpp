@@ -322,6 +322,13 @@ void Window::startMinikube(QStringList moreArgs)
     QStringList args = { "start", "-o", "json" };
     args << moreArgs;
     bool success = sendMinikubeCommand(args, text);
+#if __APPLE__
+    if (text.contains("docker-machine-driver-hyperkit needs to run with elevated permissions")) {
+        showHyperKitMessage();
+        hyperkitPermission();
+        success = sendMinikubeCommand(args, text);
+    }
+#endif
     updateClustersTable();
     if (success) {
         return;
@@ -910,10 +917,8 @@ void Window::sshConsole()
     mainWindow->show();
 #elif __APPLE__
     QString command = program + " ssh -p " + selectedClusterName();
-    QStringList arguments = { "-e", "tell app \"Terminal\"",
-                              "-e", "activate",
-                              "-e", "do script \"" + command + "\"",
-                              "-e", "end tell" };
+    QStringList arguments = { "-e", "tell app \"Terminal\"",         "-e", "activate",
+                              "-e", "do script \"" + command + "\"", "-e", "end tell" };
     QProcess *process = new QProcess(this);
     process->start("/usr/bin/osascript", arguments);
 #else
@@ -930,6 +935,39 @@ void Window::sshConsole()
     process->start(QStandardPaths::findExecutable(terminal), arguments);
 #endif
 }
+
+#if __APPLE__
+void Window::hyperkitPermission()
+{
+    QString command = "sudo chown root:wheel ~/.minikube/bin/docker-machine-driver-hyperkit && "
+                      "sudo chmod u+s ~/.minikube/bin/docker-machine-driver-hyperkit && exit";
+    QStringList arguments = { "-e", "tell app \"Terminal\"",
+                              "-e", "set w to do script \"" + command + "\"",
+                              "-e", "activate",
+                              "-e", "repeat",
+                              "-e", "delay 0.1",
+                              "-e", "if not busy of w then exit repeat",
+                              "-e", "end repeat",
+                              "-e", "end tell" };
+    QProcess *process = new QProcess(this);
+    process->start("/usr/bin/osascript", arguments);
+    process->waitForFinished(-1);
+}
+
+void Window::showHyperKitMessage()
+{
+    QMessageBox dialog;
+    dialog.setWindowTitle(tr("HyperKit Permissions Required"));
+    dialog.setWindowIcon(*trayIconIcon);
+    dialog.setModal(true);
+    dialog.setText(tr(
+            "The HyperKit driver requires permission changes on the machine driver which requires "
+            "sudo.\n\nAfter clicking 'OK' a terminal window will open requiring you to enter your "
+            "password to allow the permission changes, the start will resume after."));
+
+    dialog.exec();
+}
+#endif
 
 void Window::dashboardBrowser()
 {
