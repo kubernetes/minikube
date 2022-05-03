@@ -66,8 +66,15 @@ func qemuFirmwarePath() (string, error) {
 	arch := runtime.GOARCH
 	switch arch {
 	case "amd64":
+		// on macOS, we assume qemu is installed via homebrew for simplicity
+		if runtime.GOOS == "darwin" {
+			return "/usr/local/Cellar/qemu/6.2.0_1/share/qemu/edk2-x86_64-code.fd", nil
+		}
 		return "/usr/share/OVMF/OVMF_CODE.fd", nil
 	case "arm64":
+		if runtime.GOOS == "darwin" {
+			return "/opt/homebrew/Cellar/qemu/6.2.0_1/share/qemu/edk2-aarch64-code.fd", nil
+		}
 		return "/usr/share/AAVMF/AAVMF_CODE.fd", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
