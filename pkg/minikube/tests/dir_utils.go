@@ -18,38 +18,25 @@ package tests
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"path/filepath"
+	"testing"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // MakeTempDir creates the temp dir and returns the path
-func MakeTempDir() string {
-	tempDir, err := os.MkdirTemp("", "minipath")
-	if err != nil {
-		log.Fatal(err)
-	}
+func MakeTempDir(t *testing.T) string {
+	tempDir := t.TempDir()
 	tempDir = filepath.Join(tempDir, ".minikube")
-	err = os.MkdirAll(filepath.Join(tempDir, "addons"), 0777)
-	if err != nil {
-		log.Fatal(err)
+	if err := os.MkdirAll(filepath.Join(tempDir, "addons"), 0777); err != nil {
+		t.Fatal(err)
 	}
-	err = os.MkdirAll(filepath.Join(tempDir, "cache"), 0777)
-	if err != nil {
-		log.Fatal(err)
+	if err := os.MkdirAll(filepath.Join(tempDir, "cache"), 0777); err != nil {
+		t.Fatal(err)
 	}
 	os.Setenv(localpath.MinikubeHome, tempDir)
 	return localpath.MiniPath()
-}
-
-// RemoveTempDir removes the temp dir
-func RemoveTempDir(tempdir string) {
-	if filepath.Base(tempdir) == ".minikube" {
-		tempdir = filepath.Dir(tempdir)
-	}
-	os.RemoveAll(tempdir)
 }
 
 // FakeFile satisfies fdWriter

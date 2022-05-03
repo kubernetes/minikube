@@ -113,7 +113,8 @@ func status() registry.State {
 	cmd := exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Server.Version}}")
 	// Run with sudo on linux (local), otherwise podman-remote (as podman)
 	if runtime.GOOS == "linux" {
-		cmd = exec.CommandContext(ctx, "sudo", "-k", "-n", oci.Podman, "version", "--format", "{{.Version}}")
+		cmd = exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Version}}")
+		cmd = oci.PrefixCmd(cmd, oci.WithSudoFlags("-k"))
 		cmd.Env = append(os.Environ(), "LANG=C", "LC_ALL=C") // sudo is localized
 	}
 	o, err := cmd.Output()
@@ -151,7 +152,7 @@ func status() registry.State {
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
 
 		if strings.Contains(stderr, "a password is required") && runtime.GOOS == "linux" {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: fmt.Sprintf("Add your user to the 'sudoers' file: '%s ALL=(ALL) NOPASSWD: %s'", username, podman), Doc: "https://podman.io"}
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: fmt.Sprintf("Add your user to the 'sudoers' file: '%s ALL=(ALL) NOPASSWD: %s' , or run 'minikube config set rootless true'", username, podman), Doc: "https://podman.io"}
 		}
 
 		// Typical low-level errors from running podman-remote:

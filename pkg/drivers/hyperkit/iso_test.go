@@ -17,21 +17,11 @@ limitations under the License.
 package hyperkit
 
 import (
-	"os"
 	"testing"
 )
 
 func TestExtractFile(t *testing.T) {
-	testDir, err := os.MkdirTemp(os.TempDir(), "")
-	if nil != err {
-		return
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(testDir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", testDir)
-		}
-	}()
+	testDir := t.TempDir()
 
 	tests := []struct {
 		name          string

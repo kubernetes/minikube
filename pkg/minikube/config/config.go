@@ -44,6 +44,8 @@ const (
 	ProfileName = "profile"
 	// UserFlag is the key for the global user flag (ex. --user=user1)
 	UserFlag = "user"
+	// Rootless is the key for the global rootless parameter (boolean)
+	Rootless = "rootless"
 	// AddonImages stores custom addon images config
 	AddonImages = "addon-images"
 	// AddonRegistries stores custom addon images config

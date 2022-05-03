@@ -26,6 +26,7 @@ import (
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/spf13/pflag"
+	"golang.org/x/text/language"
 
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -34,7 +35,7 @@ import (
 
 func TestOutT(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
-	translate.SetPreferredLanguage("ar")
+	translate.SetPreferredLanguage(language.Arabic)
 
 	translate.Translations = map[string]interface{}{
 		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",

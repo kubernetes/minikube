@@ -59,13 +59,18 @@
 #include <QList>
 #include <QMap>
 
-//! [0]
 class Cluster
 {
 public:
     Cluster() : Cluster("") { }
     Cluster(const QString &name)
-        : m_name(name), m_status(""), m_driver(""), m_container_runtime(""), m_cpus(0), m_memory(0)
+        : m_name(name),
+          m_status(""),
+          m_driver(""),
+          m_container_runtime(""),
+          m_k8s_version(""),
+          m_cpus(0),
+          m_memory(0)
     {
     }
 
@@ -76,25 +81,27 @@ public:
     void setDriver(QString driver) { m_driver = driver; }
     QString containerRuntime() const { return m_container_runtime; }
     void setContainerRuntime(QString containerRuntime) { m_container_runtime = containerRuntime; }
+    QString k8sVersion() const { return m_k8s_version; }
+    void setK8sVersion(QString k8sVersion) { m_k8s_version = k8sVersion; }
     int cpus() const { return m_cpus; }
     void setCpus(int cpus) { m_cpus = cpus; }
     int memory() const { return m_memory; }
     void setMemory(int memory) { m_memory = memory; }
+    bool isEmpty() { return m_name.isEmpty(); }
 
 private:
     QString m_name;
     QString m_status;
     QString m_driver;
     QString m_container_runtime;
+    QString m_k8s_version;
     int m_cpus;
     int m_memory;
 };
-//! [0]
 
 typedef QList<Cluster> ClusterList;
 typedef QHash<QString, Cluster> ClusterHash;
 
-//! [1]
 class ClusterModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -115,6 +122,5 @@ public:
 private:
     ClusterList clusterList;
 };
-//! [1]
 
 #endif // CLUSTER_H

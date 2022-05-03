@@ -72,8 +72,7 @@ var defaultClusterConfig = config.ClusterConfig{
 }
 
 func TestCreateHost(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -120,8 +119,7 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -160,8 +158,7 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -210,8 +207,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -250,8 +246,7 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -283,8 +278,7 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
@@ -328,8 +322,7 @@ func TestStopHostError(t *testing.T) {
 }
 
 func TestStopHost(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -350,8 +343,7 @@ func TestStopHost(t *testing.T) {
 }
 
 func TestDeleteHost(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -368,8 +360,7 @@ func TestDeleteHost(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -387,8 +378,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -403,8 +393,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 }
 
 func TestDeleteHostErrMachineNotExist(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -421,8 +410,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)

@@ -99,6 +99,8 @@ const (
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
 	// TestDiskAvailableEnv is used in integration tests for insufficient storage with 'minikube status' (in GiB)
 	TestDiskAvailableEnv = "MINIKUBE_TEST_AVAILABLE_STORAGE"
+	// MinikubeRootlessEnv is used to force Rootless Docker/Podman driver
+	MinikubeRootlessEnv = "MINIKUBE_ROOTLESS"
 
 	// scheduled stop constants
 
@@ -121,7 +123,7 @@ const (
 	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
 
 	// TimeFormat is the format that should be used when outputting time
-	TimeFormat = time.RFC1123
+	TimeFormat = time.RFC822
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
 

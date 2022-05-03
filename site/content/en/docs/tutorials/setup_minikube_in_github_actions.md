@@ -1,13 +1,13 @@
 ---
-title: "Setup minikube as CI step in github actions"
-linkTitle: "Minikube in Github Actions"
+title: "Setup minikube as CI step in GitHub Actions"
+linkTitle: "Minikube in GitHub Actions"
 weight: 1
 date: 2020-06-02
 description: >
-  How to use minikube in github actions for testing your app
+  How to use minikube in GitHub Actions for testing your app
 ---
 
-To install and start a minikube cluster, add the following step to your [github action workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
+To install and start a minikube cluster, add the following step to your [GitHub Actions workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
 
   ```yaml
       steps:
@@ -16,7 +16,7 @@ To install and start a minikube cluster, add the following step to your [github 
         uses: medyagh/setup-minikube@master
   ```
 
-for more information see github actions marketplace [setup-minikube]( https://github.com/marketplace/actions/setup-minikube).
+for more information see GitHub Actions marketplace [setup-minikube](https://github.com/marketplace/actions/setup-minikube).
 
 ## Example: build image & deploy to minikube on each PR
 

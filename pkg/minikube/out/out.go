@@ -94,6 +94,7 @@ func Step(st style.Enum, format string, a ...V) {
 	outStyled, _ := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
+		klog.Info(outStyled)
 		return
 	}
 	register.RecordStep(outStyled)
@@ -154,7 +155,6 @@ func Infof(format string, a ...V) {
 	outStyled, _ := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
-		return
 	}
 	String(outStyled)
 }
@@ -163,8 +163,9 @@ func Infof(format string, a ...V) {
 func String(format string, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
+	defer klog.Flush()
 
-	if silent {
+	if silent || JSON {
 		klog.Infof(format, a...)
 		return
 	}
@@ -212,10 +213,6 @@ func spinnerString(format string, a ...interface{}) {
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
-	if JSON {
-		klog.Warningf("please use out.T to log steps in JSON")
-		return
-	}
 	String(format+"\n", a...)
 }
 
@@ -229,6 +226,7 @@ func ErrT(st style.Enum, format string, a ...V) {
 func Err(format string, a ...interface{}) {
 	if JSON {
 		register.PrintError(format)
+		klog.Warningf(format, a...)
 		return
 	}
 	register.RecordError(format)
@@ -271,6 +269,7 @@ func WarningT(format string, a ...V) {
 		}
 		st, _ := stylized(style.Warning, useColor, format, a...)
 		register.PrintWarning(st)
+		klog.Warning(st)
 		return
 	}
 	ErrT(style.Warning, format, a...)

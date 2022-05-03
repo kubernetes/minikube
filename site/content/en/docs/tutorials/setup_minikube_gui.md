@@ -20,20 +20,10 @@ date: 2022-02-25
 
 {{% tabs %}}
 {{% mactab %}}
-{{% tabs %}}
-{{% tab Stable %}}
-1. Download the zipped folder
-```shell
-curl -LO https://storage.googleapis.com/minikube-gui/latest/minikube-gui-mac.zip
-```
-{{% /tab %}}
-{{% tab Nightly %}}
 1. Download the zipped folder
 ```shell
 curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-mac.zip
 ```
-{{% /tab %}}
-{{% /tabs %}}
 
 2. Unzip
 ```shell
@@ -52,20 +42,10 @@ open dist/systray.app
 5. Open System Preferences and go to Security & Privacy -> General and click "Open Anyway".
 {{% /mactab %}}
 {{% windowstab %}}
-{{% tabs %}}
-{{% tab Stable %}}
-1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/latest/minikube-gui-windows.zip) (faster)
-```shell
-Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/latest/minikube-gui-windows.zip' -UseBasicParsing
-```
-{{% /tab %}}
-{{% tab Nightly %}}
 1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip) (faster)
 ```shell
 Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip' -UseBasicParsing
 ```
-{{% /tab %}}
-{{% /tabs %}}
 
 2. Unzip
 ```shell
@@ -82,20 +62,10 @@ Expand-Archive minikube-gui-windows.zip
 ![Windows unreconized app](/images/gui/windows.png)
 {{% /windowstab %}}
 {{% linuxtab %}}
-{{% tabs %}}
-{{% tab Stable %}}
-1. Download the zipped folder
-```shell
-curl -LO https://storage.googleapis.com/minikube-gui/latest/minikube-gui-linux.zip
-```
-{{% /tab %}}
-{{% tab Nightly %}}
 1. Download the zipped folder
 ```shell
 curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-linux.zip
 ```
-{{% /tab %}}
-{{% /tabs %}}
 
 2. Unzip
 ```shell
