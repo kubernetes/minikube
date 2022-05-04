@@ -323,11 +323,7 @@ void Window::startMinikube(QStringList moreArgs)
     args << moreArgs;
     bool success = sendMinikubeCommand(args, text);
 #if __APPLE__
-    if (text.contains("docker-machine-driver-hyperkit needs to run with elevated permissions")) {
-        showHyperKitMessage();
-        hyperkitPermission();
-        success = sendMinikubeCommand(args, text);
-    }
+    hyperkitPermissionFix(args, text);
 #endif
     updateClustersTable();
     if (success) {
@@ -937,6 +933,19 @@ void Window::sshConsole()
 }
 
 #if __APPLE__
+bool Window::hyperkitPermissionFix(QStringList args, QString text)
+{
+    if (!text.contains("docker-machine-driver-hyperkit needs to run with elevated permissions")) {
+        return false;
+    }
+    if (!showHyperKitMessage()) {
+        return false;
+    }
+
+    hyperkitPermission();
+    return sendMinikubeCommand(args, text);
+}
+
 void Window::hyperkitPermission()
 {
     QString command = "sudo chown root:wheel ~/.minikube/bin/docker-machine-driver-hyperkit && "
@@ -954,18 +963,19 @@ void Window::hyperkitPermission()
     process->waitForFinished(-1);
 }
 
-void Window::showHyperKitMessage()
+bool Window::showHyperKitMessage()
 {
-    QMessageBox dialog;
-    dialog.setWindowTitle(tr("HyperKit Permissions Required"));
-    dialog.setWindowIcon(*trayIconIcon);
-    dialog.setModal(true);
-    dialog.setText(tr(
-            "The HyperKit driver requires permission changes on the machine driver which requires "
-            "sudo.\n\nAfter clicking 'OK' a terminal window will open requiring you to enter your "
-            "password to allow the permission changes, the start will resume after."));
-
-    dialog.exec();
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("HyperKit Permissions Required"));
+    msgBox.setWindowIcon(*trayIconIcon);
+    msgBox.setModal(true);
+    msgBox.setText(tr("The HyperKit driver requires a one-time sudo permission.\n\nIf you'd like "
+                      "to proceed, press OK and then enter your password into the terminal prompt, "
+                      "the start will resume after."));
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    int code = msgBox.exec();
+    return code == QMessageBox::Ok;
 }
 #endif
 

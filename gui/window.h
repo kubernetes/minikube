@@ -181,7 +181,8 @@ private:
     QProcessEnvironment env;
 #if __APPLE__
     void hyperkitPermission();
-    void showHyperKitMessage();
+    bool hyperkitPermissionFix(QStringList args, QString text);
+    bool showHyperKitMessage();
 #endif
 
     // Error messaging
