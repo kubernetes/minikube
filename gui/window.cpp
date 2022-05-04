@@ -114,7 +114,7 @@ Window::Window()
     updateButtons();
     layout->addWidget(stackedWidget);
     setLayout(layout);
-    resize(200, 250);
+    resize(200, 275);
 
     setWindowTitle(tr("minikube"));
     setWindowIcon(*trayIconIcon);
@@ -131,6 +131,8 @@ QProcessEnvironment Window::setMacEnv()
 
 void Window::createBasicView()
 {
+    QWidget *basicView = new QWidget();
+
     basicStartButton = new QPushButton(tr("Start"));
     basicStopButton = new QPushButton(tr("Stop"));
     basicPauseButton = new QPushButton(tr("Pause"));
@@ -141,8 +143,7 @@ void Window::createBasicView()
     QPushButton *advancedViewButton = new QPushButton(tr("Advanced View"));
 
     QVBoxLayout *buttonLayout = new QVBoxLayout;
-    QGroupBox *catBox = new QGroupBox();
-    catBox->setLayout(buttonLayout);
+    basicView->setLayout(buttonLayout);
     buttonLayout->addWidget(basicStartButton);
     buttonLayout->addWidget(basicStopButton);
     buttonLayout->addWidget(basicPauseButton);
@@ -151,8 +152,8 @@ void Window::createBasicView()
     buttonLayout->addWidget(basicSSHButton);
     buttonLayout->addWidget(basicDashboardButton);
     buttonLayout->addWidget(advancedViewButton);
-    catBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    stackedWidget->addWidget(catBox);
+    basicView->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(basicView);
 
     connect(basicSSHButton, &QAbstractButton::clicked, this, &Window::sshConsole);
     connect(basicDashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
@@ -168,7 +169,7 @@ void Window::toAdvancedView()
 {
     isBasicView = false;
     stackedWidget->setCurrentIndex(1);
-    resize(600, 400);
+    resize(670, 400);
     updateButtons();
 }
 
@@ -176,7 +177,7 @@ void Window::toBasicView()
 {
     isBasicView = true;
     stackedWidget->setCurrentIndex(0);
-    resize(200, 250);
+    resize(200, 275);
     updateButtons();
 }
 
@@ -191,8 +192,8 @@ void Window::createAdvancedView()
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClustersTable);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
 
-    clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    stackedWidget->addWidget(clusterGroupBox);
+    advancedView->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(advancedView);
 }
 
 void Window::setVisible(bool visible)
@@ -511,7 +512,7 @@ void Window::setSelectedClusterName(QString cluster)
 
 void Window::createClusterGroupBox()
 {
-    clusterGroupBox = new QGroupBox(tr("Clusters"));
+    advancedView = new QWidget();
 
     updateClusterList();
     ClusterList clusters = clusterList;
@@ -561,7 +562,7 @@ void Window::createClusterGroupBox()
     clusterLayout->addLayout(topButtonLayout);
     clusterLayout->addWidget(clusterListView);
     clusterLayout->addLayout(bottomButtonLayout);
-    clusterGroupBox->setLayout(clusterLayout);
+    advancedView->setLayout(clusterLayout);
 
     QFont *loadingFont = new QFont();
     loadingFont->setPointSize(30);
@@ -841,10 +842,14 @@ void Window::outputFailedStart(QString text)
         QFormLayout form(&dialog);
         createLabel("Error Code", name, &form, false);
         createLabel("Advice", advice, &form, false);
-        QLabel *errorMessage = createLabel("Error Message", message, &form, false);
+        QTextEdit *errorMessage = new QTextEdit();
+        errorMessage->setText(message);
+        errorMessage->setWordWrapMode(QTextOption::WrapAnywhere);
         int pointSize = errorMessage->font().pointSize();
         errorMessage->setFont(QFont("Courier", pointSize));
         errorMessage->setAutoFillBackground(true);
+        errorMessage->setReadOnly(true);
+        form.addRow(errorMessage);
         QPalette pal = errorMessage->palette();
         QColor color = pal.window().color().lighter();
         pal.setColor(errorMessage->backgroundRole(), color);
