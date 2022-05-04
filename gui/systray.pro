@@ -6,7 +6,7 @@ SOURCES       = main.cpp \
 RESOURCES     = systray.qrc
 ICON          = images/minikube.icns
 
-QT += widgets
+QT += widgets network
 requires(qtConfig(combobox))
 
 DISTFILES += \
