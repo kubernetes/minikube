@@ -35,7 +35,7 @@ RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20220316
 
-ARG BUILDKIT_VERSION="v0.10.0"
+ARG BUILDKIT_VERSION="v0.10.2"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.22"
