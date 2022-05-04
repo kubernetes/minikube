@@ -197,13 +197,14 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 
 func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := listProfiles()
-
+	activeProfile := ClusterFlagValue()
 	updateProfilesStatus(validProfiles)
 
 	var body = map[string]interface{}{}
 	if err == nil || config.IsNotExist(err) {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
+		body["active"] = activeProfile
 		jsonString, _ := json.Marshal(body)
 		out.String(string(jsonString))
 	} else {
