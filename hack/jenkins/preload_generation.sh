@@ -20,7 +20,7 @@
 
 set -eux -o pipefail
 
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/master/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
 # Make sure the right golang version is installed based on Makefile
