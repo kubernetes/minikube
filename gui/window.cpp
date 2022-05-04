@@ -850,10 +850,6 @@ void Window::outputFailedStart(QString text)
         errorMessage->setAutoFillBackground(true);
         errorMessage->setReadOnly(true);
         form.addRow(errorMessage);
-        QPalette pal = errorMessage->palette();
-        QColor color = pal.window().color().lighter();
-        pal.setColor(errorMessage->backgroundRole(), color);
-        errorMessage->setPalette(pal);
         createLabel("Link to documentation", url, &form, true);
         createLabel("Link to related issue", issues, &form, true);
         QLabel *fileLabel = new QLabel(this);
