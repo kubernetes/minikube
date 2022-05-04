@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-BUILDKIT_BIN_VERSION = v0.10.0
+BUILDKIT_BIN_VERSION = v0.10.2
 BUILDKIT_BIN_COMMIT = 068cf686a7e5c3254244d0acc54636f4f393611e
 BUILDKIT_BIN_SITE = https://github.com/moby/buildkit/releases/download/$(BUILDKIT_BIN_VERSION)
 BUILDKIT_BIN_SOURCE = buildkit-$(BUILDKIT_BIN_VERSION).linux-amd64.tar.gz
