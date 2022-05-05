@@ -762,32 +762,28 @@ func parseMapString(str string) map[string]string {
 	return mapResult
 }
 
-// mergeMaps creates a map with the union of `sourceMap` and `overrideMap` where collisions take the value of `overrideMap`.
-func mergeMaps(sourceMap, overrideMap map[string]string) map[string]string {
-	result := make(map[string]string)
-	for name, value := range sourceMap {
-		result[name] = value
+// mergeMaps returns a map with the union of `source` and `override` where collisions take the value of `override`.
+func mergeMaps(source, override map[string]string) map[string]string {
+	for k, v := range override {
+		source[k] = v
 	}
-	for name, value := range overrideMap {
-		result[name] = value
-	}
-	return result
+	return source
 }
 
-// filterKeySpace creates a map of the values in `targetMap` where the keys are also in `keySpace`.
-func filterKeySpace(keySpace map[string]string, targetMap map[string]string) map[string]string {
+// filterKeySpace creates a map of the values in `target` where the keys are also in `keySpace`.
+func filterKeySpace(keySpace map[string]string, target map[string]string) map[string]string {
 	result := make(map[string]string)
 	for name := range keySpace {
-		if value, ok := targetMap[name]; ok {
+		if value, ok := target[name]; ok {
 			result[name] = value
 		}
 	}
 	return result
 }
 
-// overrideDefaults creates a copy of `defaultMap` where `overrideMap` replaces any of its values that `overrideMap` contains.
-func overrideDefaults(defaultMap, overrideMap map[string]string) map[string]string {
-	return mergeMaps(defaultMap, filterKeySpace(defaultMap, overrideMap))
+// overrideDefaults creates a copy of `def` where `overrideMap` replaces any of its values that `overrideMap` contains.
+func overrideDefaults(def, override map[string]string) map[string]string {
+	return mergeMaps(def, filterKeySpace(def, override))
 }
 
 // SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
@@ -837,14 +833,12 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, customRegistries)
 	}
 
-	err = nil
 	// If images or registries were specified, save the config afterward.
 	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
 		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
-		err = config.Write(viper.GetString(config.ProfileName), cc)
-		// Whether err is nil or not we still return here.
+		return images, customRegistries, config.Write(viper.GetString(config.ProfileName), cc)
 	}
-	return images, customRegistries, err
+	return images, customRegistries, nil
 }
 
 // GenerateTemplateData generates template data for template assets
@@ -852,7 +846,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	cfg := cc.KubernetesConfig
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
-	// for  less common architectures blank suffix for amd64
+	// for less common architectures blank suffix for amd64
 	ea := ""
 	if runtime.GOARCH != "amd64" {
 		ea = "-" + runtime.GOARCH
