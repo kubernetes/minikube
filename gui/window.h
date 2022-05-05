@@ -61,6 +61,7 @@
 #include <QVersionNumber>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
+#include <QProgressBar>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -166,9 +167,19 @@ private:
     QComboBox *containerRuntimeComboBox;
     QComboBox *k8sVersionComboBox;
 
-    // Commands
+    // Start Commands
     void startMinikube(QStringList args);
     void startSelectedMinikube();
+    bool sendMinikubeStart(QStringList cmds, QString &text);
+    void startProgress();
+    void endProgress();
+    void startStep(QString step);
+    QDialog *progressDialog;
+    QProgressBar progressBar;
+    QLabel *progressText;
+    QProcess *startProcess;
+
+    // Other Commands
     void stopMinikube();
     void pauseMinikube();
     void unpauseMinikube();
