@@ -326,7 +326,7 @@ void Window::startMinikube(QStringList moreArgs)
     QString text;
     QStringList args = { "start", "-o", "json" };
     args << moreArgs;
-    bool success = sendMinikubeCommand(args, text);
+    bool success = sendMinikubeStart(args, text);
 #if __APPLE__
     hyperkitPermissionFix(args, text);
 #endif
@@ -712,6 +712,99 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     }
     delete process;
     return success;
+}
+
+bool Window::sendMinikubeStart(QStringList cmds, QString &text)
+{
+    QString program = minikubePath();
+    if (program.isEmpty()) {
+        return false;
+    }
+    QStringList arguments = { "--user", "minikube-gui" };
+    arguments << cmds;
+
+    QProcess *process = new QProcess(this);
+    connect(process, &QProcess::readyReadStandardOutput,
+            [process, this]() { startStep(process->readAllStandardOutput()); });
+    startProcess = process;
+#if __APPLE__
+    if (env.isEmpty()) {
+        env = setMacEnv();
+    }
+    startProcess->setProcessEnvironment(env);
+#endif
+    this->setCursor(Qt::WaitCursor);
+    startProcess->start(program, arguments);
+    startProgress();
+    while (startProcess->state() != QProcess::NotRunning) {
+        delay();
+    }
+    endProgress();
+    int exitCode = startProcess->exitCode();
+    bool success = exitCode == 0;
+    this->unsetCursor();
+
+    text = startProcess->readAllStandardOutput();
+    if (success) {
+    } else {
+        qDebug() << text;
+        qDebug() << startProcess->readAllStandardError();
+    }
+    delete startProcess;
+    return success;
+}
+
+void Window::startProgress()
+{
+    progressDialog = new QDialog(this);
+    progressDialog->resize(300, 150);
+    progressDialog->setWindowTitle(tr("minikube start Progress"));
+    progressDialog->setWindowIcon(*trayIconIcon);
+    progressDialog->setWindowFlags(Qt::FramelessWindowHint);
+    progressDialog->setModal(true);
+
+    QVBoxLayout form(progressDialog);
+    progressText = new QLabel();
+    progressText->setText("Starting...");
+    progressText->setWordWrap(true);
+    form.addWidget(progressText);
+    progressBar.setMaximum(19);
+    form.addWidget(&progressBar);
+    QPushButton *cancel = new QPushButton(tr("Cancel"));
+    connect(cancel, &QAbstractButton::clicked, startProcess, &QProcess::kill);
+    form.addWidget(cancel);
+
+    progressDialog->open();
+}
+
+void Window::endProgress()
+{
+    progressDialog->hide();
+    progressBar.setValue(0);
+}
+
+void Window::startStep(QString step)
+{
+    QStringList lines;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    lines = step.split("\n", Qt::SkipEmptyParts);
+#else
+    lines = step.split("\n", QString::SkipEmptyParts);
+#endif
+    for (int i = 0; i < lines.size(); i++) {
+        QJsonDocument json = QJsonDocument::fromJson(lines[i].toUtf8());
+        QJsonObject object = json.object();
+        QString type = object["type"].toString();
+        if (type != "io.k8s.sigs.minikube.step") {
+            return;
+        }
+        QJsonObject data = object["data"].toObject();
+        QString stringStep = data["currentstep"].toString();
+        int currStep = stringStep.toInt();
+        QString message = data["message"].toString();
+        progressBar.setValue(currStep);
+        progressText->setText(message);
+    }
 }
 
 static QString profile = "minikube";
