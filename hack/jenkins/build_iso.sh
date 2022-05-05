@@ -37,6 +37,7 @@ if [[ -z $ISO_VERSION ]]; then
 	now=$(date +%s)
 	export ISO_VERSION=$IV-$now-$ghprbPullId
 	export ISO_BUCKET=minikube-builds/iso/$ghprbPullId
+	echo "#$ghprPullId - $ghprPullTitle" >> deploy/iso/minikube-iso/CHANGELOG
 else
 	release=true
 	export ISO_VERSION
