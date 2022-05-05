@@ -836,6 +836,7 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 	// If images or registries were specified, save the config afterward.
 	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
 		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
+		// Whether err is nil or not we still return here.
 		return images, customRegistries, config.Write(viper.GetString(config.ProfileName), cc)
 	}
 	return images, customRegistries, nil
