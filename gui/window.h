@@ -144,7 +144,7 @@ private:
     QPushButton *createButton;
     QPushButton *sshButton;
     QPushButton *dashboardButton;
-    QGroupBox *clusterGroupBox;
+    QWidget *advancedView;
 
     // Cluster table
     QString selectedClusterName();
