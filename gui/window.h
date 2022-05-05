@@ -182,6 +182,11 @@ private:
     Cluster createClusterObject(QJsonObject obj);
     QProcess *dashboardProcess;
     QProcessEnvironment env;
+#if __APPLE__
+    void hyperkitPermission();
+    bool hyperkitPermissionFix(QStringList args, QString text);
+    bool showHyperKitMessage();
+#endif
 
     // Error messaging
     void outputFailedStart(QString text);
