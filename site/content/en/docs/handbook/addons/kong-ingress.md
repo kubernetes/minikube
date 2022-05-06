@@ -80,7 +80,7 @@ $ curl -v localhost
 ## Creating Ingress object
 
 Let's create a service.
-As an example, we use `tyoe-ExternalName` to point to https://httpbin.org
+As an example, we use `type=ExternalName` to point to https://httpbin.org
 
 ```bash
 echo "
