@@ -1,7 +1,7 @@
 # Architecture
 BR2_aarch64=y
 
-# Toolchainmv
+# Toolchain
 BR2_TOOLCHAIN_BUILDROOT_WCHAR=y
 
 # System
