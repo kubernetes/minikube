@@ -83,12 +83,15 @@
 #include <QFontDialog>
 #include <QStackedWidget>
 #include <QProcessEnvironment>
+#include <QNetworkAccessManager>
 
 #ifndef QT_NO_TERMWIDGET
 #include <QApplication>
 #include <QMainWindow>
 #include "qtermwidget.h"
 #endif
+
+const QVersionNumber version = QVersionNumber::fromString("0.0.1");
 
 Window::Window()
 {
@@ -111,10 +114,11 @@ Window::Window()
     updateButtons();
     layout->addWidget(stackedWidget);
     setLayout(layout);
-    resize(200, 250);
+    resize(200, 275);
 
     setWindowTitle(tr("minikube"));
     setWindowIcon(*trayIconIcon);
+    checkForUpdates();
 }
 
 QProcessEnvironment Window::setMacEnv()
@@ -127,6 +131,8 @@ QProcessEnvironment Window::setMacEnv()
 
 void Window::createBasicView()
 {
+    QWidget *basicView = new QWidget();
+
     basicStartButton = new QPushButton(tr("Start"));
     basicStopButton = new QPushButton(tr("Stop"));
     basicPauseButton = new QPushButton(tr("Pause"));
@@ -137,8 +143,7 @@ void Window::createBasicView()
     QPushButton *advancedViewButton = new QPushButton(tr("Advanced View"));
 
     QVBoxLayout *buttonLayout = new QVBoxLayout;
-    QGroupBox *catBox = new QGroupBox();
-    catBox->setLayout(buttonLayout);
+    basicView->setLayout(buttonLayout);
     buttonLayout->addWidget(basicStartButton);
     buttonLayout->addWidget(basicStopButton);
     buttonLayout->addWidget(basicPauseButton);
@@ -147,8 +152,8 @@ void Window::createBasicView()
     buttonLayout->addWidget(basicSSHButton);
     buttonLayout->addWidget(basicDashboardButton);
     buttonLayout->addWidget(advancedViewButton);
-    catBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    stackedWidget->addWidget(catBox);
+    basicView->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(basicView);
 
     connect(basicSSHButton, &QAbstractButton::clicked, this, &Window::sshConsole);
     connect(basicDashboardButton, &QAbstractButton::clicked, this, &Window::dashboardBrowser);
@@ -164,7 +169,7 @@ void Window::toAdvancedView()
 {
     isBasicView = false;
     stackedWidget->setCurrentIndex(1);
-    resize(600, 400);
+    resize(670, 400);
     updateButtons();
 }
 
@@ -172,7 +177,7 @@ void Window::toBasicView()
 {
     isBasicView = true;
     stackedWidget->setCurrentIndex(0);
-    resize(200, 250);
+    resize(200, 275);
     updateButtons();
 }
 
@@ -187,8 +192,8 @@ void Window::createAdvancedView()
     connect(refreshButton, &QAbstractButton::clicked, this, &Window::updateClustersTable);
     connect(createButton, &QAbstractButton::clicked, this, &Window::initMachine);
 
-    clusterGroupBox->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    stackedWidget->addWidget(clusterGroupBox);
+    advancedView->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    stackedWidget->addWidget(advancedView);
 }
 
 void Window::setVisible(bool visible)
@@ -321,7 +326,10 @@ void Window::startMinikube(QStringList moreArgs)
     QString text;
     QStringList args = { "start", "-o", "json" };
     args << moreArgs;
-    bool success = sendMinikubeCommand(args, text);
+    bool success = sendMinikubeStart(args, text);
+#if __APPLE__
+    hyperkitPermissionFix(args, text);
+#endif
     updateClustersTable();
     if (success) {
         return;
@@ -507,7 +515,7 @@ void Window::setSelectedClusterName(QString cluster)
 
 void Window::createClusterGroupBox()
 {
-    clusterGroupBox = new QGroupBox(tr("Clusters"));
+    advancedView = new QWidget();
 
     updateClusterList();
     ClusterList clusters = clusterList;
@@ -557,7 +565,7 @@ void Window::createClusterGroupBox()
     clusterLayout->addLayout(topButtonLayout);
     clusterLayout->addWidget(clusterListView);
     clusterLayout->addLayout(bottomButtonLayout);
-    clusterGroupBox->setLayout(clusterLayout);
+    advancedView->setLayout(clusterLayout);
 
     QFont *loadingFont = new QFont();
     loadingFont->setPointSize(30);
@@ -706,6 +714,99 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
     return success;
 }
 
+bool Window::sendMinikubeStart(QStringList cmds, QString &text)
+{
+    QString program = minikubePath();
+    if (program.isEmpty()) {
+        return false;
+    }
+    QStringList arguments = { "--user", "minikube-gui" };
+    arguments << cmds;
+
+    QProcess *process = new QProcess(this);
+    connect(process, &QProcess::readyReadStandardOutput,
+            [process, this]() { startStep(process->readAllStandardOutput()); });
+    startProcess = process;
+#if __APPLE__
+    if (env.isEmpty()) {
+        env = setMacEnv();
+    }
+    startProcess->setProcessEnvironment(env);
+#endif
+    this->setCursor(Qt::WaitCursor);
+    startProcess->start(program, arguments);
+    startProgress();
+    while (startProcess->state() != QProcess::NotRunning) {
+        delay();
+    }
+    endProgress();
+    int exitCode = startProcess->exitCode();
+    bool success = exitCode == 0;
+    this->unsetCursor();
+
+    text = startProcess->readAllStandardOutput();
+    if (success) {
+    } else {
+        qDebug() << text;
+        qDebug() << startProcess->readAllStandardError();
+    }
+    delete startProcess;
+    return success;
+}
+
+void Window::startProgress()
+{
+    progressDialog = new QDialog(this);
+    progressDialog->resize(300, 150);
+    progressDialog->setWindowTitle(tr("minikube start Progress"));
+    progressDialog->setWindowIcon(*trayIconIcon);
+    progressDialog->setWindowFlags(Qt::FramelessWindowHint);
+    progressDialog->setModal(true);
+
+    QVBoxLayout form(progressDialog);
+    progressText = new QLabel();
+    progressText->setText("Starting...");
+    progressText->setWordWrap(true);
+    form.addWidget(progressText);
+    progressBar.setMaximum(19);
+    form.addWidget(&progressBar);
+    QPushButton *cancel = new QPushButton(tr("Cancel"));
+    connect(cancel, &QAbstractButton::clicked, startProcess, &QProcess::kill);
+    form.addWidget(cancel);
+
+    progressDialog->open();
+}
+
+void Window::endProgress()
+{
+    progressDialog->hide();
+    progressBar.setValue(0);
+}
+
+void Window::startStep(QString step)
+{
+    QStringList lines;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    lines = step.split("\n", Qt::SkipEmptyParts);
+#else
+    lines = step.split("\n", QString::SkipEmptyParts);
+#endif
+    for (int i = 0; i < lines.size(); i++) {
+        QJsonDocument json = QJsonDocument::fromJson(lines[i].toUtf8());
+        QJsonObject object = json.object();
+        QString type = object["type"].toString();
+        if (type != "io.k8s.sigs.minikube.step") {
+            return;
+        }
+        QJsonObject data = object["data"].toObject();
+        QString stringStep = data["currentstep"].toString();
+        int currStep = stringStep.toInt();
+        QString message = data["message"].toString();
+        progressBar.setValue(currStep);
+        progressText->setText(message);
+    }
+}
+
 static QString profile = "minikube";
 static int cpus = 2;
 static int memory = 2400;
@@ -837,14 +938,14 @@ void Window::outputFailedStart(QString text)
         QFormLayout form(&dialog);
         createLabel("Error Code", name, &form, false);
         createLabel("Advice", advice, &form, false);
-        QLabel *errorMessage = createLabel("Error Message", message, &form, false);
+        QTextEdit *errorMessage = new QTextEdit();
+        errorMessage->setText(message);
+        errorMessage->setWordWrapMode(QTextOption::WrapAnywhere);
         int pointSize = errorMessage->font().pointSize();
         errorMessage->setFont(QFont("Courier", pointSize));
         errorMessage->setAutoFillBackground(true);
-        QPalette pal = errorMessage->palette();
-        QColor color = pal.window().color().lighter();
-        pal.setColor(errorMessage->backgroundRole(), color);
-        errorMessage->setPalette(pal);
+        errorMessage->setReadOnly(true);
+        form.addRow(errorMessage);
         createLabel("Link to documentation", url, &form, true);
         createLabel("Link to related issue", issues, &form, true);
         QLabel *fileLabel = new QLabel(this);
@@ -910,10 +1011,8 @@ void Window::sshConsole()
     mainWindow->show();
 #elif __APPLE__
     QString command = program + " ssh -p " + selectedClusterName();
-    QStringList arguments = { "-e", "tell app \"Terminal\"",
-                              "-e", "activate",
-                              "-e", "do script \"" + command + "\"",
-                              "-e", "end tell" };
+    QStringList arguments = { "-e", "tell app \"Terminal\"",         "-e", "activate",
+                              "-e", "do script \"" + command + "\"", "-e", "end tell" };
     QProcess *process = new QProcess(this);
     process->start("/usr/bin/osascript", arguments);
 #else
@@ -930,6 +1029,53 @@ void Window::sshConsole()
     process->start(QStandardPaths::findExecutable(terminal), arguments);
 #endif
 }
+
+#if __APPLE__
+bool Window::hyperkitPermissionFix(QStringList args, QString text)
+{
+    if (!text.contains("docker-machine-driver-hyperkit needs to run with elevated permissions")) {
+        return false;
+    }
+    if (!showHyperKitMessage()) {
+        return false;
+    }
+
+    hyperkitPermission();
+    return sendMinikubeCommand(args, text);
+}
+
+void Window::hyperkitPermission()
+{
+    QString command = "sudo chown root:wheel ~/.minikube/bin/docker-machine-driver-hyperkit && "
+                      "sudo chmod u+s ~/.minikube/bin/docker-machine-driver-hyperkit && exit";
+    QStringList arguments = { "-e", "tell app \"Terminal\"",
+                              "-e", "set w to do script \"" + command + "\"",
+                              "-e", "activate",
+                              "-e", "repeat",
+                              "-e", "delay 0.1",
+                              "-e", "if not busy of w then exit repeat",
+                              "-e", "end repeat",
+                              "-e", "end tell" };
+    QProcess *process = new QProcess(this);
+    process->start("/usr/bin/osascript", arguments);
+    process->waitForFinished(-1);
+}
+
+bool Window::showHyperKitMessage()
+{
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("HyperKit Permissions Required"));
+    msgBox.setWindowIcon(*trayIconIcon);
+    msgBox.setModal(true);
+    msgBox.setText(tr("The HyperKit driver requires a one-time sudo permission.\n\nIf you'd like "
+                      "to proceed, press OK and then enter your password into the terminal prompt, "
+                      "the start will resume after."));
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    int code = msgBox.exec();
+    return code == QMessageBox::Ok;
+}
+#endif
 
 void Window::dashboardBrowser()
 {
@@ -980,6 +1126,66 @@ void Window::checkForMinikube()
     form.addRow(&buttonBox);
     dialog.exec();
     exit(EXIT_FAILURE);
+}
+
+void Window::checkForUpdates()
+{
+    QString releases = getRequest("https://storage.googleapis.com/minikube-gui/releases.json");
+    QJsonObject latestRelease =
+            QJsonDocument::fromJson(releases.toUtf8()).array().first().toObject();
+    QString latestReleaseVersion = latestRelease["name"].toString();
+    QVersionNumber latestReleaseVersionNumber = QVersionNumber::fromString(latestReleaseVersion);
+    if (version >= latestReleaseVersionNumber) {
+        return;
+    }
+    QJsonObject links = latestRelease["links"].toObject();
+    QString key;
+#if __linux__
+    key = "linux";
+#elif __APPLE__
+    key = "darwin";
+#else
+    key = "windows";
+#endif
+    QString link = links[key].toString();
+    notifyUpdate(latestReleaseVersion, link);
+}
+
+void Window::notifyUpdate(QString latest, QString link)
+{
+    QDialog dialog;
+    dialog.setWindowTitle(tr("minikube GUI Update Available"));
+    dialog.setWindowIcon(*trayIconIcon);
+    dialog.setModal(true);
+    QFormLayout form(&dialog);
+    QLabel *msgLabel = new QLabel(this);
+    msgLabel->setText("Version " + latest
+                      + " of minikube GUI is now available!\n\nDownload the update from:");
+    form.addWidget(msgLabel);
+    QLabel *linkLabel = new QLabel(this);
+    linkLabel->setOpenExternalLinks(true);
+    linkLabel->setText("<a href=\"" + link + "\">" + link + "</a>");
+    form.addWidget(linkLabel);
+    QDialogButtonBox buttonBox(Qt::Horizontal, &dialog);
+    buttonBox.addButton(QString(tr("OK")), QDialogButtonBox::AcceptRole);
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    form.addRow(&buttonBox);
+    dialog.exec();
+}
+
+QString Window::getRequest(QString url)
+{
+    QNetworkAccessManager *manager = new QNetworkAccessManager();
+    QObject::connect(manager, &QNetworkAccessManager::finished, this, [=](QNetworkReply *reply) {
+        if (reply->error()) {
+            qDebug() << reply->errorString();
+        }
+    });
+    QNetworkReply *resp = manager->get(QNetworkRequest(QUrl(url)));
+    QEventLoop loop;
+    connect(resp, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+    return resp->readAll();
 }
 
 #endif

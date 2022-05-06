@@ -58,6 +58,10 @@
 #include <QFormLayout>
 #include <QStackedWidget>
 #include <QProcessEnvironment>
+#include <QVersionNumber>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QProgressBar>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -141,7 +145,7 @@ private:
     QPushButton *createButton;
     QPushButton *sshButton;
     QPushButton *dashboardButton;
-    QGroupBox *clusterGroupBox;
+    QWidget *advancedView;
 
     // Cluster table
     QString selectedClusterName();
@@ -163,9 +167,19 @@ private:
     QComboBox *containerRuntimeComboBox;
     QComboBox *k8sVersionComboBox;
 
-    // Commands
+    // Start Commands
     void startMinikube(QStringList args);
     void startSelectedMinikube();
+    bool sendMinikubeStart(QStringList cmds, QString &text);
+    void startProgress();
+    void endProgress();
+    void startStep(QString step);
+    QDialog *progressDialog;
+    QProgressBar progressBar;
+    QLabel *progressText;
+    QProcess *startProcess;
+
+    // Other Commands
     void stopMinikube();
     void pauseMinikube();
     void unpauseMinikube();
@@ -179,6 +193,11 @@ private:
     Cluster createClusterObject(QJsonObject obj);
     QProcess *dashboardProcess;
     QProcessEnvironment env;
+#if __APPLE__
+    void hyperkitPermission();
+    bool hyperkitPermissionFix(QStringList args, QString text);
+    bool showHyperKitMessage();
+#endif
 
     // Error messaging
     void outputFailedStart(QString text);
@@ -193,6 +212,9 @@ private:
     bool isBasicView;
     void delay();
     int getCenter(int widgetSize, int parentSize);
+    void checkForUpdates();
+    QString getRequest(QString url);
+    void notifyUpdate(QString latest, QString link);
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
