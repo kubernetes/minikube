@@ -42,6 +42,8 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
+// findCgroupMountpoints returns the cgroups mount point
+// defined in docker engine engine/pkg/sysinfo/sysinfo_linux.go
 func findCgroupMountpoints() (map[string]string, error) {
 	cgMounts, err := cgroups.GetCgroupMounts(false)
 	if err != nil {
@@ -126,48 +128,43 @@ func PrepareContainerNode(p CreateParams) error {
 
 // HasMemoryCgroup checks whether it is possible to set memory limit for cgroup.
 func HasMemoryCgroup() bool {
-	memcg := true
 	if runtime.GOOS == "linux" {
 		cgMounts, err := findCgroupMountpoints()
 		if err != nil {
 			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			memcg = false
+			return false
 		}
 		_, ok := cgMounts["memory"]
 		if !ok {
 			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			memcg = false
+			return false
 		}
 	}
-	return memcg
-}
-func cgroupEnabled(mountPoint, name string) bool {
-	_, err := os.Stat(path.Join(mountPoint, name))
-	return err == nil
+	return true
 }
 
+// hasMemorySwapCgroup checks whether it is possible to set swap limit for cgroup
 func hasMemorySwapCgroup() bool {
-	memcgSwap := true
 	if runtime.GOOS == "linux" {
 		cgMounts, err := findCgroupMountpoints()
 		if err != nil {
 			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
+			return false
 		}
 		mountPoint, ok := cgMounts["memory"]
 		if !ok {
 			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
+			return false
 		}
 
-		swapLimit := cgroupEnabled(mountPoint, "memory.memsw.limit_in_bytes")
-		if !swapLimit {
+		_, err = os.Stat(path.Join(mountPoint, "memory.memsw.limit_in_bytesw"))
+		if err != nil {
 			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
+			return false
 
 		}
 	}
-	return memcgSwap
+	return true
 }
 
 // CreateContainerNode creates a new container node
