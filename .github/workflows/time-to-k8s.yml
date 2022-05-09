@@ -26,7 +26,7 @@ jobs:
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh
           echo "::set-output name=version::$(minikube version --short)"
     - name: Create PR
-      uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
+      uses: peter-evans/create-pull-request@f094b77505fb89581e68a1163fbd2fffece39da1
       with:
         token: ${{ secrets.MINIKUBE_BOT_PAT }}
         commit-message: add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}

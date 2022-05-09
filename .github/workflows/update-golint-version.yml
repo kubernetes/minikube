@@ -26,7 +26,7 @@ jobs:
           echo "::set-output name=changes::$(git status --porcelain)"
       - name: Create PR
         if: ${{ steps.bumpGolint.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
+        uses: peter-evans/create-pull-request@f094b77505fb89581e68a1163fbd2fffece39da1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: bump golint versions
