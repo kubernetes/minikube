@@ -105,9 +105,9 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
 	if cc == nil {
-		table.SetHeader([]string{"Addon Name", "Maintainer"})
+		table.SetHeader([]string{"Addon Name", "Maintainer", "Docs"})
 	} else {
-		table.SetHeader([]string{"Addon Name", "Profile", "Status", "Maintainer"})
+		table.SetHeader([]string{"Addon Name", "Profile", "Status", "Maintainer", "Docs"})
 	}
 
 	for _, addonName := range addonNames {
@@ -116,12 +116,16 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 		if maintainer == "" {
 			maintainer = "unknown (third-party)"
 		}
+		docs := addonBundle.Docs
+		if docs == "" {
+			docs = "n/a"
+		}
 		if cc == nil {
-			tData = append(tData, []string{addonName, maintainer})
+			tData = append(tData, []string{addonName, maintainer, docs})
 			continue
 		}
 		enabled := addonBundle.IsEnabled(cc)
-		tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer})
+		tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer, docs})
 	}
 
 	table.AppendBulk(tData)

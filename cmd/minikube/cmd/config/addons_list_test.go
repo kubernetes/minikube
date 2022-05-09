@@ -51,11 +51,11 @@ func TestAddonsList(t *testing.T) {
 			got += buf.Text()
 		}
 		// The lines we pull should look something like
-		// |-----------------------------|-----------------------|
-		// |         ADDON NAME          |      MAINTAINER       |
-		// |-----------------------------|-----------------------|
-		// which has 9 pipes
-		expected := 9
+		// |------------|------------|------|
+		// | ADDON NAME | MAINTAINER | DOCS |
+		// |------------|------------|------|
+		// which has 12 pipes
+		expected := 12
 		if pipeCount != expected {
 			t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
 		}
