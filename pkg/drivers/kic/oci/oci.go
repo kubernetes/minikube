@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -32,7 +31,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/opencontainers/runc/libcontainer/cgroups"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -41,22 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
-
-// findCgroupMountpoints returns the cgroups mount point
-// defined in docker engine engine/pkg/sysinfo/sysinfo_linux.go
-func findCgroupMountpoints() (map[string]string, error) {
-	cgMounts, err := cgroups.GetCgroupMounts(false)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse cgroup information: %v", err)
-	}
-	mps := make(map[string]string)
-	for _, m := range cgMounts {
-		for _, ss := range m.Subsystems {
-			mps[ss] = m.Mountpoint
-		}
-	}
-	return mps, nil
-}
 
 // DeleteContainersByLabel deletes all containers that have a specific label
 // if there no containers found with the given 	label, it will return nil
@@ -124,47 +106,6 @@ func PrepareContainerNode(p CreateParams) error {
 	}
 	klog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
-}
-
-// HasMemoryCgroup checks whether it is possible to set memory limit for cgroup.
-func HasMemoryCgroup() bool {
-	if runtime.GOOS == "linux" {
-		cgMounts, err := findCgroupMountpoints()
-		if err != nil {
-			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			return false
-		}
-		_, ok := cgMounts["memory"]
-		if !ok {
-			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			return false
-		}
-	}
-	return true
-}
-
-// hasMemorySwapCgroup checks whether it is possible to set swap limit for cgroup
-func hasMemorySwapCgroup() bool {
-	if runtime.GOOS == "linux" {
-		cgMounts, err := findCgroupMountpoints()
-		if err != nil {
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			return false
-		}
-		mountPoint, ok := cgMounts["memory"]
-		if !ok {
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			return false
-		}
-
-		_, err = os.Stat(path.Join(mountPoint, "memory.memsw.limit_in_bytesw"))
-		if err != nil {
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			return false
-
-		}
-	}
-	return true
 }
 
 // CreateContainerNode creates a new container node
