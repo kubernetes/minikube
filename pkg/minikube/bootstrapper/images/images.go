@@ -46,11 +46,12 @@ func Pause(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
 	pv := "3.6"
 	imageName := "pause"
-	pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), pv)
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 
 	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		pv = pVersion
+	} else {
+		pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), pv)
 	}
 
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
@@ -79,24 +80,19 @@ func componentImage(name string, v semver.Version, mirror string) string {
 // fixes 13136 by getting the latest image version from the k8s.gcr.io repository instead of hardcoded
 func findLatestTagFromRepository(url string, lastKnownGood string) string {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	errorMsg := fmt.Sprintf("Failed to get latest image version for %s, reverting to version %s.", url, lastKnownGood)
 
-	if err != nil {
-		klog.Infof("Failed to get latest image version for %s, reverting to version %s\n", url, lastKnownGood)
-		return lastKnownGood
-	}
-
-	resp, err := client.Do(req)
+	resp, err := client.Get(url)
 
 	if err != nil || resp.StatusCode != http.StatusOK {
-		klog.Infof("Failed to get latest image version for %s, reverting to version %s\n", url, lastKnownGood)
+		klog.Warningf("%s Error %v", errorMsg, err)
 		return lastKnownGood
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		klog.Infof("Failed to read latest image version for %s, reverting to version %s\n", url, lastKnownGood)
+		klog.Warningf("%s Error %v", errorMsg, err)
 		return lastKnownGood
 	}
 
@@ -108,7 +104,7 @@ func findLatestTagFromRepository(url string, lastKnownGood string) string {
 	tags := TagsResponse{}
 	err = json.Unmarshal(body, &tags)
 	if err != nil || len(tags.Tags) < 1 {
-		klog.Infof("Failed to read latest image version for %s, reverting to version %s\n", url, lastKnownGood)
+		klog.Warningf("%s Error %v", errorMsg, err)
 		return lastKnownGood
 	}
 	lastTagNum := len(tags.Tags) - 1
@@ -121,19 +117,20 @@ func coreDNS(v semver.Version, mirror string) string {
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 
-	in := "coredns/coredns"
+	imageName := "coredns/coredns"
 	cv := "v1.8.6"
-	cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), in), cv)
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
-		in = "coredns"
+		imageName = "coredns"
 	}
 
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][in]; ok {
+	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		cv = cVersion
+	} else {
+		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), cv)
 	}
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), in), cv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), cv)
 }
 
 // etcd returns the image used for etcd
@@ -143,10 +140,11 @@ func etcd(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.5.0-0"
 	imageName := "etcd"
-	ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), ev), ev)
 	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
 	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		ev = eVersion
+	} else {
+		ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), ev)
 	}
 
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
