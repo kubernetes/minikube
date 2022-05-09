@@ -1,0 +1,4 @@
+config BR2_PACKAGE_CRICTL_BIN_AARCH64
+	bool "crictl-bin"
+	default y
+	depends on BR2_aarch64

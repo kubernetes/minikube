@@ -1,1 +1,0 @@
-source "$BR2_EXTERNAL_MINIKUBE_PATH/package/Config.in"
