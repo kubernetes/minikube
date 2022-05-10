@@ -145,7 +145,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", "kubernetes", "", nil, nil),
+	}, true, "default-storageclass", "kubernetes", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PodSecurityPolicyAssets,
 			"pod-security-policy/pod-security-policy.yaml.tmpl",
@@ -239,7 +239,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-deploy.yaml",
 			"0640"),
-	}, false, "ingress", "", "", map[string]string{
+	}, false, "ingress", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/6d9a39eda7b180f27b34726d7a7a96d73808ce75/deploy/static/provider/kind/deploy.yaml#L417
 		"IngressController": "ingress-nginx/controller:v1.2.0@sha256:d8196e3bc1e72547c5dec66d6556c0ff92a23f6d0919b206be170bc90d5f9185",
 		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L621
@@ -255,7 +255,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-operator.yaml",
 			"0640"),
-	}, false, "istio-provisioner", "3rd party (istio)", "", map[string]string{
+	}, false, "istio-provisioner", "3rd party (istio)", "https://istio.io/latest/docs/setup/platform-setup/minikube/", map[string]string{
 		"IstioOperator": "istio/operator:1.12.2@sha256:42c7609872882cb88728a1592561b4046dac6d05b6002cbdc815b84c86a24f08",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
@@ -264,7 +264,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
-	}, false, "istio", "3rd party (istio)", "", nil, nil),
+	}, false, "istio", "3rd party (istio)", "https://istio.io/latest/docs/setup/platform-setup/minikube/", nil, nil),
 	"kong": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KongAssets,
 			"kong/kong-ingress-controller.yaml.tmpl",
@@ -281,7 +281,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"pod.yaml",
 			"0640"),
-	}, false, "kubevirt", "3rd party (kubevirt)", "", map[string]string{
+	}, false, "kubevirt", "3rd party (kubevirt)", "https://minikube.sigs.k8s.io/docs/tutorials/kubevirt/", map[string]string{
 		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
 	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
@@ -357,7 +357,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds", "3rd party (upmc enterprises)", "", map[string]string{
+	}, false, "registry-creds", "3rd party (upmc enterprises)", "https://minikube.sigs.k8s.io/docs/handbook/registry/", map[string]string{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
@@ -400,7 +400,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"freshpod-rc.yaml",
 			"0640"),
-	}, false, "freshpod", "google", "", map[string]string{
+	}, false, "freshpod", "google", "https://github.com/GoogleCloudPlatform/freshpod", map[string]string{
 		"FreshPod": "google-samples/freshpod:v0.0.1@sha256:b9efde5b509da3fd2959519c4147b653d0c5cefe8a00314e2888e35ecbcb46f9",
 	}, map[string]string{
 		"FreshPod": "gcr.io",
@@ -411,7 +411,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-driver-installer.yaml",
 			"0640"),
-	}, false, "nvidia-driver-installer", "google", "", map[string]string{
+	}, false, "nvidia-driver-installer", "google", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
 		"NvidiaDriverInstaller": "minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01",
 		"Pause":                 "pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e",
 	}, map[string]string{
@@ -424,7 +424,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
-	}, false, "nvidia-gpu-device-plugin", "3rd party (nvidia)", "", map[string]string{
+	}, false, "nvidia-gpu-device-plugin", "3rd party (nvidia)", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
 		"NvidiaDevicePlugin": "k8s.gcr.io",
@@ -459,7 +459,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestGvisorDir,
 			constants.GvisorConfigTomlTargetName,
 			"0640"),
-	}, false, "gvisor", "google", "", map[string]string{
+	}, false, "gvisor", "google", "https://github.com/kubernetes/minikube/blob/master/deploy/addons/gvisor/README.md", map[string]string{
 		"GvisorAddon": "k8s-minikube/gvisor-addon:3@sha256:23eb17d48a66fc2b09c31454fb54ecae520c3e9c9197ef17fcb398b4f31d505a",
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
@@ -480,7 +480,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"helm-tiller-svc.yaml",
 			"0640"),
-	}, false, "helm-tiller", "3rd party (helm)", "", map[string]string{
+	}, false, "helm-tiller", "3rd party (helm)", "https://v2.helm.sh/docs/using_helm/", map[string]string{
 		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
 		// GCR is deprecated in helm
@@ -529,7 +529,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
-	}, false, "ambassador", "3rd party (ambassador)", "", map[string]string{
+	}, false, "ambassador", "3rd party (ambassador)", "https://minikube.sigs.k8s.io/docs/tutorials/ambassador_ingress_controller/", map[string]string{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",
@@ -589,7 +589,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"volume-snapshot-controller-deployment.yaml",
 			"0640"),
-	}, false, "volumesnapshots", "kubernetes", "", map[string]string{
+	}, false, "volumesnapshots", "kubernetes", "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/", map[string]string{
 		"SnapshotController": "sig-storage/snapshot-controller:v4.0.0@sha256:00fcc441ea9f72899c25eed61d602272a2a58c5f0014332bdcb5ac24acef08e4",
 	}, map[string]string{
 		"SnapshotController": "k8s.gcr.io",
@@ -660,7 +660,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"csi-hostpath-storageclass.yaml",
 			"0640"),
-	}, false, "csi-hostpath-driver", "kubernetes", "", map[string]string{
+	}, false, "csi-hostpath-driver", "kubernetes", "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/", map[string]string{
 		"Attacher":              "sig-storage/csi-attacher:v3.1.0@sha256:50c3cfd458fc8e0bf3c8c521eac39172009382fc66dc5044a330d137c6ed0b09",
 		"HostMonitorAgent":      "sig-storage/csi-external-health-monitor-agent:v0.2.0@sha256:c20d4a4772599e68944452edfcecc944a1df28c19e94b942d526ca25a522ea02",
 		"HostMonitorController": "sig-storage/csi-external-health-monitor-controller:v0.2.0@sha256:14988b598a180cc0282f3f4bc982371baf9a9c9b80878fb385f8ae8bd04ecf16",
