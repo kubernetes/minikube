@@ -223,7 +223,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"kibana-svc.yaml",
 			"0640"),
-	}, false, "efk", "third-party (elastic)", "", map[string]string{
+	}, false, "efk", "3rd party (elastic)", "", map[string]string{
 		"Elasticsearch":        "elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2",
 		"FluentdElasticsearch": "fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97",
 		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
@@ -255,7 +255,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-operator.yaml",
 			"0640"),
-	}, false, "istio-provisioner", "third-party (istio)", "", map[string]string{
+	}, false, "istio-provisioner", "3rd party (istio)", "", map[string]string{
 		"IstioOperator": "istio/operator:1.12.2@sha256:42c7609872882cb88728a1592561b4046dac6d05b6002cbdc815b84c86a24f08",
 	}, nil),
 	"istio": NewAddon([]*BinAsset{
@@ -264,14 +264,14 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"istio-default-profile.yaml",
 			"0640"),
-	}, false, "istio", "third-party (istio)", "", nil, nil),
+	}, false, "istio", "3rd party (istio)", "", nil, nil),
 	"kong": NewAddon([]*BinAsset{
 		MustBinAsset(addons.KongAssets,
 			"kong/kong-ingress-controller.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"kong-ingress-controller.yaml",
 			"0640"),
-	}, false, "kong", "third-party (Kong HQ)", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
+	}, false, "kong", "3rd party (Kong HQ)", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
 		"Kong":        "kong:2.7@sha256:4d3e93207305ace881fe9e95ac27717b6fbdd9e0ec1873c34e94908a4f4c9335",
 		"KongIngress": "kong/kubernetes-ingress-controller:2.1.1@sha256:60e4102ab2da7f61e9c478747f0762d06a6166b5f300526b237ed7354c3cb4c8",
 	}, nil),
@@ -281,7 +281,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"pod.yaml",
 			"0640"),
-	}, false, "kubevirt", "third-party (kubevirt)", "", map[string]string{
+	}, false, "kubevirt", "3rd party (kubevirt)", "", map[string]string{
 		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
 	}, nil),
 	"metrics-server": NewAddon([]*BinAsset{
@@ -321,7 +321,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"olm.yaml",
 			"0640"),
-	}, false, "olm", "third-party (operator framework)", "", map[string]string{
+	}, false, "olm", "3rd party (operator framework)", "", map[string]string{
 		"OLM": "operator-framework/olm@sha256:e74b2ac57963c7f3ba19122a8c31c9f2a0deb3c0c5cac9e5323ccffd0ca198ed",
 		// operator-framework/community-operators was deprecated: https://github.com/operator-framework/community-operators#repository-is-obsolete; switching to OperatorHub.io instead
 		"UpstreamCommunityOperators": "operatorhubio/catalog@sha256:e08a1cd21fe72dd1be92be738b4bf1515298206dac5479c17a4b3ed119e30bd4",
@@ -357,7 +357,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds", "third-party (upmc enterprises)", "", map[string]string{
+	}, false, "registry-creds", "3rd party (upmc enterprises)", "", map[string]string{
 		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
@@ -424,7 +424,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
-	}, false, "nvidia-gpu-device-plugin", "third-party (nvidia)", "", map[string]string{
+	}, false, "nvidia-gpu-device-plugin", "3rd party (nvidia)", "", map[string]string{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
 		"NvidiaDevicePlugin": "k8s.gcr.io",
@@ -480,7 +480,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"helm-tiller-svc.yaml",
 			"0640"),
-	}, false, "helm-tiller", "third-party (helm)", "", map[string]string{
+	}, false, "helm-tiller", "3rd party (helm)", "", map[string]string{
 		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
 	}, map[string]string{
 		// GCR is deprecated in helm
@@ -509,7 +509,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"metallb-config.yaml",
 			"0640"),
-	}, false, "metallb", "third-party (metallb)", "", map[string]string{
+	}, false, "metallb", "3rd party (metallb)", "", map[string]string{
 		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
 		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, nil),
@@ -529,7 +529,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
-	}, false, "ambassador", "third-party (ambassador)", "", map[string]string{
+	}, false, "ambassador", "3rd party (ambassador)", "", map[string]string{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",

@@ -114,7 +114,7 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
 		if maintainer == "" {
-			maintainer = "unknown (third-party)"
+			maintainer = "3rd party (unknown)"
 		}
 		docs := addonBundle.Docs
 		if docs == "" {
