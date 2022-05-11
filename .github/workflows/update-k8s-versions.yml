@@ -18,8 +18,7 @@ jobs:
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
-      - name: Bump Kuberenetes Versions
+      - name: Bump Kubernetes Versions
         id: bumpk8s
         run: |
           t=$(make update-kubernetes-version)
@@ -31,7 +30,7 @@ jobs:
           echo "::set-output name=changes::$c"
       - name: Create PR
         if: ${{ steps.bumpk8s.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
+        uses: peter-evans/create-pull-request@f094b77505fb89581e68a1163fbd2fffece39da1
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: bump default/newest kubernetes versions

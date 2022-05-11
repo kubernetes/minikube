@@ -1,0 +1,78 @@
+From 2b512af2ddaae01926fdcc9056b71017cac2a8d2 Mon Sep 17 00:00:00 2001
+From: Tamir Duberstein <tamird@google.com>
+Date: Thu, 25 Feb 2021 16:44:46 -0500
+Subject: [PATCH] dist: generate stub go.mod in workdir
+
+(cherry picked from commit c6374f516206c02b905d0d76ee1a66dab6fcd212)
+---
+ src/cmd/dist/build.go | 26 ++++++--------------------
+ 1 file changed, 6 insertions(+), 20 deletions(-)
+
+diff --git a/src/cmd/dist/build.go b/src/cmd/dist/build.go
+index 9e2b4f33b8..e5a7f9e9c4 100644
+--- a/src/cmd/dist/build.go
++++ b/src/cmd/dist/build.go
+@@ -110,9 +110,6 @@ func xinit() {
+ 		fatalf("$GOROOT must be set")
+ 	}
+ 	goroot = filepath.Clean(b)
+-	if modRoot := findModuleRoot(goroot); modRoot != "" {
+-		fatalf("found go.mod file in %s: $GOROOT must not be inside a module", modRoot)
+-	}
+ 
+ 	b = os.Getenv("GOROOT_FINAL")
+ 	if b == "" {
+@@ -244,6 +241,9 @@ func xinit() {
+ 	os.Setenv("LANGUAGE", "en_US.UTF8")
+ 
+ 	workdir = xworkdir()
++	if err := ioutil.WriteFile(pathf("%s/go.mod", workdir), []byte("module bootstrap"), 0666); err != nil {
++		fatalf("cannot write stub go.mod: %s", err)
++	}
+ 	xatexit(rmworkdir)
+ 
+ 	tooldir = pathf("%s/pkg/tool/%s_%s", goroot, gohostos, gohostarch)
+@@ -1484,11 +1484,11 @@ func goCmd(goBinary string, cmd string, args ...string) {
+ 		goCmd = append(goCmd, "-p=1")
+ 	}
+ 
+-	run(goroot, ShowOutput|CheckExit, append(goCmd, args...)...)
++	run(workdir, ShowOutput|CheckExit, append(goCmd, args...)...)
+ }
+ 
+ func checkNotStale(goBinary string, targets ...string) {
+-	out := run(goroot, CheckExit,
++	out := run(workdir, CheckExit,
+ 		append([]string{
+ 			goBinary,
+ 			"list", "-gcflags=all=" + gogcflags, "-ldflags=all=" + goldflags,
+@@ -1498,7 +1498,7 @@ func checkNotStale(goBinary string, targets ...string) {
+ 		os.Setenv("GODEBUG", "gocachehash=1")
+ 		for _, target := range []string{"runtime/internal/sys", "cmd/dist", "cmd/link"} {
+ 			if strings.Contains(out, "STALE "+target) {
+-				run(goroot, ShowOutput|CheckExit, goBinary, "list", "-f={{.ImportPath}} {{.Stale}}", target)
++				run(workdir, ShowOutput|CheckExit, goBinary, "list", "-f={{.ImportPath}} {{.Stale}}", target)
+ 				break
+ 			}
+ 		}
+@@ -1590,20 +1590,6 @@ func checkCC() {
+ 	}
+ }
+ 
+-func findModuleRoot(dir string) (root string) {
+-	for {
+-		if fi, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil && !fi.IsDir() {
+-			return dir
+-		}
+-		d := filepath.Dir(dir)
+-		if d == dir {
+-			break
+-		}
+-		dir = d
+-	}
+-	return ""
+-}
+-
+ func defaulttarg() string {
+ 	// xgetwd might return a path with symlinks fully resolved, and if
+ 	// there happens to be symlinks in goroot, then the hasprefix test
