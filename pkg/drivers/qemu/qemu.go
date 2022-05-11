@@ -345,7 +345,7 @@ func (d *Driver) Start() error {
 			machineType += ",accel=hvf,highmem=off"
 		}
 		startCmd = append(startCmd,
-			"-M", d.MachineType,
+			"-M", machineType,
 		)
 	}
 	if d.CPUType != "" {
