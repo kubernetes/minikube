@@ -28,3 +28,11 @@ import (
 func IsCgroup2UnifiedMode() (bool, error) {
 	return false, errors.Errorf("Not supported on %s", runtime.GOOS)
 }
+
+func HasMemoryCgroup() bool {
+	return true
+}
+
+func hasMemorySwapCgroup() bool {
+	return true
+}
