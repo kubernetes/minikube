@@ -100,6 +100,13 @@ sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
 # install gotestsum if not present
 GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
 
+# install cron jobs
+if [ "$OS" == "linux" ]; then
+  source ./install_linux_crons.sh
+else
+  source ./install_osx_crons.sh
+fi
+
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true

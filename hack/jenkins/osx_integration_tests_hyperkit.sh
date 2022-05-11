@@ -34,9 +34,4 @@ EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 EXTERNAL="yes"
 
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
-install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"
-echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
-crontab -l
-
 source common.sh

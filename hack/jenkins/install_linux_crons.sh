@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2022 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,17 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script builds all the minikube binary for all 3 platforms as well as Windows-installer and .deb
-# This is intended to be run on a new release tag in order to build/upload the required files for a release
+set -e
 
-
-set -eux -o pipefail
-
-MINIKUBE_LOCATION="master"
-source ./install_linux_crons.sh
-
-# Make sure the right golang version is installed based on Makefile
-./hack/jenkins/installers/check_install_golang.sh /usr/local
-
-make upload-preloaded-images-tar
-make clean
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP AND REBOOT"
+sudo install cron/cleanup_go_modules.sh /etc/cron.monthly/cleanup_go_modules || echo "FAILED TO INSTALL GO MODULES CLEANUP"
