@@ -339,6 +339,11 @@ func (d *Driver) Start() error {
 	var startCmd []string
 
 	if d.MachineType != "" {
+		machineType := d.MachineType
+		if runtime.GOOS == "darwin" {
+			// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
+			machineType += ",accel=hvf,highmem=off"
+		}
 		startCmd = append(startCmd,
 			"-M", d.MachineType,
 		)
@@ -352,7 +357,7 @@ func (d *Driver) Start() error {
 	if !d.BIOS {
 		if d.Firmware != "" {
 			startCmd = append(startCmd,
-				"-drive", fmt.Sprintf("file=%s,readonly,format=raw,if=pflash", d.Firmware))
+				"-drive", fmt.Sprintf("file=%s,readonly=on,format=raw,if=pflash", d.Firmware))
 		} else {
 			return fmt.Errorf("unknown firmware")
 		}
