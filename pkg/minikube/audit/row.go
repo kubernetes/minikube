@@ -37,6 +37,7 @@ type row struct {
 	startTime string
 	user      string
 	version   string
+	id        string
 	Data      map[string]string `json:"data"`
 }
 
@@ -55,6 +56,7 @@ func (e *row) assignFields() {
 	e.startTime = e.Data["startTime"]
 	e.user = e.Data["user"]
 	e.version = e.Data["version"]
+	e.id = e.Data["id"]
 }
 
 // toMap combines fields into a string map,
@@ -68,11 +70,12 @@ func (e *row) toMap() map[string]string {
 		"startTime": e.startTime,
 		"user":      e.user,
 		"version":   e.version,
+		"id":        e.id,
 	}
 }
 
 // newRow creates a new audit row.
-func newRow(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *row {
+func newRow(command string, args string, user string, version string, startTime time.Time, id string, profile ...string) *row {
 	p := viper.GetString(config.ProfileName)
 	if len(profile) > 0 {
 		p = profile[0]
@@ -80,18 +83,18 @@ func newRow(command string, args string, user string, version string, startTime 
 	return &row{
 		args:      args,
 		command:   command,
-		endTime:   endTime.Format(constants.TimeFormat),
 		profile:   p,
 		startTime: startTime.Format(constants.TimeFormat),
 		user:      user,
 		version:   version,
+		id:        id,
 	}
 }
 
 // toFields converts a row to an array of fields,
 // to be used when converting to a table.
 func (e *row) toFields() []string {
-	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime}
+	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime, e.id}
 }
 
 // logsToRows converts audit logs into arrays of rows.

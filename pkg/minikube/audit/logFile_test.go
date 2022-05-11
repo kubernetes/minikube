@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -48,7 +49,7 @@ func TestLogFile(t *testing.T) {
 		defer func() { currentLogFile = &oldLogFile }()
 		currentLogFile = f
 
-		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), time.Now())
+		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), uuid.New().String())
 		if err := appendToLog(r); err != nil {
 			t.Fatalf("Error appendingToLog: %v", err)
 		}

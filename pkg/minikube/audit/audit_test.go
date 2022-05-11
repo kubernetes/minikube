@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/user"
 	"testing"
-	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -177,7 +176,27 @@ func TestAudit(t *testing.T) {
 	})
 
 	// Check if logging with limited args causes a panic
-	t.Run("Log", func(t *testing.T) {
+	t.Run("LogCommandStart", func(t *testing.T) {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"minikube", "start"}
+
+		oldCommandLine := pflag.CommandLine
+		defer func() {
+			pflag.CommandLine = oldCommandLine
+			pflag.Parse()
+		}()
+		mockArgs(t, os.Args)
+		auditID, err := LogCommandStart()
+		if auditID == "" {
+			t.Fatal("audit ID should not be empty")
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("LogCommandEnd", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = []string{"minikube"}
@@ -188,8 +207,32 @@ func TestAudit(t *testing.T) {
 			pflag.Parse()
 		}()
 		mockArgs(t, os.Args)
+		auditID, err := LogCommandStart()
+		if err != nil {
+			t.Fatal("start failed")
+		}
+		err = LogCommandEnd(auditID)
 
-		Log(time.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("LogCommandEnd", func(t *testing.T) {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = []string{"minikube"}
+
+		oldCommandLine := pflag.CommandLine
+		defer func() {
+			pflag.CommandLine = oldCommandLine
+			pflag.Parse()
+		}()
+		mockArgs(t, os.Args)
+		err := LogCommandEnd("non-existing-id")
+		if err == nil {
+			t.Fatal("function LogCommandEnd should return an error when a non-existing id is passed in it as an argument")
+		}
 	})
 }
 

@@ -17,17 +17,24 @@ limitations under the License.
 package audit
 
 import (
+	"bufio"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
+
+var mutex sync.Mutex
 
 // userName pulls the user flag, if empty gets the os username.
 func userName() string {
@@ -52,14 +59,73 @@ func args() string {
 }
 
 // Log details about the executed command.
-func Log(startTime time.Time) {
-	if !shouldLog() {
-		return
+func LogCommandStart() (string, error) {
+	mutex.Lock()
+	defer mutex.Unlock()
+	if len(os.Args) < 2 || !shouldLog() {
+		return "", nil
 	}
-	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), startTime, time.Now())
+	id := uuid.New().String()
+	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), time.Now(), id)
 	if err := appendToLog(r); err != nil {
-		klog.Warning(err)
+		return "", err
 	}
+	return r.id, nil
+}
+
+func LogCommandEnd(id string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	if id == "" {
+		return nil
+	}
+	if currentLogFile == nil {
+		if err := setLogFile(); err != nil {
+			return fmt.Errorf("failed to set the log file: %v", err)
+		}
+	}
+	_, err := currentLogFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to offset for the next Read or Write on currentLogFile: %v", err)
+	}
+	var logs []string
+	s := bufio.NewScanner(currentLogFile)
+	for s.Scan() {
+		logs = append(logs, s.Text())
+	}
+	if err = s.Err(); err != nil {
+		return fmt.Errorf("failed to read from audit file: %v", err)
+	}
+	rowSlice, err := logsToRows(logs)
+	if err != nil {
+		return fmt.Errorf("failed to convert logs to rows: %v", err)
+	}
+	auditContents := ""
+	var entriesNeedsToUpdate int
+	for _, v := range rowSlice {
+		if v.id == id {
+			v.endTime = time.Now().Format(constants.TimeFormat)
+			v.Data = v.toMap()
+			entriesNeedsToUpdate++
+		}
+		auditLog, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		auditContents += string(auditLog) + "\n"
+	}
+	if entriesNeedsToUpdate == 0 {
+		return fmt.Errorf("failed to find a log row with id equals to %v", id)
+	}
+	_, err = currentLogFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to offset for the next Read or Write on currentLogFile: %v", err)
+	}
+	_, err = currentLogFile.Write([]byte(auditContents))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // shouldLog returns if the command should be logged.
