@@ -28,6 +28,7 @@ type Profile struct {
 	Name   string
 	Status string // running, stopped, paused, unknown
 	Config *ClusterConfig
+	Active bool
 }
 
 // ClusterConfig contains the parameters used to start a cluster.
