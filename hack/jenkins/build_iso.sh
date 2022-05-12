@@ -61,8 +61,10 @@ else
 	# Copy the most recently built PR ISO for release
 	CURRENT_ISO_VERSION=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
 	CURRENT_ISO_BUCKET=$(egrep "isoBucket :=" pkg/minikube/download/iso.go | cut -d " " -f 3 | cut -d '"' -f 2)
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}.iso
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}.iso.sha256
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-amd64.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-amd64.iso
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-amd64.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-amd64.iso.sha256
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-arm64.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-arm64.iso
+	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-arm64.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-arm64.iso.sha256
 fi
 
 git config user.name "minikube-bot"
