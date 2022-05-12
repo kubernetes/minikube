@@ -33,7 +33,7 @@ var (
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.24.0"
+	DefaultKubernetesVersion = "v1.23.6"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
 	NewestKubernetesVersion = "v1.24.1-rc.0"
