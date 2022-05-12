@@ -97,6 +97,9 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
+signals:
+    void updateCheck();
+
 private slots:
     void messageClicked();
     void updateButtons();
@@ -215,6 +218,7 @@ private:
     void checkForUpdates();
     QString getRequest(QString url);
     void notifyUpdate(QString latest, QString link);
+    void setupUpdateChecking();
 };
 
 #endif // QT_NO_SYSTEMTRAYICON

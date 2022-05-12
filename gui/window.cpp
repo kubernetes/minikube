@@ -118,7 +118,13 @@ Window::Window()
 
     setWindowTitle(tr("minikube"));
     setWindowIcon(*trayIconIcon);
+    setupUpdateChecking();
+}
+
+void Window::setupUpdateChecking()
+{
     checkForUpdates();
+    connect(this, &Window::updateCheck, this, &Window::checkForUpdates);
 }
 
 QProcessEnvironment Window::setMacEnv()
@@ -235,6 +241,7 @@ void Window::createActions()
 
     restoreAction = new QAction(tr("&Restore"), this);
     connect(restoreAction, &QAction::triggered, this, &Window::restoreWindow);
+    connect(restoreAction, &QAction::triggered, this, &Window::updateCheck);
 
     quitAction = new QAction(tr("&Quit"), this);
     connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
@@ -711,6 +718,7 @@ bool Window::sendMinikubeCommand(QStringList cmds, QString &text)
         qDebug() << process->readAllStandardError();
     }
     delete process;
+    emit updateCheck();
     return success;
 }
 
@@ -1128,8 +1136,44 @@ void Window::checkForMinikube()
     exit(EXIT_FAILURE);
 }
 
+static bool checkedForUpdateRecently()
+{
+    QString filePath = QStandardPaths::locate(QStandardPaths::HomeLocation, "/.minikube-gui/last_update_check");
+    if (filePath == "") {
+        return false;
+    }
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return false;
+    }
+    QTextStream in(&file);
+    QString line = in.readLine();
+    QDateTime nextCheck = QDateTime::fromString(line).addSecs(60*60*24);
+    QDateTime now = QDateTime::currentDateTime();
+    return nextCheck > now;
+}
+
+static void logUpdateCheck()
+{
+    QDir dir = QDir(QDir::homePath() +  "/.minikube-gui");
+    if (!dir.exists()) {
+        dir.mkpath(".");
+    }
+    QString filePath = dir.filePath("last_update_check");
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return;
+    }
+    QTextStream stream(&file);
+    stream << QDateTime::currentDateTime().toString() << Qt::endl;
+}
+
 void Window::checkForUpdates()
 {
+    if (checkedForUpdateRecently()) {
+        return;
+    }
+    logUpdateCheck();
     QString releases = getRequest("https://storage.googleapis.com/minikube-gui/releases.json");
     QJsonObject latestRelease =
             QJsonDocument::fromJson(releases.toUtf8()).array().first().toObject();
