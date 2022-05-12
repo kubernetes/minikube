@@ -20,8 +20,7 @@
 
 set -eux -o pipefail
 
-MINIKUBE_LOCATION="master"
-source ./install_linux_crons.sh
+source ./hack/jenkins/installers/check_install_linux_crons.sh
 
 # Make sure the right golang version is installed based on Makefile
 ./hack/jenkins/installers/check_install_golang.sh /usr/local

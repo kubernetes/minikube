@@ -102,9 +102,9 @@ GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
 
 # install cron jobs
 if [ "$OS" == "linux" ]; then
-  source ./install_linux_crons.sh
+  source ./installers/check_install_linux_crons.sh
 else
-  source ./install_osx_crons.sh
+  source ./installers/check_install_osx_crons.sh
 fi
 
 # let's just clean all docker artifacts up
