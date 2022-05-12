@@ -312,6 +312,11 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
+	// Bail cleanly for qemu2 until implemented
+	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime != "docker" {
+		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+	}
+
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.Step(style.DryRun, `dry-run validation complete!`)
