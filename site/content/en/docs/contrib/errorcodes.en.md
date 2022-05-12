@@ -19,6 +19,9 @@ minikube was interrupted by an OS signal
 "MK_WRONG_BINARY_WSL" (Exit code ExProgramUnsupported)  
 user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary  
 
+"MK_UNIMPLEMENTED" (Exit code ExProgramUnsupported)  
+this feature is unimplemented for whatever reason  
+
 "MK_NEW_APICLIENT" (Exit code ExProgramError)  
 minikube failed to create a new Docker Machine api client  
 
