@@ -52,11 +52,12 @@ type ClusterConfig struct {
 	HypervVirtualSwitch     string
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
-	KVMNetwork              string   // Only used by the KVM2 driver
-	KVMQemuURI              string   // Only used by the KVM2 driver
-	KVMGPU                  bool     // Only used by the KVM2 driver
-	KVMHidden               bool     // Only used by the KVM2 driver
-	KVMNUMACount            int      // Only used by the KVM2 driver
+	KVMNetwork              string // Only used by the KVM2 driver
+	KVMQemuURI              string // Only used by the KVM2 driver
+	KVMGPU                  bool   // Only used by the KVM2 driver
+	KVMHidden               bool   // Only used by the KVM2 driver
+	KVMNUMACount            int    // Only used by the KVM2 driver
+	APIServerPort           int
 	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
