@@ -1,7 +1,5 @@
-//go:build !linux
-
 /*
-Copyright 2021 The Kubernetes Authors All rights reserved.
+Copyright 2018 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,23 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package oci
-
-import (
-	"runtime"
-
-	"github.com/pkg/errors"
-)
-
-// IsCgroup2UnifiedMode returns whether we are running in cgroup 2 cgroup2 mode.
-func IsCgroup2UnifiedMode() (bool, error) {
-	return false, errors.Errorf("Not supported on %s", runtime.GOOS)
-}
-
-func HasMemoryCgroup() bool {
-	return true
-}
-
-func hasMemorySwapCgroup() bool {
-	return true
-}
+package qemu

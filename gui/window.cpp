@@ -593,7 +593,7 @@ void Window::updateTrayActions(Cluster cluster)
     bool isPaused = cluster.status() == "Paused";
     pauseAction->setEnabled(isRunning || isPaused);
     stopAction->setEnabled(isRunning || isPaused);
-    pauseAction->setText(getPauseLabel(isRunning));
+    pauseAction->setText(getPauseLabel(isPaused));
     startAction->setText(getStartLabel(isRunning));
 }
 

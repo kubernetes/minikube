@@ -28,7 +28,7 @@ import (
 
 // ControlPlaneEndpoint returns the location where callers can reach this cluster
 func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
-	if NeedsPortForward(driverName) {
+	if NeedsPortForward(driverName) && IsKIC(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
 		if err != nil {
 			klog.Warningf("failed to get forwarded control plane port %v", err)
@@ -45,6 +45,8 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			hostname = cc.KubernetesConfig.APIServerName
 		}
 		return hostname, ips[0], port, err
+	} else if NeedsPortForward(driverName) && IsQEMU(driverName) {
+		return "localhost", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 
 	// https://github.com/kubernetes/minikube/issues/3878

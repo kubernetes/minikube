@@ -253,6 +253,15 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, err
 	}
 
+	// Tunnel apiserver to guest, if needed
+	if starter.Cfg.APIServerPort != 0 {
+		args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", starter.Cfg.APIServerPort)}
+		err := machine.CreateSSHShell(starter.MachineAPI, *starter.Cfg, *starter.Node, args, false)
+		if err != nil {
+			klog.Warningf("apiserver tunnel failed: %v", err)
+		}
+	}
+
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
@@ -558,6 +567,14 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
+	if driver.IsQEMU(host.Driver.DriverName()) {
+		apiServerPort, err := getPort()
+		if err != nil {
+			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+		}
+		cfg.APIServerPort = apiServerPort
+	}
+
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -565,6 +582,21 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	}
 
 	return runner, preExists, m, host, err
+}
+
+// getPort asks the kernel for a free open port that is ready to use
+func getPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 // startHostInternal starts a new minikube host using a VM or None
@@ -638,7 +670,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) && !driver.IsQEMU(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}

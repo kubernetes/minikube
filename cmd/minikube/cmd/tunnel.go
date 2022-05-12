@@ -79,8 +79,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if driver.NeedsPortForward(co.Config.Driver) {
-
+		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) {
 			port, err := oci.ForwardedPort(co.Config.Driver, cname, 22)
 			if err != nil {
 				exit.Error(reason.DrvPortForward, "error getting ssh port", err)
