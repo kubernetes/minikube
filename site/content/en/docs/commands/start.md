@@ -71,7 +71,7 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13791/minikube-v1.25.2-1652310010-13791-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.25.2-1652310010-13791/minikube-v1.25.2-1652310010-13791-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.25.2-1652310010-13791-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/13791/minikube-v1.25.2-1652310010-13791.iso,https://github.com/kubernetes/minikube/releases/download/v1.25.2-1652310010-13791/minikube-v1.25.2-1652310010-13791.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.25.2-1652310010-13791.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.5, 'latest' for v1.23.6-rc.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.6, 'latest' for v1.23.6). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
