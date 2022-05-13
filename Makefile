@@ -527,7 +527,8 @@ mdlint:
 
 .PHONY: verify-iso
 verify-iso: # Make sure the current ISO exists in the expected bucket
-	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
