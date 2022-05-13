@@ -72,7 +72,8 @@ This step uses the git tag to publish new binaries to GCS and create a GitHub re
 * Ensure that you are logged in (top right)
 * Click "▶️ Build with Parameters" (left)
 * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
-* For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
+* For `ISO_SHA256_AMD64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-amd64.iso.sha256`
+* For `ISO_SHA256_ARM64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-arm64.iso.sha256`
 * Click *Build*
 
 ## Check the release logs
