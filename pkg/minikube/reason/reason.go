@@ -71,6 +71,9 @@ var (
 	// user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
 
+	// this feature is unimplemented for whatever reason
+	Unimplemented = Kind{ID: "MK_UNIMPLEMENTED", ExitCode: ExProgramUnsupported}
+
 	// minikube failed to create a new Docker Machine api client
 	NewAPIClient = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	// minikube could not disable an addon, e.g. dashboard addon

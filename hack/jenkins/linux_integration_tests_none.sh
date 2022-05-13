@@ -23,7 +23,6 @@
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
 # access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
-
 set -e
 
 OS="linux"
@@ -65,9 +64,6 @@ if ! which socat &>/dev/null; then
   sudo apt-get update -qq
   sudo apt-get -qq -y install socat
 fi
-
-mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
-sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
 # We need this for reasons now
 sudo sysctl fs.protected_regular=0

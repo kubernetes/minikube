@@ -55,6 +55,11 @@ var tunnelCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
+		// Bail cleanly for qemu2 until implemented
+		if driver.IsQEMU(co.Config.Driver) {
+			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		}
+
 		if cleanup {
 			klog.Info("Checking for tunnels to cleanup...")
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
