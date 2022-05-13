@@ -78,6 +78,7 @@ authentication:
   x509:
     clientCAFile: {{.ClientCAFile}}
 cgroupDriver: {{.CgroupDriver}}
+cgroupRoot: /kubelet
 clusterDomain: "{{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100

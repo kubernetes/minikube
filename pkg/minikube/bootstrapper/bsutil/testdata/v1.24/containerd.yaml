@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 12345
+  bindPort: 8443
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -32,13 +32,13 @@ scheduler:
     leader-elect: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: control-plane.minikube.internal:12345
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.23.0
+kubernetesVersion: v1.24.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"

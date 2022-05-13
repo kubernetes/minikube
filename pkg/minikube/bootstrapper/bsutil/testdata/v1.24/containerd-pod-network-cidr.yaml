@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 12345
+  bindPort: 8443
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -32,16 +32,16 @@ scheduler:
     leader-elect: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: control-plane.minikube.internal:12345
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.23.0
+kubernetesVersion: v1.24.0
 networking:
   dnsDomain: cluster.local
-  podSubnet: "10.244.0.0/16"
+  podSubnet: "192.168.32.0/20"
   serviceSubnet: 10.96.0.0/12
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -63,7 +63,7 @@ staticPodPath: /etc/kubernetes/manifests
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
-clusterCIDR: "10.244.0.0/16"
+clusterCIDR: "192.168.32.0/20"
 metricsBindAddress: 0.0.0.0:10249
 conntrack:
   maxPerCore: 0

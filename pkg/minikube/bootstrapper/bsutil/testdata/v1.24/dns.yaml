@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 12345
+  bindPort: 8443
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /run/containerd/containerd.sock
+  criSocket: /var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1
@@ -32,15 +32,15 @@ scheduler:
     leader-elect: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
-controlPlaneEndpoint: control-plane.minikube.internal:12345
+controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.23.0
+kubernetesVersion: v1.24.0
 networking:
-  dnsDomain: cluster.local
+  dnsDomain: minikube.local
   podSubnet: "10.244.0.0/16"
   serviceSubnet: 10.96.0.0/12
 ---
@@ -51,7 +51,7 @@ authentication:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
 cgroupRoot: /kubelet
-clusterDomain: "cluster.local"
+clusterDomain: "minikube.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:
