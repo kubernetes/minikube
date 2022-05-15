@@ -57,6 +57,11 @@
 #include <QSystemTrayIcon>
 #include <QFormLayout>
 #include <QStackedWidget>
+#include <QProcessEnvironment>
+#include <QVersionNumber>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QProgressBar>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -92,6 +97,9 @@ public:
 protected:
     void closeEvent(QCloseEvent *event) override;
 
+signals:
+    void updateCheck();
+
 private slots:
     void messageClicked();
     void updateButtons();
@@ -101,9 +109,16 @@ private:
     // Tray icon
     void createTrayIcon();
     void createActions();
+    void updateStatus(Cluster cluster);
+    void updateTrayActions(Cluster cluster);
+    void iconActivated(QSystemTrayIcon::ActivationReason reason);
     QAction *minimizeAction;
     QAction *restoreAction;
     QAction *quitAction;
+    QAction *startAction;
+    QAction *pauseAction;
+    QAction *stopAction;
+    QAction *statusAction;
     QSystemTrayIcon *trayIcon;
     QMenu *trayIconMenu;
     QIcon *trayIconIcon;
@@ -111,15 +126,10 @@ private:
     // Basic view
     void createBasicView();
     void toBasicView();
-    void updateBasicButtons();
-    void basicStartMinikube();
-    void basicStopMinikube();
-    void basicDeleteMinikube();
-    void basicRefreshMinikube();
-    void basicSSHMinikube();
-    void basicDashboardMinikube();
+    void updateBasicButtons(Cluster cluster);
     QPushButton *basicStartButton;
     QPushButton *basicStopButton;
+    QPushButton *basicPauseButton;
     QPushButton *basicDeleteButton;
     QPushButton *basicRefreshButton;
     QPushButton *basicSSHButton;
@@ -129,35 +139,54 @@ private:
     void createAdvancedView();
     void toAdvancedView();
     void createClusterGroupBox();
-    void updateAdvancedButtons();
+    void updateAdvancedButtons(Cluster cluster);
     QPushButton *startButton;
     QPushButton *stopButton;
+    QPushButton *pauseButton;
     QPushButton *deleteButton;
     QPushButton *refreshButton;
     QPushButton *createButton;
     QPushButton *sshButton;
     QPushButton *dashboardButton;
-    QGroupBox *clusterGroupBox;
+    QWidget *advancedView;
 
     // Cluster table
-    QString selectedCluster();
-    void setSelectedCluster(QString cluster);
-    ClusterHash getClusterHash();
-    ClusterList getClusters();
-    void updateClusters();
+    QString selectedClusterName();
+    void setSelectedClusterName(QString cluster);
+    Cluster selectedCluster();
+    void updateClusterList();
+    void updateClustersTable();
+    void showLoading();
+    void hideLoading();
     ClusterModel *clusterModel;
     QTableView *clusterListView;
+    ClusterList clusterList;
+    QLabel *loading;
 
     // Create cluster
     void askCustom();
     void askName();
     QComboBox *driverComboBox;
     QComboBox *containerRuntimeComboBox;
+    QComboBox *k8sVersionComboBox;
 
-    // Commands
+    // Start Commands
     void startMinikube(QStringList args);
     void startSelectedMinikube();
+    bool sendMinikubeStart(QStringList cmds, QString &text);
+    void startProgress();
+    void endProgress();
+    void startStep(QString step);
+    QDialog *progressDialog;
+    QProgressBar progressBar;
+    QLabel *progressText;
+    QProcess *startProcess;
+
+    // Other Commands
     void stopMinikube();
+    void pauseMinikube();
+    void unpauseMinikube();
+    void pauseOrUnpauseMinikube();
     void deleteMinikube();
     bool sendMinikubeCommand(QStringList cmds);
     bool sendMinikubeCommand(QStringList cmds, QString &text);
@@ -166,14 +195,30 @@ private:
     void dashboardBrowser();
     Cluster createClusterObject(QJsonObject obj);
     QProcess *dashboardProcess;
+    QProcessEnvironment env;
+#if __APPLE__
+    void hyperkitPermission();
+    bool hyperkitPermissionFix(QStringList args, QString text);
+    bool showHyperKitMessage();
+#endif
 
     // Error messaging
     void outputFailedStart(QString text);
     QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
 
     void checkForMinikube();
+    void restoreWindow();
+    QString getPauseLabel(bool isPaused);
+    QString getStartLabel(bool isRunning);
+    QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
     bool isBasicView;
+    void delay();
+    int getCenter(int widgetSize, int parentSize);
+    void checkForUpdates();
+    QString getRequest(QString url);
+    void notifyUpdate(QString latest, QString link);
+    void setupUpdateChecking();
 };
 
 #endif // QT_NO_SYSTEMTRAYICON

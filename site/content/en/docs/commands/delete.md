@@ -21,8 +21,9 @@ minikube delete [flags]
 ### Options
 
 ```
-      --all     Set flag to delete all profiles
-      --purge   Set this flag to delete the '.minikube' folder from your user directory.
+      --all             Set flag to delete all profiles
+  -o, --output string   Format to print stdout in. Options include: [text,json] (default "text")
+      --purge           Set this flag to delete the '.minikube' folder from your user directory.
 ```
 
 ### Options inherited from parent commands

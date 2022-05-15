@@ -47,9 +47,9 @@ import (
 var (
 	dashboardURLMode     bool
 	dashboardExposedPort int
-	// Matches: 127.0.0.1:8001
+	// Matches: "127.0.0.1:8001" or "127.0.0.1 40012" etc.
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
-	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
+	hostPortRe = regexp.MustCompile(`127.0.0.1(:| )\d{4,}`)
 )
 
 // dashboardCmd represents the dashboard command

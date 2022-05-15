@@ -546,7 +546,7 @@ func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) erro
 		return nil
 	}
 
-	return dom.Undefine()
+	return dom.UndefineFlags(libvirt.DOMAIN_UNDEFINE_KEEP_NVRAM)
 }
 
 // lvErr will return libvirt Error struct containing specific libvirt error code, domain, message and level

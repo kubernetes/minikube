@@ -21,7 +21,7 @@
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The Github API access token. Injected by the Jenkins credential provider. 
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -e
 
@@ -30,11 +30,6 @@ ARCH="amd64"
 DRIVER="docker"
 JOB_NAME="Docker_Linux_containerd"
 CONTAINER_RUNTIME="containerd"
-
-
-
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
-sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
 # removing possible left over docker containers from previous runs
 docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true

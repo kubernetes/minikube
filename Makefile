@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 25
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 26
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.25.2-1649577058-13659
+ISO_VERSION ?= v1.26.0-beta.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -42,7 +42,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2021.02.4
+BUILDROOT_BRANCH ?= 2021.02.12
 # the go version on the line below is for the ISO and does not need to be updated often
 GOLANG_OPTIONS = GO_VERSION=1.17 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
@@ -73,7 +73,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.202
+KERNEL_VERSION ?= 4.19.235
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v1.45.2
@@ -93,7 +93,7 @@ GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOARM ?= 7 # the default is 5
 GOPATH ?= $(shell go env GOPATH)
-BUILD_DIR ?= ./out
+BUILD_DIR ?= $(PWD)/out
 $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
@@ -282,17 +282,27 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube_iso: deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
+minikube-iso-amd64: minikube-iso-x86_64
+minikube-iso-arm64: minikube-iso-aarch64
+
+minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
+	cp deploy/iso/minikube-iso/CHANGELOG deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/CHANGELOG
+	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
 		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 	fi;
-	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) host-python
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS)
-	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
+	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
+	if [ "$*" = "aarch64" ]; then \
+                mv $(BUILD_DIR)/buildroot/output-aarch64/images/boot.iso $(BUILD_DIR)/minikube-arm64.iso; \
+        else \
+                mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
+        fi;
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
@@ -301,15 +311,14 @@ iso-menuconfig: ## Configure buildroot configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) savedefconfig
 
 # Change the kernel configuration for the minikube ISO
-.PHONY: linux-menuconfig
-linux-menuconfig:  ## Configure Linux kernel configuration
+linux-menuconfig-%:  ## Configure Linux kernel configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/$*/linux_$*_defconfig
 
-out/minikube.iso: $(shell find "deploy/iso/minikube-iso" -type f)
+out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
-	$(MAKE) minikube_iso
+	$(MAKE) minikube-iso-$*
 else
 	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
@@ -320,9 +329,6 @@ iso_in_docker:
 	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
-
-test-iso:
-	go test -v $(INTEGRATION_TESTS_TO_RUN) --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
 test-pkg/%: ## Trigger packaging test
@@ -436,7 +442,7 @@ e2e-cross: e2e-linux-amd64 e2e-linux-arm64 e2e-darwin-amd64 e2e-windows-amd64.ex
 
 .PHONY: checksum
 checksum: ## Generate checksums
-	for f in out/minikube.iso out/minikube-linux-amd64 out/minikube-linux-arm \
+	for f in out/minikube-amd64.iso out/minikube-arm64.iso out/minikube-linux-amd64 out/minikube-linux-arm \
 		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
 		 out/minikube-darwin-amd64 out/minikube-darwin-arm64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2-amd64 out/docker-machine-driver-kvm2-arm64 \
@@ -521,7 +527,8 @@ mdlint:
 
 .PHONY: verify-iso
 verify-iso: # Make sure the current ISO exists in the expected bucket
-	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso
+	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
@@ -776,9 +783,11 @@ push-gvisor-addon-image: gvisor-addon-image
 	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
-release-iso: minikube_iso checksum  ## Build and release .iso file
-	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
-	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files
+	gsutil cp out/minikube-amd64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso
+	gsutil cp out/minikube-amd64.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso.sha256
+	gsutil cp out/minikube-arm64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
+	gsutil cp out/minikube-arm64.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso.sha256
 
 .PHONY: release-minikube
 release-minikube: out/minikube checksum ## Minikube release
@@ -918,8 +927,9 @@ out/mkcmp:
 
 
 # auto pause binary to be used for ISO
-deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
-	GOOS=linux GOARCH=$(GOARCH) go build -o $@ cmd/auto-pause/auto-pause.go
+deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause: $(SOURCE_FILES) $(ASSET_FILES)
+	@if [ "$*" != "x86_64" ] && [ "$*" != "aarch64" ]; then echo "Please enter a valid architecture. Choices are x86_64 and aarch64."; exit 1; fi
+	GOOS=linux GOARCH=$(subst x86_64,amd64,$(subst aarch64,arm64,$*)) go build -o $@ cmd/auto-pause/auto-pause.go
 
 
 .PHONY: deploy/addons/auto-pause/auto-pause-hook
