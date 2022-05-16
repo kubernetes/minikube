@@ -20,7 +20,7 @@ jobs:
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -45,7 +45,7 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
