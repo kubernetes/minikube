@@ -68,7 +68,6 @@ func qemuFirmwarePath() (string, error) {
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
-		//return "/opt/homebrew/Cellar/qemu/6.2.0_1/share/qemu/edk2-aarch64-code.fd", nil
 		p := "/usr/local/Cellar/qemu"
 		fw := "share/qemu/edk2-x86_64-code.fd"
 		if arch == "arm64" {
@@ -86,6 +85,7 @@ func qemuFirmwarePath() (string, error) {
 			}
 		}
 	}
+
 	switch arch {
 	case "amd64":
 		return "/usr/share/OVMF/OVMF_CODE.fd", nil

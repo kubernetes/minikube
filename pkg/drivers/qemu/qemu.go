@@ -339,7 +339,7 @@ func (d *Driver) Start() error {
 		machineType := d.MachineType
 		if runtime.GOOS == "darwin" {
 			// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
-			machineType += ",accel=hvf,highmem=off"
+			machineType += ",highmem=off"
 		}
 		startCmd = append(startCmd,
 			"-M", machineType,
@@ -377,6 +377,13 @@ func (d *Driver) Start() error {
 				"-display", "none",
 			)
 		}
+	}
+
+	// hardware acceleration is important, it increases performance by 10x
+	if runtime.GOOS == "darwin" {
+		startCmd = append(startCmd, "-accel", "hvf")
+	} else if runtime.GOOS == "linux" {
+		startCmd = append(startCmd, "-accel", "kvm")
 	}
 
 	startCmd = append(startCmd,
