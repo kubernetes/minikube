@@ -115,7 +115,6 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}

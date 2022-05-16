@@ -117,7 +117,6 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
@@ -218,7 +217,6 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
@@ -324,7 +322,6 @@ jobs:
           echo "--------------------------"
           podman ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
@@ -412,7 +409,6 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
@@ -524,7 +520,6 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
       - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
         with:
           go-version: ${{env.GO_VERSION}}
