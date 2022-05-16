@@ -245,6 +245,7 @@
 	"Failed to check main repository and mirrors for images": "Prüfen des Haupt-Repositories und der Mirrors für Images fehlgeschlagen",
 	"Failed to configure metallb IP {{.profile}}": "Konfiguration der metallb IP {{.profile}} fehlgeschlagen",
 	"Failed to configure network plugin": "",
+	"Failed to configure registry-aliases {{.profile}}": "",
 	"Failed to create file": "Erstellen der Datei fehlgeschlagen",
 	"Failed to create runtime": "Erstellen der Runtime fehlgeschlagen",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "Löschen des Clusters {{.name}} fehlgeschlagen, versuche es dennoch erneut.",
