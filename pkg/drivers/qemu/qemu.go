@@ -380,10 +380,10 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
+	// kvm acceleration doesn't currently work for linux, it's incompatible with our chosen CPU
+	// once that's fixed we should add a branch for linux
 	if runtime.GOOS == "darwin" {
 		startCmd = append(startCmd, "-accel", "hvf")
-	} else if runtime.GOOS == "linux" {
-		startCmd = append(startCmd, "-accel", "kvm")
 	}
 
 	startCmd = append(startCmd,
@@ -427,9 +427,10 @@ func (d *Driver) Start() error {
 
 	// other options
 	// "-enable-kvm" if its available
-	if _, err := os.Stat("/dev/kvm"); err == nil {
+	// TODO (#14171): re-enable this once kvm acceleration is fixed
+	/*if _, err := os.Stat("/dev/kvm"); err == nil {
 		startCmd = append(startCmd, "-enable-kvm")
-	}
+	}*/
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
