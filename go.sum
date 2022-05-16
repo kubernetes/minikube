@@ -377,8 +377,8 @@ github.com/docker/docker v0.0.0-20180621001606-093424bec097/go.mod h1:eEKB0N0r5N
 github.com/docker/docker v17.12.0-ce-rc1.0.20181225093023-5ddb1d410a8b+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v17.12.0-ce-rc1.0.20190115220918-5ec31380a5d3+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker v20.10.7+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
-github.com/docker/docker v20.10.15+incompatible h1:dk9FewY/9Xwm4ay/HViEEHSQuM/kL4F+JaG6GQdgmGo=
-github.com/docker/docker v20.10.15+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
+github.com/docker/docker v20.10.16+incompatible h1:2Db6ZR/+FUR3hqPMwnogOPHFn405crbpxvWzKovETOQ=
+github.com/docker/docker v20.10.16+incompatible/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/docker-credential-helpers v0.6.3 h1:zI2p9+1NQYdnG6sMU26EX4aVGlqbInSQxQXLvzJ4RPQ=
 github.com/docker/docker-credential-helpers v0.6.3/go.mod h1:WRaJzqw3CTB9bk10avuGsjVBZsD05qeibJ1/TYlvc0Y=
 github.com/docker/go-connections v0.4.0 h1:El9xVISelRB7BuFusrZozjnkIM5YnzCViNKohAFqRJQ=
