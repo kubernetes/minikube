@@ -18,8 +18,10 @@ package qemu2
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 
@@ -64,17 +66,30 @@ func qemuSystemProgram() (string, error) {
 
 func qemuFirmwarePath() (string, error) {
 	arch := runtime.GOARCH
+	// For macOS, find the correct brew installation path for qemu firmware
+	if runtime.GOOS == "darwin" {
+		//return "/opt/homebrew/Cellar/qemu/6.2.0_1/share/qemu/edk2-aarch64-code.fd", nil
+		p := "/usr/local/Cellar/qemu"
+		fw := "share/qemu/edk2-x86_64-code.fd"
+		if arch == "arm64" {
+			p = "/opt/homebrew/Cellar/qemu"
+			fw = "share/qemu/edk2-aarch64-code.fd"
+		}
+
+		v, err := ioutil.ReadDir(p)
+		if err != nil {
+			return "", fmt.Errorf("lookup qemu: %v", err)
+		}
+		for _, version := range v {
+			if version.IsDir() {
+				return path.Join(p, version.Name(), fw), nil
+			}
+		}
+	}
 	switch arch {
 	case "amd64":
-		// on macOS, we assume qemu is installed via homebrew for simplicity
-		if runtime.GOOS == "darwin" {
-			return "/usr/local/Cellar/qemu/6.2.0_1/share/qemu/edk2-x86_64-code.fd", nil
-		}
 		return "/usr/share/OVMF/OVMF_CODE.fd", nil
 	case "arm64":
-		if runtime.GOOS == "darwin" {
-			return "/opt/homebrew/Cellar/qemu/6.2.0_1/share/qemu/edk2-aarch64-code.fd", nil
-		}
 		return "/usr/share/AAVMF/AAVMF_CODE.fd", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
