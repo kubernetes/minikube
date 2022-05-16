@@ -240,6 +240,7 @@
 	"Failed to check main repository and mirrors for images": "Échec de la vérification du référentiel principal et des miroirs pour les images",
 	"Failed to configure metallb IP {{.profile}}": "Échec de la configuration de metallb IP {{.profile}}",
 	"Failed to configure network plugin": "Échec de la configuration du plug-in réseau",
+	"Failed to configure registry-aliases {{.profile}}": "",
 	"Failed to create file": "La création du fichier a échoué",
 	"Failed to create runtime": "Échec de la création de l'environnement d'exécution",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "Échec de la suppression du cluster {{.name}}, réessayez quand même.",

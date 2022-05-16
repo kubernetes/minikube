@@ -246,6 +246,7 @@
 	"Failed to check main repository and mirrors for images": "メインリポジトリーとミラーのイメージのチェックに失敗しました",
 	"Failed to configure metallb IP {{.profile}}": "metallb IP {{.profile}} の設定に失敗しました",
 	"Failed to configure network plugin": "",
+	"Failed to configure registry-aliases {{.profile}}": "",
 	"Failed to create file": "ファイルの作成に失敗しました",
 	"Failed to create runtime": "ランタイムの作成に失敗しました",
 	"Failed to delete cluster {{.name}}, proceeding with retry anyway.": "{{.name}} クラスターを削除できませんでしたが、処理を続行します。",
