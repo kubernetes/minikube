@@ -30,21 +30,21 @@ minikube service <service-name> --url
 
 ### Using `minikube service` with tunnel
 
-The network is limited if you are using a Docker driver on darwin, Windows or WSL, and the Node IP is not reachable directly.
+The network is limited if using the Docker driver on Darwin, Windows, or WSL, and the Node IP is not reachable directly.
 
-If minikube runs on Linux with Docker driver, no tunnel will be created.
+Running minikube on Linux with the Docker driver will result in no tunnel being created.
 
 Services of type `NodePort` can be exposed via the `minikube service <service-name> --url` command. It must be run in a separate terminal window to keep the [tunnel](https://en.wikipedia.org/wiki/Port_forwarding#Local_port_forwarding) open. Ctrl-C in the terminal can be used to terminate the process at which time the network routes will be cleaned up.
 
 ### Example of NodePort
 
-1. Create a kubernetes deployment
+1. Create a Kubernetes deployment
 
     ```shell
     kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
     ```
 
-2. Create a kubernetes service type NodePort
+2. Create a Kubernetes service type NodePort
 
     ```shell
     kubectl expose deployment hello-minikube1 --type=NodePort --port=8080
@@ -67,7 +67,7 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
     minikube service hello-minikube1 --url
     ```
 
-    `minikube service hello-minikube1 --url` runs as a process, creating a [tunnel](https://en.wikipedia.org/wiki/Port_forwarding#Local_port_forwarding) to cluster. The command exposes the service directly to any program running on the host operating system.
+    `minikube service hello-minikube1 --url` runs as a process, creating a [tunnel](https://en.wikipedia.org/wiki/Port_forwarding#Local_port_forwarding) to the cluster. The command exposes the service directly to any program running on the host operating system.
 
     <details>
     <summary>
@@ -80,7 +80,7 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
     </pre>
     </details>
 
-    check ssh tunnel in another terminal
+    Check ssh tunnel in another terminal
 
     ```shell
     $ ps -ef | grep docker@127.0.0.1
@@ -89,7 +89,7 @@ Services of type `NodePort` can be exposed via the `minikube service <service-na
 
 5. Try in your browser
 
-    open in your browser (make sure there is no proxy set)
+    Open in your browser (ensure there is no proxy set)
 
     ```shell
     http://127.0.0.1:TUNNEL_PORT
@@ -127,9 +127,9 @@ Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command
 
 ### Example of LoadBalancer
 
-1. Run tunnel in a separate terminal
+1. Run the tunnel in a separate terminal
 
-    it will ask for password.
+    It will ask for a password.
 
     ```shell
     minikube tunnel
@@ -159,19 +159,19 @@ Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command
     </pre>
     </details>
 
-2. Create a kubernetes deployment
+2. Create a Kubernetes deployment
 
     ```shell
     kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
     ```
 
-3. Create a kubernetes service type LoadBalancer
+3. Create a Kubernetes service with type LoadBalancer
 
     ```shell
     kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
     ```
 
-4. Check external IP
+4. Check the external IP
 
     ```shell
     kubectl get svc
@@ -182,17 +182,17 @@ Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command
     hello-minikube1   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
     </pre>
 
-    note that without minikube tunnel, kubernetes would be showing external IP as "pending".
+    Note that without minikube tunnel, Kubernetes will show the external IP as "pending".
 
 5. Try in your browser
 
-    open in your browser (make sure there is no proxy set)
+    Open in your browser (ensure there is no proxy set)
 
     ```shell
     http://REPLACE_WITH_EXTERNAL_IP:8080
     ```
 
-    Each service will get its own external ip.
+    Each service will get its own external IP.
 
 ----
 
