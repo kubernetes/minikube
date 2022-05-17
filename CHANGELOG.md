@@ -2,7 +2,7 @@
 
 ## Version 1.26.0-beta.1 - 2022-05-17
 
-QEMU driver enchancements:
+QEMU driver enhancements:
 * fix qemu firmware path locations [#14182](https://github.com/kubernetes/minikube/pull/14182)
 * re-establish apiserver tunnel on restart  [#14183](https://github.com/kubernetes/minikube/pull/14183)
 
