@@ -114,11 +114,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		qemuMachine = "" // default
 		qemuCPU = ""     // default
 	case "arm64":
+		qemuMachine = "virt"
+		qemuCPU = "cortex-a72"
 		// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
 			qemuMachine = "virt,highmem=off"
-			qemuCPU = "cortex-a72"
-		} else if runtime.GOOS == "linux" {
+		} else if _, err := os.Stat("/dev/kvm"); err == nil {
 			qemuMachine = "virt,gic-version=3"
 			qemuCPU = "host"
 		}
