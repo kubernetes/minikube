@@ -487,17 +487,17 @@ func (d *Driver) Stop() error {
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get state")
 	}
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
-			return err
+			return errors.Wrap(err, "kill")
 		}
 	}
 	if s != state.Stopped {
 		_, err = d.RunQMPCommand("quit")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "quit")
 		}
 	}
 	return nil
