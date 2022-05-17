@@ -270,6 +270,10 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 
 	portRange := strings.Split(rawPortRange, "-")
 
+	if len(portRange) < 2 {
+		return 0, 0, errors.New("Invalid port range, must be at least of length 2")
+	}
+
 	minPort, err := strconv.Atoi(portRange[0])
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "Invalid port range")
@@ -337,10 +341,6 @@ func (d *Driver) Start() error {
 
 	if d.MachineType != "" {
 		machineType := d.MachineType
-		if runtime.GOOS == "darwin" {
-			// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
-			machineType += ",highmem=off"
-		}
 		startCmd = append(startCmd,
 			"-M", machineType,
 		)
@@ -380,10 +380,10 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
-	// kvm acceleration doesn't currently work for linux, it's incompatible with our chosen CPU
-	// once that's fixed we should add a branch for linux
 	if runtime.GOOS == "darwin" {
 		startCmd = append(startCmd, "-accel", "hvf")
+	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
+		startCmd = append(startCmd, "-accel", "kvm")
 	}
 
 	startCmd = append(startCmd,
@@ -424,13 +424,6 @@ func (d *Driver) Start() error {
 	}
 
 	startCmd = append(startCmd, "-daemonize")
-
-	// other options
-	// "-enable-kvm" if its available
-	// TODO (#14171): re-enable this once kvm acceleration is fixed
-	/*if _, err := os.Stat("/dev/kvm"); err == nil {
-		startCmd = append(startCmd, "-enable-kvm")
-	}*/
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,

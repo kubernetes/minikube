@@ -68,11 +68,16 @@ func qemuFirmwarePath() (string, error) {
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
-		p := "/usr/local/Cellar/qemu"
-		fw := "share/qemu/edk2-x86_64-code.fd"
-		if arch == "arm64" {
+		var p, fw string
+		switch arch {
+		case "amd64":
+			p = "/usr/local/Cellar/qemu"
+			fw = "share/qemu/edk2-x86_64-code.fd"
+		case "arm64":
 			p = "/opt/homebrew/Cellar/qemu"
 			fw = "share/qemu/edk2-aarch64-code.fd"
+		default:
+			return "", fmt.Errorf("unknown arch: %s", arch)
 		}
 
 		v, err := ioutil.ReadDir(p)
@@ -111,6 +116,13 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "arm64":
 		qemuMachine = "virt"
 		qemuCPU = "cortex-a72"
+		// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
+		if runtime.GOOS == "darwin" {
+			qemuMachine = "virt,highmem=off"
+		} else if _, err := os.Stat("/dev/kvm"); err == nil {
+			qemuMachine = "virt,gic-version=3"
+			qemuCPU = "host"
+		}
 	default:
 		return nil, fmt.Errorf("unknown arch: %s", runtime.GOARCH)
 	}
