@@ -270,6 +270,10 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 
 	portRange := strings.Split(rawPortRange, "-")
 
+	if len(portRange) < 2 {
+		return 0, 0, errors.New("Invalid port range, must be at least of length 2")
+	}
+
 	minPort, err := strconv.Atoi(portRange[0])
 	if err != nil {
 		return 0, 0, errors.Wrap(err, "Invalid port range")
@@ -378,7 +382,7 @@ func (d *Driver) Start() error {
 	// hardware acceleration is important, it increases performance by 10x
 	if runtime.GOOS == "darwin" {
 		startCmd = append(startCmd, "-accel", "hvf")
-	} else if runtime.GOOS == "linux" {
+	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
 		startCmd = append(startCmd, "-accel", "kvm")
 	}
 
