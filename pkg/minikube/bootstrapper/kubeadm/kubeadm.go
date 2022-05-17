@@ -290,6 +290,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	// Tunnel apiserver to guest, if necessary
 	if cfg.APIServerPort != 0 {
 		k.tunnelToAPIServer(cfg)
 	}
@@ -402,7 +403,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
-		// Tunnel apiserver to guest, if needed
+		// If the guest already exists and was stopped, re-establish the apiserver tunnel so checks pass
 		if cfg.APIServerPort != 0 {
 			k.tunnelToAPIServer(cfg)
 		}
