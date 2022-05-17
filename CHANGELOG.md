@@ -8,7 +8,6 @@ QEMU driver enhancements:
 
 Features:
 * Add configure option to registry-aliases addon [#13912](https://github.com/kubernetes/minikube/pull/13912)
-* GUI: Check for updates again after 24 hours of usage [#14164](https://github.com/kubernetes/minikube/pull/14164)
 
 For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
