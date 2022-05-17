@@ -1,5 +1,40 @@
 # Release Notes
 
+## Version 1.26.0-beta.1 - 2022-05-17
+
+QEMU driver enchancements:
+* fix qemu firmware path locations [#14182](https://github.com/kubernetes/minikube/pull/14182)
+* re-establish apiserver tunnel on restart  [#14183](https://github.com/kubernetes/minikube/pull/14183)
+
+Features:
+* Add configure option to registry-aliases addon [#13912](https://github.com/kubernetes/minikube/pull/13912)
+* GUI: Check for updates again after 24 hours of usage [#14164](https://github.com/kubernetes/minikube/pull/14164)
+
+For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Jack Zhang
+- Pablo Caderno
+- Sharif Elgamal
+- Steven Powell
+- Yuki Okushi
+- loftkun
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (20 comments)
+- afbjorklund (1 comments)
+- sharifelgamal (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (4 comments)
+- spowelljr (4 comments)
+- Al4DIN (1 comments)
+- Gimb0 (1 comments)
+- Neandril (1 comments)
+
 ## Version 1.26.0-beta.0 - 2022-05-13
 
 Featues:
