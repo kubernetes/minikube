@@ -337,10 +337,6 @@ func (d *Driver) Start() error {
 
 	if d.MachineType != "" {
 		machineType := d.MachineType
-		if runtime.GOOS == "darwin" {
-			// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
-			machineType += ",highmem=off"
-		}
 		startCmd = append(startCmd,
 			"-M", machineType,
 		)
