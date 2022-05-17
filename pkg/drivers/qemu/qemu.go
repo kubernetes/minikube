@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
@@ -79,11 +80,9 @@ type Driver struct {
 	DiskPath         string
 	CacheMode        string
 	IOMode           string
-	//	conn             *libvirt.Connect
-	//	VM               *libvirt.Domain
-	UserDataFile    string
-	CloudConfigRoot string
-	LocalPorts      string
+	UserDataFile     string
+	CloudConfigRoot  string
+	LocalPorts       string
 }
 
 func (d *Driver) GetMachineName() string {
@@ -273,19 +272,19 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 
 	minPort, err := strconv.Atoi(portRange[0])
 	if err != nil {
-		return 0, 0, fmt.Errorf("invalid port range")
+		return 0, 0, errors.Wrap(err, "Invalid port range")
 	}
 	maxPort, err := strconv.Atoi(portRange[1])
 	if err != nil {
-		return 0, 0, fmt.Errorf("invalid port range")
+		return 0, 0, errors.Wrap(err, "Invalid port range")
 	}
 
 	if maxPort < minPort {
-		return 0, 0, fmt.Errorf("invalid port range")
+		return 0, 0, errors.New("Invalid port range")
 	}
 
 	if maxPort-minPort < 2 {
-		return 0, 0, fmt.Errorf("port range must be minimum 2 ports")
+		return 0, 0, errors.New("Port range must be minimum 2 ports")
 	}
 
 	return minPort, maxPort, nil
@@ -340,7 +339,7 @@ func (d *Driver) Start() error {
 		machineType := d.MachineType
 		if runtime.GOOS == "darwin" {
 			// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
-			machineType += ",accel=hvf,highmem=off"
+			machineType += ",highmem=off"
 		}
 		startCmd = append(startCmd,
 			"-M", machineType,
@@ -378,6 +377,13 @@ func (d *Driver) Start() error {
 				"-display", "none",
 			)
 		}
+	}
+
+	// hardware acceleration is important, it increases performance by 10x
+	// kvm acceleration doesn't currently work for linux, it's incompatible with our chosen CPU
+	// once that's fixed we should add a branch for linux
+	if runtime.GOOS == "darwin" {
+		startCmd = append(startCmd, "-accel", "hvf")
 	}
 
 	startCmd = append(startCmd,
@@ -421,9 +427,10 @@ func (d *Driver) Start() error {
 
 	// other options
 	// "-enable-kvm" if its available
-	if _, err := os.Stat("/dev/kvm"); err == nil {
+	// TODO (#14171): re-enable this once kvm acceleration is fixed
+	/*if _, err := os.Stat("/dev/kvm"); err == nil {
 		startCmd = append(startCmd, "-enable-kvm")
-	}
+	}*/
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
