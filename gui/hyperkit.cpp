@@ -20,6 +20,7 @@ bool HyperKit::hyperkitPermissionFix(QStringList args, QString text)
 
     hyperkitPermission();
     emit rerun(args);
+    return true;
 }
 
 void HyperKit::hyperkitPermission()
