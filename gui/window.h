@@ -125,7 +125,6 @@ private:
     HyperKit *hyperKit;
     Updater *updater;
     QVBoxLayout *layout;
-
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
