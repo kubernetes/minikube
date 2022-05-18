@@ -84,6 +84,14 @@ class QProcess;
 QT_END_NAMESPACE
 
 #include "cluster.h"
+#include "basicview.h"
+#include "advancedview.h"
+#include "progresswindow.h"
+#include "operator.h"
+#include "errormessage.h"
+#include "tray.h"
+#include "hyperkit.h"
+#include "updater.h"
 
 class Window : public QDialog
 {
@@ -93,128 +101,31 @@ public:
     Window();
 
     void setVisible(bool visible) override;
+    void restoreWindow();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
 
-private slots:
-    void messageClicked();
-    void updateButtons();
-    void dashboardClose();
-
 private:
-    // Tray icon
-    void createTrayIcon();
-    void createActions();
-    void updateStatus(Cluster cluster);
-    void updateTrayActions(Cluster cluster);
-    void iconActivated(QSystemTrayIcon::ActivationReason reason);
-    QAction *minimizeAction;
-    QAction *restoreAction;
-    QAction *quitAction;
-    QAction *startAction;
-    QAction *pauseAction;
-    QAction *stopAction;
-    QAction *statusAction;
-    QSystemTrayIcon *trayIcon;
-    QMenu *trayIconMenu;
     QIcon *trayIconIcon;
 
-    // Basic view
-    void createBasicView();
-    void toBasicView();
-    void updateBasicButtons(Cluster cluster);
-    QPushButton *basicStartButton;
-    QPushButton *basicStopButton;
-    QPushButton *basicPauseButton;
-    QPushButton *basicDeleteButton;
-    QPushButton *basicRefreshButton;
-    QPushButton *basicSSHButton;
-    QPushButton *basicDashboardButton;
-
-    // Advanced view
-    void createAdvancedView();
-    void toAdvancedView();
-    void createClusterGroupBox();
-    void updateAdvancedButtons(Cluster cluster);
-    QPushButton *startButton;
-    QPushButton *stopButton;
-    QPushButton *pauseButton;
-    QPushButton *deleteButton;
-    QPushButton *refreshButton;
-    QPushButton *createButton;
-    QPushButton *sshButton;
-    QPushButton *dashboardButton;
-    QWidget *advancedView;
-
-    // Cluster table
-    QString selectedClusterName();
-    void setSelectedClusterName(QString cluster);
-    Cluster selectedCluster();
-    void updateClusterList();
-    void updateClustersTable();
-    void showLoading();
-    void hideLoading();
-    ClusterModel *clusterModel;
-    QTableView *clusterListView;
-    ClusterList clusterList;
-    QLabel *loading;
-
-    // Create cluster
-    void askCustom();
-    void askName();
-    QComboBox *driverComboBox;
-    QComboBox *containerRuntimeComboBox;
-    QComboBox *k8sVersionComboBox;
-
-    // Start Commands
-    void startMinikube(QStringList args);
-    void startSelectedMinikube();
-    bool sendMinikubeStart(QStringList cmds, QString &text);
-    void startProgress();
-    void endProgress();
-    void startStep(QString step);
-    QDialog *progressDialog;
-    QProgressBar progressBar;
-    QLabel *progressText;
-    QProcess *startProcess;
-
-    // Other Commands
-    void stopMinikube();
-    void pauseMinikube();
-    void unpauseMinikube();
-    void pauseOrUnpauseMinikube();
-    void deleteMinikube();
-    bool sendMinikubeCommand(QStringList cmds);
-    bool sendMinikubeCommand(QStringList cmds, QString &text);
-    void initMachine();
-    void sshConsole();
-    void dashboardBrowser();
-    Cluster createClusterObject(QJsonObject obj);
-    QProcess *dashboardProcess;
-    QProcessEnvironment env;
-#if __APPLE__
-    void hyperkitPermission();
-    bool hyperkitPermissionFix(QStringList args, QString text);
-    bool showHyperKitMessage();
-#endif
-
-    // Error messaging
-    void outputFailedStart(QString text);
-    QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
-
     void checkForMinikube();
-    void restoreWindow();
-    QString getPauseLabel(bool isPaused);
-    QString getStartLabel(bool isRunning);
-    QProcessEnvironment setMacEnv();
     QStackedWidget *stackedWidget;
-    bool isBasicView;
-    void delay();
-    int getCenter(int widgetSize, int parentSize);
     void checkForUpdates();
     QString getRequest(QString url);
     void notifyUpdate(QString latest, QString link);
+
+    BasicView *basicView;
+    AdvancedView *advancedView;
+    Operator *op;
+    CommandRunner *commandRunner;
+    ErrorMessage *errorMessage;
+    ProgressWindow *progressWindow;
+    Tray *tray;
+    HyperKit *hyperKit;
+    Updater *updater;
+    QVBoxLayout *layout;
+
 };
 
 #endif // QT_NO_SYSTEMTRAYICON
