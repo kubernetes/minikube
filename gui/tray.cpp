@@ -99,6 +99,7 @@ static QString getStartLabel(bool isRunning)
 
 void Tray::updateTrayActions(Cluster cluster)
 {
+    startAction->setEnabled(true);
     bool isRunning = cluster.status() == "Running";
     bool isPaused = cluster.status() == "Paused";
     pauseAction->setEnabled(isRunning || isPaused);
