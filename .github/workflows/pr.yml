@@ -509,21 +509,31 @@ jobs:
           curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+        with:
+          go-version: ${{env.GO_VERSION}}
+          stable: true
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+      # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
       - name: Install tools for none
         shell: bash
         run: |
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
+          git clone -n https://github.com/Mirantis/cri-dockerd
+          cd cri-dockerd
+          git checkout a4d1895a2659ea9974bd7528a706592ab8b74181
+          cd src
+          env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd
+          cd ../..
+          sudo cp cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
+          sudo cp cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
+          sudo cp cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
-        with:
-          go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install gopogh
 
         shell: bash
