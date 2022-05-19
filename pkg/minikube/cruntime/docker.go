@@ -121,7 +121,6 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if inUserNamespace {
 		return errors.New("inUserNamespace must not be true for docker")
 	}
-	containerdWasActive := r.Init.Active("containerd")
 
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
@@ -145,15 +144,9 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		if err := r.forceSystemd(); err != nil {
 			return err
 		}
-		return r.Init.Restart("docker")
 	}
 
-	if containerdWasActive && !dockerBoundToContainerd(r.Runner) {
-		// Make sure to use the internal containerd
-		return r.Init.Restart("docker")
-	}
-
-	if err := r.Init.Start("docker"); err != nil {
+	if err := r.Init.Restart("docker"); err != nil {
 		return err
 	}
 
