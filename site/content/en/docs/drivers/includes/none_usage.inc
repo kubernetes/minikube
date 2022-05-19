@@ -4,6 +4,7 @@ A Linux VM with the following:
 
 * systemd or OpenRC
 * a container runtime, such as Docker or CRIO
+* [cri-dockerd](https://github.com/Mirantis/cri-dockerd#build-and-install) (if using Kubernetes +v1.24 & `docker` container-runtime)
 
 This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/), such as:
 
