@@ -120,7 +120,7 @@ func TestStartStop(t *testing.T) {
 				}
 				if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
 					args := []string{}
-					for _, arg := range args {
+					for _, arg := range startArgs {
 						if arg == "--extra-config=kubelet.network-plugin=cni" {
 							continue
 						}
