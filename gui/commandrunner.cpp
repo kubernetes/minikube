@@ -194,12 +194,14 @@ void CommandRunner::outputReady()
     emit output(text);
 }
 
+#if __APPLE__
 void CommandRunner::setMinikubePath()
 {
     m_env = QProcessEnvironment::systemEnvironment();
     QString path = m_env.value("PATH") + ":/usr/local/bin";
     m_env.insert("PATH", path);
 }
+#endif
 
 void CommandRunner::minikubePath()
 {

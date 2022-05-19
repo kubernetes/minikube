@@ -115,7 +115,7 @@ void AdvancedView::update(Cluster cluster)
 #if __linux__ || __APPLE__
     sshButton->setEnabled(exists);
 #else
-    basicSSHButton->setEnabled(false);
+    sshButton->setEnabled(false);
 #endif
     pauseButton->setText(getPauseLabel(isPaused));
     startButton->setText(getStartLabel(isRunning));
