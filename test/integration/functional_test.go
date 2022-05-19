@@ -49,7 +49,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/otiai10/copy"
+	cp "github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
@@ -480,10 +480,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 			defer cancel()
 
 			command := make([]string, len(tc.commandPrefix)+1)
-			// Would use "copy" built-in here, but that is shadowed by "copy" package
-			for i, v := range tc.commandPrefix {
-				command[i] = v
-			}
+			copy(command, tc.commandPrefix)
 
 			formattedArg := fmt.Sprintf(tc.formatArg, Target(), profile)
 
@@ -1783,7 +1780,7 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
 	syncFile := filepath.Join(*testdataDir, "sync.test")
-	err := copy.Copy(syncFile, p)
+	err := cp.Copy(syncFile, p)
 	if err != nil {
 		t.Fatalf("failed to copy testdata/sync.test: %v", err)
 	}
@@ -1792,7 +1789,7 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	// Write to a temp file for an atomic write
 	tmpPem := localTestCertPath() + ".pem"
-	if err := copy.Copy(testPem, tmpPem); err != nil {
+	if err := cp.Copy(testPem, tmpPem); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem, err)
 	}
 
@@ -1816,7 +1813,7 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	testPem2 := filepath.Join(*testdataDir, "minikube_test2.pem")
 	tmpPem2 := localTestCertFilesPath() + ".pem"
-	if err := copy.Copy(testPem2, tmpPem2); err != nil {
+	if err := cp.Copy(testPem2, tmpPem2); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem2, err)
 	}
 

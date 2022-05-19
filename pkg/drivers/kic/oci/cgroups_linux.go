@@ -22,29 +22,18 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"syscall"
 
 	"github.com/opencontainers/runc/libcontainer/cgroups"
-	"golang.org/x/sys/unix"
 
 	"k8s.io/klog/v2"
 )
-
-// IsCgroup2UnifiedMode returns whether we are running in cgroup 2 cgroup2 mode.
-func IsCgroup2UnifiedMode() (bool, error) {
-	var st syscall.Statfs_t
-	if err := syscall.Statfs("/sys/fs/cgroup", &st); err != nil {
-		return false, err
-	}
-	return st.Type == unix.CGROUP2_SUPER_MAGIC, nil
-}
 
 // findCgroupMountpoints returns the cgroups mount point
 // defined in docker engine engine/pkg/sysinfo/sysinfo_linux.go
 func findCgroupMountpoints() (map[string]string, error) {
 	cgMounts, err := cgroups.GetCgroupMounts(false)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse cgroup information: %v", err)
+		return nil, fmt.Errorf("failed to parse cgroup information: %v", err)
 	}
 	mps := make(map[string]string)
 	for _, m := range cgMounts {

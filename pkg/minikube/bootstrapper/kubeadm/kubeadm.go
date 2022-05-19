@@ -290,6 +290,10 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	// Tunnel apiserver to guest, if necessary
+	if cfg.APIServerPort != 0 {
+		k.tunnelToAPIServer(cfg)
+	}
 	return nil
 }
 
@@ -399,6 +403,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
+		// If the guest already exists and was stopped, re-establish the apiserver tunnel so checks pass
+		if cfg.APIServerPort != 0 {
+			k.tunnelToAPIServer(cfg)
+		}
 		klog.Infof("found existing configuration files, will attempt cluster restart")
 		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
@@ -431,6 +439,22 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return k.init(cfg)
 	}
 	return err
+}
+
+func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) {
+	m, err := machine.NewAPIClient()
+	if err != nil {
+		klog.Warningf("libmachine API failed: %v", err)
+	}
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		klog.Warningf("finding control plane failed: %v", err)
+	}
+	args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", cfg.APIServerPort)}
+	err = machine.CreateSSHShell(m, cfg, cp, args, false)
+	if err != nil {
+		klog.Warningf("apiserver tunnel failed: %v", err)
+	}
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -569,6 +593,7 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
+
 	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
 	apiStatusTimeout := 3000 * time.Millisecond
 	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)

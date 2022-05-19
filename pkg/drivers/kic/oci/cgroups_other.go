@@ -18,17 +18,6 @@ limitations under the License.
 
 package oci
 
-import (
-	"runtime"
-
-	"github.com/pkg/errors"
-)
-
-// IsCgroup2UnifiedMode returns whether we are running in cgroup 2 cgroup2 mode.
-func IsCgroup2UnifiedMode() (bool, error) {
-	return false, errors.Errorf("Not supported on %s", runtime.GOOS)
-}
-
 func HasMemoryCgroup() bool {
 	return true
 }

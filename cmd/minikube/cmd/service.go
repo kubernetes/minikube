@@ -85,6 +85,12 @@ var serviceCmd = &cobra.Command{
 
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
+
+		// Bail cleanly for qemu2 until implemented
+		if driver.IsQEMU(co.Config.Driver) {
+			exit.Message(reason.Unimplemented, "minikube service is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		}
+
 		var services service.URLs
 		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
@@ -103,7 +109,7 @@ var serviceCmd = &cobra.Command{
 			services = newServices
 		}
 
-		if services == nil || len(services) == 0 {
+		if len(services) == 0 {
 			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
 		}
