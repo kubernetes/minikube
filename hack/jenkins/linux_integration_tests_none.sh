@@ -79,6 +79,14 @@ if ! cri-dockerd &>/dev/null; then
   sudo cp cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
 fi
 
+# crictl is required for Kubernetes 1.24 and higher for none driver
+if ! crictl &>/dev/null; then
+  echo "WARNING: crictl is not installed. will try to install."
+  VERSION="v1.17.0"
+  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
+  sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+fi
+
 # We need this for reasons now
 sudo sysctl fs.protected_regular=0
 
