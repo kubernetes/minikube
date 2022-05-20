@@ -51,6 +51,11 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
+func showNotK8sVersionInfo(cr cruntime.Manager) {
+	version, _ := cr.Version()
+	out.Step(cr.Style(), "Preparing {{.runtime}} {{.runtimeVersion}} ...", out.V{"runtime": cr.Name(), "runtimeVersion": version})
+}
+
 // configureMounts configures any requested filesystem mounts
 func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 	wg.Add(1)
