@@ -27,7 +27,7 @@ INSTALL_PATH=${1}
 
 function current_arch() {
   case $(arch) in
-  "x86_64")
+  "x86_64" | "i386")
      echo "amd64"
   ;;
   "aarch64")
