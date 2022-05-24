@@ -1039,3 +1039,8 @@ time-to-k8s-benchmark:
 update-gopogh-version: ## update gopogh version
 	(cd hack/update/gopogh_version && \
 	 go run update_gopogh_version.go)
+
+.PHONY: update-gotestsum-version
+update-gotestsum-version:
+	(cd hack/update/gotestsum_version && \
+	 go run update_gotestsum_version.go)

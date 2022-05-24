@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2022 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -43,40 +44,25 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/master.yml": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
-		".github/workflows/functional_verified.yml": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`(?U)https://github.com/gotestyourself/gotestsum/releases/download/.*/gotestsum_.*_`: `https://github.com/gotestyourself/gotestsum/releases/download/v{{.StableVersion}}/gotestsum_{{.StableVersion}}_`,
 			},
 		},
-		"hack/jenkins/common.sh": {
+		"hack/jenkins/installers/check_install_gotestsum.sh": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@v{{.StableVersion}}`,
 			},
 		},
 	}
 
 	// PR data
-	prBranchPrefix = "update-gopogh-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_gopogh_version: {stable: "{{.StableVersion}}"}`
-	prIssue        = 9850
+	prBranchPrefix = "update-gotestsum-version_" // will be appended with first 7 characters of the PR commit SHA
+	prTitle        = `update_gotestsum_version: {stable: "{{.StableVersion}}"}`
+	prIssue        = 14224
 )
 
-// Data holds stable gopogh version in semver format.
+// Data holds stable gotestsum version in semver format.
 type Data struct {
 	StableVersion string `json:"stableVersion"`
 }
@@ -86,20 +72,20 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// get gopogh stable version from https://github.com/medyagh/gopogh
-	stable, err := gopoghVersion(ctx, "medyagh", "gopogh")
+	// get gotestsum stable version from https://github.com/gotestyourself/gotestsum
+	stable, err := gotestsumVersion(ctx, "gotestyourself", "gotestsum")
 	if err != nil || stable == "" {
-		klog.Fatalf("Unable to get gopogh stable version: %v", err)
+		klog.Fatalf("Unable to get gotestsum stable version: %v", err)
 	}
-	data := Data{StableVersion: stable}
-	klog.Infof("gopogh stable version: %s", data.StableVersion)
+	data := Data{StableVersion: strings.TrimPrefix(stable, "v")}
+	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
 	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
 }
 
-// gopoghVersion returns gopogh stable version in semver format.
-func gopoghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get gopogh versions from GitHub Releases
+// gotestsumVersion returns gotestsum stable version in semver format.
+func gotestsumVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+	// get gotestsum versions from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err
