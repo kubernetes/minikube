@@ -53,7 +53,7 @@ If ($lastexitcode -gt 0) {
 }
 
 # Download gopogh and gotestsum
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
+(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
 (New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.8.1/gotestsum_1.8.1_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
 tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
 
