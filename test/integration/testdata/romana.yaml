@@ -1,0 +1,402 @@
+apiVersion: v1
+items:
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    name: romana-listener
+  rules:
+  - apiGroups:
+    - '*'
+    resources:
+    - pods
+    - namespaces
+    - nodes
+    - endpoints
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - extensions
+    resources:
+    - networkpolicies
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+    - '*'
+    resources:
+    - services
+    verbs:
+    - update
+    - list
+    - watch
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    creationTimestamp: null
+    name: romana-listener
+    namespace: kube-system
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    creationTimestamp: null
+    name: romana-listener
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: romana-listener
+  subjects:
+  - kind: ServiceAccount
+    name: romana-listener
+    namespace: kube-system
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRole
+  metadata:
+    creationTimestamp: null
+    name: romana-agent
+  rules:
+  - apiGroups:
+    - '*'
+    resources:
+    - pods
+    - nodes
+    verbs:
+    - get
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    creationTimestamp: null
+    name: romana-agent
+    namespace: kube-system
+- apiVersion: rbac.authorization.k8s.io/v1
+  kind: ClusterRoleBinding
+  metadata:
+    creationTimestamp: null
+    name: romana-agent
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: romana-agent
+  subjects:
+  - kind: ServiceAccount
+    name: romana-agent
+    namespace: kube-system
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: romana-etcd
+    namespace: kube-system
+  spec:
+    clusterIP: 10.96.0.88
+    internalTrafficPolicy: Cluster
+    ports:
+    - name: etcd
+      port: 12379
+      protocol: TCP
+      targetPort: 12379
+    selector:
+      romana-app: etcd
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    creationTimestamp: null
+    labels:
+      romana-app: etcd
+    name: romana-etcd
+    namespace: kube-system
+  spec:
+    progressDeadlineSeconds: 2147483647
+    replicas: 1
+    revisionHistoryLimit: 2147483647
+    selector:
+      matchLabels:
+        romana-app: etcd
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          romana-app: etcd
+      spec:
+        containers:
+        - command:
+          - etcd
+          - --listen-client-urls=http://0.0.0.0:12379
+          - --listen-peer-urls=http://127.0.0.1:12380
+          - --advertise-client-urls=http://10.96.0.88:12379
+          - --data-dir=/var/etcd/data
+          image: gcr.io/google_containers/etcd-amd64:3.0.17
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              host: 127.0.0.1
+              path: /health
+              port: 12379
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 15
+          name: romana-etcd
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/etcd/data
+            name: etcd-data
+        dnsPolicy: ClusterFirst
+        hostNetwork: true
+        nodeSelector:
+          node-role.kubernetes.io/master: ""
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext:
+          seLinuxOptions:
+            type: spc_t
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+        volumes:
+        - hostPath:
+            path: /var/lib/romana/etcd-db
+            type: ""
+          name: etcd-data
+  status: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: null
+    name: romana
+    namespace: kube-system
+  spec:
+    clusterIP: 10.96.0.99
+    internalTrafficPolicy: Cluster
+    ports:
+    - name: daemon
+      port: 9600
+      protocol: TCP
+      targetPort: 9600
+    selector:
+      romana-app: daemon
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    creationTimestamp: null
+    labels:
+      romana-app: daemon
+    name: romana-daemon
+    namespace: kube-system
+  spec:
+    progressDeadlineSeconds: 2147483647
+    replicas: 1
+    revisionHistoryLimit: 2147483647
+    selector:
+      matchLabels:
+        romana-app: daemon
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          romana-app: daemon
+      spec:
+        containers:
+        - image: quay.io/romana/daemon:v2.0.2
+          imagePullPolicy: Always
+          name: romana-daemon
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        hostNetwork: true
+        nodeSelector:
+          node-role.kubernetes.io/master: ""
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+  status: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    creationTimestamp: null
+    labels:
+      romana-app: listener
+    name: romana-listener
+    namespace: kube-system
+  spec:
+    progressDeadlineSeconds: 2147483647
+    replicas: 1
+    revisionHistoryLimit: 2147483647
+    selector:
+      matchLabels:
+        romana-app: listener
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          romana-app: listener
+      spec:
+        containers:
+        - image: quay.io/romana/listener:v2.0.2
+          imagePullPolicy: Always
+          name: romana-listener
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        hostNetwork: true
+        nodeSelector:
+          node-role.kubernetes.io/master: ""
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: romana-listener
+        serviceAccountName: romana-listener
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+  status: {}
+- apiVersion: apps/v1
+  kind: DaemonSet
+  metadata:
+    annotations:
+      deprecated.daemonset.template.generation: "0"
+    creationTimestamp: null
+    labels:
+      romana-app: agent
+    name: romana-agent
+    namespace: kube-system
+  spec:
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        romana-app: agent
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          romana-app: agent
+      spec:
+        containers:
+        - env:
+          - name: NODENAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: NODEIP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.hostIP
+          image: quay.io/romana/agent:v2.0.2
+          imagePullPolicy: Always
+          name: romana-agent
+          resources: {}
+          securityContext:
+            privileged: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /host/usr/local/bin
+            name: host-usr-local-bin
+          - mountPath: /host/etc/romana
+            name: host-etc-romana
+          - mountPath: /host/opt/cni/bin
+            name: host-cni-bin
+          - mountPath: /host/etc/cni/net.d
+            name: host-cni-net-d
+          - mountPath: /var/run/romana
+            name: run-path
+          - mountPath: /host/etc/rlog
+            name: host-etc-rlog
+        dnsPolicy: ClusterFirst
+        hostNetwork: true
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext:
+          seLinuxOptions:
+            type: spc_t
+        serviceAccount: romana-agent
+        serviceAccountName: romana-agent
+        terminationGracePeriodSeconds: 30
+        tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+        - effect: NoSchedule
+          key: node.kubernetes.io/not-ready
+        volumes:
+        - hostPath:
+            path: /usr/local/bin
+            type: ""
+          name: host-usr-local-bin
+        - hostPath:
+            path: /etc/romana
+            type: ""
+          name: host-etc-romana
+        - hostPath:
+            path: /opt/cni/bin
+            type: ""
+          name: host-cni-bin
+        - hostPath:
+            path: /etc/cni/net.d
+            type: ""
+          name: host-cni-net-d
+        - hostPath:
+            path: /var/run/romana
+            type: ""
+          name: run-path
+        - hostPath:
+            path: /etc/rlog
+            type: ""
+          name: host-etc-rlog
+    updateStrategy:
+      rollingUpdate:
+        maxSurge: 0
+        maxUnavailable: 1
+      type: RollingUpdate
+  status:
+    currentNumberScheduled: 0
+    desiredNumberScheduled: 0
+    numberMisscheduled: 0
+    numberReady: 0
+kind: List
+metadata: {}
