@@ -94,7 +94,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-arm64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-arm64
           sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
 
       - name: Docker Info
