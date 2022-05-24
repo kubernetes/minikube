@@ -18,22 +18,30 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
-# multi-tage docker build so we can build auto-pause for arm64
-FROM golang:1.17
+# multi-stage docker build so we can build auto-pause for arm64
+FROM golang:1.17 as auto-pause
 WORKDIR /src
-# becaue auto-pause binary depends on minikube's code we need to pass the whole source code as the context
-ADD . .
+# auto-pause depends on core minikube code so we need to pass the whole source code as the context
+# copy in the minimal amount of source code possible
+COPY pkg/ ./pkg
+COPY cmd/ ./cmd
+COPY deploy/addons ./deploy/addons
+COPY translations/ ./translations
+COPY third_party/ ./third_party
+COPY go.mod go.sum ./
+ARG TARGETARCH
+ENV GOARCH=${TARGETARCH}
 RUN cd ./cmd/auto-pause/ && go build 
 
 # cri-dockerd static
-FROM golang:1.16
+FROM golang:1.16 as cri-dockerd
 RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
     cd cri-dockerd && git checkout a4d1895a2659ea9974bd7528a706592ab8b74181 && \
     cd src && env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20220316
+FROM ubuntu:focal-20220316 as kicbase
 
 ARG BUILDKIT_VERSION="v0.10.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -46,10 +54,10 @@ COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.con
 COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY --from=0 /src/cmd/auto-pause/auto-pause /bin/auto-pause
-COPY --from=1 /go/cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
-COPY --from=1 /go/cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
-COPY --from=1 /go/cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
+COPY --from=auto-pause /src/cmd/auto-pause/auto-pause /bin/auto-pause
+COPY --from=cri-dockerd /go/cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
+COPY --from=cri-dockerd /go/cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
+COPY --from=cri-dockerd /go/cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -162,9 +170,9 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     if [ "$ARCH" != "ppc64le" ]; then \
-    	clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
+       clean-install containers-common conmon containernetworking-plugins cri-tools crun podman podman-plugins catatonit; \
     else \
-    	clean-install containers-common conmon containernetworking-plugins crun; \
+       clean-install containers-common conmon containernetworking-plugins crun; \
     fi
 
 # install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
