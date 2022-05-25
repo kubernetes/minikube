@@ -30,6 +30,7 @@ function Write-GithubStatus {
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
+$GoVersion = "1.18.2"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 $KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
@@ -51,6 +52,18 @@ If ($lastexitcode -gt 0) {
 	Write-GithubStatus -JsonBody $json
 	docker system prune --all --force
 	Exit $lastexitcode
+}
+
+# Download Go
+$CurrentGo = go version
+if ($CurrentGo -NotLike "*$GoVersion*") {
+  (New-Object Net.WebClient).DownloadFile("https://go.dev/dl/go$GoVersion.windows-amd64.zip", "$env:TEMP\golang.zip")
+  Remove-Item "c:\Program Files\Go\*" -Recurse
+  Add-Type -Assembly "System.IO.Compression.Filesystem"
+  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:TEMP\golang.zip", "$env:TEMP\golang")
+  Copy-Item -Path "$env:TEMP\golang\go\*" -Destination "c:\Program Files\Go\" -Recurse
+  Remove-Item "$env:TEMP\golang" -Recurse
+  Remove-Item "$env:TEMP\golang.zip"
 }
 
 # Download gopogh and gotestsum
