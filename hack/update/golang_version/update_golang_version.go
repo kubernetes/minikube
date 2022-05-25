@@ -137,6 +137,11 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
+		"hack/jenkins/common.ps1": {
+			Replace: map[string]string{
+				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
+			},
+		},
 	}
 
 	// PR data
