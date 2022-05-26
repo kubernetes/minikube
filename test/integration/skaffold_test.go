@@ -35,11 +35,11 @@ import (
 
 // TestSkaffold makes sure skaffold run can be run with minikube
 func TestSkaffold(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping due to https://github.com/kubernetes/minikube/issues/14232")
+	}
 	if NoneDriver() {
 		t.Skip("none driver doesn't support `minikube docker-env`; skaffold depends on this command")
-	}
-	if HyperVDriver() {
-		t.Skip("skipping due to https://github.com/kubernetes/minikube/issues/14232")
 	}
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("skaffold requires docker-env, currently testing %s container runtime", cr)
