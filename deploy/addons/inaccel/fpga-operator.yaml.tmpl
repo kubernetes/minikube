@@ -1,0 +1,56 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: inaccel
+  name: inaccel-addon
+  namespace: kube-system
+data:
+  disable.sh: |
+    #!/bin/sh -e
+    exec >/proc/1/fd/1
+    echo "Disabling InAccel FPGA Operator"
+    helm uninstall inaccel --namespace kube-system
+    echo "InAccel is disabled"
+  enable.sh: |
+    #!/bin/sh -e
+    exec >/proc/1/fd/1
+    echo "Enabling InAccel FPGA Operator"
+    helm install inaccel fpga-operator --namespace kube-system --repo https://setup.inaccel.com/helm
+    echo "InAccel is enabled"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: inaccel
+  name: inaccel-addon
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - sleep
+    - infinity
+    image: {{ .CustomRegistries.Helm3 | default .ImageRepository | default .Registries.Helm3 }}{{ .Images.Helm3 }}
+    lifecycle:
+      postStart:
+        exec:
+          command:
+          - /inaccel/enable.sh
+      preStop:
+        exec:
+          command:
+          - /inaccel/disable.sh
+    name: helm3
+    volumeMounts:
+    - mountPath: /inaccel
+      name: inaccel-addon
+      readOnly: true
+  volumes:
+  - configMap:
+      defaultMode: 0777
+      name: inaccel-addon
+    name: inaccel-addon
