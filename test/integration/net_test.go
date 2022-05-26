@@ -61,7 +61,7 @@ func TestNetworkPlugins(t *testing.T) {
 			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", true},
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
 			{"false", []string{"--cni=false"}, "", "", false},
-			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "weavenet.yaml"))}, "cni", "", true},
+			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", true},
 			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
 			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", true},
 		}
