@@ -47,14 +47,14 @@ spec:
           protocol: TCP
         readinessProbe:
           httpGet:
-            path: /readyz
+            path: /readyz?exclude=livez
             port: https
             scheme: HTTPS
           periodSeconds: 10
           failureThreshold: 3
         livenessProbe:
           httpGet:
-            path: /livez
+            path: /livez?exclude=readyz
             port: https
             scheme: HTTPS
           periodSeconds: 10

@@ -170,7 +170,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     if [ "$ARCH" != "ppc64le" ]; then \
-       clean-install containers-common conmon containernetworking-plugins cri-tools crun podman podman-plugins catatonit; \
+       clean-install containers-common conmon containernetworking-plugins cri-tools crun podman-plugins catatonit; \
     else \
        clean-install containers-common conmon containernetworking-plugins crun; \
     fi
