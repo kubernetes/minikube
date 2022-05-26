@@ -33,12 +33,6 @@ ARG TARGETARCH
 ENV GOARCH=${TARGETARCH}
 RUN cd ./cmd/auto-pause/ && go build 
 
-# cri-dockerd static
-FROM golang:1.16 as cri-dockerd
-RUN git clone -n https://github.com/Mirantis/cri-dockerd && \
-    cd cri-dockerd && git checkout a4d1895a2659ea9974bd7528a706592ab8b74181 && \
-    cd src && env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd
-
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ubuntu:focal-20220316 as kicbase
@@ -47,6 +41,8 @@ ARG BUILDKIT_VERSION="v0.10.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.22"
+ARG CRI_DOCKERD_VERSION="a4d1895a2659ea9974bd7528a706592ab8b74181"
+ARG TARGETARCH
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -55,9 +51,7 @@ COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause /bin/auto-pause
-COPY --from=cri-dockerd /go/cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
-COPY --from=cri-dockerd /go/cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
-COPY --from=cri-dockerd /go/cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
+
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -125,6 +119,12 @@ ARG COMMIT_SHA
 # which is an ubuntu 20.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
 USER root
+
+# Install cri-dockerd from pre-compiled binaries stored in GCS, this is way faster than building from source in multi-arch
+RUN echo "Installing cri-dockerd" && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
 
 # install system requirements from the regular distro repositories
 RUN clean-install \
