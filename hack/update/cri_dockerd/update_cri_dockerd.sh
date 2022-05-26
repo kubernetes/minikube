@@ -36,7 +36,7 @@ cd src
 for (( i=0; i < ${#archarray[*]}; i++ ))
 do
 	arch=${archarray[i]#"linux/"}
-	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd-$arch
+	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags "-X github.com/Mirantis/cri-dockerd/version.GitCommit=${version:0:7}" -o cri-dockerd-$arch
 	gsutil cp cri-dockerd-$arch gs://kicbase-artifacts/cri-dockerd/$version/$arch/cri-dockerd
 
 done
