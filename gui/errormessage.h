@@ -14,7 +14,8 @@ class ErrorMessage : public QObject
 public:
     explicit ErrorMessage(QDialog *parent, QIcon icon);
 
-    void error(QString errorCode, QString advice, QString errorMessage, QString url, QString issues);
+    void error(QString errorCode, QString advice, QString errorMessage, QString url,
+               QString issues);
     QLabel *createLabel(QString title, QString text, QFormLayout *form, bool isLink);
 
 private:

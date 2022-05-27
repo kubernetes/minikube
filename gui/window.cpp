@@ -108,7 +108,8 @@ Window::Window()
     hyperKit = new HyperKit(*trayIconIcon);
     updater = new Updater(version, *trayIconIcon);
 
-    op = new Operator(advancedView, basicView, commandRunner, errorMessage, progressWindow, tray, hyperKit, updater, stackedWidget, this);
+    op = new Operator(advancedView, basicView, commandRunner, errorMessage, progressWindow, tray,
+                      hyperKit, updater, stackedWidget, this);
 
     stackedWidget->addWidget(basicView->basicView);
     stackedWidget->addWidget(advancedView->advancedView);

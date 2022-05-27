@@ -13,7 +13,6 @@
 #include <QStandardPaths>
 #include <QDir>
 
-
 Updater::Updater(QVersionNumber version, QIcon icon)
 {
     m_version = version;
@@ -22,7 +21,8 @@ Updater::Updater(QVersionNumber version, QIcon icon)
 
 static bool checkedForUpdateRecently()
 {
-    QString filePath = QStandardPaths::locate(QStandardPaths::HomeLocation, "/.minikube-gui/last_update_check");
+    QString filePath = QStandardPaths::locate(QStandardPaths::HomeLocation,
+                                              "/.minikube-gui/last_update_check");
     if (filePath == "") {
         return false;
     }
@@ -32,14 +32,14 @@ static bool checkedForUpdateRecently()
     }
     QTextStream in(&file);
     QString line = in.readLine();
-    QDateTime nextCheck = QDateTime::fromString(line).addSecs(60*60*24);
+    QDateTime nextCheck = QDateTime::fromString(line).addSecs(60 * 60 * 24);
     QDateTime now = QDateTime::currentDateTime();
     return nextCheck > now;
 }
 
 static void logUpdateCheck()
 {
-    QDir dir = QDir(QDir::homePath() +  "/.minikube-gui");
+    QDir dir = QDir(QDir::homePath() + "/.minikube-gui");
     if (!dir.exists()) {
         dir.mkpath(".");
     }

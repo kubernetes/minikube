@@ -5,7 +5,10 @@
 #include <QJsonDocument>
 #include <QStandardPaths>
 
-Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunner *commandRunner, ErrorMessage *errorMessage, ProgressWindow *progressWindow, Tray *tray, HyperKit *hyperKit, Updater *updater, QStackedWidget *stackedWidget, QDialog *parent)
+Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunner *commandRunner,
+                   ErrorMessage *errorMessage, ProgressWindow *progressWindow, Tray *tray,
+                   HyperKit *hyperKit, Updater *updater, QStackedWidget *stackedWidget,
+                   QDialog *parent)
 {
     m_advancedView = advancedView;
     m_basicView = basicView;
@@ -37,14 +40,16 @@ Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunn
     connect(m_advancedView, &AdvancedView::dashboard, this, &Operator::dashboardBrowser);
     connect(m_advancedView, &AdvancedView::basic, this, &Operator::toBasicView);
     connect(m_advancedView, &AdvancedView::createCluster, this, &Operator::createCluster);
-    connect(m_advancedView->clusterListView, SIGNAL(clicked(QModelIndex)), this, SLOT(updateButtons()));
+    connect(m_advancedView->clusterListView, SIGNAL(clicked(QModelIndex)), this,
+            SLOT(updateButtons()));
 
     connect(m_commandRunner, &CommandRunner::startingExecution, this, &Operator::commandStarting);
     connect(m_commandRunner, &CommandRunner::executionEnded, this, &Operator::commandEnding);
     connect(m_commandRunner, &CommandRunner::output, this, &Operator::commandOutput);
     connect(m_commandRunner, &CommandRunner::error, this, &Operator::commandError);
     connect(m_commandRunner, &CommandRunner::updatedClusters, this, &Operator::clustersReceived);
-    connect(m_commandRunner, &CommandRunner::startCommandStarting, this, &Operator::startCommandStarting);
+    connect(m_commandRunner, &CommandRunner::startCommandStarting, this,
+            &Operator::startCommandStarting);
 
     connect(m_progressWindow, &ProgressWindow::cancelled, this, &Operator::cancelCommand);
 
@@ -185,6 +190,8 @@ void Operator::restoreWindow()
     if (wasVisible) {
         return;
     }
+    if (m_commandRunner->isRunning())
+        return;
     updateClusters();
 }
 
