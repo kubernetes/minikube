@@ -35,7 +35,7 @@ func TestAddonsList(t *testing.T) {
 		old := os.Stdout
 		defer func() { os.Stdout = old }()
 		os.Stdout = w
-		printAddonsList(nil)
+		printAddonsList(nil, false)
 		if err := w.Close(); err != nil {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
@@ -51,11 +51,11 @@ func TestAddonsList(t *testing.T) {
 			got += buf.Text()
 		}
 		// The lines we pull should look something like
-		// |------------|------------|------|
-		// | ADDON NAME | MAINTAINER | DOCS |
-		// |------------|------------|------|
-		// which has 12 pipes
-		expected := 12
+		// |------------|------------|
+		// | ADDON NAME | MAINTAINER |
+		// |------------|------------|
+		// which has 9 pipes
+		expected := 9
 		if pipeCount != expected {
 			t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
 		}
