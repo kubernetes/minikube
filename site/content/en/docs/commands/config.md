@@ -78,6 +78,7 @@ list displays all valid default settings for PROPERTY_NAME
 Acceptable fields: 
 
  * driver
+ * kubernetes-version
 
 ```shell
 minikube config defaults PROPERTY_NAME [flags]
@@ -86,7 +87,7 @@ minikube config defaults PROPERTY_NAME [flags]
 ### Options
 
 ```
-      --output string   Output format. Accepted values: [json]
+  -o, --output string   Output format. Accepted values: [json, yaml]
 ```
 
 ### Options inherited from parent commands
