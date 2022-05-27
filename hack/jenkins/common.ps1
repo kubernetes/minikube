@@ -30,9 +30,11 @@ function Write-GithubStatus {
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
+$GoVersion = "1.18.2"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
-(New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/v1.20.0/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
+$KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
+(New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/$KubeVersion/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
 # Setup the cleanup and reboot cron
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_and_reboot.ps1 C:\jenkins
@@ -52,9 +54,21 @@ If ($lastexitcode -gt 0) {
 	Exit $lastexitcode
 }
 
+# Download Go
+$CurrentGo = go version
+if ($CurrentGo -NotLike "*$GoVersion*") {
+  (New-Object Net.WebClient).DownloadFile("https://go.dev/dl/go$GoVersion.windows-amd64.zip", "$env:TEMP\golang.zip")
+  Remove-Item "c:\Program Files\Go\*" -Recurse
+  Add-Type -Assembly "System.IO.Compression.Filesystem"
+  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:TEMP\golang.zip", "$env:TEMP\golang")
+  Copy-Item -Path "$env:TEMP\golang\go\*" -Destination "c:\Program Files\Go\" -Recurse
+  Remove-Item "$env:TEMP\golang" -Recurse
+  Remove-Item "$env:TEMP\golang.zip"
+}
+
 # Download gopogh and gotestsum
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
-(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.6.4/gotestsum_1.6.4_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
+(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
+(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.8.1/gotestsum_1.8.1_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
 tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
 
 # Grab all the scripts we'll need for integration tests

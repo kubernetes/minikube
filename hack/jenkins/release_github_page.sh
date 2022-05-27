@@ -21,7 +21,8 @@
 # VERSION_MAJOR: The major version of the tag to be released.
 # VERSION_MINOR: The minor version of the tag to be released.
 # VERSION_BUILD: The build version of the tag to be released.
-# ISO_SHA256: The sha 256 of the minikube-iso for the current release.
+# ISO_SHA256_AMD64: The sha 256 of the amd64 minikube-iso for the current release.
+# ISO_SHA256_ARM64: The sha 256 of the arm64 minikube-iso for the current release.
 # GITHUB_TOKEN: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -eux -o pipefail
@@ -62,7 +63,8 @@ See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
 ## ISO Checksum
 
-\`${ISO_SHA256}\`"
+amd64: \`${ISO_SHA256_AMD64}\`  
+arm64: \`${ISO_SHA256_ARM64}\`"
 
 # ================================================================================
 # Deleting release from github before creating new one
