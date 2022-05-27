@@ -100,6 +100,7 @@ require (
 require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/docker/go-connections v0.4.0
+	github.com/google/go-github/v43 v43.0.0
 	github.com/opencontainers/runc v1.0.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0
 )
@@ -153,7 +154,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.3.0 // indirect
 	github.com/googleapis/go-type-adapters v1.0.0 // indirect

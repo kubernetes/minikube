@@ -41,7 +41,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var output string
+var profileOutput string
 var isLight bool
 
 var profileListCmd = &cobra.Command{
@@ -49,13 +49,13 @@ var profileListCmd = &cobra.Command{
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
-		switch strings.ToLower(output) {
+		switch strings.ToLower(profileOutput) {
 		case "json":
 			printProfilesJSON()
 		case "table":
 			printProfilesTable()
 		default:
-			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", profileOutput))
 		}
 	},
 }
@@ -217,7 +217,7 @@ func profilesOrDefault(profiles []*config.Profile) []*config.Profile {
 }
 
 func init() {
-	profileListCmd.Flags().StringVarP(&output, "output", "o", "table", "The output format. One of 'json', 'table'")
+	profileListCmd.Flags().StringVarP(&profileOutput, "output", "o", "table", "The output format. One of 'json', 'table'")
 	profileListCmd.Flags().BoolVarP(&isLight, "light", "l", false, "If true, returns list of profiles faster by skipping validating the status of the cluster.")
 	ProfileCmd.AddCommand(profileListCmd)
 }
