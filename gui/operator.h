@@ -18,7 +18,9 @@ class Operator : public QObject
     Q_OBJECT
 
 public:
-    Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunner *commandRunner, ErrorMessage *errorMessage, ProgressWindow *progressWindow, Tray *tray, HyperKit *hyperKit, Updater *updater, QStackedWidget *stackedWidget, QDialog *parent);
+    Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunner *commandRunner,
+             ErrorMessage *errorMessage, ProgressWindow *progressWindow, Tray *tray,
+             HyperKit *hyperKit, Updater *updater, QStackedWidget *stackedWidget, QDialog *parent);
 
 public slots:
     void startMinikube();
