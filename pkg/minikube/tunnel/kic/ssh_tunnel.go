@@ -37,6 +37,7 @@ type SSHTunnel struct {
 	ctx                  context.Context
 	sshPort              string
 	sshKey               string
+	bindAddress          string
 	v1Core               typed_core.CoreV1Interface
 	v1Networking         typed_networking.NetworkingV1Interface
 	LoadBalancerEmulator tunnel.LoadBalancerEmulator
@@ -45,11 +46,12 @@ type SSHTunnel struct {
 }
 
 // NewSSHTunnel ...
-func NewSSHTunnel(ctx context.Context, sshPort, sshKey string, v1Core typed_core.CoreV1Interface, v1Networking typed_networking.NetworkingV1Interface) *SSHTunnel {
+func NewSSHTunnel(ctx context.Context, sshPort, sshKey, bindAddress string, v1Core typed_core.CoreV1Interface, v1Networking typed_networking.NetworkingV1Interface) *SSHTunnel {
 	return &SSHTunnel{
 		ctx:                  ctx,
 		sshPort:              sshPort,
 		sshKey:               sshKey,
+		bindAddress:          bindAddress,
 		v1Core:               v1Core,
 		LoadBalancerEmulator: tunnel.NewLoadBalancerEmulator(v1Core),
 		v1Networking:         v1Networking,
@@ -124,7 +126,7 @@ func (t *SSHTunnel) startConnection(svc v1.Service) {
 	}
 
 	// create new ssh conn
-	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, resourcePorts, svc.Spec.ClusterIP, svc.Name)
+	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, t.bindAddress, resourcePorts, svc.Spec.ClusterIP, svc.Name)
 	t.conns[newSSHConn.name] = newSSHConn
 
 	go func() {
@@ -154,7 +156,7 @@ func (t *SSHTunnel) startConnectionIngress(ingress v1_networking.Ingress) {
 	resourceIP := "127.0.0.1"
 
 	// create new ssh conn
-	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, resourcePorts, resourceIP, ingress.Name)
+	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, t.bindAddress, resourcePorts, resourceIP, ingress.Name)
 	t.conns[newSSHConn.name] = newSSHConn
 
 	go func() {
