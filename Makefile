@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 26
-VERSION_BUILD ?= 0-beta.0
+VERSION_BUILD ?= 0-beta.1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.26.0-beta.0
+ISO_VERSION ?= v1.26.0-1652998508-14153
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,9 +33,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.18.1
+GO_VERSION ?= 1.18.2
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.24.0
+GO_K8S_VERSION_PREFIX ?= v1.25.0
 
 # replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -76,7 +76,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 4.19.235
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.45.2
+GOLINT_VERSION ?= v1.46.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -702,6 +702,11 @@ KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
+CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
+.PHONY: update-cri-dockerd
+update-cri-dockerd:
+	hack/update/cri_dockerd/update_cri_dockerd.sh $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH)
+
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) .
@@ -1039,3 +1044,8 @@ time-to-k8s-benchmark:
 update-gopogh-version: ## update gopogh version
 	(cd hack/update/gopogh_version && \
 	 go run update_gopogh_version.go)
+
+.PHONY: update-gotestsum-version
+update-gotestsum-version:
+	(cd hack/update/gotestsum_version && \
+	 go run update_gotestsum_version.go)

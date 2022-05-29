@@ -20,5 +20,5 @@ mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cro
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP AND REBOOT"
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 install cron/cleanup_go_modules.sh $HOME/cleanup_go_modules.sh || echo "FAILED TO INSTALL GO MODULES CLEANUP"
-echo "0 0 1 * * $HOME/cleanup_go_modules.sh" | crontab
+(crontab -l ; echo "0 0 1 * * $HOME/cleanup_go_modules.sh")| crontab -
 crontab -l
