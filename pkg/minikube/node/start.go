@@ -102,7 +102,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if err = cruntime.CheckCompatibility(cr); err != nil {
 			return nil, err
 		}
-		
+
 		showNotK8sVersionInfo(cr)
 
 		configureMounts(&wg, *starter.Cfg)
