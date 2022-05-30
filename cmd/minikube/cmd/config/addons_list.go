@@ -95,12 +95,12 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	}
 	sort.Strings(addonNames)
 
-	var tData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
 
+	// Create table header
 	var tHeader []string
 	if cc == nil {
 		tHeader = []string{"Addon Name", "Maintainer"}
@@ -112,6 +112,9 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	}
 	table.SetHeader(tHeader)
 
+	// Create table data
+	var tData [][]string
+	var temp []string
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -123,23 +126,18 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			docs = "n/a"
 		}
 		if cc == nil {
-			if printDocs {
-				tData = append(tData, []string{addonName, maintainer, docs})
-			} else {
-				tData = append(tData, []string{addonName, maintainer})
-			}
-			continue
+			temp = []string{addonName, maintainer}
 		} else {
 			enabled := addonBundle.IsEnabled(cc)
-			if printDocs {
-				tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer, docs})
-			} else {
-				tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer})
-			}
+			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
 		}
+		if printDocs {
+			temp = append(temp, docs)
+		}
+		tData = append(tData, temp)
 	}
-
 	table.AppendBulk(tData)
+
 	table.Render()
 
 	v, _, err := config.ListProfiles()
