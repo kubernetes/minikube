@@ -51,7 +51,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showNotK8sVersionInfo(cr cruntime.Manager) {
+func showNoK8sVersionInfo(cr cruntime.Manager) {
 	version, _ := cr.Version()
 	out.Step(cr.Style(), "Preparing {{.runtime}} {{.runtimeVersion}} ...", out.V{"runtime": cr.Name(), "runtimeVersion": version})
 }
