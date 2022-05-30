@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -117,7 +117,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -217,7 +217,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -322,7 +322,7 @@ jobs:
           echo "--------------------------"
           podman ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -409,7 +409,7 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -520,7 +520,7 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
