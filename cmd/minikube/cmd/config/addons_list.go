@@ -70,7 +70,7 @@ var addonsListCmd = &cobra.Command{
 
 func init() {
 	addonsListCmd.Flags().StringVarP(&addonListOutput, "output", "o", "list", "minikube addons list --output OUTPUT. json, list")
-	addonsListCmd.Flags().BoolVarP(&addonPrintDocs, "docs", "d", false, "If true, print web links to addons' documentation.")
+	addonsListCmd.Flags().BoolVarP(&addonPrintDocs, "docs", "d", false, "If true, print web links to addons' documentation if using --output=list (default).")
 	AddonsCmd.AddCommand(addonsListCmd)
 }
 
