@@ -984,7 +984,7 @@
 	"stat failed": "state Fehler",
 	"status json failure": "Status json Fehler",
 	"status text failure": "Status text Fehler",
-	"too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "Zu viele Parameter ({{.ArgCount}}).\\nVerwendung: minikube config set PROPERTY_NAME PROPERTY_VALUE",
+	"too many arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "Zu viele Parameter ({{.ArgCount}}).\nVerwendung: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer": "",
 	"unable to bind flags": "Kann Parameter nicht zuweisen",
 	"unable to daemonize: {{.err}}": "Kann nicht in den Hintergrund starten (daemonize): {{.err}}",
