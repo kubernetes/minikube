@@ -17,7 +17,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/cloudevents/sdk-go/v2 v2.9.0
-	github.com/docker/docker v20.10.15+incompatible
+	github.com/docker/docker v20.10.16+incompatible
 	github.com/docker/go-units v0.4.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
@@ -85,9 +85,9 @@ require (
 	google.golang.org/api v0.79.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
-	k8s.io/client-go v0.24.0
+	k8s.io/api v0.24.1
+	k8s.io/apimachinery v0.24.1
+	k8s.io/client-go v0.24.1
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.24.0
 	k8s.io/klog/v2 v2.60.1
