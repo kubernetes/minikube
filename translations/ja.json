@@ -983,7 +983,7 @@
 	"namespaces to unpause": "停止を解除する名前空間",
 	"network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.": "minikube を実行するネットワーク。現時点では docker/podman と KVM ドライバーで使用されます。空の場合、minikube は新しいネットワークを作成します。",
 	"none driver does not support multi-node clusters": "none ドライバーはマルチノードクラスターをサポートしていません",
-	"not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "引数 ({{.ArgCount}}) が不十分です。\\n使用方法: minikube config set PROPERTY_NAME PROPERTY_VALUE",
+	"not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "引数 ({{.ArgCount}}) が不十分です。\n使用方法: minikube config set PROPERTY_NAME PROPERTY_VALUE",
 	"numa node is only supported on k8s v1.18 and later": "NUMA ノードは k8s v1.18 以降でのみサポートされます",
 	"output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster'": "出力形式 (実験的、JSON のみ): 'nodes' または 'cluster'",
 	"pause Kubernetes": "Kubernetes を一時停止させます",
