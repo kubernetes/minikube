@@ -41,23 +41,23 @@ func TestMinikubeProfile(t *testing.T) {
 	for _, p := range profiles {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "start", "-p", p))
 		if err != nil {
-			t.Fatalf("test pre-condition failed. args %q: %v", rr.Command(), err.Error())
+			t.Fatalf("test pre-condition failed. args %q: %v", rr.Command(), err)
 		}
 	}
 	// 2. Change minikube profile
 	for _, p := range profiles {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", p))
 		if err != nil {
-			t.Fatalf("cmd: %s failed with error: %v\n", rr.Command(), err.Error())
+			t.Fatalf("cmd: %s failed with error: %v\n", rr.Command(), err)
 		}
 		r, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "-ojson"))
 		if err != nil {
-			t.Fatalf("cmd: %s failed with error: %v\n", r.Command(), err.Error())
+			t.Fatalf("cmd: %s failed with error: %v\n", r.Command(), err)
 		}
 		var profile profileJSON
 		err = json.NewDecoder(r.Stdout).Decode(&profile)
 		if err != nil {
-			t.Fatalf("unmarshalling %s cmd output failed with error: %v\n", r.Command(), err.Error())
+			t.Fatalf("unmarshalling %s cmd output failed with error: %v\n", r.Command(), err)
 		}
 		// 3. Assert minikube profile is set to the correct profile in JSON
 		for _, s := range profile.Valid {
