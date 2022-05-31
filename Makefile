@@ -287,7 +287,6 @@ minikube-iso-arm64: minikube-iso-aarch64
 
 minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
-	cp deploy/iso/minikube-iso/CHANGELOG deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/CHANGELOG
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
