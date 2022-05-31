@@ -25,6 +25,7 @@ public:
     void deleteMinikube(QStringList args);
     void stopCommand();
     void requestClusters();
+    bool isRunning();
 
 signals:
     void startingExecution();
@@ -53,6 +54,7 @@ private:
     QString m_command;
     QDialog *m_parent;
     QStringList m_args;
+    bool m_isRunning;
 };
 
 #endif // COMMANDRUNNER_H

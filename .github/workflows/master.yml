@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -44,7 +44,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: minikube_binaries
           path: out
@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -119,7 +119,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -127,7 +127,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
@@ -168,7 +168,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -219,7 +219,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -227,7 +227,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
@@ -268,7 +268,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -323,14 +323,14 @@ jobs:
         echo "--------------------------"
         podman ps || true
         echo "--------------------------"
-    - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+    - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
       with:
         go-version: ${{env.GO_VERSION}}
         stable: true
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
@@ -371,7 +371,7 @@ jobs:
         echo 'STAT<<EOF' >> $GITHUB_ENV
         echo "${STAT}" >> $GITHUB_ENV
         echo 'EOF' >> $GITHUB_ENV
-    - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+    - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
       with:
         name: functional_podman_ubuntu
         path: minikube_binaries/report
@@ -409,7 +409,7 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -417,7 +417,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -471,7 +471,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_virtualbox_macos
           path: minikube_binaries/report
@@ -519,7 +519,7 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      - uses: actions/setup-go@fcdc43634adb5f7ae75a9d7a9b9361790f7293e2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -527,7 +527,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
         uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
@@ -566,7 +566,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: none_ubuntu18_04
           path: minikube_binaries/report
@@ -616,7 +616,7 @@ jobs:
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
 
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: all_reports
           path: all_reports

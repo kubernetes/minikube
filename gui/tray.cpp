@@ -1,8 +1,8 @@
 #include "tray.h"
 
-#include<QAction>
-#include<QCoreApplication>
-#include<QMenu>
+#include <QAction>
+#include <QCoreApplication>
+#include <QMenu>
 
 Tray::Tray(QIcon icon)
 {

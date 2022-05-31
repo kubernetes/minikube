@@ -13,7 +13,8 @@ ErrorMessage::ErrorMessage(QDialog *parent, QIcon icon)
     m_icon = icon;
 }
 
-void ErrorMessage::error(QString errorCode, QString advice, QString message, QString url, QString issues)
+void ErrorMessage::error(QString errorCode, QString advice, QString message, QString url,
+                         QString issues)
 {
 
     m_dialog = new QDialog(m_parent);

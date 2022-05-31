@@ -18,11 +18,13 @@ CommandRunner::CommandRunner(QDialog *parent)
 
 void CommandRunner::executeMinikubeCommand(QStringList args)
 {
+    m_isRunning = true;
     m_output = "";
     QStringList userArgs = { "--user", "minikube-gui" };
     args << userArgs;
     m_process = new QProcess(m_parent);
-    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this, &CommandRunner::executionCompleted);
+    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            &CommandRunner::executionCompleted);
     connect(m_process, &QProcess::readyReadStandardError, this, &CommandRunner::errorReady);
     connect(m_process, &QProcess::readyReadStandardOutput, this, &CommandRunner::outputReady);
     m_process->setProcessEnvironment(m_env);
@@ -163,6 +165,7 @@ void CommandRunner::requestClusters()
 
 void CommandRunner::executionCompleted()
 {
+    m_isRunning = false;
     QString cmd = m_command;
     m_command = "";
     QString output = m_output;
@@ -211,4 +214,9 @@ void CommandRunner::minikubePath()
     }
     QStringList path = { "/usr/local/bin" };
     m_minikubePath = QStandardPaths::findExecutable("minikube", path);
+}
+
+bool CommandRunner::isRunning()
+{
+    return m_isRunning;
 }

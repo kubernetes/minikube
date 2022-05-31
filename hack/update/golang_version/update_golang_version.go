@@ -100,13 +100,22 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
-
+		".github/workflows/update-gopogh-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/functional_verified.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-gotestsum-version.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
@@ -126,6 +135,11 @@ var (
 		"hack/jenkins/installers/check_install_golang.sh": {
 			Replace: map[string]string{
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
+			},
+		},
+		"hack/jenkins/common.ps1": {
+			Replace: map[string]string{
+				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
 			},
 		},
 	}

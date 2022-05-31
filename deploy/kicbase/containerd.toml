@@ -1,7 +1,7 @@
 version = 2
-root = "/var/lib/containerd"
+root = "/var/lib/containerd"                                     
 state = "/run/containerd"
-oom_score = 0
+oom_score = 0      
 # imports
 
 [grpc]
