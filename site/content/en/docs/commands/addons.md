@@ -252,6 +252,7 @@ minikube addons list [flags]
 ### Options
 
 ```
+  -d, --docs            If true, print web links to addons' documentation if using --output=list (default).
   -o, --output string   minikube addons list --output OUTPUT. json, list (default "list")
 ```
 
