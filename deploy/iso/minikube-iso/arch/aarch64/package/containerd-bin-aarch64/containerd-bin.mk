@@ -26,6 +26,7 @@ endef
 
 define CONTAINERD_BIN_AARCH64_CONFIGURE_CMDS
 	mkdir -p $(CONTAINERD_BIN_AARCH64_GOPATH)/src/github.com/containerd
+	mkdir -p $(TARGET_DIR)/etc/containerd/containerd.conf.d
 	ln -sf $(@D) $(CONTAINERD_BIN_AARCH64_COMPILE_SRC)
 endef
 
