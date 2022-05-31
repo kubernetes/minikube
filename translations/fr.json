@@ -1,7 +1,7 @@
 {
 	"\"The '{{.minikube_addon}}' addon is disabled": "Le module \"{{.minikube_addon}}\" est désactivé",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "\"minikube cache\" sera obsolète dans les prochaines versions, veuillez passer à \"minikube image load\"",
-	\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "Le contexte \"{{.context}}\" a été mis à jour pour pointer vers {{.hostname}}:{{.port}}",
+	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "Le contexte \"{{.context}}\" a été mis à jour pour pointer vers {{.hostname}}:{{.port}}",
 	"\"{{.machineName}}\" does not exist, nothing to stop": "La machine \"{{.machineName}} n'existe pas, rien a arrêter",
 	"\"{{.name}}\" profile does not exist, trying anyways.": "Le profil \"{{.name}}\" n'existe pas, tentative de suppression quand même.",
 	"'none' driver does not support 'minikube docker-env' command": "Le pilote 'none' ne prend pas en charge la commande 'minikube docker-env'",

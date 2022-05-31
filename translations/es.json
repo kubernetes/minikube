@@ -20,7 +20,6 @@
 	"- Prune unused {{.driver_name}} images, volumes, networks and abandoned containers.\n\n\t\t\t\t{{.driver_name}} system prune --volumes": "- Recorta las imágenes, volumenes, redes y contenedores abandonados de {{.driver_name}}.\n\n\t\t\t\t{{.driver_name}} system prune --volumes",
 	"- Restart your {{.driver_name}} service": "- Reinicia el servicio {{.driver_name}}",
 	"--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless": "--container-runtime debe ser configurado a \"containerd\" o \"crio-o\" para no usar usuario root",
-	"--container-runtime must be set to \\\"containerd\\\" or \\\"cri-o\\\" for rootless": ,
 	"--kvm-numa-count range is 1-8": "--kvm-numa-count el rango es 1-8",
 	"--network flag is only valid with the docker/podman and KVM drivers, it will be ignored": "el flag --network es válido solamente con docker/podman y KVM, será ignorado",
 	"1) Recreate the cluster with Kubernetes {{.new}}, by running:\n\t  \n\t\t  minikube delete{{.profile}}\n\t\t  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}\n\t  \n\t\t2) Create a second cluster with Kubernetes {{.new}}, by running:\n\t  \n\t\t  minikube start -p {{.suggestedName}} --kubernetes-version={{.prefix}}{{.new}}\n\t  \n\t\t3) Use the existing cluster at version Kubernetes {{.old}}, by running:\n\t  \n\t\t  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}\n\t\t": "",
