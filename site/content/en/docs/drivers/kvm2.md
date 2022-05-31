@@ -22,7 +22,7 @@ aliases:
 
 The `minikube start` command supports 5 additional KVM specific flags:
 
-* **`--gpu`**: Enable experimental NVIDIA GPU support in minikube
+* **`--kvm-gpu`**: Enable experimental NVIDIA GPU support in minikube
 * **`--hidden`**: Hide the hypervisor signature from the guest in minikube
 * **`--kvm-network`**:  The KVM default network name
 * **`--network`**:  The dedicated KVM private network name
