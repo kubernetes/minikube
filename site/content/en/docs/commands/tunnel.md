@@ -20,7 +20,8 @@ minikube tunnel [flags]
 ### Options
 
 ```
-  -c, --cleanup   call with cleanup=true to remove old tunnels (default true)
+      --bind-address string   set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces
+  -c, --cleanup               call with cleanup=true to remove old tunnels (default true)
 ```
 
 ### Options inherited from parent commands

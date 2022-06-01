@@ -985,6 +985,7 @@
 	"retrieving node": "",
 	"scheduled stop is not supported on the none driver, skipping scheduling": "",
 	"service {{.namespace_name}}/{{.service_name}} has no node port": "",
+	"set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces": "",
 	"stat failed": "",
 	"status json failure": "",
 	"status text failure": "",

@@ -120,5 +120,5 @@ func outputTunnelStarted() {
 
 func init() {
 	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
-	tunnelCmd.Flags().StringVar(&bindAddress, "bind-address", "", "set tunnel bind address, empty or `*' indicates that tunnel should be available for all interfaces")
+	tunnelCmd.Flags().StringVar(&bindAddress, "bind-address", "", "set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces")
 }
