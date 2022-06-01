@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2021 The Kubernetes Authors All rights reserved.

@@ -36,6 +36,17 @@ type runcContainer struct {
 	Status string
 }
 
+type crictlImages struct {
+	Images []struct {
+		ID          string      `json:"id"`
+		RepoTags    []string    `json:"repoTags"`
+		RepoDigests []string    `json:"repoDigests"`
+		Size        string      `json:"size"`
+		UID         interface{} `json:"uid"`
+		Username    string      `json:"username"`
+	} `json:"images"`
+}
+
 // criOutput maps to the output of `crictl ps -a --output=json`
 type criOutput struct {
 	Containers []criContainer `json:"containers"`
@@ -203,13 +214,14 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 
 // pauseContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc"}
+	baseArgs := []string{"runc"}
 	if root != "" {
-		args = append(args, "--root", root)
+		baseArgs = append(baseArgs, "--root", root)
 	}
-	args = append(args, "pause")
+	baseArgs = append(baseArgs, "pause")
 	for _, id := range ids {
-		args := append(args, id)
+		args := baseArgs
+		args = append(args, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}
@@ -339,6 +351,33 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 		return nil, err
 	}
 	return jsonMap, nil
+}
+
+// listCRIImages lists images using crictl
+func listCRIImages(cr CommandRunner) ([]ListImage, error) {
+	c := exec.Command("sudo", "crictl", "images", "--output", "json")
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "crictl images")
+	}
+
+	var jsonImages crictlImages
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	if err != nil {
+		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		return nil, err
+	}
+
+	images := []ListImage{}
+	for _, img := range jsonImages.Images {
+		images = append(images, ListImage{
+			ID:          img.ID,
+			RepoDigests: img.RepoDigests,
+			RepoTags:    img.RepoTags,
+			Size:        img.Size,
+		})
+	}
+	return images, nil
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a runcContainer based on ID

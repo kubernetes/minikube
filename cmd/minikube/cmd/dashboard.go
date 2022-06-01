@@ -47,9 +47,9 @@ import (
 var (
 	dashboardURLMode     bool
 	dashboardExposedPort int
-	// Matches: 127.0.0.1:8001
+	// Matches: "127.0.0.1:8001" or "127.0.0.1 40012" etc.
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
-	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
+	hostPortRe = regexp.MustCompile(`127.0.0.1(:| )\d{4,}`)
 )
 
 // dashboardCmd represents the dashboard command
@@ -98,7 +98,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(style.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectlVersion, cname, dashboardExposedPort)
+		p, hostPort, err := kubectlProxy(kubectlVersion, co.Config.BinaryMirror, cname, dashboardExposedPort)
 		if err != nil {
 			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
@@ -132,7 +132,7 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(kubectlVersion string, contextName string, port int) (*exec.Cmd, string, error) {
+func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, port int) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 
 	kubectlArgs := []string{"--context", contextName, "proxy", "--port", strconv.Itoa(port)}
@@ -140,7 +140,7 @@ func kubectlProxy(kubectlVersion string, contextName string, port int) (*exec.Cm
 	var cmd *exec.Cmd
 	if kubectl, err := exec.LookPath("kubectl"); err == nil {
 		cmd = exec.Command(kubectl, kubectlArgs...)
-	} else if cmd, err = KubectlCommand(kubectlVersion, kubectlArgs...); err != nil {
+	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, kubectlArgs...); err != nil {
 		return nil, "", err
 	}
 

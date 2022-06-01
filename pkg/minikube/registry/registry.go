@@ -80,9 +80,10 @@ type State struct {
 	NeedsImprovement bool // healthy but could be improved
 	Error            error
 
-	Reason string // A reason ID, propagated to reason.Kind.ID
-	Fix    string
-	Doc    string
+	Reason  string // A reason ID, propagated to reason.Kind.ID
+	Fix     string
+	Doc     string
+	Version string // Provider version
 }
 
 // DriverDef defines how to initialize and load a machine driver

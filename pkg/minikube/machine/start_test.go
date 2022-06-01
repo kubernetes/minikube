@@ -21,6 +21,8 @@ import (
 	"net"
 	"os"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 const initialEtcHostsContent string = `127.0.0.1	localhost
@@ -95,4 +97,101 @@ func writeContentToTempFile(content string) (string, error) {
 	}
 
 	return path, nil
+}
+
+func TestDiskUsed(t *testing.T) {
+	ex := command.NewFakeCommandRunner()
+	ex.SetCommandToOutput(map[string]string{
+		"sh -c \"df -h /var | awk 'NR==2{print $5}'\"": "20%",
+	})
+	nonex := command.NewFakeCommandRunner()
+	nonex.SetCommandToOutput(map[string]string{
+		"sh -c \"df -h /nonexistent | awk 'NR==2{print $5}'\"": "df: /nonexistent: No such file or directory",
+	})
+
+	type args struct {
+		cr  command.Runner
+		dir string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name:    "existent",
+			args:    args{ex, "/var"},
+			want:    20,
+			wantErr: false,
+		},
+		{
+			name:    "existent",
+			args:    args{nonex, "/nonexistent"},
+			want:    0,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Logf("starting %v", tt.name)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DiskUsed(tt.args.cr, tt.args.dir)
+			t.Logf("err: %v\n", err)
+			t.Logf("got: %v\n", got)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DiskUsed() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("DiskUsed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDiskAvailable(t *testing.T) {
+	ex := command.NewFakeCommandRunner()
+	ex.SetCommandToOutput(map[string]string{
+		"sh -c \"df -BG /var | awk 'NR==2{print $4}'\"": "20",
+	})
+	nonex := command.NewFakeCommandRunner()
+	nonex.SetCommandToOutput(map[string]string{
+		"sh -c \"df -BG /nonexistent | awk 'NR==2{print $4}'\"": "df: /nonexistent: No such file or directory",
+	})
+
+	type args struct {
+		cr  command.Runner
+		dir string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    int
+		wantErr bool
+	}{
+		{
+			name:    "existent",
+			args:    args{ex, "/var"},
+			want:    20,
+			wantErr: false,
+		},
+		{
+			name:    "existent",
+			args:    args{nonex, "/nonexistent"},
+			want:    0,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Logf("starting %v", tt.name)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := DiskAvailable(tt.args.cr, tt.args.dir)
+			t.Logf("err: %v\n", err)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DiskAvailable() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if got != tt.want {
+				t.Errorf("DiskAvailable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

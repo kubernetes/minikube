@@ -16,6 +16,8 @@ metadata:
     kubernetes.io/minikube-addons: istio
     addonmanager.kubernetes.io/mode: EnsureExists
 spec:
+  conversion:
+    strategy: None
   group: install.istio.io
   names:
     kind: IstioOperator
@@ -24,13 +26,24 @@ spec:
     singular: istiooperator
     shortNames:
     - iop
+    - io
   scope: Namespaced
-  subresources:
-    status: {}
   versions:
   - name: v1alpha1
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
     served: true
     storage: true
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
 ...
 ---
 apiVersion: v1
@@ -78,12 +91,6 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - rbac.istio.io
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups:
   - security.istio.io
   resources:
   - '*'
@@ -111,9 +118,7 @@ rules:
   - daemonsets
   - deployments
   - deployments/finalizers
-  - ingresses
   - replicasets
-  - statefulsets
   verbs:
   - '*'
 - apiGroups:
@@ -129,6 +134,7 @@ rules:
   verbs:
   - get
   - create
+  - update
 - apiGroups:
   - policy
   resources:
@@ -145,17 +151,27 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - create
+  - update
+- apiGroups:
   - ""
   resources:
-  - configmaps  
+  - configmaps
   - endpoints
   - events
   - namespaces
   - pods
+  - pods/proxy
+  - pods/portforward
   - persistentvolumeclaims
   - secrets
   - services
-  - serviceaccounts  
+  - serviceaccounts
   verbs:
   - '*'
 ...
@@ -191,6 +207,7 @@ spec:
   - name: http-metrics
     port: 8383
     targetPort: 8383
+    protocol: TCP
   selector:
     name: istio-operator
 ...
@@ -202,7 +219,7 @@ metadata:
   name: istio-operator
   labels:
     kubernetes.io/minikube-addons: istio
-    addonmanager.kubernetes.io/mode: Reconcile 
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
@@ -222,6 +239,16 @@ spec:
           command:
           - operator
           - server
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 1337
+            runAsUser: 1337
+            runAsNonRoot: true
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -243,4 +270,6 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "istio-operator"
+            - name: WAIT_FOR_RESOURCES_TIMEOUT
+              value: "300s"
 ...

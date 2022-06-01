@@ -89,7 +89,7 @@ minikube start --extra-config=kubeadm.ignore-preflight-errors=SystemVerification
 
 ## Runtime configuration
 
-The default container runtime in minikube is Docker. You can select it explicitly by using:
+The default container runtime in minikube varies. You can select one explicitly by using:
 
 ```shell
 minikube start --container-runtime=docker
@@ -99,6 +99,8 @@ Other options available are:
 
 * [containerd](https://github.com/containerd/containerd)
 * [cri-o](https://github.com/cri-o/cri-o)
+
+See <https://kubernetes.io/docs/setup/production-environment/container-runtimes/>
 
 ## Environment variables
 

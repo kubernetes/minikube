@@ -63,6 +63,7 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 		IP:                cc.KubernetesConfig.NodeIP,
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ControlPlane:      true,
 		Worker:            true,
 	}

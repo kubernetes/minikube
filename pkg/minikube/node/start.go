@@ -90,11 +90,15 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
-	stop8ks, err := handleNoKubernetes(starter)
+	var wg sync.WaitGroup
+	stopk8s, err := handleNoKubernetes(starter)
 	if err != nil {
 		return nil, err
 	}
-	if stop8ks {
+	if stopk8s {
+		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
+		configureRuntimes(starter.Runner, *starter.Cfg, nv)
+		configureMounts(&wg, *starter.Cfg)
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
 
@@ -146,10 +150,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	var wg sync.WaitGroup
-	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg, *starter.Cfg)
-	}
+	go configureMounts(&wg, *starter.Cfg)
 
 	wg.Add(1)
 	go func() {
@@ -257,9 +258,11 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
 	}
 
-	// Scale down CoreDNS from default 2 to 1 replica.
-	if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-		klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+	if !starter.Cfg.DisableOptimizations {
+		// Scale down CoreDNS from default 2 to 1 replica.
+		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
 	}
 
 	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
@@ -325,7 +328,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
-	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnecessary
+	// Be explicit with each case for the sake of translations
 	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
@@ -391,6 +394,12 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 				exit.Error(reason.RuntimeCache, "Failed to cache images", err)
 			}
+		}
+	}
+
+	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
 		}
 	}
 
@@ -549,6 +558,14 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
+	if driver.IsQEMU(host.Driver.DriverName()) {
+		apiServerPort, err := getPort()
+		if err != nil {
+			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+		}
+		cfg.APIServerPort = apiServerPort
+	}
+
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -556,6 +573,21 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	}
 
 	return runner, preExists, m, host, err
+}
+
+// getPort asks the kernel for a free open port that is ready to use
+func getPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 // startHostInternal starts a new minikube host using a VM or None
@@ -629,7 +661,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) && !driver.IsQEMU(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}

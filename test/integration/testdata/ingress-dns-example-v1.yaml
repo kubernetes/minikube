@@ -28,10 +28,10 @@ spec:
         app: hello-world-app
     spec:
       containers:
-        - name: hello-world-app
-          image: gcr.io/google-samples/hello-app:1.0
-          ports:
-            - containerPort: 8080
+      - name: hello-world-app
+        image: gcr.io/google-samples/hello-app:1.0
+        ports:
+        - containerPort: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -41,26 +41,26 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: hello-john.test
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: hello-world-app
-                port:
-                  number: 80
-    - host: hello-jane.test
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: hello-world-app
-                port:
-                  number: 80
+  - host: hello-john.test
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-world-app
+            port:
+              number: 80
+  - host: hello-jane.test
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: hello-world-app
+            port:
+              number: 80
 ---
 apiVersion: v1
 kind: Service

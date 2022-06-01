@@ -136,10 +136,13 @@ func formatKubeadmImageList(version, data string) (string, error) {
 	lines := strings.Split(data, "\n")
 	for _, line := range lines {
 		imageTag := strings.Split(line, ":")
-		if len(imageTag) == 2 {
-			// removing the repo from image name
-			imageName := strings.Split(imageTag[0], "/")
-			imageTag[0] = strings.Join(imageName[1:], "/")
+		if len(imageTag) != 2 {
+			continue
+		}
+		// removing the repo from image name
+		imageName := strings.Split(imageTag[0], "/")
+		imageTag[0] = strings.Join(imageName[1:], "/")
+		if !isKubeImage(imageTag[0]) {
 			templateData[majorMinorVersion][imageTag[0]] = imageTag[1]
 		}
 	}
@@ -157,6 +160,16 @@ func formatKubeadmImageList(version, data string) (string, error) {
 	}
 
 	return bytesBuffer.String(), nil
+}
+
+func isKubeImage(name string) bool {
+	kubeImages := map[string]bool{
+		"kube-apiserver":          true,
+		"kube-controller-manager": true,
+		"kube-proxy":              true,
+		"kube-scheduler":          true,
+	}
+	return kubeImages[name]
 }
 
 func downloadFile(url, fileName string) error {

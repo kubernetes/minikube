@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -34,6 +35,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -108,6 +110,7 @@ var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, prof
 func init() {
 	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
 	deleteCmd.Flags().BoolVar(&purge, "purge", false, "Set this flag to delete the '.minikube' folder from your user directory.")
+	deleteCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 
 	if err := viper.BindPFlags(deleteCmd.Flags()); err != nil {
 		exit.Error(reason.InternalBindFlags, "unable to bind flags", err)
@@ -145,12 +148,66 @@ func deleteContainersAndVolumes(ctx context.Context, ociBin string) {
 	}
 }
 
+// kicbaseImages returns kicbase images
+func kicbaseImages(ctx context.Context, ociBin string) ([]string, error) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		return nil, nil
+	}
+
+	// create list of possible kicbase images
+	kicImages := []string{kic.BaseImage}
+	kicImages = append(kicImages, kic.FallbackImages...)
+
+	kicImagesRepo := []string{}
+	for _, img := range kicImages {
+		kicImagesRepo = append(kicImagesRepo, strings.Split(img, ":")[0])
+	}
+
+	allImages, err := oci.ListImagesRepository(ctx, ociBin)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []string
+	for _, img := range allImages {
+		for _, kicImg := range kicImagesRepo {
+			if kicImg == strings.Split(img, ":")[0] {
+				result = append(result, img)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
+// printDeleteImagesCommand prints command which remove images
+func printDeleteImagesCommand(ociBin string, imageNames []string) {
+	if _, err := exec.LookPath(ociBin); err != nil {
+		return
+	}
+
+	if len(imageNames) > 0 {
+		out.Styled(style.Command, `{{.ociBin}} rmi {{.images}}`, out.V{"ociBin": ociBin, "images": strings.Join(imageNames, " ")})
+	}
+}
+
+// printDeleteImageInfo prints info about removing kicbase images
+func printDeleteImageInfo(dockerImageNames, podmanImageNames []string) {
+	if len(dockerImageNames) == 0 && len(podmanImageNames) == 0 {
+		return
+	}
+
+	out.Styled(style.Notice, `Kicbase images have not been deleted. To delete images run:`)
+	printDeleteImagesCommand(oci.Docker, dockerImageNames)
+	printDeleteImagesCommand(oci.Podman, podmanImageNames)
+}
+
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Message(reason.Usage, "Usage: minikube delete")
 	}
-	// register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
+	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Deleting)
 	download.CleanUpOlderPreloads()
 	validProfiles, invalidProfiles, err := config.ListProfiles()
@@ -213,6 +270,16 @@ func runDelete(cmd *cobra.Command, args []string) {
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge {
 		purgeMinikubeDirectory()
+
+		dockerImageNames, err := kicbaseImages(delCtx, oci.Docker)
+		if err != nil {
+			klog.Warningf("error fetching docker images: %v", err)
+		}
+		podmanImageNames, err := kicbaseImages(delCtx, oci.Podman)
+		if err != nil {
+			klog.Warningf("error fetching podman images: %v", err)
+		}
+		printDeleteImageInfo(dockerImageNames, podmanImageNames)
 	}
 }
 
@@ -221,6 +288,7 @@ func purgeMinikubeDirectory() {
 	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
 		exit.Error(reason.HostPurge, "unable to delete minikube config folder", err)
 	}
+	register.Reg.SetStep(register.Purging)
 	out.Step(style.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
@@ -266,7 +334,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 			if err := unpauseIfNeeded(profile); err != nil {
 				klog.Warningf("failed to unpause %s : %v", profile.Name, err)
 			}
-			out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			out.Styled(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
 			for _, n := range profile.Config.Nodes {
 				machineName := config.MachineName(*profile.Config, n)
 				delete.PossibleLeftOvers(ctx, machineName, profile.Config.Driver)
@@ -305,7 +373,7 @@ func deleteProfile(ctx context.Context, profile *config.Profile) error {
 		return err
 	}
 
-	out.Step(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
+	out.Styled(style.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
 }
 
@@ -395,7 +463,7 @@ func deleteContext(machineName string) error {
 }
 
 func deleteInvalidProfile(profile *config.Profile) []error {
-	out.Step(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+	out.Styled(style.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
 	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
@@ -421,7 +489,7 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
-	out.Step(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
+	out.Styled(style.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	host, err := machine.LoadHost(api, config.MachineName(cc, n))
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
@@ -499,7 +567,7 @@ func handleMultipleDeletionErrors(errors []error) {
 func deleteProfileDirectory(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
-		out.Step(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		out.Styled(style.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
 			exit.Error(reason.GuestProfileDeletion, "Unable to remove machine directory", err)

@@ -60,6 +60,10 @@ var (
 	//go:embed istio/istio-default-profile.yaml.tmpl
 	IstioAssets embed.FS
 
+	// KongAssets assets for kong addon
+	//go:embed kong/kong-ingress-controller.yaml.tmpl
+	KongAssets embed.FS
+
 	// KubevirtAssets assets for kubevirt addon
 	//go:embed kubevirt/pod.yaml.tmpl
 	KubevirtAssets embed.FS

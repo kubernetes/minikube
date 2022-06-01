@@ -41,7 +41,7 @@ import (
 
 const (
 	// CRIOConfFile is the path to the CRI-O configuration
-	crioConfigFile = "/etc/crio/crio.conf"
+	crioConfigFile = "/etc/crio/crio.conf.d/02-crio.conf"
 )
 
 // CRIO contains CRIO runtime state
@@ -57,9 +57,9 @@ type CRIO struct {
 func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
 	pauseImage := images.Pause(kv, imageRepository)
 
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generateCRIOConfig.")
+		return errors.Wrap(err, "generateCRIOConfig")
 	}
 
 	if cni.Network != "" {
@@ -73,8 +73,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 }
 
 func (r *CRIO) forceSystemd() error {
-	// remove `cgroup_manager` since cri-o defaults to `systemd` if nothing set
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^cgroup_manager = .*$||' -i %s", crioConfigFile))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cgroup_manager = .*$|cgroup_manager = \"systemd\"|' -i %s", crioConfigFile))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "force systemd")
 	}
@@ -97,7 +96,7 @@ func (r *CRIO) Version() (string, error) {
 	c := exec.Command("crio", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrap(err, "crio version.")
+		return "", errors.Wrap(err, "crio version")
 	}
 
 	// crio version 1.13.0
@@ -118,7 +117,7 @@ func (r *CRIO) SocketPath() string {
 func (r *CRIO) Available() error {
 	c := exec.Command("which", "crio")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check crio available.")
+		return errors.Wrapf(err, "check crio available")
 	}
 	return nil
 }
@@ -151,18 +150,13 @@ func enableIPForwarding(cr CommandRunner) error {
 // enableRootless enables configurations for running CRI-O in Rootless Docker.
 //
 // 1. Create /etc/systemd/system/crio.service.d/10-rootless.conf to set _CRIO_ROOTLESS=1
-// 2. Create /etc/crio/crio.conf.d/10-fuse-overlayfs.conf to enable fuse-overlayfs
-// 3. Reload systemd
+// 2. Reload systemd
 //
 // See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/#configuring-cri
 func (r *CRIO) enableRootless() error {
 	files := map[string]string{
 		"/etc/systemd/system/crio.service.d/10-rootless.conf": `[Service]
 Environment="_CRIO_ROOTLESS=1"
-`,
-		"/etc/crio/crio.conf.d/10-fuse-overlayfs.conf": `[crio]
-storage_driver = "overlay"
-storage_option = ["overlay.mount_program=/usr/local/bin/fuse-overlayfs"]
 `,
 	}
 	for target, content := range files {
@@ -212,6 +206,14 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		}
 	}
 	if inUserNamespace {
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
 		if err := r.enableRootless(); err != nil {
 			return err
 		}
@@ -240,13 +242,8 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 }
 
 // ListImages returns a list of images managed by this container runtime
-func (r *CRIO) ListImages(ListImagesOptions) ([]string, error) {
-	c := exec.Command("sudo", "podman", "images", "--format", "{{.Repository}}:{{.Tag}}")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "podman images")
-	}
-	return strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n"), nil
+func (r *CRIO) ListImages(ListImagesOptions) ([]ListImage, error) {
+	return listCRIImages(r.Runner)
 }
 
 // LoadImage loads an image into this runtime
@@ -464,16 +461,6 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
-	}
-	type crictlImages struct {
-		Images []struct {
-			ID          string      `json:"id"`
-			RepoTags    []string    `json:"repoTags"`
-			RepoDigests []string    `json:"repoDigests"`
-			Size        string      `json:"size"`
-			UID         interface{} `json:"uid"`
-			Username    string      `json:"username"`
-		} `json:"images"`
 	}
 
 	var jsonImages crictlImages

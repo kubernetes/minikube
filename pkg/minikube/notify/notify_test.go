@@ -36,8 +36,7 @@ import (
 )
 
 func TestShouldCheckURLVersion(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
@@ -75,8 +74,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 }
 
 func TestShouldCheckURLBetaVersion(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 	viper.Set(config.WantUpdateNotification, true)
@@ -95,7 +93,7 @@ func TestShouldCheckURLBetaVersion(t *testing.T) {
 }
 
 type URLHandlerCorrect struct {
-	releases Releases
+	releases []Release
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -169,8 +167,7 @@ var mockLatestVersionFromURL = semver.Make
 func TestMaybePrintUpdateText(t *testing.T) {
 	latestVersionFromURL = mockLatestVersionFromURL
 
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	var tc = []struct {
 		wantUpdateNotification     bool

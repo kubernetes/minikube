@@ -48,6 +48,11 @@ var exclude = []string{
 	"    - {{.profile}}",
 	"test/integration",
 	"pkg/minikube/reason/exitcodes.go",
+	"{{.err}}",
+	"{{.extra_option_component_name}}.{{.key}}={{.value}}",
+	"{{ .name }}: {{ .rejection }}",
+	"127.0.0.1",
+	"- {{.logPath}}",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
@@ -348,6 +353,12 @@ func checkString(s string) string {
 		if e == stringToTranslate {
 			return ""
 		}
+	}
+
+	// Remove unnecessary backslashes
+	if s[0] == '"' {
+		r := strings.NewReplacer(`\\`, "\\", `\a`, "\a", `\b`, "\b", `\f`, "\f", `\n`, "\n", `\r`, "\r", `\t`, "\t", `\v`, "\v", `\"`, "\"")
+		stringToTranslate = r.Replace(stringToTranslate)
 	}
 
 	// Hooray, we can translate the string!

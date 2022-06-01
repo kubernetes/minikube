@@ -66,7 +66,7 @@ func TestAddonsList(t *testing.T) {
 			Ambassador *interface{} `json:"ambassador"`
 		}
 
-		b := make([]byte, 534)
+		b := make([]byte, 544)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)

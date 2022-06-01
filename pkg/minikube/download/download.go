@@ -28,6 +28,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
@@ -60,7 +61,7 @@ func CreateDstDownloadMock(src, dst string) error {
 // download is a well-configured atomic download function
 func download(src string, dst string) error {
 	var clientOptions []getter.ClientOption
-	if out.IsTerminal(os.Stdout) {
+	if out.IsTerminal(os.Stdout) && !detect.GithubActionRunner() {
 		progress := getter.WithProgress(DefaultProgressBar)
 		if out.JSON {
 			progress = getter.WithProgress(DefaultJSONOutput)

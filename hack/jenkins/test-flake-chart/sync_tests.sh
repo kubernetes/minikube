@@ -20,7 +20,7 @@
 # flakes or uploads flakes to flake data.
 # 
 # This script expects the following env variables:
-# MINIKUBE_LOCATION: The Github location being run on (e.g. master, 11000).
+# MINIKUBE_LOCATION: The GitHub location being run on (e.g. master, 11000).
 # COMMIT: Commit hash the tests ran on.
 # ROOT_JOB_ID: Job ID to use for synchronization.
 
@@ -83,6 +83,7 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
     SUMMARY="${BUCKET_PATH}/${ENVIRONMENT}_summary.json"
     "${DIR}/upload_tests.sh" "${SUMMARY}" || true
   done
+  "${DIR}/process_last_90/process_last_90.sh"
 else
   "${DIR}/report_flakes.sh" "${MINIKUBE_LOCATION}" "${ROOT_JOB_ID}" "${FINISHED_LIST}"
 fi

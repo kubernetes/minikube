@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 var (
@@ -34,10 +33,10 @@ var (
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
 	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.22.4"
+	DefaultKubernetesVersion = "v1.23.6"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.23.0-rc.1"
+	NewestKubernetesVersion = "v1.23.6"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.16.0"
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
@@ -60,8 +59,10 @@ const (
 	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// Docker is the default name and spelling for the docker container runtime
+	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
-	DefaultContainerRuntime = "docker"
+	DefaultContainerRuntime = ""
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
@@ -94,8 +95,12 @@ const (
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
 	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
-	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
+	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status' (in %)
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
+	// TestDiskAvailableEnv is used in integration tests for insufficient storage with 'minikube status' (in GiB)
+	TestDiskAvailableEnv = "MINIKUBE_TEST_AVAILABLE_STORAGE"
+	// MinikubeRootlessEnv is used to force Rootless Docker/Podman driver
+	MinikubeRootlessEnv = "MINIKUBE_ROOTLESS"
 
 	// scheduled stop constants
 
@@ -118,7 +123,7 @@ const (
 	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
 
 	// TimeFormat is the format that should be used when outputting time
-	TimeFormat = time.RFC1123
+	TimeFormat = time.RFC822
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
 
@@ -141,9 +146,6 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
-
-	// ReconfigurationNotRequired is the message logged when reconfiguration is not required
-	ReconfigurationNotRequired = "The running cluster does not require reconfiguration"
 )
 
 var (
@@ -181,13 +183,6 @@ var (
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
-
-	// ISOCacheDir is the path to the virtual machine image cache directory
-	ISOCacheDir = localpath.MakeMiniPath("cache", "iso")
-	// KICCacheDir is the path to the container node image cache directory
-	KICCacheDir = localpath.MakeMiniPath("cache", "kic")
-	// ImageCacheDir is the path to the container image cache directory
-	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{

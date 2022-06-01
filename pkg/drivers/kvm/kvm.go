@@ -1,5 +1,4 @@
 //go:build linux
-// +build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -29,10 +28,10 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util/retry"
+	"libvirt.org/go/libvirt"
 )
 
 // Driver is the machine driver for KVM
@@ -547,7 +546,7 @@ func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) erro
 		return nil
 	}
 
-	return dom.Undefine()
+	return dom.UndefineFlags(libvirt.DOMAIN_UNDEFINE_KEEP_NVRAM)
 }
 
 // lvErr will return libvirt Error struct containing specific libvirt error code, domain, message and level

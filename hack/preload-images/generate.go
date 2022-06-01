@@ -122,7 +122,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 	sm := sysinit.New(runner)
 
-	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
+	if err := bsutil.TransferBinaries(kcfg, runner, sm, ""); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// Create image tarball

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,11 +32,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/"
+	docURL                    = "https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/"
+	vboxSupportedMajorVersion = 5
 )
 
 func init() {
@@ -85,31 +88,52 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, path, "list", "hostinfo")
-	err = cmd.Run()
-
+	version := ""
+	cmd := exec.CommandContext(ctx, path, "--version")
+	stdout, verr := cmd.Output()
 	// Basic timeout
 	if ctx.Err() == context.DeadlineExceeded {
 		klog.Warningf("%q timed out. ", strings.Join(cmd.Args, " "))
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart VirtualBox", Doc: docURL}
 	}
 
-	if exitErr, ok := err.(*exec.ExitError); ok {
-		stderr := strings.TrimSpace(string(exitErr.Stderr))
+	if verr != nil {
+		klog.Warningf("unable to get virtualbox version, returned: %v", err)
 		return registry.State{
 			Installed: true,
-			Error:     fmt.Errorf(`%q returned: %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr),
+			Error:     fmt.Errorf(`%q returned: %v`, strings.Join(cmd.Args, " "), err),
 			Fix:       "Restart VirtualBox, or upgrade to the latest version of VirtualBox",
 			Doc:       docURL,
 		}
 	}
 
-	if err != nil {
+	version = string(stdout)
+	// some warnings related to VirtualBox configs are always printed along with version string
+	// ex:
+	// WARNING: The character device /dev/vboxdrv does not exist.
+	// Please install the virtualbox-dkms package and the appropriate
+	// headers, most likely linux-headers-generic.
+	// You will not be able to start VMs until this problem is fixed.
+	// 6.1.26_Ubuntur145957
+	tempSlice := strings.Split(version, "\n")
+	if len(tempSlice) > 2 {
 		return registry.State{
 			Installed: true,
-			Error:     fmt.Errorf("%s failed: %v", strings.Join(cmd.Args, " "), err),
+			Error:     fmt.Errorf(`warning from virtualbox %s`, version),
+			Fix:       "Read the docs for resolution",
+			Doc:       docURL,
 		}
 	}
 
-	return registry.State{Installed: true, Healthy: true}
+	majorVers := (strings.Split(version, "."))[0]
+	majorVersInt, cerr := strconv.Atoi(majorVers)
+	if cerr != nil {
+		klog.Warningf("unable to convert major version: %s of vbox to an int %v", majorVers, cerr)
+	} else if majorVersInt < vboxSupportedMajorVersion {
+		out.WarningT("Minimum VirtualBox Version supported: {{.vers}}, current VirtualBox version: {{.cvers}}", out.V{"vers": vboxSupportedMajorVersion, "cvers": majorVersInt})
+	}
+
+	klog.Infof("virtual box version: %s", version)
+
+	return registry.State{Installed: true, Healthy: true, Version: version}
 }

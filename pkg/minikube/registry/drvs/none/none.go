@@ -1,5 +1,4 @@
 //go:build linux
-// +build linux
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -58,10 +57,6 @@ func status() registry.State {
 	_, err := exec.LookPath("iptables")
 	if err != nil {
 		return registry.State{Running: true, Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
-	}
-
-	if _, err := exec.LookPath("docker"); err != nil {
-		return registry.State{Running: true, Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
 	u, err := user.Current()

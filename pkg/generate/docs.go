@@ -51,7 +51,7 @@ func Docs(root *cobra.Command, path string, testPath string, codePath string) er
 		return errors.Wrap(err, "failed to generate test docs")
 	}
 
-	return ErrorCodes(codePath, []string{"pkg/minikube/reason/exitcodes.go", "pkg/minikube/reason/reason.go"})
+	return ErrorCodes(codePath, []string{"pkg/minikube/reason/reason.go", "pkg/minikube/reason/exitcodes.go"})
 }
 
 // DocForCommand returns the specific doc for that command
