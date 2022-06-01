@@ -85,11 +85,11 @@ require (
 	google.golang.org/api v0.79.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.24.0
-	k8s.io/apimachinery v0.24.0
-	k8s.io/client-go v0.24.0
+	k8s.io/api v0.24.1
+	k8s.io/apimachinery v0.24.1
+	k8s.io/client-go v0.24.1
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.24.0
+	k8s.io/component-base v0.24.1
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/kubectl v0.24.0
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
