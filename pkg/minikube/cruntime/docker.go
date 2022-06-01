@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -700,7 +699,7 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 		return errors.Wrap(err, "failed to execute template")
 	}
 	criDockerService := b.Bytes()
-	c := exec.Command("sudo", "mkdir", "-p", filepath.Dir(CRIDockerServiceConfFile))
+	c := exec.Command("sudo", "mkdir", "-p", path.Dir(CRIDockerServiceConfFile))
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "failed to create directory")
 	}
