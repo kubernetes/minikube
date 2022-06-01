@@ -39,7 +39,9 @@ func TestMinikubeProfile(t *testing.T) {
 	defer CleanupWithLogs(t, profiles[0], cancel)
 	defer CleanupWithLogs(t, profiles[1], cancel)
 	for _, p := range profiles {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "start", "-p", p))
+		c := []string{"start", "-p", p}
+		c = append(c, StartArgs()...)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), c...))
 		if err != nil {
 			t.Fatalf("test pre-condition failed. args %q: %v", rr.Command(), err)
 		}
