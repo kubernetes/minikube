@@ -25,15 +25,16 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/network"
 )
 
-// firstSubnetAddr subnet to be used on first kic cluster
+// defaultFirstSubnetAddr is a first subnet to be used on first kic cluster
 // it is one octet more than the one used by KVM to avoid possible conflict
-const firstSubnetAddr = "192.168.49.0"
+const defaultFirstSubnetAddr = "192.168.49.0"
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
@@ -53,8 +54,16 @@ func defaultBridgeName(ociBin string) string {
 	}
 }
 
+func firstSubnetAddr(subnet string) string {
+	if subnet == "" {
+		return defaultFirstSubnetAddr
+	}
+
+	return subnet
+}
+
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
+func CreateNetwork(ociBin, networkName, subnet string) (net.IP, error) {
 	defaultBridgeName := defaultBridgeName(ociBin)
 	if networkName == defaultBridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
@@ -76,7 +85,7 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	}
 
 	// retry up to 5 times to create container network
-	for attempts, subnetAddr := 0, firstSubnetAddr; attempts < 5; attempts++ {
+	for attempts, subnetAddr := 0, firstSubnetAddr(subnet); attempts < 5; attempts++ {
 		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
 		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
 		var subnet *network.Parameters
@@ -213,7 +222,16 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 }
 
 var podmanInspectGetter = func(name string) (*RunResult, error) {
-	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
+	v, err := podmanVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "podman version")
+	}
+	format := `{{range .}}{{if eq .Driver "bridge"}}{{(index .Subnets 0).Subnet}},{{(index .Subnets 0).Gateway}}{{end}}{{end}}`
+	if v.LT(semver.Version{Major: 4, Minor: 0, Patch: 0}) {
+		// format was changed in Podman 4.0.0: https://github.com/kubernetes/minikube/issues/13861#issuecomment-1082639236
+		format = `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`
+	}
+	cmd := exec.Command(Podman, "network", "inspect", name, "--format", format)
 	return runCmd(cmd)
 }
 

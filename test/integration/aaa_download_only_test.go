@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
@@ -27,7 +26,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -143,7 +141,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
-					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
+					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, v, bin)
 					_, err := os.Stat(fp)
 					if err != nil {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
@@ -161,7 +159,7 @@ func TestDownloadOnly(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					binary = "kubectl.exe"
 				}
-				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
+				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, runtime.GOARCH, v, binary)
 				if _, err := os.Stat(fp); err != nil {
 					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
 				}
@@ -276,11 +274,7 @@ func TestBinaryMirror(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
-	tmpDir, err := ioutil.TempDir("", "kb_test")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Start test server which will serve binary files
 	ts := httptest.NewServer(

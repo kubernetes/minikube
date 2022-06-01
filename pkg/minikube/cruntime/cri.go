@@ -140,13 +140,14 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 
 // pauseContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc"}
+	baseArgs := []string{"runc"}
 	if root != "" {
-		args = append(args, "--root", root)
+		baseArgs = append(baseArgs, "--root", root)
 	}
-	args = append(args, "pause")
+	baseArgs = append(baseArgs, "pause")
 	for _, id := range ids {
-		args := append(args, id)
+		args := baseArgs
+		args = append(args, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}

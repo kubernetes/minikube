@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -30,11 +29,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/util"
 )
 
 // TestStartStop tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
@@ -60,6 +61,7 @@ func TestStartStop(t *testing.T) {
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
+				// TODO: Remove network-plugin config when newest is 1.24
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
@@ -111,6 +113,21 @@ func TestStartStop(t *testing.T) {
 				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
+
+				version, err := util.ParseKubernetesVersion(tc.version)
+				if err != nil {
+					t.Errorf("failed to parse %s: %v", tc.version, err)
+				}
+				if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+					args := []string{}
+					for _, arg := range startArgs {
+						if arg == "--extra-config=kubelet.network-plugin=cni" {
+							continue
+						}
+						args = append(args, arg)
+					}
+					startArgs = args
+				}
 
 				t.Run("serial", func(t *testing.T) {
 					serialTests := []struct {
@@ -431,10 +448,10 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 // Remove container-specific prefixes for naming consistency
 // for example in `docker` runtime we get this:
 // 		$ docker@minikube:~$ sudo crictl images -o json | grep dash
-// 	         "kubernetesui/dashboard:v2.1.0"
+// 	         "kubernetesui/dashboard:v2.5.1"
 // but for 'containerd' we get full name
 // 		$ docker@minikube:~$  sudo crictl images -o json | grep dash
-//        	 "docker.io/kubernetesui/dashboard:v2.1.0"
+//        	 "docker.io/kubernetesui/dashboard:v2.5.1"
 func trimImageName(name string) string {
 	name = strings.TrimPrefix(name, "docker.io/")
 	name = strings.TrimPrefix(name, "localhost/")

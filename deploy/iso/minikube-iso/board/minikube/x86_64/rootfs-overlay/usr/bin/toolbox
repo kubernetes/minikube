@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+machine=$(uname -m)
+
+case ${machine} in
+	aarch64 )
+		TOOLBOX_DOCKER_IMAGE=arm64v8/fedora
+		TOOLBOX_DOCKER_TAG=latest
+		;;
+	x86_64 )
+		TOOLBOX_DOCKER_IMAGE=fedora
+		TOOLBOX_DOCKER_TAG=latest
+		;;
+	* )
+		echo "Warning: Unknown machine type ${machine}" >&2
+		;;
+esac
+
+TOOLBOX_USER=root
+TOOLBOX_DIRECTORY="/var/lib/toolbox"
+TOOLBOX_BIND="--bind=/:/media/root --bind=/usr:/media/root/usr --bind=/run:/media/root/run"
+# Ex: "--setenv=KEY=VALUE"
+TOOLBOX_ENV=""
+
+toolboxrc="${HOME}"/.toolboxrc
+
+# System defaults
+if [ -f "/etc/default/toolbox" ]; then
+	source "/etc/default/toolbox"
+fi
+
+# User overrides
+if [ -f "${toolboxrc}" ]; then
+	source "${toolboxrc}"
+fi
+
+if [[ -n "${TOOLBOX_DOCKER_IMAGE}" ]] && [[ -n "${TOOLBOX_DOCKER_TAG}" ]]; then
+	TOOLBOX_NAME=${TOOLBOX_DOCKER_IMAGE}-${TOOLBOX_DOCKER_TAG}
+	have_docker_image="y"
+fi
+
+machinename=$(echo "${USER}-${TOOLBOX_NAME}" | sed -r 's/[^a-zA-Z0-9_.-]/_/g')
+machinepath="${TOOLBOX_DIRECTORY}/${machinename}"
+osrelease="${machinepath}/etc/os-release"
+if [ ! -f "${osrelease}" ] || systemctl is-failed -q "${machinename}" ; then
+	sudo mkdir -p "${machinepath}"
+	sudo chown "${USER}:" "${machinepath}"
+
+	if [[ -n "${have_docker_image}" ]]; then
+		piid=$(sudo --preserve-env podman pull "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
+		pcid=$(sudo --preserve-env podman create "${piid}")
+		mnt=$(sudo --preserve-env podman mount "${pcid}")
+		sudo --preserve-env rsync -ax "${mnt}"/ "${machinepath}"/
+		sudo --preserve-env podman unmount "${pcid}"
+		sudo --preserve-env podman rm "${pcid}"
+		sudo --preserve-env podman rmi "${piid}"
+	else
+		echo "Error: No toolbox filesystem specified." >&2
+		exit 1
+	fi
+	sudo touch "${osrelease}"
+fi
+
+# Special case for when SSH tries to pass a shell command with -c
+if [ "x${1-}" == x-c ]; then
+	set /bin/sh "$@"
+fi
+
+sudo SYSTEMD_NSPAWN_SHARE_SYSTEM=1 systemd-nspawn \
+	--directory="${machinepath}" \
+	--capability=all \
+        ${TOOLBOX_BIND} \
+        ${TOOLBOX_ENV} \
+	--user="${TOOLBOX_USER}" "$@"

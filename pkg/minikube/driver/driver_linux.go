@@ -25,6 +25,8 @@ var supportedDrivers = []string{
 	VirtualBox,
 	VMwareFusion,
 	KVM2,
+	QEMU2,
+	QEMU,
 	VMware,
 	None,
 	Docker,

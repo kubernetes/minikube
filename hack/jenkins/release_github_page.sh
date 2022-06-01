@@ -14,15 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script generates the Github Release page and uploads all the binaries/etc to that page
+# This script generates the GitHub Release page and uploads all the binaries/etc to that page
 # This is intended to be run on a new release tag in order to generate the github release page for that release
 
 # The script expects the following env variables:
 # VERSION_MAJOR: The major version of the tag to be released.
 # VERSION_MINOR: The minor version of the tag to be released.
 # VERSION_BUILD: The build version of the tag to be released.
-# ISO_SHA256: The sha 256 of the minikube-iso for the current release.
-# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
+# ISO_SHA256_AMD64: The sha 256 of the amd64 minikube-iso for the current release.
+# ISO_SHA256_ARM64: The sha 256 of the arm64 minikube-iso for the current release.
+# GITHUB_TOKEN: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
@@ -62,7 +63,8 @@ See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
 ## ISO Checksum
 
-\`${ISO_SHA256}\`"
+amd64: \`${ISO_SHA256_AMD64}\`  
+arm64: \`${ISO_SHA256_ARM64}\`"
 
 # ================================================================================
 # Deleting release from github before creating new one

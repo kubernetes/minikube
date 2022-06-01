@@ -11,7 +11,7 @@ Returns a URL to connect to a service
 
 ### Synopsis
 
-Returns the Kubernetes URL for a service in your local cluster. In the case of multiple URLs they will be printed one at a time.
+Returns the Kubernetes URL(s) for service(s) in your local cluster. In the case of multiple URLs they will be printed one at a time.
 
 ```shell
 minikube service [flags] SERVICE
@@ -20,6 +20,7 @@ minikube service [flags] SERVICE
 ### Options
 
 ```
+      --all                Forwards all services in a namespace (defaults to "false")
       --format string      Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --https              Open the service URL with https instead of http (defaults to "false")
       --interval int       The initial time interval for each check that wait performs in seconds (default 1)
@@ -42,6 +43,7 @@ minikube service [flags] SERVICE
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -78,6 +80,7 @@ minikube service help [command] [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -119,6 +122,7 @@ minikube service list [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

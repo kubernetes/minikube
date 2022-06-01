@@ -33,7 +33,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -46,7 +46,7 @@ var (
 
 // imagePathInCache returns path in local cache directory
 func imagePathInCache(img string) string {
-	f := filepath.Join(constants.KICCacheDir, path.Base(img)+".tar")
+	f := filepath.Join(detect.KICCacheDir(), path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 	return f
 }
@@ -222,7 +222,7 @@ func CacheToDaemon(img string) error {
 
 // ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
 func ImageToDaemon(img string) error {
-	fileLock := filepath.Join(constants.KICCacheDir, path.Base(img)+".d.lock")
+	fileLock := filepath.Join(detect.KICCacheDir(), path.Base(img)+".d.lock")
 	fileLock = localpath.SanitizeCacheDir(fileLock)
 
 	releaser, err := lockDownload(fileLock)

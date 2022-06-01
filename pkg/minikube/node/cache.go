@@ -137,12 +137,10 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
 
-			if driver.IsDocker(cc.Driver) {
-				if download.ImageExistsInDaemon(img) {
-					klog.Infof("%s exists in daemon, skipping load", img)
-					finalImg = img
-					return nil
-				}
+			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
+				klog.Infof("%s exists in daemon, skipping load", img)
+				finalImg = img
+				return nil
 			}
 
 			klog.Infof("Downloading %s to local cache", img)
@@ -228,7 +226,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return image.SaveToDir(images, constants.ImageCacheDir, false)
+	return image.SaveToDir(images, detect.ImageCacheDir(), false)
 }
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file

@@ -41,8 +41,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -65,7 +65,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := image.SaveToDir(images, constants.ImageCacheDir, false); err != nil {
+	if err := image.SaveToDir(images, detect.ImageCacheDir(), false); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
@@ -192,11 +192,11 @@ func CacheAndLoadImages(images []string, profiles []*config.Profile, overwrite b
 	}
 
 	// This is the most important thing
-	if err := image.SaveToDir(images, constants.ImageCacheDir, overwrite); err != nil {
+	if err := image.SaveToDir(images, detect.ImageCacheDir(), overwrite); err != nil {
 		return errors.Wrap(err, "save to dir")
 	}
 
-	return DoLoadImages(images, profiles, constants.ImageCacheDir, overwrite)
+	return DoLoadImages(images, profiles, detect.ImageCacheDir(), overwrite)
 }
 
 // DoLoadImages loads images to all profiles
@@ -382,7 +382,7 @@ func SaveAndCacheImages(images []string, profiles []*config.Profile) error {
 		return nil
 	}
 
-	return DoSaveImages(images, "", profiles, constants.ImageCacheDir)
+	return DoSaveImages(images, "", profiles, detect.ImageCacheDir())
 }
 
 // DoSaveImages saves images from all profiles

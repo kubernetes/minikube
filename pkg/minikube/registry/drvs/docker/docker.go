@@ -22,12 +22,13 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -37,8 +38,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-var docURL = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
-var minDockerVersion = []int{18, 9, 0}
+const (
+	docURL                   = "https://minikube.sigs.k8s.io/docs/drivers/docker/"
+	minDockerVersion         = "18.09.0"
+	recommendedDockerVersion = "20.10.0"
+)
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -83,6 +87,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ExtraArgs:         extraArgs,
 		Network:           cc.Network,
+		Subnet:            cc.Subnet,
 		ListenAddress:     cc.ListenAddress,
 	}), nil
 }
@@ -130,11 +135,13 @@ func status() (retState registry.State) {
 	}()
 
 	klog.Infof("docker version: %s", o)
-	s := checkDockerVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
-	if s.Error != nil {
-		return s
+	if !viper.GetBool("force") {
+		s := checkDockerVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
+		if s.Error != nil {
+			return s
+		}
+		recordImprovement(s)
 	}
-	recordImprovement(s)
 
 	si, err := oci.CachedDaemonInfo("docker")
 	if err != nil {
@@ -174,8 +181,9 @@ func checkDockerVersion(o string) registry.State {
 		}
 	}
 
-	hintInstallOfficial := fmt.Sprintf("Install the official release of %s (Minimum recommended version is %2d.%02d.%d, current version is %s)",
-		driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2], parts[1])
+	versionMsg := fmt.Sprintf("(Minimum recommended version is %s, minimum supported version is %s, current version is %s)", recommendedDockerVersion, minDockerVersion, parts[1])
+	hintInstallOfficial := fmt.Sprintf("Install the official release of %s %s", driver.FullName(driver.Docker), versionMsg)
+	hintUpdate := fmt.Sprintf("Upgrade %s to a newer version %s", driver.FullName(driver.Docker), versionMsg)
 
 	p := strings.SplitN(parts[1], ".", 3)
 	switch l := len(p); l {
@@ -195,31 +203,40 @@ func checkDockerVersion(o string) registry.State {
 		}
 	}
 
-	for i, s := range p {
-		k, err := strconv.Atoi(s)
-		if err != nil {
-			return registry.State{
-				Installed:        true,
-				Healthy:          true,
-				NeedsImprovement: true,
-				Fix:              hintInstallOfficial,
-				Doc:              docURL,
-			}
-		}
-
-		if k > minDockerVersion[i] {
-			return registry.State{Installed: true, Healthy: true, Error: nil}
-		} else if k < minDockerVersion[i] {
-			return registry.State{
-				Installed:        true,
-				Healthy:          true,
-				NeedsImprovement: true,
-				Fix:              fmt.Sprintf("Upgrade %s to a newer version (Minimum recommended version is %2d.%02d.%d)", driver.FullName(driver.Docker), minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
-				Doc:              docURL + "#requirements"}
+	currSemver, err := semver.ParseTolerant(strings.Join(p, "."))
+	if err != nil {
+		return registry.State{
+			Installed:        true,
+			Healthy:          true,
+			NeedsImprovement: true,
+			Fix:              hintInstallOfficial,
+			Doc:              docURL,
 		}
 	}
+	// these values are consts and their conversions are covered in unit tests
+	minSemver, _ := semver.ParseTolerant(minDockerVersion)
+	recSemver, _ := semver.ParseTolerant(recommendedDockerVersion)
 
-	return registry.State{Installed: true, Healthy: true, Error: nil}
+	if currSemver.GTE(recSemver) {
+		return registry.State{Installed: true, Healthy: true, Error: nil}
+	}
+	if currSemver.GTE(minSemver) {
+		return registry.State{
+			Installed:        true,
+			Healthy:          true,
+			NeedsImprovement: true,
+			Fix:              hintUpdate,
+			Doc:              docURL + "#requirements"}
+	}
+
+	return registry.State{
+		Reason:           "PROVIDER_DOCKER_VERSION_LOW",
+		Error:            oci.ErrMinDockerVersion,
+		Installed:        true,
+		Healthy:          false,
+		NeedsImprovement: true,
+		Fix:              hintUpdate,
+		Doc:              docURL + "#requirements"}
 }
 
 // checkNeedsImprovement if overlay mod is installed on a system

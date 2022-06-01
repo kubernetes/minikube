@@ -100,6 +100,13 @@ sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
 # install gotestsum if not present
 GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
 
+# install cron jobs
+if [ "$OS" == "linux" ]; then
+  source ./installers/check_install_linux_crons.sh
+else
+  source ./installers/check_install_osx_crons.sh
+fi
+
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
 docker system df || true
@@ -414,7 +421,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-${OS_ARCH}"
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 

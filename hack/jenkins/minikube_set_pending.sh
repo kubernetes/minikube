@@ -15,14 +15,14 @@
 # limitations under the License.
 
 
-# This script creates several Github statuses using the Github API: https://developer.github.com/v3/repos/statuses/
-# This is intended to run before the tests start, so the icons show up on the Github PR and block submit until
+# This script creates several GitHub statuses using the GitHub API: https://developer.github.com/v3/repos/statuses/
+# This is intended to run before the tests start, so the icons show up on the GitHub PR and block submit until
 # the tests finish.
 
 # The script expects the following env variables:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
-# access_token: The Github API access token. Injected by the Jenkins credential provider.
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -eux -o pipefail
 

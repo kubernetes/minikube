@@ -20,9 +20,9 @@
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The Github API access token. Injected by the Jenkins credential provider.
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
-set -ex
+set -x
 
 gcloud cloud-shell ssh --authorize-session << EOF
  OS="linux"
@@ -48,3 +48,14 @@ gcloud cloud-shell ssh --authorize-session << EOF
  chmod +x ./common.sh
  source ./common.sh
 EOF
+
+code=$?
+if [ $code -gt 0 ]; then
+    curl -L -u minikube-bot:${access_token} \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"state\": \"failure\", \"description\": \"Jenkins: Cloud Shell failed to start\", \"target_url\": \"https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/Docker_Cloud_Shell.html\", \"context\": \"Docker_Cloud_Shell\"}"
+fi
+
+exit $code

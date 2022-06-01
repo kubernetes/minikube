@@ -97,8 +97,7 @@ func TestAssetsFromDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			testDir := testutil.MakeTempDir()
-			defer testutil.RemoveTempDir(testDir)
+			testDir := testutil.MakeTempDir(t)
 
 			testDirs = append(testDirs, testDir)
 			testFileBaseDir := filepath.Join(testDir, test.baseDir)
