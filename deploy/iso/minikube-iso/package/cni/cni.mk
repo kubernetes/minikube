@@ -12,6 +12,11 @@ CNI_LICENSE_FILES = LICENSE
 
 CNI_DEPENDENCIES = host-go
 
+CNI_GOARCH=amd64
+ifeq ($(BR2_aarch64),y)
+CNI_GOARCH=arm64
+endif
+
 CNI_GOPATH = $(@D)/_output
 CNI_MAKE_ENV = \
 	$(GO_TARGET_ENV) \
@@ -20,6 +25,7 @@ CNI_MAKE_ENV = \
 	GOPATH="$(CNI_GOPATH)" \
 	GOBIN="$(CNI_GOPATH)/bin" \
 	PATH=$(CNI_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=$(CNI_GOARCH)
 
 CNI_BUILDFLAGS = -a --ldflags '-extldflags \"-static\"'
 

@@ -10,14 +10,18 @@ CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
 CRIO_BIN_GOPATH = $(@D)/_output
+CRIO_BIN_GOARCH=amd64
+ifeq ($(BR2_aarch64),y)
+CRIO_BIN_GOARCH=arm64
+endif
 CRIO_BIN_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
 	GO111MODULE=off \
 	GOPATH="$(CRIO_BIN_GOPATH)" \
 	GOBIN="$(CRIO_BIN_GOPATH)/bin" \
-	PATH=$(CRIO_BIN_GOPATH)/bin:$(BR_PATH)
-
+	PATH=$(CRIO_BIN_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=$(CRIO_BIN_GOARCH)
 
 define CRIO_BIN_USERS
 	- -1 crio-admin -1 - - - - -

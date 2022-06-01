@@ -11,14 +11,19 @@ ifeq ($(BR2_INIT_SYSTEMD),y)
 PODMAN_DEPENDENCIES += systemd
 endif
 
+PODMAN_GOARCH=amd64
+ifeq ($(BR2_aarch64),y)
+PODMAN_GOARCH=arm64
+endif
+
 PODMAN_GOPATH = $(@D)/_output
 PODMAN_BIN_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
 	GOPATH="$(PODMAN_GOPATH)" \
 	GOBIN="$(PODMAN_GOPATH)/bin" \
-	PATH=$(PODMAN_GOPATH)/bin:$(BR_PATH)
-
+	PATH=$(PODMAN_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=$(PODMAN_GOARCH)
 
 define PODMAN_USERS
 	- -1 podman -1 - - - - -

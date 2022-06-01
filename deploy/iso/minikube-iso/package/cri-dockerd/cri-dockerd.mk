@@ -13,6 +13,11 @@ CRI_DOCKERD_SOURCE = $(CRI_DOCKERD_VERSION).tar.gz
 
 CRI_DOCKERD_DEPENDENCIES = host-go
 
+CRI_DOCKERD_GOARCH=amd64
+ifeq ($(BR2_aarch64),y)
+CRI_DOCKERD_GOARCH=arm64
+endif
+
 CRI_DOCKERD_GOPATH = $(@D)/_output
 CRI_DOCKERD_ENV = \
 	$(GO_TARGET_ENV) \
@@ -21,6 +26,7 @@ CRI_DOCKERD_ENV = \
 	GOPATH="$(CRI_DOCKERD_GOPATH)" \
 	GOBIN="$(CRI_DOCKERD_GOPATH)/bin" \
 	PATH=$(CRI_DOCKERD_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=$(CRI_DOCKERD_GOARCH)
 
 CRI_DOCKERD_COMPILE_SRC = $(CRI_DOCKERD_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_REV)'"
