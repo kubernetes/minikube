@@ -355,6 +355,12 @@ func checkString(s string) string {
 		}
 	}
 
+	// Remove unnecessary backslashes
+	if s[0] == '"' {
+		r := strings.NewReplacer(`\\`, "\\", `\a`, "\a", `\b`, "\b", `\f`, "\f", `\n`, "\n", `\r`, "\r", `\t`, "\t", `\v`, "\v", `\"`, "\"")
+		stringToTranslate = r.Replace(stringToTranslate)
+	}
+
 	// Hooray, we can translate the string!
 	return stringToTranslate
 }

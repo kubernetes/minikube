@@ -51,9 +51,18 @@ ln -s $(which minikube) /usr/local/bin/kubectl
 {{% windowstab %}}
 You can also alias kubectl for easier usage.
 
+Powershell.
+
 ```shell
 function kubectl { minikube kubectl -- $args }
 ```
+
+Command Prompt.
+
+```shell
+doskey kubectl=minikube kubectl $*
+```
+
 
 {{% /windowstab %}}
 

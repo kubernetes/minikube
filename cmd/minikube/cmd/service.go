@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"net/url"
@@ -84,6 +85,12 @@ var serviceCmd = &cobra.Command{
 
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
+
+		// Bail cleanly for qemu2 until implemented
+		if driver.IsQEMU(co.Config.Driver) {
+			exit.Message(reason.Unimplemented, "minikube service is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		}
+
 		var services service.URLs
 		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
@@ -102,10 +109,14 @@ var serviceCmd = &cobra.Command{
 			services = newServices
 		}
 
+		if len(services) == 0 {
+			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
+		}
+
 		var data [][]string
-		var openUrls []string
 		for _, svc := range services {
-			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, true, https, wait, interval)
+			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, https, wait, interval)
 
 			if err != nil {
 				var s *service.SVCNotFoundError
@@ -128,33 +139,21 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 				}
 
 				data = append(data, []string{svc.Namespace, svc.Name, servicePortNames, serviceURLs})
+
+				if serviceURLMode && !driver.NeedsPortForward(co.Config.Driver) {
+					out.String(fmt.Sprintf("%s\n", serviceURLs))
+				}
 			}
 		}
 
-		if (!serviceURLMode && serviceURLFormat != defaultServiceFormatTemplate && !all) || all {
-			service.PrintServiceList(os.Stdout, data)
-		} else if serviceURLMode && !all {
-			for _, u := range data {
-				out.String(fmt.Sprintf("%s\n", u[3]))
-			}
-		}
-
-		if driver.NeedsPortForward(co.Config.Driver) {
-			startKicServiceTunnel(args, services, cname, co.Config.Driver)
-			return
-		}
-
-		if !serviceURLMode && !all && len(args) == 1 {
-			openURLs(args[0], openUrls)
+		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) && services != nil {
+			startKicServiceTunnel(services, cname, co.Config.Driver)
+		} else if driver.NeedsPortForward(co.Config.Driver) && driver.IsQEMU(co.Config.Driver) && services != nil {
+			startQemuServiceTunnel(services, cname, co.Config.Driver)
+		} else if !serviceURLMode {
+			openURLs(data)
 		}
 	},
-}
-
-func shouldOpen(args []string) bool {
-	if !serviceURLMode && !all && len(args) == 1 {
-		return true
-	}
-	return false
 }
 
 func init() {
@@ -168,7 +167,7 @@ func init() {
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 }
 
-func startKicServiceTunnel(args []string, services service.URLs, configName, driverName string) {
+func startKicServiceTunnel(services service.URLs, configName, driverName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
@@ -186,23 +185,36 @@ func startKicServiceTunnel(args []string, services service.URLs, configName, dri
 		sshPort := strconv.Itoa(port)
 		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
 
-		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1())
+		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), serviceURLMode)
 		urls, err := serviceTunnel.Start(svc.Name, namespace)
+
 		if err != nil {
 			exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
 		}
+		// mutate response urls to HTTPS if needed
+		urls, err = mutateURLs(svc.Name, urls)
+
+		if err != nil {
+			exit.Error(reason.SvcTunnelStart, "error creatings urls", err)
+		}
+
 		defer serviceTunnel.Stop()
+		svc.URLs = urls
 		data = append(data, []string{namespace, svc.Name, "", strings.Join(urls, "\n")})
 	}
 
 	time.Sleep(1 * time.Second)
 
-	if !serviceURLMode && serviceURLFormat != defaultServiceFormatTemplate && !all {
+	if !serviceURLMode {
 		service.PrintServiceList(os.Stdout, data)
+	} else {
+		for _, row := range data {
+			out.String(fmt.Sprintf("%s\n", row[3]))
+		}
 	}
 
-	if shouldOpen(args) {
-		openURLs(services[0].Name, services[0].URLs)
+	if !serviceURLMode {
+		openURLs(data)
 	}
 
 	out.WarningT("Because you are using a Docker driver on {{.operating_system}}, the terminal needs to be open to run it.", out.V{"operating_system": runtime.GOOS})
@@ -210,11 +222,47 @@ func startKicServiceTunnel(args []string, services service.URLs, configName, dri
 	<-ctrlC
 }
 
-func openURLs(svc string, urls []string) {
-	for _, u := range urls {
-		_, err := url.Parse(u)
+func startQemuServiceTunnel(services service.URLs, configName, driverName string) {
+}
+
+func mutateURLs(serviceName string, urls []string) ([]string, error) {
+	formattedUrls := make([]string, 0)
+	for _, rawURL := range urls {
+		var doc bytes.Buffer
+		parsedURL, err := url.Parse(rawURL)
 		if err != nil {
-			klog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+			exit.Error(reason.SvcTunnelStart, "No valid URL found for tunnel.", err)
+		}
+		port, err := strconv.Atoi(parsedURL.Port())
+		if err != nil {
+			exit.Error(reason.SvcTunnelStart, "No valid port found for tunnel.", err)
+		}
+		err = serviceURLTemplate.Execute(&doc, struct {
+			IP   string
+			Port int32
+			Name string
+		}{
+			parsedURL.Hostname(),
+			int32(port),
+			serviceName,
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		httpsURL, _ := service.OptionallyHTTPSFormattedURLString(doc.String(), https)
+		formattedUrls = append(formattedUrls, httpsURL)
+	}
+
+	return formattedUrls, nil
+}
+
+func openURLs(urls [][]string) {
+	for _, u := range urls {
+		_, err := url.Parse(u[3])
+		if err != nil {
+			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
 			out.String(fmt.Sprintf("%s\n", u))
 			continue
 		}
@@ -224,8 +272,8 @@ func openURLs(svc string, urls []string) {
 			continue
 		}
 
-		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
-		if err := browser.OpenURL(u); err != nil {
+		out.Styled(style.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": u[1]})
+		if err := browser.OpenURL(u[3]); err != nil {
 			exit.Error(reason.HostBrowser, fmt.Sprintf("open url failed: %s", u), err)
 		}
 	}

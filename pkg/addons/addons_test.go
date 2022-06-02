@@ -30,20 +30,9 @@ import (
 
 func createTestProfile(t *testing.T) string {
 	t.Helper()
-	td, err := os.MkdirTemp("", "profile")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
+	td := t.TempDir()
 
-	t.Cleanup(func() {
-		err := os.RemoveAll(td)
-		t.Logf("remove path %q", td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	})
-	err = os.Setenv(localpath.MinikubeHome, td)
-	if err != nil {
+	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}
 
@@ -130,8 +119,7 @@ func TestSetAndSave(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	// this test will write a config.json into MinikubeHome, create a temp dir for it
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tests.MakeTempDir(t)
 
 	cc := &config.ClusterConfig{
 		Name:             "start",

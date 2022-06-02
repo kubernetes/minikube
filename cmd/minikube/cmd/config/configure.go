@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -233,6 +234,26 @@ var addonsConfigureCmd = &cobra.Command{
 
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+			}
+		case "registry-aliases":
+			profile := ClusterFlagValue()
+			_, cfg := mustload.Partial(profile)
+			validator := func(s string) bool {
+				format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
+				return format.MatchString(s)
+			}
+			registryAliases := AskForStaticValidatedValue("-- Enter registry aliases separated by space: ", validator)
+			cfg.KubernetesConfig.RegistryAliases = registryAliases
+
+			if err := config.SaveProfile(profile, cfg); err != nil {
+				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+			}
+			addon := assets.Addons["registry-aliases"]
+			if addon.IsEnabled(cfg) {
+				// Re-enable registry-aliases addon in order to generate template manifest files with custom hosts
+				if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true"); err != nil {
+					out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
+				}
 			}
 
 		default:

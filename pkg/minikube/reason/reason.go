@@ -71,6 +71,9 @@ var (
 	// user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
 
+	// this feature is unimplemented for whatever reason
+	Unimplemented = Kind{ID: "MK_UNIMPLEMENTED", ExitCode: ExProgramUnsupported}
+
 	// minikube failed to create a new Docker Machine api client
 	NewAPIClient = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	// minikube could not disable an addon, e.g. dashboard addon
@@ -95,7 +98,7 @@ var (
 	InternalConfigUnset = Kind{ID: "MK_CONFIG_UNSET", ExitCode: ExProgramError}
 	// minikube failed to view current config values
 	InternalConfigView = Kind{ID: "MK_CONFIG_VIEW", ExitCode: ExProgramError}
-	// minikybe failed to delete an internal configuration, such as a cached image
+	// minikube failed to delete an internal configuration, such as a cached image
 	InternalDelConfig = Kind{ID: "MK_DEL_CONFIG", ExitCode: ExProgramError}
 	// minikube failed to generate script to activate minikube docker-env
 	InternalDockerScript = Kind{ID: "MK_DOCKER_SCRIPT", ExitCode: ExProgramError}

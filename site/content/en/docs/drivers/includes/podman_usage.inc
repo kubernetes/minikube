@@ -21,3 +21,14 @@ To make podman the default driver:
 ```shell
 minikube config set driver podman
 ```
+
+## Rootless Podman
+
+By default, minikube executes Podman with `sudo`.
+To use Podman without `sudo` (i.e., Rootless Podman), set the `rootless` property to `true`:
+
+```shell
+minikube config set rootless true
+```
+
+See the [Rootless Docker](https://minikube.sigs.k8s.io/docs/drivers/docker/#rootless-docker) section for the requirements and the restrictions.

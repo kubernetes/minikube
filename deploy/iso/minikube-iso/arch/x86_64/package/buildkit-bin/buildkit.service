@@ -1,0 +1,11 @@
+[Unit]
+Description=BuildKit
+Requires=buildkit.socket
+After=buildkit.socket
+Documentation=https://github.com/moby/buildkit
+
+[Service]
+ExecStart=/usr/sbin/buildkitd --addr fd://
+
+[Install]
+WantedBy=multi-user.target

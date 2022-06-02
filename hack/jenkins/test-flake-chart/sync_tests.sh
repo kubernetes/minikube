@@ -20,7 +20,7 @@
 # flakes or uploads flakes to flake data.
 # 
 # This script expects the following env variables:
-# MINIKUBE_LOCATION: The Github location being run on (e.g. master, 11000).
+# MINIKUBE_LOCATION: The GitHub location being run on (e.g. master, 11000).
 # COMMIT: Commit hash the tests ran on.
 # ROOT_JOB_ID: Job ID to use for synchronization.
 

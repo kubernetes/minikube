@@ -12,15 +12,18 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.17.7'
+  GO_VERSION: '1.18.2'
+permissions:
+  contents: read
+
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -39,15 +42,15 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: minikube_binaries
           path: out
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -65,8 +68,8 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -84,6 +87,8 @@ jobs:
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
   functional_docker_ubuntu:
+    permissions:
+      contents: none
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -112,18 +117,17 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -162,7 +166,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -183,6 +187,8 @@ jobs:
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_docker_containerd_ubuntu:
+    permissions:
+      contents: none
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -211,8 +217,7 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -220,10 +225,10 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -262,7 +267,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -284,6 +289,8 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
 
   functional_podman_ubuntu:
+    permissions:
+      contents: none
     needs: [ build_minikube ]
     env:
       TIME_ELAPSED: time
@@ -315,18 +322,17 @@ jobs:
           echo "--------------------------"
           podman ps || true
           echo "--------------------------"
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -365,7 +371,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_podman_ubuntu
           path: minikube_binaries/report
@@ -387,6 +393,8 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
 
   functional_virtualbox_macos:
+    permissions:
+      contents: none
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -401,8 +409,7 @@ jobs:
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -410,7 +417,7 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-darwin-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
       - name: Install docker
         shell: bash
@@ -428,7 +435,7 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -465,7 +472,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: functional_virtualbox_macos
           path: minikube_binaries/report
@@ -486,6 +493,8 @@ jobs:
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_baremetal_ubuntu18_04:
+    permissions:
+      contents: none
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -511,8 +520,7 @@ jobs:
           VERSION="v1.17.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      # go 1.14.6+ is needed because of this bug https://github.com/golang/go/issues/39308
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -520,10 +528,10 @@ jobs:
 
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.9.0/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -560,7 +568,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: none_ubuntu18_04
           path: minikube_binaries/report
@@ -583,6 +591,8 @@ jobs:
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
+    permissions:
+      contents: none
     if: always()
     needs:
       [
@@ -595,7 +605,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all reports
-        uses: actions/download-artifact@v2-preview
+        uses: actions/download-artifact@9fde3de0b74bd6bc202952485c264b551a4f9405
       - name: upload all reports
         shell: bash {0}
         continue-on-error: true
@@ -608,7 +618,7 @@ jobs:
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: all_reports
           path: all_reports

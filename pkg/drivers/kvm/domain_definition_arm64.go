@@ -1,5 +1,4 @@
 //go:build linux && arm64
-// +build linux,arm64
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -25,8 +24,9 @@ const domainTmpl = `
   <memory unit='MiB'>{{.Memory}}</memory>
   <vcpu>{{.CPU}}</vcpu>
   <features>
-	<acpi/>                                                                        
-    <gic version='3'/>   
+    <acpi/>
+    <apic/>
+    <pae/>
     {{if .Hidden}}
     <kvm>
       <hidden state='on'/>
@@ -38,11 +38,10 @@ const domainTmpl = `
   {{.NUMANodeXML}}
   {{end}}
   </cpu>
-
   <os>
- 	<loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
-    <nvram>/var/lib/libvirt/qemu/nvram/ubuntu_VARS.fd</nvram>  
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
+    <loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
+    <nvram>/usr/share/AAVMF/AAVMF_VARS.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='no'/>
@@ -50,7 +49,7 @@ const domainTmpl = `
   <devices>
     <disk type='file' device='cdrom'>
       <source file='{{.ISO}}'/>
-      <target dev='hdc' bus='scsi'/>
+      <target dev='sdc' bus='sata'/>
       <readonly/>
     </disk>
     <disk type='file' device='disk'>

@@ -22,12 +22,12 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=1.17.7
+VERSION_TO_INSTALL=1.18.2
 INSTALL_PATH=${1}
 
 function current_arch() {
   case $(arch) in
-  "x86_64")
+  "x86_64" | "i386")
      echo "amd64"
   ;;
   "aarch64")

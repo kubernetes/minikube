@@ -20,6 +20,7 @@ minikube logs [flags]
 ### Options
 
 ```
+      --audit         Show only the audit logs
       --file string   If present, writes to the provided file instead of stdout.
   -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
   -n, --length int    Number of lines back to go within the log (default 60)
@@ -41,6 +42,7 @@ minikube logs [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

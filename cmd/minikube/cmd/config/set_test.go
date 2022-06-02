@@ -66,29 +66,18 @@ func TestSetOK(t *testing.T) {
 
 func createTestConfig(t *testing.T) {
 	t.Helper()
-	td, err := os.MkdirTemp("", "config")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
+	td := t.TempDir()
 
-	err = os.Setenv(localpath.MinikubeHome, td)
-	if err != nil {
+	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 		t.Fatalf("error setting up test environment. could not set %s due to %+v", localpath.MinikubeHome, err)
 	}
 
 	// Not necessary, but it is a handy random alphanumeric
-	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
+	if err := os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
 	}
 
-	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
+	if err := os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
 		t.Fatalf("error creating temporary profiles directory: %+v", err)
 	}
-
-	t.Cleanup(func() {
-		err := os.RemoveAll(td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	})
 }

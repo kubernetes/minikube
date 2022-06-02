@@ -19,7 +19,14 @@ date: 2022-02-02
 ## Steps
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Install the Docker CLI</h2>
 {{% tabs %}}
-{{% tab macOS %}}
+{{% mactab %}}
+{{% tabs %}}
+{{% tab brew %}}
+```shell
+brew install docker
+```
+{{% /tab %}}
+{{% tab Manual %}}
 1. Download the static binary archive. Go to https://download.docker.com/mac/static/stable/ and select `x86_64` (for Mac on Intel chip) or `aarch64` (for Mac on Apple silicon), and then download the `.tgz` file relating to the version of Docker Engine you want to install.
 
 2. Extract the archive using the `tar` utility. The `docker` binary is extracted.
@@ -37,7 +44,24 @@ sudo xattr -rc docker
 sudo cp docker/docker /usr/local/bin/
 ```
 {{% /tab %}}
-{{% tab Windows %}}
+{{% /tabs %}}
+{{% /mactab %}}
+{{% windowstab %}}
+{{% tabs %}}
+{{% tab Chocolatey %}}
+**Please Note**: The docker engine requires the Windows Features: Containers and Microsoft-Hyper-V to be installed in order to function correctly. You can install these with the chocolatey command:
+```shell
+choco install Containers Microsoft-Hyper-V --source windowsfeatures
+```
+
+1. Install docker-engine
+```shell
+choco install docker-engine
+```
+
+2. This package creates the group `docker-users` and adds the installing user to it. In order to communicate with docker you will need to log out and back in.
+{{% /tab %}}
+{{% tab Manual %}}
 1. Download the static binary archive. Go to https://download.docker.com/win/static/stable/x86_64 and select the latest version from the list.
 
 2. Run the following PowerShell commands to install and extract the archive to your program files:
@@ -49,6 +73,8 @@ Expand-Archive /path/to/<FILE>.zip -DestinationPath $Env:ProgramFiles
 
 4. Restart Windows for the `PATH` change to take effect.
 {{% /tab %}}
+{{% /tabs %}}
+{{% /windowstab %}}
 {{% /tabs %}}
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Start minikube</h2>

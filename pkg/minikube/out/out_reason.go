@@ -20,6 +20,7 @@ package out
 import (
 	"strings"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -35,9 +36,8 @@ func Error(k reason.Kind, format string, a ...V) {
 			"url":    k.URL,
 			"issues": strings.Join(k.IssueURLs(), ","),
 		})
-	} else {
-		displayText(k, format, a...)
 	}
+	displayText(k, format, a...)
 }
 
 // WarnReason shows a warning reason
@@ -45,9 +45,8 @@ func WarnReason(k reason.Kind, format string, a ...V) {
 	if JSON {
 		msg := Fmt(format, a...)
 		register.PrintWarning(msg)
-	} else {
-		displayText(k, format, a...)
 	}
+	displayText(k, format, a...)
 }
 
 // indentMultiLine indents a message if it contains multiple lines
@@ -71,33 +70,42 @@ func displayText(k reason.Kind, format string, a ...V) {
 		st = style.KnownIssue
 	}
 
-	ErrT(st, format, a...)
+	determineOutput(st, format, a...)
 
 	if k.Advice != "" {
 
 		advice := indentMultiLine(Fmt(k.Advice, a...))
-		ErrT(style.Tip, Fmt("Suggestion: {{.advice}}", V{"advice": advice}))
+		determineOutput(style.Tip, Fmt("Suggestion: {{.advice}}", V{"advice": advice}))
 	}
 
 	if k.URL != "" {
-		ErrT(style.Documentation, "Documentation: {{.url}}", V{"url": k.URL})
+		determineOutput(style.Documentation, "Documentation: {{.url}}", V{"url": k.URL})
 	}
 
 	issueURLs := k.IssueURLs()
 	if len(issueURLs) == 1 {
-		ErrT(style.Issues, "Related issue: {{.url}}", V{"url": issueURLs[0]})
+		determineOutput(style.Issues, "Related issue: {{.url}}", V{"url": issueURLs[0]})
 	}
 
 	if len(issueURLs) > 1 {
-		ErrT(style.Issues, "Related issues:")
+		determineOutput(style.Issues, "Related issues:")
 		for _, i := range issueURLs {
-			ErrT(style.Issue, "{{.url}}", V{"url": i})
+			determineOutput(style.Issue, "{{.url}}", V{"url": i})
 		}
 	}
 
 	if k.NewIssueLink {
-		ErrT(style.Empty, "")
+		determineOutput(style.Empty, "")
 		displayGitHubIssueMessage()
 	}
 	Ln("")
+}
+
+func determineOutput(st style.Enum, format string, a ...V) {
+	if !JSON {
+		ErrT(st, format, a...)
+		return
+	}
+	errStyled, _ := stylized(st, useColor, format, a...)
+	klog.Warning(errStyled)
 }

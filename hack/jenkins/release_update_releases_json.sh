@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script generates the Github Release page and uploads all the binaries/etc to that page
+# This script generates the GitHub Release page and uploads all the binaries/etc to that page
 # This is intended to be run on a new release tag in order to generate the github release page for that release
 
 # The script expects the following env variables:
