@@ -312,6 +312,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
+	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime == "crio" {
+		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+	}
+
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.Step(style.DryRun, `dry-run validation complete!`)
