@@ -12,12 +12,6 @@ CRI_DOCKERD_SITE = https://github.com/Mirantis/cri-dockerd/archive
 CRI_DOCKERD_SOURCE = $(CRI_DOCKERD_VERSION).tar.gz
 
 CRI_DOCKERD_DEPENDENCIES = host-go
-
-CRI_DOCKERD_GOARCH=arm64
-ifeq ($(BR2_x86_64),y)
-CRI_DOCKERD_GOARCH=amd64
-endif
-
 CRI_DOCKERD_GOPATH = $(@D)/_output
 CRI_DOCKERD_ENV = \
 	$(GO_TARGET_ENV) \
@@ -25,18 +19,18 @@ CRI_DOCKERD_ENV = \
 	GO111MODULE=on \
 	GOPATH="$(CRI_DOCKERD_GOPATH)" \
 	PATH=$(CRI_DOCKERD_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=$(CRI_DOCKERD_GOARCH)
+	GOARCH=arm64
 
 CRI_DOCKERD_COMPILE_SRC = $(CRI_DOCKERD_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_REV)'"
 
 define CRI_DOCKERD_BUILD_CMDS
-	$(CRI_DOCKERD_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_VER) REVISION=$(CRI_DOCKERD_REV) static-linux
+	$(CRI_DOCKERD_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_VER) REVISION=$(CRI_DOCKERD_REV) static
 endef
 
 define CRI_DOCKERD_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
-		$(@D)/packaging/static/build/linux/cri-dockerd/cri-dockerd \
+		$(@D)/packaging/static/build/arm/cri-dockerd/cri-dockerd \
 		$(TARGET_DIR)/usr/bin/cri-dockerd
 endef
 
