@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_PLUGINS_VERSION = v0.8.5
+CNI_PLUGINS_VERSION = v1.1.1
 CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_VERSION)
 CNI_PLUGINS_SOURCE = cni-plugins-linux-amd64-$(CNI_PLUGINS_VERSION).tgz
 CNI_PLUGINS_LICENSE = Apache-2.0

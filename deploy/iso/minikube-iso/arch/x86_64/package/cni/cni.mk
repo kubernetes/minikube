@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_VERSION = v0.7.1
+CNI_VERSION = v1.1.1
 CNI_SITE = https://github.com/containernetworking/cni/archive
 CNI_SOURCE = $(CNI_VERSION).tar.gz
 CNI_LICENSE = Apache-2.0
