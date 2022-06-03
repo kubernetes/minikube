@@ -446,6 +446,8 @@ verifies the docker/podman driver works with a custom subnet
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
 
+## TestMinikubeProfile
+
 ## TestMountStart
 tests using the mount command on start
 
