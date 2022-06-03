@@ -981,6 +981,7 @@
 	"retrieving node": "Ermittele Node",
 	"scheduled stop is not supported on the none driver, skipping scheduling": "Das geplante Stoppen wird von none Treiber nicht unterstützt, überspringe Planung",
 	"service {{.namespace_name}}/{{.service_name}} has no node port": "Service {{.namespace_name}}/{{.service_name}} hat keinen Node Port",
+	"set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces": "",
 	"stat failed": "state Fehler",
 	"status json failure": "Status json Fehler",
 	"status text failure": "Status text Fehler",

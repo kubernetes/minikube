@@ -946,6 +946,7 @@
 	"retrieving node": "récupération du nœud",
 	"scheduled stop is not supported on the none driver, skipping scheduling": "l'arrêt programmé n'est pas pris en charge sur le pilote none, programmation non prise en compte",
 	"service {{.namespace_name}}/{{.service_name}} has no node port": "le service {{.namespace_name}}/{{.service_name}} n'a pas de port de nœud",
+	"set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces": "",
 	"stat failed": "stat en échec",
 	"status json failure": "état du JSON en échec",
 	"status text failure": "état du texte en échec",
