@@ -56,8 +56,10 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 		cc, err := config.Load(ClusterFlagValue())
 
 		version := constants.DefaultKubernetesVersion
+		binaryMirror := ""
 		if err == nil {
 			version = cc.KubernetesConfig.KubernetesVersion
+			binaryMirror = cc.BinaryMirror
 		}
 
 		cname := ClusterFlagValue()
@@ -99,7 +101,7 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 			args = append(cluster, args...)
 		}
 
-		c, err := KubectlCommand(version, args...)
+		c, err := KubectlCommand(version, binaryMirror, args...)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
 			os.Exit(1)
@@ -134,12 +136,12 @@ func kubeconfigPath(cfg config.ClusterConfig) string {
 }
 
 // KubectlCommand will return kubectl command with a version matching the cluster
-func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
+func KubectlCommand(version, binaryURL string, args ...string) (*exec.Cmd, error) {
 	if version == "" {
 		version = constants.DefaultKubernetesVersion
 	}
 
-	path, err := node.CacheKubectlBinary(version)
+	path, err := node.CacheKubectlBinary(version, binaryURL)
 	if err != nil {
 		return nil, err
 	}

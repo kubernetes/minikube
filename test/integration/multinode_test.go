@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2020 The Kubernetes Authors All rights reserved.
@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -55,6 +57,7 @@ func TestMultiNode(t *testing.T) {
 			{"CopyFile", validateCopyFileWithMultiNode},
 			{"StopNode", validateStopRunningNode},
 			{"StartAfterStop", validateStartNodeAfterStop},
+			{"RestartKeepsNodes", validateRestartKeepsNodes},
 			{"DeleteNode", validateDeleteNodeFromMultiNode},
 			{"StopMultiNode", validateStopMultiNodeCluster},
 			{"RestartMultiNode", validateRestartMultiNodeCluster},
@@ -175,11 +178,26 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}
 
-	for _, s := range statuses {
-		if s.Worker {
-			testCpCmd(ctx, t, profile, s.Name)
-		} else {
-			testCpCmd(ctx, t, profile, "")
+	tmpDir := t.TempDir()
+
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestMinikubePath()
+
+	for _, n := range statuses {
+		// copy local to node
+		testCpCmd(ctx, t, profile, "", srcPath, n.Name, dstPath)
+
+		// copy back from node to local
+		tmpPath := filepath.Join(tmpDir, fmt.Sprintf("cp-test_%s.txt", n.Name))
+		testCpCmd(ctx, t, profile, n.Name, dstPath, "", tmpPath)
+
+		// copy node to node
+		for _, n2 := range statuses {
+			if n.Name == n2.Name {
+				continue
+			}
+			fp := path.Join("/home/docker", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
+			testCpCmd(ctx, t, profile, n.Name, dstPath, n2.Name, fp)
 		}
 	}
 }
@@ -255,6 +273,36 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "get", "nodes"))
 	if err != nil {
 		t.Fatalf("failed to kubectl get nodes. args %q : %v", rr.Command(), err)
+	}
+}
+
+// validateRestartKeepsNodes restarts minikube cluster and checks if the reported node list is unchanged
+func validateRestartKeepsNodes(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
+	}
+
+	nodeList := rr.Stdout.String()
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run minikube stop. args %q : %v", rr.Command(), err)
+	}
+
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"))
+	if err != nil {
+		t.Errorf("failed to run minikube start. args %q : %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	if err != nil {
+		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
+	}
+
+	restartedNodeList := rr.Stdout.String()
+	if nodeList != restartedNodeList {
+		t.Fatalf("reported node list is not the same after restart. Before restart: %s\nAfter restart: %s", nodeList, restartedNodeList)
 	}
 }
 
@@ -435,13 +483,13 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 
 	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
-		t.Errorf("failed to delploy busybox to multinode cluster")
+		t.Errorf("failed to deploy busybox to multinode cluster")
 	}
 
 	// resolve Pod IPs
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
 	if err != nil {
-		t.Errorf("failed retrieve Pod IPs")
+		t.Errorf("failed to retrieve Pod IPs")
 	}
 	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 	if len(podIPs) != 2 {
@@ -489,27 +537,22 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 	// get Pod names
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {
-		t.Errorf("failed get Pod names")
+		t.Fatalf("failed to get Pod names: %v", err)
 	}
 	podNames := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 
 	for _, name := range podNames {
 		// get host.minikube.internal ip as resolved by nslookup
-		if out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3")); err != nil {
+		out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
+		if err != nil {
 			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
-		} else {
-			hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
-			// get node's eth0 network
-			if out, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "ip -4 -br -o a s eth0 | tr -s ' ' | cut -d' ' -f3")); err != nil {
-				t.Errorf("Error getting eth0 IP of node %s: %v", profile, err)
-			} else {
-				if _, nodeNet, err := net.ParseCIDR(strings.TrimSpace(out.Stdout.String())); err != nil {
-					t.Errorf("Error parsing eth0 IP of node %s: %v", profile, err)
-					// check if host ip belongs to node's eth0 network
-				} else if !nodeNet.Contains(hostIP) {
-					t.Errorf("Pod %s resolved 'host.minikube.internal' to %s while node's eth0 network is %s", name, hostIP, nodeNet)
-				}
-			}
+			continue
+		}
+		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+		// try pinging host from pod
+		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
+		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
+			t.Errorf("Failed to ping host (%s) from pod (%s): %v", hostIP, name, err)
 		}
 	}
 }

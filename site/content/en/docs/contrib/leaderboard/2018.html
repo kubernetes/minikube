@@ -1,0 +1,522 @@
+---
+title: "2018"
+linkTitle: "2018"
+weight: -99992018
+---
+<html>
+<head>
+    <title>kubernetes/minikube - Leaderboard</title>
+		
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+        google.charts.load("current", {packages:["corechart"]});
+    </script>
+    <style>
+    body {
+       font-family: 'Open Sans', sans-serif;
+       background-color: #f7f7fa;
+       padding: 1em;
+    }
+
+    h1 {
+      color: rgba(66,133,244);
+      margin-bottom: 0em;
+    }
+
+    .subtitle {
+      color: rgba(23,90,201);
+      font-size: small;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: #666;
+        font-size: small;
+    }
+
+    h2.cli {
+       color: #666;
+    }
+
+    h2 {
+        color: #333;
+    }
+
+    .board p {
+        font-size: small;
+        color: #999;
+        text-align: center;
+    }
+
+
+    .board {
+        clear: right;
+        display: inline-block;
+        padding: 0.5em;
+        margin: 0.5em;
+        background-color: #fff;
+    }
+    .board:nth-child(4n+3) {
+        border: 2px solid rgba(66,133,244,0.25);
+        color: rgba(66,133,244);
+    }
+
+    .board:nth-child(4n+2) {
+        border: 2px solid rgba(219,68,55,0.25);
+        color: rgba rgba(219,68,55);
+    }
+
+    .board:nth-child(4n+1) {
+        border: 2px solid rgba(244,160,0,0.25);
+        color: rgba(244,160,0);
+    }
+
+    .board:nth-child(4n) {
+        border: 2px solid rgba(15,157,88,0.25);
+        color: rgba(15,157,88);
+    }
+
+    h3 {
+        text-align: center;
+    }
+
+    </style>
+</head>
+<body>
+    <h1>kubernetes/minikube</h1>
+    <div class="subtitle">2018-01-01 &mdash; 2018-12-31</div>
+
+
+    
+        <h2>Reviewers</h2>
+
+        
+            <div class="board">
+            <h3>Most Influential</h3>
+            <p># of Merged PRs reviewed</p>
+            <div id="chart_reviewCounts" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewCounts);
+
+                function drawreviewCounts() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of Merged PRs reviewed', type: 'number'}, { role: 'annotation' }],
+                    ["dlorenc", 90, "90"],
+                    ["r2d4", 33, "33"],
+                    ["balopat", 25, "25"],
+                    ["tstromberg", 21, "21"],
+                    ["afbjorklund", 8, "8"],
+                    ["gbraad", 7, "7"],
+                    ["RA489", 4, "4"],
+                    ["praveenkumar", 3, "3"],
+                    ["aaron-prindle", 3, "3"],
+                    ["vishh", 2, "2"],
+                    ["haizaar", 1, "1"],
+                    ["crosbymichael", 1, "1"],
+                    ["karser", 1, "1"],
+                    ["abitrolly", 1, "1"],
+                    ["stantonxu", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewCounts'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Helpful</h3>
+            <p># of words written in merged PRs</p>
+            <div id="chart_reviewWords" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewWords);
+
+                function drawreviewWords() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of words written in merged PRs', type: 'number'}, { role: 'annotation' }],
+                    ["tstromberg", 2383, "2383"],
+                    ["dlorenc", 1901, "1901"],
+                    ["balopat", 1023, "1023"],
+                    ["praveenkumar", 572, "572"],
+                    ["afbjorklund", 442, "442"],
+                    ["russt", 370, "370"],
+                    ["r2d4", 327, "327"],
+                    ["gbraad", 244, "244"],
+                    ["pgandhipfpt", 233, "233"],
+                    ["davidovich", 226, "226"],
+                    ["ianlewis", 204, "204"],
+                    ["gintautassulskus", 197, "197"],
+                    ["spiffxp", 177, "177"],
+                    ["ahmetb", 171, "171"],
+                    ["ivan-section-io", 146, "146"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewWords'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Demanding</h3>
+            <p># of Review Comments in merged PRs</p>
+            <div id="chart_reviewComments" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawreviewComments);
+
+                function drawreviewComments() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of Review Comments in merged PRs', type: 'number'}, { role: 'annotation' }],
+                    ["tstromberg", 107, "107"],
+                    ["balopat", 43, "43"],
+                    ["dlorenc", 38, "38"],
+                    ["ianlewis", 12, "12"],
+                    ["r2d4", 6, "6"],
+                    ["gbraad", 6, "6"],
+                    ["ahmetb", 5, "5"],
+                    ["fvoznika", 4, "4"],
+                    ["aaron-prindle", 3, "3"],
+                    ["RA489", 3, "3"],
+                    ["Arnavion", 2, "2"],
+                    ["spiffxp", 2, "2"],
+                    ["berrange", 1, "1"],
+                    ["aledbf", 1, "1"],
+                    ["davidovich", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_reviewComments'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+        <h2>Pull Requests</h2>
+
+        
+            <div class="board">
+            <h3>Most Active</h3>
+            <p># of Pull Requests Merged</p>
+            <div id="chart_prCounts" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprCounts);
+
+                function drawprCounts() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of Pull Requests Merged', type: 'number'}, { role: 'annotation' }],
+                    ["dlorenc", 51, "51"],
+                    ["tstromberg", 50, "50"],
+                    ["afbjorklund", 23, "23"],
+                    ["r2d4", 12, "12"],
+                    ["balopat", 12, "12"],
+                    ["AdamDang", 11, "11"],
+                    ["kairen", 8, "8"],
+                    ["priyawadhwa", 7, "7"],
+                    ["anfernee", 7, "7"],
+                    ["rajansandeep", 7, "7"],
+                    ["rohitagarwal003", 5, "5"],
+                    ["mirake", 5, "5"],
+                    ["vadorovsky", 3, "3"],
+                    ["aaron-prindle", 3, "3"],
+                    ["aledbf", 3, "3"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prCounts'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Big Movers</h3>
+            <p>Lines of code (delta)</p>
+            <div id="chart_prDeltas" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprDeltas);
+
+                function drawprDeltas() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: 'Lines of code (delta)', type: 'number'}, { role: 'annotation' }],
+                    ["balopat", 5049, "5049"],
+                    ["aaron-prindle", 3919, "3919"],
+                    ["tstromberg", 2284, "2284"],
+                    ["anfernee", 1747, "1747"],
+                    ["dlorenc", 1650, "1650"],
+                    ["priyawadhwa", 1061, "1061"],
+                    ["rohitagarwal003", 584, "584"],
+                    ["afbjorklund", 529, "529"],
+                    ["praveenkumar", 349, "349"],
+                    ["kairen", 295, "295"],
+                    ["mheese", 251, "251"],
+                    ["ansiwen", 207, "207"],
+                    ["diazjf", 206, "206"],
+                    ["yanxuean", 201, "201"],
+                    ["ijl", 180, "180"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prDeltas'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most difficult to review</h3>
+            <p>Average PR size (added+changed)</p>
+            <div id="chart_prSize" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawprSize);
+
+                function drawprSize() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: 'Average PR size (added+changed)', type: 'number'}, { role: 'annotation' }],
+                    ["balopat", 401, "401"],
+                    ["mheese", 208, "208"],
+                    ["yanxuean", 201, "201"],
+                    ["anfernee", 156, "156"],
+                    ["seborama", 144, "144"],
+                    ["priyawadhwa", 141, "141"],
+                    ["rohitagarwal003", 109, "109"],
+                    ["diazjf", 94, "94"],
+                    ["ansiwen", 90, "90"],
+                    ["doodlesbykumbi", 86, "86"],
+                    ["dvdmuckle", 82, "82"],
+                    ["Twister915", 65, "65"],
+                    ["outcoldman", 58, "58"],
+                    ["lichen2013", 44, "44"],
+                    ["KristofMorva", 42, "42"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_prSize'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+        <h2>Issues</h2>
+
+        
+            <div class="board">
+            <h3>Most Active</h3>
+            <p># of comments</p>
+            <div id="chart_comments" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawcomments);
+
+                function drawcomments() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of comments', type: 'number'}, { role: 'annotation' }],
+                    ["tstromberg", 5, "5"],
+                    ["afbjorklund", 3, "3"],
+                    ["maxmarkus", 3, "3"],
+                    ["sshilko", 2, "2"],
+                    ["ghost", 2, "2"],
+                    ["jpswade", 2, "2"],
+                    ["it-monkey", 2, "2"],
+                    ["ekimia", 2, "2"],
+                    ["kisadam", 1, "1"],
+                    ["cwchapma", 1, "1"],
+                    ["AmeyK-Globant", 1, "1"],
+                    ["jamesrom", 1, "1"],
+                    ["jamescarson", 1, "1"],
+                    ["bw2", 1, "1"],
+                    ["ptink", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_comments'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Most Helpful</h3>
+            <p># of words (excludes authored)</p>
+            <div id="chart_commentWords" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawcommentWords);
+
+                function drawcommentWords() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of words (excludes authored)', type: 'number'}, { role: 'annotation' }],
+                    ["tstromberg", 207, "207"],
+                    ["it-monkey", 167, "167"],
+                    ["maxmarkus", 144, "144"],
+                    ["ekimia", 83, "83"],
+                    ["bit0rez", 80, "80"],
+                    ["afbjorklund", 70, "70"],
+                    ["adampl", 67, "67"],
+                    ["ms-choudhary", 63, "63"],
+                    ["chenleji", 58, "58"],
+                    ["iambp", 57, "57"],
+                    ["amouat", 53, "53"],
+                    ["sshilko", 41, "41"],
+                    ["aaron-prindle", 40, "40"],
+                    ["pchico83", 29, "29"],
+                    ["parasyte", 29, "29"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_commentWords'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+            <div class="board">
+            <h3>Top Closers</h3>
+            <p># of issues closed (excludes authored)</p>
+            <div id="chart_issueCloser" style="width: 450px; height: 350px;"></div>
+            <script type="text/javascript">
+                google.charts.setOnLoadCallback(drawissueCloser);
+
+                function drawissueCloser() {
+                    var data = new google.visualization.arrayToDataTable([
+                    [{label:'',type:'string'},{label: '# of issues closed (excludes authored)', type: 'number'}, { role: 'annotation' }],
+                    ["tstromberg", 86, "86"],
+                    ["dlorenc", 66, "66"],
+                    ["r2d4", 32, "32"],
+                    ["balopat", 13, "13"],
+                    ["gbraad", 4, "4"],
+                    ["aaron-prindle", 3, "3"],
+                    ["", 1, "1"],
+                    
+                    ]);
+
+                    var options = {
+                    axisTitlesPosition: 'none',
+
+                    bars: 'horizontal', // Required for Material Bar Charts.
+                    axes: {
+                        x: {
+                        y: { side: 'top'} // Top x-axis.
+                        }
+                    },
+                    legend: { position: "none" },
+                    bar: { groupWidth: "85%" }
+                    };
+
+                   var chart = new google.visualization.BarChart(document.getElementById('chart_issueCloser'));
+                   chart.draw(data, options);
+                };
+            </script>
+            </div>
+        
+    
+</body>
+</html>

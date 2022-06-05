@@ -17,7 +17,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -229,24 +228,15 @@ func TestUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			tmpDir, err := ioutil.TempDir("", "")
-			if err != nil {
-				t.Fatalf("Error making temp directory %v", err)
-			}
-			defer func() { // clean up tempdir
-				err := os.RemoveAll(tmpDir)
-				if err != nil {
-					t.Errorf("failed to clean up temp folder  %q", tmpDir)
-				}
-			}()
+			tmpDir := t.TempDir()
 
 			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
+				if err := os.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
-			err = Update(test.cfg)
+			err := Update(test.cfg)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -460,16 +450,7 @@ func TestEmptyConfig(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	dir, err := ioutil.TempDir("", ".kube")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		err := os.RemoveAll(dir)
-		if err != nil {
-			t.Errorf("Failed to remove dir %q: %v", dir, err)
-		}
-	}()
+	dir := t.TempDir()
 
 	// setup minikube config
 	expected := api.NewConfig()
@@ -477,8 +458,7 @@ func TestNewConfig(t *testing.T) {
 
 	// write actual
 	filename := filepath.Join(dir, "config")
-	err = writeToFile(expected, filename)
-	if err != nil {
+	if err := writeToFile(expected, filename); err != nil {
 		t.Fatal(err)
 	}
 
@@ -537,7 +517,7 @@ func Test_Endpoint(t *testing.T) {
 // tempFile creates a temporary with the provided bytes as its contents.
 // The caller is responsible for deleting file after use.
 func tempFile(t *testing.T, data []byte) string {
-	tmp, err := ioutil.TempFile("", "kubeconfig")
+	tmp, err := os.CreateTemp("", "kubeconfig")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -560,7 +540,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(constants.APIServerPort)
+	cluster.Server = "https://192.168.59.100:" + strconv.Itoa(constants.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 

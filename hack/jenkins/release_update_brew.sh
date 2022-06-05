@@ -51,7 +51,7 @@ cd "${SRC_DIR}"
 brew bump-formula-pr \
   --strict minikube \
   --revision="${revision}" \
-  --message="This PR was automatically created by minikube release scripts. Contact @tstromberg with any questions." \
+  --message="This PR was automatically created by minikube release scripts. Contact @medyagh with any questions." \
   --no-browse \
   --tag="${TAG}" \
   && status=0 || status=$?

@@ -19,7 +19,6 @@ package config
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -144,7 +143,7 @@ func TestReadConfig(t *testing.T) {
 }
 
 func TestWriteConfig(t *testing.T) {
-	configFile, err := ioutil.TempFile("/tmp", "configTest")
+	configFile, err := os.CreateTemp("/tmp", "configTest")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}

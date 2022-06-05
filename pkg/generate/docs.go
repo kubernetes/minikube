@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -52,7 +51,7 @@ func Docs(root *cobra.Command, path string, testPath string, codePath string) er
 		return errors.Wrap(err, "failed to generate test docs")
 	}
 
-	return ErrorCodes(codePath, []string{"pkg/minikube/reason/exitcodes.go", "pkg/minikube/reason/reason.go"})
+	return ErrorCodes(codePath, []string{"pkg/minikube/reason/reason.go", "pkg/minikube/reason/exitcodes.go"})
 }
 
 // DocForCommand returns the specific doc for that command
@@ -166,5 +165,5 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 	if err := os.Remove(fp); err != nil {
 		klog.Warningf("error removing %s", fp)
 	}
-	return ioutil.WriteFile(fp, contents, 0o644)
+	return os.WriteFile(fp, contents, 0o644)
 }

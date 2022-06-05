@@ -1,4 +1,4 @@
-// +build darwin
+//go:build darwin
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -19,7 +19,7 @@ limitations under the License.
 package hyperkit
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -49,16 +49,15 @@ var validLeases = []byte(`{
 }`)
 
 func Test_getIpAddressFromFile(t *testing.T) {
-	tmpdir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tmpdir)
+	tmpdir := tests.MakeTempDir(t)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
-	if err := ioutil.WriteFile(dhcpFile, validLeases, 0644); err != nil {
+	if err := os.WriteFile(dhcpFile, validLeases, 0644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 
 	invalidFile := filepath.Join(tmpdir, "invalid")
-	if err := ioutil.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
+	if err := os.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
 		t.Fatalf("writefile: %v", err)
 	}
 

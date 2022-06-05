@@ -34,6 +34,7 @@ func TestDownload(t *testing.T) {
 	t.Run("ImageToDaemon", testImageToDaemon)
 	t.Run("PreloadNotExists", testPreloadNotExists)
 	t.Run("PreloadChecksumMismatch", testPreloadChecksumMismatch)
+	t.Run("PreloadExistsCaching", testPreloadExistsCaching)
 }
 
 // Returns a mock function that sleeps before incrementing `downloadsCounter` and creates the requested file.
@@ -60,7 +61,7 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if _, err := Binary("kubectl", "v1.20.2", "linux", "amd64"); err != nil {
+		if _, err := Binary("kubectl", "v1.20.2", "linux", "amd64", ""); err != nil {
 			t.Errorf("Failed to download binary: %+v", err)
 		}
 		group.Done()
@@ -93,7 +94,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker"); err != nil {
+		if err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker"); err != nil {
 			t.Logf("Failed to download preload: %+v (may be ok)", err)
 		}
 		group.Done()
@@ -118,7 +119,7 @@ func testPreloadNotExists(t *testing.T) {
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
+	err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker")
 	if err != nil {
 		t.Errorf("Expected no error when preload exists")
 	}
@@ -139,7 +140,7 @@ func testPreloadChecksumMismatch(t *testing.T) {
 		return fmt.Errorf("checksum mismatch")
 	}
 
-	err := Preload(constants.DefaultKubernetesVersion, constants.DefaultContainerRuntime, "docker")
+	err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker")
 	expectedErrMsg := "checksum mismatch"
 	if err == nil {
 		t.Errorf("Expected error when checksum mismatches")
@@ -195,5 +196,43 @@ func testImageToDaemon(t *testing.T) {
 
 	if downloadNum != 1 {
 		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
+	}
+}
+
+// Validates that preload existence checks correctly caches values retrieved by remote checks.
+func testPreloadExistsCaching(t *testing.T) {
+	checkCache = func(file string) (fs.FileInfo, error) {
+		return nil, fmt.Errorf("cache not found")
+	}
+	doesPreloadExist := false
+	checkCalled := false
+	checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
+		checkCalled = true
+		return doesPreloadExist
+	}
+	existence := PreloadExists("v1", "c1", "docker", true)
+	if existence || !checkCalled {
+		t.Errorf("Expected preload not to exist and a check to be performed. Existence: %v, Check: %v", existence, checkCalled)
+	}
+	checkCalled = false
+	existence = PreloadExists("v1", "c1", "docker", true)
+	if existence || checkCalled {
+		t.Errorf("Expected preload not to exist and no check to be performed. Existence: %v, Check: %v", existence, checkCalled)
+	}
+	doesPreloadExist = true
+	checkCalled = false
+	existence = PreloadExists("v2", "c1", "docker", true)
+	if !existence || !checkCalled {
+		t.Errorf("Expected preload to exist and a check to be performed. Existence: %v, Check: %v", existence, checkCalled)
+	}
+	checkCalled = false
+	existence = PreloadExists("v2", "c2", "docker", true)
+	if !existence || !checkCalled {
+		t.Errorf("Expected preload to exist and a check to be performed. Existence: %v, Check: %v", existence, checkCalled)
+	}
+	checkCalled = false
+	existence = PreloadExists("v2", "c2", "docker", true)
+	if !existence || checkCalled {
+		t.Errorf("Expected preload to exist and no check to be performed. Existence: %v, Check: %v", existence, checkCalled)
 	}
 }

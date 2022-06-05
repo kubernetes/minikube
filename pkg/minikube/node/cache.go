@@ -19,8 +19,11 @@ package node
 import (
 	"fmt"
 	"os"
+	"path"
 	"runtime"
 	"strings"
+
+	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -75,10 +78,12 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 	if !viper.GetBool("download-only") {
 		return
 	}
-	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName); err != nil {
+
+	binariesURL := viper.GetString("binary-mirror")
+	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
 		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
 	}
-	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
+	if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
 		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
@@ -91,22 +96,22 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 }
 
 // CacheKubectlBinary caches the kubectl binary
-func CacheKubectlBinary(k8sVersion string) (string, error) {
+func CacheKubectlBinary(k8sVersion, binaryURL string) (string, error) {
 	binary := "kubectl"
 	if runtime.GOOS == "windows" {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch(), binaryURL)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
-func doCacheBinaries(k8sVersion, containerRuntime, driverName string) error {
+func doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL string) error {
 	existingBinaries := constants.KubernetesReleaseBinaries
 	if !download.PreloadExists(k8sVersion, containerRuntime, driverName) {
 		existingBinaries = nil
 	}
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries)
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries, binariesURL)
 }
 
 // beginDownloadKicBaseImage downloads the kic image
@@ -118,7 +123,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
-			baseImg = strings.Replace(baseImg, "gcr.io/k8s-minikube", cc.KubernetesConfig.ImageRepository, 1)
+			baseImg = updateKicImageRepo(baseImg, cc.KubernetesConfig.ImageRepository)
 			cc.KicBaseImage = baseImg
 		}
 		var finalImg string
@@ -131,6 +136,13 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
+
+			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
+				klog.Infof("%s exists in daemon, skipping load", img)
+				finalImg = img
+				return nil
+			}
+
 			klog.Infof("Downloading %s to local cache", img)
 			err = download.ImageToCache(img)
 			if err == nil {
@@ -139,14 +151,6 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 			if downloadOnly {
 				return err
-			}
-
-			if driver.IsDocker(cc.Driver) {
-				if download.ImageExistsInDaemon(img) {
-					klog.Infof("%s exists in daemon, skipping load", img)
-					finalImg = img
-					return nil
-				}
 			}
 
 			if cc.Driver == driver.Podman {
@@ -222,7 +226,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return image.SaveToDir(images, constants.ImageCacheDir, false)
+	return image.SaveToDir(images, detect.ImageCacheDir(), false)
 }
 
 // CacheAndLoadImagesInConfig loads the images currently in the config file
@@ -251,4 +255,15 @@ func imagesInConfigFile() ([]string, error) {
 		return images, nil
 	}
 	return []string{}, nil
+}
+
+func updateKicImageRepo(imgName string, repo string) string {
+	image := strings.TrimPrefix(imgName, "gcr.io/")
+	if repo == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		// for aliyun registry must strip namespace from image name, e.g.
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-minikube/kicbase:v0.0.25 will not work
+		//   registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase:v0.0.25 does work
+		image = strings.TrimPrefix(image, "k8s-minikube/")
+	}
+	return path.Join(repo, image)
 }

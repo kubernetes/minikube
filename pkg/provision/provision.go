@@ -106,8 +106,9 @@ func configureAuth(p miniProvisioner) error {
 		return err
 	}
 
+	hosts := authOptions.ServerCertSANs
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, hostIP, "localhost", "127.0.0.1", "minikube", machineName)
+	hosts = append(hosts, ip, hostIP, "localhost", "127.0.0.1", "minikube", machineName)
 	klog.Infof("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
@@ -254,7 +255,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 		return err
 	}
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 

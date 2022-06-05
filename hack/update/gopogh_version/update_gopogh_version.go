@@ -43,22 +43,22 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		".github/workflows/iso.yml": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
-		".github/workflows/kic_image.yml": {
-			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
-			},
-		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
 		},
 		".github/workflows/pr.yml": {
+			Replace: map[string]string{
+				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+			},
+		},
+		".github/workflows/functional_verified.yml": {
+			Replace: map[string]string{
+				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+			},
+		},
+		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
 				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
 			},
@@ -99,8 +99,8 @@ func main() {
 
 // gopoghVersion returns gopogh stable version in semver format.
 func gopoghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get Kubernetes versions from GitHub Releases
-	stable, _, err = update.GHReleases(ctx, owner, repo)
+	// get gopogh versions from GitHub Releases
+	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err
 	}

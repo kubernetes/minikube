@@ -19,13 +19,13 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -47,13 +47,18 @@ func MaybePrintUpdateTextFromGithub() {
 	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath)
 }
 
+// MaybePrintUpdateTextFromAliyunMirror prints update text if needed, from Aliyun mirror
+func MaybePrintUpdateTextFromAliyunMirror() {
+	maybePrintUpdateText(GithubMinikubeReleasesAliyunURL, GithubMinikubeBetaReleasesAliyunURL, lastUpdateCheckFilePath)
+}
+
 func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
-	if !shouldCheckURLVersion(lastUpdatePath) {
-		return
-	}
 	latestVersion, err := latestVersionFromURL(latestReleasesURL)
 	if err != nil {
 		klog.Warning(err)
+		return
+	}
+	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
 	localVersion, err := version.GetSemverVersion()
@@ -125,14 +130,33 @@ func shouldCheckURLBetaVersion(filePath string) bool {
 	return shouldCheckURLVersion(filePath)
 }
 
-// Release represents a release
-type Release struct {
-	Name      string
-	Checksums map[string]string
+type operatingSystems struct {
+	Darwin  string `json:"darwin,omitempty"`
+	Linux   string `json:"linux,omitempty"`
+	Windows string `json:"windows,omitempty"`
 }
 
-// Releases represents several release
-type Releases []Release
+type checksums struct {
+	AMD64   *operatingSystems `json:"amd64,omitempty"`
+	ARM     *operatingSystems `json:"arm,omitempty"`
+	ARM64   *operatingSystems `json:"arm64,omitempty"`
+	PPC64LE *operatingSystems `json:"ppc64le,omitempty"`
+	S390X   *operatingSystems `json:"s390x,omitempty"`
+	operatingSystems
+}
+
+type Release struct {
+	Checksums checksums `json:"checksums"`
+	Name      string    `json:"name"`
+}
+
+type Releases struct {
+	Releases []Release
+}
+
+func (r *Releases) UnmarshalJSON(p []byte) error {
+	return json.Unmarshal(p, &r.Releases)
+}
 
 func getJSON(url string, target *Releases) error {
 	client := &http.Client{}
@@ -160,7 +184,7 @@ var latestVersionFromURL = func(url string) (semver.Version, error) {
 	if err != nil {
 		return semver.Version{}, err
 	}
-	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
+	return semver.Make(strings.TrimPrefix(r.Releases[0].Name, version.VersionPrefix))
 }
 
 // AllVersionsFromURL get all versions from a JSON URL
@@ -170,7 +194,7 @@ func AllVersionsFromURL(url string) (Releases, error) {
 	if err := getJSON(url, &releases); err != nil {
 		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}
-	if len(releases) == 0 {
+	if len(releases.Releases) == 0 {
 		return releases, errors.Errorf("There were no json releases at the url specified: %s", url)
 	}
 	return releases, nil
@@ -185,7 +209,7 @@ func writeTimeToFile(path string, inputTime time.Time) error {
 }
 
 func timeFromFileIfExists(path string) time.Time {
-	lastUpdateCheckTime, err := ioutil.ReadFile(path)
+	lastUpdateCheckTime, err := os.ReadFile(path)
 	if err != nil {
 		return time.Time{}
 	}

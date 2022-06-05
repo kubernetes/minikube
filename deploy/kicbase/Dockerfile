@@ -17,19 +17,42 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
+
+# multi-stage docker build so we can build auto-pause for arm64
+FROM golang:1.17 as auto-pause
+WORKDIR /src
+# auto-pause depends on core minikube code so we need to pass the whole source code as the context
+# copy in the minimal amount of source code possible
+COPY pkg/ ./pkg
+COPY cmd/ ./cmd
+COPY deploy/addons ./deploy/addons
+COPY translations/ ./translations
+COPY third_party/ ./third_party
+COPY go.mod go.sum ./
+ARG TARGETARCH
+ENV GOARCH=${TARGETARCH}
+RUN cd ./cmd/auto-pause/ && go build 
+
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20210401
+FROM ubuntu:focal-20220316 as kicbase
 
-ARG BUILDKIT_VERSION="v0.8.2"
+ARG BUILDKIT_VERSION="v0.10.3"
+ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
+ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG CRIO_VERSION="1.22"
+ARG CRI_DOCKERD_VERSION="a4d1895a2659ea9974bd7528a706592ab8b74181"
+ARG TARGETARCH
 
 # copy in static files (configs, scripts)
-COPY 10-network-security.conf /etc/sysctl.d/10-network-security.conf
-COPY 11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
-COPY clean-install /usr/local/bin/clean-install
-COPY entrypoint /usr/local/bin/entrypoint
-# must first run `make deploy/kicbase/auto-pause`
-COPY auto-pause /bin/auto-pause
+COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
+COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
+COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
+COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
+COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
+COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
+COPY --from=auto-pause /src/cmd/auto-pause/auto-pause /bin/auto-pause
+
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -98,6 +121,12 @@ ARG COMMIT_SHA
 # could be changed to any debian that can run systemd
 USER root
 
+# Install cri-dockerd from pre-compiled binaries stored in GCS, this is way faster than building from source in multi-arch
+RUN echo "Installing cri-dockerd" && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && chmod +x /usr/bin/cri-dockerd && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+
 # install system requirements from the regular distro repositories
 RUN clean-install \
     lz4 \
@@ -109,7 +138,10 @@ RUN clean-install \
     libglib2.0-0
 
 # install docker
-RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /etc/apt/sources.list.d/docker.list" && \
+# use the bionic packages for arm32
+RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
+    sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io
@@ -117,30 +149,44 @@ RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu focal stable' > /e
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
  && echo "Installing buildkit ..." \
+    && addgroup --system buildkit \
     && export BUILDKIT_BASE_URL="https://github.com/moby/buildkit/releases/download/${BUILDKIT_VERSION}" \
     && curl -sSL --retry 5 --output /tmp/buildkit.tgz "${BUILDKIT_BASE_URL}/buildkit-${BUILDKIT_VERSION}.linux-${ARCH}.tar.gz" \
     && tar -C /usr/local -xzvf /tmp/buildkit.tgz \
     && rm -rf /tmp/buildkit.tgz \
+    && mkdir -p /usr/local/lib/systemd/system \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.service "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/system/buildkit.service" \
+    && curl -L --retry 5 --output /usr/local/lib/systemd/system/buildkit.socket "https://raw.githubusercontent.com/moby/buildkit/${BUILDKIT_VERSION}/examples/systemd/system/buildkit.socket" \
+    && mkdir -p /etc/buildkit \
+    && echo "[worker.oci]\n  enabled = false\n[worker.containerd]\n  enabled = true\n  namespace = \"k8s.io\"" > /etc/buildkit/buildkitd.toml \
     && chmod 755 /usr/local/bin/buildctl \
     && chmod 755 /usr/local/bin/buildkit-runc \
     && chmod 755 /usr/local/bin/buildkit-qemu-* \
-    && chmod 755 /usr/local/bin/buildkitd
+    && chmod 755 /usr/local/bin/buildkitd \
+    && systemctl enable buildkit.socket
 
 # Install cri-o/podman dependencies:
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
-    clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun
+    if [ "$ARCH" != "ppc64le" ]; then \
+        clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
+    else \
+       	clean-install containers-common conmon containernetworking-plugins crun; \
+    fi
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.20/README.md#installing-cri-o
-RUN sh -c "echo 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:1.20.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.20/xUbuntu_20.04/Release.key && \
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.22/README.md#installing-cri-o
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc
+    clean-install cri-o cri-o-runc; fi
 
 # install podman
-RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb http://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install podman && \
     addgroup --system podman && \
@@ -149,23 +195,28 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
            > /etc/systemd/system/podman.socket.d/override.conf && \
     mkdir -p /etc/tmpfiles.d && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
-    systemd-tmpfiles --create
+    systemd-tmpfiles --create; fi
 
 # automount service
-COPY automount/minikube-automount /usr/sbin/minikube-automount
-COPY automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
+COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
+COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
 RUN ln -fs /usr/lib/systemd/system/minikube-automount.service \
     /etc/systemd/system/multi-user.target.wants/minikube-automount.service
 
 # scheduled stop service
-COPY scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
-COPY scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
+COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
+COPY deploy/kicbase/scheduled-stop/minikube-scheduled-stop.service /usr/lib/systemd/system/minikube-scheduled-stop.service
 RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl disable containerd
+# disable crio for archs that support it
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm /etc/crictl.yaml; fi
+# enable podman socket on archs that support it
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
-RUN systemctl enable docker.service && systemctl enable podman.socket
+RUN systemctl enable docker.service 
 # making SSH work for docker container 
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
@@ -184,7 +235,8 @@ EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker 
 RUN adduser docker sudo
-RUN adduser docker podman
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
+RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker
 RUN mkdir /home/docker/.ssh

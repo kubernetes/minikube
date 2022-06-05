@@ -200,7 +200,7 @@ func setupBridge(t *tunnel) {
 		return
 	}
 	iface := string(response)
-	pattern := regexp.MustCompile(`.*member: (en\d+) flags=.*`)
+	pattern := regexp.MustCompile(`.*member: ((?:vm)?en(?:et)?\d+) flags=.*`)
 	submatch := pattern.FindStringSubmatch(iface)
 	if len(submatch) != 2 {
 		t.status.RouteError = fmt.Errorf("couldn't find member in bridge100 interface: %s", iface)

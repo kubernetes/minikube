@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -21,7 +21,7 @@ package integration
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os/exec"
@@ -37,6 +37,7 @@ import (
 
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -92,8 +93,8 @@ func checkRoutePassword(t *testing.T) {
 // checkDNSForward skips DNS forwarding test if runtime is not supported
 func checkDNSForward(t *testing.T) {
 	// Not all platforms support DNS forwarding
-	if runtime.GOOS != "darwin" {
-		t.Skip("DNS forwarding is supported for darwin only now, skipping test DNS forwarding")
+	if runtime.GOOS != "darwin" || KicDriver() {
+		t.Skip("DNS forwarding is only supported for Hyperkit on Darwin, skipping test DNS forwarding")
 	}
 }
 
@@ -132,27 +133,31 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("The test WaitService is broken on github actions in macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 	checkRoutePassword(t)
+	setupSucceeded := t.Run("Setup", func(t *testing.T) {
+		client, err := kapi.Client(profile)
+		if err != nil {
+			t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
+		}
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %q: %v", profile, err)
-	}
+		// Start the "nginx" pod.
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+		if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
+			t.Fatalf("wait: %v", err)
+		}
 
-	// Start the "nginx" pod.
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
-		t.Fatalf("wait: %v", err)
-	}
-
-	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
-		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
+		if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
+			t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
+		}
+	})
+	if !setupSucceeded {
+		t.Fatal("Failed setup")
 	}
 
 	t.Run("IngressIP", func(t *testing.T) {
@@ -160,7 +165,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
 		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
-		err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
+		err := wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 			if err != nil {
 				return false, err
@@ -187,7 +192,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
 	}
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -206,7 +211,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}
@@ -235,7 +240,7 @@ func validateAccessDirect(ctx context.Context, t *testing.T, profile string) {
 // validateDNSDig validates if the DNS forwarding works by dig command DNS lookup
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -270,7 +275,7 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 // validateDNSDscacheutil validates if the DNS forwarding works by dscacheutil command DNS lookup
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -295,7 +300,7 @@ func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
 // validateAccessDNS validates if the test service can be accessed with DNS forwarding from host
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
 func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
-	if GithubActionRunner() && runtime.GOOS == "darwin" {
+	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
 
@@ -337,7 +342,7 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
+		got, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}

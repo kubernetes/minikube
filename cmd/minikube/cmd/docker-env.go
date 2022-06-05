@@ -20,6 +20,7 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -33,10 +34,11 @@ import (
 	apiWait "k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -48,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 const minLogCheckTime = 60 * time.Second
@@ -278,7 +281,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
-		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
+		if co.Config.KubernetesConfig.ContainerRuntime != constants.Docker {
 			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
@@ -288,11 +291,13 @@ var dockerEnvCmd = &cobra.Command{
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
-		if driver.NeedsPortForward(driverName) {
+		if driver.NeedsPortForward(driverName) && driver.IsKIC(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.Message(reason.DrvPortForward, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
+		} else if driver.NeedsPortForward(driverName) && driverName == driver.QEMU2 {
+			port = d.(*qemu.Driver).EnginePort
 		}
 
 		hostname, err := d.GetSSHHostname()
@@ -384,12 +389,94 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 		dockerSetEnvTmpl = dockerEnvTCPTmpl
 	}
 	envVars := dockerEnvVars(ec)
+	if ec.Shell == "none" {
+		switch outputFormat {
+		case "":
+			// shell "none"
+			break
+		case "text":
+			for k, v := range envVars {
+				_, err := fmt.Fprintf(w, "%s=%s\n", k, v)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		case "json":
+			json, err := json.Marshal(envVars)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write(json)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte{'\n'})
+			if err != nil {
+				return err
+			}
+			return nil
+		case "yaml":
+			yaml, err := yaml.Marshal(envVars)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write(yaml)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			exit.Message(reason.InternalOutputUsage, "error: --output must be 'text', 'yaml' or 'json'")
+		}
+	}
 	return shell.SetScript(ec.EnvConfig, w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := dockerEnvNames(ec)
+	if ec.Shell == "none" {
+		switch outputFormat {
+		case "":
+			// shell "none"
+			break
+		case "text":
+			for _, n := range vars {
+				_, err := fmt.Fprintf(w, "%s\n", n)
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		case "json":
+			json, err := json.Marshal(vars)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write(json)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write([]byte{'\n'})
+			if err != nil {
+				return err
+			}
+			return nil
+		case "yaml":
+			yaml, err := yaml.Marshal(vars)
+			if err != nil {
+				return err
+			}
+			_, err = w.Write(yaml)
+			if err != nil {
+				return err
+			}
+			return nil
+		default:
+			exit.Message(reason.InternalOutputUsage, "error: --output must be 'text', 'yaml' or 'json'")
+		}
+	}
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
@@ -508,5 +595,6 @@ func init() {
 	dockerEnvCmd.Flags().BoolVar(&sshHost, "ssh-host", false, "Use SSH connection instead of HTTPS (port 2376)")
 	dockerEnvCmd.Flags().BoolVar(&sshAdd, "ssh-add", false, "Add SSH identity key to SSH authentication agent")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
+	dockerEnvCmd.Flags().StringVarP(&outputFormat, "output", "o", "", "One of 'text', 'yaml' or 'json'.")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
 }

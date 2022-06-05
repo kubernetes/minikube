@@ -33,10 +33,11 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${DRIVER}-${CONTAINER_RUNTIME}-${MIN
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
+export MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE=true
 
 readonly TIMEOUT=${1:-120m}
 
-public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${COMMIT:0:7}/${JOB_NAME}.html"
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${JOB_NAME}.html"
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -84,17 +85,27 @@ fi
 
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
-  sudo apt-get -y install lsof psmisc
+  sudo apt-get -y install lsof psmisc dnsutils
 else
   brew install pstree coreutils pidof
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
 # installing golang so we could do go get for gopogh
-sudo ARCH="$ARCH"./installers/check_install_golang.sh "1.16.4" "/usr/local" || true
+./installers/check_install_golang.sh "/usr/local" || true
 
 # install docker and kubectl if not present
 sudo ARCH="$ARCH" ./installers/check_install_docker.sh || true
+
+# install gotestsum if not present
+GOROOT="/usr/local/go" ./installers/check_install_gotestsum.sh || true
+
+# install cron jobs
+if [ "$OS" == "linux" ]; then
+  source ./installers/check_install_linux_crons.sh
+else
+  source ./installers/check_install_osx_crons.sh
+fi
 
 # let's just clean all docker artifacts up
 docker system prune --force --volumes || true
@@ -360,11 +371,20 @@ then
     EXTRA_START_ARGS="${EXTRA_START_ARGS} --container-runtime=${CONTAINER_RUNTIME}"
 fi
 
-${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
-  -test.timeout=${TIMEOUT} -test.v \
-  ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+
+touch "${JSON_OUT}"
+
+gotestsum --jsonfile "${JSON_OUT}" -f standard-verbose --raw-command -- \
+  go tool test2json -t \
+  ${SUDO_PREFIX}${E2E_BIN} \
+    -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
+    -test.timeout=${TIMEOUT} -test.v \
+    ${EXTRA_TEST_ARGS} \
+    -binary="${MINIKUBE_BIN}" 2>&1 \
+  | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
@@ -386,21 +406,14 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-echo ">> Attmpting to convert test logs to json"
-if test -f "${JSON_OUT}"; then
-  rm "${JSON_OUT}" || true # clean up previous runs of same build
-fi
-
-touch "${JSON_OUT}"
-
-  
-# Generate JSON output
-echo ">> Running go test2json"
-go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
-
 if ! type "jq" > /dev/null; then
-echo ">> Installing jq"
-    if [ "${OS}" != "darwin" ]; then
+    echo ">> Installing jq"
+    if [ "${ARCH}" == "arm64" && "${OS}" == "linux" ]; then
+      sudo apt-get install jq -y
+    elif [ "${ARCH}" == "arm64" ]; then
+      echo "Unable to install 'jq' automatically for arm64 on Darwin, please install 'jq' manually."
+      exit 5
+    elif [ "${OS}" != "darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
     else
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
@@ -408,7 +421,7 @@ echo ">> Installing jq"
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.6.0/gopogh-${OS_ARCH}"
+curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-${OS_ARCH}"
 sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
 
 
@@ -419,27 +432,37 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')
 pessimistic_status="${fail_num} / ${test_num} failures"
-description="completed with ${status} in ${elapsed} minute(s)."
+description="completed with ${status} in ${elapsed} minutes."
 if [ "$status" = "failure" ]; then
-  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+  description="completed with ${pessimistic_status} in ${elapsed} minutes."
 fi
 echo "$description"
+
+REPORT_URL_BASE="https://storage.googleapis.com"
 
 if [ -z "${EXTERNAL}" ]; then
   # If we're already in GCP, then upload results to GCS directly
   SHORT_COMMIT=${COMMIT:0:7}
-  JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
-  echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
-  gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
-  echo ">> uploading ${JSON_OUT}"
+  JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${JOB_NAME}"
+
+  echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}.out.txt"
+  echo ">>   public URL: ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.out.txt"
+  gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}.out.txt"
+
+  echo ">> uploading ${JSON_OUT} to gs://${JOB_GCS_BUCKET}.json"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.json"
   gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
-  echo ">> uploading ${HTML_OUT}"
+
+  echo ">> uploading ${HTML_OUT} to gs://${JOB_GCS_BUCKET}.html"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}.html"
   gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
-  echo ">> uploading ${SUMMARY_OUT}"
+
+  echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
+  echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 else 
   # Otherwise, put the results in a predictable spot so the upload job can find them

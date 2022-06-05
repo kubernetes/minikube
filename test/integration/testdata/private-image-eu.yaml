@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: private-image-eu
+  labels:
+    integration-test: private-image-eu
+spec:
+  selector:
+    matchLabels:
+      integration-test: private-image-eu
+  template:
+    metadata:
+      labels:
+        integration-test: private-image-eu
+    spec:
+      containers:
+      - image: europe-west1-docker.pkg.dev/k8s-minikube/test-artifacts-eu/echoserver:1.4
+        imagePullPolicy: IfNotPresent
+        name: private-image-eu

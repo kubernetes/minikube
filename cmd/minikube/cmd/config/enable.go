@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -45,11 +46,17 @@ var addonsEnableCmd = &cobra.Command{
 			out.Styled(style.Waiting, "using metrics-server addon, heapster is deprecated")
 			addon = "metrics-server"
 		}
+		if addon == "ambassador" {
+			out.Styled(style.Warning, "The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73")
+		}
+		if addon == "olm" {
+			out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
+		}
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
-		if err != nil {
-			exit.Error(reason.InternalEnable, "enable failed", err)
+		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
+			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}
 		if addon == "dashboard" {
 			tipProfileArg := ""
@@ -63,8 +70,9 @@ var addonsEnableCmd = &cobra.Command{
 `, out.V{"profileArg": tipProfileArg})
 
 		}
-
-		out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		if err == nil {
+			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
+		}
 	},
 }
 

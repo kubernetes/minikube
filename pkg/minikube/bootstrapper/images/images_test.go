@@ -17,10 +17,12 @@ limitations under the License.
 package images
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/version"
 )
@@ -66,6 +68,15 @@ k8s.gcr.io/pause:3.4.1
 k8s.gcr.io/etcd:3.4.13-0
 k8s.gcr.io/coredns/coredns:v1.8.0
 `, "\n"), "\n")},
+		{"v1.22.0", strings.Split(strings.Trim(`
+k8s.gcr.io/kube-apiserver:v1.22.0
+k8s.gcr.io/kube-controller-manager:v1.22.0
+k8s.gcr.io/kube-scheduler:v1.22.0
+k8s.gcr.io/kube-proxy:v1.22.0
+k8s.gcr.io/pause:3.5
+k8s.gcr.io/etcd:3.5.0-0
+k8s.gcr.io/coredns/coredns:v1.8.4
+`, "\n"), "\n")},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.version, func(t *testing.T) {
@@ -82,11 +93,43 @@ k8s.gcr.io/coredns/coredns:v1.8.0
 	}
 }
 
+func TestGetLatestTag(t *testing.T) {
+	serverResp := "{tags: [\"1.8.7\"]}"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(serverResp))
+		if err != nil {
+			t.Errorf("failed to write https response")
+		}
+	}))
+	defer server.Close()
+
+	var testCases = []struct {
+		name          string
+		url           string
+		lastKnownGood string
+		wsResponse    string
+		expect        string
+	}{
+		{name: "VersionGetSuccess", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["v1.8.9"]}`, expect: "v1.8.9"},
+		{name: "VersionGetFail", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "nah", "nope": ["v1.8.9"]}`, expect: "v1.8.6"},
+		{name: "VersionGetFailNone", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: ``, expect: "v1.8.6"},
+		{name: "VersionGetSuccessMultiple", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["1.8.7","v1.8.9"]}`, expect: "v1.8.9"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			serverResp = tc.wsResponse
+			resp := findLatestTagFromRepository(tc.url, tc.lastKnownGood)
+			if diff := cmp.Diff(tc.expect, resp); diff != "" {
+				t.Errorf("Incorrect response version (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAuxiliary(t *testing.T) {
 	want := []string{
 		"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"docker.io/kubernetesui/dashboard:v2.1.0",
-		"docker.io/kubernetesui/metrics-scraper:v1.0.4",
 	}
 	got := auxiliary("")
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -96,9 +139,7 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/storage-provisioner:" + version.GetStorageProvisionerVersion(),
-		"test.mirror/dashboard:v2.1.0",
-		"test.mirror/metrics-scraper:v1.0.4",
+		"test.mirror/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 	}
 	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {

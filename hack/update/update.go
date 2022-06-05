@@ -62,6 +62,9 @@ func init() {
 	if err := flag.Set("alsologtostderr", "true"); err != nil {
 		klog.Warningf("Unable to set flag value for alsologtostderr: %v", err)
 	}
+
+	// used in update_kubeadm_constants.go
+	flag.String("kubernetes-version", "latest", "kubernetes-version")
 	flag.Parse()
 	defer klog.Flush()
 
@@ -189,7 +192,7 @@ func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 	notify := func(err error, wait time.Duration) {
 		klog.Errorf("Temporary error running '%s' (will retry in %s): %v", cmd.String(), wait, err)
 	}
-	if err := backoff.RetryNotify(func() error {
+	return backoff.RetryNotify(func() error {
 		cmd.Stdin = stdin
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
@@ -198,10 +201,7 @@ func RunWithRetryNotify(ctx context.Context, cmd *exec.Cmd, stdin io.Reader, max
 			return fmt.Errorf("%w: %s", err, stderr.String())
 		}
 		return nil
-	}, bc, notify); err != nil {
-		return err
-	}
-	return nil
+	}, bc, notify)
 }
 
 // Run runs command cmd with stdin

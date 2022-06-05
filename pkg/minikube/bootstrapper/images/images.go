@@ -18,12 +18,24 @@ limitations under the License.
 package images
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"path"
 
-	"github.com/blang/semver"
+	"k8s.io/klog/v2"
+
+	"k8s.io/minikube/pkg/minikube/constants"
+
+	"github.com/blang/semver/v4"
 
 	"k8s.io/minikube/pkg/version"
+)
+
+const (
+	// builds a docker v2 repository API call in the format https://k8s.gcr.io/v2/coredns/coredns/tags/list
+	tagURLTemplate = "https://%s/v2/%s/tags/list"
 )
 
 // Pause returns the image name to pull for a given Kubernetes version
@@ -31,15 +43,18 @@ func Pause(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	pv := "3.4.1"
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	if semver.MustParseRange("<1.21.0-alpha.3")(v) {
-		pv = "3.2"
+	pv := "3.6"
+	imageName := "pause"
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+
+	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+		pv = pVersion
+	} else {
+		pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), pv)
 	}
-	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
-		pv = "3.1"
-	}
-	return path.Join(kubernetesRepo(mirror), "pause:"+pv)
+
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -62,33 +77,60 @@ func componentImage(name string, v semver.Version, mirror string) string {
 	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
 }
 
+// fixes 13136 by getting the latest image version from the k8s.gcr.io repository instead of hardcoded
+func findLatestTagFromRepository(url string, lastKnownGood string) string {
+	client := &http.Client{}
+	errorMsg := fmt.Sprintf("Failed to get latest image version for %s, reverting to version %s.", url, lastKnownGood)
+
+	resp, err := client.Get(url)
+
+	if err != nil || resp.StatusCode != http.StatusOK {
+		klog.Warningf("%s Error %v", errorMsg, err)
+		return lastKnownGood
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		klog.Warningf("%s Error %v", errorMsg, err)
+		return lastKnownGood
+	}
+
+	type TagsResponse struct {
+		Name string   `json:"name"`
+		Tags []string `json:"tags"`
+	}
+
+	tags := TagsResponse{}
+	err = json.Unmarshal(body, &tags)
+	if err != nil || len(tags.Tags) < 1 {
+		klog.Warningf("%s Error %v", errorMsg, err)
+		return lastKnownGood
+	}
+	lastTagNum := len(tags.Tags) - 1
+	return tags.Tags[lastTagNum]
+}
+
 // coreDNS returns the images used for CoreDNS
 func coreDNS(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `CoreDNSImageName` and `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	in := "coredns/coredns"
+
+	imageName := "coredns/coredns"
+	cv := "v1.8.6"
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
-		in = "coredns"
+		imageName = "coredns"
 	}
-	cv := "v1.8.0"
-	switch v.Minor {
-	case 20, 19:
-		cv = "1.7.0"
-	case 18:
-		cv = "1.6.7"
-	case 17:
-		cv = "1.6.5"
-	case 16:
-		cv = "1.6.2"
-	case 15, 14:
-		cv = "1.3.1"
-	case 13:
-		cv = "1.2.6"
-	case 12:
-		cv = "1.2.2"
+
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+		cv = cVersion
+	} else {
+		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), cv)
 	}
-	return path.Join(kubernetesRepo(mirror), in+":"+cv)
+
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), cv)
 }
 
 // etcd returns the image used for etcd
@@ -96,27 +138,16 @@ func etcd(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.4.13-3"
-
-	switch v.Minor {
-	case 19, 20, 21:
-		ev = "3.4.13-0"
-	case 17, 18:
-		ev = "3.4.3-0"
-	case 16:
-		ev = "3.3.15-0"
-	case 14, 15:
-		ev = "3.3.10"
-	case 12, 13:
-		ev = "3.2.24"
+	ev := "3.5.0-0"
+	imageName := "etcd"
+	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
+		ev = eVersion
+	} else {
+		ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), ev)
 	}
 
-	// An awkward special case for v1.19.0 - do not imitate unless necessary
-	if v.Equals(semver.MustParse("1.19.0")) {
-		ev = "3.4.9-1"
-	}
-
-	return path.Join(kubernetesRepo(mirror), "etcd:"+ev)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
 }
 
 // auxiliary returns images that are helpful for running minikube
@@ -124,8 +155,6 @@ func auxiliary(mirror string) []string {
 	// Note: changing this list requires bumping the preload version
 	return []string{
 		storageProvisioner(mirror),
-		dashboardFrontend(mirror),
-		dashboardMetrics(mirror),
 		// NOTE: kindnet is also used when the Docker driver is used with a non-Docker runtime
 	}
 }
@@ -133,24 +162,6 @@ func auxiliary(mirror string) []string {
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
 	return path.Join(minikubeRepo(mirror), "storage-provisioner:"+version.GetStorageProvisionerVersion())
-}
-
-// dashboardFrontend returns the image used for the dashboard frontend
-func dashboardFrontend(repo string) string {
-	if repo == "" {
-		repo = "docker.io/kubernetesui"
-	}
-	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "dashboard:v2.1.0")
-}
-
-// dashboardMetrics returns the image used for the dashboard metrics scraper
-func dashboardMetrics(repo string) string {
-	if repo == "" {
-		repo = "docker.io/kubernetesui"
-	}
-	// See 'dashboard-metrics-scraper' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "metrics-scraper:v1.0.4")
 }
 
 // KindNet returns the image used for kindnet
@@ -163,18 +174,34 @@ func KindNet(repo string) string {
 	return path.Join(repo, "kindnetd:v20210326-1e038dc5")
 }
 
+// all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
+const calicoVersion = "v3.20.0"
+const calicoRepo = "docker.io/calico"
+
 // CalicoDaemonSet returns the image used for calicoDaemonSet
 func CalicoDaemonSet(repo string) string {
-	if repo == "" {
-		repo = "calico"
-	}
-	return path.Join(repo, "node:v3.14.1")
+	return calicoCommon(repo, "node")
+
 }
 
 // CalicoDeployment returns the image used for calicoDeployment
 func CalicoDeployment(repo string) string {
+	return calicoCommon(repo, "kube-controllers")
+}
+
+// CalicoFelixDriver returns image used for felix driver
+func CalicoFelixDriver(repo string) string {
+	return calicoCommon(repo, "pod2daemon-flexvol")
+}
+
+// CalicoBin returns image used for calico binary image
+func CalicoBin(repo string) string {
+	return calicoCommon(repo, "cni")
+}
+
+func calicoCommon(repo string, name string) string {
 	if repo == "" {
-		repo = "calico"
+		repo = calicoRepo
 	}
-	return path.Join(repo, "kube-controllers:v3.14.1")
+	return path.Join(repo, fmt.Sprintf("%s:%s", name, calicoVersion))
 }

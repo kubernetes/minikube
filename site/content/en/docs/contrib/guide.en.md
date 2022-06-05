@@ -1,7 +1,7 @@
 ---
 title: "Contributor Guide"
 linkTitle: "Guide"
-date: 2019-07-31
+date: 2021-11-09
 weight: 1
 description: >
   How to become a minikube contributor
@@ -9,7 +9,7 @@ description: >
 
 ### Code of Conduct
 
- Be excellent to each another. Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md).
+Be excellent to each another. Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md).
 
 ### License Agreement
 
@@ -17,36 +17,37 @@ We'd love to accept your patches! Before we can take them, [please fill out eith
 
 ### Finding issues to work on
 
-* ["good first issue"](https://github.com/kubernetes/minikube/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)  -  issues where there is a clear path to resolution
-* ["help wanted"](https://github.com/kubernetes/minikube/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues where we've identified a need but not resources to work on them
-* ["priority/important-soon"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-soon) or ["priority/important-longterm"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-longterm) - high impact issues that need to be addressed in the next couple of releases.
+- ["good first issue"](https://github.com/kubernetes/minikube/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) - issues where there is a clear path to resolution
+- ["help wanted"](https://github.com/kubernetes/minikube/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues where we've identified a need but not resources to work on them
+- ["priority/important-soon"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-soon) or ["priority/important-longterm"](https://github.com/kubernetes/minikube/issues?q=is%3Aopen+is%3Aissue+label%3Apriority%2Fimportant-longterm) - high impact issues that need to be addressed in the next couple of releases.
 
-* Ask on the #minikube Slack if you aren't sure
+- Ask on the #minikube Slack if you aren't sure
 
 Once you've discovered an issue to work on:
 
-* Add a comment mentioning that you plan to work on the issue
-* Send a PR out that mentions the issue
-* Comment on the issue with `/assign` to assign it to yourself
-
+- Add a comment mentioning that you plan to work on the issue
+- Send a PR out that mentions the issue
+- Comment on the issue with `/assign` to assign it to yourself
 
 ### clone `minikube`
 
 After forking minikube you can `clone` for best practices use the following instruction:
 
-```bash 
+```bash
 git clone git@github.com:kubernetes/minikube.git
+cd minikube
 git remote rename origin upstream
 git remote set-url --push upstream NO_PUSH
 git remote add origin git@github.com:<YOUR_GITHUB_USERNAME>/minikube.git
 ```
+
 ### Contributing A Patch
 
 1. Submit an issue describing your proposed change
 2. A reviewer will respond to your issue promptly.
 3. If your proposed change is accepted, and you haven't already done so, sign the [Contributor License Agreement (CLA)](https://git.k8s.io/community/CLA.md)
 4. Fork the minikube repository, develop and test your code changes.
-    * Before test, you may need to install some [prerequisites](https://minikube.sigs.k8s.io/docs/contrib/testing/#prerequisites).
+   - Before test, you may need to install some [prerequisites](https://minikube.sigs.k8s.io/docs/contrib/testing/#prerequisites).
 5. Submit a pull request.
 
 ## Contributing larger changes

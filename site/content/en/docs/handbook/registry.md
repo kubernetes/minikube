@@ -29,6 +29,8 @@ registry-creds was successfully configured
 $ minikube addons enable registry-creds
 ```
 
+**Google Artifact Registry**: minikube has an addon, `gcp-auth`, which maps credentials into minikube to support pulling from Google Artifact Registry. Run `minikube addons enable gcp-auth` to configure the authentication. You can refer to the full docs [here](https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/).
+
 For additional information on private container registries, see [this page](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 
 We recommend you use _ImagePullSecrets_, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/var/lib/kubelet` directory. Make sure to restart your kubelet (for kubeadm) process with `sudo systemctl restart kubelet`.
@@ -83,13 +85,19 @@ The first step is to enable the registry addon:
 minikube addons enable registry
 ```
 
-When enabled, the registry addon exposes its port 5000 on the minikube's virtual machine.
+When enabled, the registry addon exposes its port 80 on the minikube's virtual machine. You can confirm this by:
+```shell
+kubectl get service --namespace kube-system
+> NAME       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)                  AGE
+> kube-dns   ClusterIP   10.96.0.10     <none>        53/UDP,53/TCP,9153/TCP   54m
+> registry   ClusterIP   10.98.34.133   <none>        80/TCP,443/TCP           37m
+```
 
-In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 5000 on the minikube machine. Unfortunately, the docker vm cannot directly see the IP address of the minikube vm. To fix this, you will have to add one more level of redirection.
+In order to make docker accept pushing images to this registry, we have to redirect port 5000 on the docker virtual machine over to port 80 on the minikube registry service. Unfortunately, the docker vm cannot directly see the IP address of the minikube vm. To fix this, you will have to add one more level of redirection.
 
 Use kubectl port-forward to map your local workstation to the minikube vm
 ```shell
-kubectl port-forward --namespace kube-system <name of the registry vm> 5000:5000
+kubectl port-forward --namespace kube-system service/registry 5000:80
 ```
 
 On your local machine you should now be able to reach the minikube registry by using `curl http://localhost:5000/v2/_catalog`

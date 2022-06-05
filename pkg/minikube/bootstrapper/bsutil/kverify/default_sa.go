@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // WaitForDefaultSA waits for the default service account to be created.

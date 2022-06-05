@@ -18,29 +18,23 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-if ! [[ -r "${DIR}/gh_token.txt" ]]; then
-  echo "Missing '${DIR}/gh_token.txt'. Please create a GitHub token at https://github.com/settings/tokens and store in '${DIR}/gh_token.txt'."
-  exit 1
-fi
+# Parse the token from `gh auth`
+GH_TOKEN=$(mktemp)
+gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$GH_TOKEN"
 
-install_release_notes_helper() {
-  release_notes_workdir="$(mktemp -d)"
-  trap 'rm -rf -- ${release_notes_workdir}' RETURN
-
-  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
-  cd "${release_notes_workdir}"
-  go mod init release-notes
-  GOBIN="$DIR" go get github.com/corneliusweig/release-notes
-  GOBIN="$DIR" go get github.com/google/pullsheet
-  cd -
+# Ensure the token is deleted when the script exits, so the token is not leaked.
+function cleanup_token() {
+  rm -f "$GH_TOKEN"
 }
+trap cleanup_token EXIT
 
 if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing release-notes'
-  install_release_notes_helper
+  go install github.com/corneliusweig/release-notes@latest
+  go install github.com/google/pullsheet@latest
 fi
 
-git pull git@github.com:kubernetes/minikube master --tags
+git pull https://github.com/kubernetes/minikube.git master --tags
 recent=$(git describe --abbrev=0)
 recent_date=$(git log -1 --format=%as $recent)
 
@@ -58,17 +52,14 @@ echo "Thank you to our PR reviewers for this release!"
 echo ""
 AWK_FORMAT_ITEM='{printf "- %s (%d comments)\n", $2, $1}'
 AWK_REVIEW_COMMENTS='NR>1{arr[$4] += $6 + $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
-"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_REVIEW_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM"
+"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_REVIEW_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM"
 echo ""
 echo "Thank you to our triage members for this release!"
 echo ""
 AWK_ISSUE_COMMENTS='NR>1{arr[$4] += $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
-"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path $DIR/gh_token.txt --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
+"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
 
 if [[ "$recent" != *"beta"* ]]; then
   echo ""
   echo "Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/$recent/) for this release!"
 fi
-
-echo ""
-echo "Don't forget to run `make update-leaderboard` & `make time-to-k8s-benchmark`!"

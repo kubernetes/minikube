@@ -26,6 +26,7 @@ import (
 
 // If you add a new step here, please also add it to register.Reg registry inside the init() function
 const (
+	// InitialSetup
 	InitialSetup                      RegStep = "Initial Minikube Setup"
 	SelectingDriver                   RegStep = "Selecting Driver"
 	DownloadingArtifacts              RegStep = "Downloading Artifacts"
@@ -47,9 +48,12 @@ const (
 	EnablingAddons                    RegStep = "Enabling Addons"
 	Done                              RegStep = "Done"
 
+	// Deleting
+	Deleting RegStep = "Deleting"
+	Purging  RegStep = "Puring home dir"
+
 	Stopping  RegStep = "Stopping"
 	PowerOff  RegStep = "PowerOff"
-	Deleting  RegStep = "Deleting"
 	Pausing   RegStep = "Pausing"
 	Unpausing RegStep = "Unpausing"
 )
@@ -98,7 +102,7 @@ func init() {
 			Stopping:  {Stopping, PowerOff, Done},
 			Pausing:   {Pausing, Done},
 			Unpausing: {Unpausing, Done},
-			Deleting:  {Deleting, Stopping, Deleting, Done},
+			Deleting:  {Deleting, Stopping, Done, Purging},
 		},
 	}
 }

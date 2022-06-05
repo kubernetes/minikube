@@ -21,18 +21,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -52,6 +55,7 @@ const (
 	nfsSharesRoot           = "nfs-shares-root"
 	nfsShare                = "nfs-share"
 	kubernetesVersion       = "kubernetes-version"
+	noKubernetes            = "no-kubernetes"
 	hostOnlyCIDR            = "host-only-cidr"
 	containerRuntime        = "container-runtime"
 	criSocket               = "cri-socket"
@@ -79,6 +83,14 @@ const (
 	imageRepository         = "image-repository"
 	imageMirrorCountry      = "image-mirror-country"
 	mountString             = "mount-string"
+	mount9PVersion          = "mount-9p-version"
+	mountGID                = "mount-gid"
+	mountIPFlag             = "mount-ip"
+	mountMSize              = "mount-msize"
+	mountOptions            = "mount-options"
+	mountPortFlag           = "mount-port"
+	mountTypeFlag           = "mount-type"
+	mountUID                = "mount-uid"
 	disableDriverMounts     = "disable-driver-mounts"
 	cacheImages             = "cache-images"
 	uuid                    = "uuid"
@@ -109,6 +121,7 @@ const (
 	kicBaseImage            = "base-image"
 	ports                   = "ports"
 	network                 = "network"
+	subnet                  = "subnet"
 	startNamespace          = "namespace"
 	trace                   = "trace"
 	sshIPAddress            = "ssh-ip-address"
@@ -118,6 +131,11 @@ const (
 	defaultSSHUser          = "root"
 	defaultSSHPort          = 22
 	listenAddress           = "listen-address"
+	extraDisks              = "extra-disks"
+	certExpiration          = "cert-expiration"
+	binaryMirror            = "binary-mirror"
+	disableOptimizations    = "disable-optimizations"
+	disableMetrics          = "disable-metrics"
 )
 
 var (
@@ -135,8 +153,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to Kubernetes.")
-	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs.", constants.MaxResources))
+	startCmd.Flags().String(memory, "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory.", constants.MaxResources))
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -144,9 +162,17 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
-	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used (%s).", strings.Join(cruntime.ValidRuntimes(), ", ")))
+	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
+	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
+	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
+	startCmd.Flags().Int(mountMSize, defaultMountMSize, mountMSizeDescription)
+	startCmd.Flags().StringSlice(mountOptions, defaultMountOptions(), mountOptionsDescription)
+	startCmd.Flags().Uint16(mountPortFlag, defaultMountPort, mountPortDescription)
+	startCmd.Flags().String(mountTypeFlag, defaultMountType, mountTypeDescription)
+	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
 	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
@@ -159,11 +185,17 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
+	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
+	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
+	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
+	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
+	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -198,7 +230,7 @@ func initDriverFlags() {
 	startCmd.Flags().Int(kvmNUMACount, 1, "Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only)")
 
 	// virtualbox
-	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (virtualbox driver only)")
+	startCmd.Flags().String(hostOnlyCIDR, "192.168.59.1/24", "The CIDR to be used for the minikube VM (virtualbox driver only)")
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)")
@@ -220,6 +252,7 @@ func initDriverFlags() {
 	// docker & podman
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
+	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -245,7 +278,7 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
@@ -257,7 +290,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, drvName)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -290,6 +323,30 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	return createNode(cc, kubeNodeName, existing)
 }
 
+func getCPUCount(drvName string) int {
+	if viper.GetString(cpus) != constants.MaxResources {
+		return viper.GetInt(cpus)
+	}
+
+	if !driver.IsKIC(drvName) {
+		ci, err := cpu.Counts(true)
+		if err != nil {
+			exit.Message(reason.Usage, "Unable to get CPU info: {{.err}}", out.V{"err": err})
+		}
+		return ci
+	}
+
+	si, err := oci.CachedDaemonInfo(drvName)
+	if err != nil {
+		si, err = oci.DaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+	}
+
+	return si.CPUs
+}
+
 func getMemorySize(cmd *cobra.Command, drvName string) int {
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
@@ -298,10 +355,15 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 
 	mem := suggestMemoryAllocation(sysLimit, containerLimit, viper.GetInt(nodes))
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
+		memString := viper.GetString(memory)
 		var err error
-		mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		if memString == constants.MaxResources {
+			mem = noLimitMemory(sysLimit, containerLimit)
+		} else {
+			mem, err = pkgutil.CalculateSizeInMB(memString)
+			if err != nil {
+				exit.Message(reason.Usage, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
+			}
 		}
 		if driver.IsKIC(drvName) && mem > containerLimit {
 			exit.Message(reason.Usage, "{{.driver_name}} has only {{.container_limit}}MB memory but you specified {{.specified_memory}}MB", out.V{"container_limit": containerLimit, "specified_memory": mem, "driver_name": driver.FullName(drvName)})
@@ -321,6 +383,27 @@ func getDiskSize() int {
 	}
 
 	return diskSize
+}
+
+func getExtraOptions() config.ExtraOptionSlice {
+	options := []string{}
+	if detect.IsCloudShell() {
+		options = append(options, "kubelet.cgroups-per-qos=false", "kubelet.enforce-node-allocatable=\"\"")
+	}
+	if viper.GetBool(disableMetrics) {
+		options = append(options, "kubelet.housekeeping-interval=5m")
+	}
+	for _, eo := range options {
+		if config.ExtraOptions.Exists(eo) {
+			klog.Infof("skipping extra-config %q.", eo)
+			continue
+		}
+		klog.Infof("setting extra-config: %s", eo)
+		if err := config.ExtraOptions.Set(eo); err != nil {
+			exit.Error(reason.InternalConfigSet, "failed to set extra option", err)
+		}
+	}
+	return config.ExtraOptions
 }
 
 func getRepository(cmd *cobra.Command, k8sVersion string) string {
@@ -343,6 +426,10 @@ func getRepository(cmd *cobra.Command, k8sVersion string) string {
 		repository = autoSelectedRepository
 	}
 
+	if repository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+		download.SetAliyunMirror()
+	}
+
 	if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {
 		out.Styled(style.Success, "Using image repository {{.name}}", out.V{"name": repository})
 	}
@@ -361,7 +448,7 @@ func getCNIConfig(cmd *cobra.Command) string {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -376,6 +463,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 
 	checkNumaCount(k8sVersion)
 
+	checkExtraDiskOptions(cmd, drvName)
+
 	cc = config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
@@ -383,8 +472,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
 		Network:                 viper.GetString(network),
+		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
-		CPUs:                    viper.GetInt(cpus),
+		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
 		ListenAddress:           viper.GetString(listenAddress),
@@ -418,6 +508,21 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		SSHUser:                 viper.GetString(sshSSHUser),
 		SSHKey:                  viper.GetString(sshSSHKey),
 		SSHPort:                 viper.GetInt(sshSSHPort),
+		ExtraDisks:              viper.GetInt(extraDisks),
+		CertExpiration:          viper.GetDuration(certExpiration),
+		Mount:                   viper.GetBool(createMount),
+		MountString:             viper.GetString(mountString),
+		Mount9PVersion:          viper.GetString(mount9PVersion),
+		MountGID:                viper.GetString(mountGID),
+		MountIP:                 viper.GetString(mountIPFlag),
+		MountMSize:              viper.GetInt(mountMSize),
+		MountOptions:            viper.GetStringSlice(mountOptions),
+		MountPort:               uint16(viper.GetUint(mountPortFlag)),
+		MountType:               viper.GetString(mountTypeFlag),
+		MountUID:                viper.GetString(mountUID),
+		BinaryMirror:            viper.GetString(binaryMirror),
+		DisableOptimizations:    viper.GetBool(disableOptimizations),
+		DisableMetrics:          viper.GetBool(disableMetrics),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -427,12 +532,12 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 			APIServerIPs:           apiServerIPs,
 			DNSDomain:              viper.GetString(dnsDomain),
 			FeatureGates:           viper.GetString(featureGates),
-			ContainerRuntime:       viper.GetString(containerRuntime),
+			ContainerRuntime:       rtime,
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          chosenNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        getRepository(cmd, k8sVersion),
-			ExtraOptions:           config.ExtraOptions,
+			ExtraOptions:           getExtraOptions(),
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			CNI:                    getCNIConfig(cmd),
 			NodePort:               viper.GetInt(apiServerPort),
@@ -444,7 +549,51 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, drvName s
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
 	}
 
+	if driver.IsKIC(drvName) {
+		si, err := oci.CachedDaemonInfo(drvName)
+		if err != nil {
+			exit.Message(reason.Usage, "Ensure your {{.driver_name}} is running and is healthy.", out.V{"driver_name": driver.FullName(drvName)})
+		}
+		if si.Rootless {
+			out.Styled(style.Notice, "Using rootless {{.driver_name}} driver", out.V{"driver_name": driver.FullName(drvName)})
+			if cc.KubernetesConfig.ContainerRuntime == constants.Docker {
+				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
+			}
+			// KubeletInUserNamespace feature gate is essential for rootless driver.
+			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+		} else {
+			if oci.IsRootlessForced() {
+				if driver.IsDocker(drvName) {
+					exit.Message(reason.Usage, "Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .")
+				} else {
+					exit.Message(reason.Usage, "Using rootless driver was required, but the current driver does not seem rootless")
+				}
+			}
+			out.Styled(style.Notice, "Using {{.driver_name}} driver with the root privilege", out.V{"driver_name": driver.FullName(drvName)})
+		}
+		if si.StorageDriver == "btrfs" {
+			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
+			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
+		}
+	}
+
 	return cc
+}
+
+func addFeatureGate(featureGates, s string) string {
+	if len(featureGates) == 0 {
+		return s
+	}
+	split := strings.Split(featureGates, ",")
+	m := make(map[string]struct{}, len(split))
+	for _, v := range split {
+		m[v] = struct{}{}
+	}
+	if _, ok := m[s]; !ok {
+		split = append(split, s)
+	}
+	return strings.Join(split, ",")
 }
 
 func checkNumaCount(k8sVersion string) {
@@ -504,6 +653,10 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 		cc.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
+	if cc.CertExpiration == 0 {
+		cc.CertExpiration = constants.DefaultCertExpiration
+	}
+
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
@@ -529,7 +682,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		out.WarningT("You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.")
 	}
 
-	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
+	checkExtraDiskOptions(cmd, cc.Driver)
+	if cmd.Flags().Changed(extraDisks) && viper.GetInt(extraDisks) != existing.ExtraDisks {
+		out.WarningT("You cannot add or remove extra disks for an existing minikube cluster. Please first delete the cluster.")
+	}
+
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
 	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
@@ -571,13 +728,29 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateIntFromFlag(cmd, &cc.KubernetesConfig.NodePort, apiServerPort)
+	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
+	updateBoolFromFlag(cmd, &cc.Mount, createMount)
+	updateStringFromFlag(cmd, &cc.MountString, mountString)
+	updateStringFromFlag(cmd, &cc.Mount9PVersion, mount9PVersion)
+	updateStringFromFlag(cmd, &cc.MountGID, mountGID)
+	updateStringFromFlag(cmd, &cc.MountIP, mountIPFlag)
+	updateIntFromFlag(cmd, &cc.MountMSize, mountMSize)
+	updateStringSliceFromFlag(cmd, &cc.MountOptions, mountOptions)
+	updateUint16FromFlag(cmd, &cc.MountPort, mountPortFlag)
+	updateStringFromFlag(cmd, &cc.MountType, mountTypeFlag)
+	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
+	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
+	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
 	}
+	if cmd.Flags().Changed(containerRuntime) {
+		cc.KubernetesConfig.ContainerRuntime = getContainerRuntime(existing)
+	}
 
 	if cmd.Flags().Changed("extra-config") {
-		cc.KubernetesConfig.ExtraOptions = config.ExtraOptions
+		cc.KubernetesConfig.ExtraOptions = getExtraOptions()
 	}
 
 	if cmd.Flags().Changed(cniFlag) || cmd.Flags().Changed(enableDefaultCNI) {
@@ -588,9 +761,20 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
+	if cmd.Flags().Changed("apiserver-ips") {
+		// IPSlice not supported in Viper
+		// https://github.com/spf13/viper/issues/460
+		cc.KubernetesConfig.APIServerIPs = apiServerIPs
+	}
+
 	// Handle flags and legacy configuration upgrades that do not contain KicBaseImage
 	if cmd.Flags().Changed(kicBaseImage) || cc.KicBaseImage == "" {
 		cc.KicBaseImage = viper.GetString(kicBaseImage)
+	}
+
+	// If this cluster was stopped by a scheduled stop, clear the config
+	if cc.ScheduledStop != nil && time.Until(time.Unix(cc.ScheduledStop.InitiationTime, 0).Add(cc.ScheduledStop.Duration)) <= 0 {
+		cc.ScheduledStop = nil
 	}
 
 	return cc
@@ -628,6 +812,13 @@ func updateIntFromFlag(cmd *cobra.Command, v *int, key string) {
 func updateDurationFromFlag(cmd *cobra.Command, v *time.Duration, key string) {
 	if cmd.Flags().Changed(key) {
 		*v = viper.GetDuration(key)
+	}
+}
+
+// updateUint16FromFlag will update the existing uint16 from the flag.
+func updateUint16FromFlag(cmd *cobra.Command, v *uint16, key string) {
+	if cmd.Flags().Changed(key) {
+		*v = uint16(viper.GetUint(key))
 	}
 }
 
@@ -674,4 +865,21 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	}
 	klog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
+}
+
+func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2}
+
+	if cmd.Flags().Changed(extraDisks) {
+		supported := false
+		for _, driver := range supportedDrivers {
+			if driverName == driver {
+				supported = true
+				break
+			}
+		}
+		if !supported {
+			out.WarningT("Specifying extra disks is currently only supported for the following drivers: {{.supported_drivers}}. If you can contribute to add this feature, please create a PR.", out.V{"supported_drivers": supportedDrivers})
+		}
+	}
 }

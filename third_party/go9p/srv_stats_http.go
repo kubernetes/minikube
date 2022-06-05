@@ -1,4 +1,4 @@
-// +build httpstats
+//go:build httpstats
 
 package go9p
 

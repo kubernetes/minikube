@@ -21,7 +21,7 @@
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The Github API access token. Injected by the Jenkins credential provider. 
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 
 set -e
@@ -33,13 +33,6 @@ JOB_NAME="Docker_macOS"
 EXTRA_TEST_ARGS=""
 EXPECTED_DEFAULT_DRIVER="docker"
 EXTERNAL="yes"
-
-# fix mac os as a service on mac os
-# https://github.com/docker/for-mac/issues/882#issuecomment-506372814
-#osascript -e 'quit app "Docker"'
-#/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-#osascript -e 'quit app "Docker"'
-#/Applications/Docker.app/Contents/MacOS/Docker --unattended &
 
 begin=$(date +%s)
 while [ -z "$(docker info 2> /dev/null )" ];
@@ -53,10 +46,5 @@ do
     break
   fi
 done
-
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
-install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"
-echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
-crontab -l
 
 source common.sh

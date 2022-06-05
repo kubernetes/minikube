@@ -18,7 +18,6 @@ package kubeconfig
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -201,7 +200,7 @@ func readOrNew(configPath ...string) (*api.Config, error) {
 		fPath = configPath[0]
 	}
 
-	data, err := ioutil.ReadFile(fPath)
+	data, err := os.ReadFile(fPath)
 	if os.IsNotExist(err) {
 		return api.NewConfig(), nil
 	} else if err != nil {

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -52,10 +53,10 @@ func args() string {
 
 // Log details about the executed command.
 func Log(startTime time.Time) {
-	if len(os.Args) < 2 || !shouldLog() {
+	if !shouldLog() {
 		return
 	}
-	r := newRow(os.Args[1], args(), userName(), version.GetVersion(), startTime, time.Now())
+	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), startTime, time.Now())
 	if err := appendToLog(r); err != nil {
 		klog.Warning(err)
 	}
@@ -64,7 +65,7 @@ func Log(startTime time.Time) {
 // shouldLog returns if the command should be logged.
 func shouldLog() bool {
 	// in rare chance we get here without a command, don't log
-	if len(os.Args) < 2 {
+	if pflag.NArg() == 0 {
 		return false
 	}
 
@@ -74,7 +75,7 @@ func shouldLog() bool {
 
 	// commands that should not be logged.
 	no := []string{"status", "version"}
-	a := os.Args[1]
+	a := pflag.Arg(0)
 	for _, c := range no {
 		if a == c {
 			return false
@@ -85,17 +86,5 @@ func shouldLog() bool {
 
 // isDeletePurge return true if command is delete with purge flag.
 func isDeletePurge() bool {
-	args := os.Args
-	if len(args) < 2 {
-		return false
-	}
-	if args[1] != "delete" {
-		return false
-	}
-	for _, a := range args {
-		if a == "--purge" {
-			return true
-		}
-	}
-	return false
+	return pflag.Arg(0) == "delete" && viper.GetBool("purge")
 }

@@ -92,7 +92,7 @@ func (d *Driver) Create() error {
 	if networkName == "" {
 		networkName = d.NodeConfig.ClusterName
 	}
-	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName); err != nil {
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName, d.NodeConfig.Subnet); err != nil {
 		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
 	} else if gateway != nil {
 		params.Network = networkName
@@ -158,7 +158,7 @@ func (d *Driver) Create() error {
 		} else {
 			// The conflicting container name was not created by minikube
 			// user has a container that conflicts with minikube profile name, will not delete users container.
-			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent.", params.Name)
+			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent", params.Name)
 		}
 	}
 
@@ -188,6 +188,7 @@ func (d *Driver) Create() error {
 			klog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
 		}
 	}()
+	waitForPreload.Wait()
 	if pErr == oci.ErrInsufficientDockerStorage {
 		return pErr
 	}
@@ -200,7 +201,6 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	waitForPreload.Wait()
 	return nil
 }
 
@@ -260,11 +260,7 @@ func (d *Driver) prepareSSH() error {
 			icaclsCmdOut, icaclsCmdErr := icaclsCmd.CombinedOutput()
 
 			if icaclsCmdErr != nil {
-				return errors.Wrap(icaclsCmdErr, "unable to execute icacls to set permissions")
-			}
-
-			if !strings.Contains(string(icaclsCmdOut), "Successfully processed 1 files; Failed processing 0 files") {
-				klog.Errorf("icacls failed applying permissions - err - [%s], output - [%s]", icaclsCmdErr, strings.TrimSpace(string(icaclsCmdOut)))
+				return errors.Wrap(icaclsCmdErr, fmt.Sprintf("unable to execute icacls to set permissions: %s", icaclsCmdOut))
 			}
 		}
 	}

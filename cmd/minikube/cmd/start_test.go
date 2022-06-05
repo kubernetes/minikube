@@ -17,16 +17,19 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -70,6 +73,21 @@ func TestGetKubernetesVersion(t *testing.T) {
 			expectedVersion: constants.NewestKubernetesVersion,
 			paramVersion:    "latest",
 		},
+		{
+			description:     "kubernetes-version given as 'LATEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "LATEST",
+		},
+		{
+			description:     "kubernetes-version given as 'newest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "newest",
+		},
+		{
+			description:     "kubernetes-version given as 'NEWEST', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "NEWEST",
+		},
 	}
 
 	for _, test := range tests {
@@ -94,6 +112,7 @@ func TestMirrorCountry(t *testing.T) {
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	checkRepository = checkRepoMock
 	k8sVersion := constants.DefaultKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
 		description     string
 		k8sVersion      string
@@ -139,7 +158,7 @@ func TestMirrorCountry(t *testing.T) {
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
 			viper.SetDefault(kvmNUMACount, 1)
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, driver.Mock)
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, driver.Mock)
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -161,6 +180,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 		}
 	}()
 	k8sVersion := constants.NewestKubernetesVersion
+	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
 		description  string
 		proxy        string
@@ -208,7 +228,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 
 			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
 			proxy.SetDockerEnv()
-			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, rtime, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -320,42 +340,256 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 func TestValidateImageRepository(t *testing.T) {
 	var tests = []struct {
 		imageRepository      string
-		vaildImageRepository string
+		validImageRepository string
 	}{
 		{
 			imageRepository:      "auto",
-			vaildImageRepository: "auto",
+			validImageRepository: "auto",
+		},
+		{
+			imageRepository:      "$$$$invalid",
+			validImageRepository: "auto",
+		},
+		{
+			imageRepository:      "",
+			validImageRepository: "auto",
 		},
 		{
 			imageRepository:      "http://registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "https://registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "registry.test.com/google_containers/",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "http://registry.test.com/google_containers",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
 		},
 		{
 			imageRepository:      "https://registry.test.com/google_containers",
-			vaildImageRepository: "registry.test.com/google_containers",
+			validImageRepository: "registry.test.com/google_containers",
+		},
+		{
+			imageRepository:      "https://registry.test.com:6666/google_containers",
+			validImageRepository: "registry.test.com:6666/google_containers",
+		},
+		{
+			imageRepository:      "registry.test.com:6666/google_containers",
+			validImageRepository: "registry.test.com:6666/google_containers",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.imageRepository, func(t *testing.T) {
-			vaildImageRepository := validateImageRepository(test.imageRepository)
-			if vaildImageRepository != test.vaildImageRepository {
+			validImageRepository := validateImageRepository(test.imageRepository)
+			if validImageRepository != test.validImageRepository {
 				t.Errorf("validateImageRepository(imageRepo=%v): got %v, expected %v",
-					test.imageRepository, vaildImageRepository, test.vaildImageRepository)
+					test.imageRepository, validImageRepository, test.validImageRepository)
 			}
 		})
 	}
 
+}
+
+func TestValidateDiskSize(t *testing.T) {
+	var tests = []struct {
+		diskSize string
+		errorMsg string
+	}{
+		{
+			diskSize: "2G",
+			errorMsg: "",
+		},
+		{
+			diskSize: "test",
+			errorMsg: "Validation unable to parse disk size test: FromHumanSize: invalid size: 'test'",
+		},
+		{
+			diskSize: "6M",
+			errorMsg: fmt.Sprintf("Requested disk size 6 is less than minimum of %v", minimumDiskSize),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.diskSize, func(t *testing.T) {
+			got := validateDiskSize(test.diskSize)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateDiskSize(diskSize=%v): got %v, expected %v", test.diskSize, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidateRuntime(t *testing.T) {
+	var tests = []struct {
+		runtime  string
+		errorMsg string
+	}{
+		{
+			runtime:  "cri-o",
+			errorMsg: "",
+		},
+		{
+			runtime:  "docker",
+			errorMsg: "",
+		},
+
+		{
+			runtime:  "test",
+			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.runtime, func(t *testing.T) {
+			got := validateRuntime(test.runtime)
+			gotError := ""
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("ValidateRuntime(runtime=%v): got %v, expected %v", test.runtime, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidatePorts(t *testing.T) {
+	isMicrosoftWSL := detect.IsMicrosoftWSL()
+	type portTest struct {
+		// isTarget indicates whether or not the test case is covered
+		// because validatePorts behaves differently depending on whether process is running in WSL in windows or not.
+		isTarget bool
+		ports    []string
+		errorMsg string
+	}
+	var tests = []portTest{
+		{
+			isTarget: true,
+			ports:    []string{"8080:80"},
+			errorMsg: "",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"8080:80/tcp", "8080:80/udp"},
+			errorMsg: "",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"test:8080"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [test:8080] (Invalid hostPort: test)",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"0:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80]",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"0:80/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80/tcp]",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"65536:80/udp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [65536:80/udp] (Invalid hostPort: 65536)",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"0-1:80-81/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0-1:80-81/tcp]",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"0-1:80-81/udp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0-1:80-81/udp]",
+		},
+		{
+			isTarget: !isMicrosoftWSL,
+			ports:    []string{"80:80", "1023-1025:8023-8025", "1023-1025:8023-8025/tcp", "1023-1025:8023-8025/udp"},
+			errorMsg: "",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"80:80"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"1023-1025:8023-8025"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"1023-1025:8023-8025/tcp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025/tcp]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"1023-1025:8023-8025/udp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025/udp]",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"127.0.0.1:8080:80", "127.0.0.1:8081:80/tcp", "127.0.0.1:8081:80/udp", "127.0.0.1:8082-8083:8082-8083/tcp"},
+			errorMsg: "",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"1000.0.0.1:80:80"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [1000.0.0.1:80:80] (Invalid ip address: 1000.0.0.1)",
+		},
+		{
+			isTarget: !isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:80:80", "127.0.0.1:81:81/tcp", "127.0.0.1:81:81/udp", "127.0.0.1:82-83:82-83/tcp", "127.0.0.1:82-83:82-83/udp"},
+			errorMsg: "",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:80:80"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80:80]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:81:81/tcp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:81:81/tcp]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:81:81/udp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:81:81/udp]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:80-83:80-83/tcp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80-83:80-83/tcp]",
+		},
+		{
+			isTarget: isMicrosoftWSL,
+			ports:    []string{"127.0.0.1:80-83:80-83/udp"},
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80-83:80-83/udp]",
+		},
+	}
+	for _, test := range tests {
+		t.Run(strings.Join(test.ports, ","), func(t *testing.T) {
+			if !test.isTarget {
+				return
+			}
+			gotError := ""
+			got := validatePorts(test.ports)
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
+			}
+		})
+	}
 }

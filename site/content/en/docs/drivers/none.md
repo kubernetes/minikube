@@ -38,6 +38,16 @@ This document is written for system integrators who wish to run minikube within 
 
 * minikube and the Kubernetes services it starts may interfere with other running software on the system. For instance, minikube will start and stop container runtimes via systemd, such as docker, containerd, cri-o.
 
+### Persistent storage
+
+* minikube expects that some mount points used for volumes are bind-mounted or symlinked to a persistent location:
+
+   * `/data`
+   * `/tmp/hostpath_pv`
+   * `/tmp/hostpath-provisioner`
+
+If you don't have a dedicated disk to use for these, you can use the `/var` partition which is _usually_ persistent.
+
 ### Data loss
 
 With the `none` driver, minikube will overwrite the following system paths:

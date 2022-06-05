@@ -58,6 +58,10 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM/Host IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
+	case driver.QEMU2:
+		return net.ParseIP("10.0.2.2"), nil
+	case driver.QEMU:
+		return net.ParseIP("10.0.2.2"), nil
 	case driver.HyperV:
 		v := reflect.ValueOf(host.Driver).Elem()
 		var hypervVirtualSwitch string
@@ -146,6 +150,9 @@ func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	}
 	if driver.IsKIC(host.DriverName) {
 		ipStr = oci.DefaultBindIPV4
+	}
+	if driver.IsQEMU(host.DriverName) {
+		ipStr = "127.0.0.1"
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {

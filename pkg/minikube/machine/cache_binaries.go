@@ -18,7 +18,6 @@ package machine
 
 import (
 	"path"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
@@ -43,7 +43,7 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 }
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
-func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string) error {
+func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string, binariesURL string) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
 	var g errgroup.Group
@@ -53,7 +53,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, ex
 		}
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH); err != nil {
+			if _, err := download.Binary(bin, version, "linux", detect.EffectiveArch(), binariesURL); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil

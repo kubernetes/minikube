@@ -21,14 +21,15 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
-	"runtime"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
+	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -43,20 +44,13 @@ const (
 	// PreloadVersion is the current version of the preloaded tarball
 	//
 	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
-	PreloadVersion = "v11"
+	PreloadVersion = "v18"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
-// Enumeration for preload existence cache.
-const (
-	preloadUnknown = iota // Value when preload status has not been checked.
-	preloadMissing        // Value when preload has been checked and is missing.
-	preloadPresent        // Value when preload has been checked and is present.
-)
-
 var (
-	preloadState int = preloadUnknown
+	preloadStates = make(map[string]map[string]bool)
 )
 
 // TarballName returns name of the tarball
@@ -70,7 +64,8 @@ func TarballName(k8sVersion, containerRuntime string) string {
 	} else {
 		storageDriver = "overlay2"
 	}
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
+	arch := detect.EffectiveArch()
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, arch)
 }
 
 // returns the name of the checksum file
@@ -95,7 +90,34 @@ func TarballPath(k8sVersion, containerRuntime string) string {
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
 func remoteTarballURL(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion, containerRuntime))
+	return fmt.Sprintf("https://%s/%s/%s/%s/%s", downloadHost, PreloadBucket, PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
+}
+
+func setPreloadState(k8sVersion, containerRuntime string, value bool) {
+	cRuntimes, ok := preloadStates[k8sVersion]
+	if !ok {
+		cRuntimes = make(map[string]bool)
+		preloadStates[k8sVersion] = cRuntimes
+	}
+	cRuntimes[containerRuntime] = value
+}
+
+var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
+	url := remoteTarballURL(k8sVersion, containerRuntime)
+	resp, err := http.Head(url)
+	if err != nil {
+		klog.Warningf("%s fetch error: %v", url, err)
+		return false
+	}
+
+	// note: err won't be set if it's a 404
+	if resp.StatusCode != http.StatusOK {
+		klog.Warningf("%s status code: %d", url, resp.StatusCode)
+		return false
+	}
+
+	klog.Infof("Found remote preload: %s", url)
+	return true
 }
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
@@ -115,36 +137,22 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 	}
 
 	// If the preload existence is cached, just return that value.
-	if preloadState != preloadUnknown {
-		return preloadState == preloadPresent
+	preloadState, ok := preloadStates[k8sVersion][containerRuntime]
+	if ok {
+		return preloadState
 	}
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if _, err := checkCache(targetPath); err == nil {
 		klog.Infof("Found local preload: %s", targetPath)
-		preloadState = preloadPresent
+		setPreloadState(k8sVersion, containerRuntime, true)
 		return true
 	}
 
-	url := remoteTarballURL(k8sVersion, containerRuntime)
-	resp, err := http.Head(url)
-	if err != nil {
-		klog.Warningf("%s fetch error: %v", url, err)
-		preloadState = preloadMissing
-		return false
-	}
-
-	// note: err won't be set if it's a 404
-	if resp.StatusCode != 200 {
-		klog.Warningf("%s status code: %d", url, resp.StatusCode)
-		preloadState = preloadMissing
-		return false
-	}
-
-	klog.Infof("Found remote preload: %s", url)
-	preloadState = preloadPresent
-	return true
+	existence := checkRemotePreloadExists(k8sVersion, containerRuntime)
+	setPreloadState(k8sVersion, containerRuntime, existence)
+	return existence
 }
 
 var checkPreloadExists = PreloadExists
@@ -181,7 +189,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	if err != nil {
 		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
 		realPath = targetPath
-		tmp, err := ioutil.TempFile(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
+		tmp, err := os.CreateTemp(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
 			return errors.Wrap(err, "tempfile")
 		}
@@ -208,7 +216,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	}
 
 	// If the download was successful, mark off that the preload exists in the cache.
-	preloadState = preloadPresent
+	setPreloadState(k8sVersion, containerRuntime, true)
 	return nil
 }
 
@@ -228,7 +236,8 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 // getChecksum returns the MD5 checksum of the preload tarball
 var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	attrs, err := getStorageAttrs(TarballName(k8sVersion, containerRuntime))
+	filename := fmt.Sprintf("%s/%s/%s", PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
+	attrs, err := getStorageAttrs(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +247,7 @@ var getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) {
 // saveChecksumFile saves the checksum to a local file for later verification
 func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) error {
 	klog.Infof("saving checksum for %s ...", TarballName(k8sVersion, containerRuntime))
-	return ioutil.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
+	return os.WriteFile(PreloadChecksumPath(k8sVersion, containerRuntime), checksum, 0o644)
 }
 
 // verifyChecksum returns true if the checksum of the local binary matches
@@ -246,13 +255,13 @@ func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) erro
 func verifyChecksum(k8sVersion, containerRuntime, path string) error {
 	klog.Infof("verifying checksumm of %s ...", path)
 	// get md5 checksum of tarball path
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return errors.Wrap(err, "reading tarball")
 	}
 	checksum := md5.Sum(contents)
 
-	remoteChecksum, err := ioutil.ReadFile(PreloadChecksumPath(k8sVersion, containerRuntime))
+	remoteChecksum, err := os.ReadFile(PreloadChecksumPath(k8sVersion, containerRuntime))
 	if err != nil {
 		return errors.Wrap(err, "reading checksum file")
 	}
@@ -275,4 +284,30 @@ var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, 
 	}
 
 	return nil
+}
+
+// CleanUpOlderPreloads deletes preload files beloning to older minikube versions
+// checks the current preload version and then if the saved tar file is belongs to older minikube it will delete it
+// in case of failure only logs to the user
+func CleanUpOlderPreloads() {
+	files, err := os.ReadDir(targetDir())
+	if err != nil {
+		klog.Warningf("Failed to list preload files: %v", err)
+	}
+
+	for _, file := range files {
+		splited := strings.Split(file.Name(), "-")
+		if len(splited) < 4 {
+			continue
+		}
+		ver := splited[3]
+		if ver != PreloadVersion {
+			fn := path.Join(targetDir(), file.Name())
+			klog.Infof("deleting older generation preload %s", fn)
+			err := os.Remove(fn)
+			if err != nil {
+				klog.Warningf("Failed to clean up older preload files, consider running `minikube delete --all --purge`")
+			}
+		}
+	}
 }

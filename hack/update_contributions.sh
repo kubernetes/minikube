@@ -18,30 +18,13 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-if ! [[ -r "${DIR}/gh_token.txt" ]]; then
-  echo "Missing '${DIR}/gh_token.txt'. Please create a GitHub token at https://github.com/settings/tokens and store in '${DIR}/gh_token.txt'."
-  exit 1
-fi
-
-install_pullsheet() {
-  pullsheet_workdir="$(mktemp -d)"
-  trap 'rm -rf -- ${pullsheet_workdir}' RETURN
-
-  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
-  cd "${pullsheet_workdir}"
-  go mod init ps
-  GOBIN="$DIR" go get github.com/google/pullsheet
-  cd -
-}
-
 if ! [[ -x "${DIR}/pullsheet" ]]; then
   echo >&2 'Installing pullsheet'
-  install_pullsheet
+  go install github.com/google/pullsheet@latest
 fi
 
-git pull git@github.com:kubernetes/minikube master --tags
-
-tags_to_generate=${1:-1}
+git fetch --tags -f
+git pull https://github.com/kubernetes/minikube.git master --tags
 
 # 1) Get tags.
 # 2) Filter out beta tags.
@@ -53,7 +36,6 @@ tags_to_generate=${1:-1}
 # 8) Execute command to get dates of previous and current tag. Format: (current tag, prev date, current date)
 # 9) Add negative line numbers to each tag. Format: (negative index, current tag, prev date, current date)
 #   - Negative line numbers are used since entries are sorted in descending order.
-# 10) Take most recent $tags_to_generate tags.
 tags_with_range=$(
   git --no-pager tag \
   | grep -v -e "beta" \
@@ -63,17 +45,32 @@ tags_with_range=$(
   | sed -n -r "x; G; s/\n/ /; p"\
   | sed -n -r "s/([v.0-9]+) ([v.0-9]+)/-c '{ echo -n \2; git log -1 --pretty=format:\" %as \" \1; git log -1 --pretty=format:\"%as\" \2; echo;}'/p" \
   | xargs -L 1 bash \
-  | sed "=" | sed -r "N;s/\n/ /;s/^/-/" \
-  | tail -n "$tags_to_generate")
+  | sed "=" | sed -r "N;s/\n/ /;s/^/-/")
 
 destination="$DIR/../site/content/en/docs/contrib/leaderboard"
 mkdir -p "$destination"
 
+TMP_TOKEN=$(mktemp)
+gh auth status -t 2>&1 | sed -n -r 's/^.*Token: ([a-zA-Z0-9_]*)/\1/p' > "$TMP_TOKEN"
+if [ ! -s "$TMP_TOKEN" ]; then
+  echo "Failed to acquire token from 'gh auth'. Ensure 'gh' is authenticated." 1>&2
+  exit 1
+fi
+# Ensure the token is deleted when the script exits, so the token is not leaked.
+function cleanup_token() {
+  rm -f "$TMP_TOKEN"
+}
+trap cleanup_token EXIT
+
 while read -r tag_index tag_name tag_start tag_end; do
+  FILE="site/content/en/docs/contrib/leaderboard/$tag_name.html"
+  if [[ -f "$FILE" ]]; then
+    continue
+  fi
   echo "Generating leaderboard for" "$tag_name" "(from $tag_start to $tag_end)"
   # Print header for page.
   printf -- "---\ntitle: \"$tag_name - $tag_end\"\nlinkTitle: \"$tag_name - $tag_end\"\nweight: $tag_index\n---\n" > "$destination/$tag_name.html"
   # Add pullsheet content (deleting the lines consisting of the command used to generate it).
-  $DIR/pullsheet leaderboard --token-path "$DIR/gh_token.txt" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --logtostderr=false --stderrthreshold=2 \
+  $DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --logtostderr=false --stderrthreshold=2 \
     | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/$tag_name.html"
 done <<< "$tags_with_range"

@@ -1,4 +1,4 @@
-// +build linux
+//go:build linux
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -21,7 +21,6 @@ package kvm
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -105,7 +104,7 @@ func getDevicesXML() (string, error) {
 func getPassthroughableNVIDIADevices() ([]string, error) {
 
 	// Make sure the host supports IOMMU
-	iommuGroups, err := ioutil.ReadDir(sysKernelIOMMUGroupsPath)
+	iommuGroups, err := os.ReadDir(sysKernelIOMMUGroupsPath)
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading %q: %v", sysKernelIOMMUGroupsPath, err)
 	}
@@ -114,7 +113,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 	}
 
 	// Get list of PCI devices
-	devices, err := ioutil.ReadDir(sysFsPCIDevicesPath)
+	devices, err := os.ReadDir(sysFsPCIDevicesPath)
 	if err != nil {
 		return []string{}, fmt.Errorf("error reading %q: %v", sysFsPCIDevicesPath, err)
 	}
@@ -123,7 +122,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 	found := false
 	for _, device := range devices {
 		vendorPath := filepath.Join(sysFsPCIDevicesPath, device.Name(), "vendor")
-		content, err := ioutil.ReadFile(vendorPath)
+		content, err := os.ReadFile(vendorPath)
 		if err != nil {
 			log.Infof("Error while reading %q: %v", vendorPath, err)
 			continue
@@ -172,7 +171,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 func isIsolated(device string) bool {
 	// Find out the other devices in the same IOMMU group as one of our unbound device.
 	iommuGroupPath := filepath.Join(sysFsPCIDevicesPath, device, "iommu_group", "devices")
-	otherDevices, err := ioutil.ReadDir(iommuGroupPath)
+	otherDevices, err := os.ReadDir(iommuGroupPath)
 	if err != nil {
 		log.Infof("Error reading %q: %v", iommuGroupPath, err)
 		return false

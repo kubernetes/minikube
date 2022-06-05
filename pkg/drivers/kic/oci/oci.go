@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
@@ -58,8 +59,8 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		// only try to delete if docker/podman inspect returns
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
-			klog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again", c, ociBin))
+			klog.Errorf("%s daemon seems to be stuck. please try restarting your %s :%v", ociBin, ociBin, err)
 			continue
 		}
 		if err := ShutDown(ociBin, c); err != nil {
@@ -105,38 +106,6 @@ func PrepareContainerNode(p CreateParams) error {
 	}
 	klog.Infof("Successfully prepared a %s volume %s", p.OCIBinary, p.Name)
 	return nil
-}
-
-// HasMemoryCgroup checks whether it is possible to set memory limit for cgroup.
-func HasMemoryCgroup() bool {
-	memcg := true
-	if runtime.GOOS == "linux" {
-		var memory string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
-		}
-		if _, err := os.Stat(memory); os.IsNotExist(err) {
-			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			memcg = false
-		}
-	}
-	return memcg
-}
-
-func hasMemorySwapCgroup() bool {
-	memcgSwap := true
-	if runtime.GOOS == "linux" {
-		var memoryswap string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
-		}
-		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
-		}
-	}
-	return memcgSwap
 }
 
 // CreateContainerNode creates a new container node
@@ -311,7 +280,7 @@ func createContainer(ociBin string, image string, opts ...createOpt) error {
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
 	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
-	if ociBin == Podman && runtime.GOOS == "linux" {
+	if ociBin == Podman && runtime.GOOS == "linux" && !IsRootlessForced() {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -341,7 +310,7 @@ func StartContainer(ociBin string, container string) error {
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
 	// only add when running locally (linux), when running remotely it needs to be configured on server in libpod.conf
-	if ociBin == Podman && runtime.GOOS == "linux" {
+	if ociBin == Podman && runtime.GOOS == "linux" && !IsRootlessForced() {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -551,6 +520,30 @@ func ListContainersByLabel(ctx context.Context, ociBin string, label string, war
 	return names, err
 }
 
+// ListImagesRepository returns all the images names
+func ListImagesRepository(ctx context.Context, ociBin string) ([]string, error) {
+	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "images", "--format", "{{.Repository}}:{{.Tag}}"))
+	if err != nil {
+		return nil, err
+	}
+	s := bufio.NewScanner(bytes.NewReader(rr.Stdout.Bytes()))
+	var names []string
+	for s.Scan() {
+		n := strings.TrimSpace(s.Text())
+		if n != "" {
+			// add docker.io prefix to image name
+			if !strings.Contains(n, ".io/") {
+				n = "docker.io/" + n
+			}
+			names = append(names, n)
+		}
+	}
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+	return names, nil
+}
+
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
 // to make sure it points to the docker daemon installed by user.
 func PointToHostDockerDaemon() error {
@@ -711,4 +704,13 @@ func IsExternalDaemonHost(driver string) bool {
 		}
 	}
 	return false
+}
+
+func podmanVersion() (semver.Version, error) {
+	rr, err := runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
+	if err != nil {
+		return semver.Version{}, errors.Wrapf(err, "podman version")
+	}
+	output := strings.TrimSpace(rr.Stdout.String())
+	return semver.Make(output)
 }

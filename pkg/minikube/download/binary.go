@@ -22,15 +22,26 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/blang/semver"
+	"k8s.io/minikube/pkg/minikube/detect"
+
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// DefaultKubeBinariesURL returns a URL to kube binaries
+func DefaultKubeBinariesURL() string {
+	return fmt.Sprintf("https://%s/kubernetes-release/release", downloadHost)
+}
+
 // binaryWithChecksumURL gets the location of a Kubernetes binary
-func binaryWithChecksumURL(binaryName, version, osName, archName string) (string, error) {
-	base := fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
+func binaryWithChecksumURL(binaryName, version, osName, archName, binaryURL string) (string, error) {
+	if binaryURL == "" {
+		binaryURL = DefaultKubeBinariesURL()
+	}
+
+	base := fmt.Sprintf("%s/%s/bin/%s/%s/%s", binaryURL, version, osName, archName, binaryName)
 	v, err := semver.Make(version[1:])
 	if err != nil {
 		return "", err
@@ -43,12 +54,12 @@ func binaryWithChecksumURL(binaryName, version, osName, archName string) (string
 }
 
 // Binary will download a binary onto the host
-func Binary(binary, version, osName, archName string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", osName, version)
+func Binary(binary, version, osName, archName, binaryURL string) (string, error) {
+	targetDir := localpath.MakeMiniPath("cache", osName, archName, version)
 	targetFilepath := path.Join(targetDir, binary)
 	targetLock := targetFilepath + ".lock"
 
-	url, err := binaryWithChecksumURL(binary, version, osName, archName)
+	url, err := binaryWithChecksumURL(binary, version, osName, archName, binaryURL)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +81,7 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		return "", errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	if osName == runtime.GOOS && archName == runtime.GOARCH {
+	if osName == runtime.GOOS && archName == detect.EffectiveArch() {
 		if err = os.Chmod(targetFilepath, 0755); err != nil {
 			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
 		}

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
@@ -150,6 +150,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if version.GTE(semver.MustParse("1.17.0")) {
 		configTmpl = ktmpl.V1Beta2
 	}
+
+	// v1beta3 isn't required until v1.23.
+	if version.GTE(semver.MustParse("1.23.0")) {
+		configTmpl = ktmpl.V1Beta3
+	}
 	klog.Infof("kubeadm options: %+v", opts)
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
@@ -183,7 +188,7 @@ var KubeadmExtraConfigOpts = []string{
 
 // InvokeKubeadm returns the invocation command for Kubeadm
 func InvokeKubeadm(version string) string {
-	return fmt.Sprintf("sudo env PATH=%s:$PATH kubeadm", binRoot(version))
+	return fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm", binRoot(version))
 }
 
 // EtcdDataDir is where etcd data is stored.

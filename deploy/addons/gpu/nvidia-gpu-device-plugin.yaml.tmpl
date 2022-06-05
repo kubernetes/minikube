@@ -29,8 +29,6 @@ spec:
     metadata:
       labels:
         k8s-app: nvidia-gpu-device-plugin
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
       priorityClassName: system-node-critical
       tolerations:
@@ -42,9 +40,12 @@ spec:
       - name: device-plugin
         hostPath:
           path: /var/lib/kubelet/device-plugins
+      - name: dev
+        hostPath:
+          path: /dev
       containers:
       - image: {{.CustomRegistries.NvidiaDevicePlugin  | default .ImageRepository | default .Registries.NvidiaDevicePlugin }}{{.Images.NvidiaDevicePlugin}}
-        command: ["/usr/bin/nvidia-device-plugin", "-logtostderr"]
+        command: ["/usr/bin/nvidia-gpu-device-plugin", "-logtostderr"]
         name: nvidia-gpu-device-plugin
         resources:
           requests:
@@ -56,6 +57,8 @@ spec:
             drop: ["ALL"]
         volumeMounts:
         - name: device-plugin
-          mountPath: /var/lib/kubelet/device-plugins
+          mountPath: /device-plugin
+        - name: dev
+          mountPath: /dev
   updateStrategy:
     type: RollingUpdate

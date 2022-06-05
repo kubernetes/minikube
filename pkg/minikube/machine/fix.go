@@ -59,7 +59,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 
 	h, err := api.Load(config.MachineName(*cc, *n))
 	if err != nil {
-		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+		return h, errors.Wrap(err, "error loading existing host. Please try running [minikube delete], then run [minikube start] again")
 	}
 	defer postStartValidations(h, cc.Driver)
 
@@ -74,7 +74,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	}
 
 	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
-	if !driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(driverName) {
 		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
@@ -91,12 +91,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		return h, errors.Wrap(err, "post-start")
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
-		klog.Infof("%s is local, skipping auth/time setup (requires ssh)", driverName)
-		return h, nil
-	}
-
-	return h, ensureSyncedGuestClock(h, driverName)
+	return h, nil
 }
 
 func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {

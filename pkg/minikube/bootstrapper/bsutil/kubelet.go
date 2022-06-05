@@ -19,9 +19,11 @@ package bsutil
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
@@ -58,7 +60,12 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	}
 
 	if k8s.NetworkPlugin != "" {
-		extraOpts["network-plugin"] = k8s.NetworkPlugin
+		// Only CNI is supported in 1.24+, and it is the default
+		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+			extraOpts["network-plugin"] = k8s.NetworkPlugin
+		} else if k8s.NetworkPlugin != "cni" && mc.KubernetesConfig.ContainerRuntime != constants.Docker {
+			return nil, fmt.Errorf("invalid network plugin: %s", k8s.NetworkPlugin)
+		}
 
 		if k8s.NetworkPlugin == "kubenet" {
 			extraOpts["pod-cidr"] = cni.DefaultPodCIDR

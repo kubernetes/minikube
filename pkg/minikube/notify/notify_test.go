@@ -19,7 +19,6 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -28,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -37,8 +36,7 @@ import (
 )
 
 func TestShouldCheckURLVersion(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
@@ -76,8 +74,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 }
 
 func TestShouldCheckURLBetaVersion(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 	viper.Set(config.WantUpdateNotification, true)
@@ -96,7 +93,7 @@ func TestShouldCheckURLBetaVersion(t *testing.T) {
 }
 
 type URLHandlerCorrect struct {
-	releases Releases
+	releases []Release
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -170,8 +167,7 @@ var mockLatestVersionFromURL = semver.Make
 func TestMaybePrintUpdateText(t *testing.T) {
 	latestVersionFromURL = mockLatestVersionFromURL
 
-	tempDir := tests.MakeTempDir()
-	defer tests.RemoveTempDir(tempDir)
+	tempDir := tests.MakeTempDir(t)
 
 	var tc = []struct {
 		wantUpdateNotification     bool
@@ -223,7 +219,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			viper.Set(config.WantBetaUpdateNotification, tt.wantBetaUpdateNotification)
 			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
 
-			tmpfile, err := ioutil.TempFile("", "")
+			tmpfile, err := os.CreateTemp("", "")
 			if err != nil {
 				t.Fatalf("Cannot create temp file: %v", err)
 			}

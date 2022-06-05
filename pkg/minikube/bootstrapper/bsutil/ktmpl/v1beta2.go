@@ -96,6 +96,10 @@ clusterCIDR: "{{.PodSubnet }}"
 metricsBindAddress: 0.0.0.0:10249
 conntrack:
   maxPerCore: 0
+# Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
+  tcpEstablishedTimeout: 0s
+# Skip setting "net.netfilter.nf_conntrack_tcp_timeout_close"
+  tcpCloseWaitTimeout: 0s
 {{- range $i, $val := printMapInOrder .KubeProxyOptions ": " }}
 {{$val}}
 {{- end}}

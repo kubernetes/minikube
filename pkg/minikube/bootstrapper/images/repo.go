@@ -16,6 +16,8 @@ limitations under the License.
 
 package images
 
+import "path"
+
 // DefaultKubernetesRepo is the default Kubernetes repository
 const DefaultKubernetesRepo = "k8s.gcr.io"
 
@@ -29,8 +31,8 @@ func kubernetesRepo(mirror string) string {
 
 // minikubeRepo returns the official minikube repository, or an alternate
 func minikubeRepo(mirror string) string {
-	if mirror != "" {
-		return mirror
+	if mirror == "" {
+		mirror = "gcr.io"
 	}
-	return "gcr.io/k8s-minikube"
+	return path.Join(mirror, "k8s-minikube")
 }

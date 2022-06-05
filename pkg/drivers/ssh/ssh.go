@@ -18,7 +18,6 @@ package ssh
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -110,7 +109,7 @@ func (d *Driver) PreCreateCheck() error {
 			return fmt.Errorf("SSH key does not exist: %q", d.SSHKey)
 		}
 
-		key, err := ioutil.ReadFile(d.SSHKey)
+		key, err := os.ReadFile(d.SSHKey)
 		if err != nil {
 			return err
 		}
@@ -206,10 +205,7 @@ func (d *Driver) Stop() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	if err := sysinit.New(d.exec).Restart("kubelet"); err != nil {
-		return err
-	}
-	return nil
+	return sysinit.New(d.exec).Restart("kubelet")
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.

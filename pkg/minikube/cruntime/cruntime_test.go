@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
@@ -51,6 +52,34 @@ func TestName(t *testing.T) {
 			got := r.Name()
 			if got != tc.want {
 				t.Errorf("Name(%s) = %q, want: %q", tc.runtime, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDefaultDockerSocketPath(t *testing.T) {
+	var tests = []struct {
+		version string
+		want    string
+	}{
+		{"1.20.0", InternalDockerCRISocket},
+		{"1.21.3", InternalDockerCRISocket},
+		{"1.23.0", InternalDockerCRISocket},
+		{"1.24.0-alpha.0", ExternalDockerCRISocket},
+		{"1.24.0-beta.0", ExternalDockerCRISocket},
+		{"1.24.6", ExternalDockerCRISocket},
+	}
+	for _, tc := range tests {
+		runtime := "docker"
+		version := semver.MustParse(tc.version)
+		t.Run(runtime, func(t *testing.T) {
+			r, err := New(Config{Type: runtime, KubernetesVersion: version})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.version, err)
+			}
+			got := r.SocketPath()
+			if got != tc.want {
+				t.Errorf("SocketPath(%s) = %q, want: %q", tc.version, got, tc.want)
 			}
 		})
 	}
@@ -236,8 +265,16 @@ func (f *FakeRunner) Copy(assets.CopyableFile) error {
 	return nil
 }
 
+func (f *FakeRunner) CopyFrom(assets.CopyableFile) error {
+	return nil
+}
+
 func (f *FakeRunner) Remove(assets.CopyableFile) error {
 	return nil
+}
+
+func (f *FakeRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
 }
 
 func (f *FakeRunner) dockerPs(args []string) (string, error) {
@@ -664,7 +701,7 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			err = cr.Enable(true, false)
+			err = cr.Enable(true, false, false)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
 			}

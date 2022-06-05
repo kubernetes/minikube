@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2020 The Kubernetes Authors All rights reserved.
@@ -51,7 +51,7 @@ func TestPreload(t *testing.T) {
 	}
 
 	// Now, pull the busybox image into minikube
-	image := "busybox"
+	image := "gcr.io/k8s-minikube/busybox"
 	var cmd *exec.Cmd
 	if ContainerRuntime() == "docker" {
 		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "pull", image)

@@ -21,9 +21,13 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/localpath"
+	"github.com/Delta456/box-cli-maker/v2"
+	"github.com/spf13/pflag"
+	"golang.org/x/text/language"
+
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -31,7 +35,7 @@ import (
 
 func TestOutT(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
-	translate.SetPreferredLanguage("ar")
+	translate.SetPreferredLanguage(language.Arabic)
 
 	translate.Translations = map[string]interface{}{
 		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",
@@ -128,37 +132,235 @@ func createLogFile() (string, error) {
 	return f.Name(), nil
 }
 
-func TestLatestLogPath(t *testing.T) {
-	filename, err := createLogFile()
+func TestLatestLogFilePath(t *testing.T) {
+	want, err := createLogFile()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove(filename)
+	defer os.Remove(want)
 
+	got, err := latestLogFilePath()
+	if err != nil {
+		t.Errorf("latestLogFilePath() failed with error = %v", err)
+	}
+	if got != want {
+		t.Errorf("latestLogFilePath() = %q; wanted %q", got, want)
+	}
+}
+
+func TestCommand(t *testing.T) {
 	testCases := []struct {
-		args []string
-		want string
+		args        []string
+		want        string
+		shouldError bool
 	}{
 		{
 			[]string{"minikube", "start"},
-			localpath.LastStartLog(),
+			"start",
+			false,
 		},
 		{
-			[]string{"minikube", "status"},
-			filename,
+			[]string{"minikube", "--profile", "profile1", "start"},
+			"start",
+			false,
+		},
+		{
+			[]string{"minikube"},
+			"",
+			true,
 		},
 	}
+
+	pflag.String("profile", "", "")
 
 	for _, tt := range testCases {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
 		os.Args = tt.args
-		got, err := latestLogFilePath()
-		if err != nil {
-			t.Fatalf("os.Args = %s; latestLogFilePath() failed with error = %v", tt.args, err)
+		pflag.Parse()
+		got, err := command()
+		if err == nil && tt.shouldError {
+			t.Errorf("os.Args = %s; command() did not fail but was expected to", tt.args)
+		}
+		if err != nil && !tt.shouldError {
+			t.Errorf("os.Args = %s; command() failed with error = %v", tt.args, err)
 		}
 		if got != tt.want {
-			t.Errorf("os.Args = %s; latestLogFilePath() = %q; wanted %q", tt.args, got, tt.want)
+			t.Errorf("os.Args = %s; command() = %q; wanted %q", tt.args, got, tt.want)
+		}
+	}
+}
+
+func TestDisplayGitHubIssueMessage(t *testing.T) {
+	testCases := []struct {
+		args                 []string
+		shouldContainMessage bool
+	}{
+		{
+			[]string{"minikube", "start"},
+			false,
+		},
+		{
+			[]string{"minikube", "delete"},
+			true,
+		},
+	}
+
+	msg := "Please also attach the following file to the GitHub issue:"
+
+	for _, tt := range testCases {
+		oldArgs := os.Args
+		defer func() { os.Args = oldArgs }()
+		os.Args = tt.args
+		pflag.Parse()
+		f := tests.NewFakeFile()
+		SetErrFile(f)
+		displayGitHubIssueMessage()
+		output := f.String()
+		if strings.Contains(output, msg) && !tt.shouldContainMessage {
+			t.Errorf("os.Args = %s; displayGitHubIssueMessage() output = %q; did not expect it to contain = %q", tt.args, output, msg)
+		}
+		if !strings.Contains(output, msg) && tt.shouldContainMessage {
+			t.Errorf("os.Args = %s; displayGitHubIssueMessage() output = %q; expected to contain = %q", tt.args, output, msg)
+		}
+	}
+}
+
+func TestBoxed(t *testing.T) {
+	f := tests.NewFakeFile()
+	SetOutFile(f)
+	Boxed(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
+	got := f.String()
+	want :=
+		`╭────────────────────────────────────────────────╮
+│                                                │
+│    Running with docker driver and port 8000    │
+│                                                │
+╰────────────────────────────────────────────────╯
+`
+	if got != want {
+		t.Errorf("Boxed() = %q, want %q", got, want)
+	}
+}
+
+func TestBoxedErr(t *testing.T) {
+	f := tests.NewFakeFile()
+	SetErrFile(f)
+	BoxedErr(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
+	got := f.String()
+	want :=
+		`╭────────────────────────────────────────────────╮
+│                                                │
+│    Running with docker driver and port 8000    │
+│                                                │
+╰────────────────────────────────────────────────╯
+`
+	if got != want {
+		t.Errorf("Boxed() = %q, want %q", got, want)
+	}
+}
+
+func TestBoxedWithConfig(t *testing.T) {
+	testCases := []struct {
+		config box.Config
+		st     style.Enum
+		title  string
+		format string
+		args   []V
+		want   string
+	}{
+		{
+			box.Config{Px: 2, Py: 2},
+			style.None,
+			"",
+			"Boxed content",
+			nil,
+			`┌─────────────────┐
+│                 │
+│                 │
+│  Boxed content  │
+│                 │
+│                 │
+└─────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 0, Py: 0},
+			style.None,
+			"",
+			"Boxed content with 0 padding",
+			nil,
+			`┌────────────────────────────┐
+│Boxed content with 0 padding│
+└────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Inside"},
+			style.None,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌─────────────────────────────────┐
+│                                 │
+│           Hello World           │
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.None,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌ Hello World ────────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.Tip,
+			"Hello World",
+			"Boxed content with title inside",
+			nil,
+			`┌ * Hello World ──────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+		{
+			box.Config{Px: 1, Py: 1, TitlePos: "Top"},
+			style.Tip,
+			// This case is to make sure newlines (\n) are removed before printing
+			// Otherwise box-cli-maker panices:
+			// https://github.com/Delta456/box-cli-maker/blob/7b5a1ad8a016ce181e7d8b05e24b54ff60b4b38a/box.go#L69-L71
+			"Hello \nWorld",
+			"Boxed content with title inside",
+			nil,
+			`┌ * Hello World ──────────────────┐
+│                                 │
+│ Boxed content with title inside │
+│                                 │
+└─────────────────────────────────┘
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		f := tests.NewFakeFile()
+		SetOutFile(f)
+		BoxedWithConfig(tc.config, tc.st, tc.title, tc.format, tc.args...)
+		got := f.String()
+		if tc.want != got {
+			t.Errorf("Expecting BoxedWithConfig(%v, %v, %s, %s, %s) = \n%s, want \n%s", tc.config, tc.st, tc.title, tc.format, tc.args, got, tc.want)
 		}
 	}
 }

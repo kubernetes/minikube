@@ -1,5 +1,3 @@
-// +build release
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -22,7 +20,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"runtime"
 	"testing"
 
@@ -38,7 +36,7 @@ func getSHAFromURL(url string) (string, error) {
 		return "", err
 	}
 	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return "", err
 	}
@@ -47,15 +45,37 @@ func getSHAFromURL(url string) (string, error) {
 	return hex.EncodeToString(b[:]), nil
 }
 
+// TestReleasesJSON checks if all *GA* releases
+// 	enlisted in https://storage.googleapis.com/minikube/releases.json
+//	are available to download and have correct hashsum
 func TestReleasesJSON(t *testing.T) {
-	releases, err := notify.GetAllVersionsFromURL(notify.GithubMinikubeReleasesURL)
+	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeReleasesURL)
 	if err != nil {
 		t.Fatalf("Error getting releases.json: %v", err)
 	}
+	checkReleases(t, releases)
+}
 
-	for _, r := range releases {
+// TestBetaReleasesJSON checks if all *BETA* releases
+// 	enlisted in https://storage.googleapis.com/minikube/releases-beta.json
+//	are available to download and have correct hashsum
+func TestBetaReleasesJSON(t *testing.T) {
+	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeBetaReleasesURL)
+	if err != nil {
+		t.Fatalf("Error getting releases-bets.json: %v", err)
+	}
+	checkReleases(t, releases)
+}
+
+func checkReleases(t *testing.T, rs notify.Releases) {
+	for _, r := range rs.Releases {
 		fmt.Printf("Checking release: %s\n", r.Name)
-		for platform, sha := range r.Checksums {
+		checksums := map[string]string{
+			"darwin":  r.Checksums.Darwin,
+			"linux":   r.Checksums.Linux,
+			"windows": r.Checksums.Windows,
+		}
+		for platform, sha := range checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
 			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform, runtime.GOARCH))
 			if err != nil {

@@ -17,7 +17,6 @@ limitations under the License.
 package image
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -29,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
@@ -49,7 +48,7 @@ var errCacheImageDoesntExist = &cacheError{errors.New("the image you are trying 
 // DeleteFromCacheDir deletes tar files stored in cache dir
 func DeleteFromCacheDir(images []string) error {
 	for _, image := range images {
-		path := filepath.Join(constants.ImageCacheDir, image)
+		path := filepath.Join(detect.ImageCacheDir(), image)
 		path = localpath.SanitizeCacheDir(path)
 		klog.Infoln("Deleting image in cache at ", path)
 		if err := os.Remove(path); err != nil {
@@ -73,10 +72,10 @@ func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst, overwrite); err != nil {
 				if err == errCacheImageDoesntExist {
-					out.WarningT("The image you are trying to add {{.imageName}} doesn't exist!", out.V{"imageName": image})
-				} else {
-					return errors.Wrapf(err, "caching image %q", dst)
+					out.WarningT("The image '{{.imageName}}' was not found; unable to add it to cache.", out.V{"imageName": image})
+					return nil
 				}
+				return errors.Wrapf(err, "caching image %q", dst)
 			}
 			klog.Infof("save to tar file %s -> %s succeeded", image, dst)
 			return nil
@@ -160,7 +159,7 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 
 func writeImage(img v1.Image, dst string, ref name.Reference) error {
 	klog.Infoln("opening: ", dst)
-	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
+	f, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
 		return err
 	}

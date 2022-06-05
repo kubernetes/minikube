@@ -22,13 +22,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
+	"strings"
 	"time"
+
+	gcr_config "github.com/GoogleCloudPlatform/docker-credential-gcr/config"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2/google"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -46,10 +50,13 @@ const (
 	projectPath     = "/var/lib/minikube/google_cloud_project"
 	secretName      = "gcp-auth"
 	namespaceName   = "gcp-auth"
+
+	// readPermission correlates to read-only file system permissions
+	readPermission = "0444"
 )
 
 // enableOrDisableGCPAuth enables or disables the gcp-auth addon depending on the val parameter
-func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) error {
+func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -61,10 +68,6 @@ func enableOrDisableGCPAuth(cfg *config.ClusterConfig, name string, val string) 
 }
 
 func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
-	if !Force && detect.IsOnGCE() {
-		exit.Message(reason.InternalCredsNotNeeded, "It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
-	}
-
 	// Grab command runner from running cluster
 	cc := mustload.Running(cfg.Name)
 	r := cc.CP.Runner
@@ -72,35 +75,54 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Grab credentials from where GCP would normally look
 	ctx := context.Background()
 	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil || creds.JSON == nil {
-		exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
-	}
-
-	// Actually copy the creds over
-	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, "0444")
-
-	err = r.Copy(f)
 	if err != nil {
-		return err
+		if detect.IsCloudShell() {
+			if c := os.Getenv("CLOUDSDK_CONFIG"); c != "" {
+				f, err := os.ReadFile(path.Join(c, "application_default_credentials.json"))
+				if err == nil {
+					creds, _ = google.CredentialsFromJSON(ctx, f)
+				}
+			}
+		} else {
+			exit.Message(reason.InternalCredsNotFound, "Could not find any GCP credentials. Either run `gcloud auth application-default login` or set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your credentials file.")
+		}
 	}
 
 	// Create a registry secret in every namespace we can find
-	err = createPullSecret(cfg, creds)
-	if err != nil {
+	// Always create the pull secret, no matter where we are
+	if err := createPullSecret(cfg, creds); err != nil {
 		return errors.Wrap(err, "pull secret")
+	}
+
+	// If the env var is explicitly set, even in GCE, then defer to the user and continue
+	if !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		out.WarningT("It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.")
+		return nil
+	}
+
+	if creds.JSON == nil {
+		out.WarningT("You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue. The image pull secret has been imported.")
+		return nil
+	}
+
+	// Actually copy the creds over
+	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, readPermission)
+
+	if err := r.Copy(f); err != nil {
+		return err
 	}
 
 	// First check if the project env var is explicitly set
 	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectEnv != "" {
-		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, "0444")
+		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, readPermission)
 		return r.Copy(f)
 	}
 
 	// We're currently assuming gcloud is installed and in the user's path
 	proj, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(proj) > 0 {
-		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, "0444")
+		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, readPermission)
 		return r.Copy(f)
 	}
 
@@ -112,30 +134,45 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 	// Copy an empty file in to avoid errors about missing files
-	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
+	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
 	return r.Copy(emptyFile)
 
 }
 
 func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error {
-	client, err := service.K8s.GetCoreClient(cc.Name)
-	if err != nil {
-		return err
-	}
-
-	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return err
+	if creds == nil {
+		return errors.New("no credentials, skipping creating pull secret")
 	}
 
 	token, err := creds.TokenSource.Token()
 	// Only try to add secret if Token was found
 	if err == nil {
+		client, err := service.K8s.GetCoreClient(cc.Name)
+		if err != nil {
+			return err
+		}
+
+		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+
+		var dockercfg string
+		registries := append(gcr_config.DefaultGCRRegistries[:], gcr_config.DefaultARRegistries[:]...)
+		for _, reg := range registries {
+			dockercfg += fmt.Sprintf(`"https://%s":{"username":"oauth2accesstoken","password":"%s","email":"none"},`, reg, token.AccessToken)
+		}
+
+		dockercfg = strings.TrimSuffix(dockercfg, ",")
+
 		data := map[string][]byte{
-			".dockercfg": []byte(fmt.Sprintf(`{"https://gcr.io":{"username":"oauth2accesstoken","password":"%s","email":"none"}, "https://us-docker.pkg.dev":{"username":"oauth2accesstoken","password":"%s","email":"none"}}`, token.AccessToken, token.AccessToken)),
+			".dockercfg": []byte(fmt.Sprintf(`{%s}`, dockercfg)),
 		}
 
 		for _, n := range namespaces.Items {
+			if skipNamespace(n.Name) {
+				continue
+			}
 			secrets := client.Secrets(n.Name)
 
 			exists := false
@@ -150,7 +187,7 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 				}
 			}
 
-			if !exists {
+			if !exists || Refresh {
 				secretObj := &corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: secretName,
@@ -159,9 +196,16 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 					Type: "kubernetes.io/dockercfg",
 				}
 
-				_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
-				if err != nil {
-					return err
+				if exists && Refresh {
+					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
+					if err != nil {
+						return err
+					}
+				} else {
+					_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -183,10 +227,19 @@ func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error
 
 			ips := corev1.LocalObjectReference{Name: secretName}
 			for _, sa := range salist.Items {
-				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
-				_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
-				if err != nil {
-					return err
+				add := true
+				for _, ps := range sa.ImagePullSecrets {
+					if ps.Name == secretName {
+						add = false
+						break
+					}
+				}
+				if add {
+					sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+					_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -207,7 +260,7 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 	}
 	for _, n := range namespaces.Items {
 		// Ignore kube-system and gcp-auth namespaces
-		if n.Name == metav1.NamespaceSystem || n.Name == namespaceName {
+		if skipNamespace(n.Name) {
 			continue
 		}
 
@@ -238,8 +291,7 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 				_, err = pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
 			}
 
-			_, err = pods.Create(context.TODO(), &p, metav1.CreateOptions{})
-			if err != nil {
+			if _, err := pods.Create(context.TODO(), &p, metav1.CreateOptions{}); err != nil {
 				return err
 			}
 		}
@@ -253,15 +305,14 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	r := cc.CP.Runner
 
 	// Clean up the files generated when enabling the addon
-	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, "0444")
+	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, readPermission)
 	err := r.Remove(creds)
 	if err != nil {
 		return err
 	}
 
-	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, "0444")
-	err = r.Remove(project)
-	if err != nil {
+	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
+	if err := r.Remove(project); err != nil {
 		return err
 	}
 
@@ -277,29 +328,54 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// No need to check for an error here, if the secret doesn't exist, no harm done.
 	for _, n := range namespaces.Items {
+		if skipNamespace(n.Name) {
+			continue
+		}
 		secrets := client.Secrets(n.Name)
-		err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{})
-		if err != nil {
+		if err := secrets.Delete(context.TODO(), secretName, metav1.DeleteOptions{}); err != nil {
 			klog.Infof("error deleting secret: %v", err)
+		}
+
+		serviceaccounts := client.ServiceAccounts(n.Name)
+		salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			klog.Infof("error getting service accounts: %v", err)
+			return err
+		}
+		for _, sa := range salist.Items {
+			for i, ps := range sa.ImagePullSecrets {
+				if ps.Name == secretName {
+					sa.ImagePullSecrets = append(sa.ImagePullSecrets[:i], sa.ImagePullSecrets[i+1:]...)
+					if _, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{}); err != nil {
+						return err
+					}
+					break
+				}
+			}
 		}
 	}
 
 	return nil
 }
 
-func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error {
+func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
-	err = verifyAddonStatusInternal(cc, name, val, "gcp-auth")
-	if err != nil {
+
+	// If we're in GCE and didn't actually start the gcp-auth pods, don't check for them.
+	// We also don't want to actually set the addon as enabled, so just exit completely.
+	if enable && !Force && detect.IsOnGCE() && os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		return ErrSkipThisAddon
+	}
+
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
 		return err
 	}
 
 	if Refresh {
-		err = refreshExistingPods(cc)
-		if err != nil {
+		if err := refreshExistingPods(cc); err != nil {
 			return err
 		}
 	}
@@ -313,4 +389,8 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name string, val string) error
 	}
 
 	return err
+}
+
+func skipNamespace(name string) bool {
+	return name == metav1.NamespaceSystem || name == namespaceName
 }

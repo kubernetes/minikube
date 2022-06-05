@@ -174,6 +174,8 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 
 	out.SetOutFile(logOutput)
 	defer out.SetOutFile(os.Stdout)
+	out.SetErrFile(logOutput)
+	defer out.SetErrFile(os.Stderr)
 
 	sort.Strings(names)
 	failed := []string{}
@@ -206,7 +208,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 }
 
 // outputAudit displays the audit logs.
-func outputAudit(lines int) error {
+func OutputAudit(lines int) error {
 	out.Styled(style.Empty, "")
 	out.Styled(style.Empty, "==> Audit <==")
 	r, err := audit.Report(lines)
@@ -248,7 +250,9 @@ func outputLastStart() error {
 func OutputOffline(lines int, logOutput *os.File) {
 	out.SetOutFile(logOutput)
 	defer out.SetOutFile(os.Stdout)
-	if err := outputAudit(lines); err != nil {
+	out.SetErrFile(logOutput)
+	defer out.SetErrFile(os.Stderr)
+	if err := OutputAudit(lines); err != nil {
 		klog.Errorf("failed to output audit logs: %v", err)
 	}
 	if err := outputLastStart(); err != nil {

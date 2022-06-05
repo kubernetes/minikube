@@ -1,0 +1,285 @@
+---
+title: "Ingress DNS"
+linkTitle: "Ingress DNS"
+weight: 1
+date: 2021-11-08
+---
+DNS service for ingress controllers running on your minikube server
+
+## Overview
+
+### Problem
+When running minikube locally, you may want to run your services on an ingress controller so that you don't have to use
+minikube tunnel or NodePorts to access your services. While NodePort might be okay in a lot of circumstances, an ingress
+is necessary to test some features. Ingress controllers are great because you can define your entire architecture in
+something like a helm chart, and all your services will be available.
+
+However, for minikube, there is an additional challenge. Your ingress controller relies on DNS, so local DNS names like
+`myservice.test` will have to resolve to your `minikube ip`. The only real way to do this is to add an entry for every
+service in your `/etc/hosts` file. This gets messy for obvious reasons. For each service you are running that each has
+its own DNS entry, you will need to configure it manually. Even if you automate it, you then need to rely on the host
+operating system for storing configurations instead of storing them in your cluster. To make it worse, these
+configurations have to be constantly maintained and updated as services are added, removed, and renamed. I call it the
+`/etc/hosts` pollution problem.
+
+### Solution
+What if you could just access your local services magically without having to edit your `/etc/hosts` file? Well, now you
+can. The `ingress-dns` addon acts as a DNS service that runs inside your Kubernetes cluster. All you have to do is
+install the service and add the `minikube ip` as a DNS server on your host machine. Each time the DNS service is
+queried, an API call is made to the Kubernetes master service for a list of all the ingresses. If a match is found for
+the name, a response is given with an IP address matching `minikube ip`. For example, with a `minikube ip` of
+`192.168.99.106` and an ingress rule for `myservice.test` configured in the cluster, a DNS query from the host would
+produce:
+
+```text
+#bash:~$ nslookup myservice.test $(minikube ip)
+Server:		192.168.99.169
+Address:	192.168.99.169#53
+
+Non-authoritative answer:
+Name:	myservice.test $(minikube ip)
+Address: 192.168.99.169
+```
+
+## Installation
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Start minikube</h2>
+
+```bash
+minikube start
+```
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Enable the addons</h2>
+
+```bash
+minikube addons enable ingress
+minikube addons enable ingress-dns
+```
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Add the `minikube ip` as a DNS server</h2>
+
+{{% tabs %}}
+{{% linuxtab %}}
+
+## Linux OS with resolvconf
+
+Update the file `/etc/resolvconf/resolv.conf.d/base` to have the following contents.
+
+```
+search test
+nameserver 192.168.99.169
+timeout 5
+```
+
+Replace `192.168.99.169` with your `minikube ip`.
+
+If your Linux OS uses `systemctl`, run the following commands.
+
+```bash
+sudo resolvconf -u
+systemctl disable --now resolvconf.service
+```
+
+If your Linux OS does not use `systemctl`, run the following commands.
+
+```bash
+# TODO add supporting docs for Linux OS that do not use `systemctl`
+```
+
+See https://linux.die.net/man/5/resolver
+
+## Linux OS with Network Manager
+
+Network Manager can run integrated caching DNS server - `dnsmasq` plugin and can be configured to use separate nameservers per domain. 
+
+Edit /etc/NetworkManager/NetworkManager.conf and set `dns=dnsmasq`
+
+```
+[main]
+dns=dnsmasq
+```
+Also see `dns=` in [NetworkManager.conf](https://developer.gnome.org/NetworkManager/stable/NetworkManager.conf.html).
+
+Configure dnsmasq to handle .test domain 
+
+```bash
+sudo mkdir /etc/NetworkManager/dnsmasq.d/
+echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
+```
+
+Restart Network Manager
+```
+systemctl restart NetworkManager.service
+```
+Ensure your /etc/resolv.conf  contains only single nameserver
+```bash
+cat /etc/resolv.conf | grep nameserver
+nameserver 127.0.0.1
+```
+
+{{% /linuxtab %}}
+
+{{% mactab %}}
+
+Create a file in `/etc/resolver/minikube-test` with the following contents.
+
+```
+domain test
+nameserver 192.168.99.169
+search_order 1
+timeout 5
+```
+
+Replace `192.168.99.169` with your `minikube ip`.
+
+If you have multiple minikube IPs, you must configure a file for each.
+
+See https://www.unix.com/man-page/opendarwin/5/resolver/
+
+Note that the `port` feature does not work as documented.
+
+{{% /mactab %}}
+
+{{% windowstab %}}
+
+Open `Powershell` as Administrator and execute the following.
+```sh
+Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
+```
+
+The following will remove any matching rules before creating a new one. This is useful for updating the `minikube ip`.
+```sh
+Get-DnsClientNrptRule | Where-Object {$_.Namespace -eq '.test'} | Remove-DnsClientNrptRule -Force; Add-DnsClientNrptRule -Namespace ".test" -NameServers "$(minikube ip)"
+```
+
+{{% /windowstab %}}
+{{% /tabs %}}
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>(optional) Configure in-cluster DNS server to resolve local DNS names inside cluster</h2>
+
+Sometimes it's useful to access other applications inside cluster via ingress and by their local DNS name - microservices/APIs/tests. 
+In such case ingress-dns addon should be used by in-cluster DNS server - [CoreDNS](https://coredns.io/) to resolve local DNS names.  
+
+Edit your CoreDNS config
+```sh
+kubectl edit configmap coredns -n kube-system
+```
+and add block for your local domain 
+```
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+
+```
+Replace `192.168.99.169` with your `minikube ip`.
+
+The final ConfigMap should look like:
+```yaml
+apiVersion: v1
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+           lameduck 5s
+        }
+...
+    }
+    test:53 {
+            errors
+            cache 30
+            forward . 192.168.99.169
+    }
+kind: ConfigMap
+metadata:
+...
+```
+See https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/
+
+## Testing
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Add the test ingress</h2>
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/minikube/master/deploy/addons/ingress-dns/example/example.yaml
+```
+Note: Minimum Kubernetes version for the example ingress is 1.19
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">2</strong></span>Confirm that DNS queries are returning A records</h2>
+
+```bash
+nslookup hello-john.test $(minikube ip)
+nslookup hello-jane.test $(minikube ip)
+```
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Confirm that domain names are resolving on the host OS</h2>
+
+```bash
+ping hello-john.test
+ping hello-jane.test
+```
+
+Expected results:
+```text
+PING hello-john.test (192.168.99.169): 56 data bytes
+64 bytes from 192.168.99.169: icmp_seq=0 ttl=64 time=0.361 ms
+```
+
+```text
+PING hello-jane.test (192.168.99.169): 56 data bytes
+64 bytes from 192.168.99.169: icmp_seq=0 ttl=64 time=0.262 ms
+```
+
+<h3 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Curl the example server</h2>
+
+```bash
+curl http://hello-john.test
+curl http://hello-jane.test
+```
+
+Expected results:
+```text
+Hello, world!
+Version: 1.0.0
+Hostname: hello-world-app-557ff7dbd8-64mtv
+```
+
+```text
+Hello, world!
+Version: 1.0.0
+Hostname: hello-world-app-557ff7dbd8-64mtv
+```
+
+## Known issues
+
+### .localhost domains will not resolve on chromium
+.localhost domains will not correctly resolve on chromium since it is used as a loopback address. Instead use .test, .example, or .invalid
+
+### .local is a reserved TLD
+Do not use .local as this is a reserved TLD for mDNS and bind9 DNS servers
+
+### Mac OS
+
+#### mDNS reloading
+Each time a file is created or a change is made to a file in `/etc/resolver` you may need to run the following to reload Mac OS mDNS resolver.
+```bash
+sudo launchctl unload -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+```
+
+## TODO
+- Add a service that runs on the host OS which will update the files in `/etc/resolver` automatically
+- Start this service when running `minikube addons enable ingress-dns` and stop the service when running
+  `minikube addons disable ingress-dns`
+
+## Contributors
+- [Josh Woodcock](https://github.com/woodcockjosh)
+
+## Images used in this plugin
+
+| Image | Source | Owner |
+| :---  | :---   | :---  |
+| [ingress-nginx](https://quay.io/repository/kubernetes-ingress-controller/nginx-ingress-controller) | [ingress-nginx](https://github.com/kubernetes/ingress-nginx) | Kubernetes ingress-nginx
+| [minikube-ingress-dns](https://hub.docker.com/r/cryptexlabs/minikube-ingress-dns) | [minikube-ingress-dns](https://gitlab.com/cryptexlabs/public/development/minikube-ingress-dns) | Cryptex Labs

@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"os/user"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -44,10 +45,11 @@ import (
 )
 
 var (
-	dashboardURLMode bool
-	// Matches: 127.0.0.1:8001
+	dashboardURLMode     bool
+	dashboardExposedPort int
+	// Matches: "127.0.0.1:8001" or "127.0.0.1 40012" etc.
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
-	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
+	hostPortRe = regexp.MustCompile(`127.0.0.1(:| )\d{4,}`)
 )
 
 // dashboardCmd represents the dashboard command
@@ -63,6 +65,10 @@ var dashboardCmd = &cobra.Command{
 			if err := proxy.ExcludeIP(n.IP); err != nil {
 				klog.Errorf("Error excluding IP from proxy: %s", err)
 			}
+		}
+
+		if dashboardExposedPort < 0 || dashboardExposedPort > 65535 {
+			exit.Message(reason.HostKubectlProxy, "Invalid port")
 		}
 
 		kubectlVersion := co.Config.KubernetesConfig.KubernetesVersion
@@ -92,7 +98,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(style.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectlVersion, cname)
+		p, hostPort, err := kubectlProxy(kubectlVersion, co.Config.BinaryMirror, cname, dashboardExposedPort)
 		if err != nil {
 			exit.Error(reason.HostKubectlProxy, "kubectl proxy", err)
 		}
@@ -126,15 +132,15 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string, error) {
+func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, port int) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 
-	kubectlArgs := []string{"--context", contextName, "proxy", "--port=0"}
+	kubectlArgs := []string{"--context", contextName, "proxy", "--port", strconv.Itoa(port)}
 
 	var cmd *exec.Cmd
 	if kubectl, err := exec.LookPath("kubectl"); err == nil {
 		cmd = exec.Command(kubectl, kubectlArgs...)
-	} else if cmd, err = KubectlCommand(kubectlVersion, kubectlArgs...); err != nil {
+	} else if cmd, err = KubectlCommand(kubectlVersion, binaryURL, kubectlArgs...); err != nil {
 		return nil, "", err
 	}
 
@@ -217,4 +223,5 @@ func checkURL(url string) error {
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
+	dashboardCmd.Flags().IntVar(&dashboardExposedPort, "port", 0, "Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.")
 }

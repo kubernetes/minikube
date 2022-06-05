@@ -5,9 +5,16 @@ weight: 1
 date: 2020-07-15
 ---
 
-## Tutorial
 
-If you have a containerized GCP app with a Kubernetes yaml, you can automatically add your credentials to all your deployed pods dynamically with this minikube addon. You just need to have a credentials file, which can be generated with `gcloud auth application-default login`. If you already have a json credentials file you want specify, use the GOOGLE_APPLICATION_CREDENTIALS environment variable.
+The gcp-auth addon automatically and dynamically configures pods to use your credentials, allowing applications to access Google Cloud services as if they were running within Google Cloud.  
+
+The addon normally uses the [Google Application Default Credentials](https://google.aip.dev/auth/4110) as configured with `gcloud auth application-default login`. If you already have a json credentials file you want specify, such as to use a service account, set the GOOGLE_APPLICATION_CREDENTIALS environment variable to point to that file.
+
+The addon normally uses the default gcloud project as configured with `gcloud config set project <project name>`. If you want to use a different project, set the `GOOGLE_CLOUD_PROJECT` environment variable to the desired project.
+
+The pods are configured with the `GOOGLE_APPLICATION_DEFAULTS` environment variable is set, which is automatically used by GCP client libraries, and the `GOOGLE_CLOUD_PROJECT` environment variable is set, as are several other historical environment variables.  The addon also configures  [registry pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) to allow the cluster to access container images hosted in your project's [Artifact Registry](https://cloud.google.com/artifact-registry) and [Google Container Registry](https://cloud.google.com/container-registry).
+
+## Tutorial
 
 - Start a cluster:
 

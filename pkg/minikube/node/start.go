@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
@@ -36,7 +36,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -61,10 +61,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 const waitTimeout = "wait-timeout"
@@ -78,6 +80,7 @@ var (
 type Starter struct {
 	Runner         command.Runner
 	PreExists      bool
+	StopK8s        bool
 	MachineAPI     libmachine.API
 	Host           *host.Host
 	Cfg            *config.ClusterConfig
@@ -87,6 +90,18 @@ type Starter struct {
 
 // Start spins up a guest and starts the Kubernetes node.
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+	var wg sync.WaitGroup
+	stopk8s, err := handleNoKubernetes(starter)
+	if err != nil {
+		return nil, err
+	}
+	if stopk8s {
+		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
+		configureRuntimes(starter.Runner, *starter.Cfg, nv)
+		configureMounts(&wg, *starter.Cfg)
+		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
+
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -97,6 +112,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+
+	// check if installed runtime is compatible with current minikube code
+	if err = cruntime.CheckCompatibility(cr); err != nil {
+		return nil, err
+	}
+
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
@@ -107,49 +128,20 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		klog.Errorf("Unable to add host alias: %v", err)
 	}
 
-	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
+	var bs bootstrapper.Bootstrapper
 	if apiServer {
-		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
+		kcs, bs, err = handleAPIServer(starter, cr, hostIP)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to setup kubeconfig")
-		}
-
-		// setup kubeadm (must come after setupKubeconfig)
-		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
-		err = bs.StartCluster(*starter.Cfg)
-		if err != nil {
-			ExitIfFatal(err)
-			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
-
-		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
-		if err := kubeconfig.Update(kcs); err != nil {
-			return nil, errors.Wrap(err, "Failed kubeconfig update")
-		}
-
-		// scale down CoreDNS from default 2 to 1 replica
-		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-		}
-
-		// not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds
-		go func() {
-			// inject {"host.minikube.internal": hostIP} record into CoreDNS
-			if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
-			}
-		}()
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
+		if err = bs.SetupCerts(*starter.Cfg, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
@@ -158,10 +150,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	var wg sync.WaitGroup
-	if !driver.IsKIC(starter.Cfg.Driver) {
-		go configureMounts(&wg)
-	}
+	go configureMounts(&wg, *starter.Cfg)
 
 	wg.Add(1)
 	go func() {
@@ -183,6 +172,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 		wg.Add(1)
 		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
+	}
+
+	// discourage use of the virtualbox driver
+	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+		warnVirtualBox()
 	}
 
 	if apiServer {
@@ -221,6 +215,65 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// handleNoKubernetes handles starting minikube without Kubernetes.
+func handleNoKubernetes(starter Starter) (bool, error) {
+	// Do not bootstrap cluster if --no-kubernetes.
+	if starter.Node.KubernetesVersion == constants.NoKubernetesVersion {
+		// Stop existing Kubernetes node if applicable.
+		if starter.StopK8s {
+			cr, err := cruntime.New(cruntime.Config{Type: starter.Cfg.KubernetesConfig.ContainerRuntime, Runner: starter.Runner, Socket: starter.Cfg.KubernetesConfig.CRISocket})
+			if err != nil {
+				return false, err
+			}
+			kubeadm.StopKubernetes(starter.Runner, cr)
+		}
+		return true, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+	}
+	return false, nil
+}
+
+// handleAPIServer handles starting the API server.
+func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
+	var err error
+
+	// Must be written before bootstrap, otherwise health checks may flake due to stale IP.
+	kcs := setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to setup kubeconfig")
+	}
+
+	// Setup kubeadm (must come after setupKubeconfig).
+	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	err = bs.StartCluster(*starter.Cfg)
+	if err != nil {
+		ExitIfFatal(err)
+		out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
+		return nil, bs, err
+	}
+
+	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
+	if err := kubeconfig.Update(kcs); err != nil {
+		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
+	}
+
+	if !starter.Cfg.DisableOptimizations {
+		// Scale down CoreDNS from default 2 to 1 replica.
+		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
+	}
+
+	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
+	go func() {
+		// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
+		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
+			klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+			out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+		}
+	}()
+	return kcs, bs, nil
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.
@@ -274,10 +327,17 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
-	if apiServer {
-		out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+
+	// Be explicit with each case for the sake of translations
+	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
-		out.Step(style.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		if apiServer {
+			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		} else {
+			out.Step(style.ThumbsUp, "Starting worker node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		}
+
 	}
 
 	if driver.IsKIC(cc.Driver) {
@@ -337,7 +397,14 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	err = cr.Enable(disableOthers, forceSystemd())
+	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
+		}
+	}
+
+	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
@@ -353,7 +420,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
-
 	return cr
 }
 
@@ -390,11 +456,7 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 		}
 		return nil
 	}
-	if err := retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
@@ -415,11 +477,7 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 		klog.Info(rr.Stdout.String())
 		return nil
 	}
-	if err := retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return err
-	}
-
-	return nil
+	return retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
@@ -428,7 +486,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	if err != nil {
 		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
 	}
-	for _, eo := range config.ExtraOptions {
+	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
@@ -441,7 +499,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 	}
 
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+	if err := bs.SetupCerts(cfg, n); err != nil {
 		exit.Error(reason.GuestCert, "Failed to setup certs", err)
 	}
 
@@ -500,6 +558,14 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
+	if driver.IsQEMU(host.Driver.DriverName()) {
+		apiServerPort, err := getPort()
+		if err != nil {
+			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+		}
+		cfg.APIServerPort = apiServerPort
+	}
+
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -507,6 +573,21 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	}
 
 	return runner, preExists, m, host, err
+}
+
+// getPort asks the kernel for a free open port that is ready to use
+func getPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
 // startHostInternal starts a new minikube host using a VM or None
@@ -580,7 +661,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) && !driver.IsQEMU(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}
@@ -725,4 +806,29 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
 
 	return nil
+}
+
+// prints a warning to the console against the use of the 'virtualbox' driver, if alternatives are available and healthy
+func warnVirtualBox() {
+	var altDriverList strings.Builder
+	for _, choice := range driver.Choices(true) {
+		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
+			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
+		}
+	}
+
+	if altDriverList.Len() != 0 {
+		out.Boxed(`You have selected "virtualbox" driver, but there are better options !
+For better performance and support consider using a different driver: {{.drivers}}
+
+To turn off this warning run:
+
+	$ minikube config set WantVirtualBoxDriverWarning false
+
+
+To learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/
+To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/
+
+`, out.V{"drivers": altDriverList.String()})
+	}
 }

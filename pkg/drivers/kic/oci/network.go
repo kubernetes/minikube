@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
@@ -34,6 +34,33 @@ import (
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
 // is routable from inside the container
 func RoutableHostIPFromInside(ociBin string, clusterName string, containerName string) (net.IP, error) {
+	si, err := CachedDaemonInfo(ociBin)
+	if err != nil {
+		return nil, err
+	}
+	if si.Rootless {
+		if IsExternalDaemonHost(ociBin) {
+			return nil, fmt.Errorf("function RoutableHostIPFromInside is not implemented for external rootless daemons")
+			// TODO: parse DaemonHost()
+		}
+		addrs, err := net.InterfaceAddrs()
+		if err != nil {
+			return nil, err
+		}
+		for _, addr := range addrs {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPAddr:
+				ip = v.IP
+			case *net.IPNet:
+				ip = v.IP
+			}
+			if ip != nil && !ip.IsLoopback() {
+				return ip, nil
+			}
+		}
+		return nil, fmt.Errorf("could not detect host IP, tried %v", addrs)
+	}
 	if ociBin == Docker {
 		if runtime.GOOS == "linux" {
 			info, err := containerNetworkInspect(ociBin, clusterName)
@@ -131,12 +158,7 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 	var v semver.Version
 
 	if ociBin == Podman {
-		rr, err = runCmd(exec.Command(Podman, "version", "--format", "{{.Version}}"))
-		if err != nil {
-			return 0, errors.Wrapf(err, "podman version")
-		}
-		output := strings.TrimSpace(rr.Stdout.String())
-		v, err = semver.Make(output)
+		v, err = podmanVersion()
 		if err != nil {
 			return 0, errors.Wrapf(err, "podman version")
 		}
