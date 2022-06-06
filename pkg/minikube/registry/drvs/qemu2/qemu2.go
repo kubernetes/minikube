@@ -42,6 +42,7 @@ const (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.QEMU2,
+		Alias:    []string{driver.AliasQEMU},
 		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
@@ -118,9 +119,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		qemuCPU = "cortex-a72"
 		// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
-			qemuMachine = "virt,highmem=off"
+			qemuMachine += ",highmem=off"
 		} else if _, err := os.Stat("/dev/kvm"); err == nil {
-			qemuMachine = "virt,gic-version=3"
+			qemuMachine += ",gic-version=3"
 			qemuCPU = "host"
 		}
 	default:

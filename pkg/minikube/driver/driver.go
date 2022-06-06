@@ -69,6 +69,8 @@ const (
 	AliasSSH = "generic"
 	// AliasNative is driver name alias for None driver
 	AliasNative = "native"
+	// AliasQEMU is the driver name alias for qemu2
+	AliasQEMU = "qemu"
 )
 
 var (
