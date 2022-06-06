@@ -136,6 +136,7 @@ const (
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
+	qemuFirmwarePath        = "qemu-firmware-path"
 )
 
 var (
@@ -253,6 +254,9 @@ func initDriverFlags() {
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
+
+	// qemu
+	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -523,6 +527,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
+		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -741,6 +746,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
 	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
 	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
+	updateStringFromFlag(cmd, &cc.CustomQemuFirmwarePath, qemuFirmwarePath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
