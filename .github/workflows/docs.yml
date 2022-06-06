@@ -29,7 +29,7 @@ jobs:
           echo "::set-output name=changes::$c"
       - name: Create PR
         if: ${{ steps.gendocs.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@f094b77505fb89581e68a1163fbd2fffece39da1
+        uses: peter-evans/create-pull-request@923ad837f191474af6b1721408744feb989a4c27
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: Update auto-generated docs and translations
