@@ -78,7 +78,7 @@ func TestKicExistingNetwork(t *testing.T) {
 		t.Fatalf("error creating network: %v", err)
 	}
 	defer func() {
-		if err := oci.DeleteKICNetworks(oci.Docker); err != nil {
+		if err := oci.DeleteKICNetworksByLabel(oci.Docker, networkName); err != nil {
 			t.Logf("error deleting kic network, may need to delete manually: %v", err)
 		}
 	}()
