@@ -701,6 +701,19 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"Helm3": "docker.io",
 	}),
+	"headlamp": NewAddon([]*BinAsset{
+		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-namespace.yaml", vmpath.GuestAddonsDir, "headlamp-namespace.yaml", "6040"),
+		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-service.yaml", vmpath.GuestAddonsDir, "headlamp-service.yaml", "6040"),
+		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "headlamp-deployment.yaml", "6040"),
+		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-serviceaccount.yaml", vmpath.GuestAddonsDir, "headlamp-serviceaccount.yaml", "6040"),
+		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
+	}, false, "headlamp", "kinvolk.io", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
+		map[string]string{
+			"Headlamp": "kinvolk/headlamp:v0.9.0@sha256:465aaee6518f3fdd032965eccd6a8f49e924d144b1c86115bad613872672ec02",
+		},
+		map[string]string{
+			"Headlamp": "ghcr.io",
+		}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
