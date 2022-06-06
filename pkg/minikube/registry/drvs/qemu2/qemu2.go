@@ -26,6 +26,7 @@ import (
 	"runtime"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -64,7 +65,10 @@ func qemuSystemProgram() (string, error) {
 	}
 }
 
-func qemuFirmwarePath() (string, error) {
+func qemuFirmwarePath(customPath string) (string, error) {
+	if customPath != "" {
+		return customPath, nil
+	}
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
@@ -126,7 +130,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("unknown arch: %s", runtime.GOARCH)
 	}
-	qemuFirmware, err := qemuFirmwarePath()
+	qemuFirmware, err := qemuFirmwarePath(cc.CustomQemuFirmwarePath)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +170,12 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
 
-	qemuFirmware, err := qemuFirmwarePath()
+	qemuFirmware, err := qemuFirmwarePath(viper.GetString("qemu-firmware-path"))
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}
 	}
 
-	if _, err := os.Stat(qemuFirmware); err != nil && runtime.GOARCH == "arm64" {
+	if _, err := os.Stat(qemuFirmware); err != nil {
 		return registry.State{Error: err, Fix: "Install uefi firmware", Doc: docURL}
 	}
 

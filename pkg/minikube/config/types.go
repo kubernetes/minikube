@@ -101,6 +101,7 @@ type ClusterConfig struct {
 	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
 	DisableOptimizations    bool
 	DisableMetrics          bool
+	CustomQemuFirmwarePath  string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
