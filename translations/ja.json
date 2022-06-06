@@ -345,6 +345,7 @@
 	"If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.": "true の場合、現在のブートストラッパーの Docker イメージをキャッシュに保存して、マシンに読み込みます。--vm-driver=none の場合は常に false です。",
 	"If true, only download and cache files for later use - don't install or start anything.": "true の場合、後の使用のためのファイルのダウンロードとキャッシュ保存のみ行われます。インストールも起動も行いません",
 	"If true, pods might get deleted and restarted on addon enable": "true の場合、有効なアドオンの Pod は削除され、再起動されます",
+	"If true, print web links to addons' documentation if using --output=list (default).": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "true の場合、クラスター状態の検証を省略することにより高速にプロファイル一覧を返します。",
 	"If true, the added node will be marked for work. Defaults to true.": "true の場合、追加されたノードはワーカー用としてマークされます。デフォルトは true です。",
 	"If true, the node added will also be a control plane in addition to a worker.": "true の場合、追加されたノードはワーカーに加えてコントロールプレーンにもなります。",
