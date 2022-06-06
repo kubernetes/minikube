@@ -102,6 +102,7 @@ minikube start [flags]
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
+      --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
       --ssh-ip-address string             IP address (ssh driver only)
