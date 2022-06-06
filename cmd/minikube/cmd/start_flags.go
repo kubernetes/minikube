@@ -256,7 +256,7 @@ func initDriverFlags() {
 	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
 
 	// qemu
-	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
+	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
