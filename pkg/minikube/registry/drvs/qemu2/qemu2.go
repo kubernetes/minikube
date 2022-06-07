@@ -43,6 +43,7 @@ const (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.QEMU2,
+		Alias:    []string{driver.AliasQEMU},
 		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,

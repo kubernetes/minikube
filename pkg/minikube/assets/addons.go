@@ -690,6 +690,17 @@ var Addons = map[string]*Addon{
 	}, false, "portainer", "Portainer.io", "", map[string]string{
 		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
 	}, nil),
+	"inaccel": NewAddon([]*BinAsset{
+		MustBinAsset(addons.InAccelAssets,
+			"inaccel/fpga-operator.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"fpga-operator.yaml",
+			"0640"),
+	}, false, "inaccel", "InAccel <info@inaccel.com>", "", map[string]string{
+		"Helm3": "alpine/helm:3.9.0@sha256:9f4bf4d24241f983910550b1fe8688571cd684046500abe58cef14308f9cb19e",
+	}, map[string]string{
+		"Helm3": "docker.io",
+	}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
