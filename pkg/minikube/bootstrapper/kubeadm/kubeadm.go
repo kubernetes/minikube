@@ -1095,13 +1095,13 @@ func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "new cruntime")
 	}
 
-	ids, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
+	containers, err := cr.ListContainers(cruntime.ListContainersOptions{Namespaces: []string{"kube-system"}})
 	if err != nil {
 		return errors.Wrap(err, "list")
 	}
 
-	if len(ids) > 0 {
-		if err := cr.StopContainers(ids); err != nil {
+	if len(containers) > 0 {
+		if err := cr.StopContainers(containers.IDs()); err != nil {
 			return errors.Wrap(err, "stop")
 		}
 	}
