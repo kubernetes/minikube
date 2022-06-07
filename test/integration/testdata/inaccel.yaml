@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    inaccel/cli: |
+      bitstream install https://store.inaccel.com/artifactory/bitstreams/xilinx/aws-vu9p-f1/dynamic-shell/aws/vector/1/1addition
+  labels:
+    inaccel/fpga: enabled
+  name: inaccel-vadd
+spec:
+  containers:
+  - image: inaccel/vadd
+    name: inaccel-vadd
+    resources:
+      limits:
+        xilinx/aws-vu9p-f1: 1
+  nodeSelector:
+    xilinx/aws-vu9p-f1: dynamic-shell
+  restartPolicy: Never
