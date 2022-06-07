@@ -696,7 +696,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"fpga-operator.yaml",
 			"0640"),
-	}, false, "inaccel", "InAccel <info@inaccel.com>", map[string]string{
+	}, false, "inaccel", "InAccel <info@inaccel.com>", "", map[string]string{
 		"Helm3": "alpine/helm:3.9.0@sha256:9f4bf4d24241f983910550b1fe8688571cd684046500abe58cef14308f9cb19e",
 	}, map[string]string{
 		"Helm3": "docker.io",
