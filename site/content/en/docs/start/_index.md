@@ -455,7 +455,8 @@ choco install minikube
       [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+    <span style="color:blue">
+    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._</span>
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
