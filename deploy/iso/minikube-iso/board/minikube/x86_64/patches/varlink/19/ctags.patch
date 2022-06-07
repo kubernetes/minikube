@@ -1,0 +1,12 @@
+diff -ur libvarlink-19.orig/meson.build libvarlink-19/meson.build
+--- libvarlink-19.orig/meson.build	2020-03-06 11:42:33.000000000 +0100
++++ libvarlink-19/meson.build	2020-05-17 13:27:52.972980173 +0200
+@@ -96,8 +96,4 @@
+                 'tags',
+                 output : 'tags',
+                 command : ['env', 'etags', '-o', '@0@/TAGS'.format(meson.current_source_dir())] + all_files)
+-        custom_target(
+-                'ctags',
+-                output : 'ctags',
+-                command : ['env', 'ctags', '-o', '@0@/tags'.format(meson.current_source_dir())] + all_files)
+ endif

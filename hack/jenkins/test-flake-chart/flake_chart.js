@@ -382,7 +382,7 @@ function displayTestAndEnvironmentChart(testData, testName, environmentName) {
   }
 }
 
-function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName) {
+function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePercentageMap, environmentName, period) {
   const createCell = (elementType, text) => {
     const element = document.createElement(elementType);
     element.innerHTML = text;
@@ -401,7 +401,7 @@ function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePe
     const {testName, flakeRate} = recentFlakePercentage[i];
     const row = document.createElement("tr");
     row.appendChild(createCell("td", "" + (i + 1))).style.textAlign = "center";
-    row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}">${testName}</a>`));
+    row.appendChild(createCell("td", `<a href="${window.location.pathname}?env=${environmentName}&test=${testName}${period === 'last90' ? '&period=last90' : ''}">${testName}</a>`));
     row.appendChild(createCell("td", `${flakeRate.toFixed(2)}%`)).style.textAlign = "right";
     const growth = previousFlakePercentageMap.has(testName) ?
       flakeRate - previousFlakePercentageMap.get(testName) : 0;
@@ -413,7 +413,7 @@ function createRecentFlakePercentageTable(recentFlakePercentage, previousFlakePe
   return table;
 }
 
-function displayEnvironmentChart(testData, environmentName) {
+function displayEnvironmentChart(testData, environmentName, period) {
   // Number of days to use to look for "flaky-est" tests.
   const dateRange = 15;
   // Number of tests to display in chart.
@@ -661,7 +661,8 @@ function displayEnvironmentChart(testData, environmentName) {
     createRecentFlakePercentageTable(
       recentFlakePercentage,
       previousFlakePercentageMap,
-      environmentName));
+      environmentName,
+      period));
 }
 
 async function init() {
@@ -683,7 +684,7 @@ async function init() {
   }
 
   if (desiredTest === undefined) {
-    displayEnvironmentChart(testData, desiredEnvironment);
+    displayEnvironmentChart(testData, desiredEnvironment, desiredPeriod);
   } else {
     displayTestAndEnvironmentChart(testData, desiredTest, desiredEnvironment);
   }

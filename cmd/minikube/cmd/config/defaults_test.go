@@ -77,12 +77,10 @@ func TestPrintDefaults(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
-			output = tc.format
+			defaultsOutput = tc.format
 			f := tests.NewFakeFile()
 			out.SetOutFile(f)
-			if err := printDefaults(defaults); err != nil {
-				t.Fatalf("error printing defaults: %v", err)
-			}
+			printDefaults(defaults)
 			if f.String() != tc.expected {
 				t.Fatalf("Expected: %v\n Actual: %v\n", tc.expected, f.String())
 			}

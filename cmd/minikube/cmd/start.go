@@ -34,6 +34,7 @@ import (
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
+	"github.com/docker/go-connections/nat"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -43,6 +44,8 @@ import (
 	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -108,7 +111,7 @@ func platform() string {
 	// Show the distro version if possible
 	hi, err := gopshost.Info()
 	if err == nil {
-		s.WriteString(fmt.Sprintf("%s %s", strings.Title(hi.Platform), hi.PlatformVersion))
+		s.WriteString(fmt.Sprintf("%s %s", cases.Title(language.Und).String(hi.Platform), hi.PlatformVersion))
 		klog.Infof("hostinfo: %+v", hi)
 	} else {
 		klog.Warningf("gopshost.Info returned error: %v", err)
@@ -307,6 +310,11 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
+	}
+
+	// Bail cleanly for qemu2 until implemented
+	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime != "docker" {
+		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.")
 	}
 
 	// This is about as far as we can go without overwriting config files
@@ -939,7 +947,7 @@ func validateUser(drvName string) {
 		return
 	}
 
-	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
+	out.ErrT(style.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges. If you wish to continue as root, use --force.`, out.V{"driver_name": drvName})
 	out.ErrT(style.Tip, "If you are running minikube within a VM, consider using --driver=none:")
 	out.ErrT(style.Documentation, "  {{.url}}", out.V{"url": "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"})
 
@@ -1244,26 +1252,22 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateInsecureRegistry()
 }
 
-// This function validates that the --ports are not below 1024 for the host and not outside range
+// validatePorts validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
-	for _, portDuplet := range ports {
-		parts := strings.Split(portDuplet, ":")
-		if len(parts) > 2 {
-			ip := parts[0]
-			if net.ParseIP(ip) == nil {
-				return errors.Errorf("Sorry, the IP address provided with --ports flag is invalid: %s", ip)
-			}
-			parts = parts[1:]
-		}
-		for i, port := range parts {
-			p, err := strconv.Atoi(port)
+	_, portBindingsMap, err := nat.ParsePortSpecs(ports)
+	if err != nil {
+		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s (%v)", ports, err)
+	}
+	for _, portBindings := range portBindingsMap {
+		for _, portBinding := range portBindings {
+			p, err := strconv.Atoi(portBinding.HostPort)
 			if err != nil {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
 			}
 			if p > 65535 || p < 1 {
 				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
 			}
-			if detect.IsMicrosoftWSL() && p < 1024 && i == 0 {
+			if detect.IsMicrosoftWSL() && p < 1024 {
 				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
 			}
 		}
@@ -1581,10 +1585,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 	if nvs.GT(newestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
 	}
 	if nvs.LT(oldestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}

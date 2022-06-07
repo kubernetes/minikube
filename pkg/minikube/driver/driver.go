@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -44,6 +46,10 @@ const (
 	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
+	// QEMU2 driver
+	QEMU2 = "qemu2"
+	// QEMU driver
+	QEMU = "qemu"
 	// VirtualBox driver
 	VirtualBox = "virtualbox"
 	// HyperKit driver
@@ -154,6 +160,11 @@ func IsKVM(name string) bool {
 	return name == KVM2 || name == AliasKVM
 }
 
+// IsQEMU checks if the driver is a QEMU[2]
+func IsQEMU(name string) bool {
+	return name == QEMU2 || name == QEMU
+}
+
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
 	if IsKIC(name) || BareMetal(name) {
@@ -179,6 +190,9 @@ func AllowsPreload(driverName string) bool {
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
+	if IsQEMU(name) {
+		return true
+	}
 	if !IsKIC(name) {
 		return false
 	}
@@ -221,7 +235,7 @@ func FullName(name string) string {
 		}
 		return "Docker"
 	default:
-		return strings.Title(name)
+		return cases.Title(language.Und).String(name)
 	}
 }
 

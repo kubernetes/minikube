@@ -1,0 +1,29 @@
+[Unit]
+Description=Container Runtime Interface for OCI (CRI-O)
+Documentation=https://github.com/cri-o/cri-o
+Wants=network-online.target
+After=network-online.target minikube-automount.service
+Requires=minikube-automount.service
+After=crio-wipe.service
+Requires=crio-wipe.service
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/sysconfig/crio
+EnvironmentFile=-/etc/sysconfig/crio.minikube
+EnvironmentFile=/var/run/minikube/env
+Environment=GOTRACEBACK=crash
+ExecStart=/usr/bin/crio \
+    $CRIO_OPTIONS \
+    $CRIO_MINIKUBE_OPTIONS
+ExecReload=/bin/kill -s HUP $MAINPID
+TasksMax=8192
+LimitNOFILE=1048576
+LimitNPROC=1048576
+LimitCORE=infinity
+OOMScoreAdjust=-999
+TimeoutStartSec=0
+Restart=on-abnormal
+
+[Install]
+WantedBy=multi-user.target

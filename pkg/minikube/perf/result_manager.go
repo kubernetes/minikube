@@ -92,7 +92,7 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 	t.SetHeader([]string{"Command", binaries[0].Name(), binaries[1].Name()})
 	for _, v := range table {
 		// Add warning sign if PR average is 5 seconds higher than average at HEAD
-		if len(v) > 3 {
+		if len(v) >= 3 {
 			prTime, _ := strconv.ParseFloat(v[2][:len(v[2])-1], 64)
 			headTime, _ := strconv.ParseFloat(v[1][:len(v[1])-1], 64)
 			if prTime-headTime > threshold {

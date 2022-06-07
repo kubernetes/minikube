@@ -19,7 +19,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -40,7 +39,7 @@ func validateSchema(schemaPathString, docPathString string) {
 		log.Fatal(err)
 	}
 
-	data, err := ioutil.ReadFile(docPathString)
+	data, err := os.ReadFile(docPathString)
 	if err != nil {
 		log.Fatal(err)
 	}

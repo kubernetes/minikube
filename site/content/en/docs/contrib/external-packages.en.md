@@ -11,6 +11,6 @@ Chocolatey is a software package manager for Windows that wraps installers, exec
 
 * Chocolatey community is the maintainer of the Minikube package. Latest approved version is available for [Install, Upgrade and Uninstall](https://community.chocolatey.org/packages/Minikube/).
 * Get the [current status](https://gist.github.com/choco-bot/a14b1e5bfaf70839b338eb1ab7f8226f) of the Chocolatey pacakge.
-* Minikube Chocolatey update script on [Github](https://github.com/chocolatey-community/chocolatey-coreteampackages/tree/master/automatic/minikube).
+* Minikube Chocolatey update script on [GitHub](https://github.com/chocolatey-community/chocolatey-coreteampackages/tree/master/automatic/minikube).
 
 **Note: Windows support is limited to 64bit operating systems.**

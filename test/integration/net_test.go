@@ -1,5 +1,4 @@
 //go:build integration
-// +build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -29,8 +28,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -59,7 +61,7 @@ func TestNetworkPlugins(t *testing.T) {
 			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", true},
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
 			{"false", []string{"--cni=false"}, "", "", false},
-			{"custom-weave", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "weavenet.yaml"))}, "cni", "", true},
+			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", true},
 			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
 			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", true},
 		}
@@ -123,7 +125,11 @@ func TestNetworkPlugins(t *testing.T) {
 							t.Fatalf("ssh failed: %v", err)
 						}
 						out := rr.Stdout.String()
-						verifyKubeletFlagsOutput(t, tc.kubeletPlugin, out)
+						c, err := config.Load(profile)
+						if err != nil {
+							t.Errorf("failed to load cluster config: %v", err)
+						}
+						verifyKubeletFlagsOutput(t, c.KubernetesConfig.KubernetesVersion, tc.kubeletPlugin, out)
 					})
 				}
 
@@ -243,7 +249,14 @@ func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hair
 	}
 }
 
-func verifyKubeletFlagsOutput(t *testing.T, kubeletPlugin, out string) {
+func verifyKubeletFlagsOutput(t *testing.T, k8sVersion, kubeletPlugin, out string) {
+	version, err := util.ParseKubernetesVersion(k8sVersion)
+	if err != nil {
+		t.Errorf("failed to parse kubernetes version %s: %v", k8sVersion, err)
+	}
+	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		return
+	}
 	if kubeletPlugin == "" {
 		if strings.Contains(out, "--network-plugin") && ContainerRuntime() == "docker" {
 			t.Errorf("expected no network plug-in, got %s", out)

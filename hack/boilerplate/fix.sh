@@ -44,7 +44,7 @@ function prepend() {
     done
 }
 
-prepend "\.go" "go" "+build"
+prepend "\.go" "go" "go:build"
 prepend "\.py" "py"
 prepend "\.sh" "sh" "#!"
 prepend Makefile Makefile

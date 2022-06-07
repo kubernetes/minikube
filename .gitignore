@@ -26,14 +26,19 @@ _testmain.go
 *.test
 *.prof
 
-/deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/usr/bin/auto-pause
+/deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause
+/deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/usr/bin/auto-pause
+/deploy/iso/minikube-iso/Config.in
 /deploy/kicbase/auto-pause
 /deploy/addons/auto-pause/auto-pause-hook
 /out
 /_gopath
 
 #iso version file
-deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
+deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
+deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/VERSION
+deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
+deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/CHANGELOG
 
 /minikube
 
@@ -50,3 +55,6 @@ test/integration/testdata/minikube-linux-amd64-latest-stable
 /site/resources
 /_gen
 
+# Qt
+*.pro.user
+*build-*

@@ -1,12 +1,30 @@
 HEADERS       = window.h \
-                cluster.h
+                advancedview.h \
+                basicview.h \
+                cluster.h \
+                commandrunner.h \
+                errormessage.h \
+                hyperkit.h \
+                operator.h \
+                progresswindow.h \
+                tray.h \
+                updater.h
 SOURCES       = main.cpp \
+                advancedview.cpp \
+                basicview.cpp \
                 cluster.cpp \
+                commandrunner.cpp \
+                errormessage.cpp \
+                hyperkit.cpp \
+                operator.cpp \
+                progresswindow.cpp \
+                tray.cpp \
+                updater.cpp \
                 window.cpp
 RESOURCES     = systray.qrc
 ICON          = images/minikube.icns
 
-QT += widgets
+QT += widgets network
 requires(qtConfig(combobox))
 
 DISTFILES += \

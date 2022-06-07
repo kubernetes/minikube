@@ -39,6 +39,7 @@ Configurable fields:
  * cache
  * EmbedCerts
  * native-ssh
+ * rootless
 
 ```shell
 minikube config SUBCOMMAND [flags]
@@ -58,6 +59,7 @@ minikube config SUBCOMMAND [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -76,6 +78,7 @@ list displays all valid default settings for PROPERTY_NAME
 Acceptable fields: 
 
  * driver
+ * kubernetes-version
 
 ```shell
 minikube config defaults PROPERTY_NAME [flags]
@@ -84,7 +87,7 @@ minikube config defaults PROPERTY_NAME [flags]
 ### Options
 
 ```
-      --output string   Output format. Accepted values: [json]
+  -o, --output string   Output format. Accepted values: [json, yaml]
 ```
 
 ### Options inherited from parent commands
@@ -101,6 +104,7 @@ minikube config defaults PROPERTY_NAME [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -135,6 +139,7 @@ minikube config get PROPERTY_NAME [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -170,6 +175,7 @@ minikube config help [command] [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -205,6 +211,7 @@ minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -239,6 +246,7 @@ minikube config unset PROPERTY_NAME [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -280,6 +288,7 @@ minikube config view [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

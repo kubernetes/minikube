@@ -55,6 +55,13 @@
 #define WINDOW_H
 
 #include <QSystemTrayIcon>
+#include <QFormLayout>
+#include <QStackedWidget>
+#include <QProcessEnvironment>
+#include <QVersionNumber>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QProgressBar>
 
 #ifndef QT_NO_SYSTEMTRAYICON
 
@@ -77,8 +84,15 @@ class QProcess;
 QT_END_NAMESPACE
 
 #include "cluster.h"
+#include "basicview.h"
+#include "advancedview.h"
+#include "progresswindow.h"
+#include "operator.h"
+#include "errormessage.h"
+#include "tray.h"
+#include "hyperkit.h"
+#include "updater.h"
 
-//! [0]
 class Window : public QDialog
 {
     Q_OBJECT
@@ -87,60 +101,31 @@ public:
     Window();
 
     void setVisible(bool visible) override;
+    void restoreWindow();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
 
-private slots:
-    void messageClicked();
-    void updateButtons();
-    void dashboardClose();
-
 private:
-    void createActionGroupBox();
-    void createActions();
-    void createTrayIcon();
-    void startMinikube();
-    void stopMinikube();
-    void deleteMinikube();
-    ClusterList getClusters();
-    QString selectedCluster();
-    void setSelectedCluster(QString cluster);
-    QTableView *clusterListView;
-    void createClusterGroupBox();
-    QGroupBox *clusterGroupBox;
-    ClusterModel *clusterModel;
-    ClusterHash getClusterHash();
-    bool sendMinikubeCommand(QStringList cmds);
-    bool sendMinikubeCommand(QStringList cmds, QString &text);
-    void updateClusters();
-    void askCustom();
-    void askName();
-    QComboBox *driverComboBox;
-    QComboBox *containerRuntimeComboBox;
-    void initMachine();
-    void sshConsole();
-    void dashboardBrowser();
-    void checkForMinikube();
-    QPushButton *sshButton;
-    QPushButton *dashboardButton;
-    QProcess *dashboardProcess;
-
-    QPushButton *startButton;
-    QPushButton *stopButton;
-    QPushButton *deleteButton;
-    QPushButton *refreshButton;
-    QPushButton *createButton;
-
-    QAction *minimizeAction;
-    QAction *restoreAction;
-    QAction *quitAction;
-
-    QSystemTrayIcon *trayIcon;
-    QMenu *trayIconMenu;
     QIcon *trayIconIcon;
+
+    void checkForMinikube();
+    QStackedWidget *stackedWidget;
+    void checkForUpdates();
+    QString getRequest(QString url);
+    void notifyUpdate(QString latest, QString link);
+
+    BasicView *basicView;
+    AdvancedView *advancedView;
+    Operator *op;
+    CommandRunner *commandRunner;
+    ErrorMessage *errorMessage;
+    ProgressWindow *progressWindow;
+    Tray *tray;
+    HyperKit *hyperKit;
+    Updater *updater;
+    QVBoxLayout *layout;
 };
-//! [0]
 
 #endif // QT_NO_SYSTEMTRAYICON
 

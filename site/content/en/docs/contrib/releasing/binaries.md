@@ -66,13 +66,14 @@ sh hack/tag_release.sh 1.<minor>.<patch>
 
 ## Build the Release
 
-This step uses the git tag to publish new binaries to GCS and create a github release:
+This step uses the git tag to publish new binaries to GCS and create a GitHub release:
 
 * Navigate to the minikube "Release" jenkins job
 * Ensure that you are logged in (top right)
 * Click "▶️ Build with Parameters" (left)
 * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
-* For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
+* For `ISO_SHA256_AMD64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-amd64.iso.sha256`
+* For `ISO_SHA256_ARM64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-arm64.iso.sha256`
 * Click *Build*
 
 ## Check the release logs
@@ -85,7 +86,7 @@ After job completion, click "Console Output" to verify that the release complete
 
 The release script updates https://storage.googleapis.com/minikube/releases.json - which is used by the minikube binary to check for updates, and is live immediately.
 
-minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and Github in sync.
+minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and GitHub in sync.
 
 ## Package managers which include minikube
 
