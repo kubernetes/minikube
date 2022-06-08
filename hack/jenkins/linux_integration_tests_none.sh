@@ -68,12 +68,12 @@ fi
 # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
 if ! cri-dockerd &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
+  CRI_DOCKER_VERSION="d627d3e64a0ebf4cd4c9f80c131c34fc615258b5"
   git clone -n https://github.com/Mirantis/cri-dockerd
   cd cri-dockerd
-  git checkout a4d1895a2659ea9974bd7528a706592ab8b74181
-  cd src
-  env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=a4d1895' -o cri-dockerd
-  cd ../..
+  git checkout "$CRI_DOCKER_VERSION"
+  env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=${CRI_DOCKER_VERSION:0:7}' -o cri-dockerd
+  cd ..
   sudo cp cri-dockerd/src/cri-dockerd /usr/bin/cri-dockerd
   sudo cp cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
   sudo cp cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
