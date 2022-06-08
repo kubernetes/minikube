@@ -43,7 +43,7 @@ tests the csi hostpath driver by creating a persistent volume, snapshotting it a
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
 #### validateInAccelAddon
-tests the InAccel addon by trying a vadd
+tests the inaccel addon by trying a vadd
 
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
