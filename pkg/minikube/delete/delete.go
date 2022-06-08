@@ -64,7 +64,7 @@ func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 		klog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
 
-	errs = oci.DeleteKICNetworks(bin)
+	errs = oci.DeleteKICNetworksByLabel(bin, delLabel)
 	if errs != nil {
 		klog.Warningf("error deleting leftover networks (might be okay).\nTo see the list of networks: 'docker network ls'\n:%v", errs)
 	}

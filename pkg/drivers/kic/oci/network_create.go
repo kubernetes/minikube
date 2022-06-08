@@ -133,7 +133,7 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
 	}
-	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), name)
+	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), fmt.Sprintf("--label=%s=%s", ProfileLabelKey, name), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
@@ -320,10 +320,10 @@ func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 	return lines, nil
 }
 
-// DeleteKICNetworks deletes all networks created by kic
-func DeleteKICNetworks(ociBin string) []error {
+// DeleteAllKICKNetworksByLabel deletes all networks that have a specific label
+func DeleteKICNetworksByLabel(ociBin string, label string) []error {
 	var errs []error
-	ns, err := networkNamesByLabel(ociBin, CreatedByLabelKey)
+	ns, err := networkNamesByLabel(ociBin, label)
 	if err != nil {
 		return []error{errors.Wrap(err, "list all volume")}
 	}
