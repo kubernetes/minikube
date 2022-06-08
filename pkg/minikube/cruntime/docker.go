@@ -679,6 +679,7 @@ func dockerConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin str
 		args += " --cni-bin-dir=" + CNIBinDir
 		args += " --cni-cache-dir=" + CNICacheDir
 		args += " --cni-conf-dir=" + cni.ConfDir
+		args += " --hairpin-mode=promiscuous-bridge"
 	}
 
 	opts := struct {
