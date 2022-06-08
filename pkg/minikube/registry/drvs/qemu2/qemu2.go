@@ -145,7 +145,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-			// Surprsingly, highmem doesn't work for low memory situations
+			// Surprisingly, highmem doesn't work for low memory situations
 			if v.LT(qemu7) || cc.Memory <= 3072 {
 				qemuMachine += ",highmem=off"
 			}
