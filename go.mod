@@ -97,6 +97,7 @@ require (
 
 require (
 	github.com/Xuanwo/go-locale v1.1.0
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v43 v43.0.0
 	github.com/opencontainers/runc v1.0.2
