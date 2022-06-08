@@ -192,7 +192,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
 	}
 
-	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+	if cc.KubernetesConfig.ImageRepository == constants.AliyunMirror {
 		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
 	}
 
