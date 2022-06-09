@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"regexp"
 	"text/template"
@@ -37,10 +36,6 @@ import (
 const (
 	// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
 	FSRoot = "../../../"
-)
-
-var (
-	target = os.Getenv("UPDATE_TARGET")
 )
 
 // init klog and check general requirements
