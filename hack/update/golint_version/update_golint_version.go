@@ -14,16 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
@@ -38,7 +28,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout = 300 * time.Second
+	cxTimeout = 5 * time.Minute
 )
 
 var (
@@ -49,15 +39,11 @@ var (
 			},
 		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-golint-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update go lint version: {stable: "{{.StableVersion}}"}`
 )
 
 // Data holds stable gopogh version in semver format.
 type Data struct {
-	StableVersion string `json:"stableVersion"`
+	StableVersion string
 }
 
 func main() {
@@ -65,15 +51,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// get Golang stable version
+	// get Golint stable version
 	stable, err := golintVersion(ctx, "golangci", "golangci-lint")
 	if err != nil {
-		klog.Fatalf("Unable to get Golang stable version: %v", err)
+		klog.Fatalf("Unable to get Golint stable version: %v", err)
 	}
 	data := Data{StableVersion: stable}
-	klog.Infof("Golang stable version: %s", data.StableVersion)
+	klog.Infof("Golint stable version: %s", data.StableVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, 12247)
+	update.Apply(schema, data)
 }
 
 //

@@ -706,7 +706,8 @@ KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
 .PHONY: update-cri-dockerd
 update-cri-dockerd:
-	hack/update/cri_dockerd/update_cri_dockerd.sh $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH)
+	(cd hack/update/cri_dockerd && \
+	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH))
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)

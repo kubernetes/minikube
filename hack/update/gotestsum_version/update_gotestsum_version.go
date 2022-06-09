@@ -14,16 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
@@ -39,7 +29,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout = 300 * time.Second
+	cxTimeout = 5 * time.Minute
 )
 
 var (
@@ -55,16 +45,11 @@ var (
 			},
 		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-gotestsum-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_gotestsum_version: {stable: "{{.StableVersion}}"}`
-	prIssue        = 14224
 )
 
 // Data holds stable gotestsum version in semver format.
 type Data struct {
-	StableVersion string `json:"stableVersion"`
+	StableVersion string
 }
 
 func main() {
@@ -80,7 +65,7 @@ func main() {
 	data := Data{StableVersion: strings.TrimPrefix(stable, "v")}
 	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
+	update.Apply(schema, data)
 }
 
 // gotestsumVersion returns gotestsum stable version in semver format.
