@@ -120,6 +120,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/sync-minikube.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		"go.mod": {
 			Replace: map[string]string{
 				`(?m)^go .*`: `go {{.StableVersionMM}}`,

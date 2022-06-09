@@ -1,9 +1,0 @@
-# From http://download.virtualbox.org/virtualbox/5.1.30/SHA256SUMS
-sha256 96cab2296fb014ce0a16b7b9603b52208b9403c10c1524b44201d3c274e8a821  VirtualBox-5.1.38.tar.bz2
-sha256 0e7ee2c78ebf7cd0d3a933d51148bef04a64f64fb27ccf70d59cddf9ca1e517a  VBoxGuestAdditions_5.1.38.iso
-# From http://download.virtualbox.org/virtualbox/5.2.32/SHA256SUMS
-sha256 ff6390e50cb03718cd3f5779627910999c12279b465e340c80d7175778a33958  VirtualBox-5.2.32.tar.bz2
-sha256 4311c7408a3410e6a33264a9062347d9eec04f58339a49f0a60488c0cabc8996  VBoxGuestAdditions_5.2.32.iso
-# From http://download.virtualbox.org/virtualbox/5.2.42/SHA256SUMS
-sha256 e5bee2e34f349aac115ee93974febfe3213ad5e94045fa36b9f04b5f8caa3720  VirtualBox-5.2.42.tar.bz2
-sha256 ff784417295e48e3cee80a596faf05e3b0976e1b94d3b88427939912b0c1fc45  VBoxGuestAdditions_5.2.42.iso

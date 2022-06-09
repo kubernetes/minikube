@@ -38,7 +38,7 @@ type sshConn struct {
 	suppressStdOut bool
 }
 
-func createSSHConn(name, sshPort, sshKey string, resourcePorts []int32, resourceIP string, resourceName string) *sshConn {
+func createSSHConn(name, sshPort, sshKey, bindAddress string, resourcePorts []int32, resourceIP string, resourceName string) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
 		// TODO: document the options here
@@ -53,12 +53,25 @@ func createSSHConn(name, sshPort, sshKey string, resourcePorts []int32, resource
 	askForSudo := false
 	var privilegedPorts []int32
 	for _, port := range resourcePorts {
-		arg := fmt.Sprintf(
-			"-L %d:%s:%d",
-			port,
-			resourceIP,
-			port,
-		)
+		var arg string
+		if bindAddress == "" || bindAddress == "*" {
+			// bind on all interfaces
+			arg = fmt.Sprintf(
+				"-L %d:%s:%d",
+				port,
+				resourceIP,
+				port,
+			)
+		} else {
+			// bind on specify address only
+			arg = fmt.Sprintf(
+				"-L %s:%d:%s:%d",
+				bindAddress,
+				port,
+				resourceIP,
+				port,
+			)
+		}
 
 		// check if any port is privileged
 		if port < 1024 {

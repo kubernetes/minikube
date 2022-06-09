@@ -41,6 +41,7 @@ import (
 )
 
 var cleanup bool
+var bindAddress string
 
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
@@ -93,7 +94,7 @@ var tunnelCmd = &cobra.Command{
 			sshKey := filepath.Join(localpath.MiniPath(), "machines", cname, "id_rsa")
 
 			outputTunnelStarted()
-			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1(), clientset.NetworkingV1())
+			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, bindAddress, clientset.CoreV1(), clientset.NetworkingV1())
 			err = kicSSHTunnel.Start()
 			if err != nil {
 				exit.Error(reason.SvcTunnelStart, "error starting tunnel", err)
@@ -119,4 +120,5 @@ func outputTunnelStarted() {
 
 func init() {
 	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
+	tunnelCmd.Flags().StringVar(&bindAddress, "bind-address", "", "set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces")
 }

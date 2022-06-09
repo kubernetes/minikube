@@ -149,7 +149,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -159,6 +159,7 @@ func renderProfilesTable(ps [][]string) {
 
 func profilesToTableData(profiles []*config.Profile) [][]string {
 	var data [][]string
+	currentProfile := ClusterFlagValue()
 	for _, p := range profiles {
 		cp, err := config.PrimaryControlPlane(p.Config)
 		if err != nil {
@@ -169,7 +170,11 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes))})
+		var c string
+		if p.Name == currentProfile {
+			c = "*"
+		}
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
 	}
 	return data
 }
@@ -192,7 +197,6 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 
 func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := listProfiles()
-
 	updateProfilesStatus(validProfiles)
 
 	var body = map[string]interface{}{}

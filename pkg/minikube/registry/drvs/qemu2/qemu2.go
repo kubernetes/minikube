@@ -24,8 +24,11 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -42,6 +45,7 @@ const (
 func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.QEMU2,
+		Alias:    []string{driver.AliasQEMU},
 		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
@@ -64,7 +68,10 @@ func qemuSystemProgram() (string, error) {
 	}
 }
 
-func qemuFirmwarePath() (string, error) {
+func qemuFirmwarePath(customPath string) (string, error) {
+	if customPath != "" {
+		return customPath, nil
+	}
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
@@ -101,6 +108,21 @@ func qemuFirmwarePath() (string, error) {
 	}
 }
 
+func qemuVersion() (semver.Version, error) {
+	qemuSystem, err := qemuSystemProgram()
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	cmd := exec.Command(qemuSystem, "-version")
+	rr, err := cmd.Output()
+	if err != nil {
+		return semver.Version{}, err
+	}
+	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
+	return semver.Make(v)
+}
+
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	qemuSystem, err := qemuSystemProgram()
@@ -116,17 +138,26 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "arm64":
 		qemuMachine = "virt"
 		qemuCPU = "cortex-a72"
-		// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
+		// highmem=off needed for qemu 6.2.0 and lower, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
-			qemuMachine = "virt,highmem=off"
+			qemu7 := semver.MustParse("7.0.0")
+			v, err := qemuVersion()
+			if err != nil {
+				return nil, err
+			}
+			// Surprisingly, highmem doesn't work for low memory situations
+			if v.LT(qemu7) || cc.Memory <= 3072 {
+				qemuMachine += ",highmem=off"
+			}
+			qemuCPU = "host"
 		} else if _, err := os.Stat("/dev/kvm"); err == nil {
-			qemuMachine = "virt,gic-version=3"
+			qemuMachine += ",gic-version=3"
 			qemuCPU = "host"
 		}
 	default:
 		return nil, fmt.Errorf("unknown arch: %s", runtime.GOARCH)
 	}
-	qemuFirmware, err := qemuFirmwarePath()
+	qemuFirmware, err := qemuFirmwarePath(cc.CustomQemuFirmwarePath)
 	if err != nil {
 		return nil, err
 	}
@@ -166,12 +197,12 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
 
-	qemuFirmware, err := qemuFirmwarePath()
+	qemuFirmware, err := qemuFirmwarePath(viper.GetString("qemu-firmware-path"))
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}
 	}
 
-	if _, err := os.Stat(qemuFirmware); err != nil && runtime.GOARCH == "arm64" {
+	if _, err := os.Stat(qemuFirmware); err != nil {
 		return registry.State{Error: err, Fix: "Install uefi firmware", Doc: docURL}
 	}
 
