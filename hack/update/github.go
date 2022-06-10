@@ -144,7 +144,7 @@ func ghCreatePR(ctx context.Context, owner, repo, base, branch, title string, is
 	return pr, nil
 }
 
-// ghFindPR returns URL of the PR if found in the given GitHub ower/repo base and any error occurred.
+// ghFindPR returns URL of the PR if found in the given GitHub owner/repo base and any error occurred.
 func ghFindPR(ctx context.Context, title, owner, repo, base, token string) (url string, err error) {
 	ghc := ghClient(ctx, token)
 

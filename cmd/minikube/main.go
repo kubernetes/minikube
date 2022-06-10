@@ -180,7 +180,7 @@ func logFileName(dir string, logIdx int64) string {
 
 // setFlags sets the flags
 func setFlags(parse bool) {
-	// parse flags beyond subcommand - get aroung go flag 'limitations':
+	// parse flags beyond subcommand - get around go flag 'limitations':
 	// "Flag parsing stops just before the first non-flag argument" (ref: https://pkg.go.dev/flag#hdr-Command_line_flag_syntax)
 	pflag.CommandLine.ParseErrorsWhitelist.UnknownFlags = true
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)

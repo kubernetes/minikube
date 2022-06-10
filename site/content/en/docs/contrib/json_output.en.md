@@ -11,7 +11,7 @@ You may need to add logs to the registry if the `TestJSONOutput` integration tes
 
 ### Background
 
-minikube provides JSON output for `minikube start`, accesible via the `--output` flag:
+minikube provides JSON output for `minikube start`, accessible via the `--output` flag:
 
 ```shell
 minikube start --output json

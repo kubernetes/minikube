@@ -315,7 +315,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		viper.Set(ProfileName, tc.profile)
 		n, err := PrimaryControlPlane(cc)
 		if err != nil {
-			t.Fatalf("Unexpexted error getting primary control plane: %v", err)
+			t.Fatalf("Unexpected error getting primary control plane: %v", err)
 		}
 
 		if n.Name != tc.expectedName {

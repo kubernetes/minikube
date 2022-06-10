@@ -203,7 +203,7 @@ pids_limit = 1024
 # limit is never exceeded.
 log_size_max = -1
 
-# Whether container output should be logged to journald in addition to the kuberentes log file
+# Whether container output should be logged to journald in addition to the kubernetes log file
 log_to_journald = false
 
 # Path to directory in which container exit files are written to by conmon.

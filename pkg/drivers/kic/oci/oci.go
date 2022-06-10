@@ -155,7 +155,7 @@ func CreateContainerNode(p CreateParams) error {
 			return ErrWindowsContainers
 		}
 		if err != nil {
-			klog.Warningf("error getting dameon info: %v", err)
+			klog.Warningf("error getting daemon info: %v", err)
 			return errors.Wrap(err, "daemon info")
 		}
 	}
@@ -411,7 +411,7 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 }
 
 /*
-This is adapated from:
+This is adapted from:
 https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155
 */
 // generateMountBindings converts the mount list to a list of strings that
@@ -647,7 +647,7 @@ func ShutDown(ociBin string, name string) error {
 	}
 	// helps with allowing docker realize the container is exited and report its status correctly.
 	time.Sleep(time.Second * 1)
-	// wait till it is stoped
+	// wait till it is stopped
 	stopped := func() error {
 		st, err := ContainerStatus(ociBin, name)
 		if st == state.Stopped {

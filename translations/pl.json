@@ -484,6 +484,7 @@
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "Uwierzytelnij się w rejestrze lub użyć flagi --base-image w celu użycia innego rejestru.",
 	"Please enter a value:": "Wprowadź wartość",
 	"Please free up disk or prune images.": "Zwolnij miejsce na dysku lub usuń niepotrzebne obrazy",
+	"Please increase Desktop's disk size.": "",
 	"Please increse Desktop's disk size.": "Zwiększ miejsce na dysku dla programu Docker Desktop",
 	"Please install the minikube hyperkit VM driver, or select an alternative --driver": "Zainstaluj sterownik hyperkit lub wybierz inny sterownik używając flagi --driver",
 	"Please install the minikube kvm2 VM driver, or select an alternative --driver": "Zainstaluj sterownik kvm2 lub wybierz inny sterownik używając flagi --driver",

@@ -7,7 +7,7 @@ date: 2020-11-24
 
 ## Overview
 
-minikube provides telemetry suppport via [OpenTelemetry tracing](https://opentelemetry.io/about/) to collect trace data for `minikube start`.
+minikube provides telemetry support via [OpenTelemetry tracing](https://opentelemetry.io/about/) to collect trace data for `minikube start`.
 
 Currently, minikube supports the following exporters for tracing data:
 

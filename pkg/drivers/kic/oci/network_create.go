@@ -99,7 +99,7 @@ func CreateNetwork(ociBin, networkName, subnet string) (net.IP, error) {
 			klog.Infof("%s network %s %s created", ociBin, networkName, subnet.CIDR)
 			return info.gateway, nil
 		}
-		// don't retry if error is not adddress is taken
+		// don't retry if error is not address is taken
 		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
 			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, subnet.CIDR, err)
 			return nil, fmt.Errorf("un-retryable: %w", err)

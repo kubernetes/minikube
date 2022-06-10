@@ -66,7 +66,7 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
 		if dst.node != "" {
 			runner = remoteCommandRunner(&co, dst.node)
 		} else if src.node == "" {
-			// if node name not explicitly specfied in both of source and target,
+			// if node name not explicitly specified in both of source and target,
 			// consider target is controlpanel node for backward compatibility.
 			runner = co.CP.Runner
 		} else {
@@ -158,7 +158,7 @@ func validateArgs(src, dst *remotePath) {
 		exit.Message(reason.Usage, "Target {{.path}} can not be empty", out.V{"path": dst.path})
 	}
 
-	// if node name not explicitly specfied in both of source and target,
+	// if node name not explicitly specified in both of source and target,
 	// consider target node is controlpanel for backward compatibility.
 	if src.node == "" && dst.node == "" && !strings.HasPrefix(dst.path, "/") {
 		exit.Message(reason.Usage, `Target <remote file path> must be an absolute Path. Relative Path is not allowed (example: "minikube:/home/docker/copied.txt")`)

@@ -105,7 +105,7 @@ func readData(file io.Reader) []testEntry {
 			}
 		}
 		if len(fields) != 9 {
-			fmt.Printf("Found line with wrong number of columns. Expectd 9, but got %d - skipping\n", len(fields))
+			fmt.Printf("Found line with wrong number of columns. Expected 9, but got %d - skipping\n", len(fields))
 			continue
 		}
 		previousLine = fields

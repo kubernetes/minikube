@@ -196,7 +196,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 				defer func() {
 					lockErr = api.flock.Unlock()
 					if lockErr != nil {
-						klog.Errorf("falied to release bootstrap cert client lock: %v", lockErr.Error())
+						klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
 					}
 				}()
 				certErr := cert.BootstrapCertificates(h.AuthOptions())

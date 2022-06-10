@@ -41,7 +41,7 @@ const (
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
 	NoKubernetesVersion = "v0.0.0"
 
-	// DefaultClusterName is the default nane for the k8s cluster
+	// DefaultClusterName is the default name for the k8s cluster
 	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
 	DockerDaemonPort = 2376

@@ -103,7 +103,7 @@ func TestCertOptions(t *testing.T) {
 	}
 
 	if !strings.Contains(rr.Stdout.String(), "8555") {
-		t.Errorf("Internal minikube kubeconfig (admin.conf) does not containe the right api port. %s", rr.Output())
+		t.Errorf("Internal minikube kubeconfig (admin.conf) does not contains the right api port. %s", rr.Output())
 	}
 
 }

@@ -9,7 +9,7 @@ description: >
 
 ## Overview
 
-A [static token file](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-token-file) can be used to ensure only authenticated users access the API server. As minikube nodes are run in VMs/containers, this adds a complication to ensuring this token file is accessable to the node. This tutorial explains how to configure a static token file.
+A [static token file](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#static-token-file) can be used to ensure only authenticated users access the API server. As minikube nodes are run in VMs/containers, this adds a complication to ensuring this token file is accessible to the node. This tutorial explains how to configure a static token file.
 
 ## Tutorial
 
