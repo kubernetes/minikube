@@ -17,7 +17,6 @@ limitations under the License.
 package detect
 
 import (
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -66,27 +65,6 @@ func IsOnGCE() bool {
 	}
 
 	return resp.Header.Get("Metadata-Flavor") == "Google"
-}
-
-// IsOnAmazonEC2 determines whether minikube is currently running on Amazon EC2
-// and, if yes, on which instance type.
-func IsOnAmazonEC2() (bool, string) {
-	resp, err := http.Get("http://instance-data.ec2.internal/latest/meta-data/instance-type")
-	if err != nil {
-		return false, ""
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return true, ""
-	}
-
-	instanceType, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return true, ""
-	}
-
-	return true, string(instanceType)
 }
 
 // IsCloudShell determines whether minikube is running inside CloudShell
