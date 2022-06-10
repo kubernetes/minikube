@@ -24,7 +24,9 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
@@ -106,6 +108,21 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	}
 }
 
+func qemuVersion() (semver.Version, error) {
+	qemuSystem, err := qemuSystemProgram()
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	cmd := exec.Command(qemuSystem, "-version")
+	rr, err := cmd.Output()
+	if err != nil {
+		return semver.Version{}, err
+	}
+	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
+	return semver.Make(v)
+}
+
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
 	qemuSystem, err := qemuSystemProgram()
@@ -121,11 +138,20 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	case "arm64":
 		qemuMachine = "virt"
 		qemuCPU = "cortex-a72"
-		// highmem=off needed, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
+		// highmem=off needed for qemu 6.2.0 and lower, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
-			qemuMachine = "virt,highmem=off"
+			qemu7 := semver.MustParse("7.0.0")
+			v, err := qemuVersion()
+			if err != nil {
+				return nil, err
+			}
+			// Surprisingly, highmem doesn't work for low memory situations
+			if v.LT(qemu7) || cc.Memory <= 3072 {
+				qemuMachine += ",highmem=off"
+			}
+			qemuCPU = "host"
 		} else if _, err := os.Stat("/dev/kvm"); err == nil {
-			qemuMachine = "virt,gic-version=3"
+			qemuMachine += ",gic-version=3"
 			qemuCPU = "host"
 		}
 	default:

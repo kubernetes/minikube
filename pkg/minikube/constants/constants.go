@@ -145,6 +145,9 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
+
+	// Mirror CN
+	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
 )
 
 var (
@@ -177,7 +180,7 @@ var (
 	// ImageRepositories contains all known image repositories
 	ImageRepositories = map[string][]string{
 		"global": {""},
-		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+		"cn":     {AliyunMirror},
 	}
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)

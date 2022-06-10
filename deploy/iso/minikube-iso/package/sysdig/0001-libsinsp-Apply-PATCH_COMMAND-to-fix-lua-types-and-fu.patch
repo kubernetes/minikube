@@ -1,0 +1,82 @@
+From cc8bccc3ebb90103900a7f0f2b085ddb723b8792 Mon Sep 17 00:00:00 2001
+From: Francis Laniel <flaniel@linux.microsoft.com>
+Date: Wed, 6 Apr 2022 16:54:37 +0100
+Subject: [PATCH] libsinsp: Apply PATCH_COMMAND to fix lua types and function.
+
+Buildroot luajit 5.1 seems to not have compatibility between luaL_reg and
+luaL_Reg.
+So, we apply sysdig CMakeLists.txt PATCH_COMMAND to fix this and lua function
+call as well.
+Note that, this PATCH_COMMAND was added in sysdig in:
+a064440394c9 ("Adding power support to Travis builds (#1566)")
+
+This patch is also present in kubernetes/minikube in:
+f036c279bc59 ("Add patch for compiling sysdig with system luajit")
+
+Signed-off-by: Francis Laniel <flaniel@linux.microsoft.com>
+---
+ userspace/libsinsp/chisel.cpp         | 6 +++---
+ userspace/libsinsp/lua_parser.cpp     | 2 +-
+ userspace/libsinsp/lua_parser_api.cpp | 2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/userspace/libsinsp/chisel.cpp b/userspace/libsinsp/chisel.cpp
+index 0a6e3cf8..0c2e255a 100644
+--- a/userspace/libsinsp/chisel.cpp
++++ b/userspace/libsinsp/chisel.cpp
+@@ -98,7 +98,7 @@ void lua_stackdump(lua_State *L)
+ // Lua callbacks
+ ///////////////////////////////////////////////////////////////////////////////
+ #ifdef HAS_LUA_CHISELS
+-const static struct luaL_reg ll_sysdig [] =
++const static struct luaL_Reg ll_sysdig [] =
+ {
+ 	{"set_filter", &lua_cbacks::set_global_filter},
+ 	{"set_snaplen", &lua_cbacks::set_snaplen},
+@@ -134,7 +134,7 @@ const static struct luaL_reg ll_sysdig [] =
+ 	{NULL,NULL}
+ };
+ 
+-const static struct luaL_reg ll_chisel [] =
++const static struct luaL_Reg ll_chisel [] =
+ {
+ 	{"request_field", &lua_cbacks::request_field},
+ 	{"set_filter", &lua_cbacks::set_filter},
+@@ -146,7 +146,7 @@ const static struct luaL_reg ll_chisel [] =
+ 	{NULL,NULL}
+ };
+ 
+-const static struct luaL_reg ll_evt [] =
++const static struct luaL_Reg ll_evt [] =
+ {
+ 	{"field", &lua_cbacks::field},
+ 	{"get_num", &lua_cbacks::get_num},
+diff --git a/userspace/libsinsp/lua_parser.cpp b/userspace/libsinsp/lua_parser.cpp
+index 0e26617d..78810d96 100644
+--- a/userspace/libsinsp/lua_parser.cpp
++++ b/userspace/libsinsp/lua_parser.cpp
+@@ -32,7 +32,7 @@ extern "C" {
+ #include "lauxlib.h"
+ }
+ 
+-const static struct luaL_reg ll_filter [] =
++const static struct luaL_Reg ll_filter [] =
+ {
+ 	{"rel_expr", &lua_parser_cbacks::rel_expr},
+ 	{"bool_op", &lua_parser_cbacks::bool_op},
+diff --git a/userspace/libsinsp/lua_parser_api.cpp b/userspace/libsinsp/lua_parser_api.cpp
+index c89e9126..c3d8008a 100644
+--- a/userspace/libsinsp/lua_parser_api.cpp
++++ b/userspace/libsinsp/lua_parser_api.cpp
+@@ -266,7 +266,7 @@ int lua_parser_cbacks::rel_expr(lua_State *ls)
+ 					string err = "Got non-table as in-expression operand\n";
+ 					throw sinsp_exception("parser API error");
+ 				}
+-				int n = luaL_getn(ls, 4);  /* get size of table */
++				int n = lua_objlen (ls, 4);  /* get size of table */
+ 				for (i=1; i<=n; i++)
+ 				{
+ 					lua_rawgeti(ls, 4, i);
+-- 
+2.25.1
+
