@@ -68,8 +68,6 @@ func TestAddons(t *testing.T) {
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
-		} else if isOnAmazonEC2, instanceType := detect.IsOnAmazonEC2(); isOnAmazonEC2 && strings.HasPrefix(instanceType, "f1.") {
-			args = append(args, "--addons=inaccel") // inaccel supports only none driver
 		}
 		if !arm64Platform() {
 			args = append(args, "--addons=helm-tiller")
@@ -97,7 +95,6 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
-			{"InAccel", validateInAccelAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -709,42 +706,5 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}
-	}
-}
-
-// validateInAccelAddon tests the inaccel addon by trying a vadd
-func validateInAccelAddon(ctx context.Context, t *testing.T, profile string) {
-	defer PostMortemLogs(t, profile)
-
-	if !NoneDriver() {
-		t.Skipf("skipping: inaccel not supported")
-	}
-
-	if isOnAmazonEC2, instanceType := detect.IsOnAmazonEC2(); !(isOnAmazonEC2 && strings.HasPrefix(instanceType, "f1.")) {
-		t.Skipf("skipping: not running on an Amazon EC2 f1 instance")
-	}
-
-	// create sample pod
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "--filename", filepath.Join(*testdataDir, "inaccel.yaml")))
-	if err != nil {
-		t.Fatalf("creating pod with %s failed: %v", rr.Command(), err)
-	}
-
-	if _, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "wait", "--for", "condition=ready", "--timeout", "-1s", "pod/inaccel-vadd")); err != nil {
-		t.Fatalf("failed waiting for inaccel-vadd pod: %v", err)
-	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "--follow", "pod/inaccel-vadd"))
-	if err != nil {
-		t.Fatalf("%q failed: %v", rr.Command(), err)
-	}
-	if !strings.Contains(rr.Stdout.String(), "Test PASSED") {
-		t.Fatalf("expected inaccel-vadd logs to include: %q but got: %s", "Test PASSED", rr.Output())
-	}
-
-	// delete pod
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod/inaccel-vadd"))
-	if err != nil {
-		t.Fatalf("deleting pod with %s failed: %v", rr.Command(), err)
 	}
 }
