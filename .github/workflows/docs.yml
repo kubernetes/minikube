@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   generate-docs:
+    if: github.repository == 'kubernetes/minikube'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
