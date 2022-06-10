@@ -464,6 +464,7 @@
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "レジストリーに認証するか、--base-image フラグで別のレジストリーを指定するかどちらを行ってください。",
 	"Please enter a value:": "値を入力してください:",
 	"Please free up disk or prune images.": "ディスクを解放するか、イメージを削除してください。",
+	"Please increase Desktop's disk size.": "",
 	"Please increse Desktop's disk size.": "Desktop のディスクサイズを増やしてください。",
 	"Please install the minikube hyperkit VM driver, or select an alternative --driver": "minikube hyperkit VM ドライバーをインストールするか、--driver で別のドライバーを選択してください",
 	"Please install the minikube kvm2 VM driver, or select an alternative --driver": "minikube kvm2 VM ドライバーをインストールするか、--driver で別のドライバーを選択してください",

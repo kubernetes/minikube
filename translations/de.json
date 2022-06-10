@@ -467,7 +467,6 @@
 	"Please enter a value:": "Bitte geben Sie einen Wert ein:",
 	"Please free up disk or prune images.": "Bitte geben Sie Plattenplatz frei oder löschen Sie unbenutzte Images (prune)",
 	"Please increase Desktop's disk size.": "Bitte erhöhen Sie die Plattengröße von Desktop",
-	"Please increse Desktop's disk size.": "",
 	"Please install the minikube hyperkit VM driver, or select an alternative --driver": "Bitte installieren Sie den minikube hyperkit VM Treiber oder geben Sie einen alternativen Treiber mit --driver an",
 	"Please install the minikube kvm2 VM driver, or select an alternative --driver": "Bitte installieren Sie den minikube kvm2 VM Treiber oder geben Sie einen alternativen Treiber mit --driver an",
 	"Please make sure the service you are looking for is deployed or is in the correct namespace.": "Bitte stellen Sie sicher, dass der gesuchte Service deployed ist oder im korrekten Namespace ist.",
