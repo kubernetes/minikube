@@ -66,7 +66,7 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 			info, err := containerNetworkInspect(ociBin, clusterName)
 			if err != nil {
 				if errors.Is(err, ErrNetworkNotFound) {
-					klog.Infof("The container %s is not attached to a network, this could be because the cluster was created by minikube <v1.14, will try to get the IP using container gatway", containerName)
+					klog.Infof("The container %s is not attached to a network, this could be because the cluster was created by minikube <v1.14, will try to get the IP using container gateway", containerName)
 
 					return containerGatewayIP(Docker, containerName)
 				}

@@ -118,7 +118,7 @@ echo $description
 #Upload logs to gcs
 If($env:EXTERNAL -eq "yes"){
 	# If we're not already in GCP, we won't have credentials to upload to GCS
-	# Instad, move logs to a predictable spot Jenkins can find and upload itself
+	# Instead, move logs to a predictable spot Jenkins can find and upload itself
 	mkdir -p test_reports
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json

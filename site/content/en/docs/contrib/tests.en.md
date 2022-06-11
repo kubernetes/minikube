@@ -42,9 +42,6 @@ tests the csi hostpath driver by creating a persistent volume, snapshotting it a
 #### validateGCPAuthAddon
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
-#### validateInAccelAddon
-tests the inaccel addon by trying a vadd
-
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
@@ -411,7 +408,7 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 stops `minikube tunnel`
 
 ## TestGuestEnvironment
-verifies files and packges installed inside minikube ISO/Base image
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestGvisorAddon
 tests the functionality of the gVisor addon

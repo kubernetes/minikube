@@ -63,7 +63,7 @@ var ErrNetworkSubnetTaken = errors.New("subnet is taken")
 // ErrNetworkNotFound is when given network was not found
 var ErrNetworkNotFound = errors.New("kic network not found")
 
-// ErrNetworkGatewayTaken is when given network gatway is taken
+// ErrNetworkGatewayTaken is when given network gateway is taken
 var ErrNetworkGatewayTaken = errors.New("network gateway is taken")
 
 // ErrNetworkInUse is when trying to delete a network which is attached to another container

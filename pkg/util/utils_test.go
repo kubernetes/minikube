@@ -157,7 +157,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 			expectedError: false,
 		},
 		{
-			name:          "invaild dir",
+			name:          "invalid dir",
 			dir:           "./utils_test",
 			expectedError: true,
 		},

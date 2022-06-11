@@ -124,7 +124,7 @@ func status() registry.State {
 
 		v, err := semver.Make(output)
 		if err != nil {
-			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
+			return registry.State{Error: err, Installed: true, Running: true, Healthy: false, Fix: "Can't verify minimum required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 		}
 
 		if v.LT(minReqPodmanVer) {

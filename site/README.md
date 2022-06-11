@@ -32,7 +32,7 @@ hugo v0.86.0+extended darwin/amd64 BuildDate=unknown
 Error: Error building site: "/minikube/site/content/en/docs/contrib/releasing/binaries.md:64:1": failed to extract shortcode: template for shortcode "alert" not found
 Built in 667 ms
 ```
-This indicates the submodules are not upated. 
+This indicates the submodules are not updated. 
 Please run the following command to fix.          
 ```  git submodule update --init --recursive ```
 

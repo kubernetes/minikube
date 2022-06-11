@@ -1573,7 +1573,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
 	if nvs.Equals(zeroVersion) {
-		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
 	if nvs.Major > newestVersion.Major {

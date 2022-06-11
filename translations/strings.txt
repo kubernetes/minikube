@@ -439,7 +439,7 @@
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "",
 	"Please enter a value:": "",
 	"Please free up disk or prune images.": "",
-	"Please increse Desktop's disk size.": "",
+	"Please increase Desktop's disk size.": "",
 	"Please install the minikube hyperkit VM driver, or select an alternative --driver": "",
 	"Please install the minikube kvm2 VM driver, or select an alternative --driver": "",
 	"Please make sure the service you are looking for is deployed or is in the correct namespace.": "",

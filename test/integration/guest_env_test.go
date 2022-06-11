@@ -27,7 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// TestGuestEnvironment verifies files and packges installed inside minikube ISO/Base image
+// TestGuestEnvironment verifies files and packages installed inside minikube ISO/Base image
 func TestGuestEnvironment(t *testing.T) {
 	MaybeParallel(t)
 

@@ -90,7 +90,7 @@ func TestGvisorAddon(t *testing.T) {
 	// Ensure that workloads survive a restart
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Fatalf("faild stopping minikube. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed stopping minikube. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
