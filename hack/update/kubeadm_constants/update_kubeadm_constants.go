@@ -38,7 +38,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout                 = 300 * time.Second
+	cxTimeout                 = 5 * time.Minute
 	kubeadmReleaseURL         = "https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/kubeadm"
 	kubeadmBinaryName         = "kubeadm-linux-amd64-%s"
 	minikubeConstantsFilePath = "pkg/minikube/constants/constants_kubeadm_images.go"
@@ -53,7 +53,7 @@ const (
 
 // Data contains kubeadm Images map
 type Data struct {
-	ImageMap string `json:"ImageMap"`
+	ImageMap string
 }
 
 func main() {
@@ -103,7 +103,7 @@ func main() {
 			schema[minikubeConstantsFilePath].Replace[versionIdentifier] = "{{.ImageMap}}"
 		}
 
-		update.Apply(ctx, schema, data, "", "", -1)
+		update.Apply(schema, data)
 	}
 }
 

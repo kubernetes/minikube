@@ -706,7 +706,8 @@ KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
 .PHONY: update-cri-dockerd
 update-cri-dockerd:
-	hack/update/cri_dockerd/update_cri_dockerd.sh $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH)
+	(cd hack/update/cri_dockerd && \
+	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH))
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
@@ -1007,17 +1008,6 @@ update-golint-version:
 update-preload-version:
 	(cd hack/update/preload_version && \
 	 go run update_preload_version.go)
-
-.PHONY: update-kubernetes-version-pr
-update-kubernetes-version-pr:
-ifndef GITHUB_TOKEN
-	@echo "⚠️ please set GITHUB_TOKEN environment variable with your GitHub token"
-	@echo "you can use https://github.com/settings/tokens/new?scopes=repo,write:packages to create new one"
-else
-	(cd hack/update/kubernetes_version && \
-	 export UPDATE_TARGET="all" && \
-	 go run update_kubernetes_version.go)
-endif
 
 .PHONY: update-kubeadm-constants
 update-kubeadm-constants:

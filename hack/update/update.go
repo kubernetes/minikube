@@ -14,16 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package update
 
 import (
@@ -33,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"regexp"
 	"text/template"
@@ -47,10 +36,6 @@ import (
 const (
 	// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
 	FSRoot = "../../../"
-)
-
-var (
-	target = os.Getenv("UPDATE_TARGET")
 )
 
 // init klog and check general requirements
@@ -67,14 +52,6 @@ func init() {
 	flag.String("kubernetes-version", "latest", "kubernetes-version")
 	flag.Parse()
 	defer klog.Flush()
-
-	if target == "" {
-		target = "fs"
-	} else if target != "fs" && target != "gh" && target != "all" {
-		klog.Fatalf("Invalid UPDATE_TARGET option: '%s'; Valid options are: unset/absent (defaults to 'fs'), 'fs', 'gh', or 'all'", target)
-	} else if (target == "gh" || target == "all") && ghToken == "" {
-		klog.Fatalf("GITHUB_TOKEN is required if UPDATE_TARGET is 'gh' or 'all'")
-	}
 }
 
 // Item defines Content where all occurrences of each Replace map key,
@@ -82,8 +59,8 @@ func init() {
 // would be swapped with its respective actual map value (having placeholders replaced with data), creating a concrete update plan.
 // Replace map keys can use RegExp and map values can use Golang Text Template.
 type Item struct {
-	Content []byte            `json:"-"`
-	Replace map[string]string `json:"replace"`
+	Content []byte
+	Replace map[string]string
 }
 
 // apply updates Item Content by replacing all occurrences of Replace map's keys with their actual map values (with placeholders replaced with data).
@@ -105,48 +82,21 @@ func (i *Item) apply(data interface{}) error {
 	return nil
 }
 
-// Apply applies concrete update plan (schema + data) to GitHub or local filesystem repo
-func Apply(ctx context.Context, schema map[string]Item, data interface{}, prBranchPrefix, prTitle string, prIssue int) {
+// Apply applies concrete update plan (schema + data) to local filesystem repo
+func Apply(schema map[string]Item, data interface{}) {
 	schema, pretty, err := GetPlan(schema, data)
 	if err != nil {
 		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
 	}
 	klog.Infof("The Plan:\n%s", pretty)
 
-	if target == "fs" || target == "all" {
-		changed, err := fsUpdate(FSRoot, schema, data)
-		if err != nil {
-			klog.Errorf("Unable to update local repo: %v", err)
-		} else if !changed {
-			klog.Infof("Local repo update skipped: nothing changed")
-		} else {
-			klog.Infof("Local repo successfully updated")
-		}
-	}
-
-	if target == "gh" || target == "all" {
-		// update prTitle replacing template placeholders with actual data values
-		if prTitle, err = ParseTmpl(prTitle, data, "prTitle"); err != nil {
-			klog.Fatalf("Unable to parse PR Title: %v", err)
-		}
-
-		// check if PR already exists
-		prURL, err := ghFindPR(ctx, prTitle, ghOwner, ghRepo, ghBase, ghToken)
-		if err != nil {
-			klog.Errorf("Unable to check if PR already exists: %v", err)
-		} else if prURL != "" {
-			klog.Infof("PR create skipped: already exists (%s)", prURL)
-		} else {
-			// create PR
-			pr, err := ghCreatePR(ctx, ghOwner, ghRepo, ghBase, prBranchPrefix, prTitle, prIssue, ghToken, schema, data)
-			if err != nil {
-				klog.Fatalf("Unable to create PR: %v", err)
-			} else if pr == nil {
-				klog.Infof("PR create skipped: nothing changed")
-			} else {
-				klog.Infof("PR successfully created: %s", *pr.HTMLURL)
-			}
-		}
+	changed, err := fsUpdate(FSRoot, schema, data)
+	if err != nil {
+		klog.Errorf("Unable to update local repo: %v", err)
+	} else if !changed {
+		klog.Infof("Local repo update skipped: nothing changed")
+	} else {
+		klog.Infof("Local repo successfully updated")
 	}
 }
 
