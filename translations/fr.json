@@ -863,6 +863,7 @@
 	"addon '{{.name}}' is not a valid addon packaged with minikube.\nTo see the list of available addons run:\nminikube addons list": "Le module '{{.name}}' n'est pas un module valide fourni avec minikube.\nPour voir la liste des modules disponibles, exécutez :\nminikube addons list",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "addons modifie les fichiers de modules minikube à l'aide de sous-commandes telles que \"minikube addons enable dashboard\"",
 	"arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.": "Les pilotes de machine virtuelle arm64 ne prennent actuellement pas en charge les runtimes de conteneur containerd ou crio. Voir https://github.com/kubernetes/minikube/issues/14146 pour plus de détails.",
+	"arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.": "",
 	"auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.": "Le module auto-pause est une fonctionnalité alpha et encore en développement précoce. Veuillez signaler les problèmes pour nous aider à l'améliorer.",
 	"bash completion failed": "échec de la complétion bash",
 	"bash completion.": "complétion bash",

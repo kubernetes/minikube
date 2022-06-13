@@ -905,7 +905,7 @@
 	"addon '{{.name}}' is currently not enabled.\nTo enable this addon run:\nminikube addons enable {{.name}}": "'{{.name}}' アドオンは現在無効になっています。\n有効にするためには、以下のコマンドを実行してください。 \nminikube addons enable {{.name}}",
 	"addon '{{.name}}' is not a valid addon packaged with minikube.\nTo see the list of available addons run:\nminikube addons list": "'{{.name}}' は minikube にパッケージングされた有効なアドオンではありません。\n利用可能なアドオンの一覧を表示するためには、以下のコマンドを実行してください。 \nminikube addons list",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "addons コマンドは「minikube addons enable dashboard」のようなサブコマンドを使用することで、minikube アドオンファイルを修正します",
-	"arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.": "",
+	"arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.": "",
 	"auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.": "auto-pause アドオンはアルファ機能で、まだ開発の初期段階です。auto-pause アドオン改善の手助けのために、問題は報告してください。",
 	"bash completion failed": "bash のコマンド補完に失敗しました",
 	"bash completion.": "bash のコマンド補完です。",
