@@ -893,7 +893,7 @@
 	"addon '{{.name}}' is currently not enabled.\nTo enable this addon run:\nminikube addons enable {{.name}}": "Addon '{{.name}}' ist derzeit nicht aktiviert.\nUm es zu aktivieren, führe Folgendes aus:\nminikube addons enable {{.name}}",
 	"addon '{{.name}}' is not a valid addon packaged with minikube.\nTo see the list of available addons run:\nminikube addons list": "Addon '{{.name}}' ist kein valides Addon welches mit Minikube paketiert ist.\nUm eine Liste der verfügbaren Addons anzuzeigen, führe Folgendes aus:\nminikube addons list",
 	"addons modifies minikube addons files using subcommands like \"minikube addons enable dashboard\"": "addons modifiziert Minikube Addon Dateien mittels Unter-Befehlen wie \"minikube addons enable dashboard\"",
-	"arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.": "",
+	"arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.": "",
 	"auto-pause addon is an alpha feature and still in early development. Please file issues to help us make it better.": "auto-pause für ein Addon ist ein Alpha-Feature und ist immer noch in Entwicklung. Bitte melde Issues um uns zu helfen das Feature zu verbessern.",
 	"bash completion failed": "bash completion fehlgeschlagen",
 	"bash completion.": "",
