@@ -118,10 +118,10 @@ github.com/Delta456/box-cli-maker/v2 v2.2.2/go.mod h1:idItIMZeyx3bg73XwSgsLeZd+g
 github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24/go.mod h1:4UJr5HIiMZrwgkSPdsjy2uOQExX/WEILpIrO9UPGuXs=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2 h1:rMamBsR6iCT9Y5m2Il6vFGJvY7FAgck4AoA/LobheKU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.7.0 h1:8vpIORQCKkwM0r/IZ1faAddG56t7byhqSxATphc+8MI=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.7.0/go.mod h1:HuFNmMWVYJDj2IxyIlUOW2vguRBM8ct9mOuAtWRU2EQ=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.31.0 h1:tfaeStvrph8eJEmo1iji3A4DXen3s6ZMM17nQmvo0WA=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.31.0/go.mod h1:j+FS9VBW3mwtHBmm9KOJEy5Tq68fCp7fE/R9bV/flIM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.1 h1:Tn/3pMqRSsI09jFVdGEuMqLIBNOmRHVqKp9DSQg4HPM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.1/go.mod h1:KddM1vG3MS+CRfmoFBqeUIICfd9nS8pLHKtwJ/kt0QQ=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.1 h1:SixyMKTOWhEWISdA7PB7vOxkvOP8BIgW5uzbyIf0kXM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.1/go.mod h1:j+FS9VBW3mwtHBmm9KOJEy5Tq68fCp7fE/R9bV/flIM=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd h1:sjQovDkwrZp8u+gxLtPgKGjk5hCxuy2hrRejBTA9xFU=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
@@ -1464,8 +1464,9 @@ go.uber.org/goleak v1.1.10/go.mod h1:8a7PlsEVH3e/a/GLqe5IIrQx6GzcnRmZEufDUTk4A7A
 go.uber.org/multierr v1.1.0/go.mod h1:wR5kodmAFQ0UK8QlbwjlSNy0Z68gJhDJUG5sjR94q/0=
 go.uber.org/multierr v1.3.0/go.mod h1:VgVr7evmIr6uPjLBxg28wmKNXyqE9akIJ5XnfpiKl+4=
 go.uber.org/multierr v1.4.0/go.mod h1:VgVr7evmIr6uPjLBxg28wmKNXyqE9akIJ5XnfpiKl+4=
-go.uber.org/multierr v1.6.0 h1:y6IPFStTAIT5Ytl7/XYmHvzXQ7S3g/IeZW9hyZ5thw4=
 go.uber.org/multierr v1.6.0/go.mod h1:cdWPpRnG4AhwMwsgIHip0KRBQjJy5kYEpYjJxpXp9iU=
+go.uber.org/multierr v1.8.0 h1:dg6GjLku4EH+249NNmoIciG9N/jURbDG+pFlTkhzIC8=
+go.uber.org/multierr v1.8.0/go.mod h1:7EAYxJLBy9rStEaz58O2t4Uvip6FSURkq8/ppBp95ak=
 go.uber.org/tools v0.0.0-20190618225709-2cfd321de3ee/go.mod h1:vJERXedbb3MVM5f9Ejo0C68/HhF8uaILCdgjnY+goOA=
 go.uber.org/zap v1.10.0/go.mod h1:vwi/ZaCAaUcBkycHslxD9B2zi4UTXhF60s6SWpuDF0Q=
 go.uber.org/zap v1.13.0/go.mod h1:zwrFLgMcdUuIBviXEYEH1YKNaOBnKXsx2IPda5bBwHM=
