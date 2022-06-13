@@ -22,12 +22,6 @@ Script promotes current KIC base image as stable, ie:
   - tags current KIC base image with the release version, and
   - pushes it to all relevant container registries
 
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
-
 Script also requires following credentials as env variables (injected by Jenkins credential provider):
   @GCR (ref: https://cloud.google.com/container-registry/docs/advanced-authentication):
   - GCR_USERNAME=<string>: GCR username, eg:
@@ -61,7 +55,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout = 600 * time.Second
+	cxTimeout = 10 * time.Minute
 )
 
 var (
@@ -75,17 +69,12 @@ var (
 			},
 		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-kicbase-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update-kicbase-version: {stable: "{{.StableVersion}}"}`
-	prIssue        = 9420
 )
 
 // Data holds current and stable KIC base image versions
 type Data struct {
-	CurrentVersion string `json:"CurrentVersion"`
-	StableVersion  string `json:"StableVersion"`
+	CurrentVersion string
+	StableVersion  string
 }
 
 func main() {
@@ -116,7 +105,7 @@ func main() {
 		klog.Fatalf("Unable to update any registry")
 	}
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
+	update.Apply(schema, data)
 }
 
 // KICVersions returns current and stable KIC base image versions and any error occurred.

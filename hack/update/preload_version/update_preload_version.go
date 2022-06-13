@@ -14,26 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"time"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
@@ -52,22 +40,14 @@ var (
 			},
 		},
 	}
-
-	// prBranchPrefix is the PR branch prefix; will be appended with the first 7 characters of the PR commit SHA.
-	prBranchPrefix = "update-preload-version_"
-	prTitle        = `update preload version: {update: "{{.UpdateVersion}}"}`
 )
 
 // Data holds updated preload version.
 type Data struct {
-	UpdateVersion string `json:"updateVersion"`
+	UpdateVersion string
 }
 
 func main() {
-	const cxTimeout = 300 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
-	defer cancel()
-
 	// Get current preload version.
 	vCurrent, err := getPreloadVersion()
 	if err != nil {
@@ -84,7 +64,7 @@ func main() {
 	data := Data{UpdateVersion: fmt.Sprint(updatedVersion)}
 	klog.Infof("updated preload version: %s", data.UpdateVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, -1)
+	update.Apply(schema, data)
 }
 
 // getPreloadVersion returns current preload version and any error.
