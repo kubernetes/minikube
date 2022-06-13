@@ -70,7 +70,8 @@ func main() {
 		if err != nil {
 			klog.Fatal(err)
 		}
-		imageVersions = append(imageVersions, stableImageVersion, latestImageVersion, edgeImageVersion)
+		uniqueMM := filterLatestUniqueMM([]string{stableImageVersion, latestImageVersion, edgeImageVersion})
+		imageVersions = append(imageVersions, uniqueMM...)
 	} else if semver.IsValid(inputVersion) {
 		imageVersions = append(imageVersions, inputVersion)
 	} else {
@@ -104,6 +105,23 @@ func main() {
 
 		update.Apply(ctx, schema, data, "", "", -1)
 	}
+}
+
+func filterLatestUniqueMM(versions []string) []string {
+	if len(versions) < 2 {
+		return versions
+	}
+	semver.Sort(versions)
+	uniqueMMVersions := []string{}
+	last := versions[0]
+	for _, ver := range versions {
+		if semver.MajorMinor(last) != semver.MajorMinor(ver) {
+			uniqueMMVersions = append(uniqueMMVersions, last)
+		}
+		last = ver
+	}
+	uniqueMMVersions = append(uniqueMMVersions, last)
+	return uniqueMMVersions
 }
 
 func getKubeadmImagesMapString(version string) (string, error) {
