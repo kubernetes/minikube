@@ -1009,17 +1009,6 @@ update-preload-version:
 	(cd hack/update/preload_version && \
 	 go run update_preload_version.go)
 
-.PHONY: update-kubernetes-version-pr
-update-kubernetes-version-pr:
-ifndef GITHUB_TOKEN
-	@echo "⚠️ please set GITHUB_TOKEN environment variable with your GitHub token"
-	@echo "you can use https://github.com/settings/tokens/new?scopes=repo,write:packages to create new one"
-else
-	(cd hack/update/kubernetes_version && \
-	 export UPDATE_TARGET="all" && \
-	 go run update_kubernetes_version.go)
-endif
-
 .PHONY: update-kubeadm-constants
 update-kubeadm-constants:
 	(cd hack/update/kubeadm_constants && \
