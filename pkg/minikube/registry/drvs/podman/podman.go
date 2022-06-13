@@ -109,12 +109,23 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
+	username := "$USER"
+	if u, err := user.Current(); err == nil {
+		username = u.Username
+	}
+
 	// Quickly returns an error code if service is not running
 	cmd := exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Server.Version}}")
 	// Run with sudo on linux (local), otherwise podman-remote (as podman)
 	if runtime.GOOS == "linux" {
 		cmd = exec.CommandContext(ctx, oci.Podman, "version", "--format", "{{.Version}}")
 		cmd = oci.PrefixCmd(cmd, oci.WithSudoFlags("-k"))
+		if !oci.IsRootlessForced() {
+			err := sudoPasswordLessRun()
+			if err != nil {
+				return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Add your user to the 'sudoers' file: '%s ALL=(ALL) NOPASSWD: %s' , or specify '--rootless' to enable rootless mode", username, podman), Doc: "https://podman.io"}
+			}
+		}
 		cmd.Env = append(os.Environ(), "LANG=C", "LC_ALL=C") // sudo is localized
 	}
 	o, err := cmd.Output()
@@ -142,18 +153,9 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: true, Running: false, Healthy: false, Fix: "Restart the Podman service", Doc: docURL}
 	}
 
-	username := "$USER"
-	if u, err := user.Current(); err == nil {
-		username = u.Username
-	}
-
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		stderr := strings.TrimSpace(string(exitErr.Stderr))
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-
-		if strings.Contains(stderr, "a password is required") && runtime.GOOS == "linux" {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: fmt.Sprintf("Add your user to the 'sudoers' file: '%s ALL=(ALL) NOPASSWD: %s' , or run 'minikube config set rootless true'", username, podman), Doc: "https://podman.io"}
-		}
 
 		// Typical low-level errors from running podman-remote:
 		// - local: "dial unix /run/podman/io.podman: connect: no such file or directory"
@@ -168,4 +170,8 @@ func status() registry.State {
 	}
 
 	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
+}
+
+func sudoPasswordLessRun() error {
+	return exec.Command("sudo", "-n", "true").Run()
 }
