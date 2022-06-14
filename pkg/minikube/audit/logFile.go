@@ -55,3 +55,11 @@ func appendToLog(row *row) error {
 	}
 	return nil
 }
+
+func seekToBeginning() error {
+	_, err := currentLogFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to seek to beginning of audit file: %v", err)
+	}
+	return nil
+}

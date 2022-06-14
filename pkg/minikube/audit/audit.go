@@ -84,16 +84,15 @@ func LogCommandEnd(id string) error {
 			return fmt.Errorf("failed to set the log file: %v", err)
 		}
 	}
-	_, err := currentLogFile.Seek(0, 0)
-	if err != nil {
-		return fmt.Errorf("failed to offset for the next Read or Write on currentLogFile: %v", err)
+	if err := seekToBeginning(); err != nil {
+		return err
 	}
 	var logs []string
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
 		logs = append(logs, s.Text())
 	}
-	if err = s.Err(); err != nil {
+	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read from audit file: %v", err)
 	}
 	rowSlice, err := logsToRows(logs)
@@ -117,9 +116,8 @@ func LogCommandEnd(id string) error {
 	if entriesNeedsToUpdate == 0 {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
 	}
-	_, err = currentLogFile.Seek(0, 0)
-	if err != nil {
-		return fmt.Errorf("failed to offset for the next Read or Write on currentLogFile: %v", err)
+	if err := currentLogFile.Truncate(0); err != nil {
+		return err
 	}
 	_, err = currentLogFile.Write([]byte(auditContents))
 	if err != nil {
@@ -140,7 +138,7 @@ func shouldLog() bool {
 	}
 
 	// commands that should not be logged.
-	no := []string{"status", "version"}
+	no := []string{"status", "version", "logs", "generate-docs"}
 	a := pflag.Arg(0)
 	for _, c := range no {
 		if a == c {

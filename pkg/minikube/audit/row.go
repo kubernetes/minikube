@@ -30,15 +30,20 @@ import (
 
 // row is the log of a single command.
 type row struct {
-	args      string
-	command   string
-	endTime   string
-	profile   string
-	startTime string
-	user      string
-	version   string
-	id        string
-	Data      map[string]string `json:"data"`
+	SpecVersion     string            `json:"specversion"`
+	ID              string            `json:"id"`
+	Source          string            `json:"source"`
+	TypeField       string            `json:"type"`
+	DataContentType string            `json:"datacontenttype"`
+	Data            map[string]string `json:"data"`
+	args            string
+	command         string
+	endTime         string
+	id              string
+	profile         string
+	startTime       string
+	user            string
+	version         string
 }
 
 // Type returns the cloud events compatible type of this struct.
@@ -94,7 +99,7 @@ func newRow(command string, args string, user string, version string, startTime 
 // toFields converts a row to an array of fields,
 // to be used when converting to a table.
 func (e *row) toFields() []string {
-	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime, e.id}
+	return []string{e.command, e.args, e.profile, e.user, e.version, e.startTime, e.endTime}
 }
 
 // logsToRows converts audit logs into arrays of rows.

@@ -37,6 +37,9 @@ func Report(lastNLines int) (*RawReport, error) {
 			return nil, fmt.Errorf("failed to set the log file: %v", err)
 		}
 	}
+	if err := seekToBeginning(); err != nil {
+		return nil, err
+	}
 	var logs []string
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
