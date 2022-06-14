@@ -31,7 +31,8 @@ COPY third_party/ ./third_party
 COPY go.mod go.sum ./
 ARG TARGETARCH
 ENV GOARCH=${TARGETARCH}
-RUN cd ./cmd/auto-pause/ && go build 
+ARG PREBUILT_AUTO_PAUSE
+RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
@@ -51,7 +52,7 @@ COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
 COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY --from=auto-pause /src/cmd/auto-pause/auto-pause /bin/auto-pause
+COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
 
 # Install dependencies, first from apt, then from release tarballs.
