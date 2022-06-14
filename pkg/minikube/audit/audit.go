@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -116,7 +117,14 @@ func LogCommandEnd(id string) error {
 	if entriesNeedsToUpdate == 0 {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
 	}
-	if err := currentLogFile.Truncate(0); err != nil {
+	// have to close the audit file, truncate it, then reopen it as Windows can't truncate an open file
+	if err := currentLogFile.Close(); err != nil {
+		return fmt.Errorf("failed to close audit file: %v", err)
+	}
+	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
+		return fmt.Errorf("failed to truncate audit file: %v", err)
+	}
+	if err := setLogFile(); err != nil {
 		return err
 	}
 	_, err = currentLogFile.Write([]byte(auditContents))
