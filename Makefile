@@ -294,6 +294,9 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
 		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git --work-tree=$(BUILD_DIR)/buildroot am ../../deploy/iso/minikube-iso/0001-linux-add-BR2_LINUX_KERNEL_NEEDS_HOST_PAHOLE.patch; \
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
@@ -307,9 +310,9 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
-iso-menuconfig: ## Configure buildroot configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) savedefconfig
+iso-menuconfig-%: ## Configure buildroot configuration
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* savedefconfig
 
 # Change the kernel configuration for the minikube ISO
 linux-menuconfig-%:  ## Configure Linux kernel configuration
