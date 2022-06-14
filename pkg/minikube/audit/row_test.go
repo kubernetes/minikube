@@ -100,7 +100,7 @@ func TestRow(t *testing.T) {
 	t.Run("toFields", func(t *testing.T) {
 		got := r.toFields()
 		gotString := strings.Join(got, ",")
-		want := []string{c, a, p, u, v, stFormatted, etFormatted, id}
+		want := []string{c, a, p, u, v, stFormatted, etFormatted}
 		wantString := strings.Join(want, ",")
 
 		if gotString != wantString {
