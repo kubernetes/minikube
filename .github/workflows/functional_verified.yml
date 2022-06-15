@@ -130,7 +130,7 @@ jobs:
         run: |
           minikube_binaries/minikube-linux-arm64 delete --all --purge || true
           docker kill $(docker ps -aq) || true
-          docker system prune --volumes --force || true
+          docker system prune -a --volumes -f || true
 
       - name: Run Integration Test
         continue-on-error: false

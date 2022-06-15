@@ -50,7 +50,7 @@ If ($lastexitcode -gt 0) {
 	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"$env:JOB_NAME`"}"
 
 	Write-GithubStatus -JsonBody $json
-	docker system prune --all --force
+	docker system prune -a --volumes -f
 	Exit $lastexitcode
 }
 

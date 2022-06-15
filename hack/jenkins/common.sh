@@ -108,7 +108,7 @@ else
 fi
 
 # let's just clean all docker artifacts up
-docker system prune --force --volumes || true
+docker system prune -a --volumes -f || true
 docker system df || true
 
 echo ">> Starting at $(date)"
