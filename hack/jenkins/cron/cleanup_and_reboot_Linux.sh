@@ -117,7 +117,8 @@ function cleanup() {
 }
 
 # Give 15m for Linux-specific cleanup
-timeout 15m cleanup
+export -f cleanup
+timeout 15m bash -c cleanup
 
 # disable localkube, kubelet
 systemctl list-unit-files --state=enabled \
