@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
@@ -39,11 +40,10 @@ func openAuditLog() error {
 }
 
 // closeAuditLog closes the audit log file
-func closeAuditLog() error {
+func closeAuditLog() {
 	if err := currentLogFile.Close(); err != nil {
-		return fmt.Errorf("failed to close the audit log: %v", err)
+		klog.Errorf("failed to close the audit log: %v", err)
 	}
-	return nil
 }
 
 // appendToLog appends the row to the log file.
@@ -56,8 +56,9 @@ func appendToLog(row *row) error {
 	if err := openAuditLog(); err != nil {
 		return err
 	}
+	defer closeAuditLog()
 	if _, err := currentLogFile.WriteString(string(bs) + "\n"); err != nil {
 		return fmt.Errorf("unable to write to audit log: %v", err)
 	}
-	return closeAuditLog()
+	return nil
 }

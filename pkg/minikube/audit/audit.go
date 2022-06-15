@@ -76,6 +76,7 @@ func LogCommandEnd(id string) error {
 	if err := openAuditLog(); err != nil {
 		return err
 	}
+	defer closeAuditLog()
 	var logs []string
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
@@ -84,9 +85,7 @@ func LogCommandEnd(id string) error {
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read from audit file: %v", err)
 	}
-	if err := closeAuditLog(); err != nil {
-		return err
-	}
+	closeAuditLog()
 	rowSlice, err := logsToRows(logs)
 	if err != nil {
 		return fmt.Errorf("failed to convert logs to rows: %v", err)
@@ -118,7 +117,7 @@ func LogCommandEnd(id string) error {
 	if _, err = currentLogFile.Write([]byte(auditContents)); err != nil {
 		return fmt.Errorf("failed to write to audit log: %v", err)
 	}
-	return closeAuditLog()
+	return nil
 }
 
 // shouldLog returns if the command should be logged.

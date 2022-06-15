@@ -35,6 +35,7 @@ func Report(lastNLines int) (*RawReport, error) {
 	if err := openAuditLog(); err != nil {
 		return nil, err
 	}
+	defer closeAuditLog()
 	var logs []string
 	s := bufio.NewScanner(currentLogFile)
 	for s.Scan() {
@@ -46,9 +47,6 @@ func Report(lastNLines int) (*RawReport, error) {
 	}
 	if err := s.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from audit file: %v", err)
-	}
-	if err := closeAuditLog(); err != nil {
-		return nil, err
 	}
 	rows, err := logsToRows(logs)
 	if err != nil {

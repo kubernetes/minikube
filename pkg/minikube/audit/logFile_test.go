@@ -28,7 +28,7 @@ import (
 )
 
 func TestLogFile(t *testing.T) {
-	t.Run("OpenAndCloseAuditLog", func(t *testing.T) {
+	t.Run("OpenAuditLog", func(t *testing.T) {
 		// make sure logs directory exists
 		if err := os.MkdirAll(filepath.Dir(localpath.AuditLog()), 0755); err != nil {
 			t.Fatalf("Error creating logs directory: %v", err)
@@ -36,12 +36,10 @@ func TestLogFile(t *testing.T) {
 		if err := openAuditLog(); err != nil {
 			t.Fatal(err)
 		}
-		if err := closeAuditLog(); err != nil {
-			t.Fatal(err)
-		}
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
+		defer closeAuditLog()
 		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
