@@ -100,11 +100,16 @@ func average(nums []float64) float64 {
 
 func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string, runtime string) error {
 	for _, b := range binaries {
-		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), "--download-only", fmt.Sprintf("--container-runtime=%s", runtime))
+		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), fmt.Sprintf("--container-runtime=%s", runtime))
 		c.Stderr = os.Stderr
 		log.Printf("Running: %v...", c.Args)
 		if err := c.Run(); err != nil {
-			return errors.Wrap(err, "downloading artifacts")
+			return errors.Wrap(err, "artifact download start")
+		}
+		c = exec.CommandContext(ctx, b.path, "delete")
+		log.Printf("Running: %v...", c.Args)
+		if err := c.Run(); err != nil {
+			return errors.Wrap(err, "artifact download delete")
 		}
 	}
 	return nil
