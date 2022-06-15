@@ -408,7 +408,7 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 stops `minikube tunnel`
 
 ## TestGuestEnvironment
-verifies files and packges installed inside minikube ISO/Base image
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
@@ -445,6 +445,8 @@ verifies the docker/podman driver works with a custom subnet
 
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
+
+## TestMinikubeProfile
 
 ## TestMountStart
 tests using the mount command on start

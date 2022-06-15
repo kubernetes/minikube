@@ -32,7 +32,6 @@ var (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	// dont update till #10545 is solved
 	DefaultKubernetesVersion = "v1.23.6"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
@@ -42,7 +41,7 @@ const (
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
 	NoKubernetesVersion = "v0.0.0"
 
-	// DefaultClusterName is the default nane for the k8s cluster
+	// DefaultClusterName is the default name for the k8s cluster
 	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
 	DockerDaemonPort = 2376
@@ -146,6 +145,9 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
+
+	// Mirror CN
+	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
 )
 
 var (
@@ -178,7 +180,7 @@ var (
 	// ImageRepositories contains all known image repositories
 	ImageRepositories = map[string][]string{
 		"global": {""},
-		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+		"cn":     {AliyunMirror},
 	}
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)

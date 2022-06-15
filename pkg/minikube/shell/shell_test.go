@@ -110,7 +110,7 @@ set -e bar;`},
 			var b bytes.Buffer
 
 			if err := UnsetScript(tc.ec, &b, tc.vars); err != nil {
-				t.Fatalf("Unexpected error when unseting script happen: %v", err)
+				t.Fatalf("Unexpected error when unsetting script happen: %v", err)
 			} else {
 				writtenMessage := strings.TrimSpace(b.String())
 				expected := strings.TrimSpace(tc.expected)

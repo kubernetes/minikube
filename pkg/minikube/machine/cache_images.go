@@ -146,7 +146,7 @@ func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Ma
 	}
 }
 
-// needsTransfer returns an error if an image needs to be retransfered
+// needsTransfer returns an error if an image needs to be retransferred
 func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager) error {
 	imgDgst := ""         // for instance sha256:7c92a2c6bbcb6b6beff92d0a940779769c2477b807c202954c537e2e0deb9bed
 	if imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.

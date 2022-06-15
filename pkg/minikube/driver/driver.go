@@ -69,6 +69,8 @@ const (
 	AliasSSH = "generic"
 	// AliasNative is driver name alias for None driver
 	AliasNative = "native"
+	// AliasQEMU is the driver name alias for qemu2
+	AliasQEMU = "qemu"
 )
 
 var (
@@ -256,7 +258,7 @@ func FlagDefaults(name string) FlagHints {
 	}
 
 	fh.CacheImages = false
-	// if specifc linux add this option for systemd work on none driver
+	// if specific linux add this option for systemd work on none driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
 		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)

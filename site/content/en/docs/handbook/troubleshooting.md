@@ -25,7 +25,7 @@ minikube stores post-mortem logs in the temporary directory of your system. One 
 find $TMPDIR -mtime -1 -type f -name "*minikube*" -ls  2>/dev/null
 ```
 
-For instance after running `minikube start`, the above comamnd will show:
+For instance after running `minikube start`, the above command will show:
 
 `-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube_start_dc950831e1a232e0318a6d6ca82aaf4f4a8a048b_0.log`
 

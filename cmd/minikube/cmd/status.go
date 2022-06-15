@@ -293,7 +293,7 @@ func writeStatusesAtInterval(duration time.Duration, api libmachine.API, cc *con
 	}
 }
 
-// exitCode calcluates the appropriate exit code given a set of status messages
+// exitCode calculates the appropriate exit code given a set of status messages
 func exitCode(statuses []*Status) int {
 	c := 0
 	for _, st := range statuses {

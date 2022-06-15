@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QDebug>
 
 CommandRunner::CommandRunner(QDialog *parent)
 {

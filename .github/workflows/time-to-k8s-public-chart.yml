@@ -6,7 +6,7 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18.2'
+  GO_VERSION: '1.18.3'
 permissions:
   contents: read
 
@@ -42,7 +42,7 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923

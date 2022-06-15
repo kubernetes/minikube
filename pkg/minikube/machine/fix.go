@@ -151,7 +151,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	return h, nil
 }
 
-// maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
+// maybeWarnAboutEvalEnv will warn user if they need to re-eval their docker-env, podman-env
 // because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
 func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {

@@ -312,9 +312,8 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
-	// Bail cleanly for qemu2 until implemented
-	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime != "docker" {
-		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support containerd or crio container runtimes. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime == "crio" {
+		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.")
 	}
 
 	// This is about as far as we can go without overwriting config files
@@ -770,8 +769,8 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
-	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
 	if viper.GetBool(deleteOnFailure) {
+		out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
 		// Start failed, delete the cluster
 		profile, err := config.LoadProfile(existing.Name)
 		if err != nil {
@@ -1574,7 +1573,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
 	if nvs.Equals(zeroVersion) {
-		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
 	if nvs.Major > newestVersion.Major {

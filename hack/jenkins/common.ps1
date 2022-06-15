@@ -30,7 +30,7 @@ function Write-GithubStatus {
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
-$GoVersion = "1.18.2"
+$GoVersion = "1.18.3"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 $KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
@@ -118,7 +118,7 @@ echo $description
 #Upload logs to gcs
 If($env:EXTERNAL -eq "yes"){
 	# If we're not already in GCP, we won't have credentials to upload to GCS
-	# Instad, move logs to a predictable spot Jenkins can find and upload itself
+	# Instead, move logs to a predictable spot Jenkins can find and upload itself
 	mkdir -p test_reports
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json

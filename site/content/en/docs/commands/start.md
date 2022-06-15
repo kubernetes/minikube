@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.31-1654032859-14252@sha256:6460c031afce844e0e3c071f4bf5274136c9036e4954d4d6fe2b32ad73fc3496")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.31-1655167405-14337@sha256:007ee1d2e27a61d87fd05c11b41a5956577f975ef7440d0283f28fa9c5dc4f26")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -69,7 +69,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/13807/minikube-v1.26.0-1653677468-13807-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1653677468-13807/minikube-v1.26.0-1653677468-13807-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1653677468-13807-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/13807/minikube-v1.26.0-1653677468-13807.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1653677468-13807/minikube-v1.26.0-1653677468-13807.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1653677468-13807.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.6, 'latest' for v1.23.6). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
@@ -102,6 +102,7 @@ minikube start [flags]
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
+      --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
       --ssh-ip-address string             IP address (ssh driver only)

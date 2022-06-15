@@ -49,7 +49,7 @@ static void logUpdateCheck()
         return;
     }
     QTextStream stream(&file);
-    stream << QDateTime::currentDateTime().toString() << Qt::endl;
+    stream << QDateTime::currentDateTime().toString() << "\n";
 }
 
 void Updater::checkForUpdates()

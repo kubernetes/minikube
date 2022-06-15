@@ -1067,7 +1067,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		// double checking defalut sa was created.
+		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
 		checkSA := func() (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
@@ -1119,7 +1119,7 @@ func adviseNodePressure(err error, name string, drv string) {
 		if driver.IsVM(drv) {
 			out.Styled(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Styled(style.Stopped, "Please increse Desktop's disk size.")
+			out.Styled(style.Stopped, "Please increase Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
 				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}

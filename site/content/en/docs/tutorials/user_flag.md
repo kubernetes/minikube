@@ -46,7 +46,7 @@ Here you can see that passing `--user=mary` overwrote the OS user with `mary` as
 
 ## How do I use minikube in a script?
 
-If you are using minikube in a script or plugin it is recommeneded to add `--user=your_script_name` to all operations.
+If you are using minikube in a script or plugin it is recommended to add `--user=your_script_name` to all operations.
 
 Example:
 ```

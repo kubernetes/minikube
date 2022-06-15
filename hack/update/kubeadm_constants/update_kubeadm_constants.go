@@ -38,7 +38,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout                 = 300 * time.Second
+	cxTimeout                 = 5 * time.Minute
 	kubeadmReleaseURL         = "https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/kubeadm"
 	kubeadmBinaryName         = "kubeadm-linux-amd64-%s"
 	minikubeConstantsFilePath = "pkg/minikube/constants/constants_kubeadm_images.go"
@@ -53,7 +53,7 @@ const (
 
 // Data contains kubeadm Images map
 type Data struct {
-	ImageMap string `json:"ImageMap"`
+	ImageMap string
 }
 
 func main() {
@@ -70,7 +70,8 @@ func main() {
 		if err != nil {
 			klog.Fatal(err)
 		}
-		imageVersions = append(imageVersions, stableImageVersion, latestImageVersion, edgeImageVersion)
+		uniqueMM := filterLatestUniqueMM([]string{stableImageVersion, latestImageVersion, edgeImageVersion})
+		imageVersions = append(imageVersions, uniqueMM...)
 	} else if semver.IsValid(inputVersion) {
 		imageVersions = append(imageVersions, inputVersion)
 	} else {
@@ -102,8 +103,25 @@ func main() {
 			schema[minikubeConstantsFilePath].Replace[versionIdentifier] = "{{.ImageMap}}"
 		}
 
-		update.Apply(ctx, schema, data, "", "", -1)
+		update.Apply(schema, data)
 	}
+}
+
+func filterLatestUniqueMM(versions []string) []string {
+	if len(versions) < 2 {
+		return versions
+	}
+	semver.Sort(versions)
+	uniqueMMVersions := []string{}
+	last := versions[0]
+	for _, ver := range versions {
+		if semver.MajorMinor(last) != semver.MajorMinor(ver) {
+			uniqueMMVersions = append(uniqueMMVersions, last)
+		}
+		last = ver
+	}
+	uniqueMMVersions = append(uniqueMMVersions, last)
+	return uniqueMMVersions
 }
 
 func getKubeadmImagesMapString(version string) (string, error) {

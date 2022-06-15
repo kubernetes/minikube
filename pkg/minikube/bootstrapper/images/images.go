@@ -130,6 +130,10 @@ func coreDNS(v semver.Version, mirror string) string {
 		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), cv)
 	}
 
+	if mirror == constants.AliyunMirror {
+		imageName = "coredns"
+	}
+
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), cv)
 }
 
@@ -161,7 +165,14 @@ func auxiliary(mirror string) []string {
 
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
-	return path.Join(minikubeRepo(mirror), "storage-provisioner:"+version.GetStorageProvisionerVersion())
+	cv := version.GetStorageProvisionerVersion()
+	in := "k8s-minikube/storage-provisioner:" + cv
+	if mirror == "" {
+		mirror = "gcr.io"
+	} else if mirror == constants.AliyunMirror {
+		in = "storage-provisioner:" + cv
+	}
+	return path.Join(mirror, in)
 }
 
 // KindNet returns the image used for kindnet

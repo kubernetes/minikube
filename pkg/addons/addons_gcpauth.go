@@ -370,14 +370,14 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 		return ErrSkipThisAddon
 	}
 
-	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
-		return err
-	}
-
 	if Refresh {
 		if err := refreshExistingPods(cc); err != nil {
 			return err
 		}
+	}
+
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
+		return err
 	}
 
 	if enable && err == nil {
