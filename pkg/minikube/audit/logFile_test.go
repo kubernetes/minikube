@@ -28,13 +28,16 @@ import (
 )
 
 func TestLogFile(t *testing.T) {
-	t.Run("SetLogFile", func(t *testing.T) {
+	t.Run("OpenAndCloseAuditLog", func(t *testing.T) {
 		// make sure logs directory exists
 		if err := os.MkdirAll(filepath.Dir(localpath.AuditLog()), 0755); err != nil {
 			t.Fatalf("Error creating logs directory: %v", err)
 		}
-		if err := setLogFile(); err != nil {
-			t.Error(err)
+		if err := openAuditLog(); err != nil {
+			t.Fatal(err)
+		}
+		if err := closeAuditLog(); err != nil {
+			t.Fatal(err)
 		}
 	})
 

@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/user"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,8 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
-
-var mutex sync.Mutex
 
 // userName pulls the user flag, if empty gets the os username.
 func userName() string {
@@ -61,8 +58,6 @@ func args() string {
 
 // Log details about the executed command.
 func LogCommandStart() (string, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
 	if len(os.Args) < 2 || !shouldLog() {
 		return "", nil
 	}
@@ -75,17 +70,10 @@ func LogCommandStart() (string, error) {
 }
 
 func LogCommandEnd(id string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
 	if id == "" {
 		return nil
 	}
-	if currentLogFile == nil {
-		if err := setLogFile(); err != nil {
-			return fmt.Errorf("failed to set the log file: %v", err)
-		}
-	}
-	if err := seekToBeginning(); err != nil {
+	if err := openAuditLog(); err != nil {
 		return err
 	}
 	var logs []string
@@ -95,6 +83,9 @@ func LogCommandEnd(id string) error {
 	}
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read from audit file: %v", err)
+	}
+	if err := closeAuditLog(); err != nil {
+		return err
 	}
 	rowSlice, err := logsToRows(logs)
 	if err != nil {
@@ -117,21 +108,17 @@ func LogCommandEnd(id string) error {
 	if entriesNeedsToUpdate == 0 {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
 	}
-	// have to close the audit file, truncate it, then reopen it as Windows can't truncate an open file
-	if err := currentLogFile.Close(); err != nil {
-		return fmt.Errorf("failed to close audit file: %v", err)
-	}
+	// have to truncate the audit log while closed as Windows can't truncate an open file
 	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
-		return fmt.Errorf("failed to truncate audit file: %v", err)
+		return fmt.Errorf("failed to truncate audit log: %v", err)
 	}
-	if err := setLogFile(); err != nil {
+	if err := openAuditLog(); err != nil {
 		return err
 	}
-	_, err = currentLogFile.Write([]byte(auditContents))
-	if err != nil {
-		return err
+	if _, err = currentLogFile.Write([]byte(auditContents)); err != nil {
+		return fmt.Errorf("failed to write to audit log: %v", err)
 	}
-	return nil
+	return closeAuditLog()
 }
 
 // shouldLog returns if the command should be logged.

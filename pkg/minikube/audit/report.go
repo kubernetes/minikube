@@ -32,12 +32,7 @@ func Report(lastNLines int) (*RawReport, error) {
 	if lastNLines <= 0 {
 		return nil, fmt.Errorf("last n lines must be 1 or greater")
 	}
-	if currentLogFile == nil {
-		if err := setLogFile(); err != nil {
-			return nil, fmt.Errorf("failed to set the log file: %v", err)
-		}
-	}
-	if err := seekToBeginning(); err != nil {
+	if err := openAuditLog(); err != nil {
 		return nil, err
 	}
 	var logs []string
@@ -51,6 +46,9 @@ func Report(lastNLines int) (*RawReport, error) {
 	}
 	if err := s.Err(); err != nil {
 		return nil, fmt.Errorf("failed to read from audit file: %v", err)
+	}
+	if err := closeAuditLog(); err != nil {
+		return nil, err
 	}
 	rows, err := logsToRows(logs)
 	if err != nil {
