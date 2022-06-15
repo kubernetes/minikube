@@ -68,7 +68,7 @@ fi
 # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
 if ! cri-dockerd &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
-  CRI_DOCKER_VERSION="d627d3e64a0ebf4cd4c9f80c131c34fc615258b5"
+  CRI_DOCKER_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
   git clone -n https://github.com/Mirantis/cri-dockerd
   cd cri-dockerd
   git checkout "$CRI_DOCKER_VERSION"
