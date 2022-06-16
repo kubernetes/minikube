@@ -18,21 +18,27 @@ package audit
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestLogFile(t *testing.T) {
 	t.Run("SetLogFile", func(t *testing.T) {
+		// make sure logs directory exists
+		if err := os.MkdirAll(filepath.Dir(localpath.AuditLog()), 0755); err != nil {
+			t.Fatalf("Error creating logs directory: %v", err)
+		}
 		if err := setLogFile(); err != nil {
 			t.Error(err)
 		}
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
-		f, err := ioutil.TempFile("", "audit.json")
+		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
 		}

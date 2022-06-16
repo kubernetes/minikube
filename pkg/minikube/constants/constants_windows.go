@@ -1,4 +1,4 @@
-// +build windows, !gendocs
+//go:build (windows && ignore) || !gendocs
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

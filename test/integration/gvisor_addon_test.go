@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -25,6 +25,7 @@ import (
 	"testing"
 )
 
+// TestGvisorAddon tests the functionality of the gVisor addon
 func TestGvisorAddon(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
@@ -89,7 +90,7 @@ func TestGvisorAddon(t *testing.T) {
 	// Ensure that workloads survive a restart
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Fatalf("faild stopping minikube. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed stopping minikube. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))

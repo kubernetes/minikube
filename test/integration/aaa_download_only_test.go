@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
@@ -23,9 +23,11 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) {
 	// Stores the startup run result for later error messages
 	var rrr *RunResult
@@ -96,7 +99,9 @@ func TestDownloadOnly(t *testing.T) {
 				if NoneDriver() {
 					t.Skip("None driver does not have preload")
 				}
-				if download.PreloadExists(v, containerRuntime, true) {
+				// Driver does not matter here, since the only exception is none driver,
+				// which cannot occur here.
+				if download.PreloadExists(v, containerRuntime, "docker", true) {
 					// Just make sure the tarball path exists
 					if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
 						t.Errorf("failed to verify preloaded tarball file exists: %v", err)
@@ -131,9 +136,12 @@ func TestDownloadOnly(t *testing.T) {
 			})
 
 			t.Run("binaries", func(t *testing.T) {
+				if preloadExists {
+					t.Skip("Preload exists, binaries are present within.")
+				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
-					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
+					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, v, bin)
 					_, err := os.Stat(fp)
 					if err != nil {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
@@ -151,9 +159,22 @@ func TestDownloadOnly(t *testing.T) {
 				if runtime.GOOS == "windows" {
 					binary = "kubectl.exe"
 				}
-				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
+				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, runtime.GOARCH, v, binary)
 				if _, err := os.Stat(fp); err != nil {
 					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+				}
+			})
+
+			// checks if the duration of `minikube logs` takes longer than 5 seconds
+			t.Run("LogsDuration", func(t *testing.T) {
+				ctx, cancel := context.WithTimeout(context.Background(), Seconds(5))
+				defer cancel()
+				args := []string{"logs", "-p", profile}
+				if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+					t.Logf("minikube logs failed with error: %v", err)
+				}
+				if err := ctx.Err(); err == context.DeadlineExceeded {
+					t.Error("minikube logs expected to finish by 5 seconds, but took longer")
 				}
 			})
 
@@ -187,6 +208,7 @@ func TestDownloadOnly(t *testing.T) {
 
 }
 
+// TestDownloadOnlyKic makes sure --download-only caches the docker driver images as well.
 func TestDownloadOnlyKic(t *testing.T) {
 	if !KicDriver() {
 		t.Skip("skipping, only for docker or podman driver")
@@ -209,7 +231,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 
 	// Make sure the downloaded image tarball exists
 	tarball := download.TarballPath(constants.DefaultKubernetesVersion, cRuntime)
-	contents, err := ioutil.ReadFile(tarball)
+	contents, err := os.ReadFile(tarball)
 	if err != nil {
 		t.Errorf("failed to read tarball file %q: %v", tarball, err)
 	}
@@ -219,11 +241,73 @@ func TestDownloadOnlyKic(t *testing.T) {
 	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
-	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
+	remoteChecksum, err := os.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
 	if err != nil {
 		t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime), err)
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
+	}
+}
+
+// createSha256File is a helper function which creates sha256 checksum file from given file
+func createSha256File(filePath string) error {
+	dat, _ := os.ReadFile(filePath)
+	sum := sha256.Sum256(dat)
+
+	f, err := os.Create(filePath + ".sha256")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(fmt.Sprintf("%x", sum[:]))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// TestBinaryMirror tests functionality of --binary-mirror flag
+func TestBinaryMirror(t *testing.T) {
+	profile := UniqueProfileName("binary-mirror")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+	defer Cleanup(t, profile, cancel)
+
+	tmpDir := t.TempDir()
+
+	// Start test server which will serve binary files
+	ts := httptest.NewServer(
+		http.FileServer(http.Dir(tmpDir)),
+	)
+	defer ts.Close()
+
+	binaryName := "kubectl"
+	if runtime.GOOS == "windows" {
+		binaryName = "kubectl.exe"
+	}
+	binaryPath, err := download.Binary(binaryName, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH, "")
+	if err != nil {
+		t.Errorf("Failed to download binary: %+v", err)
+	}
+
+	newBinaryDir := filepath.Join(tmpDir, constants.DefaultKubernetesVersion, "bin", runtime.GOOS, runtime.GOARCH)
+	if err := os.MkdirAll(newBinaryDir, os.ModePerm); err != nil {
+		t.Errorf("Failed to create %s directories", newBinaryDir)
+	}
+
+	newBinaryPath := filepath.Join(newBinaryDir, binaryName)
+	if err := os.Rename(binaryPath, newBinaryPath); err != nil {
+		t.Errorf("Failed to move binary file: %+v", err)
+	}
+	if err := createSha256File(newBinaryPath); err != nil {
+		t.Errorf("Failed to generate sha256 checksum file: %+v", err)
+	}
+
+	args := append([]string{"start", "--download-only", "-p", profile, "--alsologtostderr", "--binary-mirror", ts.URL}, StartArgs()...)
+
+	cmd := exec.CommandContext(ctx, Target(), args...)
+	if _, err := Run(t, cmd); err != nil {
+		t.Errorf("start with --binary-mirror failed %q : %v", args, err)
 	}
 }

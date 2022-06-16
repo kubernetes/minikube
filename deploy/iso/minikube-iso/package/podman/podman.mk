@@ -1,5 +1,5 @@
-PODMAN_VERSION = v2.2.1
-PODMAN_COMMIT = a0d478edea7f775b7ce32f8eb1a01e75374486cb
+PODMAN_VERSION = v3.4.2
+PODMAN_COMMIT = 2ad1fd3555de12de34e20898cc2ef901f08fe5ed
 PODMAN_SITE = https://github.com/containers/podman/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -11,14 +11,18 @@ ifeq ($(BR2_INIT_SYSTEMD),y)
 PODMAN_DEPENDENCIES += systemd
 endif
 
+PODMAN_GOARCH=amd64
+ifeq ($(BR2_aarch64),y)
+PODMAN_GOARCH=arm64
+endif
+
 PODMAN_GOPATH = $(@D)/_output
 PODMAN_BIN_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
 	GOPATH="$(PODMAN_GOPATH)" \
-	GOBIN="$(PODMAN_GOPATH)/bin" \
-	PATH=$(PODMAN_GOPATH)/bin:$(BR_PATH)
-
+	PATH=$(PODMAN_GOPATH)/bin:$(BR_PATH) \
+	GOARCH=$(PODMAN_GOARCH)
 
 define PODMAN_USERS
 	- -1 podman -1 - - - - -

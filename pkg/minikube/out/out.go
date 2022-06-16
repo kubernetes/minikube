@@ -24,12 +24,15 @@ import (
 	"html/template"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/briandowns/spinner"
-	isatty "github.com/mattn/go-isatty"
+	"github.com/mattn/go-isatty"
+	"github.com/spf13/pflag"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -64,6 +67,8 @@ var (
 	JSON = false
 	// spin is spinner showed at starting minikube
 	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond)
+	// defaultBoxCfg is the default style config for cli box output
+	defaultBoxCfg = box.Config{Py: 1, Px: 4, Type: "Round", Color: "Red"}
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -89,6 +94,7 @@ func Step(st style.Enum, format string, a ...V) {
 	outStyled, _ := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
+		klog.Info(outStyled)
 		return
 	}
 	register.RecordStep(outStyled)
@@ -109,12 +115,46 @@ func Styled(st style.Enum, format string, a ...V) {
 	}
 }
 
+func boxedCommon(printFunc func(format string, a ...interface{}), cfg box.Config, title string, format string, a ...V) {
+	box := box.New(cfg)
+	if !useColor {
+		box.Config.Color = nil
+	}
+	str := Sprintf(style.None, format, a...)
+	printFunc(box.String(title, strings.TrimSpace(str)))
+}
+
+// Boxed writes a stylized and templated message in a box to stdout using the default style config
+func Boxed(format string, a ...V) {
+	boxedCommon(String, defaultBoxCfg, "", format, a...)
+}
+
+// BoxedErr writes a stylized and templated message in a box to stderr using the default style config
+func BoxedErr(format string, a ...V) {
+	boxedCommon(Err, defaultBoxCfg, "", format, a...)
+}
+
+// BoxedWithConfig writes a templated message in a box with customized style config to stdout
+func BoxedWithConfig(cfg box.Config, st style.Enum, title string, text string, a ...V) {
+	if st != style.None {
+		title = Sprintf(st, title)
+	}
+	// need to make sure no newlines are in the title otherwise box-cli-maker panics
+	title = strings.ReplaceAll(title, "\n", "")
+	boxedCommon(String, cfg, title, text, a...)
+}
+
+// Sprintf is used for returning the string (doesn't write anything)
+func Sprintf(st style.Enum, format string, a ...V) string {
+	outStyled, _ := stylized(st, useColor, format, a...)
+	return outStyled
+}
+
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
 	outStyled, _ := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
-		return
 	}
 	String(outStyled)
 }
@@ -123,8 +163,9 @@ func Infof(format string, a ...V) {
 func String(format string, a ...interface{}) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
+	defer klog.Flush()
 
-	if silent {
+	if silent || JSON {
 		klog.Infof(format, a...)
 		return
 	}
@@ -172,10 +213,6 @@ func spinnerString(format string, a ...interface{}) {
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
-	if JSON {
-		klog.Warningf("please use out.T to log steps in JSON")
-		return
-	}
 	String(format+"\n", a...)
 }
 
@@ -189,6 +226,7 @@ func ErrT(st style.Enum, format string, a ...V) {
 func Err(format string, a ...interface{}) {
 	if JSON {
 		register.PrintError(format)
+		klog.Warningf(format, a...)
 		return
 	}
 	register.RecordError(format)
@@ -231,6 +269,7 @@ func WarningT(format string, a ...V) {
 		}
 		st, _ := stylized(style.Warning, useColor, format, a...)
 		register.PrintWarning(st)
+		klog.Warning(st)
 		return
 	}
 	ErrT(style.Warning, format, a...)
@@ -312,7 +351,7 @@ func wantsColor(w fdWriter) bool {
 
 // LogEntries outputs an error along with any important log entries.
 func LogEntries(msg string, err error, entries map[string][]string) {
-	DisplayError(msg, err)
+	displayError(msg, err)
 
 	for name, lines := range entries {
 		Step(style.Failure, "Problems detected in {{.entry}}:", V{"entry": name})
@@ -325,8 +364,8 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	}
 }
 
-// DisplayError prints the error and displays the standard minikube error messaging
-func DisplayError(msg string, err error) {
+// displayError prints the error and displays the standard minikube error messaging
+func displayError(msg string, err error) {
 	klog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	if JSON {
 		FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
@@ -336,8 +375,64 @@ func DisplayError(msg string, err error) {
 	ErrT(style.Empty, "")
 	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 	ErrT(style.Empty, "")
-	ErrT(style.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
-	ErrT(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	displayGitHubIssueMessage()
+}
+
+func latestLogFilePath() (string, error) {
+	tmpdir := os.TempDir()
+	files, err := os.ReadDir(tmpdir)
+	if err != nil {
+		return "", fmt.Errorf("failed to get list of files in tempdir: %v", err)
+	}
+	var lastModName string
+	var lastModTime time.Time
+	for _, file := range files {
+		if !strings.Contains(file.Name(), "minikube_") {
+			continue
+		}
+		fileInfo, err := file.Info()
+		if err != nil {
+			return "", fmt.Errorf("failed to get file info: %v", err)
+		}
+		if !lastModTime.IsZero() && lastModTime.After(fileInfo.ModTime()) {
+			continue
+		}
+		lastModName = file.Name()
+		lastModTime = fileInfo.ModTime()
+	}
+	fullPath := filepath.Join(tmpdir, lastModName)
+
+	return fullPath, nil
+}
+
+func command() (string, error) {
+	if len(pflag.Args()) < 1 {
+		return "", fmt.Errorf("unable to detect command")
+	}
+
+	return pflag.Arg(0), nil
+}
+
+func displayGitHubIssueMessage() {
+	cmd, err := command()
+	if err != nil {
+		klog.Warningf("failed to get command: %v", err)
+	}
+
+	msg := Sprintf(style.Sad, "If the above advice does not help, please let us know:")
+	msg += Sprintf(style.URL, "https://github.com/kubernetes/minikube/issues/new/choose\n")
+	msg += Sprintf(style.Empty, "Please run `minikube logs --file=logs.txt` and attach logs.txt to the GitHub issue.")
+
+	if cmd != "start" {
+		logPath, err := latestLogFilePath()
+		if err != nil {
+			klog.Warningf("failed to get latest log file path: %v", err)
+		}
+		msg += Sprintf(style.Empty, "Please also attach the following file to the GitHub issue:")
+		msg += Sprintf(style.Empty, "- {{.logPath}}", V{"logPath": logPath})
+	}
+
+	BoxedErr(msg)
 }
 
 // applyTmpl applies formatting
@@ -365,14 +460,17 @@ func applyTmpl(format string, a ...V) string {
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
-	out = strings.Replace(out, "%", "%%", -1)
+	out = strings.ReplaceAll(out, "%", "%%")
 	// avoid doubling up in case this function is called multiple times
-	out = strings.Replace(out, "%%%%", "%%", -1)
+	out = strings.ReplaceAll(out, "%%%%", "%%")
 	return out
 }
 
 // Fmt applies formatting and translation
 func Fmt(format string, a ...V) string {
 	format = translate.T(format)
+	if len(a) == 0 {
+		return format
+	}
 	return applyTmpl(format, a...)
 }

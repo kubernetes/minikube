@@ -18,21 +18,20 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/tools/apidiff/ioext"
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
+// TestKVMDriverInstallOrUpdate makes sure our docker-machine-driver-kvm2 binary can be installed properly
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Skip none driver.")
@@ -53,23 +52,14 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		path string
 	}{
 		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
-		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-older-version")},
 	}
 
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := ioutil.TempDir("", tc.name)
-		if err != nil {
-			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
-		}
-		defer func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				t.Errorf("Failed to remove dir %q: %v", dir, err)
-			}
-		}()
+		dir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -97,7 +87,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = driver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
+		err = auxdriver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -109,6 +99,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	}
 }
 
+// TestHyperKitDriverInstallOrUpdate makes sure our docker-machine-driver-hyperkit binary can be installed properly
 func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("Skip if not darwin.")
@@ -121,23 +112,14 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 		path string
 	}{
 		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
-		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "hyperkit-driver-older-version")},
 	}
 
 	originalPath := os.Getenv("PATH")
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir, err := ioutil.TempDir("", tc.name)
-		if err != nil {
-			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
-		}
-		defer func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				t.Errorf("Failed to remove dir %q: %v", dir, err)
-			}
-		}()
+		dir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -169,7 +151,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Skipf("password required to execute 'sudo', skipping remaining test")
 		}
 
-		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
+		err = auxdriver.InstallOrUpdate("hyperkit", dir, newerVersion, false, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -181,6 +163,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 	}
 }
 
+// TestHyperkitDriverSkipUpgrade makes sure our docker-machine-driver-hyperkit binary can be installed properly
 func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("Skip if not darwin.")
@@ -211,15 +194,10 @@ func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(tc.name, tc.path)
+			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(t, tc.name, tc.path)
 			if err != nil {
 				t.Fatalf("Failed to prepare tempdir. test: %s, got: %v", tc.name, err)
 			}
-			defer func() {
-				if err := os.RemoveAll(mkDir); err != nil {
-					t.Errorf("Failed to remove mkDir %q: %v", mkDir, err)
-				}
-			}()
 
 			cmd := exec.Command(Target(), "start", "--download-only", "--interactive=false", "--driver=hyperkit")
 			cmd.Stdout = os.Stdout
@@ -264,15 +242,11 @@ func driverVersion(path string) (string, error) {
 
 // prepareTempMinikubeDirWithHyperkitDriver creates a temp .minikube directory
 // with structure essential to testing of hyperkit driver updates
-func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, string, error) {
-	temp, err := ioutil.TempDir("", name)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create tempdir: %v", err)
-	}
+func prepareTempMinikubeDirWithHyperkitDriver(t *testing.T, name, driver string) (string, string, error) {
+	temp := t.TempDir()
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
-	err = os.MkdirAll(mkBinDir, 0777)
-	if err != nil {
+	if err := os.MkdirAll(mkBinDir, 0777); err != nil {
 		return "", "", fmt.Errorf("failed to prepare tempdir: %v", err)
 	}
 
@@ -287,12 +261,12 @@ func prepareTempMinikubeDirWithHyperkitDriver(name, driver string) (string, stri
 	}
 	// copy driver to temp bin
 	testDriverPath := filepath.Join(mkBinDir, "docker-machine-driver-hyperkit")
-	if err = ioext.CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
+	if err = CopyFile(testDataDriverPath, testDriverPath, false); err != nil {
 		return "", "", fmt.Errorf("failed to setup current hyperkit driver: %v", err)
 	}
 
 	// try to copy cached files to the temp minikube folder to avoid downloading of iso and preloads
-	_ = ioext.CopyDir(filepath.Join(localpath.MakeMiniPath("cache")), filepath.Join(mkDir, "cache"))
+	_ = CopyDir(localpath.MakeMiniPath("cache"), filepath.Join(mkDir, "cache"))
 
 	// change permission to allow driver to be executable
 	if err = os.Chmod(testDriverPath, 0755); err != nil {

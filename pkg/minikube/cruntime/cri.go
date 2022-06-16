@@ -36,8 +36,19 @@ type container struct {
 	Status string
 }
 
+type crictlImages struct {
+	Images []struct {
+		ID          string      `json:"id"`
+		RepoTags    []string    `json:"repoTags"`
+		RepoDigests []string    `json:"repoDigests"`
+		Size        string      `json:"size"`
+		UID         interface{} `json:"uid"`
+		Username    string      `json:"username"`
+	} `json:"images"`
+}
+
 // crictlList returns the output of 'crictl ps' in an efficient manner
-func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResult, error) {
+func crictlList(cr CommandRunner, root string, o ListContainersOptions) (*command.RunResult, error) {
 	klog.Infof("listing CRI containers in root %s: %+v", root, o)
 
 	// Use -a because otherwise paused containers are missed
@@ -63,7 +74,7 @@ func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResul
 }
 
 // listCRIContainers returns a list of containers
-func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, error) {
+func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) ([]string, error) {
 	rr, err := crictlList(cr, root, o)
 	if err != nil {
 		return nil, errors.Wrap(err, "crictl list")
@@ -129,15 +140,15 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 
 // pauseContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc"}
+	baseArgs := []string{"runc"}
 	if root != "" {
-		args = append(args, "--root", root)
+		baseArgs = append(baseArgs, "--root", root)
 	}
-	args = append(args, "pause")
-
+	baseArgs = append(baseArgs, "pause")
 	for _, id := range ids {
-		cargs := append(args, id)
-		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
+		args := baseArgs
+		args = append(args, id)
+		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}
 	}
@@ -161,9 +172,9 @@ func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 		args = append(args, "--root", root)
 	}
 	args = append(args, "resume")
-
+	cargs := args
 	for _, id := range ids {
-		cargs := append(args, id)
+		cargs := append(cargs, id)
 		if _, err := cr.RunCmd(exec.Command("sudo", cargs...)); err != nil {
 			return errors.Wrap(err, "runc")
 		}
@@ -180,6 +191,32 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 
 	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "rm"}, ids...)
+	c := exec.Command("sudo", args...)
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crictl")
+	}
+	return nil
+}
+
+// pullCRIImage pulls image using crictl
+func pullCRIImage(cr CommandRunner, name string) error {
+	klog.Infof("Pulling image: %s", name)
+
+	crictl := getCrictlPath(cr)
+	args := append([]string{crictl, "pull"}, name)
+	c := exec.Command("sudo", args...)
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crictl")
+	}
+	return nil
+}
+
+// removeCRIImage remove image using crictl
+func removeCRIImage(cr CommandRunner, name string) error {
+	klog.Infof("Removing image: %s", name)
+
+	crictl := getCrictlPath(cr)
+	args := append([]string{crictl, "rmi"}, name)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")
@@ -242,6 +279,33 @@ func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
 	return jsonMap, nil
 }
 
+// listCRIImages lists images using crictl
+func listCRIImages(cr CommandRunner) ([]ListImage, error) {
+	c := exec.Command("sudo", "crictl", "images", "--output", "json")
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrapf(err, "crictl images")
+	}
+
+	var jsonImages crictlImages
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	if err != nil {
+		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
+		return nil, err
+	}
+
+	images := []ListImage{}
+	for _, img := range jsonImages.Images {
+		images = append(images, ListImage{
+			ID:          img.ID,
+			RepoDigests: img.RepoDigests,
+			RepoTags:    img.RepoTags,
+			Size:        img.Size,
+		})
+	}
+	return images, nil
+}
+
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
 func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
 	crictl := getCrictlPath(cr)
@@ -263,7 +327,7 @@ func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) strin
 // addRepoTagToImageName makes sure the image name has a repo tag in it.
 // in crictl images list have the repo tag prepended to them
 // for example "kubernetesui/dashboard:v2.0.0 will show up as "docker.io/kubernetesui/dashboard:v2.0.0"
-// warning this is only meant for kuberentes images where we know the GCR addreses have .io in them
+// warning this is only meant for kubernetes images where we know the GCR addresses have .io in them
 // not mean to be used for public images
 func addRepoTagToImageName(imgName string) string {
 	if !strings.Contains(imgName, ".io/") {

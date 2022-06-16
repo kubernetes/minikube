@@ -24,9 +24,9 @@ minikube mount [flags] <source directory>:<target directory>
       --gid string          Default group id used for the mount (default "docker")
       --ip string           Specify the ip that the mount should be setup on
       --kill                Kill the mount process spawned by minikube start
-      --mode uint           File permissions used for the mount (default 493)
       --msize int           The number of bytes to use for 9p packet payload (default 262144)
       --options strings     Additional mount options, such as cache=fscache
+      --port uint16         Specify the port that the mount should be setup on, where 0 means any free port.
       --type string         Specify the mount filesystem type (supported types: 9p) (default "9p")
       --uid string          Default user id used for the mount (default "docker")
 ```
@@ -43,8 +43,9 @@ minikube mount [flags] <source directory>:<target directory>
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

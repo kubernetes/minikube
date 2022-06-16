@@ -1,4 +1,4 @@
-// +build !windows
+//go:build !windows
 
 /*
 Copyright 2020 The Kubernetes Authors All rights reserved.
@@ -20,7 +20,6 @@ package schedule
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"time"
@@ -28,7 +27,9 @@ import (
 	"github.com/VividCortex/godaemon"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 // KillExisting kills existing scheduled stops by looking up the PID
@@ -36,14 +37,19 @@ import (
 func KillExisting(profiles []string) {
 	for _, profile := range profiles {
 		if err := killPIDForProfile(profile); err != nil {
-			klog.Errorf("error killng PID for profile %s: %v", profile, err)
+			klog.Warningf("error killng PID for profile %s: %v", profile, err)
+		}
+		_, cc := mustload.Partial(profile)
+		cc.ScheduledStop = nil
+		if err := config.SaveProfile(profile, cc); err != nil {
+			klog.Errorf("error saving profile for profile %s: %v", profile, err)
 		}
 	}
 }
 
 func killPIDForProfile(profile string) error {
 	file := localpath.PID(profile)
-	f, err := ioutil.ReadFile(file)
+	f, err := os.ReadFile(file)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -83,7 +89,7 @@ func daemonize(profiles []string, duration time.Duration) error {
 func savePIDs(pid int, profiles []string) error {
 	for _, p := range profiles {
 		file := localpath.PID(p)
-		if err := ioutil.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+		if err := os.WriteFile(file, []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
 			return err
 		}
 	}

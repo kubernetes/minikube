@@ -1,17 +1,17 @@
 ---
 title: "cache"
 description: >
-  Add, delete, or push a local image into minikube
+  Manage cache for images
 ---
 
 
 ## minikube cache
 
-Add, delete, or push a local image into minikube
+Manage cache for images
 
 ### Synopsis
 
-Add, delete, or push a local image into minikube
+Add an image into minikube as a local cache, or delete, reload the cached images
 
 ### Options inherited from parent commands
 
@@ -25,8 +25,9 @@ Add, delete, or push a local image into minikube
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -50,7 +51,7 @@ minikube cache add [flags]
 ### Options
 
 ```
-      --   Add image to cache for all running minikube clusters
+      --all   Add image to cache for all running minikube clusters
 ```
 
 ### Options inherited from parent commands
@@ -65,8 +66,9 @@ minikube cache add [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -99,8 +101,9 @@ minikube cache delete [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -134,8 +137,9 @@ minikube cache help [command] [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -175,8 +179,9 @@ minikube cache list [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
@@ -209,8 +214,9 @@ minikube cache reload [flags]
       --log_file string                  If non-empty, use this log file
       --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
       --logtostderr                      log to standard error instead of files
-      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level
+      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

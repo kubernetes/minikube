@@ -18,6 +18,7 @@ limitations under the License.
 package kverify
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -26,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // WaitExtra calls waitPodCondition for all system-critical pods including those with specified labels.
@@ -37,7 +38,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		klog.Infof("duration metric: took %s for extra waiting for all system-critical and pods with labels %v to be %q ...", time.Since(start), labels, core.PodReady)
 	}()
 
-	pods, err := cs.CoreV1().Pods(meta.NamespaceSystem).List(meta.ListOptions{})
+	pods, err := cs.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("error listing pods in %q namespace: %w", meta.NamespaceSystem, err)
 	}
@@ -91,6 +92,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 			klog.Info(reason)
 			return true, nil
 		}
+		// return immediately: status == core.ConditionUnknown
 		if status == core.ConditionUnknown {
 			klog.Info(reason)
 			return false, fmt.Errorf(reason)
@@ -100,6 +102,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 			klog.Info(reason)
 			lap = time.Now()
 		}
+		// return immediately: status == core.ConditionFalse
 		return false, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkCondition); err != nil {
@@ -111,15 +114,15 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 
 // podConditionStatus returns if pod is in specified condition and verbose reason.
 func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) (status core.ConditionStatus, reason string) {
-	pod, err := cs.CoreV1().Pods(namespace).Get(name, meta.GetOptions{})
+	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), name, meta.GetOptions{})
 	if err != nil {
-		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace: %v", name, namespace, err)
+		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace (skipping!): %v", name, namespace, err)
 	}
 
 	// check if undelying node is Ready - in case we got stale data about the pod
 	if pod.Spec.NodeName != "" {
 		if status, reason := nodeConditionStatus(cs, pod.Spec.NodeName, core.NodeReady); status != core.ConditionTrue {
-			return core.ConditionUnknown, fmt.Sprintf("node %q hosting pod %q in %q namespace is currently not %q: %v", pod.Spec.NodeName, name, namespace, core.NodeReady, reason)
+			return core.ConditionUnknown, fmt.Sprintf("node %q hosting pod %q in %q namespace is currently not %q (skipping!): %v", pod.Spec.NodeName, name, namespace, core.NodeReady, reason)
 		}
 	}
 

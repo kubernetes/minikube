@@ -25,18 +25,16 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/network"
 )
 
-// firstSubnetAddr subnet to be used on first kic cluster
+// defaultFirstSubnetAddr is a first subnet to be used on first kic cluster
 // it is one octet more than the one used by KVM to avoid possible conflict
-const firstSubnetAddr = "192.168.49.0"
-
-// big enough for a cluster of 254 nodes
-const defaultSubnetMask = 24
+const defaultFirstSubnetAddr = "192.168.49.0"
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
@@ -44,15 +42,29 @@ const dockerDefaultBridge = "bridge"
 // name of the default bridge network
 const podmanDefaultBridge = "podman"
 
+func defaultBridgeName(ociBin string) string {
+	switch ociBin {
+	case Docker:
+		return dockerDefaultBridge
+	case Podman:
+		return podmanDefaultBridge
+	default:
+		klog.Warningf("Unexpected oci:  %v", ociBin)
+		return dockerDefaultBridge
+	}
+}
+
+func firstSubnetAddr(subnet string) string {
+	if subnet == "" {
+		return defaultFirstSubnetAddr
+	}
+
+	return subnet
+}
+
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
-func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
-	var defaultBridgeName string
-	if ociBin == Docker {
-		defaultBridgeName = dockerDefaultBridge
-	}
-	if ociBin == Podman {
-		defaultBridgeName = podmanDefaultBridge
-	}
+func CreateNetwork(ociBin, networkName, subnet string) (net.IP, error) {
+	defaultBridgeName := defaultBridgeName(ociBin)
 	if networkName == defaultBridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
 		return nil, nil
@@ -71,30 +83,42 @@ func CreateNetwork(ociBin string, networkName string) (net.IP, error) {
 	if err != nil {
 		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, defaultBridgeName, err)
 	}
-	// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
-	// will be like 192.168.49.0/24 ,...,192.168.239.0/24
-	subnet, err := network.FreeSubnet(firstSubnetAddr, 10, 20)
-	if err != nil {
-		klog.Errorf("error while trying to create network: %v", err)
-		return nil, errors.Wrap(err, "un-retryable")
+
+	// retry up to 5 times to create container network
+	for attempts, subnetAddr := 0, firstSubnetAddr(subnet); attempts < 5; attempts++ {
+		// Rather than iterate through all of the valid subnets, give up at 20 to avoid a lengthy user delay for something that is unlikely to work.
+		// will be like 192.168.49.0/24,..., 192.168.220.0/24 (in increment steps of 9)
+		var subnet *network.Parameters
+		subnet, err = network.FreeSubnet(subnetAddr, 9, 20)
+		if err != nil {
+			klog.Errorf("failed to find free subnet for %s network %s after %d attempts: %v", ociBin, networkName, 20, err)
+			return nil, fmt.Errorf("un-retryable: %w", err)
+		}
+		info.gateway, err = tryCreateDockerNetwork(ociBin, subnet, info.mtu, networkName)
+		if err == nil {
+			klog.Infof("%s network %s %s created", ociBin, networkName, subnet.CIDR)
+			return info.gateway, nil
+		}
+		// don't retry if error is not address is taken
+		if !(errors.Is(err, ErrNetworkSubnetTaken) || errors.Is(err, ErrNetworkGatewayTaken)) {
+			klog.Errorf("error while trying to create %s network %s %s: %v", ociBin, networkName, subnet.CIDR, err)
+			return nil, fmt.Errorf("un-retryable: %w", err)
+		}
+		klog.Warningf("failed to create %s network %s %s, will retry: %v", ociBin, networkName, subnet.CIDR, err)
+		subnetAddr = subnet.IP
 	}
-	info.gateway, err = tryCreateDockerNetwork(ociBin, subnet.IP, defaultSubnetMask, info.mtu, networkName)
-	if err != nil {
-		return info.gateway, fmt.Errorf("failed to create network after 20 attempts")
-	}
-	return info.gateway, nil
+	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
 }
 
-func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mtu int, name string) (net.IP, error) {
-	gateway := net.ParseIP(subnetAddr)
-	gateway.To4()[3]++ // first ip for gateway
-	klog.Infof("attempt to create network %s/%d with subnet: %s and gateway %s and MTU of %d ...", subnetAddr, subnetMask, name, gateway, mtu)
+func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
+	gateway := net.ParseIP(subnet.Gateway)
+	klog.Infof("attempt to create %s network %s %s with gateway %s and MTU of %d ...", ociBin, name, subnet.CIDR, subnet.Gateway, mtu)
 	args := []string{
 		"network",
 		"create",
 		"--driver=bridge",
-		fmt.Sprintf("--subnet=%s", fmt.Sprintf("%s/%d", subnetAddr, subnetMask)),
-		fmt.Sprintf("--gateway=%s", gateway),
+		fmt.Sprintf("--subnet=%s", subnet.CIDR),
+		fmt.Sprintf("--gateway=%s", subnet.Gateway),
 	}
 	if ociBin == Docker {
 		// options documentation https://docs.docker.com/engine/reference/commandline/network_create/#bridge-driver-options
@@ -108,10 +132,8 @@ func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mt
 			args = append(args, "-o")
 			args = append(args, fmt.Sprintf("com.docker.network.driver.mtu=%d", mtu))
 		}
-
-		args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"))
 	}
-	args = append(args, name)
+	args = append(args, fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"), fmt.Sprintf("--label=%s=%s", ProfileLabelKey, name), name)
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
@@ -125,7 +147,7 @@ func tryCreateDockerNetwork(ociBin string, subnetAddr string, subnetMask int, mt
 		if strings.Contains(rr.Output(), "is being used by a network interface") {
 			return nil, ErrNetworkGatewayTaken
 		}
-		return nil, errors.Wrapf(err, "create network %s", fmt.Sprintf("%s %s/%d", name, subnetAddr, subnetMask))
+		return nil, fmt.Errorf("create %s network %s %s with gateway %s and MTU of %d: %w", ociBin, name, subnet.CIDR, subnet.Gateway, mtu, err)
 	}
 	return gateway, nil
 }
@@ -158,7 +180,7 @@ type networkInspect struct {
 	ContainerIPs []string
 }
 
-var dockerInsepctGetter = func(name string) (*RunResult, error) {
+var dockerInspectGetter = func(name string) (*RunResult, error) {
 	// hack -- 'support ancient versions of docker again (template parsing issue) #10362' and resolve 'Template parsing error: template: :1: unexpected "=" in operand' / 'exit status 64'
 	// note: docker v18.09.7 and older use go v1.10.8 and older, whereas support for '=' operator in go templates came in go v1.11
 	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}}, "ContainerIPs": [{{range $k,$v := .Containers }}"{{$v.IPv4Address}}",{{end}}]}`)
@@ -173,7 +195,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	var vals networkInspect
 	var info = netInfo{name: name}
 
-	rr, err := dockerInsepctGetter(name)
+	rr, err := dockerInspectGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Docker, name)
 		if strings.Contains(rr.Output(), "No such network") {
@@ -199,31 +221,41 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	return info, nil
 }
 
+var podmanInspectGetter = func(name string) (*RunResult, error) {
+	v, err := podmanVersion()
+	if err != nil {
+		return nil, errors.Wrapf(err, "podman version")
+	}
+	format := `{{range .}}{{if eq .Driver "bridge"}}{{(index .Subnets 0).Subnet}},{{(index .Subnets 0).Gateway}}{{end}}{{end}}`
+	if v.LT(semver.Version{Major: 4, Minor: 0, Patch: 0}) {
+		// format was changed in Podman 4.0.0: https://github.com/kubernetes/minikube/issues/13861#issuecomment-1082639236
+		format = `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`
+	}
+	cmd := exec.Command(Podman, "network", "inspect", name, "--format", format)
+	return runCmd(cmd)
+}
+
 func podmanNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
-	cmd := exec.Command(Podman, "network", "inspect", name, "--format", `{{range .plugins}}{{if eq .type "bridge"}}{{(index (index .ipam.ranges 0) 0).subnet}},{{(index (index .ipam.ranges 0) 0).gateway}}{{end}}{{end}}`)
-	rr, err := runCmd(cmd)
+	rr, err := podmanInspectGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Podman, name)
-		if strings.Contains(rr.Output(), "No such network") {
+		if strings.Contains(rr.Output(), "no such network") {
 
 			return info, ErrNetworkNotFound
 		}
 		return info, err
 	}
 
-	output := rr.Stdout.String()
+	output := strings.TrimSpace(rr.Stdout.String())
 	if output == "" {
 		return info, fmt.Errorf("no bridge network found for %s", name)
 	}
 
 	// results looks like 172.17.0.0/16,172.17.0.1,1500
-	vals := strings.Split(strings.TrimSpace(output), ",")
-	if len(vals) == 0 {
-		return info, fmt.Errorf("empty list network inspect: %q", rr.Output())
-	}
+	vals := strings.Split(output, ",")
 
-	if len(vals) > 0 {
+	if len(vals) >= 2 {
 		info.gateway = net.ParseIP(vals[1])
 	}
 
@@ -288,10 +320,10 @@ func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 	return lines, nil
 }
 
-// DeleteKICNetworks deletes all networks created by kic
-func DeleteKICNetworks(ociBin string) []error {
+// DeleteAllKICKNetworksByLabel deletes all networks that have a specific label
+func DeleteKICNetworksByLabel(ociBin string, label string) []error {
 	var errs []error
-	ns, err := networkNamesByLabel(ociBin, CreatedByLabelKey)
+	ns, err := networkNamesByLabel(ociBin, label)
 	if err != nil {
 		return []error{errors.Wrap(err, "list all volume")}
 	}

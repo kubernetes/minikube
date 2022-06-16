@@ -23,7 +23,7 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -94,15 +94,14 @@ func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string,
 		var (
 			response string
 			err      error
-			term     *terminal.Terminal
 		)
 
 		if hidden {
-			term = terminal.NewTerminal(readWriter, "")
-			response, err = term.ReadPassword(promptString)
+			t := term.NewTerminal(readWriter, "")
+			response, err = t.ReadPassword(promptString)
 		} else {
-			term = terminal.NewTerminal(readWriter, promptString)
-			response, err = term.ReadLine()
+			t := term.NewTerminal(readWriter, promptString)
+			response, err = t.ReadLine()
 		}
 
 		if err != nil {
@@ -121,19 +120,19 @@ func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string,
 func AskForPasswordValue(s string) string {
 
 	stdInFd := int(os.Stdin.Fd())
-	oldState, err := terminal.MakeRaw(stdInFd)
+	oldState, err := term.MakeRaw(stdInFd)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer func() {
-		if err := terminal.Restore(stdInFd, oldState); err != nil {
+		if err := term.Restore(stdInFd, oldState); err != nil {
 			klog.Errorf("terminal restore failed: %v", err)
 		}
 	}()
 
 	result, err := concealableAskForStaticValue(os.Stdin, s, true)
 	if err != nil {
-		log.Fatal(err)
+		defer log.Fatal(err)
 	}
 	return result
 }

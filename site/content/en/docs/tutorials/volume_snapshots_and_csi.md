@@ -65,23 +65,16 @@ minikube addons enable volumesnapshots
 minikube addons enable csi-hostpath-driver
 ```
 
-<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Register volume snapshot class</h2>
+<h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Check volume snapshot class</h2>
 
-Before creating volume snapshot, you have to register [Volume Snapshot Classes](https://kubernetes.io/docs/concepts/storage/volume-snapshot-classes/) to your cluster.
-Here is an example `VolumeSnapshotClass` config to register:
-
-```yaml
-# snapshotclass.yaml
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: csi-hostpath-snapclass
-driver: hostpath.csi.k8s.io #csi-hostpath
-deletionPolicy: Delete
-```
+When you create the volume snapshot, you have to register [Volume Snapshot Classes](https://kubernetes.io/docs/concepts/storage/volume-snapshot-classes/) to your cluster.
+The default `VolumeSnapshotClass` called `csi-hostpath-snapclass` is already registered by `csi-hostpath-driver` addon.
+You can check the `VolumeSnapshotClass` by the following command:
 
 ```shell
-kubectl apply -f snapshotclass.yaml
+kubectl get volumesnapshotclasses
+NAME                     DRIVER                DELETIONPOLICY   AGE
+csi-hostpath-snapclass   hostpath.csi.k8s.io   Delete           10s
 ```
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Prepare persistent volume</h2>
@@ -138,6 +131,7 @@ kubectl apply -f example-csi-snapshot.yaml
 You could get volume snapshot. You can confirm your volume snapshot by the following command:
 
 ```shell
+kubectl get volumesnapshot
 NAME            READYTOUSE   SOURCEPVC   SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS            SNAPSHOTCONTENT                                    CREATIONTIME   AGE
 snapshot-demo   true         csi-pvc                             1Gi           csi-hostpath-snapclass   snapcontent-19730fcb-c34a-4f1a-abf2-6c5a9808076b   5s             5s
 ```

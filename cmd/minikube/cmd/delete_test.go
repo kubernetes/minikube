@@ -17,15 +17,17 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -50,7 +52,7 @@ func exclude(vals []string, exclude []string) []string {
 
 func fileNames(path string) ([]string, error) {
 	result := []string{}
-	fis, err := ioutil.ReadDir(path)
+	fis, err := os.ReadDir(path)
 	if err != nil {
 		return result, err
 	}
@@ -61,20 +63,9 @@ func fileNames(path string) ([]string, error) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	td, err := ioutil.TempDir("", "single")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
+	td := t.TempDir()
 
-	t.Cleanup(func() {
-		err := os.RemoveAll(td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	})
-
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-single", td)
-	if err != nil {
+	if err := copy.Copy("../../../pkg/minikube/config/testdata/delete-single", td); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
@@ -95,8 +86,7 @@ func TestDeleteProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err = os.Setenv(localpath.MinikubeHome, td)
-			if err != nil {
+			if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 				t.Errorf("setenv: %v", err)
 			}
 
@@ -114,6 +104,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Logf("load failure: %v", err)
 			}
 
+			hostAndDirsDeleter = hostAndDirsDeleterMock
 			errs := DeleteProfiles([]*config.Profile{profile})
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
@@ -154,25 +145,25 @@ func TestDeleteProfile(t *testing.T) {
 	}
 }
 
-func TestDeleteAllProfiles(t *testing.T) {
-	td, err := ioutil.TempDir("", "all")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
-	defer func() { //clean up tempdir
-		err := os.RemoveAll(td)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", td)
-		}
-	}()
+var hostAndDirsDeleterMock = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
+	return deleteContextTest()
+}
 
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td)
-	if err != nil {
+func deleteContextTest() error {
+	if err := cmdcfg.Unset(config.ProfileName); err != nil {
+		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
+	}
+	return nil
+}
+
+func TestDeleteAllProfiles(t *testing.T) {
+	td := t.TempDir()
+
+	if err := copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td); err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
-	err = os.Setenv(localpath.MinikubeHome, td)
-	if err != nil {
+	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}
 
@@ -194,6 +185,9 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test machines, expected %d: %s", len(mFiles), numberOfTotalMachineDirs, mFiles)
 	}
 
+	config.DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	validProfiles, inValidProfiles, err := config.ListProfiles()
 	if err != nil {
 		t.Error(err)
@@ -203,7 +197,9 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs, validProfiles, inValidProfiles)
 	}
 
-	profiles := append(validProfiles, inValidProfiles...)
+	profiles := validProfiles
+	profiles = append(profiles, inValidProfiles...)
+	hostAndDirsDeleter = hostAndDirsDeleterMock
 	errs := DeleteProfiles(profiles)
 
 	if errs != nil {
@@ -214,7 +210,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("profiles: %v", err)
 	}
-	afterMachines, err := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
+	afterMachines, err := os.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	if err != nil {
 		t.Errorf("machines: %v", err)
 	}

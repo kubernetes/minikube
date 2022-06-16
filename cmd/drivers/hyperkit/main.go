@@ -1,4 +1,4 @@
-// +build darwin,!arm64
+//go:build darwin && !arm64
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

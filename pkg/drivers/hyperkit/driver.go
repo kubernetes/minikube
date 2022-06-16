@@ -1,4 +1,4 @@
-// +build darwin
+//go:build darwin
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -21,7 +21,6 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -64,6 +63,7 @@ type Driver struct {
 	UUID           string
 	VpnKitSock     string
 	VSockPorts     []string
+	ExtraDisks     int
 }
 
 // NewDriver creates a new driver for a host
@@ -229,6 +229,13 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 			Trim: true,
 		},
 	}
+	for i := 0; i < d.ExtraDisks; i++ {
+		h.Disks = append(h.Disks, &hyperkit.RawDisk{
+			Path: pkgdrivers.ExtraDiskPath(d.BaseDriver, i),
+			Size: d.DiskSize,
+			Trim: true,
+		})
+	}
 
 	return h, nil
 }
@@ -268,10 +275,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	if err := d.setupNFSMounts(); err != nil {
-		return err
-	}
-	return nil
+	return d.setupNFSMounts()
 }
 
 func (d *Driver) setupIP(mac string) error {
@@ -340,13 +344,13 @@ func (t tempError) Error() string {
 	return "Temporary error: " + t.Err.Error()
 }
 
-//recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
-//the machine directory. If it can't find it, a clean shutdown is assumed.
-//If it finds the pid file, it checks for a running hyperkit process with that pid
-//as the existence of a file might not indicate an unclean shutdown but an actual running
-//hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
-//an instance running already. If the PID in the pidfile does not belong to a running hyperkit
-//process, we can safely delete it, and there is a good chance the machine will recover when restarted.
+// recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
+// the machine directory. If it can't find it, a clean shutdown is assumed.
+// If it finds the pid file, it checks for a running hyperkit process with that pid
+// as the existence of a file might not indicate an unclean shutdown but an actual running
+// hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
+// an instance running already. If the PID in the pidfile does not belong to a running hyperkit
+// process, we can safely delete it, and there is a good chance the machine will recover when restarted.
 func (d *Driver) recoverFromUncleanShutdown() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	pidFile := filepath.Join(stateDir, pidFileName)
@@ -360,7 +364,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-	bs, err := ioutil.ReadFile(pidFile)
+	bs, err := os.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}
@@ -421,7 +425,6 @@ func (d *Driver) extractKernel(isoPath string) error {
 	}{
 		{"/boot/bzimage", "bzimage"},
 		{"/boot/initrd", "initrd"},
-		{"/isolinux/isolinux.cfg", "isolinux.cfg"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
 		if err := ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {

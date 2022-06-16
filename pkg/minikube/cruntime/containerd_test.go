@@ -18,6 +18,8 @@ package cruntime
 
 import (
 	"testing"
+
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestAddRepoTagToImageName(t *testing.T) {
@@ -25,15 +27,37 @@ func TestAddRepoTagToImageName(t *testing.T) {
 		imgName string
 		want    string
 	}{
-		{"kubernetesui/dashboard:v2.1.0", "docker.io/kubernetesui/dashboard:v2.1.0"},
-		{"kubernetesui/metrics-scraper:v1.0.4", "docker.io/kubernetesui/metrics-scraper:v1.0.4"},
-		{"gcr.io/k8s-minikube/storage-provisioner:v4", "gcr.io/k8s-minikube/storage-provisioner:v4"},
+		{"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(), "gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion()},
 	}
 	for _, tc := range tests {
 		t.Run(tc.imgName, func(t *testing.T) {
 			got := addRepoTagToImageName(tc.imgName)
 			if got != tc.want {
 				t.Errorf("expected image name to be: %q but got %q", tc.want, got)
+			}
+		})
+	}
+}
+
+func TestParseContainerdVersion(t *testing.T) {
+	var tests = []struct {
+		version string
+		want    string
+	}{
+		{"containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", "1.2.0"},
+		{"containerd github.com/containerd/containerd v1.2.1-rc.0 de1f167ab96338a9f5c2b17347abf84bdf1dd411", "1.2.1-rc.0"},
+		{"containerd github.com/containerd/containerd 1.4.4-0ubuntu1 ", "1.4.4-0ubuntu1"},
+		{"containerd github.com/containerd/containerd 1.5.2-0ubuntu1~21.04.2 ", "1.5.2-0ubuntu1"},
+		{"containerd github.com/containerd/containerd 1.5.4~ds1 1.5.4~ds1-1", "1.5.4"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			got, err := parseContainerdVersion(tc.version)
+			if err != nil {
+				t.Fatalf("parse(%s): %v", tc.version, err)
+			}
+			if got != tc.want {
+				t.Errorf("expected version to be: %q but got %q", tc.want, got)
 			}
 		})
 	}

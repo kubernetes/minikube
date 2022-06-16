@@ -19,10 +19,107 @@ set -o nounset
 set -o pipefail
 set -x
 
+# If /proc/self/uid_map 4294967295 mappings, we are in the initial user namespace, i.e. the host.
+# Otherwise we are in a non-initial user namespace.
+# https://github.com/opencontainers/runc/blob/v1.0.0-rc92/libcontainer/system/linux.go#L109-L118
+userns=""
+if grep -Eqv "0[[:space:]]+0[[:space:]]+4294967295" /proc/self/uid_map; then
+  userns="1"
+  echo 'INFO: running in a user namespace (experimental)'
+fi
+
+grep_allow_nomatch() {
+  # grep exits 0 on match, 1 on no match, 2 on error
+  grep "$@" || [[ $? == 1 ]]
+}
+
+validate_userns() {
+  if [[ -z "${userns}" ]]; then
+    return
+  fi
+
+  local nofile_hard
+  nofile_hard="$(ulimit -Hn)"
+  local nofile_hard_expected="64000"
+  if [[ "${nofile_hard}" -lt "${nofile_hard_expected}" ]]; then
+    echo "WARN: UserNS: expected RLIMIT_NOFILE to be at least ${nofile_hard_expected}, got ${nofile_hard}" >&2
+  fi
+
+  if [[ -f "/sys/fs/cgroup/cgroup.controllers" ]]; then
+    for f in cpu memory pids; do
+      if ! grep -qw $f /sys/fs/cgroup/cgroup.controllers; then
+        echo "ERROR: UserNS: $f controller needs to be delegated" >&2
+        exit 1
+      fi
+    done
+  fi
+}
+
+overlayfs_preferrable() {
+	if [[ -z "$userns" ]]; then
+		# If we are outside userns, we can always assume overlayfs is preferrable
+		return 0
+	fi
+
+	# Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
+	# but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
+	if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
+		echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
+		return 1
+	fi
+
+	# Check overlayfs availability, by attempting to mount it.
+	#
+	# Overlayfs inside userns is known to be available for the following environments:
+	# - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
+	# - Ubuntu kernel
+	# - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
+	# - Sysbox
+	tmp=$(mktemp -d)
+	mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
+	if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
+		echo "INFO: UserNS: kernel does not seem to support overlayfs."
+		rm -rf "${tmp}"
+		return 1
+	fi
+	umount "${tmp}/m"
+	rm -rf "${tmp}"
+
+	# Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
+	# Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
+	if grep -q "_t:" "/proc/self/attr/current"; then
+		# When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
+		# https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
+		echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
+	fi
+	return 0
+}
+
 configure_containerd() {
-  # we need to switch to the 'native' snapshotter on zfs
-  if [[ "$(stat -f -c %T /kind)" == 'zfs' ]]; then
-    sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
+  local snapshotter=${KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER:-}
+  if [[ -n "$userns" ]]; then
+    # userns (rootless) configs
+
+    # Adjust oomScoreAdj
+    sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
+
+    # Use fuse-overlayfs if overlayfs is not preferrable: https://github.com/kubernetes-sigs/kind/issues/2275
+    if [[ -z "$snapshotter" ]] && ! overlayfs_preferrable; then
+      snapshotter="fuse-overlayfs"
+    fi
+  else
+    # we need to switch to the 'native' snapshotter on zfs
+    if [[ -z "$snapshotter" ]] && [["$(stat -f -c %T /kind)" == 'zfs' ]]; then
+      snapshotter="native"
+    fi
+  fi
+  if [[ -n "$snapshotter" ]]; then
+    echo "INFO: changing snapshotter from \"overlayfs\" to \"$snapshotter\""
+    sed -i "s/snapshotter = \"overlayfs\"/snapshotter = \"$snapshotter\"/" /etc/containerd/config.toml
+    if [[ "$snapshotter" = "fuse-overlayfs" ]]; then
+      echo 'INFO: enabling containerd-fuse-overlayfs service'
+      systemctl enable containerd-fuse-overlayfs
+    fi
   fi
 }
 
@@ -78,7 +175,15 @@ fix_mount() {
   # https://systemd.io/CONTAINER_INTERFACE/
   # however, we need other things from `docker run --privileged` ...
   # and this flag also happens to make /sys rw, amongst other things
-  mount -o remount,ro /sys
+  #
+  # This step is ignored when running inside UserNS, because it fails with EACCES.
+  if ! mount -o remount,ro /sys; then
+    if [[ -n "$userns" ]]; then
+      echo 'INFO: UserNS: ignoring mount fail' >&2
+    else
+      exit 1
+    fi
+  fi
 
   echo 'INFO: making mounts shared' >&2
   # for mount propagation
@@ -126,13 +231,55 @@ fix_cgroup() {
     return
   fi
   echo 'INFO: detected cgroup v1'
-  echo 'INFO: fix cgroup mounts for all subsystems'
-  # see: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
-  # capture initial state before modifying
   local current_cgroup
-  current_cgroup=$(grep systemd /proc/self/cgroup | cut -d: -f3)
+  current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
+  if [ "$current_cgroup" = "/" ]; then
+    echo "INFO: cgroupns detected, no need to fix cgroups"
+    return
+  fi
+
+  # NOTE The rest of this function deals with the unfortunate situation of
+  # cgroup v1 with no cgroupns enabled. One fine day every user will have
+  # cgroupns enabled (or switch or cgroup v2 which has it enabled by default).
+  # Once that happens, this function can be removed completely.
+
+  echo 'WARN: cgroupns not enabled! Please use cgroup v2, or cgroup v1 with cgroupns enabled.'
+
+  # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
+  # Capture initial state before modifying
+  #
+  # Basically we're looking for the cgroup-path for the cpu controller for the
+  # current process. this tells us what cgroup-path the container is in.
+  # Then we collect the subsystems that are active on this path.
+  # We assume the cpu controller is in use on all node containers,
+  # and other controllers use the same sub-path.
+  #
+  # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
+  echo 'INFO: fix cgroup mounts for all subsystems'
   local cgroup_subsystems
   cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
+  # Unmount the cgroup subsystems that are not known to runtime used to
+  # run the container we are in. Those subsystems are not properly scoped
+  # (i.e. the root cgroup is exposed, rather than something like docker/xxxx).
+  # In case a runtime (which is aware of more subsystems -- such as rdma,
+  # misc, or unified) is used inside the container, it may create cgroups for
+  # these subsystems, and as they are not scoped, they will leak to the host
+  # and thus will become non-removable.
+  #
+  # See https://github.com/kubernetes/kubernetes/issues/109182
+  local unsupported_cgroups
+  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v "${current_cgroup}" | awk '{print $2}')
+  if [ -n "$unsupported_cgroups" ]; then
+    local mnt
+    echo "$unsupported_cgroups" |
+    while IFS= read -r mnt; do
+      echo "INFO: unmounting and removing $mnt"
+      umount "$mnt" || true
+      rmdir "$mnt" || true
+    done
+  fi
+
+
   # For each cgroup subsystem, Docker does a bind mount from the current
   # cgroup to the root of the cgroup subsystem. For instance:
   #   /sys/fs/cgroup/memory/docker/<cid> -> /sys/fs/cgroup/memory
@@ -145,10 +292,6 @@ fix_cgroup() {
   # The following is a workaround to recreate the original cgroup
   # environment by doing another bind mount for each subsystem.
   local cgroup_mounts
-
-  # This regexp finds all /sys/fs/cgroup mounts that are cgroupfs and mounted somewhere other than / - extracting fields 4+
-  # See https://man7.org/linux/man-pages/man5/proc.5.html for field names
-
   # xref: https://github.com/kubernetes/minikube/pull/9508
   # Example inputs:
   #
@@ -156,18 +299,14 @@ fix_cgroup() {
   # podman:               /libpod_parent/libpod-73a4fb9769188ae5dc51cb7e24b9f2752a4af7b802a8949f06a7b2f2363ab0e9 ...
   # Cloud Shell:          /kubepods/besteffort/pod3d6beaa3004913efb68ce073d73494b0/accdf94879f0a494f317e9a0517f23cdd18b35ff9439efd0175f17bbc56877c4 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime master:19 - cgroup cgroup rw,memory
   # GitHub actions #9304: /actions_job/0924fbbcf7b18d2a00c171482b4600747afc367a9dfbeac9d6b14b35cda80399 /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime shared:263 master:24 - cgroup cgroup rw,memory
-
   cgroup_mounts=$(grep -E -o '/[[:alnum:]].* /sys/fs/cgroup.*.*cgroup' /proc/self/mountinfo || true)
-
   if [[ -n "${cgroup_mounts}" ]]; then
     local mount_root
-    mount_root=$(echo "${cgroup_mounts}" | head -n 1 | cut -d' ' -f1)
-
+    mount_root=$(head -n 1 <<<"${cgroup_mounts}" | cut -d' ' -f1)
     for mount_point in $(echo "${cgroup_mounts}" | cut -d' ' -f 2); do
       # bind mount each mount_point to mount_point + mount_root
       # mount --bind /sys/fs/cgroup/cpu /sys/fs/cgroup/cpu/docker/fb07bb6daf7730a3cb14fc7ff3e345d1e47423756ce54409e66e01911bab2160
       local target="${mount_point}${mount_root}"
-
       if ! findmnt "${target}"; then
         mkdir -p "${target}"
         mount --bind "${mount_point}" "${target}"
@@ -178,10 +317,12 @@ fix_cgroup() {
   # "nesting" clusters, unless we instruct it to use a different cgroup root.
   # We do this, and when doing so we must fixup this alternative root
   # currently this is hardcoded to be /kubelet
+  # under systemd cgroup driver, kubelet appends .slice
   mount --make-rprivate /sys/fs/cgroup
   echo "${cgroup_subsystems}" |
   while IFS= read -r subsystem; do
     mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
+    mount_kubelet_cgroup_root "/kubelet.slice" "${subsystem}"
   done
 }
 
@@ -251,18 +392,15 @@ fix_kmsg() {
 }
 
 select_iptables() {
-  # based on: https://github.com/kubernetes/kubernetes/blob/ffe93b3979486feb41a0f85191bdd189cbd56ccc/build/debian-iptables/iptables-wrapper
-  local mode=nft
-  num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep '^-' | wc -l || true)
-  if [ "${num_legacy_lines}" -ge 10 ]; then
+  # based on: https://github.com/kubernetes-sigs/iptables-wrappers/blob/97b01f43a8e8db07840fc4b95e833a37c0d36b12/iptables-wrapper-installer.sh
+  local mode num_legacy_lines num_nft_lines
+  num_legacy_lines=$( (iptables-legacy-save || true; ip6tables-legacy-save || true) 2>/dev/null | grep -c '^-' || true)
+  num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep -c '^-' || true)
+  if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
     mode=legacy
   else
-    num_nft_lines=$( (timeout 5 sh -c "iptables-nft-save; ip6tables-nft-save" || true) 2>/dev/null | grep '^-' | wc -l || true)
-    if [ "${num_legacy_lines}" -ge "${num_nft_lines}" ]; then
-      mode=legacy
-    fi
+    mode=nft
   fi
-
   echo "INFO: setting iptables to detected mode: ${mode}" >&2
   update-alternatives --set iptables "/usr/sbin/iptables-${mode}" > /dev/null
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
@@ -274,8 +412,9 @@ enable_network_magic(){
 
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
-  docker_host_ip="$( (getent ahostsv4 'host.docker.internal' | head -n1 | cut -d' ' -f1) || true)"
-  if [[ -z "${docker_host_ip}" ]]; then
+  docker_host_ip="$( (head -n1 <(getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
+  # if the ip doesn't exist or is a loopback address use the default gateway
+  if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
   fi
 
@@ -295,7 +434,7 @@ enable_network_magic(){
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
   # fixup IPs in manifests ...
-  curr_ipv4="$( (getent ahostsv4 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -315,7 +454,7 @@ enable_network_magic(){
   fi
 
   # do IPv6
-  curr_ipv6="$( (getent ahostsv6 "$(hostname)" | head -n1 | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (head -n1 <(getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
@@ -333,6 +472,9 @@ enable_network_magic(){
     echo -n "${curr_ipv6}" >/kind/old-ipv6
   fi
 }
+
+# validate state
+validate_userns
 
 # run pre-init fixups
 # NOTE: it's important that we do configure* first in this order to avoid races

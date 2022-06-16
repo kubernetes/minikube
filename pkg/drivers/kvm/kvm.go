@@ -1,4 +1,4 @@
-// +build linux
+//go:build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -28,9 +28,10 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/util/retry"
+	"libvirt.org/go/libvirt"
 )
 
 // Driver is the machine driver for KVM
@@ -87,6 +88,12 @@ type Driver struct {
 
 	// NUMA XML
 	NUMANodeXML string
+
+	// Extra Disks
+	ExtraDisks int
+
+	// Extra Disks XML
+	ExtraDisksXML []string
 }
 
 const (
@@ -209,12 +216,14 @@ func (d *Driver) GetIP() (string, error) {
 	if s != state.Running {
 		return "", errors.New("host is not running")
 	}
-	ip, err := d.lookupIP()
-	if err != nil {
-		return "", errors.Wrap(err, "getting IP")
-	}
 
-	return ip, nil
+	conn, err := getConnection(d.ConnectionURI)
+	if err != nil {
+		return "", errors.Wrap(err, "getting libvirt connection")
+	}
+	defer conn.Close()
+
+	return ipFromXML(conn, d.MachineName, d.PrivateNetwork)
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -272,32 +281,43 @@ func (d *Driver) Start() (err error) {
 	}
 
 	log.Info("Waiting to get IP...")
-	for i := 0; i <= 40; i++ {
-		ip, err := d.GetIP()
-		if err != nil {
-			return errors.Wrap(err, "getting ip during machine start")
-		}
-		if ip == "" {
-			log.Debugf("Waiting for machine to come up %d/%d", i, 40)
-			time.Sleep(3 * time.Second)
-			continue
-		}
-
-		if ip != "" {
-			log.Infof("Found IP for machine: %s", ip)
-			d.IPAddress = ip
-			break
-		}
-	}
-
-	if d.IPAddress == "" {
-		return errors.New("machine didn't return an IP after 120 seconds")
+	if err := d.waitForStaticIP(conn); err != nil {
+		return errors.Wrap(err, "IP not available after waiting")
 	}
 
 	log.Info("Waiting for SSH to be available...")
 	if err := drivers.WaitForSSH(d); err != nil {
-		d.IPAddress = ""
 		return errors.Wrap(err, "SSH not available after waiting")
+	}
+
+	return nil
+}
+
+// waitForStaticIP waits for IP address of domain that has been created & starting and then makes that IP static.
+func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
+	query := func() error {
+		sip, err := ipFromAPI(conn, d.MachineName, d.PrivateNetwork)
+		if err != nil {
+			return fmt.Errorf("failed getting IP during machine start, will retry: %w", err)
+		}
+		if sip == "" {
+			return fmt.Errorf("waiting for machine to come up")
+		}
+
+		log.Infof("Found IP for machine: %s", sip)
+		d.IPAddress = sip
+
+		return nil
+	}
+	if err := retry.Local(query, 1*time.Minute); err != nil {
+		return fmt.Errorf("machine %s didn't return IP after 1 minute", d.MachineName)
+	}
+
+	log.Info("Reserving static IP address...")
+	if err := addStaticIP(conn, d.PrivateNetwork, d.MachineName, d.PrivateMAC, d.IPAddress); err != nil {
+		log.Warnf("Failed reserving static IP %s for host %s, will continue anyway: %v", d.IPAddress, d.MachineName, err)
+	} else {
+		log.Infof("Reserved static IP address: %s", d.IPAddress)
 	}
 
 	return nil
@@ -306,7 +326,6 @@ func (d *Driver) Start() (err error) {
 // Create a host using the driver's config
 func (d *Driver) Create() (err error) {
 	log.Info("Creating KVM machine...")
-	defer log.Infof("KVM machine creation complete!")
 	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
@@ -339,6 +358,26 @@ func (d *Driver) Create() (err error) {
 		return errors.Wrap(err, "error creating disk")
 	}
 
+	if d.ExtraDisks > 20 {
+		// Limiting the number of disks to 20 arbitrarily. If more disks are
+		// needed, the logical name generation has to changed to create them if
+		// the form hdaa, hdab, etc
+		return errors.Wrap(err, "cannot create more than 20 extra disks")
+	}
+	for i := 0; i < d.ExtraDisks; i++ {
+		diskpath, err := createExtraDisk(d, i)
+		if err != nil {
+			return errors.Wrap(err, "creating extra disks")
+		}
+		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.
+		// TODO: Enhance the domain template to use variable for the logical name of the main disk and the cdrom disk.
+		extraDisksXML, err := getExtraDiskXML(diskpath, fmt.Sprintf("hd%v", string(rune('d'+i))))
+		if err != nil {
+			return errors.Wrap(err, "creating extraDisk XML")
+		}
+		d.ExtraDisksXML = append(d.ExtraDisksXML, extraDisksXML)
+	}
+
 	if err := ensureDirPermissions(store); err != nil {
 		log.Errorf("unable to ensure permissions on %s: %v", store, err)
 	}
@@ -350,10 +389,16 @@ func (d *Driver) Create() (err error) {
 	}
 	defer func() {
 		if ferr := dom.Free(); ferr != nil {
+			log.Warnf("unable to free domain: %v", err)
 			err = ferr
 		}
 	}()
-	return d.Start()
+	if err = d.Start(); err != nil {
+		log.Errorf("unable to start VM: %v", err)
+		return err
+	}
+	log.Infof("KVM machine creation complete!")
+	return nil
 }
 
 // ensureDirPermissions ensures that libvirt has access to access the image store directory
@@ -385,7 +430,6 @@ func ensureDirPermissions(store string) error {
 
 // Stop a host gracefully
 func (d *Driver) Stop() (err error) {
-	d.IPAddress = ""
 	s, err := d.GetState()
 	if err != nil {
 		return errors.Wrap(err, "getting state of VM")
@@ -458,6 +502,13 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "undefine domain")
 	}
 
+	log.Info("Removing static IP address...")
+	if err := delStaticIP(conn, d.PrivateNetwork, "", "", d.IPAddress); err != nil {
+		log.Warnf("failed removing static IP %s for host %s, will continue anyway: %v", d.IPAddress, d.MachineName, err)
+	} else {
+		log.Info("Removed static IP address")
+	}
+
 	return nil
 }
 
@@ -495,7 +546,7 @@ func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) erro
 		return nil
 	}
 
-	return dom.Undefine()
+	return dom.UndefineFlags(libvirt.DOMAIN_UNDEFINE_KEEP_NVRAM)
 }
 
 // lvErr will return libvirt Error struct containing specific libvirt error code, domain, message and level

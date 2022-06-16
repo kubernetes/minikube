@@ -19,7 +19,7 @@ package version
 import (
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 // VersionPrefix is the prefix of the git tag for a version

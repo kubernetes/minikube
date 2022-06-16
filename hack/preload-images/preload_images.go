@@ -21,10 +21,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -40,64 +43,126 @@ var (
 	dockerStorageDriver = "overlay2"
 	podmanStorageDriver = "overlay"
 	containerRuntimes   = []string{"docker", "containerd", "cri-o"}
-	k8sVersion          string
 	k8sVersions         []string
+	k8sVersion          = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
+	noUpload            = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
+	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
+	limit               = flag.Int("limit", 0, "Limit the number of tarballs to generate")
+	armUpload           = flag.Bool("arm-upload", false, "Upload the arm64 preload tarballs to GCS")
+	armPreloadsDir      = flag.String("arm-preloads-dir", "artifacts", "Directory containing the arm64 preload tarballs")
 )
 
-func init() {
-	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
-	flag.Parse()
-	if k8sVersion != "" {
-		k8sVersions = append(k8sVersions, k8sVersion)
-	}
-	viper.Set("preload", "true")
+type preloadCfg struct {
+	k8sVer  string
+	runtime string
+}
+
+func (p preloadCfg) String() string {
+	return fmt.Sprintf("%q/%q", p.runtime, p.k8sVer)
 }
 
 func main() {
-	defer func() {
-		if err := deleteMinikube(); err != nil {
-			fmt.Printf("error cleaning up minikube: %v \n", err)
+	flag.Parse()
+
+	if *armUpload {
+		if err := uploadArmTarballs(*armPreloadsDir); err != nil {
+			log.Fatal(err)
 		}
-	}()
+		return
+	}
+
+	// used by pkg/minikube/download.PreloadExists()
+	viper.Set("preload", "true")
+
+	if *k8sVersion != "" {
+		k8sVersions = []string{*k8sVersion}
+	}
 
 	if err := deleteMinikube(); err != nil {
 		fmt.Printf("error cleaning up minikube at start up: %v \n", err)
 	}
 
-	if k8sVersions == nil {
-		var err error
-		k8sVersions, err = RecentK8sVersions()
-		if err != nil {
-			exit("Unable to get recent k8s versions: %v\n", err)
+	k8sVersions, err := collectK8sVers()
+	if err != nil {
+		exit("Unable to get recent k8s versions: %v\n", err)
+	}
+
+	var toGenerate []preloadCfg
+	var i int
+
+out:
+	for _, kv := range k8sVersions {
+		for _, cr := range containerRuntimes {
+			if *limit > 0 && i >= *limit {
+				break out
+			}
+			// Since none/mock are the only exceptions, it does not matter what driver we choose.
+			if !download.PreloadExists(kv, cr, "docker") {
+				toGenerate = append(toGenerate, preloadCfg{kv, cr})
+				i++
+				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q does not exist.\n", i, kv, cr)
+			} else if *force {
+				// the tarball already exists, but '--force' is passed. we need to overwrite the file
+				toGenerate = append(toGenerate, preloadCfg{kv, cr})
+				i++
+				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q already exists. Going to overwrite it.\n", i, kv, cr)
+			} else {
+				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
+			}
 		}
 	}
 
-	k8sVersions = append(k8sVersions, constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion, constants.OldestKubernetesVersion)
+	fmt.Printf("Going to generate preloads for %v\n", toGenerate)
 
-	for _, kv := range k8sVersions {
-		for _, cr := range containerRuntimes {
-			tf := download.TarballName(kv, cr)
-			if download.PreloadExists(kv, cr) {
-				fmt.Printf("A preloaded tarball for k8s version %s - runtime %q already exists, skipping generation.\n", kv, cr)
-				continue
-			}
-			fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
-			if err := generateTarball(kv, cr, tf); err != nil {
-				exit(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
-			}
-			if err := uploadTarball(tf); err != nil {
-				exit(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
-			}
-
-			if err := deleteMinikube(); err != nil {
-				fmt.Printf("error cleaning up minikube before finishing up: %v\n", err)
-			}
-
+	for _, cfg := range toGenerate {
+		if err := makePreload(cfg); err != nil {
+			exit(err.Error(), err)
 		}
 	}
 }
 
-func verifyDockerStorage() error {
+func collectK8sVers() ([]string, error) {
+	if k8sVersions == nil {
+		recent, err := recentK8sVersions()
+		if err != nil {
+			return nil, err
+		}
+		k8sVersions = recent
+	}
+	return append([]string{
+		constants.DefaultKubernetesVersion,
+		constants.NewestKubernetesVersion,
+		constants.OldestKubernetesVersion,
+	}, k8sVersions...), nil
+}
+
+func makePreload(cfg preloadCfg) error {
+	kv, cr := cfg.k8sVer, cfg.runtime
+
+	fmt.Printf("A preloaded tarball for k8s version %s - runtime %q doesn't exist, generating now...\n", kv, cr)
+	tf := download.TarballName(kv, cr)
+
+	defer func() {
+		if err := deleteMinikube(); err != nil {
+			fmt.Printf("error cleaning up minikube before finishing up: %v\n", err)
+		}
+	}()
+
+	if err := generateTarball(kv, cr, tf); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr))
+	}
+
+	if *noUpload {
+		fmt.Printf("skip upload of %q\n", tf)
+		return nil
+	}
+	if err := uploadTarball(tf, kv); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr))
+	}
+	return nil
+}
+
+var verifyDockerStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "docker", "info", "-f", "{{.Info.Driver}}")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -112,7 +177,7 @@ func verifyDockerStorage() error {
 	return nil
 }
 
-func verifyPodmanStorage() error {
+var verifyPodmanStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "sudo", "podman", "info", "-f", "json")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

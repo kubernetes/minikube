@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: private-image
+  labels:
+    integration-test: private-image
+spec:
+  selector:
+    matchLabels:
+      integration-test: private-image
+  template:
+    metadata:
+      labels:
+        integration-test: private-image
+    spec:
+      containers:
+      - image: us-docker.pkg.dev/k8s-minikube/test-artifacts/echoserver:1.4
+        imagePullPolicy: IfNotPresent
+        name: private-image

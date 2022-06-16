@@ -1,4 +1,4 @@
-// +build linux
+//go:build linux
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -70,6 +70,7 @@ type kvmDriver struct {
 	Hidden         bool
 	ConnectionURI  string
 	NUMANodeCount  int
+	ExtraDisks     int
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
@@ -83,7 +84,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cc.Memory,
 		CPU:            cc.CPUs,
 		Network:        cc.KVMNetwork,
-		PrivateNetwork: "minikube-net",
+		PrivateNetwork: privateNetwork(cc),
 		Boot2DockerURL: download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
@@ -92,7 +93,16 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Hidden:         cc.KVMHidden,
 		ConnectionURI:  cc.KVMQemuURI,
 		NUMANodeCount:  cc.KVMNUMACount,
+		ExtraDisks:     cc.ExtraDisks,
 	}, nil
+}
+
+// if network is not user-defined it defaults to "mk-<cluster_name>"
+func privateNetwork(cc config.ClusterConfig) string {
+	if cc.Network == "" {
+		return fmt.Sprintf("mk-%s", cc.KubernetesConfig.ClusterName)
+	}
+	return cc.Network
 }
 
 // defaultURI returns the QEMU URI to connect to for health checks
@@ -105,8 +115,8 @@ func defaultURI() string {
 }
 
 func status() registry.State {
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	// Allow no more than 6 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
 	path, err := exec.LookPath("virsh")
@@ -114,34 +124,47 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
-	member, err := isCurrentUserLibvirtGroupMember()
-	if err != nil {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
-			Reason: "PR_KVM_USER_PERMISSION",
-			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:    docURL,
-		}
-	}
-	if !member {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			// keep the error messsage in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
-			Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
-			Reason: "PR_KVM_USER_PERMISSION",
-			Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
-			Doc:    docURL,
-		}
-	}
-
 	// On Ubuntu 19.10 (libvirt 5.4), this fails if LIBVIRT_DEFAULT_URI is unset
 	cmd := exec.CommandContext(ctx, path, "domcapabilities", "--virttype", "kvm")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err := cmd.CombinedOutput()
+
+	// If we fail to connect to libvirt, first check whether we're member of the libvirt group.
+	if err != nil {
+		member, err := isCurrentUserLibvirtGroupMember()
+		if err != nil {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("libvirt group membership check failed:\n%v", err.Error()),
+				Reason: "PR_KVM_USER_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+				Doc:    docURL,
+			}
+		}
+		if !member {
+			return registry.State{
+				Installed: true,
+				Running:   true,
+				// keep the error message in sync with reason.providerIssues(Kind.ID: "PR_KVM_USER_PERMISSION") regexp
+				Error:  fmt.Errorf("libvirt group membership check failed:\nuser is not a member of the appropriate libvirt group"),
+				Reason: "PR_KVM_USER_PERMISSION",
+				Fix:    "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)",
+				Doc:    docURL,
+			}
+		}
+	}
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{
+			Installed: true,
+			Running:   false,
+			Error:     fmt.Errorf("%s timed out", strings.Join(cmd.Args, " ")),
+			Fix:       "Check that the libvirtd service is running and the socket is ready",
+			Doc:       docURL,
+		}
+	}
 	if err != nil {
 		return registry.State{
 			Installed: true,

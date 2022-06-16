@@ -19,10 +19,12 @@ package kverify
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"path"
 	"strconv"
@@ -35,12 +37,13 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
@@ -141,6 +144,22 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 	return nil
 }
 
+// WaitForAPIServerStatus waits for 'to' duration to get apiserver pod running or stopped
+// this functions is intended to use in situations where apiserver process can be recreated
+// by container runtime restart for example and there is a gap before it comes back
+func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string, port int) (state.State, error) {
+	var st state.State
+	err := wait.PollImmediate(200*time.Millisecond, to, func() (bool, error) {
+		var err error
+		st, err = APIServerStatus(cr, hostname, port)
+		if st == state.Stopped {
+			return false, nil
+		}
+		return true, err
+	})
+	return st, err
+}
+
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	klog.Infof("Checking apiserver status ...")
@@ -205,7 +224,7 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	err = retry.Local(check, 5*time.Second)
+	err = retry.Local(check, 15*time.Second)
 
 	// Don't propagate 'Stopped' upwards as an error message, as clients may interpret the err
 	// as an inability to get status. We need it for retry.Local, however.
@@ -219,12 +238,18 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(hostname, fmt.Sprint(port)))
 	klog.Infof("Checking apiserver healthz at %s ...", url)
-	// To avoid: x509: certificate signed by unknown authority
+	cert, err := os.ReadFile(localpath.CACert())
+	if err != nil {
+		klog.Infof("ca certificate: %v", err)
+		return state.Stopped, err
+	}
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(cert)
 	tr := &http.Transport{
 		Proxy:           nil, // Avoid using a proxy to speak to a local host
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{RootCAs: pool},
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
@@ -233,7 +258,7 @@ func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		klog.Warningf("unable to read response body: %s", err)
 	}

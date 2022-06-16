@@ -1,0 +1,41 @@
+# ref: https://operatorhub.io/install/etcd.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-etcd
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: operatorgroup
+  namespace: my-etcd
+spec:
+  targetNamespaces:
+  - my-etcd
+---
+# # etcd v0.9.4 uses 'apiVersion: apiextensions.k8s.io/v1beta1' deprecated in k8s v1.22+
+# # ref: https://github.com/k8s-operatorhub/community-operators/blob/834fa9b5a58f75fbf1ae2ed5e37db2efe1cab483/operators/etcd/0.9.4/etcdclusters.etcd.database.coreos.com.crd.yaml#L1
+# # keep it disabled until updated and temporary use the 'cluster-manager' below instead
+# apiVersion: operators.coreos.com/v1alpha1
+# kind: Subscription
+# metadata:
+#   name: my-etcd
+#   namespace: my-etcd
+# spec:
+#   channel: singlenamespace-alpha
+#   name: etcd
+#   source: operatorhubio-catalog
+#   sourceNamespace: olm
+# ---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cluster-manager
+  namespace: my-etcd
+spec:
+  channel: stable
+  name: cluster-manager
+  source: operatorhubio-catalog
+  sourceNamespace: olm
+  installPlanApproval: Automatic

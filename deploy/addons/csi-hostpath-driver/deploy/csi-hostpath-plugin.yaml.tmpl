@@ -23,6 +23,7 @@ metadata:
   namespace: kube-system
   labels:
     app: csi-hostpathplugin
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   selector:
     app: csi-hostpathplugin
@@ -35,6 +36,8 @@ apiVersion: apps/v1
 metadata:
   name: csi-hostpathplugin
   namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   serviceName: "csi-hostpathplugin"
   # One replica only:
@@ -45,13 +48,45 @@ spec:
   selector:
     matchLabels:
       app: csi-hostpathplugin
+      addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         app: csi-hostpathplugin
+        addonmanager.kubernetes.io/mode: Reconcile
         kubernetes.io/minikube-addons: csi-hostpath-driver
     spec:
+      serviceAccount: csi-external-health-monitor-controller
       containers:
+        - name: csi-external-health-monitor-agent
+          image: {{.CustomRegistries.HostMonitorAgent  | default .ImageRepository | default .Registries.HostMonitorAgent }}{{.Images.HostMonitorAgent}}
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: ADDRESS
+              value: /csi/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+        - name: csi-external-health-monitor-controller
+          image: {{.CustomRegistries.HostMonitorController  | default .ImageRepository | default .Registries.HostMonitorController }}{{.Images.HostMonitorController}}
+          args:
+            - "--v=5"
+            - "--csi-address=$(ADDRESS)"
+            - "--leader-election"
+          env:
+            - name: ADDRESS
+              value: /csi/csi.sock
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
         - name: node-driver-registrar
           image: {{.CustomRegistries.NodeDriverRegistrar  | default .ImageRepository | default .Registries.NodeDriverRegistrar }}{{.Images.NodeDriverRegistrar}}
           args:

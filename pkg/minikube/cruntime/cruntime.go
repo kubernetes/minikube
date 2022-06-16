@@ -20,8 +20,10 @@ package cruntime
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -64,8 +66,12 @@ type CommandRunner interface {
 	WaitCmd(sc *command.StartedCmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+	// CopyFrom is a convenience method that runs a command to copy a file back
+	CopyFrom(assets.CopyableFile) error
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	ReadableFile(sourcePath string) (assets.ReadableFile, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -75,7 +81,7 @@ type Manager interface {
 	// Version retrieves the current version of this runtime
 	Version() (string, error)
 	// Enable idempotently enables this runtime on a host
-	Enable(bool, bool) error
+	Enable(bool, bool, bool) error
 	// Disable idempotently disables this runtime on a host
 	Disable() error
 	// Active returns whether or not a runtime is active on a host
@@ -94,12 +100,27 @@ type Manager interface {
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
+	// Pull an image to the runtime from the container registry
+	PullImage(string) error
+	// Build an image idempotently into the runtime on a host
+	BuildImage(string, string, string, bool, []string, []string) error
+	// Save an image from the runtime on a host
+	SaveImage(string, string) error
+	// Tag an image
+	TagImage(string, string) error
+	// Push an image from the runtime to the container registry
+	PushImage(string) error
 
-	// ImageExists takes image name and image sha checks if an it exists
+	// ImageExists takes image name and optionally image sha to check if an image exists
 	ImageExists(string, string) bool
+	// ListImages returns a list of images managed by this container runtime
+	ListImages(ListImagesOptions) ([]ListImage, error)
 
-	// ListContainers returns a list of managed by this container runtime
-	ListContainers(ListOptions) ([]string, error)
+	// RemoveImage remove image based on name
+	RemoveImage(string) error
+
+	// ListContainers returns a list of containers managed by this container runtime
+	ListContainers(ListContainersOptions) ([]string, error)
 	// KillContainers removes containers based on ID
 	KillContainers([]string) error
 	// StopContainers stops containers based on ID
@@ -113,7 +134,7 @@ type Manager interface {
 	// SystemLogCmd returns the command to return the system logs
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
-	Preload(config.KubernetesConfig) error
+	Preload(config.ClusterConfig) error
 	// ImagesPreloaded returns true if all images have been preloaded
 	ImagesPreloaded([]string) bool
 }
@@ -134,8 +155,8 @@ type Config struct {
 	InsecureRegistry []string
 }
 
-// ListOptions are the options to use for listing containers
-type ListOptions struct {
+// ListContainersOptions are the options to use for listing containers
+type ListContainersOptions struct {
 	// State is the container state to filter by (All, Running, Paused)
 	State ContainerState
 	// Name is a name filter
@@ -144,19 +165,65 @@ type ListOptions struct {
 	Namespaces []string
 }
 
+// ListImagesOptions are the options to use for listing images
+type ListImagesOptions struct {
+}
+
+type ListImage struct {
+	ID          string   `json:"id" yaml:"id"`
+	RepoDigests []string `json:"repoDigests" yaml:"repoDigests"`
+	RepoTags    []string `json:"repoTags" yaml:"repoTags"`
+	Size        string   `json:"size" yaml:"size"`
+}
+
+// ErrContainerRuntimeNotRunning is thrown when container runtime is not running
+var ErrContainerRuntimeNotRunning = errors.New("container runtime is not running")
+
+// ErrServiceVersion is the error returned when disk image has incompatible version of service
+type ErrServiceVersion struct {
+	// Service is the name of the incompatible service
+	Service string
+	// Installed is the installed version of Service
+	Installed string
+	// Required is the minimum required version of Service
+	Required string
+}
+
+// NewErrServiceVersion creates a new ErrServiceVersion
+func NewErrServiceVersion(svc, required, installed string) *ErrServiceVersion {
+	return &ErrServiceVersion{
+		Service:   svc,
+		Installed: installed,
+		Required:  required,
+	}
+}
+
+func (e ErrServiceVersion) Error() string {
+	return fmt.Sprintf("service %q version is %v. Required: %v",
+		e.Service, e.Installed, e.Required)
+}
+
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
 	case "", "docker":
+		sp := c.Socket
+		cs := ""
+		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
+		if sp == "" && c.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.0")) {
+			sp = ExternalDockerCRISocket
+			cs = "cri-docker.socket"
+		}
 		return &Docker{
-			Socket:            c.Socket,
+			Socket:            sp,
 			Runner:            c.Runner,
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
-			UseCRI:            (c.Socket != ""), // !dockershim
+			UseCRI:            (sp != ""), // !dockershim
+			CRIService:        cs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{
@@ -206,9 +273,10 @@ func disableOthers(me Manager, cr CommandRunner) error {
 			klog.Infof("skipping containerd shutdown because we are bound to it")
 			continue
 		}
-
-		// runtime is already disabled, nothing to do.
-		if !r.Active() {
+		// in case of docker, if other runtime are already not active we are sure it is disabled, nothing to do.
+		// because #11515 for non-docker runtimes, we gotta ensure Docker is disabled and can not just check if it is not active
+		// since it is enabled by default in the current base image and it keeps coming back to life
+		if me.Name() == "Docker" && !r.Active() {
 			continue
 		}
 
@@ -222,4 +290,60 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		}
 	}
 	return nil
+}
+
+var requiredContainerdVersion = semver.MustParse("1.4.0")
+
+// compatibleWithVersion checks if current version of "runtime" is compatible with version "v"
+func compatibleWithVersion(runtime, v string) error {
+	if runtime == "containerd" {
+		vv, err := semver.Make(v)
+		if err != nil {
+			return err
+		}
+		if requiredContainerdVersion.GT(vv) {
+			return NewErrServiceVersion(runtime, requiredContainerdVersion.String(), vv.String())
+		}
+	}
+	return nil
+}
+
+// CheckCompatibility checks if the container runtime managed by "cr" is compatible with current minikube code
+// returns: NewErrServiceVersion if not
+func CheckCompatibility(cr Manager) error {
+	v, err := cr.Version()
+	if err != nil {
+		return errors.Wrap(err, "Failed to check container runtime version")
+	}
+	return compatibleWithVersion(cr.Name(), v)
+}
+
+// CheckKernelCompatibility returns an error when the kernel is older than the specified version.
+func CheckKernelCompatibility(cr CommandRunner, major, minor int) error {
+	expected := fmt.Sprintf("%d.%d", major, minor)
+	unameRes, err := cr.RunCmd(exec.Command("uname", "-r"))
+	if err != nil {
+		return err
+	}
+	actual := strings.TrimSpace(unameRes.Stdout.String())
+	sortRes, err := cr.RunCmd(exec.Command("sh", "-euc", fmt.Sprintf(`(echo %s; echo %s) | sort -V | head -n1`, actual, expected)))
+	if err != nil {
+		return err
+	}
+	comparison := strings.TrimSpace(sortRes.Stdout.String())
+	if comparison != expected {
+		return NewErrServiceVersion("kernel", expected, actual)
+	}
+	return nil
+}
+
+func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
+	// Only supported for Docker with cri-dockerd
+	if r.Name() != "Docker" {
+		if networkPlugin != "cni" {
+			return fmt.Errorf("unknown network plugin: %s", networkPlugin)
+		}
+		return nil
+	}
+	return dockerConfigureNetworkPlugin(r, cr, networkPlugin)
 }

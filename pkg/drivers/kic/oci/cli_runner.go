@@ -21,14 +21,17 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"k8s.io/klog/v2"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -70,10 +73,40 @@ func (rr RunResult) Output() string {
 	return sb.String()
 }
 
+// IsRootlessForced returns whether rootless mode is explicitly required.
+func IsRootlessForced() bool {
+	s := os.Getenv(constants.MinikubeRootlessEnv)
+	if s == "" {
+		return false
+	}
+	v, err := strconv.ParseBool(s)
+	if err != nil {
+		klog.ErrorS(err, "failed to parse", "env", constants.MinikubeRootlessEnv, "value", s)
+		return false
+	}
+	return v
+}
+
+type prefixCmdOptions struct {
+	sudoFlags []string
+}
+
+type PrefixCmdOption func(*prefixCmdOptions)
+
+func WithSudoFlags(ss ...string) PrefixCmdOption {
+	return func(o *prefixCmdOptions) {
+		o.sudoFlags = ss
+	}
+}
+
 // PrefixCmd adds any needed prefix (such as sudo) to the command
-func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
-	if cmd.Args[0] == Podman && runtime.GOOS == "linux" { // want sudo when not running podman-remote
-		cmdWithSudo := exec.Command("sudo", append([]string{"-n"}, cmd.Args...)...)
+func PrefixCmd(cmd *exec.Cmd, opt ...PrefixCmdOption) *exec.Cmd {
+	var o prefixCmdOptions
+	for _, f := range opt {
+		f(&o)
+	}
+	if cmd.Args[0] == Podman && runtime.GOOS == "linux" && !IsRootlessForced() { // want sudo when not running podman-remote
+		cmdWithSudo := exec.Command("sudo", append(append([]string{"-n"}, o.sudoFlags...), cmd.Args...)...)
 		cmdWithSudo.Env = cmd.Env
 		cmdWithSudo.Dir = cmd.Dir
 		cmdWithSudo.Stdin = cmd.Stdin
@@ -82,6 +115,22 @@ func PrefixCmd(cmd *exec.Cmd) *exec.Cmd {
 		cmd = cmdWithSudo
 	}
 	return cmd
+}
+
+func suppressDockerMessage() bool {
+	envKey := "MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE"
+	env := os.Getenv(envKey)
+	if env == "" {
+		return false
+	}
+	suppress, err := strconv.ParseBool(env)
+	if err != nil {
+		msg := fmt.Sprintf("failed to parse bool from the %s env, defaulting to 'false'; received: %s: %v", envKey, env, err)
+		klog.Warning(msg)
+		out.Styled(style.Warning, msg)
+		return false
+	}
+	return suppress
 }
 
 // runCmd runs a command exec.Command against docker daemon or podman
@@ -135,7 +184,7 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)
-	if warn {
+	if warn && !out.JSON && !suppressDockerMessage() {
 		if elapsed > warnTime {
 			warnLock.Lock()
 			_, ok := alreadyWarnedCmds[rr.Command()]

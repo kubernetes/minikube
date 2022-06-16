@@ -142,12 +142,12 @@ func MachinePath(machine string, miniHome ...string) string {
 func SanitizeCacheDir(image string) string {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
-		s := image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		s := image[:2] + strings.ReplaceAll(image[2:], ":", "_")
 		klog.Infof("windows sanitize: %s -> %s", image, s)
 		return s
 	}
 	// ParseReference cannot have a : in the directory path
-	return strings.Replace(image, ":", "_", -1)
+	return strings.ReplaceAll(image, ":", "_")
 }
 
 func hasWindowsDriveLetter(s string) bool {
@@ -197,7 +197,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 		return "", err
 	}
 
-	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+	outs := strings.Split(strings.ReplaceAll(string(stdout), "\r", ""), "\n")
 
 	var vname string
 	for _, l := range outs {

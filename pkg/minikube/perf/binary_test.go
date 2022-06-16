@@ -31,7 +31,7 @@ func TestBinaryName(t *testing.T) {
 			binary:   Binary{path: "foo", pr: 0},
 		},
 		{
-			expected: "Minikube (PR 1)",
+			expected: "minikube (PR 1)",
 			binary:   Binary{path: "bar", pr: 1},
 		},
 	}

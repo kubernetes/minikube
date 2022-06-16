@@ -17,7 +17,6 @@ limitations under the License.
 package tunnel
 
 import (
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -246,7 +245,7 @@ func TestTunnelTakeoverFromNonRunningProcess(t *testing.T) {
 
 func tmpFile(t *testing.T) string {
 	t.Helper()
-	f, err := ioutil.TempFile(os.TempDir(), "reg_")
+	f, err := os.CreateTemp(os.TempDir(), "reg_")
 	f.Close()
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)
@@ -255,7 +254,7 @@ func tmpFile(t *testing.T) string {
 }
 
 func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) {
-	f, err := ioutil.TempFile(os.TempDir(), "reg_")
+	f, err := os.CreateTemp(os.TempDir(), "reg_")
 	f.Close()
 	if err != nil {
 		t.Errorf("failed to create temp file %s", err)

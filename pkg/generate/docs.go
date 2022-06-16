@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -32,7 +31,7 @@ import (
 )
 
 // Docs generates docs for minikube command
-func Docs(root *cobra.Command, path string) error {
+func Docs(root *cobra.Command, path string, testPath string, codePath string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
 		if c.Hidden {
@@ -47,7 +46,12 @@ func Docs(root *cobra.Command, path string) error {
 			return errors.Wrapf(err, "saving doc for %s", c.Name())
 		}
 	}
-	return nil
+	err := TestDocs(testPath, "test/integration")
+	if err != nil {
+		return errors.Wrap(err, "failed to generate test docs")
+	}
+
+	return ErrorCodes(codePath, []string{"pkg/minikube/reason/reason.go", "pkg/minikube/reason/exitcodes.go"})
 }
 
 // DocForCommand returns the specific doc for that command
@@ -55,6 +59,9 @@ func DocForCommand(command *cobra.Command) (string, error) {
 	buf := bytes.NewBuffer([]byte{})
 	if err := generateTitle(command, buf); err != nil {
 		return "", errors.Wrap(err, "generating title")
+	}
+	if err := rewriteLogFile(); err != nil {
+		return "", errors.Wrap(err, "rewriting log_file")
 	}
 	if err := rewriteFlags(command); err != nil {
 		return "", errors.Wrap(err, "rewriting flags")
@@ -91,6 +98,11 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string)
 
 	if cmd.Runnable() {
 		buf.WriteString(fmt.Sprintf("```shell\n%s\n```\n\n", cmd.UseLine()))
+	}
+
+	if len(cmd.Aliases) > 0 {
+		buf.WriteString("### Aliases\n\n")
+		buf.WriteString(fmt.Sprintf("%s\n\n", cmd.Aliases))
 	}
 
 	if len(cmd.Example) > 0 {
@@ -153,5 +165,5 @@ func saveDocForCommand(command *cobra.Command, contents []byte, path string) err
 	if err := os.Remove(fp); err != nil {
 		klog.Warningf("error removing %s", fp)
 	}
-	return ioutil.WriteFile(fp, contents, 0o644)
+	return os.WriteFile(fp, contents, 0o644)
 }

@@ -19,6 +19,7 @@ metadata:
   namespace: kube-system
   labels:
     app: csi-hostpath-attacher
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   selector:
     app: csi-hostpath-attacher
@@ -42,6 +43,7 @@ spec:
     metadata:
       labels:
         app: csi-hostpath-attacher
+        addonmanager.kubernetes.io/mode: Reconcile
         kubernetes.io/minikube-addons: csi-hostpath-driver
     spec:
       affinity:

@@ -1,4 +1,4 @@
-// +build darwin,integration
+//go:build darwin && integration
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.

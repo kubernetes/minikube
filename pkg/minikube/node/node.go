@@ -17,23 +17,19 @@ limitations under the License.
 package node
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
-)
-
-// TODO: Share these between cluster and node packages
-const (
-	mountString = "mount-string"
-	createMount = "mount"
 )
 
 // Add adds a new node config to an existing cluster.
@@ -80,7 +76,7 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 
 // drainNode drains then deletes (removes) node from cluster.
 func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, index, err := Retrieve(cc, name)
+	n, _, err := Retrieve(cc, name)
 	if err != nil {
 		return n, errors.Wrap(err, "retrieve")
 	}
@@ -106,7 +102,7 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	// ref: https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#drain
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m,
-		"--force", "--grace-period=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data")
+		"--force", "--grace-period=1", "--skip-wait-for-delete-timeout=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data", "--delete-local-data")
 	if _, err := runner.RunCmd(cmd); err != nil {
 		klog.Warningf("unable to drain node %q: %v", name, err)
 	} else {
@@ -119,13 +115,16 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	err = client.CoreV1().Nodes().Delete(m, nil)
+	// set 'GracePeriodSeconds: 0' option to delete node immediately (ie, w/o waiting)
+	var grace *int64
+	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{GracePeriodSeconds: grace})
 	if err != nil {
+		klog.Errorf("unable to delete node %q: %v", name, err)
 		return n, err
 	}
+	klog.Infof("successfully deleted node %q", name)
 
-	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
+	return n, nil
 }
 
 // Delete calls drainNode to remove node from cluster and deletes the host.
@@ -146,7 +145,13 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 		return n, err
 	}
 
-	return n, nil
+	_, index, err := Retrieve(cc, name)
+	if err != nil {
+		return n, errors.Wrap(err, "retrieve")
+	}
+
+	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
+	return n, config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster

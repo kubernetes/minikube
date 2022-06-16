@@ -17,6 +17,7 @@ limitations under the License.
 package tunnel
 
 import (
+	"context"
 	"testing"
 
 	"reflect"
@@ -50,7 +51,7 @@ type stubServices struct {
 	servicesList *core.ServiceList
 }
 
-func (s *stubServices) List(opts meta.ListOptions) (*core.ServiceList, error) {
+func (s *stubServices) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	return s.servicesList, nil
 }
 

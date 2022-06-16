@@ -15,40 +15,47 @@
 # limitations under the License.
 
 
-# This script creates several Github statuses using the Github API: https://developer.github.com/v3/repos/statuses/
-# This is intended to run before the tests start, so the icons show up on the Github PR and block submit until
+# This script creates several GitHub statuses using the GitHub API: https://developer.github.com/v3/repos/statuses/
+# This is intended to run before the tests start, so the icons show up on the GitHub PR and block submit until
 # the tests finish.
 
 # The script expects the following env variables:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
-# access_token: The Github API access token. Injected by the Jenkins credential provider.
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 set -eux -o pipefail
 
-if [ "${ghprbPullId}" == "master" ]; then
-  echo "not setting github status for continuous builds"
-  exit 0
-fi
-
 jobs=(
-     # 'HyperKit_Functional_macOS'
+     'Hyperkit_macOS'
      'Hyper-V_Windows'
-     'VirtualBox_Linux'
+     # 'VirtualBox_Linux'
      # 'VirtualBox_macOS'
-     'VirtualBox_Windows'
+     # 'VirtualBox_Windows'
      # 'KVM-GPU_Linux' - Disabled
      'KVM_Linux'
      'KVM_Linux_containerd'
      'KVM_Linux_crio'
      'none_Linux'
      'Docker_Linux'
+     'Docker_Linux_docker_arm64'
+     'Docker_Linux_containerd_arm64'
+     'Docker_Linux_crio_arm64'
      'Docker_Linux_containerd'
      'Docker_Linux_crio'
-     # 'Docker_macOS'
+     'Docker_macOS'
      'Docker_Windows'
      # 'Podman_Linux'
+     'Docker_Cloud_Shell'
 )
+
+STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/started_environments.txt"
+printf "%s\n" "${jobs[@]}" | gsutil cp - "${STARTED_LIST_REMOTE}"
+
+if [ "${ghprbPullId}" == "master" ]; then
+  echo "not setting github status for continuous builds"
+  exit 0
+fi
 
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
@@ -65,8 +72,8 @@ function retry_github_status() {
 
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
-    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L  -u minikube-bot:$token \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}" \
       -H "Content-Type: application/json" \
       -X POST \
       -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
@@ -84,9 +91,7 @@ function retry_github_status() {
   done
 }
 
-SHORT_COMMIT=${ghprbActualCommit:0:7}
 for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
-  "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
+  "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/${j}.pending"
 done
-

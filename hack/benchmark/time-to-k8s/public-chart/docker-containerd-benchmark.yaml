@@ -1,0 +1,4 @@
+testcases:
+  minikube:
+    setup: minikube start --driver=docker --container-runtime=containerd --memory=max --cpus=max
+    teardown: minikube delete

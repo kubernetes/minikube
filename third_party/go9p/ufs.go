@@ -264,7 +264,7 @@ func (*Ufs) Create(req *SrvReq) {
 		e = os.Symlink(tc.Ext, path)
 
 	case tc.Perm&DMLINK != 0:
-		n, e := strconv.ParseUint(tc.Ext, 10, 0)
+		n, e := strconv.ParseUint(tc.Ext, 10, 32)
 		if e != nil {
 			break
 		}
@@ -467,7 +467,7 @@ func lookup(uid string, group bool) (uint32, *Error) {
 	if group {
 		conv = usr.Gid
 	}
-	u, e := strconv.Atoi(conv)
+	u, e := strconv.ParseUint(conv, 10, 32)
 	if e != nil {
 		return NOUID, toError(e)
 	}

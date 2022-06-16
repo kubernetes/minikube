@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 type buffFd struct {
@@ -86,7 +87,7 @@ func TestDisplayProblem(t *testing.T) {
 	}
 }
 
-func TestDisplayJSON(t *testing.T) {
+func TestDisplayProblemJSON(t *testing.T) {
 	defer SetJSON(false)
 	SetJSON(true)
 
@@ -96,7 +97,6 @@ func TestDisplayJSON(t *testing.T) {
 	}{
 		{
 			k: &reason.Kind{
-
 				ID:       "BUG",
 				ExitCode: 4,
 				Advice:   "fix me!",
@@ -117,12 +117,10 @@ func TestDisplayJSON(t *testing.T) {
 				return "random-id"
 			}
 
-			JSON = true
 			Error(*tc.k, "my error")
-			actual := buf.String()
-			if actual != tc.expected {
-				t.Fatalf("expected didn't match actual:\nExpected:\n%v\n\nActual:\n%v", tc.expected, actual)
-			}
+			actual := buf.Bytes()
+
+			tests.CompareJSON(t, actual, []byte(tc.expected))
 		})
 	}
 }

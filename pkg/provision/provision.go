@@ -106,8 +106,9 @@ func configureAuth(p miniProvisioner) error {
 		return err
 	}
 
+	hosts := authOptions.ServerCertSANs
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, hostIP, "localhost", "127.0.0.1", "minikube", machineName)
+	hosts = append(hosts, ip, hostIP, "localhost", "127.0.0.1", "minikube", machineName)
 	klog.Infof("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
@@ -153,6 +154,12 @@ func copyHostCerts(authOptions auth.Options) error {
 		if err != nil {
 			return errors.Wrapf(err, "open cert file: %s", src)
 		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
+
 		if err := execRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file: %+v", f)
 		}
@@ -187,6 +194,12 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		if err != nil {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
+
 		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
@@ -242,7 +255,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 		return err
 	}
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 

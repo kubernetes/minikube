@@ -17,6 +17,7 @@
 set -eu -o pipefail
 
 TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
+CI="${CI:-false}" # if env variable not set don't run CI tests
 exitcode=0
 
 if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
@@ -25,7 +26,14 @@ then
     make -s lint-ci && echo ok || ((exitcode += 4))
     echo "= go mod ================================================================"
     go mod download 2>&1 | grep -v "go: finding" || true
-    go mod tidy -v && echo ok || ((exitcode += 2))
+    if [[ "$CI" = "true" ]]
+    then
+        go mod tidy -v && git diff --quiet go.* && echo ok || (((exitcode += 2)) && echo ERROR: Please run go mod tidy)
+        echo "= generate docs ========================================================="
+        make generate-docs > /dev/null 2>&1 && git diff --quiet site && echo ok || (((exitcode += 3)) && echo ERROR: Please run make generate-docs)
+    else
+        go mod tidy -v && echo ok || ((exitcode += 2))
+    fi
 fi
 
 
@@ -37,7 +45,7 @@ then
     readonly BDIR="${ROOT_DIR}/hack/boilerplate"
     pushd . >/dev/null
     cd ${BDIR}
-    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
+    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/|hack/benchmark/time-to-k8s/time-to-k8s-repo' || true)"
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"

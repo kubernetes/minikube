@@ -18,7 +18,6 @@ package driver
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -67,6 +66,8 @@ func TestMachineType(t *testing.T) {
 		None:         "bare metal machine",
 		SSH:          "bare metal machine",
 		KVM2:         "VM",
+		QEMU2:        "VM",
+		QEMU:         "VM",
 		VirtualBox:   "VM",
 		HyperKit:     "VM",
 		VMware:       "VM",
@@ -91,7 +92,7 @@ func TestFlagDefaults(t *testing.T) {
 		t.Errorf("defaults mismatch (-want +got):\n%s", diff)
 	}
 
-	tf, err := ioutil.TempFile("", "resolv.conf")
+	tf, err := os.CreateTemp("", "resolv.conf")
 	if err != nil {
 		t.Fatalf("tempfile: %v", err)
 	}
@@ -240,6 +241,22 @@ func TestIndexFromMachineName(t *testing.T) {
 			Name:        "michivious-user",
 			MachineName: "michivious-user-m02-m03",
 			Want:        3},
+		{
+			Name:        "third-node",
+			MachineName: "minikube-m3",
+			Want:        3},
+		{
+			Name:        "agent-node",
+			MachineName: "minikube-m007",
+			Want:        7},
+		{
+			Name:        "byte-0",
+			MachineName: "offline-docker-20210314040449-6655",
+			Want:        1},
+		{
+			Name:        "byte-255",
+			MachineName: "offline-docker-20210314040449-6654",
+			Want:        1},
 	}
 
 	for _, tc := range testCases {
@@ -299,6 +316,70 @@ func TestIndexFromMachineNameClusterConfig(t *testing.T) {
 				},
 			},
 			Want: 2,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "p3",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+					{
+						Name:              "m02",
+						IP:                "172.17.0.4",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+					{
+						Name:              "m03",
+						IP:                "172.17.0.5",
+						Port:              0,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      false,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 3,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6654",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 1,
+		},
+
+		{
+			ClusterConfig: config.ClusterConfig{Name: "offline-docker-20210314040449-6655",
+				Nodes: []config.Node{
+					{
+						Name:              "",
+						IP:                "172.17.0.3",
+						Port:              8443,
+						KubernetesVersion: "v1.19.2",
+						ControlPlane:      true,
+						Worker:            true,
+					},
+				},
+			},
+			Want: 1,
 		},
 	}
 

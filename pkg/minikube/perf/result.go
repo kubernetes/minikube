@@ -16,6 +16,10 @@ limitations under the License.
 
 package perf
 
+type resultWrapper struct {
+	results map[string][]*result
+}
+
 type result struct {
 	logs      []string
 	timedLogs map[string]float64

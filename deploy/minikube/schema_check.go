@@ -17,39 +17,42 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"os"
-	"path/filepath"
 
-	"github.com/xeipuuv/gojsonschema"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 )
 
 func main() {
 	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases.json")
+	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases-beta.json")
+	validateSchema("deploy/minikube/schema-v2.json", "deploy/minikube/releases-v2.json")
+	validateSchema("deploy/minikube/schema-v2.json", "deploy/minikube/releases-beta-v2.json")
 	os.Exit(0)
 }
 
-func validateSchema(schemaPathString string, docPathString string) {
-	schemaPath, _ := filepath.Abs(schemaPathString)
-	schemaSrc := "file://" + schemaPath
-	schemaLoader := gojsonschema.NewReferenceLoader(schemaSrc)
-
-	docPath, _ := filepath.Abs(docPathString)
-	docSrc := "file://" + docPath
-	docLoader := gojsonschema.NewReferenceLoader(docSrc)
-
-	result, err := gojsonschema.Validate(schemaLoader, docLoader)
+func validateSchema(schemaPathString, docPathString string) {
+	sch, err := jsonschema.Compile(schemaPathString)
 	if err != nil {
-		panic(err.Error())
+		log.Fatal(err)
 	}
 
-	if result.Valid() {
-		fmt.Printf("The document %s is valid\n", docPathString)
-	} else {
-		fmt.Printf("The document %s is not valid. see errors :\n", docPathString)
-		for _, desc := range result.Errors() {
-			fmt.Printf("- %s\n", desc)
-		}
-		os.Exit(1)
+	data, err := os.ReadFile(docPathString)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	var v interface{}
+	if err := json.Unmarshal(data, &v); err != nil {
+		log.Fatal(err)
+	}
+
+	if err = sch.Validate(v); err != nil {
+		fmt.Printf("The document %s is invalid, see errors:\n%#v", docPathString, err)
+		return
+	}
+
+	fmt.Printf("The document %s is valid\n", docPathString)
 }

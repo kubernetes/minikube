@@ -1,4 +1,4 @@
-// +build linux
+//go:build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -20,96 +20,13 @@ package kvm
 
 import (
 	"bytes"
-	"crypto/rand"
 	"fmt"
-	"net"
 	"text/template"
 
-	libvirt "github.com/libvirt/libvirt-go"
+	"github.com/docker/machine/libmachine/log"
 	"github.com/pkg/errors"
+	"libvirt.org/go/libvirt"
 )
-
-const domainTmpl = `
-<domain type='kvm'>
-  <name>{{.MachineName}}</name>
-  <memory unit='MiB'>{{.Memory}}</memory>
-  <vcpu>{{.CPU}}</vcpu>
-  <features>
-    <acpi/>
-    <apic/>
-    <pae/>
-    {{if .Hidden}}
-    <kvm>
-      <hidden state='on'/>
-    </kvm>
-    {{end}}
-  </features>
-  <cpu mode='host-passthrough'>
-  {{if gt .NUMANodeCount 1}}
-  {{.NUMANodeXML}}
-  {{end}}
-  </cpu>
-  <os>
-    <type>hvm</type>
-    <boot dev='cdrom'/>
-    <boot dev='hd'/>
-    <bootmenu enable='no'/>
-  </os>
-  <devices>
-    <disk type='file' device='cdrom'>
-      <source file='{{.ISO}}'/>
-      <target dev='hdc' bus='scsi'/>
-      <readonly/>
-    </disk>
-    <disk type='file' device='disk'>
-      <driver name='qemu' type='raw' cache='default' io='threads' />
-      <source file='{{.DiskPath}}'/>
-      <target dev='hda' bus='virtio'/>
-    </disk>
-    <interface type='network'>
-      <source network='{{.Network}}'/>
-      <mac address='{{.MAC}}'/>
-      <model type='virtio'/>
-    </interface>
-    <interface type='network'>
-      <source network='{{.PrivateNetwork}}'/>
-      <mac address='{{.PrivateMAC}}'/>
-      <model type='virtio'/>
-    </interface>
-    <serial type='pty'>
-      <target port='0'/>
-    </serial>
-    <console type='pty'>
-      <target type='serial' port='0'/>
-    </console>
-    <rng model='virtio'>
-      <backend model='random'>/dev/random</backend>
-    </rng>
-    {{if .GPU}}
-    {{.DevicesXML}}
-    {{end}}
-  </devices>
-</domain>
-`
-
-func randomMAC() (net.HardwareAddr, error) {
-	buf := make([]byte, 6)
-	_, err := rand.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-	// We unset the first and second least significant bits (LSB) of the MAC
-	//
-	// The LSB of the first octet
-	// 0 for unicast
-	// 1 for multicast
-	//
-	// The second LSB of the first octet
-	// 0 for universally administered addresses
-	// 1 for locally administered addresses
-	buf[0] &= 0xfc
-	return buf, nil
-}
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	conn, err := getConnection(d.ConnectionURI)
@@ -128,7 +45,7 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 func getConnection(connectionURI string) (*libvirt.Connect, error) {
 	conn, err := libvirt.NewConnect(connectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "error connecting to libvirt socket.")
+		return nil, errors.Wrap(err, "connecting to libvirt socket")
 	}
 
 	return conn, nil
@@ -146,22 +63,6 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 }
 
 func (d *Driver) createDomain() (*libvirt.Domain, error) {
-	// create random MAC addresses first for our NICs
-	if d.MAC == "" {
-		mac, err := randomMAC()
-		if err != nil {
-			return nil, errors.Wrap(err, "generating mac address")
-		}
-		d.MAC = mac.String()
-	}
-
-	if d.PrivateMAC == "" {
-		mac, err := randomMAC()
-		if err != nil {
-			return nil, errors.Wrap(err, "generating mac address")
-		}
-		d.PrivateMAC = mac.String()
-	}
 	// create the XML for the domain using our domainTmpl template
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
 	var domainXML bytes.Buffer
@@ -174,11 +75,24 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	}
 	defer conn.Close()
 
+	log.Infof("define libvirt domain using xml: %v", domainXML.String())
 	// define the domain in libvirt using the generated XML
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "error defining domain xml: %s", domainXML.String())
 	}
+
+	// save MAC address
+	dmac, err := macFromXML(conn, d.MachineName, d.Network)
+	if err != nil {
+		return nil, fmt.Errorf("failed saving MAC address: %w", err)
+	}
+	d.MAC = dmac
+	pmac, err := macFromXML(conn, d.MachineName, d.PrivateNetwork)
+	if err != nil {
+		return nil, fmt.Errorf("failed saving MAC address: %w", err)
+	}
+	d.PrivateMAC = pmac
 
 	return dom, nil
 }

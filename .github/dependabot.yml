@@ -5,3 +5,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    labels:
+      - "ok-to-test"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+        interval: "weekly"
+    labels:
+      - "ok-to-test"

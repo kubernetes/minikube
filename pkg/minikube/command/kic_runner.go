@@ -20,21 +20,20 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // kicRunner runs commands inside a container
@@ -140,6 +139,10 @@ func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
 }
 
+func (k *kicRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, fmt.Errorf("kicRunner does not support ReadableFile - you could be the first to add it")
+}
+
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
@@ -162,7 +165,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
-	if err != nil {
+	if err != nil || perms > 07777 {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
@@ -187,13 +190,12 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 	klog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
 
-	isSnap := isSnapBinary()
-	tmpFolder, err := tempDirectory(isSnap)
+	tmpFolder, err := tempDirectory(detect.MinikubeInstalledViaSnap(), detect.DockerInstalledViaSnap())
 	if err != nil {
 		return errors.Wrap(err, "determining temp directory")
 	}
 
-	tf, err := ioutil.TempFile(tmpFolder, "tmpf-memory-asset")
+	tf, err := os.CreateTemp(tmpFolder, "tmpf-memory-asset")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
 	}
@@ -205,10 +207,19 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	return k.copy(tf.Name(), dst)
 }
 
+// CopyFrom copies a file
+func (k *kicRunner) CopyFrom(f assets.CopyableFile) error {
+	src := f.GetTargetPath()
+	dst := f.GetSourcePath()
+
+	klog.Infof("%s (direct): %s --> %s", k.ociBin, src, dst)
+	return k.copyFrom(src, dst)
+}
+
 // tempDirectory returns the directory to use as the temp directory
 // or an empty string if it should use the os default temp directory.
-func tempDirectory(isSnap bool) (string, error) {
-	if !isSnap {
+func tempDirectory(isMinikubeSnap bool, isDockerSnap bool) (string, error) {
+	if !isMinikubeSnap && !isDockerSnap {
 		return "", nil
 	}
 
@@ -222,22 +233,20 @@ func tempDirectory(isSnap bool) (string, error) {
 	return home, nil
 }
 
-// isSnapBinary returns true if the binary path includes "snap".
-func isSnapBinary() bool {
-	ex, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	exPath := filepath.Dir(ex)
-	return strings.Contains(exPath, "snap")
-}
-
 func (k *kicRunner) copy(src string, dst string) error {
 	fullDest := fmt.Sprintf("%s:%s", k.nameOrID, dst)
 	if k.ociBin == oci.Podman {
 		return copyToPodman(src, fullDest)
 	}
 	return copyToDocker(src, fullDest)
+}
+
+func (k *kicRunner) copyFrom(src string, dst string) error {
+	fullSource := fmt.Sprintf("%s:%s", k.nameOrID, src)
+	if k.ociBin == oci.Podman {
+		return copyToPodman(fullSource, dst)
+	}
+	return copyToDocker(fullSource, dst)
 }
 
 func (k *kicRunner) chmod(dst string, perm string) error {
@@ -291,7 +300,7 @@ func (k *kicRunner) Remove(f assets.CopyableFile) error {
 // isTerminal returns true if the writer w is a terminal
 func isTerminal(w io.Writer) bool {
 	if v, ok := (w).(*os.File); ok {
-		return terminal.IsTerminal(int(v.Fd()))
+		return term.IsTerminal(int(v.Fd()))
 	}
 	return false
 }

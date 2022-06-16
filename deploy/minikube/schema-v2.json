@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      },
+      "checksums": {
+        "type": "object",
+        "properties": {
+          "darwin": { "$ref": "#/$defs/sha" },
+          "linux": { "$ref": "#/$defs/sha" },
+          "windows": { "$ref": "#/$defs/sha" },
+	  "amd64": { "$ref": "#/$defs/arch" },
+	  "arm": { "$ref": "#/$defs/arch" },
+	  "arm64": { "$ref": "#/$defs/arch" },
+	  "ppc64le": { "$ref": "#/$defs/arch" },
+	  "s390x": { "$ref": "#/$defs/arch" }
+        },
+        "required": ["darwin", "linux", "windows"]
+      }
+    },
+    "required": [
+      "name"
+    ]
+  },
+  "$defs": {
+    "sha": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "arch": {
+      "type": "object",
+      "properties": {
+        "darwin": { "$ref": "#/$defs/sha" },
+	"linux": { "$ref": "#/$defs/sha" },
+	"windows": { "$ref": "#/$defs/sha" }
+      }
+    }
+  }
+}

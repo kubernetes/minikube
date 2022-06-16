@@ -64,6 +64,11 @@ spec:
             value: /usr/local/nvidia
           - name: ROOT_MOUNT_DIR
             value: /root
+          - name: NVIDIA_DRIVER_VERSION
+            value: "510.60.02"
+        # hack to not have to change https://github.com/GoogleCloudPlatform/container-engine-accelerators/blob/master/nvidia-driver-installer/minikube/entrypoint.sh
+        command: ["/bin/sh"]
+        args: ["-c", "sed -i 's|make modules_prepare|&;ln -s /root/lib/modules/${KERNEL_VERSION}/Module.symvers|' /entrypoint.sh;exec /entrypoint.sh"]
         volumeMounts:
         - name: nvidia-install-dir-host
           mountPath: /usr/local/nvidia

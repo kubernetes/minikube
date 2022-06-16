@@ -18,7 +18,6 @@ package ssh
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -110,7 +109,7 @@ func (d *Driver) PreCreateCheck() error {
 			return fmt.Errorf("SSH key does not exist: %q", d.SSHKey)
 		}
 
-		key, err := ioutil.ReadFile(d.SSHKey)
+		key, err := os.ReadFile(d.SSHKey)
 		if err != nil {
 			return err
 		}
@@ -191,7 +190,7 @@ func (d *Driver) Stop() error {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
-	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -206,10 +205,7 @@ func (d *Driver) Stop() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	if err := sysinit.New(d.exec).Restart("kubelet"); err != nil {
-		return err
-	}
-	return nil
+	return sysinit.New(d.exec).Restart("kubelet")
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -219,7 +215,7 @@ func (d *Driver) Kill() error {
 	}
 
 	// First try to gracefully stop containers
-	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err := d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -231,7 +227,7 @@ func (d *Driver) Kill() error {
 		return errors.Wrap(err, "stop")
 	}
 
-	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err = d.runtime.ListContainers(cruntime.ListContainersOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}

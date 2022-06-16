@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,7 +51,15 @@ func TestListProfiles(t *testing.T) {
 		{2, "p5_partial_config", ""},
 	}
 
+	DockerContainers = func() ([]string, error) {
+		return []string{}, nil
+	}
 	val, inv, err := ListProfiles(miniDir)
+
+	num := len(testCasesValidProfs) + len(testCasesInValidProfs)
+	if num != len(val)+len(inv) {
+		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(val)+len(inv), num, val, inv)
+	}
 
 	for _, tt := range testCasesValidProfs {
 		if val[tt.index].Name != tt.expectName {
@@ -273,12 +280,12 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		expectedName string
 	}{
 		{"old style", "p1", "192.168.64.75", 8443, "minikube"},
-		{"new style", "p2_newformat", "192.168.99.136", 8443, "m01"},
+		{"new style", "p2_newformat", "192.168.59.136", 8443, "m01"},
 	}
 
 	for _, tc := range tests {
 		// To save converted config file from old style config at ./testdata/.minikube,
-		//rather than at env(MINIKUBE_HOME) which depends on test environment
+		// rather than at env(MINIKUBE_HOME) which depends on test environment
 		originalMinikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
 		err = os.Setenv("MINIKUBE_HOME", miniDir)
 		if err != nil {
@@ -294,12 +301,12 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		originalFilePath := profileFilePath(tc.profile, miniDir)
 		tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
 
-		d, err := ioutil.ReadFile(originalFilePath)
+		d, err := os.ReadFile(originalFilePath)
 		if err != nil {
 			t.Fatalf("Failed to read config file : %s", originalFilePath)
 		}
 
-		err = ioutil.WriteFile(tempFilePath, d, 0644)
+		err = os.WriteFile(tempFilePath, d, 0644)
 		if err != nil {
 			t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
 		}
@@ -308,7 +315,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		viper.Set(ProfileName, tc.profile)
 		n, err := PrimaryControlPlane(cc)
 		if err != nil {
-			t.Fatalf("Unexpexted error getting primary control plane: %v", err)
+			t.Fatalf("Unexpected error getting primary control plane: %v", err)
 		}
 
 		if n.Name != tc.expectedName {

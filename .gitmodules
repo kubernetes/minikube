@@ -1,3 +1,6 @@
 [submodule "site/themes/docsy"]
 	path = site/themes/docsy
 	url = https://github.com/google/docsy.git
+[submodule "hack/benchmark/time-to-k8s/time-to-k8s-repo"]
+	path = hack/benchmark/time-to-k8s/time-to-k8s-repo
+	url = https://github.com/tstromberg/time-to-k8s.git

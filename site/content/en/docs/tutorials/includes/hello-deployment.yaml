@@ -22,7 +22,7 @@ spec:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
-              matchExpressions: [{ key: app, operator: In, values: [hello-from] }]
+              matchExpressions: [{ key: app, operator: In, values: [hello] }]
             topologyKey: "kubernetes.io/hostname"
       containers:
       - name: hello-from

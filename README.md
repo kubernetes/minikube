@@ -2,7 +2,7 @@
 
 [![Actions Status](https://github.com/kubernetes/minikube/workflows/build/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
-[![Github All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
+[![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
  
 
@@ -25,8 +25,9 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * [Persistent Volumes](https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/)
 * [Ingress](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
 * [Dashboard](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) - `minikube dashboard`
-* [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `start --container-runtime`
+* [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `minikube start --container-runtime`
 * [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags
+* Supports common [CI environments](https://github.com/minikube-ci/examples)
 
 As well as developer-friendly features:
 

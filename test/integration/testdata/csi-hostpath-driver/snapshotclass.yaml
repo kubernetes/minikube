@@ -1,6 +1,0 @@
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: csi-hostpath-snapclass
-driver: hostpath.csi.k8s.io #csi-hostpath
-deletionPolicy: Delete

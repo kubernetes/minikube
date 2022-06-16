@@ -117,11 +117,9 @@ func exportMinikubeStart(ctx context.Context, projectID, containerRuntime string
 func getExporter(projectID, containerRuntime string) (*stackdriver.Exporter, error) {
 	return stackdriver.NewExporter(stackdriver.Options{
 		ProjectID: projectID,
-		// MetricPrefix helps uniquely identify your metrics.
-		MetricPrefix: "minikube_start",
 		// ReportingInterval sets the frequency of reporting metrics
 		// to stackdriver backend.
-		ReportingInterval:       1 * time.Second,
+		ReportingInterval:       11 * time.Second,
 		DefaultMonitoringLabels: getLabels(containerRuntime),
 	})
 }
@@ -147,7 +145,7 @@ func getLabels(containerRuntime string) *stackdriver.Labels {
 func minikubeStartTime(ctx context.Context, projectID, minikubePath, containerRuntime string) (float64, error) {
 	defer deleteMinikube(ctx, minikubePath)
 
-	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2000", "--trace=gcp", fmt.Sprintf("--container-runtime=%s", containerRuntime))
+	cmd := exec.CommandContext(ctx, minikubePath, "start", "--driver=docker", "-p", profile, "--memory=2048", "--trace=gcp", fmt.Sprintf("--container-runtime=%s", containerRuntime))
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", pkgtrace.ProjectEnvVar, projectID))
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr

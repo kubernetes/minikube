@@ -19,7 +19,9 @@ package sysinit
 
 import (
 	"errors"
+	"fmt"
 	"os/exec"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -48,13 +50,25 @@ func (s *Systemd) Active(svc string) bool {
 
 // Disable disables a service
 func (s *Systemd) Disable(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", svc))
+	cmd := exec.Command("sudo", "systemctl", "disable", svc)
+	// See https://github.com/kubernetes/minikube/issues/11615#issuecomment-861794258
+	cmd.Env = append(cmd.Env, "SYSTEMCTL_SKIP_SYSV=1")
+	_, err := s.r.RunCmd(cmd)
 	return err
 }
 
 // DisableNow disables a service and stops it too (not waiting for next restart)
 func (s *Systemd) DisableNow(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", "--now", svc))
+	cmd := exec.Command("sudo", "systemctl", "disable", "--now", svc)
+	// See https://github.com/kubernetes/minikube/issues/11615#issuecomment-861794258
+	cmd.Env = append(cmd.Env, "SYSTEMCTL_SKIP_SYSV=1")
+	_, err := s.r.RunCmd(cmd)
+	return err
+}
+
+// Mask prevents a service from being started
+func (s *Systemd) Mask(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "mask", svc))
 	return err
 }
 
@@ -67,12 +81,18 @@ func (s *Systemd) Enable(svc string) error {
 	return err
 }
 
-// Enable enables a service and then activates it too (not waiting for next start)
+// EnableNow enables a service and then activates it too (not waiting for next start)
 func (s *Systemd) EnableNow(svc string) error {
 	if svc == "kubelet" {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", "--now", svc))
+	return err
+}
+
+// Unmask allows a service to be started
+func (s *Systemd) Unmask(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "unmask", svc))
 	return err
 }
 
@@ -111,7 +131,14 @@ func (s *Systemd) Stop(svc string) error {
 
 // ForceStop terminates a service with prejudice
 func (s *Systemd) ForceStop(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
+	rr, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(rr.Output(), fmt.Sprintf("Unit %s not loaded", svc)) {
+		// already stopped
+		return nil
+	}
 	return err
 }
 

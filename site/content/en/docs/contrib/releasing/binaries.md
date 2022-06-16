@@ -12,6 +12,11 @@ description: >
 * Two minikube repos checked out locally:
   * Your personal fork
   * Upstream  
+  
+## Update the Kubernetes version
+
+* Run `make update-kubernetes-version` from your local upstream repo copy
+* If any files are updated, create and merge a PR before moving forward  
 
 ## Build a new ISO
 
@@ -48,13 +53,6 @@ You may merge this PR at any time, or combine it with a `Makefile` update PR.
 Update the version numbers in  `Makefile`:
 
 * `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD`
-* `ISO_VERSION`:
-  - beta releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
-  - major/minor releases use: `v$(VERSION_MAJOR).$(VERSION_MINOR).0`
-  - if the ISO was updated, a patch release may use `v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)`
-* `DEB_REVISION`, `RPM_REVISION`
-  - for all major/minor releases, set to 0
-  - if updating .deb/.rpm files without a major/minor release, increment by 1
 
 {{% alert title="Warning" color="warning" %}}
 Merge this PR only if all non-experimental integration tests pass!
@@ -68,13 +66,14 @@ sh hack/tag_release.sh 1.<minor>.<patch>
 
 ## Build the Release
 
-This step uses the git tag to publish new binaries to GCS and create a github release:
+This step uses the git tag to publish new binaries to GCS and create a GitHub release:
 
 * Navigate to the minikube "Release" jenkins job
 * Ensure that you are logged in (top right)
 * Click "▶️ Build with Parameters" (left)
 * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
-* For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
+* For `ISO_SHA256_AMD64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-amd64.iso.sha256`
+* For `ISO_SHA256_ARM64`, run: `gsutil cat gs://minikube/iso/minikube-v<version>-arm64.iso.sha256`
 * Click *Build*
 
 ## Check the release logs
@@ -87,7 +86,7 @@ After job completion, click "Console Output" to verify that the release complete
 
 The release script updates https://storage.googleapis.com/minikube/releases.json - which is used by the minikube binary to check for updates, and is live immediately.
 
-minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and Github in sync.
+minikube-bot will also send out a PR to merge this into the tree. Please merge this PR to keep GCS and GitHub in sync.
 
 ## Package managers which include minikube
 
@@ -116,4 +115,4 @@ Other places:
 
 - #minikube on Slack
 - minikube-dev, minikube-users mailing list
-- Twitter (optional!)
+- Twitter (this is now automated with the @minikube_dev account)

@@ -18,8 +18,8 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
@@ -217,7 +217,7 @@ var endpointMap = map[string]*core.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string, _ meta.GetOptions) (*core.Endpoints, error) {
+func (e MockEndpointsInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -235,7 +235,7 @@ type MockSecretInterface struct {
 	SecretsList *core.SecretList
 }
 
-func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, error) {
+func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	serviceList := &core.ServiceList{
 		Items: []core.Service{},
 	}
@@ -254,7 +254,7 @@ func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, er
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string, _ meta.GetOptions) (*core.Service, error) {
+func (s MockServiceInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
@@ -364,9 +364,9 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 	}{
 		{
 			description:                     "no https for http schemed with no https option",
-			bareURLString:                   "http://192.168.99.100:30563",
+			bareURLString:                   "http://192.168.59.100:30563",
 			https:                           false,
-			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
+			expectedHTTPSFormattedURLString: "http://192.168.59.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
@@ -378,9 +378,9 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 		},
 		{
 			description:                     "https for http schemed with https option",
-			bareURLString:                   "http://192.168.99.100:30563",
+			bareURLString:                   "http://192.168.59.100:30563",
 			https:                           true,
-			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
+			expectedHTTPSFormattedURLString: "https://192.168.59.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
@@ -568,7 +568,7 @@ func TestGetCoreClient(t *testing.T) {
 	mockK8sConfig := `apiVersion: v1
 clusters:
 - cluster:
-    server: https://192.168.99.102:8443
+    server: https://192.168.59.102:8443
   name: minikube
 contexts:
 - context:
@@ -611,7 +611,7 @@ users:
 		t.Run(test.description, func(t *testing.T) {
 			mockK8sConfigByte := []byte(test.config)
 			mockK8sConfigPath := test.kubeconfigPath
-			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 			defer os.Remove(mockK8sConfigPath)
 			if err != nil {
 				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)

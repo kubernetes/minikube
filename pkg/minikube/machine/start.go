@@ -34,6 +34,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -85,14 +86,18 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 	if err != nil {
 		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
 	}
+	var h *host.Host
 	if !exists {
 		klog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
-		h, err := createHost(api, cfg, n)
+		h, err = createHost(api, cfg, n)
+	} else {
+		klog.Infoln("Skipping create...Using existing machine configuration")
+		h, err = fixHost(api, cfg, n)
+	}
+	if err != nil {
 		return h, exists, err
 	}
-	klog.Infoln("Skipping create...Using existing machine configuration")
-	h, err := fixHost(api, cfg, n)
-	return h, exists, err
+	return h, exists, ensureSyncedGuestClock(h, cfg.Driver)
 }
 
 // engineOptions returns docker engine options for the dockerd running inside minikube
@@ -233,17 +238,36 @@ func postStartValidations(h *host.Host, drvName string) {
 		return
 	}
 
+	if viper.GetBool("force") {
+		return
+	}
+
 	// make sure /var isn't full,  as pod deployments will fail if it is
 	percentageFull, err := DiskUsed(r, "/var")
 	if err != nil {
 		klog.Warningf("error getting percentage of /var that is free: %v", err)
 	}
-	if percentageFull >= 99 {
-		exit.Message(kind, `{{.n}} is out of disk space! (/var is at {{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+
+	availableGiB, err := DiskAvailable(r, "/var")
+	if err != nil {
+		klog.Warningf("error getting GiB of /var that is available: %v", err)
+	}
+	const thresholdGiB = 20
+
+	if percentageFull >= 99 && availableGiB < thresholdGiB {
+		exit.Message(
+			kind,
+			`{{.n}} is out of disk space! (/var is at {{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 
-	if percentageFull >= 85 {
-		out.WarnReason(kind, `{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity)`, out.V{"n": name, "p": percentageFull})
+	if percentageFull >= 85 && availableGiB < thresholdGiB {
+		out.WarnReason(
+			kind,
+			`{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity). You can pass '--force' to skip this check.`,
+			out.V{"n": name, "p": percentageFull},
+		)
 	}
 }
 
@@ -262,7 +286,22 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 	return strconv.Atoi(percentage)
 }
 
-// postStart are functions shared between startHost and fixHost
+// DiskAvailable returns the available capacity of dir in the VM/container in GiB
+func DiskAvailable(cr command.Runner, dir string) (int, error) {
+	if s := os.Getenv(constants.TestDiskAvailableEnv); s != "" {
+		return strconv.Atoi(s)
+	}
+	output, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("df -BG %s | awk 'NR==2{print $4}'", dir)))
+	if err != nil {
+		klog.Warningf("error running df -BG /var: %v\n%v", err, output.Output())
+		return 0, err
+	}
+	gib := strings.TrimSpace(output.Stdout.String())
+	gib = strings.Trim(gib, "G")
+	return strconv.Atoi(gib)
+}
+
+// postStartSetup are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	klog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()
@@ -359,9 +398,24 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 		return nil
 	}
 
-	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo cp /tmp/h.$$ /etc/hosts`, name, record)
-	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", script)); err != nil {
+	if _, err := c.RunCmd(addHostAliasCommand(name, record, true, "/etc/hosts")); err != nil {
 		return errors.Wrap(err, "hosts update")
 	}
 	return nil
+}
+
+func addHostAliasCommand(name string, record string, sudo bool, path string) *exec.Cmd {
+	sudoCmd := "sudo"
+	if !sudo { // for testing
+		sudoCmd = ""
+	}
+
+	script := fmt.Sprintf(
+		`{ grep -v $'\t%s$' "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
+		name,
+		path,
+		record,
+		sudoCmd,
+		path)
+	return exec.Command("/bin/bash", "-c", script)
 }

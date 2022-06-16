@@ -100,6 +100,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:      "kong",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "kubevirt",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
@@ -112,7 +117,7 @@ var Addons = []*Addon{
 	{
 		name:      "metrics-server",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
 		name:      "nvidia-driver-installer",
@@ -143,8 +148,8 @@ var Addons = []*Addon{
 		name:      "registry-aliases",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
-		//TODO - add other settings
-		//TODO check if registry addon is enabled
+		// TODO - add other settings
+		// TODO check if registry addon is enabled
 	},
 	{
 		name:      "storage-provisioner",
@@ -186,5 +191,15 @@ var Addons = []*Addon{
 		set:         SetBool,
 		validations: []setFn{IsVolumesnapshotsEnabled},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
+	},
+	{
+		name:      "portainer",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "inaccel",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 }

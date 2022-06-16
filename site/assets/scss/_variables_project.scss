@@ -23,7 +23,7 @@ $gray-800: #333 !default;
 $gray-900: #222 !default;
 $black: #000 !default;
 
-$primary: #f2771a !default;
+$primary: $mk-dark !default;
 $primary-light: $mk-light;
 $secondary: #403F4C;
 $success: #3772FF !default;
@@ -227,4 +227,17 @@ div.td-content {
 
 div.code-toolbar > .toolbar {
     top: -.3em !important;
+}
+
+.option-button {
+    border-radius: 0.2rem !important;
+    margin-right: 0.2rem;
+}
+
+.hide {
+    display: none !important;
+}
+
+.card-body-blue {
+    background: #f3f9fa;
 }

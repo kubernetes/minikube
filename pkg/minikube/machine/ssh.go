@@ -28,7 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-func getHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
+// GetHost find node's host information by name in the given cluster.
+func GetHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	machineName := config.MachineName(cc, n)
 	host, err := LoadHost(api, machineName)
 	if err != nil {
@@ -49,7 +50,7 @@ func getHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 
 // CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string, native bool) error {
-	host, err := getHost(api, cc, n)
+	host, err := GetHost(api, cc, n)
 	if err != nil {
 		return err
 	}
@@ -70,7 +71,7 @@ func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, 
 
 // GetSSHHostAddrPort returns the host address and port for ssh
 func GetSSHHostAddrPort(api libmachine.API, cc config.ClusterConfig, n config.Node) (string, int, error) {
-	host, err := getHost(api, cc, n)
+	host, err := GetHost(api, cc, n)
 	if err != nil {
 		return "", 0, err
 	}

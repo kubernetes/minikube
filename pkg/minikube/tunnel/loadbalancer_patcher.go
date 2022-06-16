@@ -17,6 +17,7 @@ limitations under the License.
 package tunnel
 
 import (
+	"context"
 	"fmt"
 
 	core "k8s.io/api/core/v1"
@@ -63,7 +64,7 @@ func (l *LoadBalancerEmulator) Cleanup() ([]string, error) {
 
 func (l *LoadBalancerEmulator) applyOnLBServices(action func(restClient rest.Interface, svc core.Service) ([]byte, error)) ([]string, error) {
 	services := l.coreV1Client.Services("")
-	serviceList, err := services.List(meta.ListOptions{})
+	serviceList, err := services.List(context.Background(), meta.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -172,5 +173,5 @@ func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *Patch)
 type defaultRequestSender struct{}
 
 func (r *defaultRequestSender) send(request *rest.Request) ([]byte, error) {
-	return request.Do().Raw()
+	return request.Do(context.Background()).Raw()
 }

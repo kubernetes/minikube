@@ -33,15 +33,13 @@ import (
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
 const cacheImageConfigKey = "cache"
 
-var (
-	all string
-)
+const allFlag = "all"
 
 // cacheCmd represents the cache command
 var cacheCmd = &cobra.Command{
 	Use:   "cache",
-	Short: "Add, delete, or push a local image into minikube",
-	Long:  "Add, delete, or push a local image into minikube",
+	Short: "Manage cache for images",
+	Long:  "Add an image into minikube as a local cache, or delete, reload the cached images",
 }
 
 // addCacheCmd represents the cache add command
@@ -52,7 +50,7 @@ var addCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		out.WarningT("\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"")
 		// Cache and load images into docker daemon
-		if err := machine.CacheAndLoadImages(args, cacheAddProfiles()); err != nil {
+		if err := machine.CacheAndLoadImages(args, cacheAddProfiles(), false); err != nil {
 			exit.Error(reason.InternalCacheLoad, "Failed to cache and load images", err)
 		}
 		// Add images to config file
@@ -63,11 +61,11 @@ var addCacheCmd = &cobra.Command{
 }
 
 func addCacheCmdFlags() {
-	addCacheCmd.Flags().Bool(all, false, "Add image to cache for all running minikube clusters")
+	addCacheCmd.Flags().Bool(allFlag, false, "Add image to cache for all running minikube clusters")
 }
 
 func cacheAddProfiles() []*config.Profile {
-	if viper.GetBool(all) {
+	if viper.GetBool(allFlag) {
 		validProfiles, _, err := config.ListProfiles() // need to load image to all profiles
 		if err != nil {
 			klog.Warningf("error listing profiles: %v", err)

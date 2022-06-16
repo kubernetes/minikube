@@ -17,6 +17,8 @@ kind: CSIDriver
 metadata:
   name: hostpath.csi.k8s.io
   namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   # Supports persistent and ephemeral inline volumes.
   volumeLifecycleModes:

@@ -2,7 +2,7 @@
 
 The *minikube enhancement process (MEP)* is a way to propose, communicate, and coordinate on new efforts for the minikube project. You can read the full details in the [MEP proposal](implemented/20190925-minikube-enhancement-process/README.md)
 
-MEP is based on a simplification of the [Kubernetes Enhancement Process](https://github.com/kubernetes/enhancements/blob/master/keps/0001-kubernetes-enhancement-proposal-process.md).
+MEP is based on a simplification of the [Kubernetes Enhancement Process](https://github.com/kubernetes/enhancements/blob/master/keps/sig-architecture/0000-kep-process/README.md).
 
 ## Workflow
 
