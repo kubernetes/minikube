@@ -43,6 +43,14 @@ var guaranteed = map[string]bool{
 // syncLocalAssets syncs files from MINIKUBE_HOME into the cluster
 func syncLocalAssets(cr command.Runner) error {
 	fs, err := localAssets()
+	defer func() {
+		for _, f := range fs {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}
+	}()
+
 	if err != nil {
 		return err
 	}

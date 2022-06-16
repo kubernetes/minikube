@@ -16,7 +16,7 @@ In production, the minikube website is served using [Netlify](https://netlify.co
 
 ## Small or cosmetic contributions
 
-Use Github's repositories and markdown editor as described by [Kubernetes's general guideline for documentation contributing](https://kubernetes.io/docs/contribute/start/#submit-a-pull-request)
+Use GitHub's repositories and markdown editor as described by [Kubernetes's general guideline for documentation contributing](https://kubernetes.io/docs/contribute/start/#submit-a-pull-request)
 
 ## Local documentation website
 

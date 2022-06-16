@@ -18,7 +18,6 @@ package driver
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -67,6 +66,8 @@ func TestMachineType(t *testing.T) {
 		None:         "bare metal machine",
 		SSH:          "bare metal machine",
 		KVM2:         "VM",
+		QEMU2:        "VM",
+		QEMU:         "VM",
 		VirtualBox:   "VM",
 		HyperKit:     "VM",
 		VMware:       "VM",
@@ -91,7 +92,7 @@ func TestFlagDefaults(t *testing.T) {
 		t.Errorf("defaults mismatch (-want +got):\n%s", diff)
 	}
 
-	tf, err := ioutil.TempFile("", "resolv.conf")
+	tf, err := os.CreateTemp("", "resolv.conf")
 	if err != nil {
 		t.Fatalf("tempfile: %v", err)
 	}

@@ -1,6 +1,6 @@
 ---
 title: "Using Multi-Node Clusters"
-linkTitle: "Using multi-node clusters"
+linkTitle: "Using Multi-Node Clusters"
 weight: 1
 date: 2019-11-24
 ---

@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 )

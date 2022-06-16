@@ -18,7 +18,7 @@ package bsutil
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -83,7 +83,7 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 // It will error if no testdata are available or in absence of testdata for newest and default minor k8s versions.
 func recentReleases(n int) ([]string, error) {
 	path := "testdata"
-	files, err := ioutil.ReadDir(path)
+	files, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("unable to list testdata directory %s: %w", path, err)
 	}
@@ -103,10 +103,10 @@ func recentReleases(n int) ([]string, error) {
 	foundDefault := false
 
 	for _, v := range versions {
-		if strings.HasPrefix(constants.NewestKubernetesVersion, v) {
+		if strings.HasPrefix(constants.NewestKubernetesVersion, v) { //nolint:gocritic // Complains "constants.NewestKubernetesVersion and v arguments order looks reversed"
 			foundNewest = true
 		}
-		if strings.HasPrefix(constants.DefaultKubernetesVersion, v) {
+		if strings.HasPrefix(constants.DefaultKubernetesVersion, v) { //nolint:gocritic // Same as above
 			foundDefault = true
 		}
 	}
@@ -123,22 +123,13 @@ func recentReleases(n int) ([]string, error) {
 }
 
 /**
-Need a separate test function to test the DNS server IP
-as v1.11 yaml file is very different compared to v1.12+.
 This test case has only 1 thing to test and that is the
 networking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	// test all testdata releases greater than v1.11
 	versions, err := recentReleases(0)
 	if err != nil {
 		t.Errorf("versions: %v", err)
-	}
-	for i, v := range versions {
-		if semver.Compare(v, "v1.11") <= 0 {
-			versions = versions[0:i]
-			break
-		}
 	}
 	fcr := command.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
@@ -186,7 +177,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
+				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
@@ -279,7 +270,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
+				expected, err := os.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}

@@ -7,7 +7,7 @@ weight: 2
 
 ## Prerequisites
 
-* A recent Go distribution (>=1.12)
+* A recent Go distribution (>=1.16)
 * If you are on Windows, you'll need Docker to be installed.
 * 4GB of RAM
 

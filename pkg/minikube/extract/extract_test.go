@@ -18,7 +18,7 @@ package extract
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,24 +32,15 @@ func TestExtract(t *testing.T) {
 	// The function we care about
 	functions := []string{"extract.PrintToScreen"}
 
-	tempdir, err := ioutil.TempDir("", "temptestdata")
-	if err != nil {
-		t.Fatalf("Creating temp dir: %v", err)
-	}
-	defer func() { // clean up tempdir
-		err := os.RemoveAll(tempdir)
-		if err != nil {
-			t.Errorf("failed to clean up temp folder  %q", tempdir)
-		}
-	}()
+	tempdir := t.TempDir()
 
-	src, err := ioutil.ReadFile("testdata/test.json")
+	src, err := os.ReadFile("testdata/test.json")
 	if err != nil {
 		t.Fatalf("Reading json file: %v", err)
 	}
 
 	tempfile := filepath.Join(tempdir, "tmpdata.json")
-	err = ioutil.WriteFile(tempfile, src, 0666)
+	err = os.WriteFile(tempfile, src, 0666)
 	if err != nil {
 		t.Fatalf("Writing temp json file: %v", err)
 	}
@@ -67,7 +58,7 @@ func TestExtract(t *testing.T) {
 		t.Fatalf("Error translating strings: %v", err)
 	}
 
-	f, err := ioutil.ReadFile(tempfile)
+	f, err := os.ReadFile(tempfile)
 	if err != nil {
 		t.Fatalf("Reading resulting json file: %v", err)
 	}
@@ -83,4 +74,13 @@ func TestExtract(t *testing.T) {
 		t.Fatalf("Translation JSON not equal: expected %v, got %v", expected, got)
 	}
 
+}
+
+func TestExtractShouldReturnErrorOnFunctionWithoutPackage(t *testing.T) {
+	expected := errors.New("Initializing: invalid function string missing_package. Needs package name as well")
+	funcs := []string{"missing_package"}
+	err := TranslatableStrings([]string{}, funcs, "")
+	if err == nil || err.Error() != expected.Error() {
+		t.Fatalf("expected %v, got %v", expected, err)
+	}
 }

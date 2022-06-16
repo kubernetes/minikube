@@ -24,13 +24,13 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.20-1618262794-11055"
+	Version = "v0.0.31-1655167405-14337"
 	// SHA of the kic base image
-	baseImageSHA = "bd5383644dd35f84afaba199cf16aac1067c462d5e8ef96fa2c1183b3dee856c"
+	baseImageSHA = "007ee1d2e27a61d87fd05c11b41a5956577f975ef7440d0283f28fa9c5dc4f26"
 	// The name of the GCR kicbase repository
 	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
 	// The name of the Dockerhub kicbase repository
-	dockerhubRepo = "kicbase/build"
+	dockerhubRepo = "docker.io/kicbase/build"
 )
 
 var (
@@ -42,6 +42,9 @@ var (
 		// the fallback of BaseImage in case gcr.io is not available. stored in docker hub
 		// same image is push to https://github.com/kicbase/stable
 		fmt.Sprintf("%s:%s@sha256:%s", dockerhubRepo, Version, baseImageSHA),
+		// try without sha because #11068
+		fmt.Sprintf("%s:%s", gcrRepo, Version),
+		fmt.Sprintf("%s:%s", dockerhubRepo, Version),
 	}
 )
 
@@ -61,6 +64,7 @@ type Config struct {
 	KubernetesVersion string            // Kubernetes version to install
 	ContainerRuntime  string            // container runtime kic is running
 	Network           string            //  network to run with kic
+	Subnet            string            // subnet to be used on kic cluster
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress     string            // IP Address to listen to
 }

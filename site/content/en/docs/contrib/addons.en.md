@@ -47,40 +47,49 @@ To make the addon appear in `minikube addons list`, add it to `pkg/addons/config
   },
 ```
 
+Next, add all required files using `//go:embed` directives to a new embed.FS variable in `deploy/addons/assets.go`. Here is the entry used by the `csi-hostpath-driver` addon:
+
+```go
+	// CsiHostpathDriverAssets assets for csi-hostpath-driver addon
+	//go:embed csi-hostpath-driver/deploy/*.tmpl csi-hostpath-driver/rbac/*.tmpl
+	CsiHostpathDriverAssets embed.FS
+```
+
 Then, add into `pkg/minikube/assets/addons.go` the list of files to copy into the cluster, including manifests. Here is the entry used by the `registry` addon:
 
 ```go
   "registry": NewAddon([]*BinAsset{
-    MustBinAsset(
-      "deploy/addons/registry/registry-rc.yaml.tmpl",
+    MustBinAsset(addons.RegistryAssets,
+      "registry/registry-rc.yaml.tmpl",
       vmpath.GuestAddonsDir,
       "registry-rc.yaml",
       "0640",
       false),
-    MustBinAsset(
-      "deploy/addons/registry/registry-svc.yaml.tmpl",
+    MustBinAsset(addons.RegistryAssets,
+      "registry/registry-svc.yaml.tmpl",
       vmpath.GuestAddonsDir,
       "registry-svc.yaml",
       "0640",
       false),
-    MustBinAsset(
-      "deploy/addons/registry/registry-proxy.yaml.tmpl",
+    MustBinAsset(addons.RegistryAssets,
+      "registry/registry-proxy.yaml.tmpl",
       vmpath.GuestAddonsDir,
       "registry-proxy.yaml",
       "0640",
       false),
-  }, false, "registry"),
+  }, false, "registry", "google"),
 ```
 
 The `MustBinAsset` arguments are:
 
+* asset variable (typically present in `deploy/addons/assets.go`)
 * source filename
 * destination directory (typically `vmpath.GuestAddonsDir`)
 * destination filename
 * permissions (typically `0640`)
 * boolean value representing if template substitution is required (often `false`)
 
-The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`.
+The boolean value on the last line is whether the addon should be enabled by default. This should always be `false`. In addition, following the addon name on the last line is the maintainer field. This is meant to inform users about the controlling party of an addon's images. In the case above, the maintainer is Google, since the registry addon uses images that Google controls. When creating a new addon, the source of the images should be contacted and requested whether they are willing to be the point of contact for this addon before being put. If the source does not accept the responsibility, leaving the maintainer field empty is acceptable.
 
 To see other examples, see the [addons commit history](https://github.com/kubernetes/minikube/commits/master/deploy/addons) for other recent examples.
 

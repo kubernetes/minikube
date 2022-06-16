@@ -1,5 +1,4 @@
 config BR2_PACKAGE_CNI
 	bool "cni"
 	default y
-	depends on BR2_x86_64
 	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS

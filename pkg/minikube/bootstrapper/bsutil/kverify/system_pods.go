@@ -20,6 +20,7 @@ package kverify
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -28,13 +29,13 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -150,7 +151,7 @@ func podStatusMsg(pod core.Pod) string {
 func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
 	problems := logs.FindProblems(r, bs, cfg, cr)
 	if len(problems) > 0 {
-		logs.OutputProblems(problems, 5)
+		logs.OutputProblems(problems, 5, os.Stderr)
 		time.Sleep(kconst.APICallRetryInterval * 15)
 	}
 }

@@ -222,13 +222,9 @@ func TestExcludeIP(t *testing.T) {
 func TestUpdateTransport(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
 		rc := rest.Config{}
-		c := UpdateTransport(&rc)
+		UpdateTransport(&rc)
 		tr := &http.Transport{}
 		tr.RegisterProtocol("file", http.NewFileTransport(http.Dir("/tmp")))
-		rt := c.WrapTransport(tr)
-		if _, ok := rt.(http.RoundTripper); !ok {
-			t.Fatalf("Cannot cast rt(%v) to http.RoundTripper", rt)
-		}
 	})
 	t.Run("existing", func(t *testing.T) {
 		// rest config initialized with WrapTransport function

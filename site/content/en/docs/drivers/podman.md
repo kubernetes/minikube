@@ -11,14 +11,13 @@ The podman driver is an alternative container runtime to the [Docker]({{< ref "/
 
 ## Requirements
 
-- Linux operating system
 - Install [podman](https://podman.io/getting-started/installation.html)
 
 {{% readfile file="/docs/drivers/includes/podman_usage.inc" %}}
 
 ## Known Issues
 
-- Podman requirements passwordless running of sudo. If you run into an error about sudo, do the following:
+- On Linux, Podman requires passwordless running of sudo. If you run into an error about sudo, do the following:
 
 ```shell
 $ sudo visudo
@@ -33,6 +32,15 @@ Be sure this text is *after* `#includedir /etc/sudoers.d`. To confirm it worked,
 
 ```shell
 sudo -k -n podman version
+```
+
+- On all other operating systems, make sure to create and start the virtual machine that is needed for Podman.
+
+```shell
+podman machine init --cpus 2 --memory 2048 --disk-size 20
+podman machine start
+podman system connection default podman-machine-default-root
+podman info
 ```
 
 ## Troubleshooting

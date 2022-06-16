@@ -31,16 +31,16 @@ var updateCheckCmd = &cobra.Command{
 	Long:  `Print current and latest version number`,
 	Run: func(command *cobra.Command, args []string) {
 		url := notify.GithubMinikubeReleasesURL
-		r, err := notify.GetAllVersionsFromURL(url)
+		r, err := notify.AllVersionsFromURL(url)
 		if err != nil {
 			exit.Error(reason.InetVersionUnavailable, "Unable to fetch latest version info", err)
 		}
 
-		if len(r) < 1 {
+		if len(r.Releases) < 1 {
 			exit.Message(reason.InetVersionEmpty, "Update server returned an empty list")
 		}
 
 		out.Ln("CurrentVersion: %s", version.GetVersion())
-		out.Ln("LatestVersion: %s", r[0].Name)
+		out.Ln("LatestVersion: %s", r.Releases[0].Name)
 	},
 }

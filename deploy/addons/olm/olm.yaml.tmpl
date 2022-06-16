@@ -1,4 +1,4 @@
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2021 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# ref: https://github.com/operator-framework/operator-lifecycle-manager/releases/download/v0.18.3/olm.yaml
 
 ---
 apiVersion: v1
@@ -78,11 +80,11 @@ spec:
           command:
           - /bin/olm
           args:
-          - -namespace
+          - --namespace
           - $(OPERATOR_NAMESPACE)
-          - -writeStatusName
+          - --writeStatusName
           - ""
-          image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
+          image: {{.CustomRegistries.OLM | default .ImageRepository | default .Registries.OLM}}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -99,7 +101,6 @@ spec:
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
           env:
-        
           - name: OPERATOR_NAMESPACE
             valueFrom:
               fieldRef:
@@ -110,10 +111,8 @@ spec:
             requests:
               cpu: 10m
               memory: 160Mi
-          
-      
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -143,7 +142,9 @@ spec:
           - '-namespace'
           - olm
           - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
-          image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
+          - -util-image
+          -  {{.CustomRegistries.OLM | default .ImageRepository | default .Registries.OLM}}{{.Images.OLM}}
+          image: {{.CustomRegistries.OLM | default .ImageRepository | default .Registries.OLM}}{{.Images.OLM}}
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -159,16 +160,12 @@ spec:
               path: /healthz
               port: 8080
           terminationMessagePolicy: FallbackToLogsOnError
-          env:
-          
           resources:
             requests:
               cpu: 10m
               memory: 80Mi
-          
-      
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -222,7 +219,7 @@ metadata:
   name: packageserver
   namespace: olm
   labels:
-    olm.version: 0.14.1
+    olm.version: 0.18.3
 spec:
   displayName: Package Server
   description: Represents an Operator package that is available from a given CatalogSource which will resolve to a ClusterServiceVersion.
@@ -286,6 +283,9 @@ spec:
         spec:
           strategy:
             type: RollingUpdate
+            rollingUpdate:
+              maxUnavailable: 1
+              maxSurge: 1
           replicas: 2
           selector:
             matchLabels:
@@ -297,7 +297,7 @@ spec:
             spec:
               serviceAccountName: olm-operator-serviceaccount
               nodeSelector:
-                beta.kubernetes.io/os: linux
+                kubernetes.io/os: linux
               containers:
               - name: packageserver
                 command:
@@ -307,8 +307,8 @@ spec:
                 - "5443"
                 - --global-namespace
                 - olm
-                image: {{.CustomRegistries.OLM  | default .ImageRepository | default .Registries.OLM }}{{.Images.OLM}}
-                imagePullPolicy: IfNotPresent
+                image: {{.CustomRegistries.OLM | default .ImageRepository | default .Registries.OLM}}{{.Images.OLM}}
+                imagePullPolicy: Always
                 ports:
                 - containerPort: 5443
                 livenessProbe:
@@ -326,8 +326,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 50Mi
+                securityContext:
+                  runAsUser: 1000
+                volumeMounts:
+                - name: tmpfs
+                  mountPath: /tmp
+              volumes:
+              - name: tmpfs
+                emptyDir: {}
   maturity: alpha
-  version: 0.14.1
+  version: 0.18.3
   apiservicedefinitions:
     owned:
     - group: packages.operators.coreos.com
@@ -346,6 +354,9 @@ metadata:
   namespace: olm
 spec:
   sourceType: grpc
-  image: {{.CustomRegistries.UpstreamCommunityOperators  | default .ImageRepository | default .Registries.UpstreamCommunityOperators }}{{.Images.UpstreamCommunityOperators}}
+  image: {{.CustomRegistries.UpstreamCommunityOperators | default .ImageRepository | default .Registries.UpstreamCommunityOperators}}{{.Images.UpstreamCommunityOperators}}
   displayName: Community Operators
   publisher: OperatorHub.io
+  updateStrategy:
+    registryPoll:
+      interval: 60m

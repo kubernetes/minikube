@@ -1,7 +1,7 @@
 ---
 title: "Mounting filesystems"
 date: 2017-01-05
-weight: 11
+weight: 12
 description: >
   How to mount a host directory into the VM
 aliases:
@@ -34,23 +34,23 @@ This directory may then be referenced from a Kubernetes manifest, for example:
     "name": "ubuntu"
   },
   "spec": {
-        "containers": [
+    "containers": [
+      {
+        "name": "ubuntu",
+        "image": "ubuntu:18.04",
+        "args": ["bash"],
+        "stdin": true,
+        "stdinOnce": true,
+        "tty": true,
+        "workingDir": "/host",
+        "volumeMounts": [
           {
-            "name": "ubuntu",
-            "image": "ubuntu:18.04",
-            "args": [
-              "bash"
-            ],
-            "stdin": true,
-            "stdinOnce": true,
-            "tty": true,
-            "workingDir": "/host",
-            "volumeMounts": [{
-              "mountPath": "/host",
-              "name": "host-mount"
-            }]
+            "mountPath": "/host",
+            "name": "host-mount"
           }
-        ],
+        ]
+      }
+    ],
     "volumes": [
       {
         "name": "host-mount",
@@ -74,9 +74,13 @@ Some hypervisors, have built-in host folder sharing. Driver mounts are reliable 
 | VirtualBox | Windows | C://Users | /c/Users |
 | VMware Fusion | macOS | /Users | /mnt/hgfs/Users |
 | KVM | Linux | Unsupported | |
-| HyperKit | Linux | Unsupported (see NFS mounts) | |
+| HyperKit | macOS | Supported |  |
 
 These mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
+
+HyperKit mounts can use the following flags:
+`--nfs-share=[]`: Local folders to share with Guest via NFS mounts
+`--nfs-shares-root='/nfsshares'`: Where to root the NFS Shares, defaults to /nfsshares
 
 ## File Sync
 

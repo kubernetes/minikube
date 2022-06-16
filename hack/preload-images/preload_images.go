@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"runtime/debug"
@@ -47,6 +48,8 @@ var (
 	noUpload            = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
 	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
 	limit               = flag.Int("limit", 0, "Limit the number of tarballs to generate")
+	armUpload           = flag.Bool("arm-upload", false, "Upload the arm64 preload tarballs to GCS")
+	armPreloadsDir      = flag.String("arm-preloads-dir", "artifacts", "Directory containing the arm64 preload tarballs")
 )
 
 type preloadCfg struct {
@@ -60,6 +63,13 @@ func (p preloadCfg) String() string {
 
 func main() {
 	flag.Parse()
+
+	if *armUpload {
+		if err := uploadArmTarballs(*armPreloadsDir); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	// used by pkg/minikube/download.PreloadExists()
 	viper.Set("preload", "true")
@@ -86,7 +96,8 @@ out:
 			if *limit > 0 && i >= *limit {
 				break out
 			}
-			if !download.PreloadExists(kv, cr) {
+			// Since none/mock are the only exceptions, it does not matter what driver we choose.
+			if !download.PreloadExists(kv, cr, "docker") {
 				toGenerate = append(toGenerate, preloadCfg{kv, cr})
 				i++
 				fmt.Printf("[%d] A preloaded tarball for k8s version %s - runtime %q does not exist.\n", i, kv, cr)
@@ -145,13 +156,13 @@ func makePreload(cfg preloadCfg) error {
 		fmt.Printf("skip upload of %q\n", tf)
 		return nil
 	}
-	if err := uploadTarball(tf); err != nil {
+	if err := uploadTarball(tf, kv); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr))
 	}
 	return nil
 }
 
-func verifyDockerStorage() error {
+var verifyDockerStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "docker", "info", "-f", "{{.Info.Driver}}")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -166,7 +177,7 @@ func verifyDockerStorage() error {
 	return nil
 }
 
-func verifyPodmanStorage() error {
+var verifyPodmanStorage = func() error {
 	cmd := exec.Command("docker", "exec", profile, "sudo", "podman", "info", "-f", "json")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

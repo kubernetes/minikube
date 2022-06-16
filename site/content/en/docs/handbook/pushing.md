@@ -31,14 +31,14 @@ Here is a comparison table to help you choose:
 
 | Method | Supported Runtimes | Performance | Load | Build |
 |--- |--- |--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
-|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env) |   only cri-o |  good  | yes | yes |
+|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
+|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-cri-o-podman-env) |   only cri-o |  good  | yes | yes |
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 |  [ctr/buildctl command](/docs/handbook/pushing/#6-pushing-directly-to-in-cluster-containerd-buildkitd) |   only containerd |  good  | yes | yes |
 |  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
 |  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
-|  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
-|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
-|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all | best  | yes\* | yes\* |
 
 * note1 : the default container-runtime on minikube is 'docker'.
 * note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
@@ -50,29 +50,49 @@ Here is a comparison table to help you choose:
 
 This is similar to podman-env but only for Docker runtime.
 When using a container or VM driver (all drivers except none), you can reuse the Docker daemon inside minikube cluster.
-this means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
+This means you don't have to build on your host machine and push the image into a docker registry. You can just build inside the same docker daemon as minikube which speeds up local experiments.
 
 To point your terminal to use the docker daemon inside minikube run this:
 
+{{% tabs %}}
+{{% linuxtab %}}
 ```shell
 eval $(minikube docker-env)
 ```
+{{% /linuxtab %}}
+{{% mactab %}}
+```shell
+eval $(minikube docker-env)
+```
+{{% /mactab %}}
+{{% windowstab %}}
+PowerShell
+```shell
+& minikube -p minikube docker-env --shell powershell | Invoke-Expression
+```
 
-now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
+cmd
+```shell
+@FOR /f "tokens=*" %i IN ('minikube -p minikube docker-env --shell cmd') DO @%i
+```
+{{% /windowstab %}}
+{{% /tabs %}}
 
-so if you do the following commands, it will show you the containers inside the minikube, inside minikube's VM or Container.
+Now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
+
+So if you do the following commands, it will show you the containers inside the minikube, inside minikube's VM or Container.
 
 ```shell
 docker ps
 ```
 
-now you can 'build' against the docker inside minikube. which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the docker inside minikube, which is instantly accessible to kubernetes cluster.
 
 ```shell
 docker build -t my_image .
 ```
 
-To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the cluster name.
+To verify your terminal is using minikube's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the cluster name.
 
 {{% pageinfo color="info" %}}
 Tip 1:
@@ -90,7 +110,7 @@ Tip 3:
 In container-based drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube cluster.
 {{% /pageinfo %}}
 
-more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
+More information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
 ---
 
@@ -109,14 +129,14 @@ Tip 1 :
 If your image changes after your cached it, you need to do 'cache reload'.
 {{% /pageinfo %}}
 
-minikube refreshes the cache images on each start. however to reload all the cached images on demand, run this command :
+minikube refreshes the cache images on each start. However to reload all the cached images on demand, run this command :
 ```shell
 minikube cache reload
 ```
 
 {{% pageinfo color="info" %}}
 Tip 2 :
-if you have multiple clusters, the cache command will load the image for all of them.
+If you have multiple clusters, the cache command will load the image for all of them.
 {{% /pageinfo %}}
 
 To display images you have added to the cache:
@@ -139,6 +159,8 @@ For more information, see:
 
 ## 3. Pushing directly to in-cluster CRI-O. (podman-env)
 
+{{% tabs %}}
+{{% linuxtab %}}
 This is similar to docker-env but only for CRI-O runtime.
 To push directly to CRI-O, configure podman client on your host using the podman-env command in your shell:
 
@@ -148,14 +170,11 @@ eval $(minikube podman-env)
 
 You should now be able to use podman client on the command line on your host machine talking to the podman service inside the minikube VM:
 
-{{% tabs %}}
-{{% linuxtab %}}
-
 ```shell
 podman-remote help
 ```
 
-now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube, which is instantly accessible to kubernetes cluster.
 
 ```shell
 podman-remote build -t my_image .
@@ -167,12 +186,20 @@ Note: On Linux the remote client is called "podman-remote", while the local prog
 
 {{% /linuxtab %}}
 {{% mactab %}}
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
+
+```shell
+eval $(minikube podman-env)
+```
+
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
 
 ```shell
 podman help
 ```
 
-now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman build -t my_image .
@@ -184,8 +211,22 @@ Note: On macOS the remote client is called "podman", since there is no local "po
 
 {{% /mactab %}}
 {{% windowstab %}}
+This is similar to docker-env but only for CRI-O runtime.
+To push directly to CRI-O, configure Podman client on your host using the podman-env command in your shell:
 
-now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+PowerShell
+```shell
+& minikube -p minikube podman-env --shell powershell | Invoke-Expression
+```
+
+cmd
+```shell
+@FOR /f "tokens=*" %i IN ('minikube -p minikube podman-env --shell cmd') DO @%i
+```
+
+You should now be able to use Podman client on the command line on your host machine talking to the Podman service inside the minikube VM:
+
+Now you can 'build' against the storage inside minikube, which is instantly accessible to Kubernetes cluster.
 
 ```shell
 podman help
@@ -269,7 +310,7 @@ For more information on the `ctr images` command, read the [containerd documenta
 
 For more information on the `buildctl build` command, read the [Buildkit documentation](https://github.com/moby/buildkit#quick-start) (mobyproject.org).
 
-to exit minikube ssh and come back to your terminal type:
+To exit minikube ssh and come back to your terminal type:
 
 ```shell
 exit
@@ -354,7 +395,7 @@ buildctl --addr unix://buildkitd.sock build \
     --output type=image,name=k8s.gcr.io/username/imagename:latest
 ```
 
-now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
+Now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.
 
 ---
 

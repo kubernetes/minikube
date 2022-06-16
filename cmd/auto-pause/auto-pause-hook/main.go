@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -47,7 +47,7 @@ var targetIP *string
 func handler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Handling a request")
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error: %v", err)
 		return

@@ -19,14 +19,18 @@ package bsutil
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/util"
@@ -47,8 +51,21 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	for k, v := range r.KubeletOptions() {
 		extraOpts[k] = v
 	}
+
+	// avoid "Failed to start ContainerManager failed to initialise top level QOS containers" error (ref: https://github.com/kubernetes/kubernetes/issues/43856)
+	// avoid "kubelet crashes with: root container [kubepods] doesn't exist" (ref: https://github.com/kubernetes/kubernetes/issues/95488)
+	if mc.Driver == oci.Docker && mc.KubernetesConfig.ContainerRuntime == constants.CRIO {
+		extraOpts["cgroups-per-qos"] = "false"
+		extraOpts["enforce-node-allocatable"] = ""
+	}
+
 	if k8s.NetworkPlugin != "" {
-		extraOpts["network-plugin"] = k8s.NetworkPlugin
+		// Only CNI is supported in 1.24+, and it is the default
+		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+			extraOpts["network-plugin"] = k8s.NetworkPlugin
+		} else if k8s.NetworkPlugin != "cni" && mc.KubernetesConfig.ContainerRuntime != constants.Docker {
+			return nil, fmt.Errorf("invalid network plugin: %s", k8s.NetworkPlugin)
+		}
 
 		if k8s.NetworkPlugin == "kubenet" {
 			extraOpts["pod-cidr"] = cni.DefaultPodCIDR

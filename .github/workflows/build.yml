@@ -1,5 +1,6 @@
 name: build
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -11,13 +12,16 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: 1.16.1
+  GO_VERSION: '1.18.3'
+permissions:
+  contents: read
+
 jobs:
   build_minikube:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -36,15 +40,15 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: minikube_binaries
           path: out
   lint:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true
@@ -60,10 +64,10 @@ jobs:
         run: make test
         continue-on-error: false
   unit_test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
           stable: true

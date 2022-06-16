@@ -19,7 +19,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -64,6 +63,7 @@ func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 		IP:                cc.KubernetesConfig.NodeIP,
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 		ControlPlane:      true,
 		Worker:            true,
 	}
@@ -152,19 +152,16 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 
 	// If no config file exists, don't worry about swapping paths
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := lock.WriteFile(path, data, 0600); err != nil {
-			return err
-		}
-		return nil
+		return lock.WriteFile(path, data, 0600)
 	}
 
-	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
+	tf, err := os.CreateTemp(filepath.Dir(path), "config.json.tmp")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(tf.Name())
 
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+	if err = os.WriteFile(tf.Name(), data, 0600); err != nil {
 		return err
 	}
 
@@ -176,11 +173,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 		return err
 	}
 
-	if err = os.Rename(tf.Name(), path); err != nil {
-		return err
-	}
-
-	return nil
+	return os.Rename(tf.Name(), path)
 }
 
 // DeleteProfile deletes a profile and removes the profile dir
@@ -201,7 +194,7 @@ var DockerContainers = func() ([]string, error) {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
-
+	activeP := viper.GetString(ProfileName)
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
@@ -225,7 +218,9 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 			continue
 		}
 		validPs = append(validPs, p)
-
+		if p.Name == activeP {
+			p.Active = true
+		}
 		for _, child := range p.Config.Nodes {
 			nodeNames[MachineName(*p.Config, child)] = true
 		}
@@ -236,17 +231,20 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // ListValidProfiles returns profiles in minikube home dir
-// Unlike `ListProfiles` this function doens't try to get profile from container
+// Unlike `ListProfiles` this function doesn't try to get profile from container
 func ListValidProfiles(miniHome ...string) (ps []*Profile, err error) {
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, err
 	}
-
+	activeP := viper.GetString(ProfileName)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
 		if err == nil && p.IsValid() {
+			if p.Name == activeP {
+				p.Active = true
+			}
 			ps = append(ps, p)
 		}
 	}
@@ -287,7 +285,7 @@ func removeChildNodes(inValidPs []*Profile, nodeNames map[string]bool) (ps []*Pr
 
 // LoadProfile loads type Profile based on its name
 func LoadProfile(name string, miniHome ...string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
+	cfg, err := Load(name, miniHome...)
 	p := &Profile{
 		Name:   name,
 		Config: cfg,
@@ -302,7 +300,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 		miniPath = miniHome[0]
 	}
 	pRootDir := filepath.Join(miniPath, "profiles")
-	items, err := ioutil.ReadDir(pRootDir)
+	items, err := os.ReadDir(pRootDir)
 	for _, f := range items {
 		if f.IsDir() {
 			dirs = append(dirs, f.Name())

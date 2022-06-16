@@ -1,0 +1,8 @@
+{{ $level := .Get "base" | strings.Count "/" }}
+
+<div data-quiz-id="{{ .Get "base" }}" data-level="{{ $level }}" class="row option-row hide">
+    <div class="col-lg-2 my-auto">
+        <p>{{ with .Get "name"}}{{.}}{{end}}</p>
+    </div>
+    <div class="col-lg-10">{{ .Inner }}</div>
+</div>

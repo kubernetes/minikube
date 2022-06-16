@@ -25,9 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/notify"
-	"k8s.io/minikube/pkg/version"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -41,9 +38,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/version"
 )
 
 var dirs = [...]string{
@@ -51,7 +50,6 @@ var dirs = [...]string{
 	localpath.MakeMiniPath("certs"),
 	localpath.MakeMiniPath("machines"),
 	localpath.MakeMiniPath("cache"),
-	localpath.MakeMiniPath("cache", "iso"),
 	localpath.MakeMiniPath("config"),
 	localpath.MakeMiniPath("addons"),
 	localpath.MakeMiniPath("files"),
@@ -74,6 +72,12 @@ var RootCmd = &cobra.Command{
 			out.WarningT("User name '{{.username}}' is not valid", out.V{"username": userName})
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
+		// viper maps $MINIKUBE_ROOTLESS to "rootless" property automatically, but it does not do vice versa,
+		// so we map "rootless" property to $MINIKUBE_ROOTLESS expliclity here.
+		// $MINIKUBE_ROOTLESS is referred by KIC runner, which is decoupled from viper.
+		if viper.GetBool(config.Rootless) {
+			os.Setenv(constants.MinikubeRootlessEnv, "true")
+		}
 	},
 }
 
@@ -92,23 +96,26 @@ func Execute() {
 			}
 		}
 		if !found {
-			exit.Message(reason.WrongBinaryWSL, "You are trying to run windows .exe binary inside WSL, for better integration please use Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
+			exit.Message(reason.WrongBinaryWSL, "You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
 		}
 	}
 
 	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		exit.Message(reason.WrongBinaryM1, "You are trying to run amd64 binary on M1 system. Please use darwin/arm64 binary instead (Download at {{.url}}.)",
-			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "amd64")})
+		out.Boxed("You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}",
+			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 
 	_, callingCmd := filepath.Split(os.Args[0])
+	callingCmd = strings.TrimSuffix(callingCmd, ".exe")
 
 	if callingCmd == "kubectl" {
 		// If the user is using the minikube binary as kubectl, allow them to specify the kubectl context without also specifying minikube profile
 		profile := ""
 		for i, a := range os.Args {
 			if a == "--context" {
-				profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				if len(os.Args) > i+1 {
+					profile = fmt.Sprintf("--profile=%s", os.Args[i+1])
+				}
 				break
 			} else if strings.HasPrefix(a, "--context=") {
 				context := strings.Split(a, "=")[1]
@@ -205,6 +212,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 	RootCmd.PersistentFlags().String(config.UserFlag, "", "Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.")
+	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
 
 	groups := templates.CommandGroups{
 		{
@@ -302,14 +310,11 @@ func setupViper() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
+	viper.RegisterAlias(config.EmbedCerts, embedCerts)
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
-	viper.SetDefault(config.WantReportError, false)
-	viper.SetDefault(config.WantReportErrorPrompt, true)
-	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	viper.SetDefault(config.WantNoneDriverWarning, true)
-	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
-	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
+	viper.SetDefault(config.WantVirtualBoxDriverWarning, true)
 }
 
 func addToPath(dir string) {

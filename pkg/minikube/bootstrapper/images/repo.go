@@ -26,11 +26,3 @@ func kubernetesRepo(mirror string) string {
 	}
 	return DefaultKubernetesRepo
 }
-
-// minikubeRepo returns the official minikube repository, or an alternate
-func minikubeRepo(mirror string) string {
-	if mirror != "" {
-		return mirror
-	}
-	return "gcr.io/k8s-minikube"
-}

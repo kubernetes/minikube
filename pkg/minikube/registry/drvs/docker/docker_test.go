@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
 
@@ -20,15 +18,21 @@ package docker
 
 import (
 	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/blang/semver/v4"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 type testCase struct {
-	version, expect string
+	version, expect   string
+	expectFixContains string
 }
 
 func appendVersionVariations(tc []testCase, v []int, reason string) []testCase {
-	appendedTc := append(tc, testCase{
+	appendedTc := tc
+	appendedTc = append(appendedTc, testCase{
 		version: fmt.Sprintf("linux-%02d.%02d", v[0], v[1]),
 		expect:  reason,
 	})
@@ -52,30 +56,41 @@ func appendVersionVariations(tc []testCase, v []int, reason string) []testCase {
 	return appendedTc
 }
 
+func stringToIntSlice(t *testing.T, s string) []int {
+	sem, err := semver.ParseTolerant(s)
+	if err != nil {
+		t.Fatalf("failed to parse %s to semver: %v", s, err)
+	}
+	return []int{int(sem.Major), int(sem.Minor), int(sem.Patch)}
+}
+
 func TestCheckDockerVersion(t *testing.T) {
+	recParts := stringToIntSlice(t, recommendedDockerVersion)
+	minParts := stringToIntSlice(t, minDockerVersion)
+
 	tc := []testCase{
 		{
 			version: "windows-20.0.1",
 			expect:  "PROVIDER_DOCKER_WINDOWS_CONTAINERS",
 		},
 		{
-			version: fmt.Sprintf("linux-%02d.%02d", minDockerVersion[0], minDockerVersion[1]),
+			version: fmt.Sprintf("linux-%02d.%02d", recParts[0], recParts[1]),
 			expect:  "",
 		},
 		{
-			version: fmt.Sprintf("linux-%02d.%02d.%02d", minDockerVersion[0], minDockerVersion[1], minDockerVersion[2]),
+			version: fmt.Sprintf("linux-%s", recommendedDockerVersion),
 			expect:  "",
 		},
 	}
 
 	for i := 0; i < 3; i++ {
 		v := make([]int, 3)
-		copy(v, minDockerVersion)
+		copy(v, minParts)
 
-		v[i] = minDockerVersion[i] + 1
+		v[i] = minParts[i] + 1
 		tc = appendVersionVariations(tc, v, "")
 
-		v[i] = minDockerVersion[i] - 1
+		v[i] = minParts[i] - 1
 		if v[2] < 0 {
 			// skip test if patch version is negative number.
 			continue
@@ -83,12 +98,53 @@ func TestCheckDockerVersion(t *testing.T) {
 		tc = appendVersionVariations(tc, v, "PROVIDER_DOCKER_VERSION_LOW")
 	}
 
+	recommendedSupported := fmt.Sprintf("Minimum recommended version is %s, minimum supported version is %s", recommendedDockerVersion, minDockerVersion)
+	install := fmt.Sprintf("Install the official release of %s (%s, current version is %%s)", driver.FullName(driver.Docker), recommendedSupported)
+	update := fmt.Sprintf("Upgrade %s to a newer version (%s, current version is %%s)", driver.FullName(driver.Docker), recommendedSupported)
+	tc = append(tc, []testCase{
+		{
+			// "dev" is set when Docker (Moby) was installed with `make binary && make install`
+			version:           "linux-dev",
+			expect:            "",
+			expectFixContains: fmt.Sprintf(install, "dev"),
+		},
+		{
+			// "library-import" is set when Docker (Moby) was installed with `go build github.com/docker/docker/cmd/dockerd` (unrecommended, but valid)
+			version:           "linux-library-import",
+			expect:            "",
+			expectFixContains: fmt.Sprintf(install, "library-import"),
+		},
+		{
+			// "foo.bar.baz" is a triplet that cannot be parsed as "%02d.%02d.%d"
+			version:           "linux-foo.bar.baz",
+			expect:            "",
+			expectFixContains: fmt.Sprintf(install, "foo.bar.baz"),
+		},
+		{
+			// "linux-18.09.9" is older than minimum recommended version
+			version:           "linux-18.09.9",
+			expect:            "",
+			expectFixContains: fmt.Sprintf(update, "18.09.9"),
+		},
+		{
+			// "linux-18.06.2" is older than minimum required version
+			version:           "linux-18.06.2",
+			expect:            "PROVIDER_DOCKER_VERSION_LOW",
+			expectFixContains: fmt.Sprintf(update, "18.06.2"),
+		},
+	}...)
+
 	for _, c := range tc {
 		t.Run("checkDockerVersion test", func(t *testing.T) {
 			s := checkDockerVersion(c.version)
 			if s.Error != nil {
 				if c.expect != s.Reason {
 					t.Errorf("Error %v expected. but got %q. (version string : %s)", c.expect, s.Reason, c.version)
+				}
+			}
+			if c.expectFixContains != "" {
+				if !strings.Contains(s.Fix, c.expectFixContains) {
+					t.Errorf("Error expected Fix to contain %q, but got %q", c.expectFixContains, s.Fix)
 				}
 			}
 		})

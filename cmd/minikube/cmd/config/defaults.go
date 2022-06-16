@@ -21,32 +21,31 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
+
+var defaultsOutput string
 
 var configDefaultsCommand = &cobra.Command{
 	Use:   "defaults PROPERTY_NAME",
 	Short: "Lists all valid default values for PROPERTY_NAME",
 	Long: `list displays all valid default settings for PROPERTY_NAME
 Acceptable fields: ` + "\n\n" + fieldsWithDefaults(),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) != 1 {
 			cmd.SilenceErrors = true
-			return errors.New("not enough arguments.\nusage: minikube config list PROPERTY_NAME")
+			exit.Message(reason.Usage, "usage: minikube config list PROPERTY_NAME")
 		}
-		if len(args) > 1 {
-			cmd.SilenceErrors = true
-			return fmt.Errorf("too many arguments (%d)\nusage: minikube config list PROPERTY_NAME", len(args))
-		}
-
 		property := args[0]
 		defaults, err := getDefaults(property)
 		if err != nil {
-			return err
+			exit.Message(reason.Usage, "error getting defaults: {{.error}}", out.V{"error": err})
 		}
-		return printDefaults(defaults)
+		printDefaults(defaults)
 	},
 }
 
@@ -61,19 +60,27 @@ func getDefaults(property string) ([]string, error) {
 	return setting.validDefaults(), nil
 }
 
-func printDefaults(defaults []string) error {
-	if output == "json" {
+func printDefaults(defaults []string) {
+	switch strings.ToLower(defaultsOutput) {
+	case "":
+		for _, d := range defaults {
+			out.Ln("* %s", d)
+		}
+	case "json":
 		encoding, err := json.Marshal(defaults)
 		if err != nil {
-			return errors.Wrap(err, "encoding json")
+			exit.Error(reason.InternalJSONMarshal, "json encoding failure", err)
 		}
 		out.Ln(string(encoding))
-		return nil
+	case "yaml":
+		encoding, err := yaml.Marshal(defaults)
+		if err != nil {
+			exit.Error(reason.InternalYamlMarshal, "yaml encoding failure", err)
+		}
+		out.Ln(string(encoding))
+	default:
+		exit.Message(reason.InternalOutputUsage, "error: --output must be 'yaml' or 'json'")
 	}
-	for _, d := range defaults {
-		out.Ln("* %s", d)
-	}
-	return nil
 }
 
 func fieldsWithDefaults() string {
@@ -87,6 +94,6 @@ func fieldsWithDefaults() string {
 }
 
 func init() {
-	configDefaultsCommand.Flags().StringVar(&output, "output", "", "Output format. Accepted values: [json]")
+	configDefaultsCommand.Flags().StringVarP(&defaultsOutput, "output", "o", "", "Output format. Accepted values: [json, yaml]")
 	ConfigCmd.AddCommand(configDefaultsCommand)
 }

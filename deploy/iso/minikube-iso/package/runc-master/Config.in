@@ -1,17 +1,17 @@
 config BR2_PACKAGE_RUNC_MASTER
-	bool "runc-master"
-	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
-	depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
-	depends on BR2_TOOLCHAIN_HAS_THREADS
-	help
-	  runC is a CLI tool for spawning and running containers
-	  according to the OCP specification.
+        bool "runc-master"
+        depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS
+        depends on BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+        depends on BR2_TOOLCHAIN_HAS_THREADS
+        help
+          runC is a CLI tool for spawning and running containers
+          according to the OCP specification.
 
-	  This is just a newer build of runc than the buildroot version.
+          This is just a newer build of runc than the buildroot version.
 
-	  https://github.com/opencontainers/runc
+          https://github.com/opencontainers/runc
 
 comment "runc needs a toolchain w/ threads"
-	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS && \
-		BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
-	depends on !BR2_TOOLCHAIN_HAS_THREADS
+        depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS && \
+                BR2_PACKAGE_HOST_GO_TARGET_CGO_LINKING_SUPPORTS
+        depends on !BR2_TOOLCHAIN_HAS_THREADS

@@ -40,7 +40,7 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(path string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile) error {
+func BuildImage(path string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -70,8 +70,22 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 			continue
 		}
 
+		cp, err := config.PrimaryControlPlane(p.Config)
+		if err != nil {
+			return err
+		}
+
 		for _, n := range c.Nodes {
 			m := config.MachineName(*c, n)
+
+			if !allNodes {
+				// build images on the primary control plane node by default
+				if nodeName == "" && n != cp {
+					continue
+				} else if nodeName != n.Name && nodeName != m {
+					continue
+				}
+			}
 
 			status, err := Status(api, m)
 			if err != nil {
@@ -153,6 +167,12 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+		}
+	}()
+
 	if err := cr.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}

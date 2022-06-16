@@ -35,13 +35,23 @@ readonly START_ARGS=${@:-}
 kubectl --context "${PROFILE_NAME}" get pods --all-namespaces
 "${MINIKUBE}" status -p "${PROFILE_NAME}"
 
-curl -LO https://github.com/vmware-tanzu/sonobuoy/releases/download/v0.19.0/sonobuoy_0.19.0_linux_amd64.tar.gz || true
-tar -xzf sonobuoy_0.19.0_linux_amd64.tar.gz
+# Make sure jq is installed
+sudo apt-get install jq -y
 
+# Remove old sonobuoy installation
+rm -rf sonobuoy
+
+# Get latest sonobuoy version
+sonobuoy=$(curl -s https://api.github.com/repos/vmware-tanzu/sonobuoy/releases/latest | jq .assets[].browser_download_url | grep linux_amd64 | cut -d '"' -f 2)
+curl -LO $sonobuoy
+tarball=$(echo $sonobuoy | awk -F "/" '{print $(NF)}')
+tar -xzf $tarball
 
 ./sonobuoy run --mode=certified-conformance --wait --alsologtostderr
 outdir="$(mktemp -d)"
 ./sonobuoy retrieve "${outdir}"
+
+"${MINIKUBE}" delete -p "${PROFILE_NAME}"
 
 cwd=$(pwd)
 
@@ -66,7 +76,30 @@ description: minikube runs a local Kubernetes cluster on macOS, Linux, and Windo
 EOF
 
 cat <<EOF >README.md
-./hack/conformance_tests.sh $MINIKUBE $START_ARGS
+# Reproducing the test results
+
+## Run minikube with docker driver
+
+Install [docker](https://docs.docker.com/engine/install/)
+Install [kubectl](https://v1-18.docs.kubernetes.io/docs/tasks/tools/install-kubectl/)
+Clone the [minikube repo](https://github.com/kubernetes/minikube)
+
+## Compile the latest minikube binary
+```console
+% cd <minikube dir>
+% make
+```
+
+## Trigger the tests and get back the results
+
+We follow the [official instructions](https://github.com/cncf/k8s-conformance/blob/master/instructions.md):
+
+```console
+% cd <minikube dir>
+./hack/conformance_tests.sh ${MINIKUBE} ${START_ARGS}
+```
+
+This script will run sonobuoy against a minikube cluster with two nodes and the provided parameters.
 EOF
 
 cp -r ../results/plugins/e2e/results/global/* .

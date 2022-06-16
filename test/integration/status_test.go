@@ -1,4 +1,4 @@
-// +build integration
+//go:build integration
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -45,7 +45,7 @@ func TestInsufficientStorage(t *testing.T) {
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	// artificially set /var to 100% capacity
-	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
+	c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv), fmt.Sprintf("%s=19", constants.TestDiskAvailableEnv))
 
 	rr, err := Run(t, c)
 	if err == nil {

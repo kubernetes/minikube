@@ -20,7 +20,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 // Profile represents a minikube profile
@@ -28,6 +28,7 @@ type Profile struct {
 	Name   string
 	Status string // running, stopped, paused, unknown
 	Config *ClusterConfig
+	Active bool
 }
 
 // ClusterConfig contains the parameters used to start a cluster.
@@ -52,11 +53,12 @@ type ClusterConfig struct {
 	HypervVirtualSwitch     string
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
-	KVMNetwork              string   // Only used by the KVM2 driver
-	KVMQemuURI              string   // Only used by the KVM2 driver
-	KVMGPU                  bool     // Only used by the KVM2 driver
-	KVMHidden               bool     // Only used by the KVM2 driver
-	KVMNUMACount            int      // Only used by the KVM2 driver
+	KVMNetwork              string // Only used by the KVM2 driver
+	KVMQemuURI              string // Only used by the KVM2 driver
+	KVMGPU                  bool   // Only used by the KVM2 driver
+	KVMHidden               bool   // Only used by the KVM2 driver
+	KVMNUMACount            int    // Only used by the KVM2 driver
+	APIServerPort           int
 	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
@@ -74,13 +76,32 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
-	VerifyComponents        map[string]bool // map of components to verify and wait for after start.
+	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> k8s.gcr.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
+	CustomAddonRegistries   map[string]string // Maps image names to the registry to use for addons. See CustomAddonImages for example.
+	VerifyComponents        map[string]bool   // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
 	ScheduledStop           *ScheduledStopConfig
 	ExposedPorts            []string // Only used by the docker and podman driver
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
+	Subnet                  string   // only used by the docker and podman driver
 	MultiNodeRequested      bool
+	ExtraDisks              int // currently only implemented for hyperkit and kvm2
+	CertExpiration          time.Duration
+	Mount                   bool
+	MountString             string
+	Mount9PVersion          string
+	MountGID                string
+	MountIP                 string
+	MountMSize              int
+	MountOptions            []string
+	MountPort               uint16
+	MountType               string
+	MountUID                string
+	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
+	DisableOptimizations    bool
+	DisableMetrics          bool
+	CustomQemuFirmwarePath  string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -101,6 +122,7 @@ type KubernetesConfig struct {
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon
 	CustomIngressCert   string // used by Ingress addon
+	RegistryAliases     string // currently only used by registry-aliases addon
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
@@ -120,6 +142,7 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
+	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool
 }

@@ -26,14 +26,18 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.20-1618262794-11055@sha256:bd5383644dd35f84afaba199cf16aac1067c462d5e8ef96fa2c1183b3dee856c")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.31-1655167405-14337@sha256:007ee1d2e27a61d87fd05c11b41a5956577f975ef7440d0283f28fa9c5dc4f26")
+      --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
+      --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
-      --container-runtime string          The container runtime to be used (docker, cri-o, containerd). (default "docker")
-      --cpus int                          Number of CPUs allocated to Kubernetes. (default 2)
+      --container-runtime string          The container runtime to be used. Valid options: docker, cri-o, containerd (default: auto)
+      --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
+      --disable-metrics                   If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.
+      --disable-optimizations             If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.
       --disk-size string                  Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g). (default "20000mb")
       --dns-domain string                 The cluster dns domain name used in the Kubernetes cluster (default "cluster.local")
       --dns-proxy                         Enable proxy for NAT DNS requests (virtualbox driver only)
@@ -48,11 +52,12 @@ minikube start [flags]
                                           		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
                                           		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
                                           		Valid kubeadm parameters: ignore-preflight-errors, dry-run, kubeconfig, kubeconfig-dir, node-name, cri-socket, experimental-upload-certs, certificate-key, rootfs, skip-phases, pod-network-cidr
+      --extra-disks int                   Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
-      --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Defaults to false.
+      --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
-      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
+      --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --hyperkit-vpnkit-sock string       Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock (hyperkit driver only)
       --hyperkit-vsock-ports strings      List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)
@@ -64,18 +69,26 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/11054/minikube-v1.19.0-1619288095-11054.iso,https://github.com/kubernetes/minikube/releases/download/v1.19.0-1619288095-11054/minikube-v1.19.0-1619288095-11054.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.19.0-1619288095-11054.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.20.2, 'latest' for v1.20.5-rc.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.6, 'latest' for v1.23.6). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
-      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).
+      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory.
       --mount                             This will start the mount daemon and automatically mount files into minikube.
+      --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
+      --mount-gid string                  Default group id used for the mount (default "docker")
+      --mount-ip string                   Specify the ip that the mount should be setup on
+      --mount-msize int                   The number of bytes to use for 9p packet payload (default 262144)
+      --mount-options strings             Additional mount options, such as cache=fscache
+      --mount-port uint16                 Specify the port that the mount should be setup on, where 0 means any free port.
       --mount-string string               The argument to pass the minikube mount command on start.
+      --mount-type string                 Specify the mount filesystem type (supported types: 9p) (default "9p")
+      --mount-uid string                  Default user id used for the mount (default "docker")
       --namespace string                  The named space to activate after start (default "default")
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
@@ -83,17 +96,20 @@ minikube start [flags]
       --network-plugin string             Kubelet network plug-in to use (default: auto)
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
+      --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)
   -n, --nodes int                         The number of nodes to spin up. Defaults to 1. (default 1)
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)
+      --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
       --ssh-ip-address string             IP address (ssh driver only)
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)
       --ssh-user string                   SSH user (ssh driver only) (default "root")
+      --subnet string                     Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
@@ -116,6 +132,7 @@ minikube start [flags]
       --logtostderr                      log to standard error instead of files
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --rootless                         Force to use rootless driver (docker and podman driver only)
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)

@@ -32,7 +32,9 @@ var supportedDrivers = []string{
 	VMwareFusion,
 	HyperV,
 	VMware,
+	QEMU2,
 	Docker,
+	Podman,
 	SSH,
 }
 

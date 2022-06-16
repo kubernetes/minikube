@@ -1,1 +1,2 @@
-Schtasks /create /tn cleanup_reboot /sc HOURLY /tr "Powershell gsutil -m cp gs://minikube-builds/master/windows_cleanup_and_reboot_docker.ps1 C:\Users\jenkins; C:\Users\jenkins\windows_cleanup_and_reboot_docker.ps1"
+Schtasks /create /tn cleanup_reboot /sc MINUTE /mo 30 /tr "Powershell C:\jenkins\windows_cleanup_and_reboot.ps1" /f
+Disable-ScheduledTask -TaskName cleanup_reboot

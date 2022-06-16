@@ -18,10 +18,14 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"gopkg.in/yaml.v2"
 )
 
 type FakeNoProxyGetter struct {
@@ -36,13 +40,16 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 func TestGenerateDockerScripts(t *testing.T) {
 	var tests = []struct {
 		shell         string
+		output        string
 		config        DockerEnvConfig
 		noProxyGetter *FakeNoProxyGetter
 		wantSet       string
 		wantUnset     string
+		diffOpts      []cmp.Option
 	}{
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "dockerdriver", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
 			nil,
 			`export DOCKER_TLS_VERIFY="1"
@@ -58,9 +65,11 @@ unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "dockerdriver", driver: "docker", ssh: true, username: "root", hostname: "host", sshport: 22},
 			nil,
 			`export DOCKER_HOST="ssh://root@host:22"
@@ -74,9 +83,11 @@ unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "bash", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`export DOCKER_TLS_VERIFY="1"
@@ -92,9 +103,11 @@ unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "ipv6", driver: "kvm2", hostIP: "fe80::215:5dff:fe00:a903", port: 2376, certsDir: "/certs"},
 			nil,
 			`export DOCKER_TLS_VERIFY="1"
@@ -110,9 +123,11 @@ unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 `,
+			nil,
 		},
 		{
 			"fish",
+			"",
 			DockerEnvConfig{profile: "fish", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`set -gx DOCKER_TLS_VERIFY "1";
@@ -128,9 +143,11 @@ set -e DOCKER_HOST;
 set -e DOCKER_CERT_PATH;
 set -e MINIKUBE_ACTIVE_DOCKERD;
 `,
+			nil,
 		},
 		{
 			"powershell",
+			"",
 			DockerEnvConfig{profile: "powershell", driver: "hyperv", hostIP: "192.168.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`$Env:DOCKER_TLS_VERIFY = "1"
@@ -138,7 +155,7 @@ $Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
 $Env:DOCKER_CERT_PATH = "/certs"
 $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
 # To point your shell to minikube's docker-daemon, run:
-# & minikube -p powershell docker-env | Invoke-Expression
+# & minikube -p powershell docker-env --shell powershell | Invoke-Expression
 `,
 
 			`Remove-Item Env:\\DOCKER_TLS_VERIFY
@@ -146,9 +163,11 @@ Remove-Item Env:\\DOCKER_HOST
 Remove-Item Env:\\DOCKER_CERT_PATH
 Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
 `,
+			nil,
 		},
 		{
 			"cmd",
+			"",
 			DockerEnvConfig{profile: "cmd", driver: "hyperv", hostIP: "192.168.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`SET DOCKER_TLS_VERIFY=1
@@ -156,7 +175,7 @@ SET DOCKER_HOST=tcp://192.168.0.1:2376
 SET DOCKER_CERT_PATH=/certs
 SET MINIKUBE_ACTIVE_DOCKERD=cmd
 REM To point your shell to minikube's docker-daemon, run:
-REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
+REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env --shell cmd') DO @%i
 `,
 
 			`SET DOCKER_TLS_VERIFY=
@@ -164,9 +183,11 @@ SET DOCKER_HOST=
 SET DOCKER_CERT_PATH=
 SET MINIKUBE_ACTIVE_DOCKERD=
 `,
+			nil,
 		},
 		{
 			"emacs",
+			"",
 			DockerEnvConfig{profile: "emacs", driver: "hyperv", hostIP: "192.168.0.1", port: 2376, certsDir: "/certs"},
 			nil,
 			`(setenv "DOCKER_TLS_VERIFY" "1")
@@ -181,9 +202,11 @@ SET MINIKUBE_ACTIVE_DOCKERD=
 (setenv "DOCKER_CERT_PATH" nil)
 (setenv "MINIKUBE_ACTIVE_DOCKERD" nil)
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "bash-no-proxy", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs", noProxy: true},
 			&FakeNoProxyGetter{"NO_PROXY", "127.0.0.1"},
 			`export DOCKER_TLS_VERIFY="1"
@@ -202,9 +225,11 @@ unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 unset NO_PROXY;
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "bash-no-proxy-lower", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs", noProxy: true},
 			&FakeNoProxyGetter{"no_proxy", "127.0.0.1"},
 			`export DOCKER_TLS_VERIFY="1"
@@ -223,9 +248,11 @@ unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 unset no_proxy;
 `,
+			nil,
 		},
 		{
 			"powershell",
+			"",
 			DockerEnvConfig{profile: "powershell-no-proxy-idempotent", driver: "hyperv", hostIP: "192.168.0.1", port: 2376, certsDir: "/certs", noProxy: true},
 			&FakeNoProxyGetter{"no_proxy", "192.168.0.1"},
 			`$Env:DOCKER_TLS_VERIFY = "1"
@@ -234,7 +261,7 @@ $Env:DOCKER_CERT_PATH = "/certs"
 $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell-no-proxy-idempotent"
 $Env:no_proxy = "192.168.0.1"
 # To point your shell to minikube's docker-daemon, run:
-# & minikube -p powershell-no-proxy-idempotent docker-env | Invoke-Expression
+# & minikube -p powershell-no-proxy-idempotent docker-env --shell powershell | Invoke-Expression
 `,
 
 			`Remove-Item Env:\\DOCKER_TLS_VERIFY
@@ -243,9 +270,11 @@ Remove-Item Env:\\DOCKER_CERT_PATH
 Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
 Remove-Item Env:\\no_proxy
 `,
+			nil,
 		},
 		{
 			"bash",
+			"",
 			DockerEnvConfig{profile: "sh-no-proxy-add", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs", noProxy: true},
 			&FakeNoProxyGetter{"NO_PROXY", "192.168.0.1,10.0.0.4"},
 			`export DOCKER_TLS_VERIFY="1"
@@ -264,9 +293,11 @@ unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
 unset NO_PROXY;
 `,
+			nil,
 		},
 		{
 			"none",
+			"",
 			DockerEnvConfig{profile: "noneshell", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
 			nil,
 			`DOCKER_TLS_VERIFY=1
@@ -279,11 +310,91 @@ DOCKER_HOST
 DOCKER_CERT_PATH
 MINIKUBE_ACTIVE_DOCKERD
 `,
+			nil,
+		},
+		{
+			"none",
+			"text",
+			DockerEnvConfig{profile: "nonetext", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			nil,
+			`DOCKER_TLS_VERIFY=1
+DOCKER_HOST=tcp://127.0.0.1:32842
+DOCKER_CERT_PATH=/certs
+MINIKUBE_ACTIVE_DOCKERD=nonetext
+`,
+			`DOCKER_TLS_VERIFY
+DOCKER_HOST
+DOCKER_CERT_PATH
+MINIKUBE_ACTIVE_DOCKERD
+`,
+			[]cmp.Option{
+				cmpopts.AcyclicTransformer("SplitLines", func(s string) []string {
+					return strings.Split(s, "\n")
+				}),
+				cmpopts.SortSlices(func(a, b string) bool {
+					return a < b
+				}),
+			},
+		},
+		{
+			"none",
+			"json",
+			DockerEnvConfig{profile: "nonejson", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			nil,
+			`{
+				"DOCKER_TLS_VERIFY": "1",
+				"DOCKER_HOST": "tcp://127.0.0.1:32842",
+				"DOCKER_CERT_PATH": "/certs",
+				"MINIKUBE_ACTIVE_DOCKERD": "nonejson"
+			}`,
+			`[
+				"DOCKER_TLS_VERIFY",
+				"DOCKER_HOST",
+				"DOCKER_CERT_PATH",
+				"MINIKUBE_ACTIVE_DOCKERD"
+			]`,
+			[]cmp.Option{
+				cmp.FilterValues(func(x, y string) bool {
+					return json.Valid([]byte(x)) && json.Valid([]byte(y))
+				},
+					cmp.Transformer("ParseJSON", func(in string) (out interface{}) {
+						if err := json.Unmarshal([]byte(in), &out); err != nil {
+							panic(err) // should never occur given previous filter to ensure valid JSON
+						}
+						return out
+					})),
+			},
+		},
+		{
+			"none",
+			"yaml",
+			DockerEnvConfig{profile: "noneyaml", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			nil,
+			`DOCKER_TLS_VERIFY: "1"
+DOCKER_HOST: tcp://127.0.0.1:32842
+DOCKER_CERT_PATH: /certs
+MINIKUBE_ACTIVE_DOCKERD: noneyaml
+`,
+			`- DOCKER_TLS_VERIFY
+- DOCKER_HOST
+- DOCKER_CERT_PATH
+- MINIKUBE_ACTIVE_DOCKERD
+`,
+			[]cmp.Option{
+				cmpopts.AcyclicTransformer("ParseYAML", func(in string) (out interface{}) {
+					if err := yaml.Unmarshal([]byte(in), &out); err != nil {
+						return nil
+					}
+					return out
+				}),
+			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
 			tc.config.EnvConfig.Shell = tc.shell
+			// set global variable
+			outputFormat = tc.output
 			defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)
@@ -291,7 +402,7 @@ MINIKUBE_ACTIVE_DOCKERD
 				t.Errorf("setScript(%+v) error: %v", tc.config, err)
 			}
 			got := buf.String()
-			if diff := cmp.Diff(tc.wantSet, got); diff != "" {
+			if diff := cmp.Diff(tc.wantSet, got, tc.diffOpts...); diff != "" {
 				t.Errorf("setScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
 
@@ -300,7 +411,7 @@ MINIKUBE_ACTIVE_DOCKERD
 				t.Errorf("unsetScript(%+v) error: %v", tc.config, err)
 			}
 			got = buf.String()
-			if diff := cmp.Diff(tc.wantUnset, got); diff != "" {
+			if diff := cmp.Diff(tc.wantUnset, got, tc.diffOpts...); diff != "" {
 				t.Errorf("unsetScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
 

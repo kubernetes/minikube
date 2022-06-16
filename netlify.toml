@@ -4,7 +4,7 @@ publish = "site/public/"
 command = "pwd && cd themes/docsy && git submodule update -f --init && cd ../.. && hugo"
 
 [build.environment]
-HUGO_VERSION = "0.68.3"
+HUGO_VERSION = "0.83.1"
 
 [context.production.environment]
 HUGO_ENV = "production"

@@ -1,4 +1,4 @@
-// +build iso
+//go:build iso
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -27,7 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-// TestGuestEnvironment verifies files and packges installed inside minikube ISO/Base image
+// TestGuestEnvironment verifies files and packages installed inside minikube ISO/Base image
 func TestGuestEnvironment(t *testing.T) {
 	MaybeParallel(t)
 
@@ -35,11 +35,17 @@ func TestGuestEnvironment(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
-	}
+	t.Run("Setup", func(t *testing.T) {
+		args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=2048", "--wait=false", "--disable-metrics=true"}, StartArgs()...)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
+		}
+
+		if strings.Contains(rr.Stderr.String(), "kubelet.housekeeping-interval=5m") {
+			t.Error("--disable-metrics=true is not working, housekeeping interval not increased")
+		}
+	})
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {

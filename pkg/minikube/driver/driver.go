@@ -24,8 +24,11 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -43,6 +46,10 @@ const (
 	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
+	// QEMU2 driver
+	QEMU2 = "qemu2"
+	// QEMU driver
+	QEMU = "qemu"
 	// VirtualBox driver
 	VirtualBox = "virtualbox"
 	// HyperKit driver
@@ -62,6 +69,8 @@ const (
 	AliasSSH = "generic"
 	// AliasNative is driver name alias for None driver
 	AliasNative = "native"
+	// AliasQEMU is the driver name alias for qemu2
+	AliasQEMU = "qemu"
 )
 
 var (
@@ -71,13 +80,20 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
-	return supportedDrivers
+	arch := detect.RuntimeArch()
+	for _, a := range constants.SupportedArchitectures {
+		if arch == a {
+			return supportedDrivers
+		}
+	}
+	// remote cluster only
+	return []string{SSH}
 }
 
 // DisplaySupportedDrivers returns a string with a list of supported drivers
 func DisplaySupportedDrivers() string {
 	var sd []string
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if registry.Driver(d).Priority == registry.Experimental {
 			sd = append(sd, d+" (experimental)")
 			continue
@@ -89,7 +105,7 @@ func DisplaySupportedDrivers() string {
 
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
-	for _, d := range supportedDrivers {
+	for _, d := range SupportedDrivers() {
 		if name == d {
 			return true
 		}
@@ -146,6 +162,11 @@ func IsKVM(name string) bool {
 	return name == KVM2 || name == AliasKVM
 }
 
+// IsQEMU checks if the driver is a QEMU[2]
+func IsQEMU(name string) bool {
+	return name == QEMU2 || name == QEMU
+}
+
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
 	if IsKIC(name) || BareMetal(name) {
@@ -164,8 +185,16 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+// AllowsPreload returns if preload is allowed for the driver
+func AllowsPreload(driverName string) bool {
+	return !BareMetal(driverName) && !IsSSH(driverName)
+}
+
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
+	if IsQEMU(name) {
+		return true
+	}
 	if !IsKIC(name) {
 		return false
 	}
@@ -173,7 +202,15 @@ func NeedsPortForward(name string) bool {
 		return true
 	}
 	// Docker for Desktop
-	return runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL()
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL() {
+		return true
+	}
+
+	si, err := oci.CachedDaemonInfo(name)
+	if err != nil {
+		panic(err)
+	}
+	return si.Rootless
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
@@ -200,7 +237,7 @@ func FullName(name string) string {
 		}
 		return "Docker"
 	default:
-		return strings.Title(name)
+		return cases.Title(language.Und).String(name)
 	}
 }
 
@@ -221,7 +258,7 @@ func FlagDefaults(name string) FlagHints {
 	}
 
 	fh.CacheImages = false
-	// if specifc linux add this option for systemd work on none driver
+	// if specific linux add this option for systemd work on none driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
 		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)
@@ -281,6 +318,7 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 
 			if !ds.State.Healthy {
 				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				ds.Suggestion = fmt.Sprintf("%s <%s>", ds.State.Fix, ds.State.Doc)
 				rejects = append(rejects, ds)
 				continue
 			}

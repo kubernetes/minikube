@@ -100,6 +100,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:      "kong",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "kubevirt",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
@@ -186,5 +191,15 @@ var Addons = []*Addon{
 		set:         SetBool,
 		validations: []setFn{IsVolumesnapshotsEnabled},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
+	},
+	{
+		name:      "portainer",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "inaccel",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 }

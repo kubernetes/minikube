@@ -97,6 +97,16 @@ func setMaxParallelism() {
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
 	limit := int(math.Floor(float64(maxp) / 1.75))
 
+	// Windows and MacOS tests were failing from timeouts due to too much parallelism
+	if runtime.GOOS == "windows" {
+		limit /= 2
+	}
+
+	// Hardcode limit to 2 for macOS
+	if runtime.GOOS == "darwin" {
+		limit = 2
+	}
+
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
 	if err := flag.Set("test.parallel", strconv.Itoa(limit)); err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to set test.parallel: %v\n", err)
@@ -136,7 +146,7 @@ func DockerDriver() bool {
 
 // PodmanDriver returns whether or not this test is using the docker or podman driver
 func PodmanDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+	return strings.Contains(*startArgs, "--driver=podman") || strings.Contains(*startArgs, "--vm-driver=podman")
 }
 
 // KicDriver returns whether or not this test is using the docker or podman driver
@@ -152,13 +162,7 @@ func ContainerRuntime() string {
 			return strings.TrimPrefix(s, flag)
 		}
 	}
-	return constants.DefaultContainerRuntime
-}
-
-// GithubActionRunner returns true if running inside a github action runner
-func GithubActionRunner() bool {
-	// based on https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
-	return os.Getenv("GITHUB_ACTIONS") == "true"
+	return constants.Docker
 }
 
 // arm64Platform returns true if running on arm64/* platform

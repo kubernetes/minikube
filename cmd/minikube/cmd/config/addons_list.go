@@ -36,6 +36,7 @@ import (
 )
 
 var addonListOutput string
+var addonPrintDocs bool
 
 // AddonListTemplate represents the addon list template
 type AddonListTemplate struct {
@@ -52,10 +53,13 @@ var addonsListCmd = &cobra.Command{
 			exit.Message(reason.Usage, "usage: minikube addons list")
 		}
 
-		_, cc := mustload.Partial(ClusterFlagValue())
+		var cc *config.ClusterConfig
+		if config.ProfileExists(ClusterFlagValue()) {
+			_, cc = mustload.Partial(ClusterFlagValue())
+		}
 		switch strings.ToLower(addonListOutput) {
 		case "list":
-			printAddonsList(cc)
+			printAddonsList(cc, addonPrintDocs)
 		case "json":
 			printAddonsJSON(cc)
 		default:
@@ -65,13 +69,8 @@ var addonsListCmd = &cobra.Command{
 }
 
 func init() {
-	addonsListCmd.Flags().StringVarP(
-		&addonListOutput,
-		"output",
-		"o",
-		"list",
-		`minikube addons list --output OUTPUT. json, list`)
-
+	addonsListCmd.Flags().StringVarP(&addonListOutput, "output", "o", "list", "minikube addons list --output OUTPUT. json, list")
+	addonsListCmd.Flags().BoolVarP(&addonPrintDocs, "docs", "d", false, "If true, print web links to addons' documentation if using --output=list (default).")
 	AddonsCmd.AddCommand(addonsListCmd)
 }
 
@@ -89,27 +88,56 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
-var printAddonsList = func(cc *config.ClusterConfig) {
+var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := make([]string, 0, len(assets.Addons))
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
 
-	var tData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Addon Name", "Profile", "Status"})
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
 
+	// Create table header
+	var tHeader []string
+	if cc == nil {
+		tHeader = []string{"Addon Name", "Maintainer"}
+	} else {
+		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+	}
+	if printDocs {
+		tHeader = append(tHeader, "Docs")
+	}
+	table.SetHeader(tHeader)
+
+	// Create table data
+	var tData [][]string
+	var temp []string
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		enabled := addonBundle.IsEnabled(cc)
-		tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled))})
+		maintainer := addonBundle.Maintainer
+		if maintainer == "" {
+			maintainer = "3rd party (unknown)"
+		}
+		docs := addonBundle.Docs
+		if docs == "" {
+			docs = "n/a"
+		}
+		if cc == nil {
+			temp = []string{addonName, maintainer}
+		} else {
+			enabled := addonBundle.IsEnabled(cc)
+			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+		}
+		if printDocs {
+			temp = append(temp, docs)
+		}
+		tData = append(tData, temp)
 	}
-
 	table.AppendBulk(tData)
+
 	table.Render()
 
 	v, _, err := config.ListProfiles()
@@ -131,6 +159,11 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonsMap := map[string]map[string]interface{}{}
 
 	for _, addonName := range addonNames {
+		if cc == nil {
+			addonsMap[addonName] = map[string]interface{}{}
+			continue
+		}
+
 		addonBundle := assets.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
 

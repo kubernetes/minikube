@@ -170,6 +170,11 @@ var podmanEnvCmd = &cobra.Command{
 			exit.Message(reason.Usage, `The podman-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 
+		if co.Config.KubernetesConfig.ContainerRuntime != constants.CRIO {
+			exit.Message(reason.Usage, `The podman-env command is only compatible with the "crio" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
+		}
+
 		r := co.CP.Runner
 		if ok := isPodmanAvailable(r); !ok {
 			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})

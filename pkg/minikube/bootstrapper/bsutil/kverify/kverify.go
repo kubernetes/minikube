@@ -45,7 +45,7 @@ const (
 var (
 	// DefaultComponents is map of the the default components to wait for
 	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
-	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
+	// NoWaitComponents is map of components to wait for if specified 'none' or 'false'
 	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunningKey: false, NodeReadyKey: false, KubeletKey: false, ExtraKey: false}
 	// AllComponents is map for waiting for all components.
 	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunningKey: true, NodeReadyKey: true, KubeletKey: true, ExtraKey: true}

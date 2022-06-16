@@ -10,29 +10,47 @@ data:
   uninstall.sh: |
     #!/bin/bash
 
-    kubectl delete -f /manifests/kubevirt.yaml
+    kubectl delete kubevirt kubevirt -n kubevirt
 
-    kubectl delete -f /manifests/kubevirt-base.yaml
+    kubectl delete -f /manifests/kubevirt-operator.yaml
 
   install.sh: |
     #!/bin/bash
 
     export KUBEVIRT_VERSION=$(curl -s https://api.github.com/repos/kubevirt/kubevirt/releases | grep tag_name | grep -v -- - | sort -V | tail -1 | awk -F':' '{print $2}' | sed 's/,//' | xargs)
-    echo $KUBEVIRT_VERSION
+    echo "Installing KubeVirt version: $KUBEVIRT_VERSION"
 
-    curl -Ls "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" -o /manifests/kubevirt-base.yaml
+    curl -Ls "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" -o /manifests/kubevirt-operator.yaml
+    kubectl create -f /manifests/kubevirt-operator.yaml
 
-    kubectl create -f /manifests/kubevirt-base.yaml
+    HARDWARE_EMULATION=$(egrep 'svm|vmx' /proc/cpuinfo)
+    if [ -z "$HARDWARE_EMULATION" ]; then
+      echo "Using software emulation"
 
-    EMULATION=$(egrep 'svm|vmx' /proc/cpuinfo)
-    if [ -z "$EMULATION" ]; then
-      echo "use emulation"
-      kubectl create configmap kubevirt-config -n kubevirt --from-literal debug.useEmulation=true
-    fi;
+      echo "
+    apiVersion: kubevirt.io/v1
+    kind: KubeVirt
+    metadata:
+      name: kubevirt
+      namespace: kubevirt
+    spec:
+      configuration:
+        developerConfiguration:
+          useEmulation: true
+    " | kubectl apply -f -
 
-    curl -sL "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml" -o /manifests/kubevirt.yaml
+    else
 
-    kubectl create -f /manifests/kubevirt.yaml
+      echo "
+    apiVersion: kubevirt.io/v1
+    kind: KubeVirt
+    metadata:
+      name: kubevirt
+      namespace: kubevirt
+    spec: {}
+    " | kubectl apply -f -
+
+    fi
 
     sleep infinity
 ---

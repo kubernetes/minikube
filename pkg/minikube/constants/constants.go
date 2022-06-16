@@ -23,19 +23,25 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/minikube/pkg/minikube/localpath"
+)
+
+var (
+	// SupportedArchitectures is the list of supported architectures
+	SupportedArchitectures = [5]string{"amd64", "arm", "arm64", "ppc64le", "s390x"}
 )
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	// dont update till #10545 is solved
-	DefaultKubernetesVersion = "v1.20.2"
+	DefaultKubernetesVersion = "v1.23.6"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.20.5-rc.0"
+	NewestKubernetesVersion = "v1.23.6"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
-	OldestKubernetesVersion = "v1.14.0"
-	// DefaultClusterName is the default nane for the k8s cluster
+	OldestKubernetesVersion = "v1.16.0"
+	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
+	NoKubernetesVersion = "v0.0.0"
+
+	// DefaultClusterName is the default name for the k8s cluster
 	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
 	DockerDaemonPort = 2376
@@ -48,10 +54,14 @@ const (
 	SSHPort = 22
 	// RegistryAddonPort os the default registry addon port
 	RegistryAddonPort = 5000
+	// Containerd is the default name and spelling for the containerd container runtime
+	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
 	CRIO = "crio"
+	// Docker is the default name and spelling for the docker container runtime
+	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
-	DefaultContainerRuntime = "docker"
+	DefaultContainerRuntime = ""
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
@@ -84,8 +94,12 @@ const (
 	MinikubeActivePodmanEnv = "MINIKUBE_ACTIVE_PODMAN"
 	// MinikubeForceSystemdEnv is used to force systemd as cgroup manager for the container runtime
 	MinikubeForceSystemdEnv = "MINIKUBE_FORCE_SYSTEMD"
-	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status'
+	// TestDiskUsedEnv is used in integration tests for insufficient storage with 'minikube status' (in %)
 	TestDiskUsedEnv = "MINIKUBE_TEST_STORAGE_CAPACITY"
+	// TestDiskAvailableEnv is used in integration tests for insufficient storage with 'minikube status' (in GiB)
+	TestDiskAvailableEnv = "MINIKUBE_TEST_AVAILABLE_STORAGE"
+	// MinikubeRootlessEnv is used to force Rootless Docker/Podman driver
+	MinikubeRootlessEnv = "MINIKUBE_ROOTLESS"
 
 	// scheduled stop constants
 
@@ -108,7 +122,32 @@ const (
 	ExistingContainerHostEnv = MinikubeExistingPrefix + "CONTAINER_HOST"
 
 	// TimeFormat is the format that should be used when outputting time
-	TimeFormat = time.RFC1123
+	TimeFormat = time.RFC822
+	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
+	MaxResources = "max"
+
+	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
+	DefaultCertExpiration = time.Hour * 24 * 365 * 3
+
+	// Mount9PVersionFlag is the flag used to set the mount 9P version
+	Mount9PVersionFlag = "9p-version"
+	// MountGIDFlag is the flag used to set the mount GID
+	MountGIDFlag = "gid"
+	// MountIPFlag is the flag used to set the mount IP
+	MountIPFlag = "ip"
+	// MountMSizeFlag is the flag used to set the mount msize
+	MountMSizeFlag = "msize"
+	// MountOptionsFlag is the flag used to set the mount options
+	MountOptionsFlag = "options"
+	// MountPortFlag is the flag used to set the mount port
+	MountPortFlag = "port"
+	// MountTypeFlag is the flag used to set the mount type
+	MountTypeFlag = "type"
+	// MountUIDFlag is the flag used to set the mount UID
+	MountUIDFlag = "uid"
+
+	// Mirror CN
+	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
 )
 
 var (
@@ -141,13 +180,11 @@ var (
 	// ImageRepositories contains all known image repositories
 	ImageRepositories = map[string][]string{
 		"global": {""},
-		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+		"cn":     {AliyunMirror},
 	}
 	// KubernetesReleaseBinaries are Kubernetes release binaries required for
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
-	// ImageCacheDir is the path to the image cache directory
-	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 	// DefaultNamespaces are Kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{

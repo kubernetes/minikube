@@ -19,15 +19,12 @@ package image
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/cheggaaa/pb/v3"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -39,8 +36,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -106,47 +102,6 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// ExistsImageInDaemon if img exist in local docker daemon
-func ExistsImageInDaemon(img string) bool {
-	// Check if image exists locally
-	klog.Infof("Checking for %s in local docker daemon", img)
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), img) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
-	}
-	// Else, pull it
-	return false
-}
-
-// LoadFromTarball checks if the image exists as a tarball and tries to load it to the local daemon
-// TODO: Pass in if we are loading to docker or podman so this function can also be used for podman
-func LoadFromTarball(binary, img string) error {
-	p := filepath.Join(constants.ImageCacheDir, img)
-	p = localpath.SanitizeCacheDir(p)
-
-	switch binary {
-	case driver.Podman:
-		return fmt.Errorf("not yet implemented, see issue #8426")
-	default:
-		tag, err := name.NewTag(Tag(img))
-		if err != nil {
-			return errors.Wrap(err, "new tag")
-		}
-
-		i, err := tarball.ImageFromPath(p, &tag)
-		if err != nil {
-			return errors.Wrap(err, "tarball")
-		}
-
-		_, err = daemon.Write(tag, i)
-		return err
-	}
-
-}
-
 // Tag returns just the image with the tag
 // eg image:tag@sha256:digest -> image:tag if there is an associated tag
 // if not possible, just return the initial img
@@ -157,64 +112,6 @@ func Tag(img string) string {
 		return fmt.Sprintf("%s:%s", split[0], tag)
 	}
 	return img
-}
-
-// WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
-	// buffered channel
-	c := make(chan v1.Update, 200)
-
-	klog.Infof("Writing %s to local daemon", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
-	}
-	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref)
-	if err != nil {
-		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
-			ErrGithubNeedsLogin = errors.New(err.Error())
-			return ErrGithubNeedsLogin
-		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
-			ErrNeedsLogin = errors.New(err.Error())
-			return ErrNeedsLogin
-		}
-
-		return errors.Wrap(err, "getting remote image")
-	}
-	klog.V(3).Infof("Writing image %v", ref)
-	errchan := make(chan error)
-	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
-	// abbreviate filename for progress
-	maxwidth := 30 - len("...")
-	if len(fn) > maxwidth {
-		fn = fn[0:maxwidth] + "..."
-	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
-
-	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(79)
-
-	go func() {
-		_, err = daemon.Write(ref, i, tarball.WithProgress(c))
-		errchan <- err
-	}()
-	var update v1.Update
-	for {
-		select {
-		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
-		case err = <-errchan:
-			p.Finish()
-			if err != nil {
-				return errors.Wrap(err, "writing daemon image")
-			}
-			return nil
-		}
-	}
 }
 
 func canonicalName(ref name.Reference) string {
@@ -257,11 +154,12 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 		}
 	}
 	if useRemote {
+		cname := canonicalName(ref)
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err == nil {
 			img, err = fixPlatform(ref, img, defaultPlatform)
 			if err == nil {
-				return img, canonicalName(ref), nil
+				return img, cname, nil
 			}
 		}
 	}
@@ -295,6 +193,63 @@ func retrieveRemote(ref name.Reference, p v1.Platform) (v1.Image, error) {
 	return img, err
 }
 
+// imagePathInCache returns path in local cache directory
+func imagePathInCache(img string) string {
+	f := filepath.Join(detect.ImageCacheDir(), img)
+	f = localpath.SanitizeCacheDir(f)
+	return f
+}
+
+// UploadCachedImage uploads cached image
+func UploadCachedImage(imgName string) error {
+	tag, err := name.NewTag(imgName, name.WeakValidation)
+	if err != nil {
+		klog.Infof("error parsing image name %s tag %v ", imgName, err)
+		return err
+	}
+	return uploadImage(tag, imagePathInCache(imgName))
+}
+
+func uploadImage(tag name.Tag, p string) error {
+	var err error
+	var img v1.Image
+
+	if !useDaemon && !useRemote {
+		return fmt.Errorf("neither daemon nor remote")
+	}
+
+	img, err = tarball.ImageFromPath(p, &tag)
+	if err != nil {
+		return errors.Wrap(err, "tarball")
+	}
+	ref := name.Reference(tag)
+
+	klog.Infof("uploading image: %+v from: %s", ref, p)
+	if useDaemon {
+		return uploadDaemon(tag, img)
+	}
+	if useRemote {
+		return uploadRemote(ref, img, defaultPlatform)
+	}
+	return nil
+}
+
+func uploadDaemon(tag name.Tag, img v1.Image) error {
+	resp, err := daemon.Write(tag, img)
+	if err != nil {
+		klog.Warningf("daemon load for %s: %v\n%s", tag, err, resp)
+	}
+	return err
+}
+
+func uploadRemote(ref name.Reference, img v1.Image, p v1.Platform) error {
+	err := remote.Write(ref, img, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(p))
+	if err != nil {
+		klog.Warningf("remote push for %s: %v", ref, err)
+	}
+	return err
+}
+
 // See https://github.com/kubernetes/minikube/issues/10402
 // check if downloaded image Architecture field matches the requested and fix it otherwise
 func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, error) {
@@ -320,7 +275,7 @@ func fixPlatform(ref name.Reference, img v1.Image, p v1.Platform) (v1.Image, err
 }
 
 func cleanImageCacheDir() error {
-	err := filepath.Walk(constants.ImageCacheDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(localpath.MakeMiniPath("cache", "images"), func(path string, info os.FileInfo, err error) error {
 		// If error is not nil, it's because the path was already deleted and doesn't exist
 		// Move on to next path
 		if err != nil {
@@ -331,7 +286,7 @@ func cleanImageCacheDir() error {
 			return nil
 		}
 		// If directory is empty, delete it
-		entries, err := ioutil.ReadDir(path)
+		entries, err := os.ReadDir(path)
 		if err != nil {
 			return err
 		}

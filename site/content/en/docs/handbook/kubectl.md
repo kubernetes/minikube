@@ -16,13 +16,57 @@ However if `kubectl` is not installed locally, minikube already includes kubectl
 minikube kubectl -- <kubectl commands>
 ```
 
-You can also `alias kubectl="minikube kubectl --"` for easier usage.
+{{% tabs %}}
+
+{{% linuxtab %}}
+You can also alias kubectl for easier usage.
+
+```shell
+alias kubectl="minikube kubectl --"
+```
 
 Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
 
 ```shell
 ln -s $(which minikube) /usr/local/bin/kubectl
 ```
+
+{{% /linuxtab %}}
+
+{{% mactab %}}
+You can also alias kubectl for easier usage.
+
+```shell
+alias kubectl="minikube kubectl --"
+```
+
+Alternatively, you can create a symbolic link to minikube's binary named 'kubectl'.
+
+```shell
+ln -s $(which minikube) /usr/local/bin/kubectl
+```
+
+{{% /mactab %}}
+
+{{% windowstab %}}
+You can also alias kubectl for easier usage.
+
+Powershell.
+
+```shell
+function kubectl { minikube kubectl -- $args }
+```
+
+Command Prompt.
+
+```shell
+doskey kubectl=minikube kubectl $*
+```
+
+
+{{% /windowstab %}}
+
+{{% /tabs %}}
 
 Get pods
 
@@ -50,5 +94,4 @@ minikube kubectl -- --help
 
 ### Shell autocompletion
 
-After applying the alias or the symbolic link you can follow https://kubernetes.io/docs/tasks/tools/install-kubectl/#enabling-shell-autocompletion to enable shell-autocompletion.
-When using zsh and the alias approach you also have to execute `setopt complete_aliases`.
+After applying the alias or the symbolic link you can follow https://kubernetes.io/docs/tasks/tools/included/optional-kubectl-configs-bash-linux/ to enable shell-autocompletion.

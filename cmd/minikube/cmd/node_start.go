@@ -68,7 +68,7 @@ var nodeStartCmd = &cobra.Command{
 			Host:           h,
 			Cfg:            cc,
 			Node:           n,
-			ExistingAddons: nil,
+			ExistingAddons: cc.Addons,
 		}
 
 		_, err = node.Start(s, n.ControlPlane)

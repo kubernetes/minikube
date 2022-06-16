@@ -29,6 +29,7 @@ import (
 
 var docsPath string
 var testPath string
+var codePath string
 
 // generateDocs represents the generate-docs command
 var generateDocs = &cobra.Command{
@@ -45,16 +46,18 @@ var generateDocs = &cobra.Command{
 		}
 
 		// generate docs
-		if err := generate.Docs(RootCmd, docsPath, testPath); err != nil {
+		if err := generate.Docs(RootCmd, docsPath, testPath, codePath); err != nil {
 			exit.Error(reason.InternalGenerateDocs, "Unable to generate docs", err)
 		}
 		out.Step(style.Documentation, "Docs have been saved at - {{.path}}", out.V{"path": docsPath})
 		out.Step(style.Documentation, "Test docs have been saved at - {{.path}}", out.V{"path": testPath})
+		out.Step(style.Documentation, "Error code docs have been saved at - {{.path}}", out.V{"path": codePath})
 	},
 }
 
 func init() {
 	generateDocs.Flags().StringVar(&docsPath, "path", "", "The path on the file system where the docs in markdown need to be saved")
 	generateDocs.Flags().StringVar(&testPath, "test-path", "", "The path on the file system where the testing docs in markdown need to be saved")
+	generateDocs.Flags().StringVar(&codePath, "code-path", "", "The path on the file system where the error code docs in markdown need to be saved")
 	RootCmd.AddCommand(generateDocs)
 }

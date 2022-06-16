@@ -1,4 +1,4 @@
-// +build linux
+//go:build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.

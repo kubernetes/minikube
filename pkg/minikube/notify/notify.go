@@ -19,13 +19,13 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -43,53 +43,120 @@ var (
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
-func MaybePrintUpdateTextFromGithub() bool {
-	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub() {
+	maybePrintUpdateText(GithubMinikubeReleasesURL, GithubMinikubeBetaReleasesURL, lastUpdateCheckFilePath)
 }
 
-// MaybePrintUpdateText prints update text, returns a bool if life is good.
-func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
-	if !shouldCheckURLVersion(lastUpdatePath) {
-		return false
-	}
-	latestVersion, err := getLatestVersionFromURL(url)
+// MaybePrintUpdateTextFromAliyunMirror prints update text if needed, from Aliyun mirror
+func MaybePrintUpdateTextFromAliyunMirror() {
+	maybePrintUpdateText(GithubMinikubeReleasesAliyunURL, GithubMinikubeBetaReleasesAliyunURL, lastUpdateCheckFilePath)
+}
+
+func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
+	latestVersion, err := latestVersionFromURL(latestReleasesURL)
 	if err != nil {
 		klog.Warning(err)
-		return true
+		return
+	}
+	if !shouldCheckURLVersion(lastUpdatePath) {
+		return
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
 		klog.Warning(err)
-		return true
+		return
 	}
-	if localVersion.Compare(latestVersion) < 0 {
-		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
-			klog.Errorf("write time failed: %v", err)
-		}
-		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
-		out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
-		return true
+	if maybePrintBetaUpdateText(betaReleasesURL, localVersion, latestVersion, lastUpdatePath) {
+		return
 	}
-	return false
+	if localVersion.Compare(latestVersion) >= 0 {
+		return
+	}
+	printUpdateText(latestVersion)
+}
+
+// maybePrintBetaUpdateText returns true if update text is printed
+func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Version, latestFullVersion semver.Version, lastUpdatePath string) bool {
+	if !shouldCheckURLBetaVersion(lastUpdatePath) {
+		return false
+	}
+	latestBetaVersion, err := latestVersionFromURL(betaReleasesURL)
+	if err != nil {
+		klog.Warning(err)
+		return false
+	}
+	if latestFullVersion.Compare(latestBetaVersion) >= 0 {
+		return false
+	}
+	if localVersion.Compare(latestBetaVersion) >= 0 {
+		return false
+	}
+	printBetaUpdateText(latestBetaVersion)
+	return true
+}
+
+func printUpdateTextCommon(version semver.Version) {
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+		klog.Errorf("write time failed: %v", err)
+	}
+	url := "https://github.com/kubernetes/minikube/releases/tag/v" + version.String()
+	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": version, "url": url})
+}
+
+func printUpdateText(version semver.Version) {
+	printUpdateTextCommon(version)
+	out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
+}
+
+func printBetaUpdateText(version semver.Version) {
+	printUpdateTextCommon(version)
+	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'")
+	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
 }
 
 func shouldCheckURLVersion(filePath string) bool {
 	if !viper.GetBool(config.WantUpdateNotification) {
 		return false
 	}
-	lastUpdateTime := getTimeFromFileIfExists(filePath)
+	lastUpdateTime := timeFromFileIfExists(filePath)
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
-// Release represents a release
-type Release struct {
-	Name      string
-	Checksums map[string]string
+func shouldCheckURLBetaVersion(filePath string) bool {
+	if !viper.GetBool(config.WantBetaUpdateNotification) {
+		return false
+	}
+
+	return shouldCheckURLVersion(filePath)
 }
 
-// Releases represents several release
-type Releases []Release
+type operatingSystems struct {
+	Darwin  string `json:"darwin,omitempty"`
+	Linux   string `json:"linux,omitempty"`
+	Windows string `json:"windows,omitempty"`
+}
+
+type checksums struct {
+	AMD64   *operatingSystems `json:"amd64,omitempty"`
+	ARM     *operatingSystems `json:"arm,omitempty"`
+	ARM64   *operatingSystems `json:"arm64,omitempty"`
+	PPC64LE *operatingSystems `json:"ppc64le,omitempty"`
+	S390X   *operatingSystems `json:"s390x,omitempty"`
+	operatingSystems
+}
+
+type Release struct {
+	Checksums checksums `json:"checksums"`
+	Name      string    `json:"name"`
+}
+
+type Releases struct {
+	Releases []Release
+}
+
+func (r *Releases) UnmarshalJSON(p []byte) error {
+	return json.Unmarshal(p, &r.Releases)
+}
 
 func getJSON(url string, target *Releases) error {
 	client := &http.Client{}
@@ -112,22 +179,22 @@ func getJSON(url string, target *Releases) error {
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-func getLatestVersionFromURL(url string) (semver.Version, error) {
-	r, err := GetAllVersionsFromURL(url)
+var latestVersionFromURL = func(url string) (semver.Version, error) {
+	r, err := AllVersionsFromURL(url)
 	if err != nil {
 		return semver.Version{}, err
 	}
-	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
+	return semver.Make(strings.TrimPrefix(r.Releases[0].Name, version.VersionPrefix))
 }
 
-// GetAllVersionsFromURL get all versions from a JSON URL
-func GetAllVersionsFromURL(url string) (Releases, error) {
+// AllVersionsFromURL get all versions from a JSON URL
+func AllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
 	klog.Info("Checking for updates...")
 	if err := getJSON(url, &releases); err != nil {
 		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}
-	if len(releases) == 0 {
+	if len(releases.Releases) == 0 {
 		return releases, errors.Errorf("There were no json releases at the url specified: %s", url)
 	}
 	return releases, nil
@@ -141,8 +208,8 @@ func writeTimeToFile(path string, inputTime time.Time) error {
 	return nil
 }
 
-func getTimeFromFileIfExists(path string) time.Time {
-	lastUpdateCheckTime, err := ioutil.ReadFile(path)
+func timeFromFileIfExists(path string) time.Time {
+	lastUpdateCheckTime, err := os.ReadFile(path)
 	if err != nil {
 		return time.Time{}
 	}

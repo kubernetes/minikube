@@ -18,6 +18,9 @@ package ssh
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
@@ -63,7 +66,17 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	d.IPAddress = cc.SSHIPAddress
 	d.SSHUser = cc.SSHUser
-	d.SSHKey = cc.SSHKey
+
+	if strings.HasPrefix(cc.SSHKey, "~") {
+		dirname, err := os.UserHomeDir()
+		if err != nil {
+			return nil, errors.Errorf("Error determining path to ssh key: %v", err)
+		}
+		d.SSHKey = filepath.Join(dirname, cc.SSHKey[1:])
+	} else {
+		d.SSHKey = cc.SSHKey
+	}
+
 	d.SSHPort = cc.SSHPort
 
 	return d, nil

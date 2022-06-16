@@ -18,9 +18,9 @@ package bootstrapper
 
 import (
 	"crypto/sha1"
+	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
@@ -42,23 +43,24 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) ([]assets.CopyableFile, error) {
-	localPath := localpath.Profile(k8s.ClusterName)
+func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) error {
+	localPath := localpath.Profile(k8s.KubernetesConfig.ClusterName)
 	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
-	ccs, err := generateSharedCACerts()
+	ccs, regen, err := generateSharedCACerts()
 	if err != nil {
-		return nil, errors.Wrap(err, "shared CA certs")
+		return errors.Wrap(err, "shared CA certs")
 	}
 
-	xfer, err := generateProfileCerts(k8s, n, ccs)
+	xfer, err := generateProfileCerts(k8s, n, ccs, regen)
 	if err != nil {
-		return nil, errors.Wrap(err, "profile certs")
+		return errors.Wrap(err, "profile certs")
 	}
 
 	xfer = append(xfer, ccs.caCert)
@@ -67,6 +69,14 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	xfer = append(xfer, ccs.proxyKey)
 
 	copyableFiles := []assets.CopyableFile{}
+	defer func() {
+		for _, f := range copyableFiles {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}
+	}()
+
 	for _, p := range xfer {
 		cert := filepath.Base(p)
 		perms := "0644"
@@ -75,19 +85,19 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		}
 		certFile, err := assets.NewFileAsset(p, vmpath.GuestKubernetesCertsDir, cert, perms)
 		if err != nil {
-			return nil, errors.Wrapf(err, "key asset %s", cert)
+			return errors.Wrapf(err, "key asset %s", cert)
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
 	caCerts, err := collectCACerts()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for src, dst := range caCerts {
 		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
-			return nil, errors.Wrapf(err, "ca asset %s", src)
+			return errors.Wrapf(err, "ca asset %s", src)
 		}
 
 		copyableFiles = append(copyableFiles, certFile)
@@ -107,11 +117,11 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	kubeCfg := api.NewConfig()
 	err = kubeconfig.PopulateFromSettings(kcs, kubeCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "populating kubeconfig")
+		return errors.Wrap(err, "populating kubeconfig")
 	}
 	data, err := runtime.Encode(latest.Codec, kubeCfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "encoding kubeconfig")
+		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
 	if n.ControlPlane {
@@ -121,14 +131,14 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {
-			return nil, errors.Wrapf(err, "Copy %s", f.GetSourcePath())
+			return errors.Wrapf(err, "Copy %s", f.GetSourcePath())
 		}
 	}
 
 	if err := installCertSymlinks(cmd, caCerts); err != nil {
-		return nil, errors.Wrapf(err, "certificate symlinks")
+		return errors.Wrapf(err, "certificate symlinks")
 	}
-	return copyableFiles, nil
+	return nil
 }
 
 // CACerts has cert and key for CA (and Proxy)
@@ -140,7 +150,8 @@ type CACerts struct {
 }
 
 // generateSharedCACerts generates CA certs shared among profiles, but only if missing
-func generateSharedCACerts() (CACerts, error) {
+func generateSharedCACerts() (CACerts, bool, error) {
+	regenProfileCerts := false
 	globalPath := localpath.MiniPath()
 	cc := CACerts{
 		caCert:    localpath.CACert(),
@@ -167,28 +178,30 @@ func generateSharedCACerts() (CACerts, error) {
 	}
 
 	for _, ca := range caCertSpecs {
-		if canRead(ca.certPath) && canRead(ca.keyPath) {
+		if isValid(ca.certPath, ca.keyPath) {
 			klog.Infof("skipping %s CA generation: %s", ca.subject, ca.keyPath)
 			continue
 		}
 
+		regenProfileCerts = true
 		klog.Infof("generating %s CA: %s", ca.subject, ca.keyPath)
 		if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
-			return cc, errors.Wrap(err, "generate ca cert")
+			return cc, false, errors.Wrap(err, "generate ca cert")
 		}
 	}
 
-	return cc, nil
+	return cc, regenProfileCerts, nil
 }
 
 // generateProfileCerts generates profile certs for a profile
-func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACerts) ([]string, error) {
+func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, regen bool) ([]string, error) {
 
 	// Only generate these certs for the api server
 	if !n.ControlPlane {
 		return []string{}, nil
 	}
 
+	k8s := cfg.KubernetesConfig
 	profilePath := localpath.Profile(k8s.ClusterName)
 
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
@@ -196,12 +209,15 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		return nil, errors.Wrap(err, "getting service cluster ip")
 	}
 
-	apiServerIPs := append(k8s.APIServerIPs,
+	apiServerIPs := k8s.APIServerIPs
+	apiServerIPs = append(apiServerIPs,
 		net.ParseIP(n.IP), serviceIP, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1"))
 
-	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
-	apiServerAlternateNames := append(
-		apiServerNames,
+	apiServerNames := k8s.APIServerNames
+	apiServerNames = append(apiServerNames, k8s.APIServerName, constants.ControlPlaneAlias)
+
+	apiServerAlternateNames := apiServerNames
+	apiServerAlternateNames = append(apiServerAlternateNames,
 		util.GetAlternateDNS(k8s.DNSDomain)...)
 
 	daemonHost := oci.DaemonHost(k8s.ContainerRuntime)
@@ -278,16 +294,23 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 			kp = kp + "." + spec.hash
 		}
 
-		if canRead(cp) && canRead(kp) {
+		if !regen && isValid(cp, kp) {
 			klog.Infof("skipping %s signed cert generation: %s", spec.subject, kp)
 			continue
 		}
 
 		klog.Infof("generating %s signed cert: %s", spec.subject, kp)
+		if canRead(cp) {
+			os.Remove(cp)
+		}
+		if canRead(kp) {
+			os.Remove(kp)
+		}
 		err := util.GenerateSignedCert(
 			cp, kp, spec.subject,
 			spec.ips, spec.alternateNames,
 			spec.caCertPath, spec.caKeyPath,
+			cfg.CertExpiration,
 		)
 		if err != nil {
 			return xfer, errors.Wrapf(err, "generate signed cert for %q", spec.subject)
@@ -310,7 +333,7 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 
 // isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
 func isValidPEMCertificate(filePath string) (bool, error) {
-	fileBytes, err := ioutil.ReadFile(filePath)
+	fileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return false, err
 	}
@@ -331,54 +354,60 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 	return false, nil
 }
 
-// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs to copy to the host.
+// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs or ~/.minikube/files/etc/ssl/certs to copy to the host.
 // minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
 func collectCACerts() (map[string]string, error) {
 	localPath := localpath.MiniPath()
 	certFiles := map[string]string{}
 
-	certsDir := filepath.Join(localPath, "certs")
-	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info == nil {
-			return nil
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		fullPath := filepath.Join(certsDir, hostpath)
-		ext := strings.ToLower(filepath.Ext(hostpath))
-
-		if ext == ".crt" || ext == ".pem" {
-			if info.Size() < 32 {
-				klog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+	dirs := []string{filepath.Join(localPath, "certs"), filepath.Join(localPath, "files", "etc", "ssl", "certs")}
+	for _, certsDir := range dirs {
+		err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+			if info == nil {
+				return nil
+			}
+			if info.IsDir() {
 				return nil
 			}
 
-			klog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+			fullPath := filepath.Join(certsDir, hostpath)
+			ext := strings.ToLower(filepath.Ext(hostpath))
 
-			validPem, err := isValidPEMCertificate(hostpath)
-			if err != nil {
-				return err
-			}
+			if ext == ".crt" || ext == ".pem" {
+				if info.Size() < 32 {
+					klog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+					return nil
+				}
 
-			if validPem {
-				filename := filepath.Base(hostpath)
-				dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-				certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
+				klog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+
+				validPem, err := isValidPEMCertificate(hostpath)
+				if err != nil {
+					return err
+				}
+
+				if validPem {
+					filename := filepath.Base(hostpath)
+					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
+					certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
+				}
 			}
+			return nil
+		})
+
+		if err != nil {
+			return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
 		}
-		return nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
-	}
 
-	for _, excluded := range []string{"ca.pem", "cert.pem"} {
-		certFiles[filepath.Join(certsDir, excluded)] = ""
+		for _, excluded := range []string{"ca.pem", "cert.pem"} {
+			certFiles[filepath.Join(certsDir, excluded)] = ""
+		}
 	}
 
 	// populates minikube CA
@@ -459,5 +488,47 @@ func canRead(path string) bool {
 		return false
 	}
 	defer f.Close()
+	return true
+}
+
+// isValid checks a cert/key path and makes sure it's still valid
+// if a cert is expired or otherwise invalid, it will be deleted
+func isValid(certPath, keyPath string) bool {
+	if !canRead(keyPath) {
+		return false
+	}
+
+	certFile, err := os.ReadFile(certPath)
+	if err != nil {
+		klog.Infof("failed to read cert file %s: %v", certPath, err)
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	certData, _ := pem.Decode(certFile)
+	if certData == nil {
+		klog.Infof("failed to decode cert file %s", certPath)
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	cert, err := x509.ParseCertificate(certData.Bytes)
+	if err != nil {
+		klog.Infof("failed to parse cert file %s: %v\n", certPath, err)
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
+	if cert.NotAfter.Before(time.Now()) {
+		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": filepath.Base(certPath)})
+		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
+		os.Remove(certPath)
+		os.Remove(keyPath)
+		return false
+	}
+
 	return true
 }
