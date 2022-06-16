@@ -345,5 +345,9 @@ func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) e
 		}
 		return nil
 	}
-	return dockerConfigureNetworkPlugin(r, cr, networkPlugin)
+	dm, ok := r.(*Docker)
+	if !ok {
+		return fmt.Errorf("name and type mismatch")
+	}
+	return dockerConfigureNetworkPlugin(*dm, cr, networkPlugin)
 }
