@@ -14,7 +14,7 @@ spec:
   targetNamespaces:
   - my-etcd
 ---
-# # etcd v0.9.4 uses 'apiVersion: apiextensions.k8s.io/v1beta1' deprecated in k8s v1.22+
+# # etcd v0.9.4 uses 'apiVersion: apiextensions.k8s.io/v1' deprecated in k8s v1.22+
 # # ref: https://github.com/k8s-operatorhub/community-operators/blob/834fa9b5a58f75fbf1ae2ed5e37db2efe1cab483/operators/etcd/0.9.4/etcdclusters.etcd.database.coreos.com.crd.yaml#L1
 # # keep it disabled until updated and temporary use the 'cluster-manager' below instead
 # apiVersion: operators.coreos.com/v1alpha1
