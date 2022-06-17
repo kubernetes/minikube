@@ -99,10 +99,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
 		cr := configureRuntimes(starter.Runner, *starter.Cfg, nv)
 
-		if err = cruntime.CheckCompatibility(cr); err != nil {
-			return nil, err
-		}
-
 		showNoK8sVersionInfo(cr)
 
 		configureMounts(&wg, *starter.Cfg)
