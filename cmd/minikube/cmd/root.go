@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -84,8 +83,16 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	defer audit.Log(time.Now())
-
+	auditID, err := audit.LogCommandStart()
+	if err != nil {
+		klog.Errorf("failed to log command start to audit: %v", err)
+	}
+	defer func() {
+		err := audit.LogCommandEnd(auditID)
+		if err != nil {
+			klog.Errorf("failed to log command end to audit: %v", err)
+		}
+	}()
 	// Check whether this is a windows binary (.exe) running inisde WSL.
 	if runtime.GOOS == "windows" && detect.IsMicrosoftWSL() {
 		var found = false

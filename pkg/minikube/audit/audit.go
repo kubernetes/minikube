@@ -17,15 +17,20 @@ limitations under the License.
 package audit
 
 import (
+	"bufio"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -52,14 +57,67 @@ func args() string {
 }
 
 // Log details about the executed command.
-func Log(startTime time.Time) {
-	if !shouldLog() {
-		return
+func LogCommandStart() (string, error) {
+	if len(os.Args) < 2 || !shouldLog() {
+		return "", nil
 	}
-	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), startTime, time.Now())
+	id := uuid.New().String()
+	r := newRow(pflag.Arg(0), args(), userName(), version.GetVersion(), time.Now(), id)
 	if err := appendToLog(r); err != nil {
-		klog.Warning(err)
+		return "", err
 	}
+	return r.id, nil
+}
+
+func LogCommandEnd(id string) error {
+	if id == "" {
+		return nil
+	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
+	defer closeAuditLog()
+	var logs []string
+	s := bufio.NewScanner(currentLogFile)
+	for s.Scan() {
+		logs = append(logs, s.Text())
+	}
+	if err := s.Err(); err != nil {
+		return fmt.Errorf("failed to read from audit file: %v", err)
+	}
+	closeAuditLog()
+	rowSlice, err := logsToRows(logs)
+	if err != nil {
+		return fmt.Errorf("failed to convert logs to rows: %v", err)
+	}
+	auditContents := ""
+	var entriesNeedsToUpdate int
+	for _, v := range rowSlice {
+		if v.id == id {
+			v.endTime = time.Now().Format(constants.TimeFormat)
+			v.Data = v.toMap()
+			entriesNeedsToUpdate++
+		}
+		auditLog, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		auditContents += string(auditLog) + "\n"
+	}
+	if entriesNeedsToUpdate == 0 {
+		return fmt.Errorf("failed to find a log row with id equals to %v", id)
+	}
+	// have to truncate the audit log while closed as Windows can't truncate an open file
+	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
+		return fmt.Errorf("failed to truncate audit log: %v", err)
+	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
+	if _, err = currentLogFile.Write([]byte(auditContents)); err != nil {
+		return fmt.Errorf("failed to write to audit log: %v", err)
+	}
+	return nil
 }
 
 // shouldLog returns if the command should be logged.
@@ -74,7 +132,7 @@ func shouldLog() bool {
 	}
 
 	// commands that should not be logged.
-	no := []string{"status", "version"}
+	no := []string{"status", "version", "logs", "generate-docs"}
 	a := pflag.Arg(0)
 	for _, c := range no {
 		if a == c {

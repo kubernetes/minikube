@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
@@ -27,29 +28,35 @@ import (
 // currentLogFile the file that's used to store audit logs
 var currentLogFile *os.File
 
-// setLogFile sets the logPath and creates the log file if it doesn't exist.
-func setLogFile() error {
+// openAuditLog opens the audit log file or creates it if it doesn't exist.
+func openAuditLog() error {
 	lp := localpath.AuditLog()
 	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("unable to open %s: %v", lp, err)
+		return fmt.Errorf("failed to open the audit log: %v", err)
 	}
 	currentLogFile = f
 	return nil
 }
 
+// closeAuditLog closes the audit log file
+func closeAuditLog() {
+	if err := currentLogFile.Close(); err != nil {
+		klog.Errorf("failed to close the audit log: %v", err)
+	}
+}
+
 // appendToLog appends the row to the log file.
 func appendToLog(row *row) error {
-	if currentLogFile == nil {
-		if err := setLogFile(); err != nil {
-			return err
-		}
-	}
 	ce := register.CloudEvent(row, row.toMap())
 	bs, err := ce.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("error marshalling event: %v", err)
 	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
+	defer closeAuditLog()
 	if _, err := currentLogFile.WriteString(string(bs) + "\n"); err != nil {
 		return fmt.Errorf("unable to write to audit log: %v", err)
 	}
