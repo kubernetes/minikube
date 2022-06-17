@@ -52,7 +52,17 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 func showNoK8sVersionInfo(cr cruntime.Manager) {
-	version, _ := cr.Version()
+	err := cruntime.CheckCompatibility(cr)
+	if err != nil {
+		klog.Warningf("%s check compatibility failed: %v", cr.Name(), err)
+
+	}
+
+	version, err := cr.Version()
+	if err != nil {
+		klog.Warningf("%s get version failed: %v", cr.Name(), err)
+	}
+
 	out.Step(cr.Style(), "Preparing {{.runtime}} {{.runtimeVersion}} ...", out.V{"runtime": cr.Name(), "runtimeVersion": version})
 }
 
