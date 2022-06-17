@@ -52,3 +52,5 @@ if [ $? -gt 0 ]; then
 fi
 output=$(cat mkcmp.log)
 gh pr comment ${MINIKUBE_LOCATION} --body "${output}"
+
+docker system prune -a --volumes -f

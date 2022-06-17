@@ -55,7 +55,7 @@ function cleanup() {
 	# clean docker left overs
 	echo -e "\ncleanup docker..."
 	docker kill $(docker ps -aq) >/dev/null 2>&1 || true
-	docker system prune --volumes --force || true
+	docker system prune -a --volumes -f || true
 
 	# clean KVM left overs
 	echo -e "\ncleanup kvm..."
@@ -111,13 +111,11 @@ function cleanup() {
 	done
 	echo -e "\nafter the cleanup:"
 	overview
-
-	# clean up /tmp
-	find /tmp -name . -o -prune -exec rm -rf -- {} + >/dev/null 2>&1 || true
 }
 
 # Give 15m for Linux-specific cleanup
-timeout 15m cleanup
+export -f cleanup
+timeout 15m bash -c cleanup
 
 # disable localkube, kubelet
 systemctl list-unit-files --state=enabled \
