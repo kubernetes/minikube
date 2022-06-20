@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -184,7 +183,7 @@ Configurable fields: ` + "\n\n" + configurableFields(),
 }
 
 func configurableFields() string {
-	var fields []string
+	fields := []string{}
 	for _, s := range settings {
 		fields = append(fields, " * "+s.name)
 	}
