@@ -18,7 +18,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Bump Golang Versions
         id: bumpGolang
         run: |

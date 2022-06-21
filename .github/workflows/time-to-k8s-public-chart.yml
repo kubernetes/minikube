@@ -23,7 +23,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Benchmark time-to-k8s for Docker driver with Docker runtime
         run: |
           ./hack/benchmark/time-to-k8s/public-chart/public-chart.sh docker docker
@@ -48,7 +47,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
