@@ -95,6 +95,7 @@ func TestAddons(t *testing.T) {
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
+			{"Headlamp", validateHeadlampAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -706,5 +707,18 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Fatalf("wait for private image: %v", err)
 		}
+	}
+}
+
+func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "headlamp", "-p", profile, "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Fatalf("failed to enable headlamp addon: args: %q: %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for headlamp pod: %v", err)
 	}
 }

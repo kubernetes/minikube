@@ -70,6 +70,29 @@ var addonsEnableCmd = &cobra.Command{
 `, out.V{"profileArg": tipProfileArg})
 
 		}
+		if addon == "headlamp" {
+			out.Styled(style.Tip, `To access Headlamp, use the following command:
+minikube service headlamp -n headlamp
+
+`)
+			out.Styled(style.Tip, `To authenticate in Headlamp, fetch the Authentication Token using the following command:
+
+export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
+kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} | base64 --decode
+			
+`)
+
+			tipProfileArg := ""
+			if ClusterFlagValue() != constants.DefaultClusterName {
+				tipProfileArg = fmt.Sprintf(" -p %s", ClusterFlagValue())
+			}
+			out.Styled(style.Tip, `Headlamp can display more detailed information when metrics-server is installed. To install it, run:
+
+minikube{{.profileArg}} addons enable metrics-server	
+
+`, out.V{"profileArg": tipProfileArg})
+
+		}
 		if err == nil {
 			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 		}
