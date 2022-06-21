@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -606,6 +607,13 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
+	serviceAccountName := "gcp-auth-test"
+	// create a dummy service account so we know the pull secret got added
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "sa", serviceAccountName))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
 	// 8 minutes, because 4 is not enough for images to pull in all cases.
 	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
 	if err != nil {
@@ -622,6 +630,22 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	expected := "/google-app-creds.json"
 	if got != expected {
 		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+	}
+
+	// Now check the service account and make sure the "gcp-auth" image pull secret is present
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "sa", serviceAccountName))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	expectedPullSecret := "gcp-auth"
+	re, err := regexp.Compile(`.*Image pull secrets:.*`)
+	if err != nil {
+		t.Errorf("Image pull secret not found in service account output: %v", err)
+	}
+	secrets := re.FindString(rr.Stdout.String())
+	if !strings.Contains(secrets, expectedPullSecret) {
+		t.Errorf("Unexpected image pull secrets. expected %s, got %s", expectedPullSecret, secrets)
 	}
 
 	if !detect.IsOnGCE() || detect.IsCloudShell() {
