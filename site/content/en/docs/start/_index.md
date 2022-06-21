@@ -456,7 +456,7 @@ choco install minikube
     }
     ```
     <span style="color:blue">
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._</span>
+    *If you used a terminal (like powershell) for the installation, please close the terminal and reopen it before running minikube.*</span>
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
