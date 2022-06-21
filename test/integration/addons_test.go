@@ -639,10 +639,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	expectedPullSecret := "gcp-auth"
-	re, err := regexp.Compile(`.*Image pull secrets:.*`)
-	if err != nil {
-		t.Errorf("Image pull secret not found in service account output: %v", err)
-	}
+	re := regexp.MustCompile(`.*Image pull secrets:.*`)
 	secrets := re.FindString(rr.Stdout.String())
 	if !strings.Contains(secrets, expectedPullSecret) {
 		t.Errorf("Unexpected image pull secrets. expected %s, got %s", expectedPullSecret, secrets)
