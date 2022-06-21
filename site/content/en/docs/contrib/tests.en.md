@@ -42,6 +42,8 @@ tests the csi hostpath driver by creating a persistent volume, snapshotting it a
 #### validateGCPAuthAddon
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
+#### validateHeadlampAddon
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
