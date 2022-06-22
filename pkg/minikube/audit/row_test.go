@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -36,8 +37,10 @@ func TestRow(t *testing.T) {
 	stFormatted := st.Format(constants.TimeFormat)
 	et := time.Now()
 	etFormatted := et.Format(constants.TimeFormat)
+	id := uuid.New().String()
 
-	r := newRow(c, a, u, v, st, et, p)
+	r := newRow(c, a, u, v, st, id, p)
+	r.endTime = etFormatted
 
 	t.Run("NewRow", func(t *testing.T) {
 		tests := []struct {
@@ -51,7 +54,7 @@ func TestRow(t *testing.T) {
 			{"user", r.user, u},
 			{"version", r.version, v},
 			{"startTime", r.startTime, stFormatted},
-			{"endTime", r.endTime, etFormatted},
+			{"id", r.id, id},
 		}
 
 		for _, tt := range tests {
@@ -83,7 +86,7 @@ func TestRow(t *testing.T) {
 			{"user", u},
 			{"version", v},
 			{"startTime", stFormatted},
-			{"endTime", etFormatted},
+			{"id", id},
 		}
 
 		for _, tt := range tests {
@@ -106,7 +109,7 @@ func TestRow(t *testing.T) {
 	})
 
 	t.Run("assignFields", func(t *testing.T) {
-		l := fmt.Sprintf(`{"data":{"args":"%s","command":"%s","endTime":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`, a, c, etFormatted, p, stFormatted, u)
+		l := fmt.Sprintf(`{"data":{"args":"%s","command":"%s","id":"%s","profile":"%s","startTime":"%s","user":"%s","version":"v0.17.1"},"datacontenttype":"application/json","id":"bc6ec9d4-0d08-4b57-ac3b-db8d67774768","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}`, a, c, id, p, stFormatted, u)
 
 		r := &row{}
 		if err := json.Unmarshal([]byte(l), r); err != nil {
@@ -126,7 +129,7 @@ func TestRow(t *testing.T) {
 			{"user", r.user, u},
 			{"version", r.version, v},
 			{"startTime", r.startTime, stFormatted},
-			{"endTime", r.endTime, etFormatted},
+			{"id", r.id, id},
 		}
 
 		for _, tt := range tests {

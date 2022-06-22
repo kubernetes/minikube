@@ -30,14 +30,20 @@ import (
 
 // row is the log of a single command.
 type row struct {
-	args      string
-	command   string
-	endTime   string
-	profile   string
-	startTime string
-	user      string
-	version   string
-	Data      map[string]string `json:"data"`
+	SpecVersion     string            `json:"specversion"`
+	ID              string            `json:"id"`
+	Source          string            `json:"source"`
+	TypeField       string            `json:"type"`
+	DataContentType string            `json:"datacontenttype"`
+	Data            map[string]string `json:"data"`
+	args            string
+	command         string
+	endTime         string
+	id              string
+	profile         string
+	startTime       string
+	user            string
+	version         string
 }
 
 // Type returns the cloud events compatible type of this struct.
@@ -55,6 +61,7 @@ func (e *row) assignFields() {
 	e.startTime = e.Data["startTime"]
 	e.user = e.Data["user"]
 	e.version = e.Data["version"]
+	e.id = e.Data["id"]
 }
 
 // toMap combines fields into a string map,
@@ -68,11 +75,12 @@ func (e *row) toMap() map[string]string {
 		"startTime": e.startTime,
 		"user":      e.user,
 		"version":   e.version,
+		"id":        e.id,
 	}
 }
 
 // newRow creates a new audit row.
-func newRow(command string, args string, user string, version string, startTime time.Time, endTime time.Time, profile ...string) *row {
+func newRow(command string, args string, user string, version string, startTime time.Time, id string, profile ...string) *row {
 	p := viper.GetString(config.ProfileName)
 	if len(profile) > 0 {
 		p = profile[0]
@@ -80,11 +88,11 @@ func newRow(command string, args string, user string, version string, startTime 
 	return &row{
 		args:      args,
 		command:   command,
-		endTime:   endTime.Format(constants.TimeFormat),
 		profile:   p,
 		startTime: startTime.Format(constants.TimeFormat),
 		user:      user,
 		version:   version,
+		id:        id,
 	}
 }
 

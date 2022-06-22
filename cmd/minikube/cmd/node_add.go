@@ -50,8 +50,13 @@ var nodeAddCmd = &cobra.Command{
 
 		name := node.Name(len(cc.Nodes) + 1)
 
-		out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		// for now control-plane feature is not supported
+		if cp {
+			out.Step(style.Unsupported, "Adding a control-plane node is not yet supported, setting control-plane flag to false")
+			cp = false
+		}
 
+		out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
 			Name:              name,
@@ -89,7 +94,7 @@ var nodeAddCmd = &cobra.Command{
 
 func init() {
 	// TODO(https://github.com/kubernetes/minikube/issues/7366): We should figure out which minikube start flags to actually import
-	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
+	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "This flag is currently unsupported.")
 	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
 	nodeAddCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 

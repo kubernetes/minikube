@@ -23,21 +23,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestLogFile(t *testing.T) {
-	t.Run("SetLogFile", func(t *testing.T) {
+	t.Run("OpenAuditLog", func(t *testing.T) {
 		// make sure logs directory exists
 		if err := os.MkdirAll(filepath.Dir(localpath.AuditLog()), 0755); err != nil {
 			t.Fatalf("Error creating logs directory: %v", err)
 		}
-		if err := setLogFile(); err != nil {
-			t.Error(err)
+		if err := openAuditLog(); err != nil {
+			t.Fatal(err)
 		}
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
+		defer closeAuditLog()
 		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
@@ -48,7 +50,7 @@ func TestLogFile(t *testing.T) {
 		defer func() { currentLogFile = &oldLogFile }()
 		currentLogFile = f
 
-		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), time.Now())
+		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), uuid.New().String())
 		if err := appendToLog(r); err != nil {
 			t.Fatalf("Error appendingToLog: %v", err)
 		}
