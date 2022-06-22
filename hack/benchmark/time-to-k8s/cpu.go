@@ -31,7 +31,7 @@ var fields = []string{"CPU Utilization(%)", "CPU Time(seconds)"}
 
 func cpuMarkdownTable(categories []plotter.Values, names []string) {
 
-	// categories row either is the  cpu pct or time, col is process name
+	// categories row is either cpu pct or time, col is process name
 	headers := append([]string{""}, names...)
 	c := [][]string{}
 	for i, values := range categories {
