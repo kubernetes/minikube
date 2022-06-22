@@ -570,9 +570,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
-          name: none_ubuntu18_04
+          name: functional_baremetal_ubuntu18_04
           path: minikube_binaries/report
-      - name: The End Result - None on Ubuntu 18:04
+      - name: The End Result functional_baremetal_ubuntu18_04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
