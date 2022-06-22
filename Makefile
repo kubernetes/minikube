@@ -813,6 +813,10 @@ release-notes:
 update-leaderboard:
 	hack/update_contributions.sh
 
+.PHONY: update-yearly-leaderboard
+update-yearly-leaderboard:
+	hack/yearly-leaderboard.sh
+
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@

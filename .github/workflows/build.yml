@@ -24,7 +24,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -51,7 +50,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -70,7 +68,6 @@ jobs:
       - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
