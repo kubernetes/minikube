@@ -575,7 +575,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 					exit.Message(reason.Usage, "Using rootless driver was required, but the current driver does not seem rootless")
 				}
 			}
-			out.Styled(style.Notice, "Using {{.driver_name}} driver with the root privilege", out.V{"driver_name": driver.FullName(drvName)})
+			out.Styled(style.Notice, "Using {{.driver_name}} driver with root privileges", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.StorageDriver == "btrfs" {
 			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
