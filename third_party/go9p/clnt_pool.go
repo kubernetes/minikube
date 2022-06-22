@@ -70,7 +70,7 @@ func (p *pool) getId() uint32 {
 
 	if int(n) >= len(p.imap) {
 		m := uint32(len(p.imap) + 32)
-		if uint32(m*8) > p.maxid {
+		if m*8 > p.maxid {
 			m = p.maxid/8 + 1
 		}
 
