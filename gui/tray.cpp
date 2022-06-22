@@ -13,7 +13,7 @@ Tray::Tray(QIcon icon)
 
     connect(trayIcon, &QSystemTrayIcon::activated, this, &Tray::iconActivated);
 
-    minimizeAction = new QAction(tr("Mi&nimize"), this);
+    minimizeAction = new QAction(tr("&Minimize"), this);
     connect(minimizeAction, &QAction::triggered, this, &Tray::hideWindow);
 
     restoreAction = new QAction(tr("&Restore"), this);
