@@ -753,7 +753,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		requested = d
 	}
 
-	// Neither --vm-driver or --driver was specified
+	// Neither --vm-driver nor --driver was specified
 	if requested == "" {
 		return
 	}
