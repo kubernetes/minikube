@@ -843,7 +843,7 @@
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "Das Verwenden der '{{.runtime}}' Laufzeitumgebung mit dem 'none' Treiber ist eine ungetestete Konfiguration!",
 	"Using the {{.driver}} driver based on existing profile": "Verwende den Treiber {{.driver}} basierend auf dem existierenden Profil",
 	"Using the {{.driver}} driver based on user configuration": "Verwende den Treiber {{.driver}} basierend auf der Benutzer-Konfiguration",
-	"Using {{.driver_name}} driver with the root privilege": "",
+	"Using {{.driver_name}} driver with root privileges": "",
 	"VM driver is one of: %v": "VM-Treiber ist einer von: %v",
 	"Valid components are: {{.valid_extra_opts}}": "Gültige Komponenten sind: {{.valid_extra_opts}}",
 	"Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all": "Validieren Sie ihre KVM Netzwerke. Führen Sie folgendes aus: virt-host-validate and then virsh net-list --all",

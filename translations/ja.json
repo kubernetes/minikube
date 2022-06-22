@@ -849,7 +849,7 @@
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "' none' ドライバーでの '{{.runtime}}' ランタイム使用は、未テストの設定です！",
 	"Using the {{.driver}} driver based on existing profile": "既存のプロファイルを元に、{{.driver}} ドライバーを使用します",
 	"Using the {{.driver}} driver based on user configuration": "ユーザーの設定に基づいて {{.driver}} ドライバーを使用します",
-	"Using {{.driver_name}} driver with the root privilege": "",
+	"Using {{.driver_name}} driver with root privileges": "",
 	"VM driver is one of: %v": "VM ドライバーは次のいずれかです: %v",
 	"Valid components are: {{.valid_extra_opts}}": "有効なコンポーネント: {{.valid_extra_opts}}",
 	"Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all": "virt-host-validate 実行後に virsh net-list --all を実行して KVM ネットワークを検証してください",
