@@ -956,7 +956,7 @@
 	"Using the running {{.driver_name}} \"{{.profile_name}}\" VM ...": "使用正在运行的 {{.driver_name}} \"{{.profile_name}}\" 虚拟机",
 	"Using the {{.driver}} driver based on existing profile": "根据现有的配置文件使用 {{.driver}} 驱动程序",
 	"Using the {{.driver}} driver based on user configuration": "根据用户配置使用 {{.driver}} 驱动程序",
-	"Using {{.driver_name}} driver with the root privilege": "",
+	"Using {{.driver_name}} driver with root privileges": "",
 	"VM driver is one of: %v": "虚拟机驱动程序是以下项之一：%v",
 	"VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository": "虚拟机无权访问 {{.repository}}，或许您需要配置代理或者设置 --image-repository",
 	"VM may be unable to resolve external DNS records": "虚拟机可能无法解析外部 DNS 记录",

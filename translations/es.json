@@ -846,7 +846,7 @@
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "",
 	"Using the {{.driver}} driver based on existing profile": "",
 	"Using the {{.driver}} driver based on user configuration": "",
-	"Using {{.driver_name}} driver with the root privilege": "",
+	"Using {{.driver_name}} driver with root privileges": "",
 	"VM driver is one of: %v": "El controlador de la VM es uno de los siguientes: %v",
 	"Valid components are: {{.valid_extra_opts}}": "",
 	"Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all": "",

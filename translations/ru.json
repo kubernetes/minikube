@@ -783,7 +783,7 @@
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "",
 	"Using the {{.driver}} driver based on existing profile": "Используется драйвер {{.driver}} на основе существующего профиля",
 	"Using the {{.driver}} driver based on user configuration": "Используется драйвер {{.driver}} на основе конфига пользователя",
-	"Using {{.driver_name}} driver with the root privilege": "",
+	"Using {{.driver_name}} driver with root privileges": "",
 	"Valid components are: {{.valid_extra_opts}}": "",
 	"Validate your KVM networks. Run: virt-host-validate and then virsh net-list --all": "",
 	"Verify that your HTTP_PROXY and HTTPS_PROXY environment variables are set correctly.": "",
