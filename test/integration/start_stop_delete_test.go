@@ -61,8 +61,6 @@ func TestStartStop(t *testing.T) {
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
-				// TODO: Remove network-plugin config when newest is 1.24
-				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
 			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{

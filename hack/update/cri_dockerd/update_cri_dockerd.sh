@@ -31,7 +31,6 @@ pushd $tmpdir
 git clone -n https://github.com/Mirantis/cri-dockerd
 cd cri-dockerd
 git checkout $version
-cd src
 
 for (( i=0; i < ${#archarray[*]}; i++ ))
 do
@@ -41,7 +40,6 @@ do
 
 done
 
-cd ..
 gsutil cp ./packaging/systemd/cri-docker.service gs://kicbase-artifacts/cri-dockerd/$version/cri-docker.service
 gsutil cp ./packaging/systemd/cri-docker.socket gs://kicbase-artifacts/cri-dockerd/$version/cri-docker.socket
 

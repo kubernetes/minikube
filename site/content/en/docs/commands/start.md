@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.31-1655167405-14337@sha256:007ee1d2e27a61d87fd05c11b41a5956577f975ef7440d0283f28fa9c5dc4f26")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.31-1655326339-14197@sha256:9190bd2393eae887316c97a74370b7d5dad8f0b2ef91ac2662bc36f7ef8e0b95")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -69,9 +69,9 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/14329/minikube-v1.26.0-1655163725-14329.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655163725-14329/minikube-v1.26.0-1655163725-14329.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655163725-14329.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/14197/minikube-v1.26.0-1655407986-14197-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655407986-14197/minikube-v1.26.0-1655407986-14197-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655407986-14197-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/14197/minikube-v1.26.0-1655407986-14197.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1655407986-14197/minikube-v1.26.0-1655407986-14197.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1655407986-14197.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.23.6, 'latest' for v1.23.6). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.24.1, 'latest' for v1.24.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")

@@ -51,18 +51,40 @@ sudo systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop -f kubelet
 
- # conntrack is required for kubernetes 1.18 and higher for none driver
+# conntrack is required for Kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
   echo "WARNING: contrack is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install conntrack
 fi
 
- # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+# socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
 if ! which socat &>/dev/null; then
   echo "WARNING: socat is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install socat
+fi
+
+# cri-dockerd is required for Kubernetes 1.24 and higher for none driver
+if ! cri-dockerd &>/dev/null; then
+  echo "WARNING: cri-dockerd is not installed. will try to install."
+  CRI_DOCKER_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+  git clone -n https://github.com/Mirantis/cri-dockerd
+  cd cri-dockerd
+  git checkout "$CRI_DOCKER_VERSION"
+  env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=${CRI_DOCKER_VERSION:0:7}' -o cri-dockerd
+  cd ..
+  sudo cp cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
+  sudo cp cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
+  sudo cp cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
+fi
+
+# crictl is required for Kubernetes 1.24 and higher for none driver
+if ! crictl &>/dev/null; then
+  echo "WARNING: crictl is not installed. will try to install."
+  VERSION="v1.17.0"
+  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
+  sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
 
 # We need this for reasons now
