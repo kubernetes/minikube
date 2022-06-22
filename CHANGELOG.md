@@ -1,5 +1,102 @@
 # Release Notes
 
+## Version 1.26.0 - 2022-06-22
+
+Features:
+* Add `headlamp` addon [#14315](https://github.com/kubernetes/minikube/pull/14315)
+* Add `InAccel FPGA Operator` addon [#12995](https://github.com/kubernetes/minikube/pull/12995)
+
+QEMU:
+* Only set highmem=off for darwin if qemu version is below 7.0 or memory is below 3GB [#14291](https://github.com/kubernetes/minikube/pull/14291)
+* Define qemu as a qemu2 driver alias [#14284](https://github.com/kubernetes/minikube/pull/14284)
+* Allow users to supply custom QEMU firmware path [#14283](https://github.com/kubernetes/minikube/pull/14283)
+
+Minor Improvements:
+* Add eBPF related kernel options [#14316](https://github.com/kubernetes/minikube/pull/14316)
+* Add bind address flag for `minikube tunnel` [#14245](https://github.com/kubernetes/minikube/pull/14245)
+* Add active column for `minikube profile list` [#14079](https://github.com/kubernetes/minikube/pull/14079)
+* Add documentation URL to the addon list table [#14123](https://github.com/kubernetes/minikube/pull/14123)
+* `minikube config defaults kubernetes-version` lists all currently supported Kubernetes versions [#13775](https://github.com/kubernetes/minikube/pull/13775)
+* Support starting minikube with the Podman driver on NixOS systems [#12739](https://github.com/kubernetes/minikube/pull/12739)
+
+Bug Fixes:
+* Fix terminated commands not writing to audit log [#13307](https://github.com/kubernetes/minikube/pull/13307)
+* Fix Podman port mapping publish on macOS [#14290](https://github.com/kubernetes/minikube/pull/14290)
+* Fix `minikube delete` deleting networks from other profiles [#14279](https://github.com/kubernetes/minikube/pull/14279)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.24.1 and latest: v1.24.1 [#14197](https://github.com/kubernetes/minikube/pull/14197)
+* ISO: Upgrade Docker from 20.10.14 to 20.10.16 [#14153](https://github.com/kubernetes/minikube/pull/14153)
+* ISO: Upgrade kernel from 4.19.235 to 5.10.57 [#12707](https://github.com/kubernetes/minikube/pull/12707)
+* Upgrade Dashboard addon from v2.5.1 to v2.6.0 & MetricsScraper from v1.0.7 to v1.0.8 [#14269](https://github.com/kubernetes/minikube/pull/14269)
+* Upgrade gcp-auth-webhook from v0.0.8 to v0.0.9 [#14372](https://github.com/kubernetes/minikube/pull/14372)
+* Upgrade nginx image from v1.2.0 to v1.2.1 [#14317](https://github.com/kubernetes/minikube/pull/14317)
+
+**Important Changes in Pre-Release Versions**
+Features:
+* Add configure option to registry-aliases addon [#13912](https://github.com/kubernetes/minikube/pull/13912)
+* Add support for building aarch64 ISO [#13762](https://github.com/kubernetes/minikube/pull/13762)
+* Support rootless Podman driver (Usage: `minikube config set rootless true`) [#13829](https://github.com/kubernetes/minikube/pull/13829)
+
+QEMU:
+* Add support for the QEMU driver [#13639](https://github.com/kubernetes/minikube/pull/13639)
+* Fix qemu firmware path locations [#14182](https://github.com/kubernetes/minikube/pull/14182)
+* Re-establish apiserver tunnel on restart  [#14183](https://github.com/kubernetes/minikube/pull/14183)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Alex Andrews
+- Anders F Björklund
+- Elias Koromilas
+- Francis Laniel
+- Giildo
+- Harsh Vardhan
+- Jack Zhang
+- Jeff MAURY
+- Kevin Grigorenko
+- Kian-Meng Ang
+- Leonardo Grasso
+- Medya Ghazizadeh
+- Nikhil Sharma
+- Nils Fahldieck
+- Pablo Caderno
+- Peter Becich
+- Predrag Rogic
+- Santhosh Nagaraj S
+- Sharif Elgamal
+- Steven Powell
+- Toshiaki Inukai
+- klaases
+- lakshkeswani
+- layakdev
+- lilongfeng
+- simonren-tes
+- ziyi-xie
+- 李龙峰
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (76 comments)
+- sharifelgamal (11 comments)
+- medyagh (8 comments)
+- afbjorklund (6 comments)
+- kakkoyun (2 comments)
+- knrt10 (2 comments)
+- mprimeaux (2 comments)
+- shu-mutou (2 comments)
+- javierhonduco (1 comments)
+- nburlett (1 comments)
+
+Thank you to our triage members for this release!
+
+- spowelljr (39 comments)
+- RA489 (30 comments)
+- sharifelgamal (27 comments)
+- afbjorklund (14 comments)
+- klaases (14 comments)
+
 ## Version 1.26.0-beta.1 - 2022-05-17
 
 QEMU driver enhancements:
