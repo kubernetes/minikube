@@ -72,7 +72,7 @@ var RootCmd = &cobra.Command{
 			exit.Message(reason.Usage, "User name must be 60 chars or less.")
 		}
 		// viper maps $MINIKUBE_ROOTLESS to "rootless" property automatically, but it does not do vice versa,
-		// so we map "rootless" property to $MINIKUBE_ROOTLESS expliclity here.
+		// so we map "rootless" property to $MINIKUBE_ROOTLESS explicitly here.
 		// $MINIKUBE_ROOTLESS is referred by KIC runner, which is decoupled from viper.
 		if viper.GetBool(config.Rootless) {
 			os.Setenv(constants.MinikubeRootlessEnv, "true")
