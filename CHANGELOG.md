@@ -9,7 +9,7 @@ QEMU driver enhancements:
 Features:
 * Add configure option to registry-aliases addon [#13912](https://github.com/kubernetes/minikube/pull/13912)
 
-For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
 Thank you to our contributors for this release!
 
@@ -75,7 +75,7 @@ Version Upgrades:
 * ISO: Upgrade Podman from 2.2.1 to 3.4.2 [#13126](https://github.com/kubernetes/minikube/pull/13126)
 * ISO: Add packaging for crun [#11679](https://github.com/kubernetes/minikube/pull/11679)
 
-For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
 Thank you to our contributors for this release!
 
@@ -161,7 +161,7 @@ Version Upgrades:
 * ISO: Add packaging for cri-dockerd [#13191](https://github.com/kubernetes/minikube/pull/13191)
 
 
-For a more detailed changelog, including changes occuring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
 Thank you to our contributors for this release!
 
