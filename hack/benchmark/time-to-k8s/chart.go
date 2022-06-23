@@ -275,8 +275,6 @@ func createChart(chartPath string, values []plotter.Values, totals []float64, na
 		return err
 	}
 
-	data.TimeChart = chartPath
-
 	return nil
 }
 
