@@ -97,8 +97,6 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 		return err
 	}
 
-	data.CPUChart = chartPath
-
 	return nil
 }
 
