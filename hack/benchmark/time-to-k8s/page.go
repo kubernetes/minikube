@@ -101,9 +101,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("fail to create file under path %s, with err %s", *pagePath, err)
 	}
-	defer f.Close()
 
 	if err = tmpl.Execute(f, data); err != nil {
 		log.Fatalf("fail to populate the page with err %s", err)
 	}
+
+	f.Close()
 }
