@@ -1,9 +1,6 @@
 name: "Tweet the release"
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
   release:
     types: [published]
 jobs:
