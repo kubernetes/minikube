@@ -4,8 +4,6 @@ on:
   push:
     tags-ignore:
       - 'v*-beta.*'
-  release:
-    types: [published]
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.18.3'
