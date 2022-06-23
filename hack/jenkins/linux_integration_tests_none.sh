@@ -35,8 +35,13 @@ EXPECTED_DEFAULT_DRIVER="kvm2"
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
+if ! kubeadm &>/dev/null; then
+  echo "WARNING: kubeadm is not installed. will try to install."
+  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubeadm"
+  sudo install kubeadm /usr/local/bin/kubeadm
+fi
 # "none" driver specific cleanup from previous runs.
-sudo kubeadm reset -f || true
+sudo kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock || true
 # kubeadm reset may not stop pods immediately
 docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 
@@ -53,7 +58,7 @@ sudo systemctl is-active --quiet kubelet \
 
 # conntrack is required for Kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
-  echo "WARNING: contrack is not installed. will try to install."
+  echo "WARNING: conntrack is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install conntrack
 fi
@@ -66,7 +71,7 @@ if ! which socat &>/dev/null; then
 fi
 
 # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
-if ! cri-dockerd &>/dev/null; then
+if ! cri-dockerd --version &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
   CRI_DOCKER_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
   git clone -n https://github.com/Mirantis/cri-dockerd
