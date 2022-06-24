@@ -441,6 +441,9 @@ func displayVersion(version string) {
 func displayEnviron(env []string) {
 	for _, kv := range env {
 		bits := strings.SplitN(kv, "=", 2)
+		if len(bits) < 2 {
+			continue
+		}
 		k := bits[0]
 		v := bits[1]
 		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
