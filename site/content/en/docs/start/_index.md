@@ -525,6 +525,11 @@ You can also make your life easier by adding the following to your shell config:
 ```shell
 alias kubectl="minikube kubectl --"
 ```
+for windows :
+
+```shell
+doskey kubectl=minikube kubectl -- $*
+```
 
 Initially, some services such as the storage-provisioner, may not yet be in a Running state. This is a normal condition during cluster bring-up, and will resolve itself momentarily. For additional insight into your cluster state, minikube bundles the Kubernetes Dashboard, allowing you to get easily acclimated to your new environment:
 
