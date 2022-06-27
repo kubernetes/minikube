@@ -159,3 +159,7 @@ $env:MINIKUBE_HOME = "D:\.minikube"
 
 minikube start
 ```
+
+## How can I resolve network issue to download image repository
+
+Simply add flag `--image-repositor` when exec `minikube start`.
