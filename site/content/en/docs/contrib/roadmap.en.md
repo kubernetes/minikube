@@ -34,5 +34,5 @@ Please send a PR to suggest any improvements to it.
 
 ## (#5) libmachine Refactor
 
-- [ ] Add new driver (with QEMU) to replace HyperKit, primarly for Mac arm64
+- [ ] Add new driver (with QEMU) to replace HyperKit, primarily for Mac arm64
 - [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
