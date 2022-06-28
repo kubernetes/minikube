@@ -61,7 +61,11 @@ ${RELEASE_NOTES}
 
 See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
-## ISO Checksum
+## Binary Checksums
+
+$(cat binary_checksums.txt)
+
+## ISO Checksums
 
 amd64: \`${ISO_SHA256_AMD64}\`  
 arm64: \`${ISO_SHA256_ARM64}\`"
