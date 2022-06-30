@@ -127,7 +127,7 @@ func validateCrioSystemd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("failed to get cri-o cgroup driver. args %q: %v", rr.Command(), err)
 	}
-	if strings.Contains(rr.Output(), "cgroup_manager = systemd") {
+	if strings.Contains(rr.Output(), "cgroup_manager = \"systemd\"") {
 		t.Fatalf("expected systemd cgroup driver, got: %v", rr.Output())
 	}
 }
