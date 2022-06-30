@@ -1149,6 +1149,26 @@ var runtimeIssues = []match{
 	},
 	{
 		Kind: Kind{
+			ID:       "RT_DOCKER_MISSING_CRI_DOCKER_NONE",
+			ExitCode: ExRuntimeUnavailable,
+			Advice:   `Using Kubernetes v1.24+ with the Docker runtime requires cri-docker to be installed`,
+			URL:      "https://minikube.sigs.k8s.io/docs/reference/drivers/none",
+			Issues:   []int{14410},
+		},
+		Regexp: re(`Unit file cri-docker\.socket does not exist`),
+		GOOS:   []string{"linux"},
+	},
+	{
+		Kind: Kind{
+			ID:       "RT_DOCKER_MISSING_CRI_DOCKER",
+			ExitCode: ExRuntimeUnavailable,
+			Advice:   `This cluster was created before minikube v1.26.0 and doesn't have cri-docker installed. Please run 'minikube delete' and then start minikube again`,
+			Issues:   []int{14410},
+		},
+		Regexp: re(`cannot stat '\/var\/run\/cri-dockerd\.sock': No such file or directory`),
+	},
+	{
+		Kind: Kind{
 			ID:       "RT_CRIO_EXIT_5",
 			ExitCode: ExRuntimeUnavailable,
 			Advice:   "Ensure that CRI-O is installed and healthy: Run 'sudo systemctl start crio' and 'journalctl -u crio'. Alternatively, use --container-runtime=docker",
