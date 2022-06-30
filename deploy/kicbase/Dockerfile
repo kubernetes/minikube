@@ -50,6 +50,7 @@ COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.c
 COPY deploy/kicbase/11-tcp-mtu-probing.conf /etc/sysctl.d/11-tcp-mtu-probing.conf
 COPY deploy/kicbase/02-crio.conf /etc/crio/crio.conf.d/02-crio.conf
 COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
+COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
