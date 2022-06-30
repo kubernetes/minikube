@@ -99,4 +99,5 @@ We publish CI builds of minikube, built at every Pull Request. Builds are availa
 
 We also publish CI builds of minikube-iso, built at every Pull Request that touches deploy/iso/minikube-iso.  Builds are available at:
 
-- <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-testing.iso>
+- <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-amd64.iso>
+- <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-arm64.iso>
