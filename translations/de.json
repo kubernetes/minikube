@@ -373,7 +373,7 @@
 	"It seems that you are running in GCE, which means authentication should work without the GCP Auth addon. If you would still like to authenticate using a credentials file, use the --force flag.": "Es scheint, dass Sie GCE verwenden, was bedeutet, dass Authentifizierung auch ohne die GCP Auth Addons funktionieren sollte. Wenn Sie dennoch mittels Credential-Datei authentifizieren möchten, verwenden Sie --force.",
 	"Kicbase images have not been deleted. To delete images run:": "",
 	"Kill the mount process spawned by minikube start": "Töte den Mount-Prozess, der durch minikube start gestartet wurde",
-	"Kubelet network plug-in to use (default: auto)": "Verwendetes Kublet network plug-in (default: auto)",
+	"DEPRECATED: Replaced by --cni": "DEPRECATED: Ersetzt durch --cni",
 	"Kubernetes requires at least 2 CPU's to start": "Kubernetes benötigt mindestens 2 CPU's um zu starten",
 	"Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.prefix}}{{.new}}": "Kubernetes {{.new}} ist nun verfügbar. Falls Sie aktualisieren möchten, verwenden Sie: --kubernetes-version={{.prefix}}{{.new}}",
 	"Kubernetes {{.version}} is not supported by this release of minikube": "Kubernetes {{.version}} wird von diesem Minikube Release nicht unterstützt",
