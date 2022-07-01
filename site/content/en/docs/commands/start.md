@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.32@sha256:9190bd2393eae887316c97a74370b7d5dad8f0b2ef91ac2662bc36f7ef8e0b95")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.32-1656350719-14420@sha256:e7b7f38d1a2eba7828afc2c4c3d24e1d391db431976e47aa6dc5c7a6b038ca4e")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -69,7 +69,7 @@ minikube start [flags]
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
       --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
-      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube/iso/minikube-v1.26.0-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0/minikube-v1.26.0-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-amd64.iso,https://storage.googleapis.com/minikube/iso/minikube-v1.26.0.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0/minikube-v1.26.0.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0.iso])
+      --iso-url strings                   Locations to fetch the minikube ISO from. (default [https://storage.googleapis.com/minikube-builds/iso/14420/minikube-v1.26.0-1656448385-14420-amd64.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1656448385-14420/minikube-v1.26.0-1656448385-14420-amd64.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1656448385-14420-amd64.iso,https://storage.googleapis.com/minikube-builds/iso/14420/minikube-v1.26.0-1656448385-14420.iso,https://github.com/kubernetes/minikube/releases/download/v1.26.0-1656448385-14420/minikube-v1.26.0-1656448385-14420.iso,https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-v1.26.0-1656448385-14420.iso])
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.24.2, 'latest' for v1.24.2). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
