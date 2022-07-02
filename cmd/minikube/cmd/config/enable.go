@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -52,6 +53,10 @@ var addonsEnableCmd = &cobra.Command{
 		if addon == "olm" {
 			out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
 		}
+    addonBundle, ok := assets.Addons[addon]
+    if ok && addonBundle.VerifiedMaintainer == "" {
+      out.Styled(style.Warning, fmt.Sprintf("The %s addon doesn't have a verified maintainer.", addon))
+    }
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
