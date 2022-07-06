@@ -93,7 +93,7 @@ minikube start [flags]
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
       --network string                    network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.
-      --network-plugin string             DEPRECATED: Replaced by --cni.
+      --network-plugin string             DEPRECATED: Replaced by --cni
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
       --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
