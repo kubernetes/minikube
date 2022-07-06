@@ -39,7 +39,7 @@ type Addon struct {
 	enabled            bool
 	addonName          string
 	Maintainer         string
-  VerifiedMaintainer string
+	VerifiedMaintainer string
 	Docs               string
 	Images             map[string]string
 
@@ -60,8 +60,8 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName string, maintainer str
 		enabled:            enabled,
 		addonName:          addonName,
 		Maintainer:         maintainer,
-	  VerifiedMaintainer: verifiedMaintainer,
-    Docs:               docs,
+		VerifiedMaintainer: verifiedMaintainer,
+		Docs:               docs,
 		Images:             images,
 		Registries:         registries,
 	}
@@ -442,7 +442,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640"),
-    }, false, "logviewer", "", "", "", map[string]string{
+	}, false, "logviewer", "", "", "", map[string]string{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
@@ -531,7 +531,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ambassadorinstallation.yaml",
 			"0640"),
-    }, false, "ambassador", "3rd party (Ambassador)", "", "https://minikube.sigs.k8s.io/docs/tutorials/ambassador_ingress_controller/", map[string]string{
+	}, false, "ambassador", "3rd party (Ambassador)", "", "https://minikube.sigs.k8s.io/docs/tutorials/ambassador_ingress_controller/", map[string]string{
 		"AmbassadorOperator": "datawire/ambassador-operator:v1.2.3@sha256:492f33e0828a371aa23331d75c11c251b21499e31287f026269e3f6ec6da34ed",
 	}, map[string]string{
 		"AmbassadorOperator": "quay.io",
@@ -927,4 +927,3 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	}
 	return opts
 }
-
