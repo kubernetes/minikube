@@ -137,7 +137,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
-	}, false, "dashboard", "", "Kubernetes", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
+	}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
 		"Dashboard":      "kubernetesui/dashboard:v2.6.0@sha256:4af9580485920635d888efe1eddbd67e12f9d5d84dba87100e93feb4e46636b3",
 		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
 	}, nil),
@@ -147,14 +147,14 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", "", "Kubernetes", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
+	}, true, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PodSecurityPolicyAssets,
 			"pod-security-policy/pod-security-policy.yaml.tmpl",
 			vmpath.GuestAddonsDir,
 			"pod-security-policy.yaml",
 			"0640"),
-	}, false, "pod-security-policy", "", "", "", nil, nil),
+	}, false, "pod-security-policy", "3rd party (pod-security-policy)", "", "", nil, nil),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.StorageProvisionerAssets,
 			"storage-provisioner/storage-provisioner.yaml.tmpl",
@@ -187,7 +187,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storage-provisioner-glusterfile.yaml",
 			"0640"),
-	}, false, "storage-provisioner-gluster", "", "", "", map[string]string{
+	}, false, "storage-provisioner-gluster", "3rd party (Gluster)", "", "", map[string]string{
 		"Heketi":                 "heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
 		"GlusterfileProvisioner": "gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223",
 		"GlusterfsServer":        "nixpanic/glusterfs-server:pr_fake-disk@sha256:3c58ae9d4e2007758954879d3f4095533831eb757c64ca6a0e32d1fc53fb6034",
@@ -241,7 +241,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-deploy.yaml",
 			"0640"),
-	}, false, "ingress", "", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
+	}, false, "ingress", "3rd party (Ingress)", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/c32f9a43279425920c41ba2e54dfcb1a54c0daf7/deploy/static/provider/kind/deploy.yaml#L834
 		"IngressController": "ingress-nginx/controller:v1.2.1@sha256:5516d103a9c2ecc4f026efbd4b40662ce22dc1f824fb129ed121460aaa5c47f8",
 		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L621
@@ -388,7 +388,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"patch-coredns-job.yaml",
 			"0640"),
-	}, false, "registry-aliases", "", "", "", map[string]string{
+	}, false, "registry-aliases", "3rd party (registry-aliases)", "", "", map[string]string{
 		"CoreDNSPatcher": "rhdevelopers/core-dns-patcher@sha256:9220ff32f690c3d889a52afb59ca6fcbbdbd99e5370550cc6fd249adea8ed0a9",
 		"Alpine":         "alpine:3.11@sha256:0bd0e9e03a022c3b0226667621da84fc9bf562a9056130424b5bfbd8bcb0397f",
 		"Pause":          "google_containers/pause:3.1@sha256:f78411e19d84a252e53bff71a4407a5686c46983a2c2eeed83929b888179acea",
@@ -442,7 +442,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640"),
-	}, false, "logviewer", "", "", "", map[string]string{
+	}, false, "logviewer", "3rd party (ivans3)", "", "", map[string]string{
 		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
@@ -689,7 +689,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"portainer.yaml",
 			"0640"),
-	}, false, "portainer", "Portainer.io", "", "", map[string]string{
+	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
 		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
 	}, nil),
 	"inaccel": NewAddon([]*BinAsset{
@@ -698,7 +698,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"fpga-operator.yaml",
 			"0640"),
-	}, false, "inaccel", "InAccel <info@inaccel.com>", "", "", map[string]string{
+	}, false, "inaccel", "3rd party (InAccel [info@inaccel.com])", "", "", map[string]string{
 		"Helm3": "alpine/helm:3.9.0@sha256:9f4bf4d24241f983910550b1fe8688571cd684046500abe58cef14308f9cb19e",
 	}, map[string]string{
 		"Helm3": "docker.io",
@@ -709,7 +709,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "headlamp-deployment.yaml", "6040"),
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-serviceaccount.yaml", vmpath.GuestAddonsDir, "headlamp-serviceaccount.yaml", "6040"),
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
-	}, false, "headlamp", "kinvolk.io", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
+	}, false, "headlamp", "3rd party (kinvolk.io)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
 			"Headlamp": "kinvolk/headlamp:v0.9.0@sha256:465aaee6518f3fdd032965eccd6a8f49e924d144b1c86115bad613872672ec02",
 		},
