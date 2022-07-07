@@ -25,7 +25,7 @@
   "github.com/kubernetes/k8s.gcr.io/sig-storage/csi-provisioner": "registry.cn-hangzhou.aliyuncs.com/google_containers/csi-provisioner",
   "console.cloud.google.com/gcr/images/google-containers/GLOBAL": "registry.cn-hangzhou.aliyuncs.com/google_containers/registry",
   "hub.docker.com/r/gluster/gluster-centos": "registry.cn-hangzhou.aliyuncs.com/google_containers/glusterfs-server",
-  "heketi/heketi": "registry.cn-hangzhou.aliyuncs.com/google_containers/heketi",
+  "github.com/heketi/heketi": "registry.cn-hangzhou.aliyuncs.com/google_containers/heketi",
   "coredns/coredns": "registry.cn-hangzhou.aliyuncs.com/google_containers/coredns",
   "kindest/kindnetd": "registry.cn-hangzhou.aliyuncs.com/google_containers/kindnetd",
   "github.com/kubernetes/k8s.gcr.io/ingress-nginx/controller": "registry.cn-hangzhou.aliyuncs.com/google_containers/nginx-ingress-controller",
