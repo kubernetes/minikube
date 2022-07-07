@@ -1,5 +1,5 @@
 {
-  "kubernetesui/dashboard": "registry.cn-hangzhou.aliyuncs.com/google_containers/dashboard",
+  "hub.docker.com/r/kubernetesui/dashboard": "registry.cn-hangzhou.aliyuncs.com/google_containers/dashboard",
   "kubernetesui/metrics-scraper": "registry.cn-hangzhou.aliyuncs.com/google_containers/metrics-scraper",
   "gcr.io/k8s-minikube/auto-pause-hook": "registry.cn-hangzhou.aliyuncs.com/google_containers/auto-pause-hook",
   "quay.io/operator-framework/olm": "registry.cn-hangzhou.aliyuncs.com/google_containers/olm",
