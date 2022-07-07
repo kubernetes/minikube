@@ -11,7 +11,7 @@
   "github.com/ivans3/minikube-log-viewer": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-log-viewer",
   "hub.docker.com/r/cryptexlabs/minikube-ingress-dns": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-ingress-dns",
   "quay.io/datawire/ambassador-operator": "registry.cn-hangzhou.aliyuncs.com/google_containers/ambassador-operator",
-  "jettech/kube-webhook-certgen": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen",
+  "hub.docker.com/r/jettech/kube-webhook-certgen": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen",
   "gcr.io/k8s-minikube/gcp-auth-webhook": "registry.cn-hangzhou.aliyuncs.com/google_containers/gcp-auth-webhook",
   "k8s.gcr.io/sig-storage/snapshot-controller": "registry.cn-hangzhou.aliyuncs.com/google_containers/snapshot-controller",
   "k8s.gcr.io/sig-storage/csi-attacher": "registry.cn-hangzhou.aliyuncs.com/google_containers/csi-attacher",
