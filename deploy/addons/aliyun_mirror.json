@@ -27,7 +27,7 @@
   "hub.docker.com/r/gluster/gluster-centos": "registry.cn-hangzhou.aliyuncs.com/google_containers/glusterfs-server",
   "github.com/heketi/heketi": "registry.cn-hangzhou.aliyuncs.com/google_containers/heketi",
   "github.com/coredns/coredns": "registry.cn-hangzhou.aliyuncs.com/google_containers/coredns",
-  "kindest/kindnetd": "registry.cn-hangzhou.aliyuncs.com/google_containers/kindnetd",
+  "hub.docker.com/r/kindest/kindnetd": "registry.cn-hangzhou.aliyuncs.com/google_containers/kindnetd",
   "github.com/kubernetes/k8s.gcr.io/ingress-nginx/controller": "registry.cn-hangzhou.aliyuncs.com/google_containers/nginx-ingress-controller",
   "gcr.io/cloud-builders/gcs-fetcher": "registry.cn-hangzhou.aliyuncs.com/cloud-builders/gcs-fetcher",
   "gcr.io/google-samples/freshpod": "registry.cn-hangzhou.aliyuncs.com/google_containers/freshpod",
