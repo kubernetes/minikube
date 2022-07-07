@@ -8,7 +8,7 @@
   "github.com/upmc-enterprises/registry-creds": "registry.cn-hangzhou.aliyuncs.com/google_containers/registry-creds",
   "quay.io/rhdevelopers/core-dns-patcher": "registry.cn-hangzhou.aliyuncs.com/google_containers/core-dns-patcher",
   "github.com/NVIDIA/k8s-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-device-plugin",
-  "ivans3/minikube-log-viewer": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-log-viewer",
+  "github.com/ivans3/minikube-log-viewer": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-log-viewer",
   "cryptexlabs/minikube-ingress-dns": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-ingress-dns",
   "quay.io/datawire/ambassador-operator": "registry.cn-hangzhou.aliyuncs.com/google_containers/ambassador-operator",
   "jettech/kube-webhook-certgen": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen",
