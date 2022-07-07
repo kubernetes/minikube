@@ -7,7 +7,7 @@
   "hub.docker.com/r/solsson/kube-registry-proxy": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-registry-proxy",
   "github.com/upmc-enterprises/registry-creds": "registry.cn-hangzhou.aliyuncs.com/google_containers/registry-creds",
   "quay.io/rhdevelopers/core-dns-patcher": "registry.cn-hangzhou.aliyuncs.com/google_containers/core-dns-patcher",
-  "nvidia/k8s-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-device-plugin",
+  "github.com/NVIDIA/k8s-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-device-plugin",
   "ivans3/minikube-log-viewer": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-log-viewer",
   "cryptexlabs/minikube-ingress-dns": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-ingress-dns",
   "quay.io/datawire/ambassador-operator": "registry.cn-hangzhou.aliyuncs.com/google_containers/ambassador-operator",
