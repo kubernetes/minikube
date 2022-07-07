@@ -188,10 +188,8 @@ var Addons = map[string]*Addon{
 	}, false, "storage-provisioner-gluster", "", "", map[string]string{
 		"Heketi":                 "heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
 		"GlusterfileProvisioner": "gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223",
-		"GlusterfsServer":        "nixpanic/glusterfs-server:pr_fake-disk@sha256:3c58ae9d4e2007758954879d3f4095533831eb757c64ca6a0e32d1fc53fb6034",
-	}, map[string]string{
-		"GlusterfsServer": "quay.io",
-	}),
+		"GlusterfsServer":        "gluster/gluster-centos:latest@sha256:8167034b9abf2d16581f3f4571507ce7d716fb58b927d7627ef72264f802e908",
+	}, nil),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(addons.EfkAssets,
 			"efk/elasticsearch-rc.yaml.tmpl",

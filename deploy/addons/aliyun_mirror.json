@@ -24,7 +24,7 @@
   "k8s.gcr.io/sig-storage/csi-snapshotter": "registry.cn-hangzhou.aliyuncs.com/google_containers/csi-snapshotter",
   "k8s.gcr.io/sig-storage/csi-provisioner": "registry.cn-hangzhou.aliyuncs.com/google_containers/csi-provisioner",
   "registry": "registry.cn-hangzhou.aliyuncs.com/google_containers/registry",
-  "quay.io/nixpanic/glusterfs-server": "registry.cn-hangzhou.aliyuncs.com/google_containers/glusterfs-server",
+  "docker.io/gluster/gluster-centos": "registry.cn-hangzhou.aliyuncs.com/google_containers/glusterfs-server",
   "heketi/heketi": "registry.cn-hangzhou.aliyuncs.com/google_containers/heketi",
   "coredns/coredns": "registry.cn-hangzhou.aliyuncs.com/google_containers/coredns",
   "kindest/kindnetd": "registry.cn-hangzhou.aliyuncs.com/google_containers/kindnetd",
