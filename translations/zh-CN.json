@@ -852,7 +852,6 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "",
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete": "提示：要移除这个由根用户拥有的集群，请运行 sudo {{.cmd}} delete",
 	"To access Headlamp, use the following command:\nminikube service headlamp -n headlamp\n\n": "",
-	"To authenticate in Headlamp, fetch the Authentication Token using the following command:\n\nexport SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=\":metadata.name\" | grep \"headlamp-token\")\nkubectl get secret $SECRET --namespace headlamp --template=\\{\\{.data.token\\}\\} | base64 --decode\n\t\t\t\n": "",
 	"To connect to this cluster, use:  --context={{.name}}": "",
 	"To connect to this cluster, use: kubectl --context={{.name}}": "如需连接到此集群，请使用 kubectl --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.name}}__1": "如需连接到此集群，请使用 kubectl --context={{.name}}",

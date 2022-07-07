@@ -748,7 +748,6 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "Tip: Um diesen zu root gehörenden Cluster zu entfernen, führe {{.cmd}} aus",
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete": "Tipp: Um diesen Root-Cluster zu entfernen, führen Sie Folgendes aus: sudo {{.cmd}} delete",
 	"To access Headlamp, use the following command:\nminikube service headlamp -n headlamp\n\n": "",
-	"To authenticate in Headlamp, fetch the Authentication Token using the following command:\n\nexport SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=\":metadata.name\" | grep \"headlamp-token\")\nkubectl get secret $SECRET --namespace headlamp --template=\\{\\{.data.token\\}\\} | base64 --decode\n\t\t\t\n": "",
 	"To connect to this cluster, use:  --context={{.name}}": "Um zu diesem Cluster zu verbinden, verwende  --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.name}}": "Verwenden Sie zum Herstellen einer Verbindung zu diesem Cluster: kubectl --context = {{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.name}}__1": "Verwenden Sie zum Herstellen einer Verbindung zu diesem Cluster: kubectl --context = {{.name}}",
