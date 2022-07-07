@@ -4,7 +4,7 @@
   "gcr.io/k8s-minikube/auto-pause-hook": "registry.cn-hangzhou.aliyuncs.com/google_containers/auto-pause-hook",
   "quay.io/operator-framework/olm": "registry.cn-hangzhou.aliyuncs.com/google_containers/olm",
   "quay.io/operator-framework/upstream-community-operators": "registry.cn-hangzhou.aliyuncs.com/google_containers/upstream-community-operators",
-  "k8s.gcr.io/kube-registry-proxy": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-registry-proxy",
+  "hub.docker.com/r/solsson/kube-registry-proxy": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-registry-proxy",
   "upmcenterprises/registry-creds": "registry.cn-hangzhou.aliyuncs.com/google_containers/registry-creds",
   "quay.io/rhdevelopers/core-dns-patcher": "registry.cn-hangzhou.aliyuncs.com/google_containers/core-dns-patcher",
   "nvidia/k8s-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-device-plugin",
