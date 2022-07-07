@@ -54,8 +54,20 @@ var addonsEnableCmd = &cobra.Command{
 			out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
 		}
 		addonBundle, ok := assets.Addons[addon]
-		if ok && addonBundle.VerifiedMaintainer == "" {
-			out.Styled(style.Warning, fmt.Sprintf("The %s addon doesn't have a verified maintainer.", addon))
+		if ok {
+			maintainer := addonBundle.Maintainer
+			if maintainer == "Google" || maintainer == "Kubernetes" {
+				out.Styled(style.Tip, `{{.addon}} is an addon maintained by {{.maintainer}}. For any concerns contact minikube on GitHub.
+You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS`,
+					out.V{"addon": addon, "maintainer": maintainer})
+			} else {
+				out.Styled(style.Warning, `{{.addon}} is a 3rd party addon and not maintained or verified by minikube maintainers, enable at your own risk.`,
+					out.V{"addon": addon})
+				if addonBundle.VerifiedMaintainer != "" {
+					out.Styled(style.Tip, `{{.addon}} is maintained by {{.maintainer}} for any concerns contact {{.verifiedMaintainer}} on GitHub.`,
+						out.V{"addon": addon, "maintainer": maintainer, "verifiedMaintainer": addonBundle.VerifiedMaintainer})
+				}
+			}
 		}
 		viper.Set(config.AddonImages, images)
 		viper.Set(config.AddonRegistries, registries)
