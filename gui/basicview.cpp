@@ -11,6 +11,7 @@ BasicView::BasicView()
     pauseButton = new QPushButton(tr("Pause"));
     deleteButton = new QPushButton(tr("Delete"));
     refreshButton = new QPushButton(tr("Refresh"));
+    dockerEnvButton = new QPushButton(tr("docker-env"));
     sshButton = new QPushButton(tr("SSH"));
     dashboardButton = new QPushButton(tr("Dashboard"));
     advancedButton = new QPushButton(tr("Advanced View"));
@@ -24,6 +25,7 @@ BasicView::BasicView()
     buttonLayout->addWidget(pauseButton);
     buttonLayout->addWidget(deleteButton);
     buttonLayout->addWidget(refreshButton);
+    buttonLayout->addWidget(dockerEnvButton);
     buttonLayout->addWidget(sshButton);
     buttonLayout->addWidget(dashboardButton);
     buttonLayout->addWidget(advancedButton);
@@ -34,6 +36,7 @@ BasicView::BasicView()
     connect(pauseButton, &QAbstractButton::clicked, this, &BasicView::pause);
     connect(deleteButton, &QAbstractButton::clicked, this, &BasicView::delete_);
     connect(refreshButton, &QAbstractButton::clicked, this, &BasicView::refresh);
+    connect(dockerEnvButton, &QAbstractButton::clicked, this, &BasicView::dockerEnv);
     connect(sshButton, &QAbstractButton::clicked, this, &BasicView::ssh);
     connect(dashboardButton, &QAbstractButton::clicked, this, &BasicView::dashboard);
     connect(advancedButton, &QAbstractButton::clicked, this, &BasicView::advanced);
@@ -57,7 +60,6 @@ static QString getStartLabel(bool isRunning)
 
 void BasicView::update(Cluster cluster)
 {
-
     startButton->setEnabled(true);
     advancedButton->setEnabled(true);
     refreshButton->setEnabled(true);
@@ -69,8 +71,10 @@ void BasicView::update(Cluster cluster)
     deleteButton->setEnabled(exists);
     dashboardButton->setEnabled(isRunning);
 #if __linux__ || __APPLE__
+    dockerEnvButton->setEnabled(isRunning);
     sshButton->setEnabled(exists);
 #else
+    dockerEnvButton->setEnabled(false);
     sshButton->setEnabled(false);
 #endif
     pauseButton->setText(getPauseLabel(isPaused));
@@ -83,6 +87,7 @@ void BasicView::disableButtons()
     stopButton->setEnabled(false);
     deleteButton->setEnabled(false);
     pauseButton->setEnabled(false);
+    dockerEnvButton->setEnabled(false);
     sshButton->setEnabled(false);
     dashboardButton->setEnabled(false);
     advancedButton->setEnabled(false);

@@ -47,6 +47,7 @@ private:
     QString selectedClusterName();
     Cluster selectedCluster();
     void sshConsole();
+    void dockerEnv();
     void dashboardBrowser();
     void dashboardClose();
     void pauseMinikube();
