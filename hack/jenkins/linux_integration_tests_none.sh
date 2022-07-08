@@ -30,7 +30,6 @@ ARCH="amd64"
 DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
-EXPECTED_DEFAULT_DRIVER="kvm2"
 
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"

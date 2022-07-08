@@ -17,8 +17,9 @@ description: >
 |Linux|kvm2|crio|[KVM_Linux_crio](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=KVM_Linux_crio&period=last90)|
 |Linux|virtualbox|docker|[VirtualBox_Linux](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=VirtualBox_Linux&period=last90)|
 |Linux|none|docker|[none_Linux](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=none_Linux&period=last90)|
-|MacOS|docker|docker|[Docker_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_macOS&period=last90)|
-|MacOS|hyperkit|docker|[Hyperkit_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Hyperkit_macOS&period=last90)|
+|macOS|docker|docker|[Docker_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_macOS&period=last90)|
+|macOS|hyperkit|docker|[Hyperkit_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Hyperkit_macOS&period=last90)|
+|macOS|qemu2|docker|[QEMU_macOS](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=QEMU_macOS&period=last90)|
 |Windows|docker|docker|[Docker_Windows](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Windows&period=last90)|
 |Windows|hyperv|docker|[Hyper-V_Windows](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Hyper-V_Windows&period=last90)|
 |Cloud Shell|docker|docker|[Docker_Cloud_Shell](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Cloud_Shell&period=last90)|
