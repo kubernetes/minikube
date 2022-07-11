@@ -27,6 +27,7 @@ Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunn
     connect(m_basicView, &BasicView::pause, this, &Operator::pauseOrUnpauseMinikube);
     connect(m_basicView, &BasicView::delete_, this, &Operator::deleteMinikube);
     connect(m_basicView, &BasicView::refresh, this, &Operator::updateClusters);
+    connect(m_basicView, &BasicView::dockerEnv, this, &Operator::dockerEnv);
     connect(m_basicView, &BasicView::ssh, this, &Operator::sshConsole);
     connect(m_basicView, &BasicView::dashboard, this, &Operator::dashboardBrowser);
     connect(m_basicView, &BasicView::advanced, this, &Operator::toAdvancedView);
@@ -36,6 +37,7 @@ Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunn
     connect(m_advancedView, &AdvancedView::pause, this, &Operator::pauseOrUnpauseMinikube);
     connect(m_advancedView, &AdvancedView::delete_, this, &Operator::deleteMinikube);
     connect(m_advancedView, &AdvancedView::refresh, this, &Operator::updateClusters);
+    connect(m_advancedView, &AdvancedView::dockerEnv, this, &Operator::dockerEnv);
     connect(m_advancedView, &AdvancedView::ssh, this, &Operator::sshConsole);
     connect(m_advancedView, &AdvancedView::dashboard, this, &Operator::dashboardBrowser);
     connect(m_advancedView, &AdvancedView::basic, this, &Operator::toBasicView);
@@ -151,7 +153,7 @@ void Operator::toBasicView()
 {
     m_isBasicView = true;
     m_stackedWidget->setCurrentIndex(0);
-    m_parent->resize(200, 275);
+    m_parent->resize(200, 300);
     updateButtons();
 }
 
@@ -304,6 +306,8 @@ static QString minikubePath()
 void Operator::sshConsole()
 {
     QString program = minikubePath();
+    QString commandArgs = QString("ssh -p %1").arg(selectedClusterName());
+    QString command = QString("%1 %2").arg(program, commandArgs);
 #ifndef QT_NO_TERMWIDGET
     QMainWindow *mainWindow = new QMainWindow();
     int startnow = 0; // set shell program first
@@ -317,8 +321,7 @@ void Operator::sshConsole()
     console->setTerminalFont(font);
     console->setColorScheme("Tango");
     console->setShellProgram(program);
-    QStringList args = { "ssh", "-p", selectedClusterName() };
-    console->setArgs(args);
+    console->setArgs({ commandArgs });
     console->startShellProgram();
 
     QObject::connect(console, SIGNAL(finished()), mainWindow, SLOT(close()));
@@ -328,9 +331,10 @@ void Operator::sshConsole()
     mainWindow->setCentralWidget(console);
     mainWindow->show();
 #elif __APPLE__
-    QString command = program + " ssh -p " + selectedClusterName();
-    QStringList arguments = { "-e", "tell app \"Terminal\"",         "-e", "activate",
-                              "-e", "do script \"" + command + "\"", "-e", "end tell" };
+    QStringList arguments = { "-e", "tell app \"Terminal\"",
+                              "-e", "do script \"" + command + "\"",
+                              "-e", "activate",
+                              "-e", "end tell" };
     QProcess *process = new QProcess(this);
     process->start("/usr/bin/osascript", arguments);
 #else
@@ -342,9 +346,56 @@ void Operator::sshConsole()
         }
     }
 
-    QStringList arguments = { "-e", QString("%1 ssh -p %2").arg(program, selectedClusterName()) };
     QProcess *process = new QProcess(this);
-    process->start(QStandardPaths::findExecutable(terminal), arguments);
+    process->start(QStandardPaths::findExecutable(terminal), { "-e", commmand });
+#endif
+}
+
+void Operator::dockerEnv()
+{
+    QString program = minikubePath();
+    QString commandArgs = QString("$(%1 -p %2 docker-env)").arg(program, selectedClusterName());
+    QString command = QString("eval %1").arg(commandArgs);
+#ifndef QT_NO_TERMWIDGET
+    QMainWindow *mainWindow = new QMainWindow();
+    int startnow = 0; // set shell program first
+
+    QTermWidget *console = new QTermWidget(startnow);
+
+    QFont font = QApplication::font();
+    font.setFamily("Monospace");
+    font.setPointSize(10);
+
+    console->setTerminalFont(font);
+    console->setColorScheme("Tango");
+    console->setShellProgram("eval");
+    console->setArgs({ commandArgs });
+    console->startShellProgram();
+
+    QObject::connect(console, SIGNAL(finished()), mainWindow, SLOT(close()));
+
+    mainWindow->setWindowTitle(nameLabel->text());
+    mainWindow->resize(800, 400);
+    mainWindow->setCentralWidget(console);
+    mainWindow->show();
+#elif __APPLE__
+    QStringList arguments = { "-e", "tell app \"Terminal\"",
+                              "-e", "do script \"" + command + "\"",
+                              "-e", "activate",
+                              "-e", "end tell" };
+    QProcess *process = new QProcess(this);
+    process->start("/usr/bin/osascript", arguments);
+#else
+    QString terminal = qEnvironmentVariable("TERMINAL");
+    if (terminal.isEmpty()) {
+        terminal = "x-terminal-emulator";
+        if (QStandardPaths::findExecutable(terminal).isEmpty()) {
+            terminal = "xterm";
+        }
+    }
+
+    QProcess *process = new QProcess(this);
+    process->start(QStandardPaths::findExecutable(terminal), { "-e", command });
 #endif
 }
 
