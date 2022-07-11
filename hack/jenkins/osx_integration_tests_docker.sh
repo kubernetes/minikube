@@ -31,7 +31,6 @@ OS="darwin"
 DRIVER="docker"
 JOB_NAME="Docker_macOS"
 EXTRA_TEST_ARGS=""
-EXPECTED_DEFAULT_DRIVER="docker"
 EXTERNAL="yes"
 
 begin=$(date +%s)

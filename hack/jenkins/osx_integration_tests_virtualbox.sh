@@ -29,8 +29,5 @@ ARCH="amd64"
 DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
-# hyperkit behaves better, so it has higher precedence.
-# Assumes that hyperkit is also installed on the VirtualBox CI host.
-EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 source common.sh
