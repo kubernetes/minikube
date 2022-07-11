@@ -26,7 +26,7 @@ For example, you can scale a Deployment, initiate a rolling update, restart a po
 To access the dashboard:
 
 ```shell
-minikube dashboard
+minikube -p "clustername" dashboard
 ```
 
 This will enable the dashboard add-on, and open the proxy in the default web browser.
