@@ -107,8 +107,8 @@ func (r *Docker) SocketPath() string {
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
 	var err error
-	if _, err = exec.LookPath("docker"); err == nil {
-		return nil
+	if _, err = exec.LookPath("docker"); err != nil {
+		return err
 	}
 	if _, err = exec.LookPath("cri-dockerd"); err == nil {
 		return nil
@@ -116,7 +116,7 @@ func (r *Docker) Available() error {
 	if _, err = exec.LookPath("dockerd"); err == nil {
 		return nil
 	}
-	return errors.New("runtimes were not found: docker, cri-dockerd, dockerd")
+	return errors.New("runtimes were not found: cri-dockerd, dockerd")
 }
 
 // Active returns if docker is active on the host
