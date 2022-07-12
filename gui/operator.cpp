@@ -347,7 +347,7 @@ void Operator::sshConsole()
     }
 
     QProcess *process = new QProcess(this);
-    process->start(QStandardPaths::findExecutable(terminal), { "-e", commmand });
+    process->start(QStandardPaths::findExecutable(terminal), { "-e", command });
 #endif
 }
 
