@@ -111,7 +111,7 @@ Restart Network Manager
 ```
 systemctl restart NetworkManager.service
 ```
-Ensure your /etc/resolv.conf  contains only single nameserver
+Ensure your /etc/resolv.conf is a symbolic link to your /run/NetworkManager/resolv.conf file and contains only single nameserver
 ```bash
 cat /etc/resolv.conf | grep nameserver
 nameserver 127.0.0.1
