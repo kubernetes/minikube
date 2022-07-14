@@ -21,11 +21,40 @@ import (
 	"net"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"k8s.io/klog/v2"
 )
 
+var setupCodePageCache struct {
+	sync.Once
+	err error
+}
+
+// setupCodePage changes the console code page to United States.
+// https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/chcp
+// The EnsureRouteIsAdded and Cleanup methods are relying on matching output
+// text in English to determine if a command execution succeeded or not. This
+// is needed as the `route` command still returns 0 exit code when failed.
+// The command is only executed once, when called multiple times.
+func setupCodePage() error {
+	setupCodePageCache.Do(func() {
+		command := exec.Command(
+			"chcp",
+			"437", // United States
+		)
+		stdOutAndErr, err := command.CombinedOutput()
+		klog.Infof("%s", stdOutAndErr)
+		setupCodePageCache.err = err
+	})
+	return setupCodePageCache.err
+}
+
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
+	if err := setupCodePage(); err != nil {
+		return fmt.Errorf("setup code page: %w", err)
+	}
+
 	exists, err := isValidToAddOrDelete(router, route)
 	if err != nil {
 		return err
@@ -103,6 +132,11 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
+	if err = setupCodePage(); err != nil {
+		err = fmt.Errorf("setup code page: %w", err)
+		return
+	}
+
 	command := exec.Command("route", "print", "-4")
 	stdInAndOut, err := command.CombinedOutput()
 	if err != nil {
@@ -117,6 +151,10 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
+	if err := setupCodePage(); err != nil {
+		return fmt.Errorf("setup code page: %w", err)
+	}
+
 	exists, err := isValidToAddOrDelete(router, route)
 	if err != nil {
 		return err
