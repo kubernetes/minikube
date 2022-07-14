@@ -76,16 +76,16 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	klog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
 	klog.Infof("About to run command: %s", command.Args)
-	stdInAndOut, err := command.CombinedOutput()
-	message := string(stdInAndOut)
-	if message != " OK!\r\n" {
-		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
-	}
-	klog.Infof("%s", stdInAndOut)
+	stdOutAndErr, err := command.CombinedOutput()
+	message := string(stdOutAndErr)
 	if err != nil {
 		klog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 		return err
 	}
+	if message != " OK!\r\n" {
+		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
+	}
+	klog.Infof("%s", stdOutAndErr)
 	return nil
 }
 
@@ -138,12 +138,12 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 	}
 
 	command := exec.Command("route", "print", "-4")
-	stdInAndOut, err := command.CombinedOutput()
+	stdOutAndErr, err := command.CombinedOutput()
 	if err != nil {
 		err = fmt.Errorf("error running '%s': %s", command.Args, err)
 		return
 	}
-	rt := router.parseTable(stdInAndOut)
+	rt := router.parseTable(stdOutAndErr)
 
 	exists, conflict, overlaps = rt.Check(route)
 
@@ -167,11 +167,11 @@ func (router *osRouter) Cleanup(route *Route) error {
 
 	klog.Infof("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "delete", serviceCIDR)
-	stdInAndOut, err := command.CombinedOutput()
+	stdOutAndErr, err := command.CombinedOutput()
 	if err != nil {
 		return err
 	}
-	message := string(stdInAndOut)
+	message := string(stdOutAndErr)
 	klog.Infof("'%s'", message)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
