@@ -675,6 +675,7 @@
 	"Set flag to stop all profiles (clusters)": "",
 	"Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)": "",
 	"Set this flag to delete the '.minikube' folder from your user directory.": "设置这个标志来删除您用户目录下的 '.minikube' 文件夹。",
+	"Sets Docker's env variables to point to the Docker instance inside minikube.": "",
 	"Sets an individual value in a minikube config file": "",
 	"Sets the PROPERTY_NAME config value to PROPERTY_VALUE\n\tThese values can be overwritten by flags or environment variables at runtime.": "",
 	"Sets up docker env variables; similar to '$(docker-machine env)'": "设置 docker env 变量；类似于 '$(docker-machine env)'",

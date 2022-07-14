@@ -575,6 +575,7 @@
 	"Set flag to stop all profiles (clusters)": "全プロファイル (クラスター) を停止します",
 	"Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)": "設定時間後にクラスターを停止します (例: --schedule=5m)",
 	"Set this flag to delete the '.minikube' folder from your user directory.": "あなたのユーザーディレクトリー中の '.minikube' フォルダーを削除します。",
+	"Sets Docker's env variables to point to the Docker instance inside minikube.": "",
 	"Sets an individual value in a minikube config file": "minikube 設定ファイルの個別の値を設定します",
 	"Sets the PROPERTY_NAME config value to PROPERTY_VALUE\n\tThese values can be overwritten by flags or environment variables at runtime.": "PROPERTY_NAME の設定値を PROPERTY_VALUE に設定します\n\tこれらの値はランタイムのフラグまたは環境変数で上書きできます。",
 	"Sets up docker env variables; similar to '$(docker-machine env)'.": "docker 環境変数を設定します。'$(docker-machine env)' と同様です。",

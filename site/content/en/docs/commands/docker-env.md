@@ -11,7 +11,7 @@ Configure environment to use minikube's Docker daemon
 
 ### Synopsis
 
-Sets up docker env variables; similar to '$(docker-machine env)'.
+Sets Docker's env variables to point to the Docker instance inside minikube.
 
 ```shell
 minikube docker-env [flags]

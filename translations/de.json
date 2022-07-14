@@ -575,6 +575,7 @@
 	"Set flag to stop all profiles (clusters)": "Setze Flag um alle Profile (Cluster) zu stoppen",
 	"Set flag to stop cluster after a set amount of time (e.g. --schedule=5m)": "Setze Flag um den Cluster nach einer angegebenen Zeit zu stoppen (z.B. --schedule=5m)",
 	"Set this flag to delete the '.minikube' folder from your user directory.": "Setze dieses Flag um das '.minikube' Verzeichnis aus deinem Benutzer Verzeichnis zu löschen.",
+	"Sets Docker's env variables to point to the Docker instance inside minikube.": "",
 	"Sets an individual value in a minikube config file": "Setzt einen individuellen Wert in der Minikube Konfigurations-Datei",
 	"Sets the PROPERTY_NAME config value to PROPERTY_VALUE\n\tThese values can be overwritten by flags or environment variables at runtime.": "Setzt den Wert von PROPERTY_NAME zu PROPERTY_VALUE\n\tDiese Werte können durch Parameter oder Umgebungsvariablen zur Laufzeit überschrieben werden.",
 	"Sets up docker env variables; similar to '$(docker-machine env)'.": "Setzt Docker env Variablen; ähnlich wie '$(docker-machine env)'.",

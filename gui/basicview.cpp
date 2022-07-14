@@ -12,6 +12,8 @@ BasicView::BasicView()
     deleteButton = new QPushButton(tr("Delete"));
     refreshButton = new QPushButton(tr("Refresh"));
     dockerEnvButton = new QPushButton(tr("docker-env"));
+    dockerEnvButton->setToolTip(
+            "Sets Docker's env variables to point to the Docker instance inside minikube.");
     sshButton = new QPushButton(tr("SSH"));
     dashboardButton = new QPushButton(tr("Dashboard"));
     advancedButton = new QPushButton(tr("Advanced View"));

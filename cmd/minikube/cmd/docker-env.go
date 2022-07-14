@@ -241,7 +241,7 @@ func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Du
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Configure environment to use minikube's Docker daemon",
-	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
+	Long:  `Sets Docker's env variables to point to the Docker instance inside minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 
