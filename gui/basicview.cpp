@@ -13,8 +13,8 @@ BasicView::BasicView()
     refreshButton = new QPushButton(tr("Refresh"));
     dockerEnvButton = new QPushButton(tr("docker-env"));
     dockerEnvButton->setToolTip(
-            "Opens a terminal where the docker-cli points to docker engine inside minikube (Useful "
-            "for building docker images directly inside minikube)");
+            "Opens a terminal where the docker-cli points to docker engine inside "
+            "minikube\n(Useful for building docker images directly inside minikube)");
     sshButton = new QPushButton(tr("SSH"));
     dashboardButton = new QPushButton(tr("Dashboard"));
     advancedButton = new QPushButton(tr("Advanced View"));
