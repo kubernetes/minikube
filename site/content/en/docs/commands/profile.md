@@ -11,10 +11,10 @@ Get or list the current profiles (clusters)
 
 ### Synopsis
 
-profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`
+The profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`.
 
 ```shell
-minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default` [flags]
+minikube profile [MINIKUBE_PROFILE_NAME] [flags]
 ```
 
 ### Options inherited from parent commands
@@ -42,7 +42,7 @@ minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikub
 
 ## minikube profile help
 
-Help about any command
+Help about any command.
 
 ### Synopsis
 
