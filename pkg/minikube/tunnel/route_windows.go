@@ -85,7 +85,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	klog.Infof("%s", stdOutAndErr)
+	klog.Infof(message)
 	return nil
 }
 
@@ -172,7 +172,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 		return err
 	}
 	message := string(stdOutAndErr)
-	klog.Infof("'%s'", message)
+	klog.Infof(message)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
