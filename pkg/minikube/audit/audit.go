@@ -58,7 +58,7 @@ func args() string {
 
 // Log details about the executed command.
 func LogCommandStart() (string, error) {
-	if len(os.Args) < 2 || !shouldLog() {
+	if !shouldLog() {
 		return "", nil
 	}
 	id := uuid.New().String()

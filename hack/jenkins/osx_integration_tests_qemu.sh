@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2022 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This script runs the integration tests on a Linux machine for the VirtualBox Driver
+# This script runs the integration tests on an OSX machine for the Hyperkit Driver
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
@@ -23,12 +23,14 @@
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
 # access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
-set -e
 
-OS="linux"
-ARCH="amd64"
-DRIVER="virtualbox"
-JOB_NAME="VirtualBox_Linux"
+set -ex
+
+ARCH="arm64"
+OS="darwin"
+DRIVER="qemu2"
+JOB_NAME="QEMU_macOS"
 EXTRA_TEST_ARGS=""
+EXTERNAL="yes"
 
-source ./common.sh 2h
+source common.sh

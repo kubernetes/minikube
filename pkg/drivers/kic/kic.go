@@ -399,8 +399,7 @@ func (d *Driver) Restart() error {
 func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
-		_, err := oci.DaemonInfo(d.OCIBinary)
-		if err != nil {
+		if _, err := oci.DaemonInfo(d.OCIBinary); err != nil {
 			return errors.Wrapf(oci.ErrDaemonInfo, "debug daemon info %q", d.MachineName)
 		}
 		return errors.Wrap(err, "start")
