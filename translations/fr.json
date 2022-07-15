@@ -491,6 +491,8 @@
 	"Profile name '{{.profilename}}' is not valid": "Le nom de profil '{{.profilename}}' n'est pas valide",
 	"Profile name should be unique": "Le nom du profil doit être unique",
 	"Provide VM UUID to restore MAC address (hyperkit driver only)": "Fournit l'identifiant unique universel (UUID) de la VM pour restaurer l'adresse MAC (pilote hyperkit uniquement).",
+	"Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)": "",
+	"Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)\n\nFor example, you can do all docker operations such as docker build, docker run, and docker ps directly on the docker inside minikube.\n\nNote: You need the docker-cli to be installed on your machine.\ndocker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps": "",
 	"Pull images": "Extraction des images",
 	"Pull the remote image (no caching)": "Extraire l'image distante (pas de mise en cache)",
 	"Pulling base image ...": "Extraction de l'image de base...",
