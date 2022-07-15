@@ -30,6 +30,10 @@ var currentLogFile *os.File
 
 // openAuditLog opens the audit log file or creates it if it doesn't exist.
 func openAuditLog() error {
+	// this is so we can manually set the log file for tests
+	if currentLogFile != nil {
+		return nil
+	}
 	lp := localpath.AuditLog()
 	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
@@ -44,6 +48,7 @@ func closeAuditLog() {
 	if err := currentLogFile.Close(); err != nil {
 		klog.Errorf("failed to close the audit log: %v", err)
 	}
+	currentLogFile = nil
 }
 
 // appendToLog appends the row to the log file.

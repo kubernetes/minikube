@@ -36,27 +36,30 @@ func TestLogFile(t *testing.T) {
 		if err := openAuditLog(); err != nil {
 			t.Fatal(err)
 		}
+		closeAuditLog()
 	})
 
 	t.Run("AppendToLog", func(t *testing.T) {
-		defer closeAuditLog()
 		f, err := os.CreateTemp("", "audit.json")
 		if err != nil {
 			t.Fatalf("Error creating temporary file: %v", err)
 		}
 		defer os.Remove(f.Name())
 
-		oldLogFile := *currentLogFile
-		defer func() { currentLogFile = &oldLogFile }()
 		currentLogFile = f
+		defer closeAuditLog()
 
 		r := newRow("start", "-v", "user1", "v0.17.1", time.Now(), uuid.New().String())
 		if err := appendToLog(r); err != nil {
 			t.Fatalf("Error appendingToLog: %v", err)
 		}
 
+		currentLogFile, err = os.Open(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
 		b := make([]byte, 100)
-		if _, err := f.Read(b); err != nil && err != io.EOF {
+		if _, err := currentLogFile.Read(b); err != nil && err != io.EOF {
 			t.Errorf("Log was not appended to file: %v", err)
 		}
 	})
