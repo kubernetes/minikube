@@ -136,8 +136,8 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
 	}, false, "dashboard", "Kubernetes", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
-		"Dashboard":      "kubernetesui/dashboard:v2.6.0@sha256:4af9580485920635d888efe1eddbd67e12f9d5d84dba87100e93feb4e46636b3",
-		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
+		"Dashboard":      "docker.io/kubernetesui/dashboard:v2.6.0@sha256:4af9580485920635d888efe1eddbd67e12f9d5d84dba87100e93feb4e46636b3",
+		"MetricsScraper": "docker.io/kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
 	}, nil),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(addons.DefaultStorageClassAssets,
@@ -186,9 +186,9 @@ var Addons = map[string]*Addon{
 			"storage-provisioner-glusterfile.yaml",
 			"0640"),
 	}, false, "storage-provisioner-gluster", "", "", map[string]string{
-		"Heketi":                 "heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
+		"Heketi":                 "docker.io/heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
 		"GlusterfileProvisioner": "gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223",
-		"GlusterfsServer":        "gluster/gluster-centos:latest@sha256:8167034b9abf2d16581f3f4571507ce7d716fb58b927d7627ef72264f802e908",
+		"GlusterfsServer":        "docker.io/gluster/gluster-centos:latest@sha256:8167034b9abf2d16581f3f4571507ce7d716fb58b927d7627ef72264f802e908",
 	}, nil),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(addons.EfkAssets,
@@ -356,7 +356,7 @@ var Addons = map[string]*Addon{
 			"registry-creds-rc.yaml",
 			"0640"),
 	}, false, "registry-creds", "3rd party (UPMC Enterprises)", "https://minikube.sigs.k8s.io/docs/handbook/registry/", map[string]string{
-		"RegistryCreds": "upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
+		"RegistryCreds": "docker.io/upmcenterprises/registry-creds:1.10@sha256:93a633d4f2b76a1c66bf19c664dbddc56093a543de6d54320f19f585ccd7d605",
 	}, nil),
 	"registry-aliases": NewAddon([]*BinAsset{
 		MustBinAsset(addons.RegistryAliasesAssets,
@@ -439,7 +439,7 @@ var Addons = map[string]*Addon{
 			"logviewer-rbac.yaml",
 			"0640"),
 	}, false, "logviewer", "", "", map[string]string{
-		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
+		"LogViewer": "docker.io/ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
 	}, nil),
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(addons.GvisorAssets,
