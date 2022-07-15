@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/blang/semver/v4"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 )
 
 var addonsEnableCmd = &cobra.Command{
@@ -75,16 +77,28 @@ var addonsEnableCmd = &cobra.Command{
 minikube service headlamp -n headlamp
 
 `)
-			out.Styled(style.Tip, `To authenticate in Headlamp, fetch the Authentication Token using the following command:
+			tokenGenerationTip := "To authenticate in Headlamp, fetch the Authentication Token using the following command:"
+			createSvcAccountToken := "kubectl create token headlamp --duration 24h -n headlamp"
+			getSvcAccountToken := `export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
+kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} | base64 --decode`
 
-export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
-kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} | base64 --decode
-			
-`)
+			clusterName := ClusterFlagValue()
+			clusterVersion := ClusterKubernetesVersion(clusterName)
+			parsedClusterVersion, err := util.ParseKubernetesVersion(clusterVersion)
+			if err != nil {
+				tokenGenerationTip = fmt.Sprintf("%s\nIf Kubernetes Version is <1.24:\n%s\n\nIf Kubernetes Version is >=1.24:\n%s\n", tokenGenerationTip, createSvcAccountToken, getSvcAccountToken)
+			} else {
+				if parsedClusterVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+					tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, createSvcAccountToken)
+				} else {
+					tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, getSvcAccountToken)
+				}
+			}
+			out.Styled(style.Tip, fmt.Sprintf("%s\n", tokenGenerationTip))
 
 			tipProfileArg := ""
-			if ClusterFlagValue() != constants.DefaultClusterName {
-				tipProfileArg = fmt.Sprintf(" -p %s", ClusterFlagValue())
+			if clusterName != constants.DefaultClusterName {
+				tipProfileArg = fmt.Sprintf(" -p %s", clusterName)
 			}
 			out.Styled(style.Tip, `Headlamp can display more detailed information when metrics-server is installed. To install it, run:
 
