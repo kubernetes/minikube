@@ -193,10 +193,10 @@ var Addons = map[string]*Addon{
 	}, false, "storage-provisioner-gluster", "3rd party (Gluster)", "", "", map[string]string{
 		"Heketi":                 "heketi/heketi:10@sha256:76d5a6a3b7cf083d1e99efa1c15abedbc5c8b73bef3ade299ce9a4c16c9660f8",
 		"GlusterfileProvisioner": "gluster/glusterfile-provisioner:latest@sha256:9961a35cb3f06701958e202324141c30024b195579e5eb1704599659ddea5223",
-		"GlusterfsServer":        "gluster/gluster-centos:latest@sha256:8167034b9abf2d16581f3f4571507ce7d716fb58b927d7627ef72264f802e908",
+		"GlusterfsServer":        "gluster/gluster-containers:glfs10.2-centos@sha256:961c1d8169ec61831c7b0650f9d099460581a46b2778202590f438ea7f857e21",
 	}, map[string]string{
 		"Heketi":                 "docker.io",
-		"GlusterfsServer":        "docker.io",
+		"GlusterfsServer":        "ghcr.io",
 		"GlusterfileProvisioner": "docker.io",
 	}),
 	"efk": NewAddon([]*BinAsset{
