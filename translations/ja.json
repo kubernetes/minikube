@@ -601,7 +601,7 @@
 	"Test docs have been saved at - {{.path}}": "テストドキュメントは {{.path}} に保存されました",
 	"The \"{{.driver_name}}\" driver should not be used with root privileges.": "「{{.driver_name}}」ドライバーは root 権限で使用すべきではありません。",
 	"The \"{{.driver_name}}\" driver should not be used with root privileges. If you wish to continue as root, use --force.": "「{{.driver_name}}」ドライバーは root 権限で使用すべきではありません。root での継続を希望する場合、--force を使用してください。",
-	"The \"{{.name}}\" container runtime requires CNI": "",
+	"The \"{{.name}}\" container runtime requires CNI": "「{{.name}}」コンテナーランタイムは CNI が必要です",
 	"The 'none' driver is designed for experts who need to integrate with an existing VM": "'none' ドライバーは既存 VM の統合が必要なエキスパートに向けて設計されています。",
 	"The '{{.addonName}}' addon is enabled": "'{{.addonName}}' アドオンが有効です",
 	"The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n": "'{{.driver}}' ドライバーは権限昇格が必要です。次のコマンドを実行してください:\n\n{{ .example }}\n",
