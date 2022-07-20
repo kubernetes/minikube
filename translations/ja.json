@@ -841,7 +841,7 @@
 	"cancel any existing scheduled stop requests": "既存のスケジュール済み停止要求をキャンセルしてください",
 	"cannot specify --kubernetes-version with --no-kubernetes,\nto unset a global config run:\n\n$ minikube config unset kubernetes-version": "--kubernetes-version と --no-kubernetes を同時に指定できません。\nグローバル設定を解除するコマンド:\n\n$ minikube config unset kubernetes-version",
 	"config modifies minikube config files using subcommands like \"minikube config set driver kvm2\"\nConfigurable fields: \n\n": "config コマンドは「minikube config set driver kvm2」のようにサブコマンドを使用して、minikube 設定ファイルを編集します。 \n設定可能なフィールド:\n\n",
-	"config view failed": "",
+	"config view failed": "設定表示が失敗しました",
 	"containers paused status: {{.paused}}": "コンテナー停止状態: {{.paused}}",
 	"dashboard service is not running: {{.error}}": "ダッシュボードサービスが実行していません: {{.error}}",
 	"delete ctx": "",
