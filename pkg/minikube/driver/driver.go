@@ -157,6 +157,11 @@ func IsMock(name string) bool {
 	return name == Mock
 }
 
+// IsNone checks if the driver is a none
+func IsNone(name string) bool {
+	return name == None
+}
+
 // IsKVM checks if the driver is a KVM[2]
 func IsKVM(name string) bool {
 	return name == KVM2 || name == AliasKVM
