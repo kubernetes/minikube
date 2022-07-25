@@ -461,7 +461,7 @@ var (
 		Style: style.SeeNoEvil,
 	}
 
-	NotFoundCriDockerD = Kind{
+	NotFoundCriDockerd = Kind{
 		ID:       "NOT_FOUND_CRI_DOCKERD",
 		ExitCode: ExProgramNotFound,
 		Advice: translate.T(`The none driver with Kubernetes v1.24+ requires cri-dockerd.
@@ -471,7 +471,7 @@ var (
 		https://github.com/Mirantis/cri-dockerd#build-and-install`),
 		Style: style.Docker,
 	}
-	NotFoundDockerD = Kind{
+	NotFoundDockerd = Kind{
 		ID:       "NOT_FOUND_DOCKERD",
 		ExitCode: ExProgramNotFound,
 		Advice: translate.T(`The none driver with Kubernetes v1.24+ requires dockerd.
