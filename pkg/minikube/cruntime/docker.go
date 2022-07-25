@@ -38,7 +38,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -110,11 +109,9 @@ func (r *Docker) Available() error {
 	// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
 	if r.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
 		if _, err := exec.LookPath("cri-dockerd"); err != nil {
-			out.ErrT(style.Fatal, `cri-dockerd is not installed, please install using these instructions: https://github.com/Mirantis/cri-dockerd#build-and-install, {{.error}}`, out.V{"error": err})
 			return err
 		}
 		if _, err := exec.LookPath("dockerd"); err != nil {
-			out.ErrT(style.Fatal, `dockerd is not installed, please install using these instructions: https://docs.docker.com/engine/reference/commandline/dockerd/, {{.error}}`, out.V{"error": err})
 			return err
 		}
 	}
