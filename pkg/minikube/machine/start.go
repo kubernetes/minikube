@@ -323,10 +323,10 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		}
 		if k8sVer.GTE(semver.Version{Major: 1, Minor: 24}) {
 			if _, err := exec.LookPath("cri-dockerd"); err != nil {
-				exit.Message(reason.NotFoundCriDockerD, "")
+				exit.Message(reason.NotFoundCriDockerD, "\n\n")
 			}
 			if _, err := exec.LookPath("dockerd"); err != nil {
-				exit.Message(reason.NotFoundDockerD, "")
+				exit.Message(reason.NotFoundDockerD, "\n\n")
 			}
 		}
 	}
