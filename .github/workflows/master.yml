@@ -395,7 +395,7 @@ jobs:
       JOB_NAME: "functional_virtualbox_macos"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: macos-10.15
+    runs-on: macos-11
     steps:
       - name: Install kubectl
         shell: bash
