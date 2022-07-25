@@ -478,7 +478,7 @@ var (
 		
 		Please install dockerd using these instructions:
 
-		https://docs.docker.com/engine/reference/commandline/dockerd/`),
+		https://docs.docker.com/engine/install/`),
 		Style: style.Docker,
 	}
 )
