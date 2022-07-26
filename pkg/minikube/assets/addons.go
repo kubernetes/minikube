@@ -255,9 +255,9 @@ var Addons = map[string]*Addon{
 		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L673
 		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
 	}, map[string]string{
-		"IngressController": "k8s.gcr.io",
+		"IngressController":        "k8s.gcr.io",
 		"KubeWebhookCertgenCreate": "k8s.gcr.io",
-		"KubeWebhookCertgenPatch": "k8s.gcr.io",
+		"KubeWebhookCertgenPatch":  "k8s.gcr.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioProvisionerAssets,
@@ -287,7 +287,7 @@ var Addons = map[string]*Addon{
 		"Kong":        "kong:2.7@sha256:4d3e93207305ace881fe9e95ac27717b6fbdd9e0ec1873c34e94908a4f4c9335",
 		"KongIngress": "kong/kubernetes-ingress-controller:2.1.1@sha256:60e4102ab2da7f61e9c478747f0762d06a6166b5f300526b237ed7354c3cb4c8",
 	}, map[string]string{
-		"Kong": "docker.io",
+		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
 	}),
 	"kubevirt": NewAddon([]*BinAsset{
@@ -536,8 +536,8 @@ var Addons = map[string]*Addon{
 		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
 		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
 	}, map[string]string{
-		"Speaker":             "docker.io",
-		"Controller":          "docker.io",
+		"Speaker":    "docker.io",
+		"Controller": "docker.io",
 	}),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(addons.AmbassadorAssets,
@@ -580,7 +580,7 @@ var Addons = map[string]*Addon{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.9@sha256:25e1c616444d5b2b404c43ce878f320a265fd663b4fcd4c2ad5c12de316612da",
 	}, map[string]string{
-		"GCPAuthWebhook": "gcr.io",
+		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
@@ -717,7 +717,7 @@ var Addons = map[string]*Addon{
 	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
 		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
 	}, map[string]string{
-		"Portainer": "docker.io", 
+		"Portainer": "docker.io",
 	}),
 	"inaccel": NewAddon([]*BinAsset{
 		MustBinAsset(addons.InAccelAssets,
