@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.18
 
 require (
-	cloud.google.com/go/storage v1.23.0
+	cloud.google.com/go/storage v1.24.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.12
 	github.com/Delta456/box-cli-maker/v2 v2.2.2
 	github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2
@@ -68,7 +68,7 @@ require (
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v1.8.0
-	go.opentelemetry.io/otel/sdk v1.7.0
+	go.opentelemetry.io/otel/sdk v1.8.0
 	go.opentelemetry.io/otel/trace v1.8.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
@@ -80,16 +80,16 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 	golang.org/x/text v0.3.7
 	gonum.org/v1/plot v0.11.0
-	google.golang.org/api v0.86.0
+	google.golang.org/api v0.88.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.24.2
-	k8s.io/apimachinery v0.24.2
-	k8s.io/client-go v0.24.2
+	k8s.io/api v0.24.3
+	k8s.io/apimachinery v0.24.3
+	k8s.io/client-go v0.24.3
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.24.2
+	k8s.io/component-base v0.24.3
 	k8s.io/klog/v2 v2.70.1
-	k8s.io/kubectl v0.24.2
+	k8s.io/kubectl v0.24.3
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
 	libvirt.org/go/libvirt v1.8005.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
@@ -157,7 +157,6 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.1.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
-	github.com/googleapis/go-type-adapters v1.0.0 // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect

@@ -1,17 +1,22 @@
 ---
 title: "docker-env"
 description: >
-  Configure environment to use minikube's Docker daemon
+  Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)
 ---
 
 
 ## minikube docker-env
 
-Configure environment to use minikube's Docker daemon
+Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)
 
 ### Synopsis
 
-Sets up docker env variables; similar to '$(docker-machine env)'.
+Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)
+
+For example, you can do all docker operations such as docker build, docker run, and docker ps directly on the docker inside minikube.
+
+Note: You need the docker-cli to be installed on your machine.
+docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps
 
 ```shell
 minikube docker-env [flags]

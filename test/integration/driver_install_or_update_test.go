@@ -194,7 +194,7 @@ func TestHyperkitDriverSkipUpgrade(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(t, tc.name, tc.path)
+			mkDir, drvPath, err := prepareTempMinikubeDirWithHyperkitDriver(t, tc.path)
 			if err != nil {
 				t.Fatalf("Failed to prepare tempdir. test: %s, got: %v", tc.name, err)
 			}
@@ -242,7 +242,7 @@ func driverVersion(path string) (string, error) {
 
 // prepareTempMinikubeDirWithHyperkitDriver creates a temp .minikube directory
 // with structure essential to testing of hyperkit driver updates
-func prepareTempMinikubeDirWithHyperkitDriver(t *testing.T, name, driver string) (string, string, error) {
+func prepareTempMinikubeDirWithHyperkitDriver(t *testing.T, driver string) (string, string, error) {
 	temp := t.TempDir()
 	mkDir := filepath.Join(temp, ".minikube")
 	mkBinDir := filepath.Join(mkDir, "bin")
