@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
@@ -311,6 +312,24 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 
 	if driver.IsMock(h.DriverName) {
 		return nil
+	}
+
+	// If none driver with docker container-runtime, require cri-dockerd and dockerd.
+	if driver.IsNone(h.DriverName) && mc.KubernetesConfig.ContainerRuntime == constants.Docker {
+		// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
+		k8sVer, err := semver.ParseTolerant(mc.KubernetesConfig.KubernetesVersion)
+		if err != nil {
+			klog.Errorf("unable to parse Kubernetes version: %s", mc.KubernetesConfig.KubernetesVersion)
+			return err
+		}
+		if k8sVer.GTE(semver.Version{Major: 1, Minor: 24}) {
+			if _, err := exec.LookPath("cri-dockerd"); err != nil {
+				exit.Message(reason.NotFoundCriDockerd, "\n\n")
+			}
+			if _, err := exec.LookPath("dockerd"); err != nil {
+				exit.Message(reason.NotFoundDockerd, "\n\n")
+			}
+		}
 	}
 
 	klog.Infof("creating required directories: %v", requiredDirectories)
