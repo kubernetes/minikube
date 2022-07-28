@@ -474,7 +474,7 @@ var (
 	NotFoundDockerd = Kind{
 		ID:       "NOT_FOUND_DOCKERD",
 		ExitCode: ExProgramNotFound,
-		Advice: translate.T(`The none driver with Kubernetes v1.24+ requires dockerd.
+		Advice: translate.T(`The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.
 		
 		Please install dockerd using these instructions:
 
