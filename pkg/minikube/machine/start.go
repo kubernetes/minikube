@@ -314,7 +314,8 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		return nil
 	}
 
-	if driver.IsNone(h.DriverName) {
+	// If none driver with docker container-runtime, require cri-dockerd and dockerd.
+	if driver.IsNone(h.DriverName) && mc.KubernetesConfig.ContainerRuntime == constants.Docker {
 		// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
 		k8sVer, err := semver.ParseTolerant(mc.KubernetesConfig.KubernetesVersion)
 		if err != nil {
