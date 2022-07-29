@@ -1,4 +1,5 @@
 {
+	"\n\n": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "Le module \"{{.minikube_addon}}\" est désactivé",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "\"minikube cache\" sera obsolète dans les prochaines versions, veuillez passer à \"minikube image load\"",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "Le contexte \"{{.context}}\" a été mis à jour pour pointer vers {{.hostname}}:{{.port}}",
@@ -691,6 +692,8 @@
 	"The node {{.name}} has ran out of memory.": "Le nœud {{.name}} est à court de mémoire.",
 	"The node {{.name}} network is not available. Please verify network settings.": "Le réseau du nœud {{.name}} n'est pas disponible. Veuillez vérifier les paramètres réseau.",
 	"The none driver is not compatible with multi-node clusters.": "Le pilote none n'est pas compatible avec les clusters multi-nœuds.",
+	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.\n\t\t\n\t\tPlease install cri-dockerd using these instructions:\n\n\t\thttps://github.com/Mirantis/cri-dockerd#build-and-install": "",
+	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.\n\t\t\n\t\tPlease install dockerd using these instructions:\n\n\t\thttps://docs.docker.com/engine/install/": "",
 	"The number of bytes to use for 9p packet payload": "Le nombre d'octets à utiliser pour la charge utile du paquet 9p",
 	"The number of nodes to spin up. Defaults to 1.": "Le nombre de nœuds à faire tourner. La valeur par défaut est 1.",
 	"The output format. One of 'json', 'table'": "Le format de sortie. 'json' ou 'table'",
