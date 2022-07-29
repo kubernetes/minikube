@@ -106,6 +106,15 @@ func (r *Docker) SocketPath() string {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
+	// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
+	if r.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+		if _, err := exec.LookPath("cri-dockerd"); err != nil {
+			return err
+		}
+		if _, err := exec.LookPath("dockerd"); err != nil {
+			return err
+		}
+	}
 	_, err := exec.LookPath("docker")
 	return err
 }
