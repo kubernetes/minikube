@@ -1,4 +1,5 @@
 {
+	"\n\n": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' アドオンが無効です",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "「minikube cache」は今後のバージョンで廃止予定になりますので、「minikube image load」に切り替えてください",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "「{{.context}}」コンテキストが更新されて、{{.hostname}}:{{.port}} を指すようになりました",
@@ -664,6 +665,8 @@
 	"The node {{.name}} has ran out of memory.": "{{.name}} ノードはメモリーを使い果たしました。",
 	"The node {{.name}} network is not available. Please verify network settings.": "{{.name}} ノードはネットワークが使用不能です。ネットワーク設定を検証してください。",
 	"The none driver is not compatible with multi-node clusters.": "ノードドライバーはマルチノードクラスターと互換性がありません。",
+	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.\n\t\t\n\t\tPlease install cri-dockerd using these instructions:\n\n\t\thttps://github.com/Mirantis/cri-dockerd#build-and-install": "",
+	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.\n\t\t\n\t\tPlease install dockerd using these instructions:\n\n\t\thttps://docs.docker.com/engine/install/": "",
 	"The number of nodes to spin up. Defaults to 1.": "起動するノード数。デフォルトは 1。",
 	"The output format. One of 'json', 'table'": "出力形式。'json', 'table' のいずれか",
 	"The path on the file system where the docs in markdown need to be saved": "markdown で書かれたドキュメントの保存先のファイルシステムパス",
