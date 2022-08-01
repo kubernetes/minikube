@@ -261,7 +261,7 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 func openURLs(urls [][]string) {
 	for _, u := range urls {
 
-		if len(u) < 4{
+		if len(u) < 4 {
 			klog.Warning("No URL found")
 			continue
 		}
