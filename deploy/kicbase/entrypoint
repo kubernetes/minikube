@@ -33,6 +33,11 @@ grep_allow_nomatch() {
   grep "$@" || [[ $? == 1 ]]
 }
 
+# regex_escape_ip converts IP address string $1 to a regex-escaped literal
+regex_escape_ip(){
+  sed -e 's#\.#\\.#g' -e 's#\[#\\[#g' -e 's#\]#\\]#g' <<<"$1"
+}
+
 validate_userns() {
   if [[ -z "${userns}" ]]; then
     return
@@ -56,43 +61,43 @@ validate_userns() {
 }
 
 overlayfs_preferrable() {
-	if [[ -z "$userns" ]]; then
-		# If we are outside userns, we can always assume overlayfs is preferrable
-		return 0
-	fi
+  if [[ -z "$userns" ]]; then
+    # If we are outside userns, we can always assume overlayfs is preferrable
+    return 0
+  fi
 
-	# Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
-	# but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
-	if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
-		echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
-		return 1
-	fi
+  # Debian 10 and 11 supports overlayfs in userns with a "permit_mount_in_userns" kernel patch,
+  # but known to be unstable, so we avoid using it https://github.com/moby/moby/issues/42302
+  if [[ -e "/sys/module/overlay/parameters/permit_mounts_in_userns" ]]; then
+    echo "INFO: UserNS: kernel seems supporting overlayfs with permit_mounts_in_userns, but avoiding due to instability."
+    return 1
+  fi
 
-	# Check overlayfs availability, by attempting to mount it.
-	#
-	# Overlayfs inside userns is known to be available for the following environments:
-	# - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
-	# - Ubuntu kernel
-	# - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
-	# - Sysbox
-	tmp=$(mktemp -d)
-	mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
-	if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
-		echo "INFO: UserNS: kernel does not seem to support overlayfs."
-		rm -rf "${tmp}"
-		return 1
-	fi
-	umount "${tmp}/m"
-	rm -rf "${tmp}"
+  # Check overlayfs availability, by attempting to mount it.
+  #
+  # Overlayfs inside userns is known to be available for the following environments:
+  # - Kernel >= 5.11 (but 5.11 and 5.12 have issues on SELinux hosts. Fixed in 5.13.)
+  # - Ubuntu kernel
+  # - Debian kernel (but avoided due to instability, see the /sys/module/overlay/... check above)
+  # - Sysbox
+  tmp=$(mktemp -d)
+  mkdir -p "${tmp}/l" "${tmp}/u" "${tmp}/w" "${tmp}/m"
+  if ! mount -t overlay -o lowerdir="${tmp}/l,upperdir=${tmp}/u,workdir=${tmp}/w" overlay "${tmp}/m"; then
+    echo "INFO: UserNS: kernel does not seem to support overlayfs."
+    rm -rf "${tmp}"
+    return 1
+  fi
+  umount "${tmp}/m"
+  rm -rf "${tmp}"
 
-	# Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
-	# Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
-	if grep -q "_t:" "/proc/self/attr/current"; then
-		# When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
-		# https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
-		echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
-	fi
-	return 0
+  # Detect whether SELinux is Enforcing (or Permitted) by grepping /proc/self/attr/current .
+  # Note that we cannot use `getenforce` command here because /sys/fs/selinux is typically not mounted for containers.
+  if grep -q "_t:" "/proc/self/attr/current"; then
+    # When the kernel is before v5.13 and SELinux is enforced, fuse-overlayfs might be safer, so we print a warning (but not an error).
+    # https://github.com/torvalds/linux/commit/7fa2e79a6bb924fa4b2de5766dab31f0f47b5ab6
+    echo "WARN: UserNS: SELinux might be Enforcing. If you see an error related to overlayfs, try setting \`KIND_EXPERIMENTAL_CONTAINERD_SNAPSHOTTER=fuse-overlayfs\` ." >&2
+  fi
+  return 0
 }
 
 configure_containerd() {
@@ -156,7 +161,7 @@ update-alternatives() {
 }
 
 fix_mount() {
-  echo 'INFO: ensuring we can execute mount/umount even with userns-remap' 
+  echo 'INFO: ensuring we can execute mount/umount even with userns-remap'
   # necessary only when userns-remap is enabled on the host, but harmless
   # The binary /bin/mount should be owned by root and have the setuid bit
   chown root:root "$(which mount)" "$(which umount)"
@@ -231,6 +236,8 @@ fix_cgroup() {
     return
   fi
   echo 'INFO: detected cgroup v1'
+  # We're looking for the cgroup-path for the cpu controller for the
+  # current process. this tells us what cgroup-path the container is in.
   local current_cgroup
   current_cgroup=$(grep -E '^[^:]*:([^:]*,)?cpu(,[^,:]*)?:.*' /proc/self/cgroup | cut -d: -f3)
   if [ "$current_cgroup" = "/" ]; then
@@ -248,16 +255,14 @@ fix_cgroup() {
   # See: https://d2iq.com/blog/running-kind-inside-a-kubernetes-cluster-for-continuous-integration
   # Capture initial state before modifying
   #
-  # Basically we're looking for the cgroup-path for the cpu controller for the
-  # current process. this tells us what cgroup-path the container is in.
-  # Then we collect the subsystems that are active on this path.
+  # Then we collect the subsystems that are active on our current process.
   # We assume the cpu controller is in use on all node containers,
   # and other controllers use the same sub-path.
   #
   # See: https://man7.org/linux/man-pages/man7/cgroups.7.html
   echo 'INFO: fix cgroup mounts for all subsystems'
   local cgroup_subsystems
-  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep "${current_cgroup}" | awk '{print $2}')
+  cgroup_subsystems=$(findmnt -lun -o source,target -t cgroup | grep -F "${current_cgroup}" | awk '{print $2}')
   # Unmount the cgroup subsystems that are not known to runtime used to
   # run the container we are in. Those subsystems are not properly scoped
   # (i.e. the root cgroup is exposed, rather than something like docker/xxxx).
@@ -268,7 +273,7 @@ fix_cgroup() {
   #
   # See https://github.com/kubernetes/kubernetes/issues/109182
   local unsupported_cgroups
-  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v "${current_cgroup}" | awk '{print $2}')
+  unsupported_cgroups=$(findmnt -lun -o source,target -t cgroup | grep_allow_nomatch -v -F "${current_cgroup}" | awk '{print $2}')
   if [ -n "$unsupported_cgroups" ]; then
     local mnt
     echo "$unsupported_cgroups" |
@@ -321,9 +326,15 @@ fix_cgroup() {
   mount --make-rprivate /sys/fs/cgroup
   echo "${cgroup_subsystems}" |
   while IFS= read -r subsystem; do
-    mount_kubelet_cgroup_root "/kubelet" "${subsystem}"
-    mount_kubelet_cgroup_root "/kubelet.slice" "${subsystem}"
+    mount_kubelet_cgroup_root /kubelet "${subsystem}"
+    mount_kubelet_cgroup_root /kubelet.slice "${subsystem}"
   done
+  # workaround for hosts not running systemd
+  # we only do this for kubelet.slice because it's not relevant when not using
+  # the systemd cgroup driver
+  if [[ ! "${cgroup_subsystems}" = */sys/fs/cgroup/systemd* ]]; then
+    mount_kubelet_cgroup_root /kubelet.slice /sys/fs/cgroup/systemd
+  fi
 }
 
 retryable_fix_cgroup() {
@@ -406,13 +417,29 @@ select_iptables() {
   update-alternatives --set ip6tables "/usr/sbin/ip6tables-${mode}" > /dev/null
 }
 
+fix_certificate() {
+  local apiserver_crt_file="/etc/kubernetes/pki/apiserver.crt"
+  local apiserver_key_file="/etc/kubernetes/pki/apiserver.key"
+
+  # Skip if this Node doesn't run kube-apiserver
+  if [[ ! -f ${apiserver_crt_file} ]] || [[ ! -f ${apiserver_key_file} ]]; then
+    return
+  fi
+
+  # Deletes the certificate for kube-apiserver and generates a new one.
+  # This is necessary because the old one doesn't match the current IP.
+  echo 'INFO: clearing and regenerating the certificate for serving the Kubernetes API' >&2
+  rm -f ${apiserver_crt_file} ${apiserver_key_file}
+  kubeadm init phase certs apiserver --config /kind/kubeadm.conf
+}
+
 enable_network_magic(){
   # well-known docker embedded DNS is at 127.0.0.11:53
   local docker_embedded_dns_ip='127.0.0.11'
 
   # first we need to detect an IP to use for reaching the docker host
   local docker_host_ip
-  docker_host_ip="$( (head -n1 <(getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
+  docker_host_ip="$( (head -n1 <(timeout 5 getent ahostsv4 'host.docker.internal') | cut -d' ' -f1) || true)"
   # if the ip doesn't exist or is a loopback address use the default gateway
   if [[ -z "${docker_host_ip}" ]] || [[ $docker_host_ip =~ ^127\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     docker_host_ip=$(ip -4 route show default | cut -d' ' -f3)
@@ -433,8 +460,19 @@ enable_network_magic(){
   cp /etc/resolv.conf /etc/resolv.conf.original
   sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
 
+  local files_to_update=(
+    /etc/kubernetes/manifests/etcd.yaml
+    /etc/kubernetes/manifests/kube-apiserver.yaml
+    /etc/kubernetes/manifests/kube-controller-manager.yaml
+    /etc/kubernetes/manifests/kube-scheduler.yaml
+    /etc/kubernetes/controller-manager.conf
+    /etc/kubernetes/scheduler.conf
+    /kind/kubeadm.conf
+    /var/lib/kubelet/kubeadm-flags.env
+  )
+  local should_fix_certificate=false
   # fixup IPs in manifests ...
-  curr_ipv4="$( (head -n1 <(getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
+  curr_ipv4="$( (head -n1 <(timeout 5 getent ahostsv4 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv4 address: ${curr_ipv4}" >&2
   if [ -f /kind/old-ipv4 ]; then
       old_ipv4=$(cat /kind/old-ipv4)
@@ -444,17 +482,23 @@ enable_network_magic(){
         echo "ERROR: Have an old IPv4 address but no current IPv4 address (!)" >&2
         exit 1
       fi
-      # kubernetes manifests are only present on control-plane nodes
-      sed -i "s#${old_ipv4}#${curr_ipv4}#" /etc/kubernetes/manifests/*.yaml || true
-      # this is no longer required with autodiscovery
-      sed -i "s#${old_ipv4}#${curr_ipv4}#" /var/lib/kubelet/kubeadm-flags.env || true
+      if [[ "${old_ipv4}" != "${curr_ipv4}" ]]; then
+        should_fix_certificate=true
+        sed_ipv4_command="s#\b$(regex_escape_ip "${old_ipv4}")\b#${curr_ipv4}#g"
+        for f in "${files_to_update[@]}"; do
+          # kubernetes manifests are only present on control-plane nodes
+          if [[ -f "$f" ]]; then
+            sed -i "${sed_ipv4_command}" "$f"
+          fi
+        done
+      fi
   fi
   if [[ -n $curr_ipv4 ]]; then
     echo -n "${curr_ipv4}" >/kind/old-ipv4
   fi
 
   # do IPv6
-  curr_ipv6="$( (head -n1 <(getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
+  curr_ipv6="$( (head -n1 <(timeout 5 getent ahostsv6 "$(hostname)") | cut -d' ' -f1) || true)"
   echo "INFO: Detected IPv6 address: ${curr_ipv6}" >&2
   if [ -f /kind/old-ipv6 ]; then
       old_ipv6=$(cat /kind/old-ipv6)
@@ -463,13 +507,23 @@ enable_network_magic(){
       if [[ -z $curr_ipv6 ]]; then
         echo "ERROR: Have an old IPv6 address but no current IPv6 address (!)" >&2
       fi
-      # kubernetes manifests are only present on control-plane nodes
-      sed -i "s#${old_ipv6}#${curr_ipv6}#" /etc/kubernetes/manifests/*.yaml || true
-      # this is no longer required with autodiscovery
-      sed -i "s#${old_ipv6}#${curr_ipv6}#" /var/lib/kubelet/kubeadm-flags.env || true
+      if [[ "${old_ipv6}" != "${curr_ipv6}" ]]; then
+        should_fix_certificate=true
+        sed_ipv6_command="s#\b$(regex_escape_ip "${old_ipv6}")\b#${curr_ipv6}#g"
+        for f in "${files_to_update[@]}"; do
+          # kubernetes manifests are only present on control-plane nodes
+          if [[ -f "$f" ]]; then
+            sed -i "${sed_ipv6_command}" "$f"
+          fi
+        done
+      fi
   fi
   if [[ -n $curr_ipv6 ]]; then
     echo -n "${curr_ipv6}" >/kind/old-ipv6
+  fi
+
+  if $should_fix_certificate; then
+    fix_certificate
   fi
 }
 
