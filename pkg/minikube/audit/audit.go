@@ -90,7 +90,13 @@ func LogCommandEnd(id string) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert logs to rows: %v", err)
 	}
-	auditContents := ""
+	// have to truncate the audit log while closed as Windows can't truncate an open file
+	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
+		return fmt.Errorf("failed to truncate audit log: %v", err)
+	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
 	var entriesNeedsToUpdate int
 	for _, v := range rowSlice {
 		if v.id == id {
@@ -102,20 +108,12 @@ func LogCommandEnd(id string) error {
 		if err != nil {
 			return err
 		}
-		auditContents += string(auditLog) + "\n"
+		if _, err = currentLogFile.WriteString(string(auditLog) + "\n"); err != nil {
+			return fmt.Errorf("failed to write to audit log: %v", err)
+		}
 	}
 	if entriesNeedsToUpdate == 0 {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
-	}
-	// have to truncate the audit log while closed as Windows can't truncate an open file
-	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
-		return fmt.Errorf("failed to truncate audit log: %v", err)
-	}
-	if err := openAuditLog(); err != nil {
-		return err
-	}
-	if _, err = currentLogFile.Write([]byte(auditContents)); err != nil {
-		return fmt.Errorf("failed to write to audit log: %v", err)
 	}
 	return nil
 }
