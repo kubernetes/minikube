@@ -260,6 +260,12 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 
 func openURLs(urls [][]string) {
 	for _, u := range urls {
+
+		if len(u) < 4 {
+			klog.Warning("No URL found")
+			continue
+		}
+
 		_, err := url.Parse(u[3])
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
