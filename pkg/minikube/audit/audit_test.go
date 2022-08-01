@@ -17,8 +17,11 @@ limitations under the License.
 package audit
 
 import (
+	"io"
 	"os"
+	"os/exec"
 	"os/user"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -27,6 +30,33 @@ import (
 )
 
 func TestAudit(t *testing.T) {
+	var auditFilename string
+
+	t.Run("setup", func(t *testing.T) {
+		f, err := os.CreateTemp("", "audit.json")
+		if err != nil {
+			t.Fatalf("failed creating temporary file: %v", err)
+		}
+		auditFilename = f.Name()
+
+		s := `{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.si  gs.minikube.audit"}
+{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.si  gs.minikube.audit"}
+{"data":{"args":"--user user2","command":"logs","endTime":"Tue, 02 Feb 2021 16:46:20 MST","profile":"minikube","startTime":"Tue, 02 Feb 2021 16:46:00 MST","user":"user2"},"datacontenttype":"application/json","id":"fec03227-2484-48b6-880a-88fd010b5efd","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.si  gs.minikube.audit"}
+{"data":{"args":"--user user2","command":"logs","endTime":"Tue, 02 Feb 2021 16:46:20 MST","profile":"minikube","startTime":"Tue, 02 Feb 2021 16:46:00 MST","user":"user2"},"datacontenttype":"application/json","id":"fec03227-2484-48b6-880a-88fd010b5efd","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+`
+
+		if _, err := f.WriteString(s); err != nil {
+			t.Fatalf("failed writing to file: %v", err)
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			t.Fatalf("failed seeking to start of file: %v", err)
+		}
+
+		currentLogFile = f
+		viper.Set(config.MaxAuditEntries, 3)
+	})
+
 	t.Run("username", func(t *testing.T) {
 		u, err := user.Current()
 		if err != nil {
@@ -168,7 +198,6 @@ func TestAudit(t *testing.T) {
 			mockArgs(t, test.args)
 
 			got := isDeletePurge()
-
 			if got != test.want {
 				t.Errorf("test.args = %q; isDeletePurge() = %t; want %t", test.args, got, test.want)
 			}
@@ -211,11 +240,18 @@ func TestAudit(t *testing.T) {
 		if err != nil {
 			t.Fatal("start failed")
 		}
-		err = LogCommandEnd(auditID)
+		if err := LogCommandEnd(auditID); err != nil {
+			t.Fatal(err)
+		}
 
+		b, err := exec.Command("wc", "-l", auditFilename).Output()
 		if err != nil {
 			t.Fatal(err)
 		}
+		if !strings.Contains(string(b), "3") {
+			t.Errorf("MaxAuditEntries did not work, expected 3 lines in the audit log found %s", string(b))
+		}
+
 	})
 
 	t.Run("LogCommandEndNonExistingID", func(t *testing.T) {
