@@ -819,8 +819,8 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 }
 
 // GenerateTemplateData generates template data for template assets
-func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo NetworkInfo, images, customRegistries map[string]string, enable bool) interface{} {
-
+func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo NetworkInfo, images, customRegistries map[string]string, enable bool) interface{} {
+	cfg := cc.KubernetesConfig
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
 	// for  less common architectures blank suffix for amd64
@@ -900,6 +900,15 @@ func GenerateTemplateData(addon *Addon, cfg config.KubernetesConfig, netInfo Net
 	for name, image := range opts.Images {
 		if _, ok := opts.Registries[name]; !ok {
 			opts.Registries[name] = "" // Avoid nil access when rendering
+		}
+
+		// Without the line below, if you try to overwrite an image the default registry is still used in the templating
+		// Example - image name: MetricsScraper, default registry: docker.io, default image: kubernetesui/metrics-scraper
+		// Passed on addon enable: --images=MetricsScraper=k8s.gcr.io/echoserver:1.4
+		// Without this line the resulting image would be docker.io/k8s.gcr.io/echoserver:1.4
+		// Therefore, if the user specified a custom image remove the default registry
+		if _, ok := cc.CustomAddonImages[name]; ok {
+			opts.Registries[name] = ""
 		}
 
 		if enable {
