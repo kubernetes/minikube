@@ -98,6 +98,9 @@ func LogCommandEnd(id string) error {
 		return err
 	}
 	var entriesNeedsToUpdate int
+
+	startIndex := getStartIndex(len(rowSlice))
+	rowSlice = rowSlice[startIndex:]
 	for _, v := range rowSlice {
 		if v.id == id {
 			v.endTime = time.Now().Format(constants.TimeFormat)
@@ -116,6 +119,15 @@ func LogCommandEnd(id string) error {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
 	}
 	return nil
+}
+
+func getStartIndex(entryCount int) int {
+	maxEntries := viper.GetInt(config.MaxAuditEntries)
+	startIndex := entryCount - maxEntries
+	if maxEntries <= 0 || startIndex <= 0 {
+		return 0
+	}
+	return startIndex
 }
 
 // shouldLog returns if the command should be logged.
