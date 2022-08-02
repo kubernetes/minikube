@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -91,7 +90,7 @@ func LogCommandEnd(id string) error {
 		return fmt.Errorf("failed to convert logs to rows: %v", err)
 	}
 	// have to truncate the audit log while closed as Windows can't truncate an open file
-	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
+	if err := truncateAuditLog(); err != nil {
 		return fmt.Errorf("failed to truncate audit log: %v", err)
 	}
 	if err := openAuditLog(); err != nil {
