@@ -28,7 +28,7 @@ function cleanup_token() {
 }
 trap cleanup_token EXIT
 
-if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
+if ! [[ -x release-notes ]] || ! [[ -x pullsheet ]]; then
   echo >&2 'Installing release-notes'
   go install github.com/corneliusweig/release-notes@latest
   go install github.com/google/pullsheet@latest
@@ -38,7 +38,7 @@ git pull https://github.com/kubernetes/minikube.git master --tags
 recent=$(git describe --abbrev=0)
 recent_date=$(git log -1 --format=%as $recent)
 
-"${DIR}/release-notes" kubernetes minikube --since $recent
+release-notes kubernetes minikube --since $recent
 
 echo ""
 echo "For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md)."
@@ -52,12 +52,12 @@ echo "Thank you to our PR reviewers for this release!"
 echo ""
 AWK_FORMAT_ITEM='{printf "- %s (%d comments)\n", $2, $1}'
 AWK_REVIEW_COMMENTS='NR>1{arr[$4] += $6 + $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
-"${DIR}/pullsheet" reviews --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_REVIEW_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM"
+pullsheet reviews --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_REVIEW_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM"
 echo ""
 echo "Thank you to our triage members for this release!"
 echo ""
 AWK_ISSUE_COMMENTS='NR>1{arr[$4] += $7}END{for (a in arr) printf "%d %s\n", arr[a], a}'
-"${DIR}/pullsheet" issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
+pullsheet issue-comments --since "$recent_date" --repos kubernetes/minikube --token-path "$GH_TOKEN" --logtostderr=false --stderrthreshold=2 | awk -F ',' "$AWK_ISSUE_COMMENTS" | sort -k1nr -k2d  | awk -F ' ' "$AWK_FORMAT_ITEM" | head -n 5
 
 if [[ "$recent" != *"beta"* ]]; then
   echo ""
