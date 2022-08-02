@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"os"
@@ -175,7 +174,7 @@ func (d *Driver) GetState() (state.State, error) {
 	if _, err := os.Stat(d.pidfilePath()); err != nil {
 		return state.Stopped, nil
 	}
-	p, err := ioutil.ReadFile(d.pidfilePath())
+	p, err := os.ReadFile(d.pidfilePath())
 	if err != nil {
 		return state.Error, err
 	}
@@ -588,7 +587,7 @@ func (d *Driver) generateDiskImage(size int) error {
 	if err := tw.WriteHeader(file); err != nil {
 		return err
 	}
-	pubKey, err := ioutil.ReadFile(d.publicSSHKeyPath())
+	pubKey, err := os.ReadFile(d.publicSSHKeyPath())
 	if err != nil {
 		return err
 	}
@@ -610,7 +609,7 @@ func (d *Driver) generateDiskImage(size int) error {
 		return err
 	}
 	rawFile := fmt.Sprintf("%s.raw", d.diskPath())
-	if err := ioutil.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
 		return nil
 	}
 	if stdout, stderr, err := cmdOutErr("qemu-img", "convert", "-f", "raw", "-O", "qcow2", rawFile, d.diskPath()); err != nil {
@@ -631,7 +630,7 @@ func (d *Driver) generateDiskImage(size int) error {
 func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 	// Start with virtio, add ISO & FAT format later
 	// Start with local file, add wget/fetct URL? (or if URL, use datasource..)
-	userdata, err := ioutil.ReadFile(userdataFile)
+	userdata, err := os.ReadFile(userdataFile)
 	if err != nil {
 		return "", err
 	}
@@ -650,7 +649,7 @@ func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 	}
 
 	writeFile := filepath.Join(userDataDir, "user_data")
-	if err := ioutil.WriteFile(writeFile, userdata, 0644); err != nil {
+	if err := os.WriteFile(writeFile, userdata, 0644); err != nil {
 		return "", err
 	}
 
