@@ -29,8 +29,8 @@ func TestReport(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 
-	s := `{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.si  gs.minikube.audit"}
-{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.si  gs.minikube.audit"}
+	s := `{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
 {"data":{"args":"--user user2","command":"logs","endTime":"Tue, 02 Feb 2021 16:46:20 MST","profile":"minikube","startTime":"Tue, 02 Feb 2021 16:46:00 MST","user":"user2"},"datacontenttype":"application/json","id":"fec03227-2484-48b6-880a-88fd010b5efd","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
 `
 
