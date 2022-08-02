@@ -228,7 +228,7 @@ func TestAudit(t *testing.T) {
 	t.Run("LogCommandEnd", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"minikube"}
+		os.Args = []string{"minikube", "start"}
 
 		oldCommandLine := pflag.CommandLine
 		defer func() {
@@ -260,7 +260,7 @@ func TestAudit(t *testing.T) {
 	t.Run("LogCommandEndNonExistingID", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"minikube"}
+		os.Args = []string{"minikube", "start"}
 
 		oldCommandLine := pflag.CommandLine
 		defer func() {
