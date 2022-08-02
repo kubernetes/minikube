@@ -1,5 +1,72 @@
 # Release Notes
 
+## Version 1.26.1 - 2022-08-02
+
+Minor Improvements:
+* Check for cri-dockerd & dockerd runtimes when using none-driver on Kubernetes 1.24+  [#14555](https://github.com/kubernetes/minikube/pull/14555)
+* Add solution message for when `cri-docker` is missing [#14483](https://github.com/kubernetes/minikube/pull/14483)
+* Limit number of audit entries [#14695](https://github.com/kubernetes/minikube/pull/14695)
+* Optimize audit logging [#14596](https://github.com/kubernetes/minikube/pull/14596)
+* Show the container runtime when running without kubernetes #13432  [#14200](https://github.com/kubernetes/minikube/pull/14200)
+* Add warning when enabling thrid-party addons [#14499](https://github.com/kubernetes/minikube/pull/14499)
+
+Bug fixes:
+* Fix url index out of range error in service [#14658](https://github.com/kubernetes/minikube/pull/14658)
+* Fix incorrect user and profile in audit logging [#14562](https://github.com/kubernetes/minikube/pull/14562)
+* Fix overwriting err for OCI "minikube start" [#14506](https://github.com/kubernetes/minikube/pull/14506)
+* Fix panic when environment variables are empty [#14415](https://github.com/kubernetes/minikube/pull/14415)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.24.3 and latest: v1.24.3 [#14606](https://github.com/kubernetes/minikube/pull/14606)
+* ISO: Update Docker from 20.10.16 to 20.10.17 [#14534](https://github.com/kubernetes/minikube/pull/14534)
+* ISO/Kicbase: Update cri-o from v1.22.3 to v1.24.1 [#14420](https://github.com/kubernetes/minikube/pull/14420)
+* ISO: Update conmon from v2.0.24 to v2.1.2 [#14545](https://github.com/kubernetes/minikube/pull/14545)
+* Update gcp-auth-webhook from v0.0.9 to v0.0.10 [#14670](https://github.com/kubernetes/minikube/pull/14670)
+* ISO/Kicbase: Update base images [#14481](https://github.com/kubernetes/minikube/pull/14481)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Akira Yoshiyama
+- Bradley S
+- Christoph "criztovyl" Schulz
+- Gimb0
+- HarshCasper
+- Jeff MAURY
+- Medya Ghazizadeh
+- Niels de Vos
+- Paul S. Schweigert
+- Santhosh Nagaraj S
+- Steven Powell
+- Tobias Pfandzelter
+- anoop142
+- inifares23lab
+- klaases
+- peizhouyu
+- zhouguowei
+- 吴梓铭
+- 李龙峰
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (50 comments)
+- medyagh (9 comments)
+- atoato88 (3 comments)
+- klaases (2 comments)
+- afbjorklund (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (75 comments)
+- RA489 (56 comments)
+- klaases (32 comments)
+- spowelljr (27 comments)
+- medyagh (13 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.26.0/) for this release!
+
 ## Version 1.26.0 - 2022-06-22
 
 Features:
