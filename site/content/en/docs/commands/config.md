@@ -40,6 +40,7 @@ Configurable fields:
  * EmbedCerts
  * native-ssh
  * rootless
+ * MaxAuditEntries
 
 ```shell
 minikube config SUBCOMMAND [flags]
