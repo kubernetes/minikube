@@ -249,9 +249,12 @@ func TestAudit(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !strings.Contains(string(b), "3") {
+			b, err = exec.Command("cat", auditFilename).Output()
+			if err != nil {
+				t.Errorf("%s", string(b))
+			}
 			t.Errorf("MaxAuditEntries did not work, expected 3 lines in the audit log found %s", string(b))
 		}
-
 	})
 
 	t.Run("LogCommandEndNonExistingID", func(t *testing.T) {
