@@ -147,6 +147,8 @@ type Config struct {
 	Socket string
 	// Runner is the CommandRunner object to execute commands with
 	Runner CommandRunner
+	// NetworkPlugin name of networking plugin ("cni")
+	NetworkPlugin string
 	// ImageRepository image repository to download image from
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
@@ -219,6 +221,7 @@ func New(c Config) (Manager, error) {
 		return &Docker{
 			Socket:            sp,
 			Runner:            c.Runner,
+			NetworkPlugin:     c.NetworkPlugin,
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
@@ -335,15 +338,4 @@ func CheckKernelCompatibility(cr CommandRunner, major, minor int) error {
 		return NewErrServiceVersion("kernel", expected, actual)
 	}
 	return nil
-}
-
-func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
-	// Only supported for Docker with cri-dockerd
-	if r.Name() != "Docker" {
-		if networkPlugin != "cni" {
-			return fmt.Errorf("unknown network plugin: %s", networkPlugin)
-		}
-		return nil
-	}
-	return dockerConfigureNetworkPlugin(cr, networkPlugin)
 }
