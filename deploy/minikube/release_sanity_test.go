@@ -86,7 +86,8 @@ func checkReleasesV1(t *testing.T, r notify.Release) {
 	}
 }
 
-func getSHAMap(c notify.Checksums) map[string]map[string]string {
+func getSHAMap(r notify.Release) map[string]map[string]string {
+	c := r.Checksums
 	return map[string]map[string]string{
 		"darwin": {
 			"amd64": c.AMD64.Darwin,
@@ -109,7 +110,7 @@ func checkReleasesV2(t *testing.T, rs notify.Releases) {
 	for _, r := range rs.Releases {
 		fmt.Printf("Checking release: %s\n", r.Name)
 		checkReleasesV1(t, r)
-		release := getSHAMap(r.Checksums)
+		release := getSHAMap(r)
 		for os, archs := range release {
 			for arch, sha := range archs {
 				fmt.Printf("Checking SHA for %s-%s.\n", os, arch)

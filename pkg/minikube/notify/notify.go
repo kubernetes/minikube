@@ -136,7 +136,7 @@ type operatingSystems struct {
 	Windows string `json:"windows,omitempty"`
 }
 
-type Checksums struct {
+type checksums struct {
 	AMD64   *operatingSystems `json:"amd64,omitempty"`
 	ARM     *operatingSystems `json:"arm,omitempty"`
 	ARM64   *operatingSystems `json:"arm64,omitempty"`
@@ -146,7 +146,7 @@ type Checksums struct {
 }
 
 type Release struct {
-	Checksums Checksums `json:"checksums"`
+	Checksums checksums `json:"checksums"`
 	Name      string    `json:"name"`
 }
 
