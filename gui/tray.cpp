@@ -92,7 +92,7 @@ static QString getPauseLabel(bool isPaused)
 static QString getStartLabel(bool isRunning)
 {
     if (isRunning) {
-        return "Reload";
+        return "Restart";
     }
     return "Start";
 }
