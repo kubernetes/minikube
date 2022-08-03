@@ -220,9 +220,9 @@ void AdvancedView::askCustom()
     QComboBox *driverComboBox = new QComboBox;
     driverComboBox->addItems({ "docker", "virtualbox", "vmware", "podman" });
 #if __linux__
-    driverComboBox->addItem("kvm2");
+    driverComboBox->addItems({ "kvm2", "qemu" });
 #elif __APPLE__
-    driverComboBox->addItems({ "hyperkit", "parallels" });
+    driverComboBox->addItems({ "hyperkit", "qemu", "parallels" });
 #else
     driverComboBox->addItem("hyperv");
 #endif
