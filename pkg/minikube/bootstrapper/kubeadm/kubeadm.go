@@ -313,12 +313,13 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 	scanner := bufio.NewScanner(logs)
 	for scanner.Scan() {
+		line := scanner.Text()
+		klog.Info(line)
 		if nextStepIndex >= len(steps) {
-			scanner.Text()
 			continue
 		}
 		nextStep := steps[nextStepIndex]
-		if !strings.Contains(scanner.Text(), fmt.Sprintf("[%s]", nextStep.logTag)) {
+		if !strings.Contains(line, fmt.Sprintf("[%s]", nextStep.logTag)) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
