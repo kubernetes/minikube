@@ -126,7 +126,7 @@ void AdvancedView::update(Cluster cluster)
     startButton->setText(getStartLabel(isRunning));
     QString startToolTip = "";
     if (isRunning) {
-        startToolTip = "Restart the Kubernetes API";
+        startToolTip = "Restart an already running minikube instance to pickup config changes.";
     }
     startButton->setToolTip(startToolTip);
 }
