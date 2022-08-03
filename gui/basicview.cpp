@@ -56,7 +56,7 @@ static QString getPauseLabel(bool isPaused)
 static QString getStartLabel(bool isRunning)
 {
     if (isRunning) {
-        return "Reload";
+        return "Restart";
     }
     return "Start";
 }
@@ -82,6 +82,11 @@ void BasicView::update(Cluster cluster)
 #endif
     pauseButton->setText(getPauseLabel(isPaused));
     startButton->setText(getStartLabel(isRunning));
+    QString startToolTip = "";
+    if (isRunning) {
+        startToolTip = "Restart the Kubernetes API";
+    }
+    startButton->setToolTip(startToolTip);
 }
 
 void BasicView::disableButtons()
