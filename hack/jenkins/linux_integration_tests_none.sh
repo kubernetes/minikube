@@ -77,7 +77,7 @@ if ! cri-dockerd --version &>/dev/null; then
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
-  chmod +x /usr/bin/cri-dockerd
+  sudo chmod +x /usr/bin/cri-dockerd
 fi
 
 # crictl is required for Kubernetes 1.24 and higher for none driver
