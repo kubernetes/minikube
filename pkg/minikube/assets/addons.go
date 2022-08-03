@@ -785,6 +785,8 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 		}
 		// Use newly configured custom images.
 		images = overrideDefaults(addonDefaultImages, newImages)
+		// Store custom addon images to be written.
+		cc.CustomAddonImages = mergeMaps(cc.CustomAddonImages, newImages)
 	}
 
 	// Use previously configured custom registries.
