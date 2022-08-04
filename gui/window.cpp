@@ -99,7 +99,8 @@ Window::Window()
     checkForMinikube();
 
     stackedWidget = new QStackedWidget;
-    commandRunner = new CommandRunner(this);
+    logger = new Logger();
+    commandRunner = new CommandRunner(this, logger);
     basicView = new BasicView();
     advancedView = new AdvancedView(*trayIconIcon);
     errorMessage = new ErrorMessage(this, *trayIconIcon);
@@ -135,7 +136,7 @@ void Window::closeEvent(QCloseEvent *event)
     }
 #endif
     if (tray->isVisible()) {
-        QMessageBox::information(this, tr("Systray"),
+        QMessageBox::information(this, tr("minikube"),
                                  tr("The program will keep running in the "
                                     "system tray. To terminate the program, "
                                     "choose <b>Quit</b> in the context menu "
