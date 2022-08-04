@@ -23,7 +23,7 @@ SOURCES       = main.cpp \
                 tray.cpp \
                 updater.cpp \
                 window.cpp
-RESOURCES     = systray.qrc
+RESOURCES     = minikube.qrc
 ICON          = images/minikube.icns
 
 QT += widgets network
