@@ -5,6 +5,7 @@ HEADERS       = window.h \
                 commandrunner.h \
                 errormessage.h \
                 hyperkit.h \
+                logger.h \
                 operator.h \
                 progresswindow.h \
                 tray.h \
@@ -16,6 +17,7 @@ SOURCES       = main.cpp \
                 commandrunner.cpp \
                 errormessage.cpp \
                 hyperkit.cpp \
+                logger.cpp \
                 operator.cpp \
                 progresswindow.cpp \
                 tray.cpp \

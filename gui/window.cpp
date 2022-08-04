@@ -99,7 +99,8 @@ Window::Window()
     checkForMinikube();
 
     stackedWidget = new QStackedWidget;
-    commandRunner = new CommandRunner(this);
+    logger = new Logger();
+    commandRunner = new CommandRunner(this, logger);
     basicView = new BasicView();
     advancedView = new AdvancedView(*trayIconIcon);
     errorMessage = new ErrorMessage(this, *trayIconIcon);
