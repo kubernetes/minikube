@@ -46,10 +46,6 @@ func DefaultISOURLs() []string {
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s-%s.iso", isoBucket, v, runtime.GOARCH),
 		fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s-%s.iso", v, v, runtime.GOARCH),
 		fmt.Sprintf("https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-%s-%s.iso", v, runtime.GOARCH),
-		// fallback to older style ISO urls, without explicit arch reference
-		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", isoBucket, v),
-		fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s.iso", v, v),
-		fmt.Sprintf("https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-%s.iso", v),
 	}
 }
 
