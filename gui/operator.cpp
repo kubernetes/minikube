@@ -404,13 +404,14 @@ void Operator::dashboardBrowser()
     QStringList arguments = { "dashboard", "-p", selectedClusterName() };
     process->start(program, arguments);
 
+    dashboardStarted = true;
     dashboardProcess = process;
     dashboardProcess->waitForStarted();
 }
 
 void Operator::dashboardClose()
 {
-    if (dashboardProcess) {
+    if (dashboardProcess && dashboardStarted) {
         dashboardProcess->terminate();
         dashboardProcess->waitForFinished();
     }

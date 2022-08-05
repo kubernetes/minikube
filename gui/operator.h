@@ -67,6 +67,7 @@ private:
     Updater *m_updater;
     bool m_isBasicView;
     QProcess *dashboardProcess;
+    bool dashboardStarted;
     QStackedWidget *m_stackedWidget;
     QDialog *m_parent;
 };
