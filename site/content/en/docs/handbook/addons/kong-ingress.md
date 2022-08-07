@@ -55,7 +55,7 @@ minikube tunnel
 Let's test if KIC is up and running.
 
 ```bash
-$ curl -v localhost
+$ curl -v $PROXY_IP
 
 *   Trying 127.0.0.1:80...
 * Connected to localhost (127.0.0.1) port 80 (#0)
@@ -125,7 +125,7 @@ spec:
 Let's test our ingress object.
 
 ```bash
-$ curl -i localhost/foo -H "Host: httpbin.org"
+$ curl -i ${PROXY_IP}/foo -H "Host: httpbin.org"
 
 
 HTTP/1.1 200 OK
