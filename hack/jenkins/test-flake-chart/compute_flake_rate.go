@@ -58,13 +58,14 @@ func main() {
 }
 
 // One entry of a test run.
-// Example: TestEntry {
-//	 name: "TestFunctional/parallel/LogsCmd",
-//   environment: "Docker_Linux",
-//	 date: time.Now,
-//   status: "Passed",
-//   duration: 0.1,
-// }
+//
+//	Example: TestEntry {
+//		 name: "TestFunctional/parallel/LogsCmd",
+//	  environment: "Docker_Linux",
+//		 date: time.Now,
+//	  status: "Passed",
+//	  duration: 0.1,
+//	}
 type testEntry struct {
 	name        string
 	environment string

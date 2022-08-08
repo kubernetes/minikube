@@ -43,10 +43,10 @@ const (
 )
 
 // Enable follows these steps for enabling gvisor in minikube:
-//   1. creates necessary directories for storing binaries and runsc logs
-//   2. downloads runsc and gvisor-containerd-shim
-//   3. copies necessary containerd config files
-//   4. restarts containerd
+//  1. creates necessary directories for storing binaries and runsc logs
+//  2. downloads runsc and gvisor-containerd-shim
+//  3. copies necessary containerd config files
+//  4. restarts containerd
 func Enable() error {
 	if err := makeGvisorDirs(); err != nil {
 		return errors.Wrap(err, "creating directories on node")
@@ -149,8 +149,9 @@ func downloadFileToDest(url, dest string) error {
 }
 
 // Must write the following files:
-//    1. gvisor-containerd-shim.toml
-//    2. gvisor containerd config.toml
+//  1. gvisor-containerd-shim.toml
+//  2. gvisor containerd config.toml
+//
 // and save the default version of config.toml
 func copyConfigFiles() error {
 	log.Printf("Storing default config.toml at %s", storedContainerdConfigTomlPath)

@@ -102,7 +102,7 @@ func TestJSONOutput(t *testing.T) {
 	}
 }
 
-//  validateDistinctCurrentSteps makes sure each step has a distinct step number
+// validateDistinctCurrentSteps makes sure each step has a distinct step number
 func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
 	steps := map[string]string{}
 	for _, ce := range ces {

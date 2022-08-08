@@ -41,7 +41,7 @@ const (
 	ExtraKey = "extra"
 )
 
-//  vars related to the --wait flag
+// vars related to the --wait flag
 var (
 	// DefaultComponents is map of the the default components to wait for
 	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
