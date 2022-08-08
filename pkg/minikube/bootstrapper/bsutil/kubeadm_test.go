@@ -122,7 +122,8 @@ func recentReleases(n int) ([]string, error) {
 	return versions, nil
 }
 
-/**
+/*
+*
 This test case has only 1 thing to test and that is the
 networking/dnsDomain value
 */

@@ -7,14 +7,32 @@
 #include <QJsonParseError>
 #include <QDebug>
 
-CommandRunner::CommandRunner(QDialog *parent)
+CommandRunner::CommandRunner(QDialog *parent, Logger *logger)
 {
     m_env = QProcessEnvironment::systemEnvironment();
     m_parent = parent;
+    m_logger = logger;
     minikubePath();
 #if __APPLE__
     setMinikubePath();
 #endif
+}
+
+void CommandRunner::executeCommand(QString program, QStringList args)
+{
+    QProcess *process = new QProcess(this);
+    process->setProcessEnvironment(m_env);
+    process->start(program, args);
+    process->waitForFinished(-1);
+    if (process->exitCode() == 0) {
+        return;
+    }
+    QString out = process->readAllStandardOutput();
+    QString err = process->readAllStandardError();
+    QString log = QString("The following command failed:\n%1 %2\n\nStdout:\n%3\n\nStderr:\n%4\n\n")
+                          .arg(program, args.join(" "), out, err);
+    m_logger->log(log);
+    delete process;
 }
 
 void CommandRunner::executeMinikubeCommand(QStringList args)

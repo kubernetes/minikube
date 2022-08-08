@@ -62,7 +62,6 @@ func main() {
 	update.Apply(schema, data)
 }
 
-//
 // golintVersions returns stable version in semver format.
 func golintVersion(ctx context.Context, owner, repo string) (stable string, err error) {
 	// get Kubernetes versions from GitHub Releases

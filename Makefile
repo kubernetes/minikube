@@ -33,7 +33,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.18.3
+GO_VERSION ?= 1.19
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.25.0
 
@@ -76,7 +76,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.47.2
+GOLINT_VERSION ?= v1.48.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint

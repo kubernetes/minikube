@@ -45,8 +45,9 @@ func getSHAFromURL(url string) (string, error) {
 }
 
 // TestReleasesJSON checks if all *GA* releases
-//      enlisted in https://storage.googleapis.com/minikube/releases-v2.json
-//      are available to download and have correct hashsum
+//
+//	enlisted in https://storage.googleapis.com/minikube/releases-v2.json
+//	are available to download and have correct hashsum
 func TestReleasesJSON(t *testing.T) {
 	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeReleasesURL)
 	if err != nil {
@@ -56,8 +57,9 @@ func TestReleasesJSON(t *testing.T) {
 }
 
 // TestBetaReleasesJSON checks if all *BETA* releases
-//      enlisted in https://storage.googleapis.com/minikube/releases-beta-v2.json
-//      are available to download and have correct hashsum
+//
+//	enlisted in https://storage.googleapis.com/minikube/releases-beta-v2.json
+//	are available to download and have correct hashsum
 func TestBetaReleasesJSON(t *testing.T) {
 	releases, err := notify.AllVersionsFromURL(notify.GithubMinikubeBetaReleasesURL)
 	if err != nil {

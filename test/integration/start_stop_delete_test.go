@@ -445,11 +445,14 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 // Remove container-specific prefixes for naming consistency
 // for example in `docker` runtime we get this:
-// 		$ docker@minikube:~$ sudo crictl images -o json | grep dash
-// 	         "kubernetesui/dashboard:vX.X.X"
+//
+//		$ docker@minikube:~$ sudo crictl images -o json | grep dash
+//	         "kubernetesui/dashboard:vX.X.X"
+//
 // but for 'containerd' we get full name
-// 		$ docker@minikube:~$  sudo crictl images -o json | grep dash
-//        	 "docker.io/kubernetesui/dashboard:vX.X.X"
+//
+//			$ docker@minikube:~$  sudo crictl images -o json | grep dash
+//	       	 "docker.io/kubernetesui/dashboard:vX.X.X"
 func trimImageName(name string) string {
 	name = strings.TrimPrefix(name, "docker.io/")
 	name = strings.TrimPrefix(name, "localhost/")

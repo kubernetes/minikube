@@ -139,7 +139,7 @@ Persistent Routes:
 	expectedRt := routingTable{
 		routingTableLine{
 			route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
-			line: " 	    10.96.0.0      255.240.0.0        127.0.0.1        127.0.0.1    281",
+			line:  " 	    10.96.0.0      255.240.0.0        127.0.0.1        127.0.0.1    281",
 		},
 		routingTableLine{
 			route: unsafeParseRoute("192.168.1.2", "10.211.55.0/24"),
