@@ -19,9 +19,9 @@ Please send a PR to suggest any improvements to it.
 
 ## (#2) Documentation
 
-- [x] Consolidate Kubernetes documentation that references minikube
-- [x] Delete outdated documentation
-- [x] Add documentation for new features
+- [ ] Consolidate Kubernetes documentation that references minikube
+- [ ] Delete outdated documentation
+- [ ] Add documentation for new features
 
 ## (#3) ARM64 Support
 
@@ -29,10 +29,10 @@ Please send a PR to suggest any improvements to it.
 - [x] Add Mac M1 VM support (experimental, will improve by end of 2022)
 
 ## (#4) Docker
-- [x] Remove the Docker Desktop requirement on Mac and Windows
+- [ ] Remove the Docker Desktop requirement on Mac and Windows
 - [x] Continue supporting Docker as a container runtime (with CRI)
 
 ## (#5) libmachine Refactor
 
-- [x] Add new driver (with QEMU) to replace HyperKit, primarily for Mac arm64
-- [x] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
+- [x] Add new driver (with QEMU) to replace HyperKit, primarily for Mac arm64 (experimental, will improve by end of 2022)
+- [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
