@@ -19,7 +19,6 @@ package util
 import (
 	"os"
 	"os/user"
-	"runtime"
 	"syscall"
 	"testing"
 
@@ -38,7 +37,7 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		url := GetBinaryDownloadURL(tt.version, tt.platform, runtime.GOARCH)
+		url := GetBinaryDownloadURL(tt.version, tt.platform, "amd64")
 		if url != tt.expectedURL {
 			t.Fatalf("Expected '%s' but got '%s'", tt.expectedURL, url)
 		}
