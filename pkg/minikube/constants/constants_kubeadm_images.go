@@ -21,7 +21,7 @@ var (
 		"v1.25": {
 			"coredns/coredns": "v1.9.3",
 			"etcd":            "3.5.4-0",
-			"pause":           "3.7",
+			"pause":           "3.8",
 		},
 		"v1.24": {
 			"coredns/coredns": "v1.8.6",
