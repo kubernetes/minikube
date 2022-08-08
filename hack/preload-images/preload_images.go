@@ -129,11 +129,26 @@ func collectK8sVers() ([]string, error) {
 		}
 		k8sVersions = recent
 	}
-	return append([]string{
+	versions := append([]string{
 		constants.DefaultKubernetesVersion,
 		constants.NewestKubernetesVersion,
 		constants.OldestKubernetesVersion,
-	}, k8sVersions...), nil
+	}, k8sVersions...)
+	return removeDuplicates(versions), nil
+}
+
+func removeDuplicates(versions []string) []string {
+	prevVersions := make(map[string]bool)
+	for i := 0; i < len(versions); i++ {
+		v := versions[i]
+		if ok := prevVersions[v]; !ok {
+			prevVersions[v] = true
+			continue
+		}
+		versions = append(versions[:i], versions[i+1:]...)
+		i--
+	}
+	return versions
 }
 
 func makePreload(cfg preloadCfg) error {
