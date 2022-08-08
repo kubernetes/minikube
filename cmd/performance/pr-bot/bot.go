@@ -37,9 +37,9 @@ func main() {
 }
 
 // analyzePerformance is responsible for:
-//   1. collecting PRs to run performance analysis on
-//   2. running mkcmp against those PRs
-//   3. commenting results on those PRs
+//  1. collecting PRs to run performance analysis on
+//  2. running mkcmp against those PRs
+//  3. commenting results on those PRs
 func analyzePerformance(ctx context.Context) error {
 	client := monitor.NewClient(ctx, monitor.GithubOwner, monitor.GithubRepo)
 	prs, err := client.ListOpenPRsWithLabel(monitor.OkToTestLabel)
