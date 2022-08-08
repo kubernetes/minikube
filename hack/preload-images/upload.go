@@ -67,7 +67,7 @@ func getVersionsFromFilename(filename string) (string, string) {
 	preloadVersion := parts[3]
 	k8sVersion := parts[4]
 	// this check is for "-rc" and "-beta" versions that would otherwise be stripped off
-	if len(parts) == 9 {
+	if len(parts) >= 9 && parts[5] != "cri" {
 		k8sVersion += fmt.Sprintf("-%s", parts[5])
 	}
 	return preloadVersion, k8sVersion
