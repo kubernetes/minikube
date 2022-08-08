@@ -428,7 +428,7 @@ tests ingress-dns addon activation
 makes sure json output works properly for the start, pause, unpause, and stop commands
 
 #### validateDistinctCurrentSteps
- validateDistinctCurrentSteps makes sure each step has a distinct step number
+makes sure each step has a distinct step number
 
 #### validateIncreasingCurrentSteps
 verifies that for a successful minikube start, 'current step' should be increasing
