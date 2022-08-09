@@ -19,7 +19,7 @@ minikube start supports some qemu specific flags:
 
 * **`--qemu-firmware-path`**: The path to the firmware image to be used.
   * Note: if this flag does not take effect, try removing the file `~/.minikube` which may have a reference to this setting.
-  * Macports: if you are installing [minikube](https://ports.macports.org/port/minikube/) and [qemu](https://ports.macports.org/port/qemu/) via Macports on an Mac with M1, use the following flag: `--qemu-firmware-path=/opt/local/share/qemu/edk2-aarch64-code.fd`
+  * Macports: if you are installing [minikube](https://ports.macports.org/port/minikube/) and [qemu](https://ports.macports.org/port/qemu/) via Macports on a Mac with M1, use the following flag: `--qemu-firmware-path=/opt/local/share/qemu/edk2-aarch64-code.fd`
 
 ## Issues
 
