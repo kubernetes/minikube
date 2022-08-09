@@ -21,12 +21,6 @@ To start minikube with the qemu driver:
 minikube start --driver=qemu
 ```
 
-To make qemu the default driver: 
-
-```shell
-minikube config set driver qemu
-```
-
 ## Issues
 
 * [Full list of open 'qemu' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fqemu-driver)
