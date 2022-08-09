@@ -109,3 +109,17 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return semver.Make(version[1:])
 }
+
+// RemoveDuplicateStrings takes a string slice and returns a slice without duplicates
+func RemoveDuplicateStrings(initial []string) []string {
+	var result []string
+	m := make(map[string]bool, len(initial))
+	for _, v := range initial {
+		if _, ok := m[v]; ok {
+			continue
+		}
+		m[v] = true
+		result = append(result, v)
+	}
+	return result
+}

@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestGetBinaryDownloadURL(t *testing.T) {
@@ -168,6 +169,48 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 			err := MaybeChownDirRecursiveToMinikubeUser(c.dir)
 			if (nil != err) != c.expectedError {
 				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
+			}
+		})
+	}
+}
+
+func TestRemoveDuplicateStrings(t *testing.T) {
+	testCases := []struct {
+		desc  string
+		slice []string
+		want  []string
+	}{
+		{
+			desc:  "NoDuplicates",
+			slice: []string{"alpha", "bravo", "charlie"},
+			want:  []string{"alpha", "bravo", "charlie"},
+		},
+		{
+			desc:  "AdjacentDuplicates",
+			slice: []string{"alpha", "bravo", "bravo", "charlie"},
+			want:  []string{"alpha", "bravo", "charlie"},
+		},
+		{
+			desc:  "NonAdjacentDuplicates",
+			slice: []string{"alpha", "bravo", "alpha", "charlie"},
+			want:  []string{"alpha", "bravo", "charlie"},
+		},
+		{
+			desc:  "MultipleDuplicates",
+			slice: []string{"alpha", "bravo", "alpha", "alpha", "charlie", "charlie", "alpha", "bravo"},
+			want:  []string{"alpha", "bravo", "charlie"},
+		},
+		{
+			desc:  "UnsortedDuplicates",
+			slice: []string{"charlie", "bravo", "alpha", "bravo"},
+			want:  []string{"charlie", "bravo", "alpha"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			got := RemoveDuplicateStrings(tc.slice)
+			if diff := cmp.Diff(got, tc.want); diff != "" {
+				t.Errorf("RemoveDuplicateStrings(%v) = %v, want: %v", tc.slice, got, tc.want)
 			}
 		})
 	}
