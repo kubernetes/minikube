@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -129,11 +130,12 @@ func collectK8sVers() ([]string, error) {
 		}
 		k8sVersions = recent
 	}
-	return append([]string{
+	versions := append([]string{
 		constants.DefaultKubernetesVersion,
 		constants.NewestKubernetesVersion,
 		constants.OldestKubernetesVersion,
-	}, k8sVersions...), nil
+	}, k8sVersions...)
+	return util.RemoveDuplicateStrings(versions), nil
 }
 
 func makePreload(cfg preloadCfg) error {
