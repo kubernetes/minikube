@@ -30,7 +30,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware Fusion]({{<ref "vmware.md">}}) - VM
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
-* [Podman]({{<ref "podman.md">}}) - container (experimental) use `--driver=podman` to get going.
+* [Podman]({{<ref "podman.md">}}) - container (experimental)
 
 ## Windows
 
