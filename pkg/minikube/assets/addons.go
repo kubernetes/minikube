@@ -902,11 +902,11 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 			opts.Registries[name] = "" // Avoid nil access when rendering
 		}
 
+		// tl;dr If the user specified a custom image remove the default registry
 		// Without the line below, if you try to overwrite an image the default registry is still used in the templating
 		// Example - image name: MetricsScraper, default registry: docker.io, default image: kubernetesui/metrics-scraper
 		// Passed on addon enable: --images=MetricsScraper=k8s.gcr.io/echoserver:1.4
 		// Without this line the resulting image would be docker.io/k8s.gcr.io/echoserver:1.4
-		// Therefore, if the user specified a custom image remove the default registry
 		if _, ok := cc.CustomAddonImages[name]; ok {
 			opts.Registries[name] = ""
 		}
