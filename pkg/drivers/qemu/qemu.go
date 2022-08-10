@@ -421,9 +421,7 @@ func (d *Driver) Start() error {
 			"-nic", fmt.Sprintf("bridge,model=virtio,br=%s", d.NetworkBridge),
 		)
 	default:
-		err := fmt.Errorf("unknown network: %s", d.Network)
-		log.Error(err)
-		return err
+		log.Errorf("unknown network: %s", d.Network)
 	}
 
 	startCmd = append(startCmd,
@@ -476,7 +474,7 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	} else {
 		// also catch error messages in stderr, even if the return code looks OK
 		if strings.Contains(stderrStr, "error:") {
-			err = fmt.Errorf("%s %v failed: %s", cmdStr, strings.Join(args, " "), stderrStr)
+			err = fmt.Errorf("%s %s failed: %s", cmdStr, strings.Join(args, " "), stderrStr)
 		}
 	}
 	return stdoutStr, stderrStr, err
@@ -500,7 +498,7 @@ func (d *Driver) Remove() error {
 		}
 	}
 	if s != state.Stopped {
-		if _, err = d.RunQMPCommand("quit"); err != nil {
+		if _, err := d.RunQMPCommand("quit"); err != nil {
 			return errors.Wrap(err, "quit")
 		}
 	}
@@ -700,7 +698,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err = conn.Write(jsonCommand); err != nil {
+	if _, err := conn.Write(jsonCommand); err != nil {
 		return nil, err
 	}
 	nr, err = conn.Read(buf[:])
@@ -725,7 +723,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err = conn.Write(jsonCommand); err != nil {
+	if _, err := conn.Write(jsonCommand); err != nil {
 		return nil, err
 	}
 	nr, err = conn.Read(buf[:])
@@ -753,7 +751,7 @@ func WaitForTCPWithDelay(addr string, duration time.Duration) error {
 			continue
 		}
 		defer conn.Close()
-		if _, err = conn.Read(make([]byte, 1)); err != nil {
+		if _, err := conn.Read(make([]byte, 1)); err != nil {
 			time.Sleep(duration)
 			continue
 		}
