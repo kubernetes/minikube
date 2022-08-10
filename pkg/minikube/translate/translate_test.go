@@ -134,7 +134,7 @@ func TestTranslationFilesValid(t *testing.T) {
 func distinctVariables(line string) []string {
 	re := regexp.MustCompile(`{{\..+?}}`)
 
-	// get all the variables from the string (possiible duplicates)
+	// get all the variables from the string (possible duplicates)
 	variables := re.FindAllString(line, -1)
 	distinctMap := make(map[string]bool)
 
