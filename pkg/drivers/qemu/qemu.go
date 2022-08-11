@@ -158,6 +158,9 @@ func (d *Driver) GetPort() int {
 		d.FirstQuery = false
 		port = 2376
 	}
+	if d.Network == "vde" {
+		port = 8443
+	}
 	return port
 }
 
