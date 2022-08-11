@@ -87,7 +87,7 @@ func New(cc *config.ClusterConfig) (Manager, error) {
 	var err error
 	switch cc.KubernetesConfig.CNI {
 	case "", "auto":
-		cnm = chooseDefault(*cc)
+		cnm, err = chooseDefault(*cc)
 	case "false":
 		cnm = Disabled{cc: *cc}
 	case "kindnet", "true":
@@ -117,33 +117,40 @@ func IsDisabled(cc config.ClusterConfig) bool {
 		return true
 	}
 
-	if chooseDefault(cc).String() == "Disabled" {
+	def, err := chooseDefault(cc)
+	if err == nil && def.String() == "Disabled" {
 		return true
 	}
 	return false
 }
 
-func chooseDefault(cc config.ClusterConfig) Manager {
+func chooseDefault(cc config.ClusterConfig) (Manager, error) {
 	// For backwards compatibility with older profiles using --enable-default-cni
 	if cc.KubernetesConfig.EnableDefaultCNI {
 		klog.Infof("EnableDefaultCNI is true, recommending bridge")
-		return Bridge{}
+		return Bridge{}, nil
 	}
 
 	if len(cc.Nodes) > 1 || cc.MultiNodeRequested {
 		// Enables KindNet CNI in master in multi node cluster, This solves the network problem
 		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
 		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
-		return KindNet{cc: cc}
+		return KindNet{cc: cc}, nil
 	}
 
-	if cc.KubernetesConfig.ContainerRuntime != constants.Docker {
+	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if cc.KubernetesConfig.ContainerRuntime != constants.Docker || version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		// Always use CNI when running with CRI (without dockershim)
 		if driver.IsKIC(cc.Driver) {
 			klog.Infof("%q driver + %q runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-			return KindNet{cc: cc}
+			return KindNet{cc: cc}, nil
 		}
 		klog.Infof("%q driver + %q runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
+		return Bridge{cc: cc}, nil
 	}
 
 	// for docker container runtime and k8s v1.24+ where dockershim and kubenet were removed, we fallback to bridge cni for cri-docker(d)
@@ -155,11 +162,11 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		klog.Infof("%q driver + %q container runtime found on kubernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
-		return Bridge{cc: cc}
+		return Bridge{cc: cc}, nil
 	}
 
 	klog.Infof("CNI unnecessary in this configuration, recommending no CNI")
-	return Disabled{cc: cc}
+	return Disabled{cc: cc}, nil
 }
 
 // manifestPath returns the path to the CNI manifest
