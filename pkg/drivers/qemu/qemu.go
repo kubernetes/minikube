@@ -146,6 +146,9 @@ func (d *Driver) GetIP() (string, error) {
 	if d.Network == "user" {
 		return "127.0.0.1", nil
 	}
+	if d.Network == "vde" {
+		return "192.168.105.1", nil
+	}
 	return d.NetworkAddress, nil
 }
 
