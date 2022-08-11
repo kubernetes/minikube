@@ -179,7 +179,7 @@ mkdir -p /var/lib/boot2docker/etc/
 # VirtualBox Host Mounting
 # - this will bail quickly and gracefully if we're not in VBox
 if modprobe vboxguest &> /dev/null && modprobe vboxsf &> /dev/null; then
-	mountOptions='defaults,iocharset=utf8'
+	mountOptions='defaults'
 	if grep -q '^docker:' /etc/passwd; then
 		mountOptions="${mountOptions},uid=$(id -u docker),gid=$(id -g docker)"
 	fi
