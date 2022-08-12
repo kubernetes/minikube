@@ -1,7 +1,7 @@
 ---
 title: "qemu2"
 ---
-<a href="/qemu">redirecting to /qemu</a>
+<a href="/docs/reference/drivers/qemu">redirecting to /docs/reference/drivers/qemu</a>
 <script language="javascript">
-  window.location.replace("/qemu");
+  window.location.replace("/docs/reference/drivers/qemu");
 </script>
