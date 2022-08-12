@@ -30,7 +30,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -90,8 +89,17 @@ func LogCommandEnd(id string) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert logs to rows: %v", err)
 	}
-	auditContents := ""
+	// have to truncate the audit log while closed as Windows can't truncate an open file
+	if err := truncateAuditLog(); err != nil {
+		return fmt.Errorf("failed to truncate audit log: %v", err)
+	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
 	var entriesNeedsToUpdate int
+
+	startIndex := getStartIndex(len(rowSlice))
+	rowSlice = rowSlice[startIndex:]
 	for _, v := range rowSlice {
 		if v.id == id {
 			v.endTime = time.Now().Format(constants.TimeFormat)
@@ -102,22 +110,23 @@ func LogCommandEnd(id string) error {
 		if err != nil {
 			return err
 		}
-		auditContents += string(auditLog) + "\n"
+		if _, err = currentLogFile.WriteString(string(auditLog) + "\n"); err != nil {
+			return fmt.Errorf("failed to write to audit log: %v", err)
+		}
 	}
 	if entriesNeedsToUpdate == 0 {
 		return fmt.Errorf("failed to find a log row with id equals to %v", id)
 	}
-	// have to truncate the audit log while closed as Windows can't truncate an open file
-	if err := os.Truncate(localpath.AuditLog(), 0); err != nil {
-		return fmt.Errorf("failed to truncate audit log: %v", err)
-	}
-	if err := openAuditLog(); err != nil {
-		return err
-	}
-	if _, err = currentLogFile.Write([]byte(auditContents)); err != nil {
-		return fmt.Errorf("failed to write to audit log: %v", err)
-	}
 	return nil
+}
+
+func getStartIndex(entryCount int) int {
+	maxEntries := viper.GetInt(config.MaxAuditEntries)
+	startIndex := entryCount - maxEntries
+	if maxEntries <= 0 || startIndex <= 0 {
+		return 0
+	}
+	return startIndex
 }
 
 // shouldLog returns if the command should be logged.

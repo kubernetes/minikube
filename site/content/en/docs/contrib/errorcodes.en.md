@@ -436,6 +436,10 @@ a too new Kubernetes version was specified for minikube to use
 "K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 minikube was unable to safely downgrade installed Kubernetes version  
 
+"NOT_FOUND_CRI_DOCKERD" (Exit code ExProgramNotFound)  
+
+"NOT_FOUND_DOCKERD" (Exit code ExProgramNotFound)  
+
 ## Error Codes
 
 

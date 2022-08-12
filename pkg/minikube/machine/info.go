@@ -142,7 +142,7 @@ var (
 	cachedSystemMemoryErr   *error
 )
 
-//  cachedSysMemLimit will return a cached limit for the system's virtual memory.
+// cachedSysMemLimit will return a cached limit for the system's virtual memory.
 func cachedSysMemLimit() (*mem.VirtualMemoryStat, error) {
 	if cachedSystemMemoryLimit == nil {
 		v, err := mem.VirtualMemory()
@@ -178,7 +178,7 @@ var (
 	cachedCPUErr *error
 )
 
-//  cachedCPUInfo will return a cached cpu info
+// cachedCPUInfo will return a cached cpu info
 func cachedCPUInfo() ([]cpu.InfoStat, error) {
 	if cachedCPU == nil {
 		// one InfoStat per thread

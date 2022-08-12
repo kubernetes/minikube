@@ -72,23 +72,20 @@ fi
 # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
 if ! cri-dockerd --version &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
-  CRI_DOCKER_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
-  git clone -n https://github.com/Mirantis/cri-dockerd
-  cd cri-dockerd
-  git checkout "$CRI_DOCKER_VERSION"
-  env CGO_ENABLED=0 go build -ldflags '-X github.com/Mirantis/cri-dockerd/version.GitCommit=${CRI_DOCKER_VERSION:0:7}' -o cri-dockerd
-  cd ..
-  sudo cp cri-dockerd/cri-dockerd /usr/bin/cri-dockerd
-  sudo cp cri-dockerd/packaging/systemd/cri-docker.service /usr/lib/systemd/system/cri-docker.service
-  sudo cp cri-dockerd/packaging/systemd/cri-docker.socket /usr/lib/systemd/system/cri-docker.socket
+  CRI_DOCKERD_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+  CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}"
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+  sudo chmod +x /usr/bin/cri-dockerd
 fi
 
 # crictl is required for Kubernetes 1.24 and higher for none driver
 if ! crictl &>/dev/null; then
   echo "WARNING: crictl is not installed. will try to install."
-  VERSION="v1.17.0"
-  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
-  sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
+  CRICTL_VERSION="v1.17.0"
+  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+  sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
 
 # We need this for reasons now

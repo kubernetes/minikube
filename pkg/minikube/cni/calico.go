@@ -29,6 +29,7 @@ import (
 )
 
 // https://docs.projectcalico.org/manifests/calico.yaml
+//
 //go:embed calico.yaml
 var calicoYaml string
 

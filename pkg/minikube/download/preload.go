@@ -253,7 +253,7 @@ func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) erro
 // verifyChecksum returns true if the checksum of the local binary matches
 // the checksum of the remote binary
 func verifyChecksum(k8sVersion, containerRuntime, path string) error {
-	klog.Infof("verifying checksumm of %s ...", path)
+	klog.Infof("verifying checksum of %s ...", path)
 	// get md5 checksum of tarball path
 	contents, err := os.ReadFile(path)
 	if err != nil {

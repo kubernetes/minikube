@@ -18,7 +18,6 @@ package qemu2
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -87,7 +86,7 @@ func qemuFirmwarePath(customPath string) (string, error) {
 			return "", fmt.Errorf("unknown arch: %s", arch)
 		}
 
-		v, err := ioutil.ReadDir(p)
+		v, err := os.ReadDir(p)
 		if err != nil {
 			return "", fmt.Errorf("lookup qemu: %v", err)
 		}

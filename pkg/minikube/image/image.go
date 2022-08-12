@@ -302,10 +302,11 @@ func cleanImageCacheDir() error {
 
 // normalizeTagName automatically tag latest to image
 // Example:
-//  nginx -> nginx:latest
-//  localhost:5000/nginx -> localhost:5000/nginx:latest
-//  localhost:5000/nginx:latest -> localhost:5000/nginx:latest
-//  docker.io/dotnet/core/sdk -> docker.io/dotnet/core/sdk:latest
+//
+//	nginx -> nginx:latest
+//	localhost:5000/nginx -> localhost:5000/nginx:latest
+//	localhost:5000/nginx:latest -> localhost:5000/nginx:latest
+//	docker.io/dotnet/core/sdk -> docker.io/dotnet/core/sdk:latest
 func normalizeTagName(image string) string {
 	base := image
 	tag := "latest"

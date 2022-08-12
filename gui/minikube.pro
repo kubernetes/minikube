@@ -5,6 +5,7 @@ HEADERS       = window.h \
                 commandrunner.h \
                 errormessage.h \
                 hyperkit.h \
+                logger.h \
                 operator.h \
                 progresswindow.h \
                 tray.h \
@@ -16,12 +17,13 @@ SOURCES       = main.cpp \
                 commandrunner.cpp \
                 errormessage.cpp \
                 hyperkit.cpp \
+                logger.cpp \
                 operator.cpp \
                 progresswindow.cpp \
                 tray.cpp \
                 updater.cpp \
                 window.cpp
-RESOURCES     = systray.qrc
+RESOURCES     = minikube.qrc
 ICON          = images/minikube.icns
 
 QT += widgets network

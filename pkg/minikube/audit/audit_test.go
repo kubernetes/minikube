@@ -18,7 +18,9 @@ package audit
 
 import (
 	"os"
+	"os/exec"
 	"os/user"
+	"strings"
 	"testing"
 
 	"github.com/spf13/pflag"
@@ -27,6 +29,30 @@ import (
 )
 
 func TestAudit(t *testing.T) {
+	defer func() { auditOverrideFilename = "" }()
+
+	t.Run("setup", func(t *testing.T) {
+		f, err := os.CreateTemp("", "audit.json")
+		if err != nil {
+			t.Fatalf("failed creating temporary file: %v", err)
+		}
+		defer f.Close()
+		auditOverrideFilename = f.Name()
+
+		s := `{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"--user user2","command":"logs","endTime":"Tue, 02 Feb 2021 16:46:20 MST","profile":"minikube","startTime":"Tue, 02 Feb 2021 16:46:00 MST","user":"user2"},"datacontenttype":"application/json","id":"fec03227-2484-48b6-880a-88fd010b5efd","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"-p mini1","command":"start","endTime":"Wed, 03 Feb 2021 15:33:05 MST","profile":"mini1","startTime":"Wed, 03 Feb 2021 15:30:33 MST","user":"user1"},"datacontenttype":"application/json","id":"9b7593cb-fbec-49e5-a3ce-bdc2d0bfb208","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+{"data":{"args":"--user user2","command":"logs","endTime":"Tue, 02 Feb 2021 16:46:20 MST","profile":"minikube","startTime":"Tue, 02 Feb 2021 16:46:00 MST","user":"user2"},"datacontenttype":"application/json","id":"fec03227-2484-48b6-880a-88fd010b5efd","source":"https://minikube.sigs.k8s.io/","specversion":"1.0","type":"io.k8s.sigs.minikube.audit"}
+`
+
+		if _, err := f.WriteString(s); err != nil {
+			t.Fatalf("failed writing to file: %v", err)
+		}
+	})
+
+	defer os.Remove(auditOverrideFilename)
+
 	t.Run("username", func(t *testing.T) {
 		u, err := user.Current()
 		if err != nil {
@@ -168,7 +194,6 @@ func TestAudit(t *testing.T) {
 			mockArgs(t, test.args)
 
 			got := isDeletePurge()
-
 			if got != test.want {
 				t.Errorf("test.args = %q; isDeletePurge() = %t; want %t", test.args, got, test.want)
 			}
@@ -188,18 +213,19 @@ func TestAudit(t *testing.T) {
 		}()
 		mockArgs(t, os.Args)
 		auditID, err := LogCommandStart()
-		if auditID == "" {
-			t.Fatal("audit ID should not be empty")
-		}
 		if err != nil {
 			t.Fatal(err)
+		}
+		if auditID == "" {
+			t.Fatal("audit ID should not be empty")
 		}
 	})
 
 	t.Run("LogCommandEnd", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"minikube"}
+		os.Args = []string{"minikube", "start"}
+		viper.Set(config.MaxAuditEntries, 3)
 
 		oldCommandLine := pflag.CommandLine
 		defer func() {
@@ -209,19 +235,26 @@ func TestAudit(t *testing.T) {
 		mockArgs(t, os.Args)
 		auditID, err := LogCommandStart()
 		if err != nil {
-			t.Fatal("start failed")
+			t.Fatalf("start failed: %v", err)
 		}
-		err = LogCommandEnd(auditID)
+		if err := LogCommandEnd(auditID); err != nil {
+			t.Fatal(err)
+		}
 
+		b, err := exec.Command("wc", "-l", auditOverrideFilename).Output()
 		if err != nil {
 			t.Fatal(err)
 		}
+		if !strings.Contains(string(b), "3") {
+			t.Errorf("MaxAuditEntries did not work, expected 3 lines in the audit log found %s", string(b))
+		}
+
 	})
 
 	t.Run("LogCommandEndNonExistingID", func(t *testing.T) {
 		oldArgs := os.Args
 		defer func() { os.Args = oldArgs }()
-		os.Args = []string{"minikube"}
+		os.Args = []string{"minikube", "start"}
 
 		oldCommandLine := pflag.CommandLine
 		defer func() {
@@ -229,8 +262,7 @@ func TestAudit(t *testing.T) {
 			pflag.Parse()
 		}()
 		mockArgs(t, os.Args)
-		err := LogCommandEnd("non-existing-id")
-		if err == nil {
+		if err := LogCommandEnd("non-existing-id"); err == nil {
 			t.Fatal("function LogCommandEnd should return an error when a non-existing id is passed in it as an argument")
 		}
 	})

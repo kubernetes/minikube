@@ -21,6 +21,7 @@ Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunn
     m_stackedWidget = stackedWidget;
     m_parent = parent;
     m_isBasicView = true;
+    dashboardProcess = NULL;
 
     connect(m_basicView, &BasicView::start, this, &Operator::startMinikube);
     connect(m_basicView, &BasicView::stop, this, &Operator::stopMinikube);
@@ -335,8 +336,7 @@ void Operator::sshConsole()
                               "-e", "do script \"" + command + "\"",
                               "-e", "activate",
                               "-e", "end tell" };
-    QProcess *process = new QProcess(this);
-    process->start("/usr/bin/osascript", arguments);
+    m_commandRunner->executeCommand("/usr/bin/osascript", arguments);
 #else
     QString terminal = qEnvironmentVariable("TERMINAL");
     if (terminal.isEmpty()) {
@@ -346,8 +346,7 @@ void Operator::sshConsole()
         }
     }
 
-    QProcess *process = new QProcess(this);
-    process->start(QStandardPaths::findExecutable(terminal), { "-e", command });
+    m_commandRunner->executeCommand(QStandardPaths::findExecutable(terminal), { "-e", command });
 #endif
 }
 
@@ -383,8 +382,7 @@ void Operator::dockerEnv()
                               "-e", "do script \"" + command + "\"",
                               "-e", "activate",
                               "-e", "end tell" };
-    QProcess *process = new QProcess(this);
-    process->start("/usr/bin/osascript", arguments);
+    m_commandRunner->executeCommand("/usr/bin/osascript", arguments);
 #else
     QString terminal = qEnvironmentVariable("TERMINAL");
     if (terminal.isEmpty()) {
@@ -394,8 +392,7 @@ void Operator::dockerEnv()
         }
     }
 
-    QProcess *process = new QProcess(this);
-    process->start(QStandardPaths::findExecutable(terminal), { "-e", command });
+    m_commandRunner->executeCommand(QStandardPaths::findExecutable(terminal), { "-e", command });
 #endif
 }
 

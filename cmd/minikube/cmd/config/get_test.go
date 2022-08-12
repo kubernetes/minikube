@@ -31,7 +31,7 @@ func TestGetNotFound(t *testing.T) {
 func TestGetOK(t *testing.T) {
 	createTestConfig(t)
 	name := "driver"
-	err := Set(name, "virtualbox")
+	err := Set(name, "ssh")
 	if err != nil {
 		t.Fatalf("Set returned error for property %s, %+v", name, err)
 	}
@@ -39,7 +39,7 @@ func TestGetOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get returned error for property %s, %+v", name, err)
 	}
-	if val != "virtualbox" {
-		t.Fatalf("Get returned %s, expected virtualbox", val)
+	if val != "ssh" {
+		t.Fatalf("Get returned %s, expected ssh", val)
 	}
 }

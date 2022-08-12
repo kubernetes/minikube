@@ -56,7 +56,7 @@ static QString getPauseLabel(bool isPaused)
 static QString getStartLabel(bool isRunning)
 {
     if (isRunning) {
-        return "Reload";
+        return "Restart";
     }
     return "Start";
 }
@@ -82,6 +82,11 @@ void BasicView::update(Cluster cluster)
 #endif
     pauseButton->setText(getPauseLabel(isPaused));
     startButton->setText(getStartLabel(isRunning));
+    QString startToolTip = "";
+    if (isRunning) {
+        startToolTip = "Restart an already running minikube instance to pickup config changes.";
+    }
+    startButton->setToolTip(startToolTip);
 }
 
 void BasicView::disableButtons()

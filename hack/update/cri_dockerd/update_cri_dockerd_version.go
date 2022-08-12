@@ -29,17 +29,17 @@ var (
 	schema = map[string]update.Item{
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKER_VERSION=".*"`: `CRI_DOCKER_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKER_VERSION=".*"`: `CRI_DOCKER_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
 			},
 		},
 		"hack/jenkins/linux_integration_tests_none.sh": {
 			Replace: map[string]string{
-				`CRI_DOCKER_VERSION=".*"`: `CRI_DOCKER_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {

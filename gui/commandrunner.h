@@ -2,6 +2,7 @@
 #define COMMANDRUNNER_H
 
 #include "cluster.h"
+#include "logger.h"
 
 #include <QString>
 #include <QDialog>
@@ -16,8 +17,9 @@ class CommandRunner : public QObject
     Q_OBJECT
 
 public:
-    CommandRunner(QDialog *parent);
+    CommandRunner(QDialog *parent, Logger *logger);
 
+    void executeCommand(QString program, QStringList args);
     void startMinikube(QStringList args);
     void stopMinikube(QStringList args);
     void pauseMinikube(QStringList args);
@@ -53,6 +55,7 @@ private:
     QString m_minikubePath;
     QString m_command;
     QDialog *m_parent;
+    Logger *m_logger;
     QStringList m_args;
     bool m_isRunning;
 };
