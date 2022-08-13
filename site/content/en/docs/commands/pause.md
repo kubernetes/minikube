@@ -11,8 +11,8 @@ Pauses a running local Kubernetes cluster
 
 ### Synopsis
 
-Minikube pause, pauses all processes and free up CPU resourses 
-while memory will still be allocated. Processes can be resumed or resource can be allocated back by using the "unpause" command. 
+Pauses local Kubernetes cluster and free up CPU resources 
+while memory will still be allocated. Processes/cluster can be resumed or resource can be allocated back by using the "unpause" command.
 
 ```shell
 minikube pause [flags]
