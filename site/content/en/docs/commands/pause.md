@@ -12,7 +12,7 @@ Pauses a running local Kubernetes cluster
 ### Synopsis
 
 Pauses local Kubernetes cluster and free up CPU resources 
-while memory will still be allocated. Processes/cluster can be resumed or resource can be allocated back by using the "unpause" command.
+while cluster state is preserved. Processes/cluster can be resumed or resource can be allocated back by using the "unpause" command.
 
 ```shell
 minikube pause [flags]
