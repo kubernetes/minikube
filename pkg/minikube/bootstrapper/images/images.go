@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	// builds a docker v2 repository API call in the format https://k8s.gcr.io/v2/coredns/coredns/tags/list
+	// builds a docker v2 repository API call in the format https://registry.k8s.io/v2/coredns/coredns/tags/list
 	tagURLTemplate = "https://%s/v2/%s/tags/list"
 )
 
