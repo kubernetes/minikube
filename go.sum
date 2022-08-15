@@ -121,10 +121,10 @@ github.com/Delta456/box-cli-maker/v2 v2.2.2/go.mod h1:idItIMZeyx3bg73XwSgsLeZd+g
 github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24/go.mod h1:4UJr5HIiMZrwgkSPdsjy2uOQExX/WEILpIrO9UPGuXs=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2 h1:rMamBsR6iCT9Y5m2Il6vFGJvY7FAgck4AoA/LobheKU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.4 h1:UlCxYSeY3a8FYR2Ni8SC8vxcb2MCTwBN8yDoy0AVGGU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.4/go.mod h1:d4ODYSOkLoLTyUyic8etLjC7Kzy13ZO2R+kdVi9ImQg=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.4 h1:ZuSnzmTHyLCDJxeq5h785t8VcbRDX40+e5iVTSE4Y3Q=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.4/go.mod h1:0NODlmSHucFiEW4hSANp07vax2tfiCdf9Zv4KuMc/4w=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.5 h1:4NJ+2PwCQjPqs56UnA4bk1ccbJJeeCd1VOmvIClzEbg=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.5/go.mod h1:lvEu2gFTE2xCqcJjJSALtRFVqmMubVlUE94pTUOdBeM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.5 h1:AJ3ALDndKaRfuJIvppYtDc7yGwuICmQDu/1ffyrNQnE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.5/go.mod h1:0NODlmSHucFiEW4hSANp07vax2tfiCdf9Zv4KuMc/4w=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd h1:sjQovDkwrZp8u+gxLtPgKGjk5hCxuy2hrRejBTA9xFU=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
