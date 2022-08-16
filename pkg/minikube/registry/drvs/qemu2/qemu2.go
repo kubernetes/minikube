@@ -59,8 +59,7 @@ func qemuSystemProgram() (string, error) {
 	case "amd64":
 		return "qemu-system-x86_64", nil
 	case "arm64":
-		const prefix = "opt/socket_vmnet/bin/socket_vmnet_client /var/run/socket_vmnet "
-		return prefix + "qemu-system-aarch64", nil
+		return "qemu-system-aarch64", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
 	}
