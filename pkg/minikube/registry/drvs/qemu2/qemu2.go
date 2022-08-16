@@ -59,7 +59,8 @@ func qemuSystemProgram() (string, error) {
 	case "amd64":
 		return "qemu-system-x86_64", nil
 	case "arm64":
-		return "qemu-system-aarch64", nil
+		const prefix = "opt/socket_vmnet/bin/socket_vmnet_client /var/run/socket_vmnet "
+		return prefix + "qemu-system-aarch64", nil
 	default:
 		return "", fmt.Errorf("unknown arch: %s", arch)
 	}
@@ -177,7 +178,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		CPUType:        qemuCPU,
 		Firmware:       qemuFirmware,
 		VirtioDrives:   false,
-		Network:        "user",
+		Network:        "socket",
 		CacheMode:      "default",
 		IOMode:         "threads",
 	}, nil

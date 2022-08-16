@@ -146,7 +146,7 @@ func (d *Driver) GetIP() (string, error) {
 	if d.Network == "user" {
 		return "127.0.0.1", nil
 	}
-	if d.Network == "vde" {
+	if d.Network == "socket" {
 		return "192.168.105.1", nil
 	}
 	return d.NetworkAddress, nil
@@ -158,7 +158,7 @@ func (d *Driver) GetPort() int {
 		d.FirstQuery = false
 		port = 2376
 	}
-	if d.Network == "vde" {
+	if d.Network == "socket" {
 		port = 8443
 	}
 	return port
@@ -418,9 +418,18 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
 		)
-	case "vde":
+	case "socket":
 		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket),
+			// VDE ref: -nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket)
+
+			// -M virt															# set.
+			// -device virtio-net-pci,netdev=net0		# enhanced.
+			// -netdev socket,id=net0,fd=3					# changed.
+			// -m 1024															# param.
+			// -accel hvf														# set.
+			// -cdrom ~/boot2docker.iso							# param.
+
+			"-netdev", "socket,id=net0,fd=3",
 		)
 	case "bridge":
 		startCmd = append(startCmd,
@@ -439,7 +448,8 @@ func (d *Driver) Start() error {
 			fmt.Sprintf("local,security_model=passthrough,readonly,id=fsdev0,path=%s", d.CloudConfigRoot))
 		startCmd = append(startCmd,
 			"-device",
-			"virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
+			// "virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
+			"virtio-net-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2,netdev=net0")
 	}
 
 	if d.VirtioDrives {
