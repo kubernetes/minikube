@@ -420,17 +420,19 @@ func (d *Driver) Start() error {
 		)
 	case "socket":
 		startCmd = append(startCmd,
-			// VDE ref: -nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket)
+			"-nic", "socket,model=virtio-net-pci,listen=192.168.105.1:8443")
+		// startCmd = append(startCmd,
+		// VDE ref: -nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket)
 
-			// -M virt															# set.
-			// -device virtio-net-pci,netdev=net0		# enhanced.
-			// -netdev socket,id=net0,fd=3					# changed.
-			// -m 1024															# param.
-			// -accel hvf														# set.
-			// -cdrom ~/boot2docker.iso							# param.
+		// -M virt															# set.
+		// -device virtio-net-pci,netdev=net0		# enhanced.
+		// -netdev socket,id=net0,fd=3					# changed.
+		// -m 1024															# param.
+		// -accel hvf														# set.
+		// -cdrom ~/boot2docker.iso							# param.
 
-			"-netdev", "socket,id=net0,fd=3",
-		)
+		// "-netdev", "socket,id=net0,fd=3",
+		// )
 	case "bridge":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("bridge,model=virtio,br=%s", d.NetworkBridge),
@@ -462,6 +464,9 @@ func (d *Driver) Start() error {
 	}
 
 	socketCmd := append([]string{"/var/run/socket_vmnet", d.Program}, startCmd...)
+
+	fmt.Printf("\n\nABC QEMU Flags: %+v\n\n", socketCmd) // Debug.
+
 	if stdout, stderr, err := cmdOutErr("/opt/socket_vmnet/bin/socket_vmnet_client", socketCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
