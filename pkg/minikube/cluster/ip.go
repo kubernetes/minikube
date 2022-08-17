@@ -152,7 +152,7 @@ func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
 		ipStr = oci.DefaultBindIPV4
 	}
 	if driver.IsQEMU(host.DriverName) {
-		ipStr = "127.0.0.1"
+		ipStr = "192.168.105.1"
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {

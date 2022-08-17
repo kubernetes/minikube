@@ -46,7 +46,7 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 		}
 		return hostname, ips[0], port, err
 	} else if IsQEMU(driverName) {
-		return "localhost", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
+		return "localhost", net.IPv4(192, 168, 105, 1), cc.APIServerPort, nil
 	}
 
 	// https://github.com/kubernetes/minikube/issues/3878
