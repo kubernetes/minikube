@@ -45,7 +45,7 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			hostname = cc.KubernetesConfig.APIServerName
 		}
 		return hostname, ips[0], port, err
-	} else if NeedsPortForward(driverName) && IsQEMU(driverName) {
+	} else if IsQEMU(driverName) {
 		return "localhost", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 

@@ -198,7 +198,7 @@ func AllowsPreload(driverName string) bool {
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
 	if IsQEMU(name) {
-		return true
+		return false
 	}
 	if !IsKIC(name) {
 		return false

@@ -143,7 +143,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 
 		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) && services != nil {
 			startKicServiceTunnel(services, cname, co.Config.Driver)
-		} else if driver.NeedsPortForward(co.Config.Driver) && driver.IsQEMU(co.Config.Driver) && services != nil {
+		} else if driver.IsQEMU(co.Config.Driver) && services != nil {
 			startQemuServiceTunnel(services, cname, co.Config.Driver)
 		} else if !serviceURLMode {
 			openURLs(data)
