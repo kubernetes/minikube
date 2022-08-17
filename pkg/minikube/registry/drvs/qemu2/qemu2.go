@@ -78,6 +78,7 @@ func qemuFirmwarePath(customPath string) (string, error) {
 			p = "/usr/local/Cellar/qemu"
 			fw = "share/qemu/edk2-x86_64-code.fd"
 		case "arm64":
+			// TODO() if installed via Macports, use "/opt/local/", see #14765.
 			p = "/opt/homebrew/Cellar/qemu"
 			fw = "share/qemu/edk2-aarch64-code.fd"
 		default:
