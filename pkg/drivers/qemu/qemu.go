@@ -441,8 +441,8 @@ func (d *Driver) Start() error {
 		log.Errorf("unknown network: %s", d.Network)
 	}
 
-	startCmd = append(startCmd,
-		"-daemonize")
+	// startCmd = append(startCmd,
+	// 	"-daemonize")
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
