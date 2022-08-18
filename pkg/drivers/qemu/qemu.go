@@ -372,12 +372,12 @@ func (d *Driver) Start() error {
 	} else {
 		if d.Nographic {
 			startCmd = append(startCmd,
-				"-nographic",
-			)
+				"-nographic")
 		} else {
 			startCmd = append(startCmd,
-				"-display", "none",
-			)
+				"-vga", "none")
+			startCmd = append(startCmd,
+				"-monitor", "stdio") // default: none
 		}
 	}
 
