@@ -12,7 +12,7 @@ minikube requires access to the internet via HTTP, HTTPS, and DNS protocols.
 
 ## Proxy
 
-If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker using environment variables:
+If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker, make sure you pass correct http(s)_proxy parameters (like SSLi configuration etc) using environment variables:
 
 * `HTTP_PROXY` - The URL to your HTTP proxy
 * `HTTPS_PROXY` - The URL to your HTTPS proxy
