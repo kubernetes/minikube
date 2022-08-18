@@ -561,13 +561,13 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
-	if driver.IsQEMU(host.Driver.DriverName()) {
-		apiServerPort, err := getPort()
-		if err != nil {
-			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
-		}
-		cfg.APIServerPort = apiServerPort
-	}
+	// if driver.IsQEMU(host.Driver.DriverName()) {
+	// 	apiServerPort, err := getPort()
+	// 	if err != nil {
+	// 		return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+	// 	}
+	// 	cfg.APIServerPort = apiServerPort
+	// }
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
@@ -579,19 +579,19 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 }
 
 // getPort asks the kernel for a free open port that is ready to use
-func getPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		panic(err)
-	}
+// func getPort() (int, error) {
+// 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		return -1, errors.Errorf("Error accessing port %d", addr.Port)
-	}
-	defer l.Close()
-	return l.Addr().(*net.TCPAddr).Port, nil
-}
+// 	l, err := net.ListenTCP("tcp", addr)
+// 	if err != nil {
+// 		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+// 	}
+// 	defer l.Close()
+// 	return l.Addr().(*net.TCPAddr).Port, nil
+// }
 
 // startHostInternal starts a new minikube host using a VM or None
 func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
