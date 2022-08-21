@@ -43,7 +43,8 @@ ARG BUILDKIT_VERSION="v0.10.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.24"
-ARG CRI_DOCKERD_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+ARG CRI_DOCKERD_VERSION="v0.2.2"
+ARG CRI_DOCKERD_COMMIT="0737013d3c48992724283d151e8a2a767a1839e9"
 ARG TARGETARCH
 
 # copy in static files (configs, scripts)
@@ -125,10 +126,10 @@ ARG COMMIT_SHA
 USER root
 
 # Install cri-dockerd from pre-compiled binaries stored in GCS, this is way faster than building from source in multi-arch
-RUN echo "Installing cri-dockerd" && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && chmod +x /usr/bin/cri-dockerd && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
-	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+RUN echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION}" && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/${TARGETARCH}/cri-dockerd" -o /usr/bin/cri-dockerd && chmod +x /usr/bin/cri-dockerd && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket && \
+	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
 
 # install system requirements from the regular distro repositories
 RUN clean-install \

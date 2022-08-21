@@ -21,7 +21,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 
+	"golang.org/x/mod/semver"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
 
@@ -29,27 +32,32 @@ var (
 	schema = map[string]update.Item{
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		"hack/jenkins/linux_integration_tests_none.sh": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {
 			Replace: map[string]string{
+				`CRI_DOCKERD_AARCH64_VER = .*`:     `CRI_DOCKERD_AARCH64_VER = {{.Version}}`,
 				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.FullCommit}}`,
 				`CRI_DOCKERD_AARCH64_REV = .*`:     `CRI_DOCKERD_AARCH64_REV = {{.ShortCommit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.mk": {
 			Replace: map[string]string{
+				`CRI_DOCKERD_VER = .*`:     `CRI_DOCKERD_VER = {{.Version}}`,
 				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.FullCommit}}`,
 				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
 			},
@@ -59,23 +67,30 @@ var (
 
 // Data holds stable cri-dockerd version in semver format.
 type Data struct {
+	Version     string
 	FullCommit  string
 	ShortCommit string
 }
 
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <archlist>")
+	if len(os.Args) < 4 {
+		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <commit> <archlist>")
 	}
 
-	commit := os.Args[1]
-	archs := os.Args[2]
+	version := os.Args[1]
+	commit := os.Args[2]
+	archs := os.Args[3]
 
-	data := Data{FullCommit: commit, ShortCommit: commit[:7]}
+	if !semver.IsValid(version) {
+		klog.Fatal(fmt.Errorf("invalid version %v", version))
+	}
+	version = strings.Replace(version, "v", "", 1)
+
+	data := Data{Version: version, FullCommit: commit, ShortCommit: commit[:7]}
 
 	update.Apply(schema, data)
 
-	if out, err := exec.Command("./update_cri_dockerd.sh", commit, archs).CombinedOutput(); err != nil {
+	if out, err := exec.Command("./update_cri_dockerd.sh", version, commit, archs).CombinedOutput(); err != nil {
 		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
 	}
 
