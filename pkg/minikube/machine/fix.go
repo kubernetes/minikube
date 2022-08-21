@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -64,6 +66,9 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 
 	driverName := h.Driver.DriverName()
 
+	// check if paths in machine config are misconfigured and display warning
+	warnAboutMisconfiguredMachineConfigPaths(h, cc.Name)
+
 	// check if need to re-run docker-env
 	maybeWarnAboutEvalEnv(driverName, cc.Name)
 
@@ -91,6 +96,23 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	}
 
 	return h, nil
+}
+
+// warnAboutMisconfiguredMachineConfigPaths will warn users if paths in machine/config.json are misconfigured.
+// This problem may be caused if the minikube home folder is moved to another location https://github.com/kubernetes/minikube/issues/14466
+func warnAboutMisconfiguredMachineConfigPaths(h *host.Host, name string) {
+	var driver map[string]interface{}
+	err := json.Unmarshal(h.RawDriver, &driver)
+	if err != nil {
+		klog.Warningf("Unable to unmarshal raw driver json: %v", err)
+		return
+	}
+
+	if h.HostOptions.AuthOptions.StorePath != localpath.MiniPath() || driver["StorePath"] != localpath.MiniPath() {
+		out.WarningT(`Your machine config likely has misconfigured paths. To update your config run the following:
+
+'minikube config update -p {{.profile_name}}'`, out.V{"profile_name": name})
+	}
 }
 
 func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.Node, h *host.Host) (*host.Host, error) {
