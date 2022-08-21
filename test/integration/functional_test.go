@@ -107,6 +107,7 @@ func TestFunctional(t *testing.T) {
 			{"LogsCmd", validateLogsCmd},
 			{"LogsFileCmd", validateLogsFileCmd},
 			{"InvalidService", validateInvalidService},
+			{"ConfigUpdateCmd", validateConfigUpdateCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -2122,6 +2123,41 @@ users:
 				t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), tc.want)
 			}
 		})
+	}
+}
+
+// validateConfigUpdateCmd asserts basic "config update" command functionality
+func validateConfigUpdateCmd(ctx context.Context, t *testing.T, profile string) {
+	newMinikubeHomeDir := t.TempDir()
+	newMinikubePath := filepath.Join(newMinikubeHomeDir, ".minikube")
+
+	if err := cp.Copy(localpath.MiniPath(), newMinikubePath); err != nil {
+		t.Fatalf("failed to copy %s: %v", localpath.MiniPath(), err)
+	}
+
+	c := exec.CommandContext(ctx, Target(), "-p", profile, "config", "update")
+	c.Env = append(os.Environ(), fmt.Sprintf("MINIKUBE_HOME=%s", newMinikubeHomeDir))
+
+	// Run `minikube config update`
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Errorf("failed to run minikube config update: args %q: %v", rr.Command(), err)
+	}
+
+	// Make sure the machine config paths have been correctly updated by checking the command output
+	if !strings.Contains(rr.Stdout.String(), "Machine config paths has been updated") {
+		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.String(), "Machine config paths has been updated")
+	}
+
+	// Check 'StorePath' value in config.json file
+	machineConfigPath := filepath.Join(newMinikubePath, "machines", profile, "config.json")
+	machineConfig, err := os.ReadFile(machineConfigPath)
+	if err != nil {
+		t.Errorf("test file not found: %v", err)
+	}
+
+	if !strings.Contains(string(machineConfig), fmt.Sprintf("\"StorePath\": \"%s\"", newMinikubePath)) {
+		t.Errorf("expected machine config to include updated 'StorePath'")
 	}
 }
 
