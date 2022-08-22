@@ -126,7 +126,7 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -225,7 +225,7 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -327,7 +327,7 @@ jobs:
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
-      uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+      uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
       with:
         name: minikube_binaries
     - name: Run Integration Test
@@ -428,7 +428,7 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -529,7 +529,7 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
       - name: Run Integration Test
@@ -602,7 +602,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all reports
-        uses: actions/download-artifact@9fde3de0b74bd6bc202952485c264b551a4f9405
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
       - name: upload all reports
         shell: bash {0}
         continue-on-error: true
