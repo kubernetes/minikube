@@ -122,6 +122,7 @@ jobs:
         uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
+          path: minikube_binaries
 
       - name: Pre-cleanup
         continue-on-error: true
