@@ -479,7 +479,7 @@ func (d *Driver) Start() error {
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %v %v", cmdStr, strings.Join(args, " "))
+	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -487,8 +487,8 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	err := cmd.Run()
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
-	log.Debugf("STDOUT: %v", stdoutStr)
-	log.Debugf("STDERR: %v", stderrStr)
+	log.Debugf("STDOUT: %s", stdoutStr)
+	log.Debugf("STDERR: %s", stderrStr)
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
 			err = fmt.Errorf("mystery error: %v", ee)
