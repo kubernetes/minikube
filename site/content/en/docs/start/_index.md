@@ -537,7 +537,7 @@ minikube dashboard
 Create a sample deployment and expose it on port 8080:
 
 ```shell
-kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4 --replicas=0
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
