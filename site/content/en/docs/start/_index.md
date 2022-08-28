@@ -540,6 +540,7 @@ Create a sample deployment and expose it on port 8080:
 kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
+(On ARM64 architecture, use the image *k8s.gcr.io/echoserver-arm:1.8* instead)
 
 It may take a moment, but your deployment will soon show up when you run:
 
