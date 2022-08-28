@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -96,9 +97,24 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 			os.Exit(1)
 		}
 
-		if len(args) > 1 && args[0] != "--help" && args[0] != cobra.ShellCompRequestCmd {
-			cluster := []string{"--cluster", cname}
-			args = append(cluster, args...)
+		if len(args) > 0 {
+			insertIndex := 0
+			if args[0] == cobra.ShellCompRequestCmd || args[0] == cobra.ShellCompNoDescRequestCmd {
+				// Insert right after __complete to allow code completion from the correct cluster.
+				insertIndex = 1
+			} else {
+				// Add cluster argument before first flag, but after all commands.
+				// This improves error message of kubectl in case the command is wrong.
+				insertIndex = len(args)
+				for i, arg := range args {
+					if strings.HasPrefix(arg, "-") {
+						insertIndex = i
+						break
+					}
+				}
+			}
+			clusterArg := "--cluster=" + cname
+			args = append(append(append([]string{}, args[:insertIndex]...), clusterArg), args[insertIndex:]...)
 		}
 
 		c, err := KubectlCommand(version, binaryMirror, args...)
