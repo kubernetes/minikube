@@ -18,10 +18,13 @@ package cni
 
 import (
 	"bytes"
+	"fmt"
+
 	// goembed needs this
 	_ "embed"
 	"text/template"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -42,10 +45,11 @@ type Calico struct {
 }
 
 type calicoTmplStruct struct {
-	DeploymentImageName  string
-	DaemonSetImageName   string
-	FelixDriverImageName string
-	BinaryImageName      string
+	DeploymentImageName       string
+	DaemonSetImageName        string
+	FelixDriverImageName      string
+	BinaryImageName           string
+	LegacyPodDisruptionBudget bool
 }
 
 // String returns a string representation of this CNI
@@ -55,11 +59,17 @@ func (c Calico) String() string {
 
 // manifest returns a Kubernetes manifest for a CNI
 func (c Calico) manifest() (assets.CopyableFile, error) {
+	k8sVersion, err := semver.Parse(c.cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Kubernetes version: %v", err)
+	}
+
 	input := &calicoTmplStruct{
-		DeploymentImageName:  images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
-		DaemonSetImageName:   images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
-		FelixDriverImageName: images.CalicoFelixDriver(c.cc.KubernetesConfig.ImageRepository),
-		BinaryImageName:      images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),
+		DeploymentImageName:       images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
+		DaemonSetImageName:        images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
+		FelixDriverImageName:      images.CalicoFelixDriver(c.cc.KubernetesConfig.ImageRepository),
+		BinaryImageName:           images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),
+		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 21}),
 	}
 
 	b := bytes.Buffer{}
