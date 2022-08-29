@@ -59,7 +59,7 @@ func (c Calico) String() string {
 
 // manifest returns a Kubernetes manifest for a CNI
 func (c Calico) manifest() (assets.CopyableFile, error) {
-	k8sVersion, err := semver.Parse(c.cc.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := semver.ParseTolerant(c.cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Kubernetes version: %v", err)
 	}

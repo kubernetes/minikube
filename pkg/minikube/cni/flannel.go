@@ -680,7 +680,7 @@ func (c Flannel) Apply(r Runner) error {
 		}
 	}
 
-	k8sVersion, err := semver.Parse(c.cc.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := semver.ParseTolerant(c.cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse Kubernetes version: %v", err)
 	}
