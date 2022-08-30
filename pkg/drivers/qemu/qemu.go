@@ -445,7 +445,9 @@ func (d *Driver) Start() error {
 			d.diskPath())
 	}
 
-	if stdout, stderr, err := cmdOutErr(d.Program, startCmd...); err != nil {
+	socketCmd := append([]string{"/var/run/socket_vmnet", d.Program}, startCmd...)
+	fmt.Printf("socketCmd: %v\n", socketCmd)
+	if stdout, stderr, err := cmdOutErr("/opt/socket_vmnet/bin/socket_vmnet_client", socketCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
