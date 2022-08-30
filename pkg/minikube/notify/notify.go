@@ -165,8 +165,8 @@ func getJSON(url string, target *Releases) error {
 	if err != nil {
 		return errors.Wrap(err, "error creating new http request")
 	}
-	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s",
-		version.GetVersion(), runtime.GOOS)
+	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s Minikube-Arch/%s",
+		version.GetVersion(), runtime.GOOS, runtime.GOARCH)
 
 	req.Header.Set("User-Agent", ua)
 
