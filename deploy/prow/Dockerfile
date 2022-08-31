@@ -52,7 +52,7 @@ RUN echo "Installing Packages ..." \
             procps \
             python \
             python-dev \
-            python-pip \
+            python3-pip \
             rsync \
             software-properties-common \
             unzip \
