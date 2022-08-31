@@ -18,7 +18,7 @@ The `qemu` driver users QEMU (system) for VM creation.
 minikube start supports some qemu specific flags:
 
 * **`--qemu-firmware-path`**: The path to the firmware image to be used.
-  * Note: if this flag does not take effect, try removing the file `~/.minikube` which may have a reference to this setting.
+  * Note: while the flag should override the config, if the flag does not take effect try running `minikube delete --all --purge`.
   * Macports: if you are installing [minikube](https://ports.macports.org/port/minikube/) and [qemu](https://ports.macports.org/port/qemu/) via Macports on a Mac with M1, use the following flag: `--qemu-firmware-path=/opt/local/share/qemu/edk2-aarch64-code.fd`
 
 ## Issues
