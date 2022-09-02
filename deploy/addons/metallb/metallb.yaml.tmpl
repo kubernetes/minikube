@@ -5,35 +5,6 @@ metadata:
     app: metallb
   name: metallb-system
 ---
-apiVersion: policy/v1beta1
-kind: PodSecurityPolicy
-metadata:
-  labels:
-    app: metallb
-  name: speaker
-  namespace: metallb-system
-spec:
-  allowPrivilegeEscalation: false
-  allowedCapabilities:
-  - NET_ADMIN
-  - NET_RAW
-  - SYS_ADMIN
-  fsGroup:
-    rule: RunAsAny
-  hostNetwork: true
-  hostPorts:
-  - max: 7472
-    min: 7472
-  privileged: true
-  runAsUser:
-    rule: RunAsAny
-  seLinux:
-    rule: RunAsAny
-  supplementalGroups:
-    rule: RunAsAny
-  volumes:
-  - '*'
----
 apiVersion: v1
 kind: ServiceAccount
 metadata:
