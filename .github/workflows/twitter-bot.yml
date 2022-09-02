@@ -3,7 +3,8 @@ on:
   workflow_dispatch:
   release:
     types: [published]
-permissions: {} # none
+permissions:
+  contents: read
 jobs:
   twitter-release:
     runs-on: ubuntu-20.04
