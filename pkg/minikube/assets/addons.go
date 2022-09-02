@@ -859,6 +859,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	}
 
 	opts := struct {
+		KubernetesVersion      map[string]uint64
 		PreOneTwentyKubernetes bool
 		Arch                   string
 		ExoticArch             string
@@ -874,6 +875,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		CustomRegistries       map[string]string
 		NetworkInfo            map[string]string
 	}{
+		KubernetesVersion:      make(map[string]uint64),
 		PreOneTwentyKubernetes: false,
 		Arch:                   a,
 		ExoticArch:             ea,
@@ -907,6 +909,17 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	}
 	if semver.MustParseRange("<1.20.0")(v) {
 		opts.PreOneTwentyKubernetes = true
+	}
+
+	// Store kubernetes version in opts
+	kv, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	opts.KubernetesVersion = map[string]uint64{
+		"Major": kv.Major,
+		"Minor": kv.Minor,
+		"Patch": kv.Patch,
 	}
 
 	// Network info for generating template
