@@ -136,6 +136,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
+			var isFromCache bool
 
 			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
 				klog.Infof("%s exists in daemon, skipping load", img)
@@ -161,19 +162,20 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				err = download.CacheToDaemon(img)
 				if err == nil {
 					klog.Infof("successfully loaded %s from cached tarball", img)
-					finalImg = img
-					return nil
+					isFromCache = true
 				}
 			}
 
 			if driver.IsDocker(cc.Driver) {
-				klog.Infof("failed to load %s, will try remote image if available: %v", img, err)
-
 				klog.Infof("Downloading %s to local daemon", img)
 				err = download.ImageToDaemon(img)
 				if err == nil {
 					klog.Infof("successfully downloaded %s", img)
 					finalImg = img
+					return nil
+				} else if isFromCache {
+					klog.Infof("use image loaded from cache %s", strings.Split(img, "@")[0])
+					finalImg = strings.Split(img, "@")[0]
 					return nil
 				}
 			}
@@ -259,7 +261,7 @@ func imagesInConfigFile() ([]string, error) {
 
 func updateKicImageRepo(imgName string, repo string) string {
 	image := strings.TrimPrefix(imgName, "gcr.io/")
-	if repo == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+	if repo == constants.AliyunMirror {
 		// for aliyun registry must strip namespace from image name, e.g.
 		//   registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-minikube/kicbase:v0.0.25 will not work
 		//   registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase:v0.0.25 does work

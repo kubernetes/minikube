@@ -1,11 +1,12 @@
 name: Sync docker images of minikube to Alibaba Cloud
-
 on:
   workflow_dispatch:
   schedule:
     # every day at 7am & 7pm pacific
     - cron: "0 2,14 * * *"
-
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.19'
 permissions:
   contents: read
 
@@ -16,15 +17,15 @@ jobs:
       run:
         working-directory: ./image-syncer
     steps:
-    - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
+    - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
       with:
         repository: denverdino/image-syncer
         path: ./image-syncer
 
     - name: Set up Go
-      uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
       with:
-        go-version: 1.17
+        go-version: ${{env.GO_VERSION}}
 
     - name: Build
       run: make

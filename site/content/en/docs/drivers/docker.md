@@ -49,7 +49,7 @@ minikube start --driver=docker --container-runtime=containerd
 Unlike Podman driver, it is not necessary to set the `rootless` property of minikube (`minikube config set rootless true`).
 When the `rootless` property is explicitly set but the current Docker host is not rootless, minikube fails with an error.
 
-The `--container-runtime` flag must be set to "containerd" or "cri-o".
+The `--container-runtime` flag must be set to "containerd" or "cri-o". "containerd" is recommended.
 {{% /tab %}}
 {{% /tabs %}}
 
@@ -60,6 +60,8 @@ The `--container-runtime` flag must be set to "containerd" or "cri-o".
 - Experimental support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
 
 ## Known Issues
+
+- On Linux, Docker Desktop is not yet supported by minikube, see [#14202](https://github.com/kubernetes/minikube/issues/14202).
 
 - The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver (see [#9607](https://github.com/kubernetes/minikube/issues/9607)):
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)

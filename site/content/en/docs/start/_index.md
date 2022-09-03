@@ -438,7 +438,7 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
-1. Download the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).  
+1. Download and run the installer for the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
 <br>
     Or if using `PowerShell`, use this command:
     ```powershell
@@ -446,7 +446,7 @@ choco install minikube
     Invoke-WebRequest -OutFile 'c:\minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
     ```
 
-2. Add the binary in to your `PATH`.  
+2. Add the `minikube.exe` binary to your `PATH`.
 <br>
     _Make sure to run PowerShell as Administrator._
     ```powershell
@@ -455,11 +455,12 @@ choco install minikube
       [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+    <span style="color:blue">
+    If you used a terminal (like powershell) for the installation, please close the terminal and reopen it before running minikube.</span>
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
-1. Download the <a href="#" id="latest-beta-download-link">latest beta release</a>.  
+1. Download and run the installer for the <a href="#" id="latest-beta-download-link">latest beta release</a>.
 <br>
     Or if using `PowerShell`, use this command:
     ```powershell
@@ -470,7 +471,7 @@ choco install minikube
     Invoke-WebRequest -Uri $item.browser_download_url -OutFile 'c:\minikube\minikube.exe' -UseBasicParsing
     ```
 
-2. Add the binary in to your `PATH`.  
+2. Add the `minikube.exe` binary to your `PATH`.
 <br>
     _Make sure to run PowerShell as Administrator._
     ```powershell

@@ -16,23 +16,28 @@ limitations under the License.
 
 package images
 
-import "path"
+import (
+	"github.com/blang/semver/v4"
+)
 
-// DefaultKubernetesRepo is the default Kubernetes repository
-const DefaultKubernetesRepo = "k8s.gcr.io"
+// OldDefaultKubernetesRepo is the old default Kubernetes repository
+const OldDefaultKubernetesRepo = "k8s.gcr.io"
+
+// NewDefaultKubernetesRepo is the new default Kubernetes repository
+const NewDefaultKubernetesRepo = "registry.k8s.io"
 
 // kubernetesRepo returns the official Kubernetes repository, or an alternate
-func kubernetesRepo(mirror string) string {
+func kubernetesRepo(mirror string, v semver.Version) string {
 	if mirror != "" {
 		return mirror
 	}
-	return DefaultKubernetesRepo
+	return DefaultKubernetesRepo(v)
 }
 
-// minikubeRepo returns the official minikube repository, or an alternate
-func minikubeRepo(mirror string) string {
-	if mirror == "" {
-		mirror = "gcr.io"
+func DefaultKubernetesRepo(kv semver.Version) string {
+	// these (-1.24) should probably be moved too
+	if kv.LT(semver.MustParse("1.25.0-alpha.1")) {
+		return OldDefaultKubernetesRepo
 	}
-	return path.Join(mirror, "k8s-minikube")
+	return NewDefaultKubernetesRepo
 }

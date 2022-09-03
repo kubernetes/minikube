@@ -14,16 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
@@ -38,7 +28,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout = 300 * time.Second
+	cxTimeout = 5 * time.Minute
 )
 
 var (
@@ -69,16 +59,11 @@ var (
 			},
 		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-gopogh-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_gopogh_version: {stable: "{{.StableVersion}}"}`
-	prIssue        = 9850
 )
 
 // Data holds stable gopogh version in semver format.
 type Data struct {
-	StableVersion string `json:"stableVersion"`
+	StableVersion string
 }
 
 func main() {
@@ -94,12 +79,12 @@ func main() {
 	data := Data{StableVersion: stable}
 	klog.Infof("gopogh stable version: %s", data.StableVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
+	update.Apply(schema, data)
 }
 
 // gopoghVersion returns gopogh stable version in semver format.
 func gopoghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get Kubernetes versions from GitHub Releases
+	// get gopogh versions from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err

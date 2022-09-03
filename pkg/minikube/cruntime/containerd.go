@@ -21,12 +21,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/url"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -45,79 +45,12 @@ const ExternalContainerdCRISocket = "/run/containerd/containerd.sock"
 const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
-	containerdConfigFile     = "/etc/containerd/config.toml"
-	containerdConfigTemplate = `version = 2
-root = "/var/lib/containerd"
-state = "/run/containerd"
-oom_score = 0
-[grpc]
-  address = "/run/containerd/containerd.sock"
-  uid = 0
-  gid = 0
-  max_recv_message_size = 16777216
-  max_send_message_size = 16777216
+	containerdConfigFile               = "/etc/containerd/config.toml"
+	containerdMirrorsRoot              = "/etc/containerd/certs.d"
+	containerdInsecureRegistryTemplate = `server = "{{.InsecureRegistry -}}"
 
-[debug]
-  address = ""
-  uid = 0
-  gid = 0
-  level = ""
-
-[metrics]
-  address = ""
-  grpc_histogram = false
-
-[cgroup]
-  path = ""
-
-[plugins]
-  [plugins."io.containerd.monitor.v1.cgroups"]
-    no_prometheus = false
-  [plugins."io.containerd.grpc.v1.cri"]
-    stream_server_address = ""
-    stream_server_port = "10010"
-    enable_selinux = false
-    sandbox_image = "{{ .PodInfraContainerImage }}"
-    stats_collect_period = 10
-    enable_tls_streaming = false
-    max_container_log_line_size = 16384
-    restrict_oom_score_adj = {{ .RestrictOOMScoreAdj }}
-
-    [plugins."io.containerd.grpc.v1.cri".containerd]
-      discard_unpacked_layers = true
-      snapshotter = "{{ .Snapshotter }}"
-      [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
-        runtime_type = "io.containerd.runc.v2"
-      [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime]
-        runtime_type = ""
-        runtime_engine = ""
-        runtime_root = ""
-      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes]
-        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
-          runtime_type = "io.containerd.runc.v2"
-          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
-            SystemdCgroup = {{ .SystemdCgroup }}
-
-    [plugins."io.containerd.grpc.v1.cri".cni]
-      bin_dir = "/opt/cni/bin"
-      conf_dir = "{{.CNIConfDir}}"
-      conf_template = ""
-    [plugins."io.containerd.grpc.v1.cri".registry]
-      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-          endpoint = ["https://registry-1.docker.io"]
-        {{ range .InsecureRegistry -}}
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{. -}}"]
-          endpoint = ["http://{{. -}}"]
-        {{ end -}}
-  [plugins."io.containerd.service.v1.diff-service"]
-    default = ["walking"]
-  [plugins."io.containerd.gc.v1.scheduler"]
-    pause_threshold = 0.02
-    deletion_threshold = 0
-    mutation_threshold = 100
-    schedule_delay = "0s"
-    startup_delay = "100ms"
+[host."{{.InsecureRegistry -}}"]
+  skip_verify = true
 `
 )
 
@@ -215,37 +148,50 @@ func (r *Containerd) Available() error {
 	return nil
 }
 
-// generateContainerdConfig sets up /etc/containerd/config.toml
+// generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
 func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, cniConfDir string, inUserNamespace bool) error {
-	cPath := containerdConfigFile
-	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
-	if err != nil {
-		return err
-	}
 	pauseImage := images.Pause(kv, imageRepository)
-	snapshotter := "overlayfs"
-	opts := struct {
-		PodInfraContainerImage string
-		SystemdCgroup          bool
-		InsecureRegistry       []string
-		CNIConfDir             string
-		RestrictOOMScoreAdj    bool
-		Snapshotter            string
-	}{
-		PodInfraContainerImage: pauseImage,
-		SystemdCgroup:          forceSystemd,
-		InsecureRegistry:       insecureRegistry,
-		CNIConfDir:             cniConfDir,
-		RestrictOOMScoreAdj:    inUserNamespace,
-		Snapshotter:            snapshotter,
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*sandbox_image = .*$|sandbox_image = \"%s\"|' -i %s", pauseImage, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update sandbox_image")
 	}
-	var b bytes.Buffer
-	if err := t.Execute(&b, opts); err != nil {
-		return err
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = %t|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update restrict_oom_score_adj")
 	}
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generate containerd cfg")
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = %t|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update SystemdCgroup")
+	}
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cniConfDir, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "update conf_dir")
+	}
+
+	for _, registry := range insecureRegistry {
+		addr := registry
+		if strings.HasPrefix(strings.ToLower(registry), "http://") || strings.HasPrefix(strings.ToLower(registry), "https://") {
+			i := strings.Index(addr, "//")
+			addr = addr[i+2:]
+		} else {
+			registry = "http://" + registry
+		}
+
+		t, err := template.New("hosts.toml").Parse(containerdInsecureRegistryTemplate)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse insecure registry template")
+		}
+		opts := struct {
+			InsecureRegistry string
+		}{
+			InsecureRegistry: registry,
+		}
+		var b bytes.Buffer
+		if err := t.Execute(&b, opts); err != nil {
+			return errors.Wrap(err, "unable to create insecure registry template")
+		}
+		regRootPath := path.Join(containerdMirrorsRoot, addr)
+
+		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", regRootPath, base64.StdEncoding.EncodeToString(b.Bytes()), path.Join(regRootPath, "hosts.toml")))
+		if _, err := cr.RunCmd(c); err != nil {
+			return errors.Wrap(err, "unable to generate insecure registry cfg")
+		}
 	}
 	return nil
 }

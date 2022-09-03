@@ -61,7 +61,7 @@ type sshReadableFile struct {
 	reader      io.Reader
 }
 
-// GetLength returns lentgh of file
+// GetLength returns length of file
 func (s *sshReadableFile) GetLength() int {
 	return s.length
 }

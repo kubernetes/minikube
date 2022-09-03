@@ -154,15 +154,12 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 		}
 	}
 	if useRemote {
-		ref, canonicalName, err := fixRemoteImageName(ref, imgName)
-		if err != nil {
-			return nil, "", err
-		}
+		cname := canonicalName(ref)
 		img, err = retrieveRemote(ref, defaultPlatform)
 		if err == nil {
 			img, err = fixPlatform(ref, img, defaultPlatform)
 			if err == nil {
-				return img, canonicalName, nil
+				return img, cname, nil
 			}
 		}
 	}
@@ -305,10 +302,11 @@ func cleanImageCacheDir() error {
 
 // normalizeTagName automatically tag latest to image
 // Example:
-//  nginx -> nginx:latest
-//  localhost:5000/nginx -> localhost:5000/nginx:latest
-//  localhost:5000/nginx:latest -> localhost:5000/nginx:latest
-//  docker.io/dotnet/core/sdk -> docker.io/dotnet/core/sdk:latest
+//
+//	nginx -> nginx:latest
+//	localhost:5000/nginx -> localhost:5000/nginx:latest
+//	localhost:5000/nginx:latest -> localhost:5000/nginx:latest
+//	docker.io/dotnet/core/sdk -> docker.io/dotnet/core/sdk:latest
 func normalizeTagName(image string) string {
 	base := image
 	tag := "latest"
@@ -320,23 +318,4 @@ func normalizeTagName(image string) string {
 		tag = parts[len(parts)-1]
 	}
 	return base + ":" + tag
-}
-
-func fixRemoteImageName(ref name.Reference, imgName string) (name.Reference, string, error) {
-	const aliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers/"
-	if strings.HasPrefix(imgName, aliyunMirror) {
-		// for aliyun registry must strip namespace from image name, e.g.
-		//   registry.cn-hangzhou.aliyuncs.com/google_containers/coredns/coredns:v1.8.0 will not work
-		//   registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.8.0 does work
-		image := strings.TrimPrefix(imgName, aliyunMirror)
-		image = strings.TrimPrefix(image, "k8s-minikube/")
-		image = strings.TrimPrefix(image, "kubernetesui/")
-		image = strings.TrimPrefix(image, "coredns/")
-		remoteRef, err := name.ParseReference(aliyunMirror+image, name.WeakValidation)
-		if err != nil {
-			return nil, "", err
-		}
-		return remoteRef, canonicalName(ref), nil
-	}
-	return ref, canonicalName(ref), nil
 }

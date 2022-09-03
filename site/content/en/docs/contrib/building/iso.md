@@ -35,19 +35,26 @@ cd minikube
 
 ### Building
 
+To build for x86
 ```shell
 $ make buildroot-image
-$ make out/minikube.iso
+$ make out/minikube-amd64.iso
+```
+
+To build for ARM
+```shell
+$ make buildroot-image
+$ make out/minikube-arm64.iso
 ```
 
 The build will occur inside a docker container. If you want to do this on
-baremetal, replace `make out/minikube.iso` with `IN_DOCKER=1 make out/minikube.iso`.
-The bootable ISO image will be available in `out/minikube.iso`.
+baremetal, replace `make out/minikube-<arch>.iso` with `IN_DOCKER=1 make out/minikube-<arch>.iso`.
+The bootable ISO image will be available in `out/minikube-<arch>.iso`.
 
 ### Using a local ISO image
 
 ```shell
-$ ./out/minikube start --iso-url=file://$(pwd)/out/minikube.iso
+$ ./out/minikube start --iso-url=file://$(pwd)/out/minikube-<arch>.iso
 ```
 
 ### Modifying buildroot components
@@ -97,6 +104,3 @@ We publish CI builds of minikube, built at every Pull Request. Builds are availa
 - <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-linux-amd64>
 - <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-windows-amd64.exe>
 
-We also publish CI builds of minikube-iso, built at every Pull Request that touches deploy/iso/minikube-iso.  Builds are available at:
-
-- <https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-testing.iso>

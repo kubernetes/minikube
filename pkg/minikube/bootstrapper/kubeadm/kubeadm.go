@@ -290,6 +290,10 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}()
 
 	wg.Wait()
+	// Tunnel apiserver to guest, if necessary
+	if cfg.APIServerPort != 0 {
+		k.tunnelToAPIServer(cfg)
+	}
 	return nil
 }
 
@@ -309,12 +313,13 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 	scanner := bufio.NewScanner(logs)
 	for scanner.Scan() {
+		line := scanner.Text()
+		klog.Info(line)
 		if nextStepIndex >= len(steps) {
-			scanner.Text()
 			continue
 		}
 		nextStep := steps[nextStepIndex]
-		if !strings.Contains(scanner.Text(), fmt.Sprintf("[%s]", nextStep.logTag)) {
+		if !strings.Contains(line, fmt.Sprintf("[%s]", nextStep.logTag)) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
@@ -399,6 +404,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
+		// If the guest already exists and was stopped, re-establish the apiserver tunnel so checks pass
+		if cfg.APIServerPort != 0 {
+			k.tunnelToAPIServer(cfg)
+		}
 		klog.Infof("found existing configuration files, will attempt cluster restart")
 		rerr := k.restartControlPlane(cfg)
 		if rerr == nil {
@@ -431,6 +440,22 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return k.init(cfg)
 	}
 	return err
+}
+
+func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) {
+	m, err := machine.NewAPIClient()
+	if err != nil {
+		klog.Warningf("libmachine API failed: %v", err)
+	}
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		klog.Warningf("finding control plane failed: %v", err)
+	}
+	args := []string{"-f", "-NTL", fmt.Sprintf("%d:localhost:8443", cfg.APIServerPort)}
+	err = machine.CreateSSHShell(m, cfg, cp, args, false)
+	if err != nil {
+		klog.Warningf("apiserver tunnel failed: %v", err)
+	}
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -569,6 +594,7 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 		klog.Infof("needs reconfigure: configs differ:\n%s", rr.Output())
 		return true
 	}
+
 	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
 	apiStatusTimeout := 3000 * time.Millisecond
 	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
@@ -1043,7 +1069,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		// double checking defalut sa was created.
+		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
 		checkSA := func() (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
@@ -1095,7 +1121,7 @@ func adviseNodePressure(err error, name string, drv string) {
 		if driver.IsVM(drv) {
 			out.Styled(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Styled(style.Stopped, "Please increse Desktop's disk size.")
+			out.Styled(style.Stopped, "Please increase Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
 				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}

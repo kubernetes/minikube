@@ -85,6 +85,12 @@ var serviceCmd = &cobra.Command{
 
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
+
+		// Bail cleanly for qemu2 until implemented
+		if driver.IsQEMU(co.Config.Driver) {
+			exit.Message(reason.Unimplemented, "minikube service is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		}
+
 		var services service.URLs
 		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
@@ -103,7 +109,7 @@ var serviceCmd = &cobra.Command{
 			services = newServices
 		}
 
-		if services == nil || len(services) == 0 {
+		if len(services) == 0 {
 			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
 		}
@@ -140,8 +146,10 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 			}
 		}
 
-		if driver.NeedsPortForward(co.Config.Driver) && services != nil {
+		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) && services != nil {
 			startKicServiceTunnel(services, cname, co.Config.Driver)
+		} else if driver.NeedsPortForward(co.Config.Driver) && driver.IsQEMU(co.Config.Driver) && services != nil {
+			startQemuServiceTunnel(services, cname, co.Config.Driver)
 		} else if !serviceURLMode {
 			openURLs(data)
 		}
@@ -214,6 +222,9 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 	<-ctrlC
 }
 
+func startQemuServiceTunnel(services service.URLs, configName, driverName string) {
+}
+
 func mutateURLs(serviceName string, urls []string) ([]string, error) {
 	formattedUrls := make([]string, 0)
 	for _, rawURL := range urls {
@@ -249,6 +260,12 @@ func mutateURLs(serviceName string, urls []string) ([]string, error) {
 
 func openURLs(urls [][]string) {
 	for _, u := range urls {
+
+		if len(u) < 4 {
+			klog.Warning("No URL found")
+			continue
+		}
+
 		_, err := url.Parse(u[3])
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)

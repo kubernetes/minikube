@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18.1'
+  GO_VERSION: '1.19'
 permissions:
   contents: read
 
@@ -20,11 +20,10 @@ jobs:
   build_minikube:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -40,18 +39,17 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: minikube_binaries
           path: out
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -66,11 +64,10 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update

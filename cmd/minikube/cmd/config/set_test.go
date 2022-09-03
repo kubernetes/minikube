@@ -45,7 +45,7 @@ func TestSetNotAllowed(t *testing.T) {
 
 func TestSetOK(t *testing.T) {
 	createTestConfig(t)
-	err := Set("driver", "virtualbox")
+	err := Set("driver", "ssh")
 	defer func() {
 		err = Unset("driver")
 		if err != nil {
@@ -59,8 +59,8 @@ func TestSetOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get returned error for valid property: %+v", err)
 	}
-	if val != "virtualbox" {
-		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
+	if val != "ssh" {
+		t.Fatalf("Get returned %s, expected \"ssh\"", val)
 	}
 }
 

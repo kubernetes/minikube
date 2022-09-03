@@ -18,9 +18,10 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -31,12 +32,12 @@ linkTitle: "{{.Version}} Benchmark"
 weight: -{{.Weight}}
 ---
 
-![time-to-k8s]({{.TimeChart}})
+![time-to-k8s](/images/benchmarks/timeToK8s/{{.Version}}-time.png)
 
 {{.TimeMarkdown}}
 
 
-![cpu-to-k8s]({{.CPUChart}})
+![cpu-to-k8s](/images/benchmarks/timeToK8s/{{.Version}}-cpu.png)
 
 {{.CPUMarkdown}}
 `
@@ -44,9 +45,7 @@ weight: -{{.Weight}}
 type Data struct {
 	Version      string
 	Weight       string
-	TimeChart    string
 	TimeMarkdown string
-	CPUChart     string
 	CPUMarkdown  string
 }
 
@@ -59,8 +58,13 @@ func main() {
 
 	flag.Parse()
 
-	t := time.Now()
-	data.Weight = fmt.Sprintf("%d%d%d", t.Year(), t.Month(), t.Day())
+	data.Weight = time.Now().Format("20060102")
+
+	version, err := exec.Command("minikube", "version", "--short").Output()
+	if err != nil {
+		log.Fatalf("failed to get minikube version: %v", err)
+	}
+	data.Version = strings.Split(string(version), "\n")[0]
 
 	// map of the apps (minikube, kind, k3d) and their runs
 	apps := make(map[string]runs)
@@ -89,7 +93,6 @@ func main() {
 
 	// generate page and save
 	tmpl, err := template.New("msg").Parse(page)
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,5 +107,4 @@ func main() {
 	}
 
 	f.Close()
-
 }

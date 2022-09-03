@@ -122,6 +122,9 @@ func saveHost(api libmachine.API, h *host.Host, cfg *config.ClusterConfig, n *co
 	if err != nil {
 		return err
 	}
+	if ip == "127.0.0.1" && driver.IsQEMU(h.Driver.DriverName()) {
+		ip = "10.0.2.15"
+	}
 	n.IP = ip
 	return config.SaveNode(cfg, n)
 }

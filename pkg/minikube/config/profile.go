@@ -194,7 +194,7 @@ var DockerContainers = func() ([]string, error) {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
-
+	activeP := viper.GetString(ProfileName)
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
@@ -218,7 +218,9 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 			continue
 		}
 		validPs = append(validPs, p)
-
+		if p.Name == activeP {
+			p.Active = true
+		}
 		for _, child := range p.Config.Nodes {
 			nodeNames[MachineName(*p.Config, child)] = true
 		}
@@ -229,17 +231,20 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // ListValidProfiles returns profiles in minikube home dir
-// Unlike `ListProfiles` this function doens't try to get profile from container
+// Unlike `ListProfiles` this function doesn't try to get profile from container
 func ListValidProfiles(miniHome ...string) (ps []*Profile, err error) {
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, err
 	}
-
+	activeP := viper.GetString(ProfileName)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
 		if err == nil && p.IsValid() {
+			if p.Name == activeP {
+				p.Active = true
+			}
 			ps = append(ps, p)
 		}
 	}

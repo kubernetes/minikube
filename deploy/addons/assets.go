@@ -143,4 +143,12 @@ var (
 	// AliyunMirror assets for aliyun_mirror.json
 	//go:embed aliyun_mirror.json
 	AliyunMirror embed.FS
+
+	// InAccelAssets assets for inaccel addon
+	//go:embed inaccel/fpga-operator.yaml.tmpl
+	InAccelAssets embed.FS
+
+	// HeadlampAssets assets for headlamp addon
+	//go:embed headlamp/*.yaml headlamp/*.tmpl
+	HeadlampAssets embed.FS
 )

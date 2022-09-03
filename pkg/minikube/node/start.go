@@ -97,7 +97,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 	if stopk8s {
 		nv := semver.Version{Major: 0, Minor: 0, Patch: 0}
-		configureRuntimes(starter.Runner, *starter.Cfg, nv)
+		cr := configureRuntimes(starter.Runner, *starter.Cfg, nv)
+
+		showNoK8sVersionInfo(cr)
+
 		configureMounts(&wg, *starter.Cfg)
 		return nil, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 	}
@@ -328,9 +331,9 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
-	// for sake of trasnlation process be easy we make the code a bit more verbose and the if statements may seem unnecessary
+	// Be explicit with each case for the sake of translations
 	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
-		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes in cluster {{.cluster}}", out.V{"cluster": cc.Name})
 	} else {
 		if apiServer {
 			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
@@ -549,9 +552,17 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
+	}
+
+	if driver.IsQEMU(host.Driver.DriverName()) {
+		apiServerPort, err := getPort()
+		if err != nil {
+			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+		}
+		cfg.APIServerPort = apiServerPort
 	}
 
 	// Bypass proxy for minikube's vm host ip
@@ -563,6 +574,21 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 	return runner, preExists, m, host, err
 }
 
+// getPort asks the kernel for a free open port that is ready to use
+func getPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
 // startHostInternal starts a new minikube host using a VM or None
 func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
@@ -570,7 +596,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		return host, exists, nil
 	}
 	klog.Warningf("error starting host: %v", err)
-	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
+	// NOTE: People get very cranky if you delete their preexisting VM. Only delete new ones.
 	if !exists {
 		err := machine.DeleteHost(api, config.MachineName(*cc, *n))
 		if err != nil {
@@ -609,7 +635,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kubernetesVersion string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -634,14 +660,14 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) && !driver.IsQEMU(h.Driver.DriverName()) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion)
 	return ip, nil
 }
 
@@ -686,7 +712,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string, imageRepository string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -696,7 +722,8 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 	}
 
 	if imageRepository == "" {
-		imageRepository = images.DefaultKubernetesRepo
+		v, _ := util.ParseKubernetesVersion(kubernetesVersion)
+		imageRepository = images.DefaultKubernetesRepo(v)
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))

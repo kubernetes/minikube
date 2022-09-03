@@ -14,33 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
-)
-
-const (
-	// default context timeout
-	cxTimeout = 300 * time.Second
 )
 
 var (
@@ -75,6 +58,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/yearly-leaderboard.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/translations.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
@@ -100,13 +88,27 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
-
+		".github/workflows/update-gopogh-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
 		".github/workflows/functional_verified.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-gotestsum-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/sync-minikube.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
@@ -128,27 +130,23 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
+		"hack/jenkins/common.ps1": {
+			Replace: map[string]string{
+				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
+			},
+		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-golang-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_golang_version: {stable: "{{.StableVersion}}"}`
-	prIssue        = 9264
 )
 
 // Data holds stable Golang version - in full and in <major>.<minor> format
 type Data struct {
-	StableVersion   string `json:"stableVersion"`
-	StableVersionMM string `json:"stableVersionMM"` // go.mod wants go version in <major>.<minor> format
-	K8SVersion      string `json:"k8sVersion"`      // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
+	StableVersion   string
+	StableVersionMM string // go.mod wants go version in <major>.<minor> format
+	K8SVersion      string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
 
 }
 
 func main() {
-	// set a context with defined timeout
-	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
-	defer cancel()
-
 	// get Golang stable version
 	stable, stableMM, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
@@ -162,7 +160,7 @@ func main() {
 	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
+	update.Apply(schema, data)
 }
 
 // goVersion returns Golang stable version.

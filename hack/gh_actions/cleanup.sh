@@ -42,7 +42,7 @@ check_running_job
 
 echo "cleanup docker..."
 docker kill $(docker ps -aq) >/dev/null 2>&1 || true
-docker system prune --volumes --force || true
+docker system prune -a --volumes -f || true
 
 echo "rebooting..."
 sudo reboot

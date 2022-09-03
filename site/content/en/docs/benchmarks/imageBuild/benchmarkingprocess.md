@@ -24,9 +24,9 @@ Using this info you can see the following:
 Finally, as the last layer, a simplistic 11 line Go app is copied in.
 
 ## Iterative vs Initial
-There are two graphs for each benchmark, iterative and inital.
+There are two graphs for each benchmark, iterative and initial.
 
-#### Inital
+#### Initial
 Initial simulates loading the image for the first time.
 
 All existing images and cache is removed/cleared from minikube and Docker between runs to replicate what the user would experience when loading for the first time.
@@ -36,7 +36,7 @@ Iterative simulates only the Go app (last layer of the image) changing.
 
 This is the exact use case of [Skaffold](https://github.com/GoogleContainerTools/skaffold), where if the user changes a file the Go binary is rebuilt and the image is re-loaded.
 
-Bewteen runs the cache and existing image is left alone, only the Go binary is changed.
+Between runs the cache and existing image is left alone, only the Go binary is changed.
 
 
 ## How are the benchmarks conducted?
@@ -48,7 +48,7 @@ startMininkube() // minikube start --container-runtime=docker
 for image in [fewLargeLayers, fewSmallLayers, ...] {
 	buildGoBinary()
 
-	// inital simulation
+	// initial simulation
 	for i in runCount {
 		startTimer()
 

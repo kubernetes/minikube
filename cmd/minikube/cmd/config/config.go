@@ -102,8 +102,9 @@ var settings = []Setting{
 		validations: []setFn{IsValidPath},
 	},
 	{
-		name: "kubernetes-version",
-		set:  SetString,
+		name:          "kubernetes-version",
+		set:           SetString,
+		validDefaults: supportedKubernetesVersions,
 	},
 	{
 		name:        "iso-url",
@@ -166,6 +167,10 @@ var settings = []Setting{
 	{
 		name: config.Rootless,
 		set:  SetBool,
+	},
+	{
+		name: config.MaxAuditEntries,
+		set:  SetInt,
 	},
 }
 

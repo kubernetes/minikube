@@ -54,6 +54,8 @@ const (
 	AddonListFlag = "addons"
 	// EmbedCerts represents the config for embedding certificates in kubeconfig
 	EmbedCerts = "EmbedCerts"
+	// MaxAuditEntries is the maximum number of audit entries to retain
+	MaxAuditEntries = "MaxAuditEntries"
 )
 
 var (

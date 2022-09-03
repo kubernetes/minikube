@@ -20,38 +20,69 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
-// currentLogFile the file that's used to store audit logs
-var currentLogFile *os.File
+var (
+	// currentLogFile the file that's used to store audit logs
+	currentLogFile *os.File
 
-// setLogFile sets the logPath and creates the log file if it doesn't exist.
-func setLogFile() error {
-	lp := localpath.AuditLog()
-	f, err := os.OpenFile(lp, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
+	// auditOverrideFilename overrides the default audit log filename, used for testing purposes
+	auditOverrideFilename string
+)
+
+// openAuditLog opens the audit log file or creates it if it doesn't exist.
+func openAuditLog() error {
+	// this is so we can manually set the log file for tests
+	if currentLogFile != nil {
+		return nil
+	}
+	f, err := os.OpenFile(auditPath(), os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		return fmt.Errorf("unable to open %s: %v", lp, err)
+		return fmt.Errorf("failed to open the audit log: %v", err)
 	}
 	currentLogFile = f
 	return nil
 }
 
+// closeAuditLog closes the audit log file
+func closeAuditLog() {
+	if err := currentLogFile.Close(); err != nil {
+		klog.Errorf("failed to close the audit log: %v", err)
+	}
+	currentLogFile = nil
+}
+
 // appendToLog appends the row to the log file.
 func appendToLog(row *row) error {
-	if currentLogFile == nil {
-		if err := setLogFile(); err != nil {
-			return err
-		}
-	}
 	ce := register.CloudEvent(row, row.toMap())
 	bs, err := ce.MarshalJSON()
 	if err != nil {
 		return fmt.Errorf("error marshalling event: %v", err)
 	}
+	if err := openAuditLog(); err != nil {
+		return err
+	}
+	defer closeAuditLog()
 	if _, err := currentLogFile.WriteString(string(bs) + "\n"); err != nil {
 		return fmt.Errorf("unable to write to audit log: %v", err)
 	}
 	return nil
+}
+
+// truncateAuditLog truncates the audit log file
+func truncateAuditLog() error {
+	if err := os.Truncate(auditPath(), 0); err != nil {
+		return fmt.Errorf("failed to truncate audit log: %v", err)
+	}
+	return nil
+}
+
+func auditPath() string {
+	if auditOverrideFilename != "" {
+		return auditOverrideFilename
+	}
+	return localpath.AuditLog()
 }

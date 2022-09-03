@@ -21,7 +21,7 @@
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
-# access_token: The Github API access token. Injected by the Jenkins credential provider.
+# access_token: The GitHub API access token. Injected by the Jenkins credential provider.
 
 
 OS="darwin"
@@ -29,14 +29,5 @@ ARCH="amd64"
 DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
-# hyperkit behaves better, so it has higher precedence.
-# Assumes that hyperkit is also installed on the VirtualBox CI host.
-EXPECTED_DEFAULT_DRIVER="hyperkit"
-
-
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
-install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh  || echo "FAILED TO GET INSTALL CLEANUP"
-echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
-crontab -l
 
 source common.sh

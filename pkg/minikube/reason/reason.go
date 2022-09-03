@@ -71,6 +71,9 @@ var (
 	// user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary
 	WrongBinaryWSL = Kind{ID: "MK_WRONG_BINARY_WSL", ExitCode: ExProgramUnsupported}
 
+	// this feature is unimplemented for whatever reason
+	Unimplemented = Kind{ID: "MK_UNIMPLEMENTED", ExitCode: ExProgramUnsupported}
+
 	// minikube failed to create a new Docker Machine api client
 	NewAPIClient = Kind{ID: "MK_NEW_APICLIENT", ExitCode: ExProgramError}
 	// minikube could not disable an addon, e.g. dashboard addon
@@ -456,5 +459,26 @@ var (
 		  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}
 		`),
 		Style: style.SeeNoEvil,
+	}
+
+	NotFoundCriDockerd = Kind{
+		ID:       "NOT_FOUND_CRI_DOCKERD",
+		ExitCode: ExProgramNotFound,
+		Advice: translate.T(`The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.
+		
+		Please install cri-dockerd using these instructions:
+
+		https://github.com/Mirantis/cri-dockerd#build-and-install`),
+		Style: style.Docker,
+	}
+	NotFoundDockerd = Kind{
+		ID:       "NOT_FOUND_DOCKERD",
+		ExitCode: ExProgramNotFound,
+		Advice: translate.T(`The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.
+		
+		Please install dockerd using these instructions:
+
+		https://docs.docker.com/engine/install/`),
+		Style: style.Docker,
 	}
 )

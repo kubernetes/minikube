@@ -163,7 +163,9 @@ func getSHA(operatingSystem, arch string) (string, error) {
 		return "", fmt.Errorf("failed to read file %q: %v", filePath, err)
 	}
 	// trim off new line character
-	return string(b[:len(b)-1]), nil
+	sha := string(b[:len(b)-1])
+	fmt.Printf("%s-%s: `%s`\n", operatingSystem, arch, sha)
+	return sha, nil
 }
 
 func updateJSON(path string, r releases) error {

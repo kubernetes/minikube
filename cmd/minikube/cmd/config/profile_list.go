@@ -41,7 +41,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var output string
+var profileOutput string
 var isLight bool
 
 var profileListCmd = &cobra.Command{
@@ -49,13 +49,13 @@ var profileListCmd = &cobra.Command{
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
-		switch strings.ToLower(output) {
+		switch strings.ToLower(profileOutput) {
 		case "json":
 			printProfilesJSON()
 		case "table":
 			printProfilesTable()
 		default:
-			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", profileOutput))
 		}
 	},
 }
@@ -149,7 +149,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -159,6 +159,7 @@ func renderProfilesTable(ps [][]string) {
 
 func profilesToTableData(profiles []*config.Profile) [][]string {
 	var data [][]string
+	currentProfile := ClusterFlagValue()
 	for _, p := range profiles {
 		cp, err := config.PrimaryControlPlane(p.Config)
 		if err != nil {
@@ -169,7 +170,11 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes))})
+		var c string
+		if p.Name == currentProfile {
+			c = "*"
+		}
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
 	}
 	return data
 }
@@ -192,7 +197,6 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 
 func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := listProfiles()
-
 	updateProfilesStatus(validProfiles)
 
 	var body = map[string]interface{}{}
@@ -217,7 +221,7 @@ func profilesOrDefault(profiles []*config.Profile) []*config.Profile {
 }
 
 func init() {
-	profileListCmd.Flags().StringVarP(&output, "output", "o", "table", "The output format. One of 'json', 'table'")
+	profileListCmd.Flags().StringVarP(&profileOutput, "output", "o", "table", "The output format. One of 'json', 'table'")
 	profileListCmd.Flags().BoolVarP(&isLight, "light", "l", false, "If true, returns list of profiles faster by skipping validating the status of the cluster.")
 	ProfileCmd.AddCommand(profileListCmd)
 }

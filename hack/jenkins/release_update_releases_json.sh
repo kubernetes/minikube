@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script generates the Github Release page and uploads all the binaries/etc to that page
+# This script generates the GitHub Release page and uploads all the binaries/etc to that page
 # This is intended to be run on a new release tag in order to generate the github release page for that release
 
 # The script expects the following env variables:
@@ -41,7 +41,7 @@ git status
 
 if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME" --legacy
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta-v2.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta-v2.json --version "$TAGNAME" > binary_checksums.txt
 
   git add -A
   git commit -m "Update releases-beta.json & releases-beta-v2.json to include ${TAGNAME}"
@@ -56,13 +56,13 @@ if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   gsutil cp deploy/minikube/releases-beta-v2.json gs://minikube/releases-beta-v2.json
 else
   go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases.json --version "$TAGNAME" --legacy
-  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-v2.json --version "$TAGNAME"
+  go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-v2.json --version "$TAGNAME" > binary_checksums.txt
 
   #Update the front page of our documentation
   now=$(date +"%b %d, %Y")
   sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
 
-  git add -A
+  git add deploy/minikube/*
   git commit -m "Update releases.json & releases-v2.json to include ${TAGNAME}"
   git remote add minikube-bot git@github.com:minikube-bot/minikube.git
   git push -f minikube-bot jenkins-releases.json-${TAGNAME}

@@ -108,36 +108,42 @@ func PrepareContainerNode(p CreateParams) error {
 	return nil
 }
 
-// HasMemoryCgroup checks whether it is possible to set memory limit for cgroup.
-func HasMemoryCgroup() bool {
-	memcg := true
-	if runtime.GOOS == "linux" {
-		var memory string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memory = "/sys/fs/cgroup/memory/memsw.limit_in_bytes"
-		}
-		if _, err := os.Stat(memory); os.IsNotExist(err) {
-			klog.Warning("Your kernel does not support memory limit capabilities or the cgroup is not mounted.")
-			memcg = false
+// kernelModulesPath checks for the existence of a known alternative kernel modules directory,
+// returning the default if none are present
+func kernelModulesPath() string {
+	paths := []string{
+		"/run/current-system/kernel-modules/lib/modules", // NixOS
+	}
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			return path
 		}
 	}
-	return memcg
+	return "/lib/modules"
 }
 
-func hasMemorySwapCgroup() bool {
-	memcgSwap := true
-	if runtime.GOOS == "linux" {
-		var memoryswap string
-		if cgroup2, err := IsCgroup2UnifiedMode(); err == nil && cgroup2 {
-			memoryswap = "/sys/fs/cgroup/memory/memory.swap.max"
+func checkRunning(p CreateParams) func() error {
+	return func() error {
+		r, err := ContainerRunning(p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking running for %q : %v", p.Name, err)
 		}
-		if _, err := os.Stat(memoryswap); os.IsNotExist(err) {
-			// requires CONFIG_MEMCG_SWAP_ENABLED or cgroup_enable=memory in grub
-			klog.Warning("Your kernel does not support swap limit capabilities or the cgroup is not mounted.")
-			memcgSwap = false
+		if !r {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
+		s, err := ContainerStatus(p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
+		}
+		if s != state.Running {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
+		}
+		if !iptablesFileExists(p.OCIBinary, p.Name) {
+			return fmt.Errorf("iptables file doesn't exist, see #8179")
+		}
+		klog.Infof("the created container %q has a running status.", p.Name)
+		return nil
 	}
-	return memcgSwap
 }
 
 // CreateContainerNode creates a new container node
@@ -149,7 +155,7 @@ func CreateContainerNode(p CreateParams) error {
 			return ErrWindowsContainers
 		}
 		if err != nil {
-			klog.Warningf("error getting dameon info: %v", err)
+			klog.Warningf("error getting daemon info: %v", err)
 			return errors.Wrap(err, "daemon info")
 		}
 	}
@@ -168,7 +174,7 @@ func CreateContainerNode(p CreateParams) error {
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
 		// some k8s things want /lib/modules
-		"-v", "/lib/modules:/lib/modules:ro",
+		"-v", fmt.Sprintf("%s:/lib/modules:ro", kernelModulesPath()),
 		"--hostname", p.Name, // make hostname match container name
 		"--name", p.Name, // ... and set the container name
 		"--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"),
@@ -258,29 +264,7 @@ func CreateContainerNode(p CreateParams) error {
 		return errors.Wrap(err, "create container")
 	}
 
-	checkRunning := func() error {
-		r, err := ContainerRunning(p.OCIBinary, p.Name)
-		if err != nil {
-			return fmt.Errorf("temporary error checking running for %q : %v", p.Name, err)
-		}
-		if !r {
-			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
-		}
-		s, err := ContainerStatus(p.OCIBinary, p.Name)
-		if err != nil {
-			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
-		}
-		if s != state.Running {
-			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
-		}
-		if !iptablesFileExists(p.OCIBinary, p.Name) {
-			return fmt.Errorf("iptables file doesn't exist, see #8179")
-		}
-		klog.Infof("the created container %q has a running status.", p.Name)
-		return nil
-	}
-
-	if err := retry.Expo(checkRunning, 15*time.Millisecond, 25*time.Second); err != nil {
+	if err := retry.Expo(checkRunning(p), 15*time.Millisecond, 25*time.Second); err != nil {
 		excerpt := LogContainerDebug(p.OCIBinary, p.Name)
 		_, err := DaemonInfo(p.OCIBinary)
 		if err != nil {
@@ -427,7 +411,7 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 }
 
 /*
-This is adapated from:
+This is adapted from:
 https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155
 */
 // generateMountBindings converts the mount list to a list of strings that
@@ -504,8 +488,13 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	for _, pm := range portMappings {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
-		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
-		result = append(result, publish)
+		if runtime.GOOS == "darwin" {
+			publish := fmt.Sprintf("--publish=%d", pm.ContainerPort)
+			result = append(result, publish)
+		} else {
+			publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
+			result = append(result, publish)
+		}
 	}
 	return result
 }
@@ -658,7 +647,7 @@ func ShutDown(ociBin string, name string) error {
 	}
 	// helps with allowing docker realize the container is exited and report its status correctly.
 	time.Sleep(time.Second * 1)
-	// wait till it is stoped
+	// wait till it is stopped
 	stopped := func() error {
 		st, err := ContainerStatus(ociBin, name)
 		if st == state.Stopped {

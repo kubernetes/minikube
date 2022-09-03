@@ -101,7 +101,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	if creds.JSON == nil {
-		out.WarningT("You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file in order to continue. The image pull secret has been imported.")
+		out.WarningT("You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue. The image pull secret has been imported.")
 		return nil
 	}
 
@@ -370,14 +370,14 @@ func verifyGCPAuthAddon(cc *config.ClusterConfig, name, val string) error {
 		return ErrSkipThisAddon
 	}
 
-	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
-		return err
-	}
-
 	if Refresh {
 		if err := refreshExistingPods(cc); err != nil {
 			return err
 		}
+	}
+
+	if err := verifyAddonStatusInternal(cc, name, val, "gcp-auth"); err != nil {
+		return err
 	}
 
 	if enable && err == nil {

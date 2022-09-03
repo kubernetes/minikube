@@ -14,16 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*
-Script expects the following env variables:
- - UPDATE_TARGET=<string>: optional - if unset/absent, default option is "fs"; valid options are:
-   - "fs"  - update only local filesystem repo files [default]
-   - "gh"  - update only remote GitHub repo files and create PR (if one does not exist already)
-   - "all" - update local and remote repo files and create PR (if one does not exist already)
- - GITHUB_TOKEN=<string>: GitHub [personal] access token
-   - note: GITHUB_TOKEN is required if UPDATE_TARGET is "gh" or "all"
-*/
-
 package main
 
 import (
@@ -39,7 +29,7 @@ import (
 
 const (
 	// default context timeout
-	cxTimeout = 300 * time.Second
+	cxTimeout = 5 * time.Minute
 )
 
 var (
@@ -111,20 +101,15 @@ var (
 			},
 		},
 	}
-
-	// PR data
-	prBranchPrefix = "update-kubernetes-version_" // will be appended with first 7 characters of the PR commit SHA
-	prTitle        = `update_kubernetes_version: {stable: "{{.StableVersion}}", latest: "{{.LatestVersion}}"}`
-	prIssue        = 4392
 )
 
 // Data holds greatest current stable release and greatest latest rc or beta pre-release Kubernetes versions
 type Data struct {
-	StableVersion   string `json:"StableVersion"`
-	LatestVersion   string `json:"LatestVersion"`
-	LatestVersionMM string `json:"LatestVersionMM"` // LatestVersion in <major>.<minor> format
+	StableVersion   string
+	LatestVersion   string
+	LatestVersionMM string // LatestVersion in <major>.<minor> format
 	// for testdata: if StableVersion greater than 'LatestVersionMM.0' exists, LatestVersionP0 is 'LatestVersionMM.0', otherwise LatestVersionP0 is LatestVersion.
-	LatestVersionP0 string `json:"LatestVersionP0"`
+	LatestVersionP0 string
 }
 
 func main() {
@@ -139,10 +124,10 @@ func main() {
 	}
 	data := Data{StableVersion: stable, LatestVersion: latest, LatestVersionMM: latestMM, LatestVersionP0: latestP0}
 
-	// Print PR title for Github action.
+	// Print PR title for GitHub action.
 	fmt.Printf("Bump Kubernetes version default: %s and latest: %s\n", data.StableVersion, data.LatestVersion)
 
-	update.Apply(ctx, schema, data, prBranchPrefix, prTitle, prIssue)
+	update.Apply(schema, data)
 }
 
 // k8sVersion returns Kubernetes versions.

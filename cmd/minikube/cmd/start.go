@@ -312,6 +312,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
+	if driver.IsVM(cc.Driver) && runtime.GOARCH == "arm64" && cc.KubernetesConfig.ContainerRuntime == "crio" {
+		exit.Message(reason.Unimplemented, "arm64 VM drivers do not currently support the crio container runtime. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+	}
+
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.Step(style.DryRun, `dry-run validation complete!`)
@@ -437,6 +441,9 @@ func displayVersion(version string) {
 func displayEnviron(env []string) {
 	for _, kv := range env {
 		bits := strings.SplitN(kv, "=", 2)
+		if len(bits) < 2 {
+			continue
+		}
 		k := bits[0]
 		v := bits[1]
 		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
@@ -765,8 +772,8 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
-	out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
 	if viper.GetBool(deleteOnFailure) {
+		out.WarningT("Deleting existing cluster {{.name}} with different driver {{.driver_name}} due to --delete-on-failure flag set by the user. ", out.V{"name": existing.Name, "driver_name": old})
 		// Start failed, delete the cluster
 		profile, err := config.LoadProfile(existing.Name)
 		if err != nil {
@@ -1569,7 +1576,7 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
 	if nvs.Equals(zeroVersion) {
-		klog.Infof("No Kuberentes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
+		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
 	}
 	if nvs.Major > newestVersion.Major {
@@ -1580,10 +1587,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 	}
 	if nvs.GT(newestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
 	}
 	if nvs.LT(oldestVersion) {
-		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if !viper.GetBool(force) {
 			out.WarningT("You can force an unsupported Kubernetes version via the --force flag")
 		}

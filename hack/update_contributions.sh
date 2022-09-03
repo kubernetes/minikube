@@ -18,10 +18,8 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-if ! [[ -x "${DIR}/pullsheet" ]]; then
-  echo >&2 'Installing pullsheet'
-  go install github.com/google/pullsheet@latest
-fi
+echo >&2 'Installing pullsheet'
+go install github.com/google/pullsheet@latest
 
 git fetch --tags -f
 git pull https://github.com/kubernetes/minikube.git master --tags
@@ -70,7 +68,7 @@ while read -r tag_index tag_name tag_start tag_end; do
   echo "Generating leaderboard for" "$tag_name" "(from $tag_start to $tag_end)"
   # Print header for page.
   printf -- "---\ntitle: \"$tag_name - $tag_end\"\nlinkTitle: \"$tag_name - $tag_end\"\nweight: $tag_index\n---\n" > "$destination/$tag_name.html"
-  # Add pullsheet content (deleting the lines consisting of the command used to generate it).
-  $DIR/pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --logtostderr=false --stderrthreshold=2 \
-    | sed -r -e "/Command\-line/,/pullsheet/d" >> "$destination/$tag_name.html"
+  # Add pullsheet content
+  pullsheet leaderboard --token-path "$TMP_TOKEN" --repos kubernetes/minikube --since "$tag_start" --until "$tag_end" --hide-command --logtostderr=false --stderrthreshold=2 \
+    >> "$destination/$tag_name.html"
 done <<< "$tags_with_range"

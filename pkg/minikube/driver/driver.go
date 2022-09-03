@@ -46,6 +46,10 @@ const (
 	SSH = "ssh"
 	// KVM2 driver
 	KVM2 = "kvm2"
+	// QEMU2 driver
+	QEMU2 = "qemu2"
+	// QEMU driver
+	QEMU = "qemu"
 	// VirtualBox driver
 	VirtualBox = "virtualbox"
 	// HyperKit driver
@@ -65,6 +69,8 @@ const (
 	AliasSSH = "generic"
 	// AliasNative is driver name alias for None driver
 	AliasNative = "native"
+	// AliasQEMU is the driver name alias for qemu2
+	AliasQEMU = "qemu"
 )
 
 var (
@@ -151,9 +157,19 @@ func IsMock(name string) bool {
 	return name == Mock
 }
 
+// IsNone checks if the driver is a none
+func IsNone(name string) bool {
+	return name == None
+}
+
 // IsKVM checks if the driver is a KVM[2]
 func IsKVM(name string) bool {
 	return name == KVM2 || name == AliasKVM
+}
+
+// IsQEMU checks if the driver is a QEMU[2]
+func IsQEMU(name string) bool {
+	return name == QEMU2 || name == QEMU
 }
 
 // IsVM checks if the driver is a VM
@@ -181,6 +197,9 @@ func AllowsPreload(driverName string) bool {
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
+	if IsQEMU(name) {
+		return true
+	}
 	if !IsKIC(name) {
 		return false
 	}
@@ -244,7 +263,7 @@ func FlagDefaults(name string) FlagHints {
 	}
 
 	fh.CacheImages = false
-	// if specifc linux add this option for systemd work on none driver
+	// if specific linux add this option for systemd work on none driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
 		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)

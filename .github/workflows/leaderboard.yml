@@ -4,10 +4,9 @@ on:
   push:
     tags-ignore:
       - 'v*-beta.*'
-  release:
-    types: [published]
 env:
-  GO_VERSION: '1.18.1'
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.19'
 permissions:
   contents: read
 
@@ -15,11 +14,10 @@ jobs:
   update-leaderboard:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@f6164bd8c8acb4a71fb2791a8b6c4024ff038dab
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Update Leaderboard
         id: leaderboard
         run: |
@@ -32,7 +30,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.leaderboard.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
+        uses: peter-evans/create-pull-request@18f90432bedd2afd6a825469ffd38aa24712a91d
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: Update leaderboard
