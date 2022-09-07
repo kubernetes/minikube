@@ -781,7 +781,7 @@ func filterKeySpace(keySpace map[string]string, target map[string]string) map[st
 	return result
 }
 
-// overrideDefaults creates a copy of `def` where `overrideMap` replaces any of its values that `overrideMap` contains.
+// overrideDefaults creates a copy of `def` where `override` replaces any of its values that `override` contains.
 func overrideDefaults(def, override map[string]string) map[string]string {
 	return mergeMaps(def, filterKeySpace(def, override))
 }
