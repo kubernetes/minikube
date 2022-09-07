@@ -787,7 +787,7 @@ func overrideDefaults(def, override map[string]string) map[string]string {
 }
 
 // SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
-func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, err error) {
+func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, _ error) {
 	addonDefaultImages := addon.Images
 	if addonDefaultImages == nil {
 		addonDefaultImages = make(map[string]string)
