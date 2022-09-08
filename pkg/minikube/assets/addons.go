@@ -54,8 +54,8 @@ type NetworkInfo struct {
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinAsset, enabled bool, addonName string, maintainer string, verifiedMaintainer string, docs string, images map[string]string, registries map[string]string) *Addon {
-	a := &Addon{
+func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedMaintainer, docs string, images, registries map[string]string) *Addon {
+	return &Addon{
 		Assets:             assets,
 		enabled:            enabled,
 		addonName:          addonName,
@@ -65,10 +65,9 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName string, maintainer str
 		Images:             images,
 		Registries:         registries,
 	}
-	return a
 }
 
-// Name get the addon name
+// Name gets the addon name
 func (a *Addon) Name() string {
 	return a.addonName
 }
@@ -775,7 +774,7 @@ func mergeMaps(source, override map[string]string) map[string]string {
 }
 
 // filterKeySpace creates a map of the values in `target` where the keys are also in `keySpace`.
-func filterKeySpace(keySpace map[string]string, target map[string]string) map[string]string {
+func filterKeySpace(keySpace, target map[string]string) map[string]string {
 	result := make(map[string]string)
 	for name := range keySpace {
 		if value, ok := target[name]; ok {
