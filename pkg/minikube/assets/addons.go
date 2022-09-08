@@ -764,10 +764,14 @@ func parseMapString(str string) map[string]string {
 
 // mergeMaps returns a map with the union of `source` and `override` where collisions take the value of `override`.
 func mergeMaps(source, override map[string]string) map[string]string {
-	for k, v := range override {
-		source[k] = v
+	result := make(map[string]string)
+	for k, v := range source {
+		result[k] = v
 	}
-	return source
+	for k, v := range override {
+		result[k] = v
+	}
+	return result
 }
 
 // filterKeySpace creates a map of the values in `target` where the keys are also in `keySpace`.
