@@ -54,6 +54,9 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm644 \
 		$(CONTAINERD_BIN_PKGDIR)/config.toml \
 		$(TARGET_DIR)/etc/containerd/config.toml
+	$(INSTALL) -Dm644 \
+		$(CONTAINERD_BIN_PKGDIR)/containerd_docker_io_hosts.toml \
+		$(TARGET_DIR)/etc/containerd/certs.d/docker.io/hosts.toml
 endef
 
 define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD

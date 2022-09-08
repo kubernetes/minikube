@@ -51,10 +51,10 @@ func Pause(v semver.Version, mirror string) string {
 	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		pv = pVersion
 	} else {
-		pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), pv)
+		pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), pv)
 	}
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -74,7 +74,7 @@ func essentials(mirror string, v semver.Version) []string {
 
 // componentImage returns a Kubernetes component image to pull
 func componentImage(name string, v semver.Version, mirror string) string {
-	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
+	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror, v), name), v)
 }
 
 // fixes 13136 by getting the latest image version from the k8s.gcr.io repository instead of hardcoded
@@ -127,14 +127,14 @@ func coreDNS(v semver.Version, mirror string) string {
 	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		cv = cVersion
 	} else {
-		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), cv)
+		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), cv)
 	}
 
 	if mirror == constants.AliyunMirror {
 		imageName = "coredns"
 	}
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), cv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), cv)
 }
 
 // etcd returns the image used for etcd
@@ -148,10 +148,10 @@ func etcd(v semver.Version, mirror string) string {
 	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
 		ev = eVersion
 	} else {
-		ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), ev)
+		ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), ev)
 	}
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), ev)
 }
 
 // auxiliary returns images that are helpful for running minikube

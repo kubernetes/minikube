@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -165,8 +166,8 @@ func getJSON(url string, target *Releases) error {
 	if err != nil {
 		return errors.Wrap(err, "error creating new http request")
 	}
-	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s",
-		version.GetVersion(), runtime.GOOS)
+	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s Minikube-Arch/%s Minikube-Plaform/%s Minikube-Cloud/%s",
+		version.GetVersion(), runtime.GOOS, runtime.GOARCH, platform(), cloud())
 
 	req.Header.Set("User-Agent", ua)
 
@@ -177,6 +178,26 @@ func getJSON(url string, target *Releases) error {
 
 	defer resp.Body.Close()
 	return json.NewDecoder(resp.Body).Decode(target)
+}
+
+func platform() string {
+	if detect.GithubActionRunner() {
+		return "GitHub Action"
+	}
+	if detect.IsCloudShell() {
+		return "Cloud Shell"
+	}
+	if detect.IsMicrosoftWSL() {
+		return "WSL"
+	}
+	return "none"
+}
+
+func cloud() string {
+	if detect.IsOnGCE() {
+		return "GCE"
+	}
+	return "none"
 }
 
 var latestVersionFromURL = func(url string) (semver.Version, error) {

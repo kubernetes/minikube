@@ -556,7 +556,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
@@ -639,7 +639,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kubernetesVersion string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -671,7 +671,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion)
 	return ip, nil
 }
 
@@ -716,7 +716,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string, imageRepository string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -726,7 +726,8 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 	}
 
 	if imageRepository == "" {
-		imageRepository = images.DefaultKubernetesRepo
+		v, _ := util.ParseKubernetesVersion(kubernetesVersion)
+		imageRepository = images.DefaultKubernetesRepo(v)
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))

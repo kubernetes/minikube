@@ -32,10 +32,10 @@ var (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.24.3"
+	DefaultKubernetesVersion = "v1.24.4"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.25.0-beta.0"
+	NewestKubernetesVersion = "v1.25.0-rc.1"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.16.0"
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
@@ -69,7 +69,7 @@ const (
 	ClusterDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
-	// HostAlias is a DNS alias to the the container/VM host IP
+	// HostAlias is a DNS alias to the container/VM host IP
 	HostAlias = "host.minikube.internal"
 	// ControlPlaneAlias is a DNS alias pointing to the apiserver frontend
 	ControlPlaneAlias = "control-plane.minikube.internal"

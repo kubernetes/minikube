@@ -61,6 +61,8 @@ The `--container-runtime` flag must be set to "containerd" or "cri-o". "containe
 
 ## Known Issues
 
+- On Linux, Docker Desktop is not yet supported by minikube, see [#14202](https://github.com/kubernetes/minikube/issues/14202).
+
 - The following Docker runtime security options are currently *unsupported and will not work* with the Docker driver (see [#9607](https://github.com/kubernetes/minikube/issues/9607)):
   - [userns-remap](https://docs.docker.com/engine/security/userns-remap/)
 

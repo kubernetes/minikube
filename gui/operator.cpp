@@ -21,6 +21,7 @@ Operator::Operator(AdvancedView *advancedView, BasicView *basicView, CommandRunn
     m_stackedWidget = stackedWidget;
     m_parent = parent;
     m_isBasicView = true;
+    dashboardProcess = NULL;
 
     connect(m_basicView, &BasicView::start, this, &Operator::startMinikube);
     connect(m_basicView, &BasicView::stop, this, &Operator::stopMinikube);

@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -108,15 +109,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	// get docker env from user specifiec config
 	dockerEnv = append(dockerEnv, cfg.DockerEnv...)
 
-	// remove duplicates
-	seen := map[string]bool{}
-	uniqueEnvs := []string{}
-	for e := range dockerEnv {
-		if !seen[dockerEnv[e]] {
-			seen[dockerEnv[e]] = true
-			uniqueEnvs = append(uniqueEnvs, dockerEnv[e])
-		}
-	}
+	uniqueEnvs := util.RemoveDuplicateStrings(dockerEnv)
 
 	o := engine.Options{
 		Env:              uniqueEnvs,

@@ -37,9 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu2/"
-)
+const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -191,8 +189,7 @@ func status() registry.State {
 		return registry.State{Error: err, Doc: docURL}
 	}
 
-	_, err = exec.LookPath(qemuSystem)
-	if err != nil {
+	if _, err := exec.LookPath(qemuSystem); err != nil {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
 

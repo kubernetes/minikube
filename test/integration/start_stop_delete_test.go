@@ -464,7 +464,7 @@ func defaultImage(name string) bool {
 	if strings.Contains(name, ":latest") {
 		return false
 	}
-	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
+	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "registry.k8s.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
 		return true
 	}
 	return false

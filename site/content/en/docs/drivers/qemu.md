@@ -13,6 +13,14 @@ The `qemu` driver users QEMU (system) for VM creation.
 
 <https://www.qemu.org/>
 
+## Usage
+
+To start minikube with the qemu driver:
+
+```shell
+minikube start --driver=qemu
+```
+
 ## Special features
 
 minikube start supports some qemu specific flags:
