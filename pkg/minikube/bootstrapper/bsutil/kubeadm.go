@@ -102,7 +102,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ImageRepository     string
 		ComponentOptions    []componentOptions
 		FeatureArgs         map[string]bool
-		NoTaintMaster       bool
 		NodeIP              string
 		CgroupDriver        string
 		ClientCAFile        string
@@ -125,7 +124,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ImageRepository:     k8s.ImageRepository,
 		ComponentOptions:    componentOpts,
 		FeatureArgs:         kubeadmFeatureArgs,
-		NoTaintMaster:       false, // That does not work with k8s 1.12+
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
 		CgroupDriver:        cgroupDriver,
@@ -139,8 +137,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		opts.ServiceCIDR = k8s.ServiceCIDR
 	}
 
-	opts.NoTaintMaster = true
-	b := bytes.Buffer{}
 	configTmpl := ktmpl.V1Alpha3
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
@@ -156,6 +152,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		configTmpl = ktmpl.V1Beta3
 	}
 	klog.Infof("kubeadm options: %+v", opts)
+	b := bytes.Buffer{}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
