@@ -24,11 +24,12 @@ import (
 	_ "embed"
 	"text/template"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/util"
 )
 
 // https://docs.projectcalico.org/manifests/calico.yaml
@@ -59,7 +60,7 @@ func (c Calico) String() string {
 
 // manifest returns a Kubernetes manifest for a CNI
 func (c Calico) manifest() (assets.CopyableFile, error) {
-	k8sVersion, err := semver.ParseTolerant(c.cc.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(c.cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse Kubernetes version: %v", err)
 	}

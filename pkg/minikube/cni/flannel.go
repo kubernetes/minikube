@@ -23,11 +23,12 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/util"
 )
 
 // From https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
@@ -680,7 +681,7 @@ func (c Flannel) Apply(r Runner) error {
 		}
 	}
 
-	k8sVersion, err := semver.ParseTolerant(c.cc.KubernetesConfig.KubernetesVersion)
+	k8sVersion, err := util.ParseKubernetesVersion(c.cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return fmt.Errorf("failed to parse Kubernetes version: %v", err)
 	}
