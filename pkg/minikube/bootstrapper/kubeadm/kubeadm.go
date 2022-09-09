@@ -1004,6 +1004,9 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	return nil
 }
 
+// copyResolvConf is a workaround for a regression introduced with https://github.com/kubernetes/kubernetes/pull/109441
+// The regression is resolved by making a copy of /etc/resolv.conf, removing the line "search ." from the copy, and setting kubelet to use the copy
+// Only Kubernetes v1.25.0 is affected by this regression
 func (k *Bootstrapper) copyResolvConf(cfg config.ClusterConfig) error {
 	if !bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
 		return nil
