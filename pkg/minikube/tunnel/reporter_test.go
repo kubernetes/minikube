@@ -103,11 +103,11 @@ Got:	  "%s"`, tc.name, tc.expectedOutput, out.output)
 	// testing deduplication
 	out := &recordingWriter{}
 	reporter := newReporter(out)
-	reporter.Report(testCases[0].tunnelState)
-	reporter.Report(testCases[0].tunnelState)
-	reporter.Report(testCases[1].tunnelState)
-	reporter.Report(testCases[1].tunnelState)
-	reporter.Report(testCases[0].tunnelState)
+	reporter.Report(testCases[0].tunnelState.Clone())
+	reporter.Report(testCases[0].tunnelState.Clone())
+	reporter.Report(testCases[1].tunnelState.Clone())
+	reporter.Report(testCases[1].tunnelState.Clone())
+	reporter.Report(testCases[0].tunnelState.Clone())
 
 	expectedOutput := fmt.Sprintf("%s%s%s",
 		testCases[0].expectedOutput,
