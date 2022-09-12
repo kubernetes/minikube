@@ -30,7 +30,7 @@ function current_arch() {
   "x86_64" | "i386")
      echo "amd64"
   ;;
-  "aarch64")
+  "aarch64" | "arm64")
     echo "arm64"
   ;;
   *)
