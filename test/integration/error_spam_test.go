@@ -51,6 +51,7 @@ var stderrAllow = []string{
 	`    > .*`,
 	// Warning of issues with specific Kubernetes versions
 	`Kubernetes .* has a known `,
+	`For more information, see`,
 }
 
 // stderrAllowRe combines rootCauses into a single regex
