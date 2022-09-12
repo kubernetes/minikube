@@ -32,7 +32,7 @@ unzip minikube-gui-mac.zip
 
 3. Open the application
 ```shell
-open dist/systray.app
+open dist/minikube.app
 ```
 
 4. If you see the following, click cancel.
