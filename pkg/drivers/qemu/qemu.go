@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
@@ -448,8 +449,9 @@ func (d *Driver) Start() error {
 	// If socket network, start with socket_vmnet.
 	startProgram := d.Program
 	if d.Network == "socket" {
-		startProgram = "/opt/socket_vmnet/bin/socket_vmnet_client"                   // get flag.
-		startCmd = append([]string{"/var/run/socket_vmnet", d.Program}, startCmd...) // get flag.
+		startProgram = viper.GetString("socket-vmnet-client-path")
+		socketVMnetPath := viper.GetString("socket-vmnet-path")
+		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
 	}
 
 	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
