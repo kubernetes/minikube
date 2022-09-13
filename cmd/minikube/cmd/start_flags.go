@@ -756,7 +756,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
 	updateStringFromFlag(cmd, &cc.CustomQemuFirmwarePath, qemuFirmwarePath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
-	updateStringFromFlag(cmd, &cc.SocketVMnetPath, cc.SocketVMnetPath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
