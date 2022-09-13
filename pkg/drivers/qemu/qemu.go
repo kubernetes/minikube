@@ -659,7 +659,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// connect to monitor
 	conn, err := net.Dial("unix", d.monitorPath())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "connect")
 	}
 	defer conn.Close()
 
@@ -667,7 +667,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	var buf [1024]byte
 	nr, err := conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read initial response")
 	}
 	type qmpInitialResponse struct {
 		QMP struct {
@@ -684,9 +684,8 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 
 	var initialResponse qmpInitialResponse
-	err = json.Unmarshal(buf[:nr], &initialResponse)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &initialResponse); err != nil {
+		return nil, errors.Wrap(err, "unmarshal initial response")
 	}
 
 	// run 'qmp_capabilities' to switch to command mode
@@ -696,22 +695,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	jsonCommand, err := json.Marshal(qmpCommand{Command: "qmp_capabilities"})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal qmp_capabilities")
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "write qmp_capabilities")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read qmp_capabilities response")
 	}
 	type qmpResponse struct {
 		Return map[string]interface{} `json:"return"`
 	}
 	var response qmpResponse
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal qmp_capabilities reponse")
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
@@ -721,18 +719,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// { "execute": command }
 	jsonCommand, err = json.Marshal(qmpCommand{Command: command})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal command")
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "write command")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read command response")
 	}
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+
+	// Sometimes QEMU returns two JSON objects with the first object being the command response
+	// and the second object being an event log (unimportant)
+	firstRespObj := strings.Split(string(buf[:nr]), "\n")[0]
+	if err := json.Unmarshal([]byte(firstRespObj), &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal command response")
 	}
 	if strings.HasPrefix(command, "query-") {
 		return response.Return, nil
