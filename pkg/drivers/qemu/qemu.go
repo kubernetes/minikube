@@ -709,7 +709,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	var response qmpResponse
 	if err := json.Unmarshal(buf[:nr], &response); err != nil {
-		return nil, errors.Wrap(err, "unmarshal qmp_capabilities reponse")
+		return nil, errors.Wrap(err, "unmarshal qmp_capabilities response")
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
