@@ -667,7 +667,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	var buf [1024]byte
 	nr, err := conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read initial response")
+		return nil, errors.Wrap(err, "read initial resp")
 	}
 	type qmpInitialResponse struct {
 		QMP struct {
@@ -685,7 +685,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 
 	var initialResponse qmpInitialResponse
 	if err := json.Unmarshal(buf[:nr], &initialResponse); err != nil {
-		return nil, errors.Wrap(err, "unmarshal initial response")
+		return nil, errors.Wrap(err, "unmarshal initial resp")
 	}
 
 	// run 'qmp_capabilities' to switch to command mode
@@ -702,14 +702,14 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read qmp_capabilities response")
+		return nil, errors.Wrap(err, "read qmp_capabilities resp")
 	}
 	type qmpResponse struct {
 		Return map[string]interface{} `json:"return"`
 	}
 	var response qmpResponse
 	if err := json.Unmarshal(buf[:nr], &response); err != nil {
-		return nil, errors.Wrap(err, "unmarshal qmp_capabilities response")
+		return nil, errors.Wrap(err, "unmarshal qmp_capabilities resp")
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
@@ -726,14 +726,14 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, errors.Wrap(err, "read command response")
+		return nil, errors.Wrap(err, "read command resp")
 	}
 
 	// Sometimes QEMU returns two JSON objects with the first object being the command response
 	// and the second object being an event log (unimportant)
 	firstRespObj := strings.Split(string(buf[:nr]), "\n")[0]
 	if err := json.Unmarshal([]byte(firstRespObj), &response); err != nil {
-		return nil, errors.Wrap(err, "unmarshal command response")
+		return nil, errors.Wrap(err, "unmarshal command resp")
 	}
 	if strings.HasPrefix(command, "query-") {
 		return response.Return, nil
