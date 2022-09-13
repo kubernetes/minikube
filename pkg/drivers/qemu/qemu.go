@@ -445,13 +445,19 @@ func (d *Driver) Start() error {
 			d.diskPath())
 	}
 
-	socketCmd := append([]string{"/var/run/socket_vmnet", d.Program}, startCmd...)
-	fmt.Printf("socketCmd: %v\n", socketCmd)
-	if stdout, stderr, err := cmdOutErr("/opt/socket_vmnet/bin/socket_vmnet_client", socketCmd...); err != nil {
+	// If socket network, start with socket_vmnet.
+	startProgram := d.Program
+	if d.Network == "socket" {
+		startProgram = "/opt/socket_vmnet/bin/socket_vmnet_client"                   // get flag.
+		startCmd = append([]string{"/var/run/socket_vmnet", d.Program}, startCmd...) // get flag.
+	}
+
+	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
+
 	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
