@@ -177,7 +177,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		CPUType:        qemuCPU,
 		Firmware:       qemuFirmware,
 		VirtioDrives:   false,
-		Network:        "user",
+		Network:        "",
 		CacheMode:      "default",
 		IOMode:         "threads",
 	}, nil
