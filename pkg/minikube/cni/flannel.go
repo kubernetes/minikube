@@ -32,7 +32,7 @@ import (
 )
 
 // From https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-var flannelYaml = `---{{ if .LegacyPodSecurityPolicy }}
+var flannelYaml = `---{{if .LegacyPodSecurityPolicy}}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -78,23 +78,23 @@ spec:
   # SELinux
   seLinux:
     # SELinux is unused in CaaSP
-    rule: 'RunAsAny'{{ else }}
+    rule: 'RunAsAny'{{else}}
 kind: Namespace
 apiVersion: v1
 metadata:
   name: kube-system
   labels:
-    pod-security.kubernetes.io/enforce: privileged{{ end }}
+    pod-security.kubernetes.io/enforce: privileged{{end}}
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: flannel
-rules:{{ if .LegacyPodSecurityPolicy }}
+rules:{{if .LegacyPodSecurityPolicy}}
   - apiGroups: ['extensions']
     resources: ['podsecuritypolicies']
     verbs: ['use']
-    resourceNames: ['psp.flannel.unprivileged']{{ end }}
+    resourceNames: ['psp.flannel.unprivileged']{{end}}
   - apiGroups:
       - ""
     resources:
@@ -687,7 +687,7 @@ func (c Flannel) Apply(r Runner) error {
 	}
 
 	input := &flannelTmplStruct{
-		LegacyPodSecurityPolicy: k8sVersion.LT(semver.Version{Major: 1, Minor: 22}),
+		LegacyPodSecurityPolicy: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
 	}
 
 	b := bytes.Buffer{}

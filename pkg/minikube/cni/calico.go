@@ -70,7 +70,7 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 		DaemonSetImageName:        images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
 		FelixDriverImageName:      images.CalicoFelixDriver(c.cc.KubernetesConfig.ImageRepository),
 		BinaryImageName:           images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),
-		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 21}),
+		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
 	}
 
 	b := bytes.Buffer{}
