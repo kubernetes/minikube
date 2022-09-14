@@ -471,6 +471,10 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
 	}
 
+	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket" {
+		out.WarningT("--driver=qemu with --network=socket for 'socket_vmnet' is experimental")
+	}
+
 	checkNumaCount(k8sVersion)
 
 	checkExtraDiskOptions(cmd, drvName)
