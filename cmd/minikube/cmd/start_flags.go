@@ -472,7 +472,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 	}
 
 	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket" {
-		out.WarningT("--driver=qemu with --network=socket for 'socket_vmnet' is experimental")
+		out.WarningT("Using qemu with --network=socket for 'socket_vmnet' is experimental")
 	}
 
 	checkNumaCount(k8sVersion)
