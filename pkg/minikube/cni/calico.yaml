@@ -4066,7 +4066,7 @@ metadata:
 
 # This manifest creates a Pod Disruption Budget for Controller to allow K8s Cluster Autoscaler to evict
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1{{if .LegacyPodDisruptionBudget}}beta1{{end}}
 kind: PodDisruptionBudget
 metadata:
   name: calico-kube-controllers

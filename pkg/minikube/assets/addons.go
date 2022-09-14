@@ -878,6 +878,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		CustomRegistries        map[string]string
 		NetworkInfo             map[string]string
 		LegacyPodSecurityPolicy bool
+		LegacyRuntimeClass      bool
 	}{
 		KubernetesVersion:       make(map[string]uint64),
 		PreOneTwentyKubernetes:  false,
@@ -895,6 +896,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		CustomRegistries:        customRegistries,
 		NetworkInfo:             make(map[string]string),
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
+		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
