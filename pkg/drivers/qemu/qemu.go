@@ -409,6 +409,10 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
+	case "socket":
+		startCmd = append(startCmd,
+			"-nic", fmt.Sprintf("socket,model=virtio,sock=%s", d.NetworkSocket),
+		)
 	case "tap":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
