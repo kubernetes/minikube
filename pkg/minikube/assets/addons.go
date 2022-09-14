@@ -858,38 +858,45 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		ea = "-" + runtime.GOARCH
 	}
 
+	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+
 	opts := struct {
-		KubernetesVersion      map[string]uint64
-		PreOneTwentyKubernetes bool
-		Arch                   string
-		ExoticArch             string
-		ImageRepository        string
-		LoadBalancerStartIP    string
-		LoadBalancerEndIP      string
-		CustomIngressCert      string
-		IngressAPIVersion      string
-		ContainerRuntime       string
-		RegistryAliases        string
-		Images                 map[string]string
-		Registries             map[string]string
-		CustomRegistries       map[string]string
-		NetworkInfo            map[string]string
+		KubernetesVersion       map[string]uint64
+		PreOneTwentyKubernetes  bool
+		Arch                    string
+		ExoticArch              string
+		ImageRepository         string
+		LoadBalancerStartIP     string
+		LoadBalancerEndIP       string
+		CustomIngressCert       string
+		IngressAPIVersion       string
+		ContainerRuntime        string
+		RegistryAliases         string
+		Images                  map[string]string
+		Registries              map[string]string
+		CustomRegistries        map[string]string
+		NetworkInfo             map[string]string
+		LegacyPodSecurityPolicy bool
 	}{
-		KubernetesVersion:      make(map[string]uint64),
-		PreOneTwentyKubernetes: false,
-		Arch:                   a,
-		ExoticArch:             ea,
-		ImageRepository:        cfg.ImageRepository,
-		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
-		CustomIngressCert:      cfg.CustomIngressCert,
-		RegistryAliases:        cfg.RegistryAliases,
-		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:       cfg.ContainerRuntime,
-		Images:                 images,
-		Registries:             addon.Registries,
-		CustomRegistries:       customRegistries,
-		NetworkInfo:            make(map[string]string),
+		KubernetesVersion:       make(map[string]uint64),
+		PreOneTwentyKubernetes:  false,
+		Arch:                    a,
+		ExoticArch:              ea,
+		ImageRepository:         cfg.ImageRepository,
+		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
+		CustomIngressCert:       cfg.CustomIngressCert,
+		RegistryAliases:         cfg.RegistryAliases,
+		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:        cfg.ContainerRuntime,
+		Images:                  images,
+		Registries:              addon.Registries,
+		CustomRegistries:        customRegistries,
+		NetworkInfo:             make(map[string]string),
+		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -900,26 +907,11 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 
 	// maintain backwards compatibility with k8s < v1.19
 	// by using v1beta1 instead of v1 api version for ingress
-	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing Kubernetes version")
-	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		opts.IngressAPIVersion = "v1beta1"
 	}
 	if semver.MustParseRange("<1.20.0")(v) {
 		opts.PreOneTwentyKubernetes = true
-	}
-
-	// Store kubernetes version in opts
-	kv, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing Kubernetes version")
-	}
-	opts.KubernetesVersion = map[string]uint64{
-		"Major": kv.Major,
-		"Minor": kv.Minor,
-		"Patch": kv.Patch,
 	}
 
 	// Network info for generating template

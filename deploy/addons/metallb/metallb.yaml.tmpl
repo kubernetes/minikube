@@ -4,8 +4,7 @@ metadata:
   labels:
     app: metallb
   name: metallb-system
----
-{{- if and (eq .KubernetesVersion.Major 1 ) (lt .KubernetesVersion.Minor 25) }}
+---{{ if .LegacyPodSecurityPolicy }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -34,8 +33,7 @@ spec:
     rule: RunAsAny
   volumes:
   - '*'
----
-{{- end }}
+---{{ end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
