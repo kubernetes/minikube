@@ -1,5 +1,70 @@
 # Release Notes
 
+## Version 1.27.0 - 2022-09-15
+
+Kubernetes v1.25:
+* Bump default Kubernetes version to v1.25.0 and resolve `/etc/resolv.conf` regression [#14848](https://github.com/kubernetes/minikube/pull/14848)
+* Skip metallb PodSecurityPolicy object for kubernetes 1.25+ [#14903](https://github.com/kubernetes/minikube/pull/14903)
+* The DefaultKubernetesRepo changed for 1.25.0 [#14768](https://github.com/kubernetes/minikube/pull/14768)
+
+Minor Improvements:
+* Add fscrypt kernel options [#14783](https://github.com/kubernetes/minikube/pull/14783)
+* Output kubeadm logs [#14697](https://github.com/kubernetes/minikube/pull/14697)
+
+Bug fixes:
+* Fix QEMU delete errors [#14950](https://github.com/kubernetes/minikube/pull/14950)
+* Fix containerd configuration issue with insecure registries [#14482](https://github.com/kubernetes/minikube/pull/14482)
+* Fix registry when custom images provided [#14690](https://github.com/kubernetes/minikube/pull/14690)
+
+Version Upgrades:
+* ISO: Update Docker from 20.10.17 to 20.10.18 [#14935](https://github.com/kubernetes/minikube/pull/14935)
+* Update kicbase base image to Ubuntu:focal-20220826 [#14904](https://github.com/kubernetes/minikube/pull/14904)
+* Update registry addon image from 2.7.1 to 2.8.1 [#14886](https://github.com/kubernetes/minikube/pull/14886)
+* Update gcp-auth-webhook addon from v0.0.10 to v0.0.11 [#14847](https://github.com/kubernetes/minikube/pull/14847)
+* Update Headlamp addon image from v0.9.0 to v0.11.1 [#14802](https://github.com/kubernetes/minikube/pull/14802)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Abirdcfly
+- Alex
+- Anders F Björklund
+- Andrew Hamilton
+- Jeff MAURY
+- Jānis Bebrītis
+- Marcel Lauhoff
+- Medya Ghazizadeh
+- Renato Costa
+- Santhosh Nagaraj S
+- Siddhant Khisty
+- Steven Powell
+- Yuiko Mouri
+- klaases
+- mtardy
+- shaunmayo
+- shixiuguo
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (23 comments)
+- medyagh (6 comments)
+- klaases (5 comments)
+- vbezhenar (2 comments)
+- nixpanic (1 comments)
+- reylejano (1 comments)
+- t-inu (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (76 comments)
+- klaases (58 comments)
+- RA489 (38 comments)
+- spowelljr (16 comments)
+- eiffel-fl (10 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.27.0/) for this release!
+
 ## Version 1.26.1 - 2022-08-02
 
 Minor Improvements:
