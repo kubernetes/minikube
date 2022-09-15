@@ -604,7 +604,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	preloadedImages := map[string]struct{}{}
 	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		i = trimDockerIO(i)
+		i = TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}
 
@@ -612,7 +612,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 
 	// Make sure images == imgs
 	for _, i := range images {
-		i = trimDockerIO(i)
+		i = TrimDockerIO(i)
 		if _, ok := preloadedImages[i]; !ok {
 			klog.Infof("%s wasn't preloaded", i)
 			return false
@@ -642,13 +642,6 @@ func addDockerIO(name string) string {
 		return reg + "/" + usr + "/" + img
 	}
 	return reg + "/" + img
-}
-
-// Remove docker.io prefix since it won't be included in images names
-// when we call 'docker images'
-func trimDockerIO(name string) string {
-	name = strings.TrimPrefix(name, "docker.io/")
-	return name
 }
 
 func dockerBoundToContainerd(runner command.Runner) bool {
