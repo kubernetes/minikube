@@ -117,11 +117,11 @@ github.com/Delta456/box-cli-maker/v2 v2.2.2/go.mod h1:idItIMZeyx3bg73XwSgsLeZd+g
 github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24/go.mod h1:4UJr5HIiMZrwgkSPdsjy2uOQExX/WEILpIrO9UPGuXs=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2 h1:rMamBsR6iCT9Y5m2Il6vFGJvY7FAgck4AoA/LobheKU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.7 h1:aAZBUYgk3pn6g1q2Z3o0NT5VeI925OhCLOoPaodrAKM=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.7/go.mod h1:/6yXXCCD7/V+E4LmwOhjdxh555rM6ASCKnXlxsj04c0=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.32.7 h1:sOOMI+OpBU4E7CuWv2qd2vM/fKtzKdirPLvkdf4vkvA=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.7 h1:nonF0R35EO4YBL7cX0U0cX0VmKEcANti6xpZwZRg/iI=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.7/go.mod h1:/G0zPXsUx5gZUd6ryJakuDo4VR7EJScegf1ZNK8xIGs=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.8 h1:gJotWbuzSbr350EljD1zTNy3l4NiigjDVeVBWf7ERgk=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.8/go.mod h1:Cy0FEJrgXiz3UbLX/ZRlHPQxq605mGwz14ac+peTwQo=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.32.8 h1:ehU1r1DPZfv3Qfi0r7C24UAi0sozSwiSHtqwD1sdL8k=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.8 h1:FJ3zlcMfrS9iv06vzg1V73RlfrHZPsyfdkKrqGYAT4E=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.8/go.mod h1:/G0zPXsUx5gZUd6ryJakuDo4VR7EJScegf1ZNK8xIGs=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
