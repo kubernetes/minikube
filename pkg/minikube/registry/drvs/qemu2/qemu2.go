@@ -161,7 +161,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	qemuNetwork := cc.Network
 	if qemuNetwork == "" {
 		qemuNetwork = "user"
-		// TODO: on next minor release, default to "socket". On next point release, default to "user".
+		// TODO: on next minor release, default to "socket".
 	}
 
 	return qemu.Driver{
