@@ -41,6 +41,8 @@ import (
 	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -410,8 +412,8 @@ func (d *Driver) Start() error {
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
 	case "socket":
-		// TODO: finalize actual socket_vmnet network flags.
-		return errors.New("qemu socket_vmnet network flags are not yet implemented")
+		// TODO: implement final socket_vmnet network flags.
+		exit.Message(reason.Unimplemented, "socket_vmnet network flags are not yet implemented with the qemu2 driver.\n    See https://github.com/kubernetes/minikube/pull/14890 for details.")
 	case "tap":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
