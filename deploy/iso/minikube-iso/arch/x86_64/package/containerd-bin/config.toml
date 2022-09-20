@@ -57,9 +57,8 @@ oom_score = 0
       conf_dir = "/etc/cni/net.mk"
       conf_template = ""
     [plugins."io.containerd.grpc.v1.cri".registry]
-      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
-          endpoint = ["https://registry-1.docker.io"]
+      config_path = "/etc/containerd/certs.d"
+      
   [plugins."io.containerd.service.v1.diff-service"]
     default = ["walking"]
   [plugins."io.containerd.gc.v1.scheduler"]

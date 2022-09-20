@@ -86,7 +86,8 @@ evictionHard:
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
 failSwapOn: false
-staticPodPath: {{.StaticPodPath}}
+staticPodPath: {{.StaticPodPath}}{{if .ResolvConfSearchRegression}}
+resolvConf: /etc/kubelet-resolv.conf{{end}}
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration

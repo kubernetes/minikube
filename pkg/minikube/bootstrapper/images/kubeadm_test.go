@@ -34,6 +34,26 @@ func TestKubeadmImages(t *testing.T) {
 		{"invalid", "", true, nil},
 		{"v0.0.1", "", true, nil}, // too old
 		{"v2.0.0", "", true, nil}, // too new
+		{"v1.25.0", "", false, []string{
+			"registry.k8s.io/kube-apiserver:v1.25.0",
+			"registry.k8s.io/kube-controller-manager:v1.25.0",
+			"registry.k8s.io/kube-scheduler:v1.25.0",
+			"registry.k8s.io/kube-proxy:v1.25.0",
+			"registry.k8s.io/coredns/coredns:v1.9.3",
+			"registry.k8s.io/etcd:3.5.4-0",
+			"registry.k8s.io/pause:3.8",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
+		}},
+		{"v1.24.0", "", false, []string{
+			"k8s.gcr.io/kube-apiserver:v1.24.0",
+			"k8s.gcr.io/kube-controller-manager:v1.24.0",
+			"k8s.gcr.io/kube-scheduler:v1.24.0",
+			"k8s.gcr.io/kube-proxy:v1.24.0",
+			"k8s.gcr.io/coredns/coredns:v1.8.6",
+			"k8s.gcr.io/etcd:3.5.3-0",
+			"k8s.gcr.io/pause:3.7",
+			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
+		}},
 		{"v1.17.0", "", false, []string{
 			"k8s.gcr.io/kube-proxy:v1.17.0",
 			"k8s.gcr.io/kube-scheduler:v1.17.0",

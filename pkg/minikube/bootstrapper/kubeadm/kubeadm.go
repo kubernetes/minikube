@@ -988,6 +988,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "copy")
 	}
 
+	if err := k.copyResolvConf(cfg); err != nil {
+		return errors.Wrap(err, "resolv.conf")
+	}
+
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
@@ -995,6 +999,23 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
 		return errors.Wrap(err, "host alias")
+	}
+
+	return nil
+}
+
+// copyResolvConf is a workaround for a regression introduced with https://github.com/kubernetes/kubernetes/pull/109441
+// The regression is resolved by making a copy of /etc/resolv.conf, removing the line "search ." from the copy, and setting kubelet to use the copy
+// Only Kubernetes v1.25.0 is affected by this regression
+func (k *Bootstrapper) copyResolvConf(cfg config.ClusterConfig) error {
+	if !bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
+		return nil
+	}
+	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", "/etc/resolv.conf", "/etc/kubelet-resolv.conf")); err != nil {
+		return errors.Wrap(err, "copy")
+	}
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "-e", "s/^search .$//", "/etc/kubelet-resolv.conf")); err != nil {
+		return errors.Wrap(err, "sed")
 	}
 
 	return nil

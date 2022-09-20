@@ -108,8 +108,11 @@ func (s *OpenRC) Start(svc string) error {
 	defer cb()
 
 	rr, err := s.r.RunCmd(exec.CommandContext(ctx, "sudo", "service", svc, "start"))
+	if err != nil {
+		return err
+	}
 	klog.Infof("start output: %s", rr.Output())
-	return err
+	return nil
 }
 
 // Disable does nothing
@@ -149,8 +152,11 @@ func (s *OpenRC) Unmask(svc string) error {
 // Restart restarts a service
 func (s *OpenRC) Restart(svc string) error {
 	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))
+	if err != nil {
+		return err
+	}
 	klog.Infof("restart output: %s", rr.Output())
-	return err
+	return nil
 }
 
 // Reload reloads a service
@@ -162,8 +168,11 @@ func (s *OpenRC) Reload(svc string) error {
 // Stop stops a service
 func (s *OpenRC) Stop(svc string) error {
 	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop"))
+	if err != nil {
+		return err
+	}
 	klog.Infof("stop output: %s", rr.Output())
-	return err
+	return nil
 }
 
 // ForceStop stops a service with prejuidice

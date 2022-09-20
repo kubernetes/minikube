@@ -81,10 +81,10 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) {
 	dir := binRoot(cfg.KubernetesVersion)
 	rr, err := c.RunCmd(exec.Command("sudo", "ls", dir))
-	stdout := rr.Stdout.String()
 	if err != nil {
 		return false, err
 	}
+	stdout := rr.Stdout.String()
 	foundBinaries := map[string]struct{}{}
 	for _, binary := range strings.Split(stdout, "\n") {
 		foundBinaries[binary] = struct{}{}
