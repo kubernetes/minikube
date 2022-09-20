@@ -410,9 +410,8 @@ func (d *Driver) Start() error {
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
 	case "socket":
-		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("socket,model=virtio,sock=%s", d.NetworkSocket),
-		)
+		// TODO: finalize actual socket_vmnet network flags.
+		return errors.New("qemu socket_vmnet network flags are not yet implemented")
 	case "tap":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
