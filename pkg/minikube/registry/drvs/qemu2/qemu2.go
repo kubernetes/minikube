@@ -158,6 +158,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	qemuNetwork := cc.Network
+	if qemuNetwork == "" {
+		qemuNetwork = "user"
+		// TODO: on next minor release, default to "socket". On next point release, default to "user".
+	}
+
 	return qemu.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
@@ -177,7 +183,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		CPUType:        qemuCPU,
 		Firmware:       qemuFirmware,
 		VirtioDrives:   false,
-		Network:        "",
+		Network:        qemuNetwork,
 		CacheMode:      "default",
 		IOMode:         "threads",
 	}, nil
