@@ -89,7 +89,7 @@ require (
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.25.1
 	k8s.io/klog/v2 v2.80.1
-	k8s.io/kubectl v0.25.0
+	k8s.io/kubectl v0.25.1
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed
 	libvirt.org/go/libvirt v1.8005.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
