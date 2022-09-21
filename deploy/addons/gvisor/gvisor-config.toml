@@ -54,6 +54,9 @@ oom_score = 0
         [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
           runtime_type = "io.containerd.runsc.v1"
           pod_annotations = [ "dev.gvisor.*" ]
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.untrusted]
+          runtime_type = "io.containerd.runsc.v1"
+          pod_annotations = [ "dev.gvisor.*" ]
     [plugins."io.containerd.grpc.v1.cri".cni]
       bin_dir = "/opt/cni/bin"
       conf_dir = "/etc/cni/net.mk"
