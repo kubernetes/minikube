@@ -71,4 +71,4 @@ NAME      READY     STATUS        RESTARTS   AGE
 gvisor    1/1       Terminating   0          5m
 ```
 
-_Note: Once gVisor is disabled, any pod with the `gvisor` Runtime Class or `io.kubernetes.cri.untrusted-workload` annotation will fail with a FailedCreatePodSandBox error._
+_Note: Once gVisor is disabled, any pod with the `gvisor` Runtime Class will fail with a FailedCreatePodSandBox error._

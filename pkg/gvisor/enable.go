@@ -29,23 +29,28 @@ import (
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 const (
-	nodeDir                        = "/node"
-	containerdConfigTomlPath       = "/etc/containerd/config.toml"
-	storedContainerdConfigTomlPath = "/tmp/config.toml"
-	gvisorContainerdShimURL        = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.3/containerd-shim-runsc-v1.linux-amd64"
-	gvisorURL                      = "https://storage.googleapis.com/gvisor/releases/nightly/2020-02-14/runsc"
+	nodeDir                    = "/node"
+	containerdConfigPath       = "/etc/containerd/config.toml"
+	containerdConfigBackupPath = "/tmp/containerd-config.toml.bak"
+
+	releaseURL = "https://storage.googleapis.com/gvisor/releases/release/latest/x86_64/"
+	shimURL    = releaseURL + "containerd-shim-runsc-v1"
+	gvisorURL  = releaseURL + "runsc"
+
+	configFragment = `
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
+  runtime_type = "io.containerd.runsc.v1"
+  pod_annotations = [ "dev.gvisor.*" ]
+`
 )
 
 // Enable follows these steps for enabling gvisor in minikube:
 //  1. creates necessary directories for storing binaries and runsc logs
 //  2. downloads runsc and gvisor-containerd-shim
-//  3. copies necessary containerd config files
+//  3. configures containerd
 //  4. restarts containerd
 func Enable() error {
 	if err := makeGvisorDirs(); err != nil {
@@ -54,7 +59,7 @@ func Enable() error {
 	if err := downloadBinaries(); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
-	if err := copyConfigFiles(); err != nil {
+	if err := configure(); err != nil {
 		return errors.Wrap(err, "copying config files")
 	}
 	if err := restartContainerd(); err != nil {
@@ -106,7 +111,7 @@ func downloadBinaries() error {
 // downloads the gvisor-containerd-shim
 func gvisorContainerdShim() error {
 	dest := filepath.Join(nodeDir, "usr/bin/containerd-shim-runsc-v1")
-	return downloadFileToDest(gvisorContainerdShimURL, dest)
+	return downloadFileToDest(shimURL, dest)
 }
 
 // downloads the runsc binary and returns a path to the binary
@@ -148,54 +153,23 @@ func downloadFileToDest(url, dest string) error {
 	return nil
 }
 
-// Must write the following files:
-//  1. gvisor-containerd-shim.toml
-//  2. gvisor containerd config.toml
-//
-// and save the default version of config.toml
-func copyConfigFiles() error {
-	log.Printf("Storing default config.toml at %s", storedContainerdConfigTomlPath)
-	if err := mcnutils.CopyFile(filepath.Join(nodeDir, containerdConfigTomlPath), filepath.Join(nodeDir, storedContainerdConfigTomlPath)); err != nil {
+// configure changes containerd `config.toml` file to include runsc runtime. A
+// copy of the original file is stored under `/tmp` to be restored when this
+// plug in is disabled.
+func configure() error {
+	log.Printf("Storing default config.toml at %s", containerdConfigBackupPath)
+	configPath := filepath.Join(nodeDir, containerdConfigPath)
+	if err := mcnutils.CopyFile(configPath, filepath.Join(nodeDir, containerdConfigBackupPath)); err != nil {
 		return errors.Wrap(err, "copying default config.toml")
 	}
-	log.Printf("Copying %s asset to %s", constants.GvisorConfigTomlTargetName, filepath.Join(nodeDir, containerdConfigTomlPath))
-	if err := copyAssetToDest(constants.GvisorConfigTomlTargetName, filepath.Join(nodeDir, containerdConfigTomlPath)); err != nil {
-		return errors.Wrap(err, "copying gvisor version of config.toml")
-	}
-	return nil
-}
 
-func copyAssetToDest(targetName, dest string) error {
-	var asset *assets.BinAsset
-	for _, a := range assets.Addons["gvisor"].Assets {
-		if a.GetTargetName() == targetName {
-			asset = a
-		}
-	}
-	if asset == nil {
-		return fmt.Errorf("no asset matching target %s among %+v", targetName, assets.Addons["gvisor"])
-	}
-
-	// Now, copy the data from this asset to dest
-	src := filepath.Join(vmpath.GuestGvisorDir, asset.GetTargetName())
-	log.Printf("%s asset path: %s", targetName, src)
-	contents, err := os.ReadFile(src)
+	// Append runsc configuration to contained config.
+	config, err := os.OpenFile(configPath, os.O_WRONLY|os.O_APPEND, 0)
 	if err != nil {
-		return errors.Wrapf(err, "getting contents of %s", asset.GetSourcePath())
+		return err
 	}
-	if _, err := os.Stat(dest); err == nil {
-		if err := os.Remove(dest); err != nil {
-			return errors.Wrapf(err, "removing %s", dest)
-		}
-	}
-
-	log.Printf("creating %s", dest)
-	f, err := os.Create(dest)
-	if err != nil {
-		return errors.Wrapf(err, "creating %s", dest)
-	}
-	if _, err := f.Write(contents); err != nil {
-		return errors.Wrapf(err, "writing contents to %s", f.Name())
+	if _, err := config.WriteString(configFragment); err != nil {
+		return errors.Wrap(err, "changing config.toml")
 	}
 	return nil
 }
