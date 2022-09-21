@@ -38,8 +38,11 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -408,6 +411,9 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
+	case "socket":
+		// TODO: implement final socket_vmnet network flags.
+		exit.Message(reason.Unimplemented, "socket_vmnet network flags are not yet implemented with the qemu2 driver.\n    See https://github.com/kubernetes/minikube/pull/14890 for details.")
 	case "tap":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
@@ -445,11 +451,20 @@ func (d *Driver) Start() error {
 			d.diskPath())
 	}
 
-	if stdout, stderr, err := cmdOutErr(d.Program, startCmd...); err != nil {
+	// If socket network, start with socket_vmnet.
+	startProgram := d.Program
+	if d.Network == "socket" {
+		startProgram = viper.GetString("socket-vmnet-client-path")
+		socketVMnetPath := viper.GetString("socket-vmnet-path")
+		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
+	}
+
+	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
+
 	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
