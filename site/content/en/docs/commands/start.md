@@ -105,8 +105,8 @@ minikube start [flags]
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
-      --socket-vmnet-client-path string   Path to the socket vmnet client binary. (default "/opt/socket_vmnet/bin/socket_vmnet_client")
-      --socket-vmnet-path string          Path to socket vmnet binary. (default "/var/run/socket_vmnet")
+      --socket-vmnet-client-path string   Path to the socket vmnet client binary (default "/opt/socket_vmnet/bin/socket_vmnet_client")
+      --socket-vmnet-path string          Path to socket vmnet binary (default "/var/run/socket_vmnet")
       --ssh-ip-address string             IP address (ssh driver only)
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)
