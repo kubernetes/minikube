@@ -55,7 +55,7 @@
 	"Add, remove, or list additional nodes": "노드를 추가하거나 삭제, 나열합니다",
 	"Adding a control-plane node is not yet supported, setting control-plane flag to false": "control-plane 노드를 추가하는 것은 아직 지원되지 않습니다. control-plane 플래그를 false로 설정합니다",
 	"Adding node {{.name}} to cluster {{.cluster}}": "노드 {{.name}} 를 클러스터 {{.cluster}} 에 추가합니다",
-	"Additional help topics": "",
+	"Additional help topics": "추가 도움말 주제",
 	"Additional mount options, such as cache=fscache": "cache=fscache 와 같은 추가적인 마운트 옵션",
 	"Adds a node to the given cluster config, and starts it.": "노드 하나를 주어진 클러스터 컨피그에 추가하고 시작합니다",
 	"Adds a node to the given cluster.": "노드 하나를 주어진 클러스터에 추가합니다",
