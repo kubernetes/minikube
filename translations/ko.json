@@ -53,7 +53,7 @@
 	"Add or delete an image from the local cache.": "로컬 캐시에 이미지를 추가하거나 삭제합니다",
 	"Add, delete, or push a local image into minikube": "minikube에 로컬 이미지를 추가하거나 삭제, 푸시합니다",
 	"Add, remove, or list additional nodes": "노드를 추가하거나 삭제, 나열합니다",
-	"Adding a control-plane node is not yet supported, setting control-plane flag to false": "",
+	"Adding a control-plane node is not yet supported, setting control-plane flag to false": "control-plane 노드를 추가하는 것은 아직 지원되지 않습니다. control-plane 플래그를 false로 설정합니다",
 	"Adding node {{.name}} to cluster {{.cluster}}": "노드 {{.name}} 를 클러스터 {{.cluster}} 에 추가합니다",
 	"Additional help topics": "",
 	"Additional mount options, such as cache=fscache": "cache=fscache 와 같은 추가적인 마운트 옵션",
