@@ -1,5 +1,21 @@
 # minikube
 
+-learning git
+qnflncqhh fqh hf 
+ khfk hlqknf
+ qw j;jk;lkwjnq
+ qfk hekqhkfhfnqlflenfjh
+ qkfuhekjqhshbdh
+ fqksjdkfbk
+ ,qfkjbdkqfb.dbf
+ qkbdqkbkjbefjk
+ qjjbebqcbkjb
+ qkjekfcjqbkjwbne
+ qlweknflqeb
+ qfkbewfbkk,qb,
+ q,jhebf,jb,jb
+
+
 [![Actions Status](https://github.com/kubernetes/minikube/workflows/build/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
