@@ -122,9 +122,6 @@ func shouldCheckURLVersion(filePath string) bool {
 	if !viper.GetBool("interactive") {
 		return false
 	}
-	if viper.GetBool("dry-run") {
-		return false
-	}
 	lastUpdateTime := timeFromFileIfExists(filePath)
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
