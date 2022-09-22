@@ -89,6 +89,7 @@
 	"Cache image from remote registry": "",
 	"Cache image to docker daemon": "",
 	"Cache image to remote registry": "",
+	"Cannot enable addons without Kubernetes": "",
 	"Cannot find directory {{.path}} for copy": "",
 	"Cannot find directory {{.path}} for mount": "",
 	"Cannot use both --output and --format options": "",

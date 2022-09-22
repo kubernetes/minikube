@@ -111,6 +111,7 @@
 	"Cache image from remote registry": "远程仓库中缓存镜像",
 	"Cache image to docker daemon": "缓存镜像到 docker daemon",
 	"Cache image to remote registry": "缓存镜像到远程仓库",
+	"Cannot enable addons without Kubernetes": "",
 	"Cannot find directory {{.path}} for copy": "找不到用来复制的 {{.path}} 目录",
 	"Cannot find directory {{.path}} for mount": "找不到用来挂载的 {{.path}} 目录",
 	"Cannot use both --output and --format options": "不能同时使用 --output 和 --format 选项",

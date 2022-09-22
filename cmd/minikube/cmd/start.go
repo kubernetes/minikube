@@ -309,6 +309,19 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		validateDockerStorageDriver(driverName)
 	}
 
+	k8sVersion, err := getKubernetesVersion(existing)
+	if err != nil {
+		klog.Warningf("failed getting Kubernetes version: %v", err)
+	}
+
+	// Disallow accepting addons flag without Kubernetes
+	// It places here because cluster config is required to get the old version.
+	if cmd.Flags().Changed(config.AddonListFlag) {
+		if k8sVersion == constants.NoKubernetesVersion || viper.GetBool(noKubernetes) {
+			exit.Message(reason.Usage, "Cannot enable addons without Kubernetes")
+		}
+	}
+
 	// Download & update the driver, even in --download-only mode
 	if !viper.GetBool(dryRun) {
 		updateDriver(driverName)
@@ -320,10 +333,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		stopk8s = true
 	}
 
-	k8sVersion, err := getKubernetesVersion(existing)
-	if err != nil {
-		klog.Warningf("failed getting Kubernetes version: %v", err)
-	}
 	rtime := getContainerRuntime(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {

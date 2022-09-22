@@ -95,6 +95,7 @@
 	"Cache image from remote registry": "Image von entfernter Registry cachen",
 	"Cache image to docker daemon": "Image zum Docker Daemon cachen",
 	"Cache image to remote registry": "Image in entfernter Docker Registry cachen",
+	"Cannot enable addons without Kubernetes": "",
 	"Cannot find directory {{.path}} for copy": "Kann das Verzeichnis {{.path}} fürs Kopieren nicht finden.",
 	"Cannot find directory {{.path}} for mount": "Kann das Verzeichnis {{.path}} fürs Einhängen nicht finden.",
 	"Cannot use both --output and --format options": "--output und --format können nicht gleichzeitig verwendet werden",

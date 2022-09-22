@@ -97,6 +97,7 @@
 	"Cache image from remote registry": "",
 	"Cache image to docker daemon": "",
 	"Cache image to remote registry": "",
+	"Cannot enable addons without Kubernetes": "",
 	"Cannot find directory {{.path}} for copy": "",
 	"Cannot find directory {{.path}} for mount": "No se pudo encontrar el directorio {{.path}} para montar",
 	"Cannot use both --output and --format options": "No se pueden usar ambas opciones (--output y --path)",

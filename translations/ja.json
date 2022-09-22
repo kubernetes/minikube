@@ -91,6 +91,7 @@
 	"Cache image from remote registry": "リモートレジストリーからイメージをキャッシュします",
 	"Cache image to docker daemon": "Docker デーモンへイメージをキャッシュします",
 	"Cache image to remote registry": "リモートレジストリーへイメージをキャッシュします",
+	"Cannot enable addons without Kubernetes": "",
 	"Cannot find directory {{.path}} for copy": "コピーするためのディレクトリー {{.path}} が見つかりません",
 	"Cannot find directory {{.path}} for mount": "マウントするためのディレクトリー {{.path}} が見つかりません",
 	"Cannot use both --output and --format options": "--output と --format オプションの両方を使用することはできません",
