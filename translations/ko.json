@@ -27,7 +27,7 @@
 	"- Restart your {{.driver_name}} service": "{{.driver_name}} 서비스를 다시 시작하세요",
 	"--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless": "",
 	"--kvm-numa-count range is 1-8": "--kvm-numa-count 범위는 1부터 8입니다",
-	"--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored": "",
+	"--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored": "--network 는 docker나 podman 에서만 유효합니다. KVM이나 Qemu 드라이버에서는 인자가 무시됩니다",
 	"1) Recreate the cluster with Kubernetes {{.new}}, by running:\n\t  \n\t\t  minikube delete{{.profile}}\n\t\t  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}\n\t  \n\t\t2) Create a second cluster with Kubernetes {{.new}}, by running:\n\t  \n\t\t  minikube start -p {{.suggestedName}} --kubernetes-version={{.prefix}}{{.new}}\n\t  \n\t\t3) Use the existing cluster at version Kubernetes {{.old}}, by running:\n\t  \n\t\t  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}\n\t\t": "",
 	"1. Click on \"Docker for Desktop\" menu icon\n\t\t\t2. Click \"Preferences\"\n\t\t\t3. Click \"Resources\"\n\t\t\t4. Increase \"CPUs\" slider bar to 2 or higher\n\t\t\t5. Click \"Apply \u0026 Restart\"": "",
 	"1. Click on \"Docker for Desktop\" menu icon\n\t\t\t2. Click \"Preferences\"\n\t\t\t3. Click \"Resources\"\n\t\t\t4. Increase \"Memory\" slider bar to {{.recommend}} or higher\n\t\t\t5. Click \"Apply \u0026 Restart\"": "",
