@@ -45,7 +45,7 @@ var addonsEnableCmd = &cobra.Command{
 			out.ErrT(style.Sad, `Unable to load config: {{.error}}`, out.V{"error": err})
 		}
 		if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
-			exit.Message(reason.Usage, "Cannot enable addons without Kubernetes")
+			exit.Message(reason.Usage, "You cannot enable the addons with a cluster without Kubernetes, to re-configure your cluster with Kubernetes, run this command: minikube start --no-kubernetes=false")
 		}
 
 		addon := args[0]
