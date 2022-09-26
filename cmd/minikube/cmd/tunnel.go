@@ -58,7 +58,7 @@ var tunnelCmd = &cobra.Command{
 		co := mustload.Healthy(cname)
 
 		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the user network on QEMU, try starting minikube with '--network=socket'")
+			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the user network on QEMU, try starting minikube with '--network=socket_vmnet'")
 		}
 
 		if cleanup {

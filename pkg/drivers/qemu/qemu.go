@@ -234,7 +234,7 @@ func (d *Driver) Create() error {
 			}
 			break
 		}
-	case "socket":
+	case "socket_vmnet":
 		d.SSHPort, err = d.GetSSHPort()
 		if err != nil {
 			return err
@@ -415,7 +415,7 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
-	case "socket":
+	case "socket_vmnet":
 		startCmd = append(startCmd,
 			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=3",
 		)
@@ -446,7 +446,7 @@ func (d *Driver) Start() error {
 
 	// If socket network, start with socket_vmnet.
 	startProgram := d.Program
-	if d.Network == "socket" {
+	if d.Network == "socket_vmnet" {
 		startProgram = viper.GetString("socket-vmnet-client-path")
 		socketVMnetPath := viper.GetString("socket-vmnet-path")
 		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
@@ -461,7 +461,7 @@ func (d *Driver) Start() error {
 	switch d.Network {
 	case "user":
 		d.IPAddress = "127.0.0.1"
-	case "socket":
+	case "socket_vmnet":
 		var err error
 		getIP := func() error {
 			// QEMU requires MAC address with leading 0s

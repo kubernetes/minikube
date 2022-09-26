@@ -463,7 +463,7 @@ func getNetwork(driverName string) string {
 		return n
 	}
 	if driver.IsQEMU(driverName) {
-		out.WarningT("The default network for QEMU will change from 'user' to 'socket' in a future release")
+		out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
 		return "user"
 	}
 	return n
