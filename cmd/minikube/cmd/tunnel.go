@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
+	pkgnetwork "k8s.io/minikube/pkg/network"
 )
 
 var cleanup bool
@@ -56,9 +57,8 @@ var tunnelCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		// Bail cleanly for qemu2 until implemented
-		if driver.IsQEMU(co.Config.Driver) {
-			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
+			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the user network on QEMU, try starting minikube with '--network=socket'")
 		}
 
 		if cleanup {
@@ -85,7 +85,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if useSSHTunnel(co.Config.Driver) {
+		if driver.NeedsPortForward(co.Config.Driver) || bindAddress != "" {
 			port, err := oci.ForwardedPort(co.Config.Driver, cname, 22)
 			if err != nil {
 				exit.Error(reason.DrvPortForward, "error getting ssh port", err)
@@ -109,16 +109,6 @@ var tunnelCmd = &cobra.Command{
 		}
 		<-done
 	},
-}
-
-func useSSHTunnel(driverName string) bool {
-	if !driver.IsKIC(driverName) {
-		return false
-	}
-	if driver.NeedsPortForward(driverName) {
-		return true
-	}
-	return bindAddress != ""
 }
 
 func outputTunnelStarted() {

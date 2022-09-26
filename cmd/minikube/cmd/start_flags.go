@@ -457,6 +457,18 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
+func getNetwork(driverName string) string {
+	n := viper.GetString(network)
+	if n != "" {
+		return n
+	}
+	if driver.IsQEMU(driverName) {
+		out.WarningT("The default network for QEMU will change from 'user' to 'socket' in a future release")
+		return "user"
+	}
+	return n
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -485,7 +497,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
-		Network:                 viper.GetString(network),
+		Network:                 getNetwork(drvName),
 		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),

@@ -41,8 +41,6 @@ import (
 	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -58,33 +56,30 @@ type Driver struct {
 	EnginePort int
 	FirstQuery bool
 
-	Memory           int
-	DiskSize         int
-	CPU              int
-	Program          string
-	BIOS             bool
-	CPUType          string
-	MachineType      string
-	Firmware         string
-	Display          bool
-	DisplayType      string
-	Nographic        bool
-	VirtioDrives     bool
-	Network          string
-	PrivateNetwork   string
-	Boot2DockerURL   string
-	NetworkInterface string
-	NetworkAddress   string
-	NetworkSocket    string
-	NetworkBridge    string
-	CaCertPath       string
-	PrivateKeyPath   string
-	DiskPath         string
-	CacheMode        string
-	IOMode           string
-	UserDataFile     string
-	CloudConfigRoot  string
-	LocalPorts       string
+	Memory          int
+	DiskSize        int
+	CPU             int
+	Program         string
+	BIOS            bool
+	CPUType         string
+	MachineType     string
+	Firmware        string
+	Display         bool
+	DisplayType     string
+	Nographic       bool
+	VirtioDrives    bool
+	Network         string
+	PrivateNetwork  string
+	Boot2DockerURL  string
+	CaCertPath      string
+	PrivateKeyPath  string
+	DiskPath        string
+	CacheMode       string
+	IOMode          string
+	UserDataFile    string
+	CloudConfigRoot string
+	LocalPorts      string
+	MACAddress      string
 }
 
 func (d *Driver) GetMachineName() string {
@@ -92,7 +87,10 @@ func (d *Driver) GetMachineName() string {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "localhost", nil
+	if d.Network == "user" {
+		return "localhost", nil
+	}
+	return d.IPAddress, nil
 }
 
 func (d *Driver) GetSSHKeyPath() string {
@@ -149,7 +147,7 @@ func (d *Driver) GetIP() (string, error) {
 	if d.Network == "user" {
 		return "127.0.0.1", nil
 	}
-	return d.NetworkAddress, nil
+	return d.IPAddress, nil
 }
 
 func (d *Driver) GetPort() int {
@@ -213,7 +211,8 @@ func (d *Driver) PreCreateCheck() error {
 
 func (d *Driver) Create() error {
 	var err error
-	if d.Network == "user" {
+	switch d.Network {
+	case "user":
 		minPort, maxPort, err := parsePortRange(d.LocalPorts)
 		log.Debugf("port range: %d -> %d", minPort, maxPort)
 		if err != nil {
@@ -234,6 +233,11 @@ func (d *Driver) Create() error {
 				continue
 			}
 			break
+		}
+	case "socket":
+		d.SSHPort, err = d.GetSSHPort()
+		if err != nil {
+			return err
 		}
 	}
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
@@ -412,22 +416,11 @@ func (d *Driver) Start() error {
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
 	case "socket":
-		// TODO: implement final socket_vmnet network flags.
-		exit.Message(reason.Unimplemented, "socket_vmnet network flags are not yet implemented with the qemu2 driver.\n    See https://github.com/kubernetes/minikube/pull/14890 for details.")
-	case "tap":
 		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
-		)
-	case "vde":
-		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket),
-		)
-	case "bridge":
-		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("bridge,model=virtio,br=%s", d.NetworkBridge),
+			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=3",
 		)
 	default:
-		log.Errorf("unknown network: %s", d.Network)
+		return fmt.Errorf("unknown network: %s", d.Network)
 	}
 
 	startCmd = append(startCmd,
@@ -465,9 +458,40 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
+	switch d.Network {
+	case "user":
+		d.IPAddress = "127.0.0.1"
+	case "socket":
+		var err error
+		getIP := func() error {
+			// QEMU requires MAC address with leading 0s
+			// But socket_vmnet writes the MAC address to the dhcp leases file with leading 0s stripped
+			mac := pkgdrivers.TrimMacAddress(d.MACAddress)
+			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+			if err != nil {
+				return errors.Wrap(err, "failed to get IP address")
+			}
+			return nil
+		}
+		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
+		for i := 0; i < 30; i++ {
+			log.Debugf("Attempt %d", i)
+			err = getIP()
+			if err == nil {
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
 
-	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
+		if err != nil {
+			return errors.Wrap(err, "IP address never found in dhcp leases file")
+		}
+		log.Debugf("IP: %s", d.IPAddress)
+	}
+
+	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+
+	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
 }
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
