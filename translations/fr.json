@@ -822,6 +822,7 @@
 	"Using image {{.registry}}{{.image}}": "Utilisation de l'image {{.registry}}{{.image}}",
 	"Using image {{.registry}}{{.image}} (global image repository)": "Utilisation de l'image {{.registry}}{{.image}} (référentiel d'images global)",
 	"Using qemu with --network=socket for 'socket_vmnet' is experimental": "L'utilisation de qemu avec --network=socket pour 'socket_vmnet' est expérimentale",
+	"Using qemu with 'socket_vmnet' network is experimental": "",
 	"Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .": "L'utilisation du pilote Docker sans root était nécessaire, mais le Docker actuel ne semble pas sans root. Essayez 'docker context use rootless' .",
 	"Using rootless driver was required, but the current driver does not seem rootless": "L'utilisation d'un pilote sans root était nécessaire, mais le pilote actuel ne semble pas sans root",
 	"Using rootless {{.driver_name}} driver": "Utilisation du pilote {{.driver_name}} sans root",

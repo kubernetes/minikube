@@ -849,7 +849,7 @@
 	"Using image repository {{.name}}": "Verwenden des Image-Repositorys {{.name}}",
 	"Using image {{.registry}}{{.image}}": "Verwende Image {{.registry}}{{.image}}",
 	"Using image {{.registry}}{{.image}} (global image repository)": "Verwende das Image {{.registry}}{{.image}} (globale Image Repository)",
-	"Using qemu with --network=socket for 'socket_vmnet' is experimental": "",
+	"Using qemu with 'socket_vmnet' network is experimental": "",
 	"Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .": "",
 	"Using rootless driver was required, but the current driver does not seem rootless": "",
 	"Using rootless {{.driver_name}} driver": "",

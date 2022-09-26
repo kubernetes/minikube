@@ -789,7 +789,7 @@
 	"Using image repository {{.name}}": "{{.name}} イメージリポジトリーを使用しています",
 	"Using image {{.registry}}{{.image}}": "{{.registry}}{{.image}} イメージを使用しています",
 	"Using image {{.registry}}{{.image}} (global image repository)": "{{.registry}}{{.image}} イメージ (グローバルイメージリポジトリー) を使用しています",
-	"Using qemu with --network=socket for 'socket_vmnet' is experimental": "",
+	"Using qemu with 'socket_vmnet' network is experimental": "",
 	"Using rootless Docker driver was required, but the current Docker does not seem rootless. Try 'docker context use rootless' .": "rootless Docker ドライバー使用が必要でしたが、現在の Docker は rootless が必要ないようです。'docker context use rootless' を試してみてください。",
 	"Using rootless driver was required, but the current driver does not seem rootless": "rootless ドライバー使用が必要でしたが、現在のドライバーは rootless が必要ないようです",
 	"Using rootless {{.driver_name}} driver": "rootless {{.driver_name}} ドライバー使用",
