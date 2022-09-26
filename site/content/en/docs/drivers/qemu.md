@@ -29,6 +29,33 @@ minikube start supports some qemu specific flags:
   * Note: while the flag should override the config, if the flag does not take effect try running `minikube delete`.
   * MacPorts: if you are installing [minikube](https://ports.macports.org/port/minikube/) and [qemu](https://ports.macports.org/port/qemu/) via MacPorts on a Mac with M1, use the following flag: `--qemu-firmware-path=/opt/local/share/qemu/edk2-aarch64-code.fd`
 
+## Networking
+
+The QEMU driver has two networking options, `user` & `socket_vmnet`.
+
+### `user` (default)
+
+The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`.
+
+### `socket_vmnet` (macOS only & experimental)
+
+##### Requirements
+
+Requires macOS 10.15 or later and socket_vmnet.
+
+[lima-vm/socket_vmnet](https://github.com/lima-vm/socket_vmnet) install instructions:
+```shell
+git clone https://github.com/lima-vm/socket_vmnet.git && cd socket_vmnet
+sudo make PREFIX=/opt/socket_vmnet install
+```
+
+##### Usage
+```shell
+minikube start --driver qemu --network socket_vmnet
+```
+
+The `socket_vmnet` network is a dedicated network and supports the `minikube service` and `minikube tunnel` commands.
+
 ## Known Issues
 
 ### 1. Start stuck with `user` network on corp machine or custom DNS
