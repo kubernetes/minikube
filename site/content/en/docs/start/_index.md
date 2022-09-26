@@ -534,7 +534,7 @@ minikube dashboard
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Deploy applications</h2>
 
-Create a sample deployment and expose it on port 8080:
+Create a sample deployment and expose it on port 80:
 
 ```shell
 kubectl create deployment hello-minikube --image=docker.io/nginx:1.23
@@ -556,7 +556,7 @@ minikube service hello-minikube
 Alternatively, use kubectl to forward the port:
 
 ```shell
-kubectl port-forward service/hello-minikube 7080:8080
+kubectl port-forward service/hello-minikube 7080:80
 ```
 
 Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/).
@@ -584,7 +584,7 @@ To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 kubectl get services balanced
 ```
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
+Your deployment is now available at &lt;EXTERNAL-IP&gt;:80
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 
