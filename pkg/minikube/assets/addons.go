@@ -54,8 +54,8 @@ type NetworkInfo struct {
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinAsset, enabled bool, addonName string, maintainer string, verifiedMaintainer string, docs string, images map[string]string, registries map[string]string) *Addon {
-	a := &Addon{
+func NewAddon(assets []*BinAsset, enabled bool, addonName, maintainer, verifiedMaintainer, docs string, images, registries map[string]string) *Addon {
+	return &Addon{
 		Assets:             assets,
 		enabled:            enabled,
 		addonName:          addonName,
@@ -65,10 +65,9 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName string, maintainer str
 		Images:             images,
 		Registries:         registries,
 	}
-	return a
 }
 
-// Name get the addon name
+// Name gets the addon name
 func (a *Addon) Name() string {
 	return a.addonName
 }
@@ -762,36 +761,36 @@ func parseMapString(str string) map[string]string {
 	return mapResult
 }
 
-// mergeMaps creates a map with the union of `sourceMap` and `overrideMap` where collisions take the value of `overrideMap`.
-func mergeMaps(sourceMap, overrideMap map[string]string) map[string]string {
+// mergeMaps returns a map with the union of `source` and `override` where collisions take the value of `override`.
+func mergeMaps(source, override map[string]string) map[string]string {
 	result := make(map[string]string)
-	for name, value := range sourceMap {
-		result[name] = value
+	for k, v := range source {
+		result[k] = v
 	}
-	for name, value := range overrideMap {
-		result[name] = value
+	for k, v := range override {
+		result[k] = v
 	}
 	return result
 }
 
-// filterKeySpace creates a map of the values in `targetMap` where the keys are also in `keySpace`.
-func filterKeySpace(keySpace map[string]string, targetMap map[string]string) map[string]string {
+// filterKeySpace creates a map of the values in `target` where the keys are also in `keySpace`.
+func filterKeySpace(keySpace, target map[string]string) map[string]string {
 	result := make(map[string]string)
 	for name := range keySpace {
-		if value, ok := targetMap[name]; ok {
+		if value, ok := target[name]; ok {
 			result[name] = value
 		}
 	}
 	return result
 }
 
-// overrideDefaults creates a copy of `defaultMap` where `overrideMap` replaces any of its values that `overrideMap` contains.
-func overrideDefaults(defaultMap, overrideMap map[string]string) map[string]string {
-	return mergeMaps(defaultMap, filterKeySpace(defaultMap, overrideMap))
+// overrideDefaults creates a copy of `def` where `override` replaces any of its values that `override` contains.
+func overrideDefaults(def, override map[string]string) map[string]string {
+	return mergeMaps(def, filterKeySpace(def, override))
 }
 
 // SelectAndPersistImages selects which images to use based on addon default images, previously persisted images, and newly requested images - which are then persisted for future enables.
-func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, err error) {
+func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, customRegistries map[string]string, _ error) {
 	addonDefaultImages := addon.Images
 	if addonDefaultImages == nil {
 		addonDefaultImages = make(map[string]string)
@@ -837,14 +836,13 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, customRegistries)
 	}
 
-	err = nil
 	// If images or registries were specified, save the config afterward.
 	if viper.IsSet(config.AddonImages) || viper.IsSet(config.AddonRegistries) {
 		// Since these values are only set when a user enables an addon, it is safe to refer to the profile name.
-		err = config.Write(viper.GetString(config.ProfileName), cc)
 		// Whether err is nil or not we still return here.
+		return images, customRegistries, config.Write(viper.GetString(config.ProfileName), cc)
 	}
-	return images, customRegistries, err
+	return images, customRegistries, nil
 }
 
 // GenerateTemplateData generates template data for template assets
@@ -852,42 +850,53 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	cfg := cc.KubernetesConfig
 	a := runtime.GOARCH
 	// Some legacy docker images still need the -arch suffix
-	// for  less common architectures blank suffix for amd64
+	// for less common architectures blank suffix for amd64
 	ea := ""
 	if runtime.GOARCH != "amd64" {
 		ea = "-" + runtime.GOARCH
 	}
 
+	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+
 	opts := struct {
-		PreOneTwentyKubernetes bool
-		Arch                   string
-		ExoticArch             string
-		ImageRepository        string
-		LoadBalancerStartIP    string
-		LoadBalancerEndIP      string
-		CustomIngressCert      string
-		IngressAPIVersion      string
-		ContainerRuntime       string
-		RegistryAliases        string
-		Images                 map[string]string
-		Registries             map[string]string
-		CustomRegistries       map[string]string
-		NetworkInfo            map[string]string
+		KubernetesVersion       map[string]uint64
+		PreOneTwentyKubernetes  bool
+		Arch                    string
+		ExoticArch              string
+		ImageRepository         string
+		LoadBalancerStartIP     string
+		LoadBalancerEndIP       string
+		CustomIngressCert       string
+		IngressAPIVersion       string
+		ContainerRuntime        string
+		RegistryAliases         string
+		Images                  map[string]string
+		Registries              map[string]string
+		CustomRegistries        map[string]string
+		NetworkInfo             map[string]string
+		LegacyPodSecurityPolicy bool
+		LegacyRuntimeClass      bool
 	}{
-		PreOneTwentyKubernetes: false,
-		Arch:                   a,
-		ExoticArch:             ea,
-		ImageRepository:        cfg.ImageRepository,
-		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
-		CustomIngressCert:      cfg.CustomIngressCert,
-		RegistryAliases:        cfg.RegistryAliases,
-		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:       cfg.ContainerRuntime,
-		Images:                 images,
-		Registries:             addon.Registries,
-		CustomRegistries:       customRegistries,
-		NetworkInfo:            make(map[string]string),
+		KubernetesVersion:       make(map[string]uint64),
+		PreOneTwentyKubernetes:  false,
+		Arch:                    a,
+		ExoticArch:              ea,
+		ImageRepository:         cfg.ImageRepository,
+		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
+		CustomIngressCert:       cfg.CustomIngressCert,
+		RegistryAliases:         cfg.RegistryAliases,
+		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:        cfg.ContainerRuntime,
+		Images:                  images,
+		Registries:              addon.Registries,
+		CustomRegistries:        customRegistries,
+		NetworkInfo:             make(map[string]string),
+		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
+		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
@@ -898,10 +907,6 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 
 	// maintain backwards compatibility with k8s < v1.19
 	// by using v1beta1 instead of v1 api version for ingress
-	v, err := util.ParseKubernetesVersion(cfg.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing Kubernetes version")
-	}
 	if semver.MustParseRange("<1.19.0")(v) {
 		opts.IngressAPIVersion = "v1beta1"
 	}

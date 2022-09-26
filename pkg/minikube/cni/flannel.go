@@ -17,17 +17,22 @@ limitations under the License.
 package cni
 
 import (
+	"bytes"
+	"fmt"
 	"os/exec"
 	"path/filepath"
+	"text/template"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/util"
 )
 
 // From https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-var flannelTmpl = `---
+var flannelYaml = `---{{if .LegacyPodSecurityPolicy}}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -73,17 +78,23 @@ spec:
   # SELinux
   seLinux:
     # SELinux is unused in CaaSP
-    rule: 'RunAsAny'
+    rule: 'RunAsAny'{{else}}
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: kube-system
+  labels:
+    pod-security.kubernetes.io/enforce: privileged{{end}}
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: flannel
-rules:
+rules:{{if .LegacyPodSecurityPolicy}}
   - apiGroups: ['extensions']
     resources: ['podsecuritypolicies']
     verbs: ['use']
-    resourceNames: ['psp.flannel.unprivileged']
+    resourceNames: ['psp.flannel.unprivileged']{{end}}
   - apiGroups:
       - ""
     resources:
@@ -631,6 +642,12 @@ spec:
             name: kube-flannel-cfg
 `
 
+var flannelTmpl = template.Must(template.New("flannel").Parse(flannelYaml))
+
+type flannelTmplStruct struct {
+	LegacyPodSecurityPolicy bool
+}
+
 // Flannel is the Flannel CNI manager
 type Flannel struct {
 	cc config.ClusterConfig
@@ -664,7 +681,21 @@ func (c Flannel) Apply(r Runner) error {
 		}
 	}
 
-	return applyManifest(c.cc, r, manifestAsset([]byte(flannelTmpl)))
+	k8sVersion, err := util.ParseKubernetesVersion(c.cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return fmt.Errorf("failed to parse Kubernetes version: %v", err)
+	}
+
+	input := &flannelTmplStruct{
+		LegacyPodSecurityPolicy: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
+	}
+
+	b := bytes.Buffer{}
+	if err := flannelTmpl.Execute(&b, input); err != nil {
+		return err
+	}
+
+	return applyManifest(c.cc, r, manifestAsset(b.Bytes()))
 }
 
 // CIDR returns the default CIDR used by this CNI

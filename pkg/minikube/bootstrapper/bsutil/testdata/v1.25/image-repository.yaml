@@ -39,7 +39,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.25.0-rc.1
+kubernetesVersion: v1.25.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
@@ -60,6 +60,7 @@ evictionHard:
   imagefs.available: "0%"
 failSwapOn: false
 staticPodPath: /etc/kubernetes/manifests
+resolvConf: /etc/kubelet-resolv.conf
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration

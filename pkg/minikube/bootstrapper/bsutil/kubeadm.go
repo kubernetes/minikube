@@ -87,28 +87,28 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	klog.Infof("Using pod CIDR: %s", podCIDR)
 
 	opts := struct {
-		CertDir             string
-		ServiceCIDR         string
-		PodSubnet           string
-		AdvertiseAddress    string
-		APIServerPort       int
-		KubernetesVersion   string
-		EtcdDataDir         string
-		EtcdExtraArgs       map[string]string
-		ClusterName         string
-		NodeName            string
-		DNSDomain           string
-		CRISocket           string
-		ImageRepository     string
-		ComponentOptions    []componentOptions
-		FeatureArgs         map[string]bool
-		NoTaintMaster       bool
-		NodeIP              string
-		CgroupDriver        string
-		ClientCAFile        string
-		StaticPodPath       string
-		ControlPlaneAddress string
-		KubeProxyOptions    map[string]string
+		CertDir                    string
+		ServiceCIDR                string
+		PodSubnet                  string
+		AdvertiseAddress           string
+		APIServerPort              int
+		KubernetesVersion          string
+		EtcdDataDir                string
+		EtcdExtraArgs              map[string]string
+		ClusterName                string
+		NodeName                   string
+		DNSDomain                  string
+		CRISocket                  string
+		ImageRepository            string
+		ComponentOptions           []componentOptions
+		FeatureArgs                map[string]bool
+		NodeIP                     string
+		CgroupDriver               string
+		ClientCAFile               string
+		StaticPodPath              string
+		ControlPlaneAddress        string
+		KubeProxyOptions           map[string]string
+		ResolvConfSearchRegression bool
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -120,27 +120,25 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		EtcdExtraArgs:     etcdExtraArgs(k8s.ExtraOptions),
 		ClusterName:       cc.Name,
 		// kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
-		NodeName:            KubeNodeName(cc, n),
-		CRISocket:           r.SocketPath(),
-		ImageRepository:     k8s.ImageRepository,
-		ComponentOptions:    componentOpts,
-		FeatureArgs:         kubeadmFeatureArgs,
-		NoTaintMaster:       false, // That does not work with k8s 1.12+
-		DNSDomain:           k8s.DNSDomain,
-		NodeIP:              n.IP,
-		CgroupDriver:        cgroupDriver,
-		ClientCAFile:        path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
-		StaticPodPath:       vmpath.GuestManifestsDir,
-		ControlPlaneAddress: constants.ControlPlaneAlias,
-		KubeProxyOptions:    createKubeProxyOptions(k8s.ExtraOptions),
+		NodeName:                   KubeNodeName(cc, n),
+		CRISocket:                  r.SocketPath(),
+		ImageRepository:            k8s.ImageRepository,
+		ComponentOptions:           componentOpts,
+		FeatureArgs:                kubeadmFeatureArgs,
+		DNSDomain:                  k8s.DNSDomain,
+		NodeIP:                     n.IP,
+		CgroupDriver:               cgroupDriver,
+		ClientCAFile:               path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+		StaticPodPath:              vmpath.GuestManifestsDir,
+		ControlPlaneAddress:        constants.ControlPlaneAlias,
+		KubeProxyOptions:           createKubeProxyOptions(k8s.ExtraOptions),
+		ResolvConfSearchRegression: HasResolvConfSearchRegression(k8s.KubernetesVersion),
 	}
 
 	if k8s.ServiceCIDR != "" {
 		opts.ServiceCIDR = k8s.ServiceCIDR
 	}
 
-	opts.NoTaintMaster = true
-	b := bytes.Buffer{}
 	configTmpl := ktmpl.V1Alpha3
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
@@ -156,6 +154,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		configTmpl = ktmpl.V1Beta3
 	}
 	klog.Infof("kubeadm options: %+v", opts)
+	b := bytes.Buffer{}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
@@ -205,4 +204,14 @@ func etcdExtraArgs(extraOpts config.ExtraOptionSlice) map[string]string {
 		args[eo.Key] = eo.Value
 	}
 	return args
+}
+
+// HasResolvConfSearchRegression returns if the k8s version includes https://github.com/kubernetes/kubernetes/pull/109441
+func HasResolvConfSearchRegression(k8sVersion string) bool {
+	versionSemver, err := util.ParseKubernetesVersion(k8sVersion)
+	if err != nil {
+		klog.Warningf("was unable to parse Kubernetes version %q: %v", k8sVersion, err)
+		return false
+	}
+	return versionSemver.EQ(semver.Version{Major: 1, Minor: 25})
 }

@@ -137,6 +137,8 @@ const (
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
 	qemuFirmwarePath        = "qemu-firmware-path"
+	socketVMnetClientPath   = "socket-vmnet-client-path"
+	socketVMnetPath         = "socket-vmnet-path"
 )
 
 var (
@@ -274,6 +276,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// socket vmnet
+	startCmd.Flags().String(socketVMnetClientPath, "/opt/socket_vmnet/bin/socket_vmnet_client", "Path to the socket vmnet client binary")
+	startCmd.Flags().String(socketVMnetPath, "/var/run/socket_vmnet", "Path to socket vmnet binary")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -461,8 +467,12 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 	}
 
-	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName)) && viper.GetString(network) != "" {
-		out.WarningT("--network flag is only valid with the docker/podman and KVM drivers, it will be ignored")
+	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName) || driver.IsQEMU(drvName)) && viper.GetString(network) != "" {
+		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
+	}
+
+	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket" {
+		out.WarningT("Using qemu with --network=socket for 'socket_vmnet' is experimental")
 	}
 
 	checkNumaCount(k8sVersion)
@@ -528,6 +538,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
+		SocketVMnetClientPath:   viper.GetString(socketVMnetClientPath),
+		SocketVMnetPath:         viper.GetString(socketVMnetPath),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -747,6 +759,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
 	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
 	updateStringFromFlag(cmd, &cc.CustomQemuFirmwarePath, qemuFirmwarePath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
