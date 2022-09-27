@@ -33,12 +33,11 @@ minikube start supports some qemu specific flags:
 
 The QEMU driver has two networking options, `user` & `socket_vmnet`.
 
-### `user` (default)
-
+{{% tabs %}}
+{{% tab "user - limited functionality" %}}
 The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`.
-
-### `socket_vmnet` (macOS only & experimental)
-
+{{% /tab %}}
+{{% tab "socket_vmnet - experimental/needs installation" %}}
 ##### Requirements
 
 Requires macOS 10.15 or later and socket_vmnet.
@@ -55,6 +54,8 @@ minikube start --driver qemu --network socket_vmnet
 ```
 
 The `socket_vmnet` network is a dedicated network and supports the `minikube service` and `minikube tunnel` commands.
+{{% /tab %}}
+{{% /tabs %}}
 
 ## Known Issues
 
