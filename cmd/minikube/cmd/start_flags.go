@@ -459,12 +459,15 @@ func getCNIConfig(cmd *cobra.Command) string {
 
 func getNetwork(driverName string) string {
 	n := viper.GetString(network)
-	if n != "" {
+	if !driver.IsQEMU(driverName) {
 		return n
 	}
-	if driver.IsQEMU(driverName) {
+	if n == "" {
 		out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
-		return "user"
+		n = "user"
+	}
+	if n == "user" {
+		out.WarningT("You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands.\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking")
 	}
 	return n
 }
