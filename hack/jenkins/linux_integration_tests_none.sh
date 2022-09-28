@@ -72,8 +72,8 @@ fi
 # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
 if ! cri-dockerd --version &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
-  CRI_DOCKERD_VERSION="v0.2.5"
-  CRI_DOCKERD_COMMIT="8b87d12437315b2ac556d53d032dcad7403c69ac"
+  CRI_DOCKERD_VERSION="v0.2.6"
+  CRI_DOCKERD_COMMIT="d8accf791cbb9762a218f47507378a7c4cb63797"
   CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
