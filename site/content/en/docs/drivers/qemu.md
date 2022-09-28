@@ -35,7 +35,7 @@ The QEMU driver has two networking options, `user` & `socket_vmnet`.
 
 {{% tabs %}}
 {{% tab "user - limited functionality" %}}
-The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`.
+The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
 {{% /tab %}}
 {{% tab "socket_vmnet - experimental/needs installation" %}}
 ##### Requirements
