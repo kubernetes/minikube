@@ -343,7 +343,7 @@ func (d *Driver) Kill() error {
 		klog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
-	cr := command.NewExecRunner(false) // using exec runner for interacting with dameon.
+	cr := command.NewExecRunner(false) // using exec runner for interacting with daemon.
 	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
 		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
@@ -399,8 +399,7 @@ func (d *Driver) Restart() error {
 func (d *Driver) Start() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
-		_, err := oci.DaemonInfo(d.OCIBinary)
-		if err != nil {
+		if _, err := oci.DaemonInfo(d.OCIBinary); err != nil {
 			return errors.Wrapf(oci.ErrDaemonInfo, "debug daemon info %q", d.MachineName)
 		}
 		return errors.Wrap(err, "start")

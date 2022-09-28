@@ -21,7 +21,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"os"
@@ -39,8 +38,11 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -101,15 +103,13 @@ func (d *Driver) GetSSHPort() (int, error) {
 	if d.SSHPort == 0 {
 		d.SSHPort = 22
 	}
-
 	return d.SSHPort, nil
 }
 
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
-		d.SSHUser = "docker"
+		d.SSHUser = defaultSSHUser
 	}
-
 	return d.SSHUser
 }
 
@@ -118,13 +118,12 @@ func (d *Driver) DriverName() string {
 }
 
 func (d *Driver) GetURL() (string, error) {
-	log.Debugf("GetURL called")
 	if _, err := os.Stat(d.pidfilePath()); err != nil {
 		return "", nil
 	}
 	ip, err := d.GetIP()
 	if err != nil {
-		log.Warnf("Failed to get IP: %s", err)
+		log.Warnf("Failed to get IP: %v", err)
 		return "", err
 	}
 	if ip == "" {
@@ -171,11 +170,10 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-
 	if _, err := os.Stat(d.pidfilePath()); err != nil {
 		return state.Stopped, nil
 	}
-	p, err := ioutil.ReadFile(d.pidfilePath())
+	p, err := os.ReadFile(d.pidfilePath())
 	if err != nil {
 		return state.Error, err
 	}
@@ -192,6 +190,7 @@ func (d *Driver) GetState() (state.State, error) {
 	if err != nil {
 		return state.Error, err
 	}
+
 	// RunState is one of:
 	// 'debug', 'inmigrate', 'internal-error', 'io-error', 'paused',
 	// 'postmigrate', 'prelaunch', 'finish-migrate', 'restore-vm',
@@ -242,24 +241,24 @@ func (d *Driver) Create() error {
 		return err
 	}
 
-	log.Infof("Creating SSH key...")
+	log.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
 		return err
 	}
 
-	log.Infof("Creating Disk image...")
+	log.Info("Creating Disk image...")
 	if err := d.generateDiskImage(d.DiskSize); err != nil {
 		return err
 	}
 
 	if d.UserDataFile != "" {
-		log.Infof("Creating Userdata Disk...")
+		log.Info("Creating Userdata Disk...")
 		if d.CloudConfigRoot, err = d.generateUserdataDisk(d.UserDataFile); err != nil {
 			return err
 		}
 	}
 
-	log.Infof("Starting QEMU VM...")
+	log.Info("Starting QEMU VM...")
 	return d.Start()
 }
 
@@ -271,34 +270,34 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 	portRange := strings.Split(rawPortRange, "-")
 
 	if len(portRange) < 2 {
-		return 0, 0, errors.New("Invalid port range, must be at least of length 2")
+		return 0, 0, errors.New("invalid port range, requires at least 2 ports")
 	}
 
 	minPort, err := strconv.Atoi(portRange[0])
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "Invalid port range")
+		return 0, 0, errors.Wrap(err, "invalid min port range")
 	}
+
 	maxPort, err := strconv.Atoi(portRange[1])
 	if err != nil {
-		return 0, 0, errors.Wrap(err, "Invalid port range")
+		return 0, 0, errors.Wrap(err, "invalid max port range")
 	}
 
 	if maxPort < minPort {
-		return 0, 0, errors.New("Invalid port range")
+		return 0, 0, errors.New("invalid port range, max less than min")
 	}
 
 	if maxPort-minPort < 2 {
-		return 0, 0, errors.New("Port range must be minimum 2 ports")
+		return 0, 0, errors.New("invalid port range, requires at least 2 ports")
 	}
-
 	return minPort, maxPort, nil
 }
 
-func getRandomPortNumberInRange(min int, max int) int {
+func getRandomPortNumberInRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-func getAvailableTCPPortFromRange(minPort int, maxPort int) (int, error) {
+func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 	port := 0
 	for i := 0; i <= 10; i++ {
 		var ln net.Listener
@@ -328,13 +327,12 @@ func getAvailableTCPPortFromRange(minPort int, maxPort int) (int, error) {
 			port = p
 			return port, nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(time.Second)
 	}
 	return 0, fmt.Errorf("unable to allocate tcp port")
 }
 
 func (d *Driver) Start() error {
-	// fmt.Printf("Init qemu %s\n", i.VM)
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
@@ -345,6 +343,7 @@ func (d *Driver) Start() error {
 			"-M", machineType,
 		)
 	}
+
 	if d.CPUType != "" {
 		startCmd = append(startCmd,
 			"-cpu", d.CPUType,
@@ -381,9 +380,13 @@ func (d *Driver) Start() error {
 
 	// hardware acceleration is important, it increases performance by 10x
 	if runtime.GOOS == "darwin" {
-		startCmd = append(startCmd, "-accel", "hvf")
+		// On macOS, enable the Hypervisor framework accelerator.
+		startCmd = append(startCmd,
+			"-accel", "hvf")
 	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
-		startCmd = append(startCmd, "-accel", "kvm")
+		// On Linux, enable the Kernel Virtual Machine accelerator.
+		startCmd = append(startCmd,
+			"-accel", "kvm")
 	}
 
 	startCmd = append(startCmd,
@@ -403,33 +406,40 @@ func (d *Driver) Start() error {
 		"-pidfile", d.pidfilePath(),
 	)
 
-	if d.Network == "user" {
+	switch d.Network {
+	case "user":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
-	} else if d.Network == "tap" {
+	case "socket":
+		// TODO: implement final socket_vmnet network flags.
+		exit.Message(reason.Unimplemented, "socket_vmnet network flags are not yet implemented with the qemu2 driver.\n    See https://github.com/kubernetes/minikube/pull/14890 for details.")
+	case "tap":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
 		)
-	} else if d.Network == "vde" {
+	case "vde":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket),
 		)
-	} else if d.Network == "bridge" {
+	case "bridge":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("bridge,model=virtio,br=%s", d.NetworkBridge),
 		)
-	} else {
-		log.Errorf("Unknown network: %s", d.Network)
+	default:
+		log.Errorf("unknown network: %s", d.Network)
 	}
 
-	startCmd = append(startCmd, "-daemonize")
+	startCmd = append(startCmd,
+		"-daemonize")
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
 			"-fsdev",
 			fmt.Sprintf("local,security_model=passthrough,readonly,id=fsdev0,path=%s", d.CloudConfigRoot))
-		startCmd = append(startCmd, "-device", "virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
+		startCmd = append(startCmd,
+			"-device",
+			"virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
 	}
 
 	if d.VirtioDrives {
@@ -437,14 +447,24 @@ func (d *Driver) Start() error {
 			"-drive", fmt.Sprintf("file=%s,index=0,media=disk,if=virtio", d.diskPath()))
 	} else {
 		// last argument is always the name of the disk image
-		startCmd = append(startCmd, d.diskPath())
+		startCmd = append(startCmd,
+			d.diskPath())
 	}
 
-	if stdout, stderr, err := cmdOutErr(d.Program, startCmd...); err != nil {
+	// If socket network, start with socket_vmnet.
+	startProgram := d.Program
+	if d.Network == "socket" {
+		startProgram = viper.GetString("socket-vmnet-client-path")
+		socketVMnetPath := viper.GetString("socket-vmnet-path")
+		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
+	}
+
+	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
+
 	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
@@ -452,33 +472,31 @@ func (d *Driver) Start() error {
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %v %v", cmdStr, strings.Join(args, " "))
+	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
+	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
-	log.Debugf("STDOUT: %v", stdout.String())
-	log.Debugf("STDERR: %v", stderrStr)
+	log.Debugf("STDOUT: %s", stdoutStr)
+	log.Debugf("STDERR: %s", stderrStr)
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
-			err = fmt.Errorf("mystery error: %s", ee)
+			err = fmt.Errorf("mystery error: %v", ee)
 		}
 	} else {
-		// also catch error messages in stderr, even if the return code
-		// looks OK
+		// also catch error messages in stderr, even if the return code looks OK
 		if strings.Contains(stderrStr, "error:") {
-			err = fmt.Errorf("%v %v failed: %v", cmdStr, strings.Join(args, " "), stderrStr)
+			err = fmt.Errorf("%s %s failed: %s", cmdStr, strings.Join(args, " "), stderrStr)
 		}
 	}
-	return stdout.String(), stderrStr, err
+	return stdoutStr, stderrStr, err
 }
 
 func (d *Driver) Stop() error {
-	// _, err := d.RunQMPCommand("stop")
-	_, err := d.RunQMPCommand("system_powerdown")
-	if err != nil {
+	if _, err := d.RunQMPCommand("system_powerdown"); err != nil {
 		return err
 	}
 	return nil
@@ -495,8 +513,7 @@ func (d *Driver) Remove() error {
 		}
 	}
 	if s != state.Stopped {
-		_, err = d.RunQMPCommand("quit")
-		if err != nil {
+		if _, err := d.RunQMPCommand("quit"); err != nil {
 			return errors.Wrap(err, "quit")
 		}
 	}
@@ -518,9 +535,7 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Kill() error {
-	// _, err := d.RunQMPCommand("quit")
-	_, err := d.RunQMPCommand("system_powerdown")
-	if err != nil {
+	if _, err := d.RunQMPCommand("system_powerdown"); err != nil {
 		return err
 	}
 	return nil
@@ -588,7 +603,7 @@ func (d *Driver) generateDiskImage(size int) error {
 	if err := tw.WriteHeader(file); err != nil {
 		return err
 	}
-	pubKey, err := ioutil.ReadFile(d.publicSSHKeyPath())
+	pubKey, err := os.ReadFile(d.publicSSHKeyPath())
 	if err != nil {
 		return err
 	}
@@ -610,7 +625,7 @@ func (d *Driver) generateDiskImage(size int) error {
 		return err
 	}
 	rawFile := fmt.Sprintf("%s.raw", d.diskPath())
-	if err := ioutil.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(rawFile, buf.Bytes(), 0644); err != nil {
 		return nil
 	}
 	if stdout, stderr, err := cmdOutErr("qemu-img", "convert", "-f", "raw", "-O", "qcow2", rawFile, d.diskPath()); err != nil {
@@ -624,14 +639,13 @@ func (d *Driver) generateDiskImage(size int) error {
 		return err
 	}
 	log.Debugf("DONE writing to %s and %s", rawFile, d.diskPath())
-
 	return nil
 }
 
 func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 	// Start with virtio, add ISO & FAT format later
 	// Start with local file, add wget/fetct URL? (or if URL, use datasource..)
-	userdata, err := ioutil.ReadFile(userdataFile)
+	userdata, err := os.ReadFile(userdataFile)
 	if err != nil {
 		return "", err
 	}
@@ -650,20 +664,17 @@ func (d *Driver) generateUserdataDisk(userdataFile string) (string, error) {
 	}
 
 	writeFile := filepath.Join(userDataDir, "user_data")
-	if err := ioutil.WriteFile(writeFile, userdata, 0644); err != nil {
+	if err := os.WriteFile(writeFile, userdata, 0644); err != nil {
 		return "", err
 	}
-
 	return ccRoot, nil
-
 }
 
 func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
-
 	// connect to monitor
 	conn, err := net.Dial("unix", d.monitorPath())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "connect")
 	}
 	defer conn.Close()
 
@@ -671,7 +682,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	var buf [1024]byte
 	nr, err := conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read initial resp")
 	}
 	type qmpInitialResponse struct {
 		QMP struct {
@@ -688,9 +699,8 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 
 	var initialResponse qmpInitialResponse
-	err = json.Unmarshal(buf[:nr], &initialResponse)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &initialResponse); err != nil {
+		return nil, errors.Wrap(err, "unmarshal initial resp")
 	}
 
 	// run 'qmp_capabilities' to switch to command mode
@@ -700,23 +710,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	jsonCommand, err := json.Marshal(qmpCommand{Command: "qmp_capabilities"})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal qmp_capabilities")
 	}
-	_, err = conn.Write(jsonCommand)
-	if err != nil {
-		return nil, err
+	if _, err := conn.Write(jsonCommand); err != nil {
+		return nil, errors.Wrap(err, "write qmp_capabilities")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read qmp_capabilities resp")
 	}
 	type qmpResponse struct {
 		Return map[string]interface{} `json:"return"`
 	}
 	var response qmpResponse
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal qmp_capabilities resp")
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
@@ -726,19 +734,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// { "execute": command }
 	jsonCommand, err = json.Marshal(qmpCommand{Command: command})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal command")
 	}
-	_, err = conn.Write(jsonCommand)
-	if err != nil {
-		return nil, err
+	if _, err := conn.Write(jsonCommand); err != nil {
+		return nil, errors.Wrap(err, "write command")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read command resp")
 	}
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+
+	// Sometimes QEMU returns two JSON objects with the first object being the command response
+	// and the second object being an event log (unimportant)
+	firstRespObj := strings.Split(string(buf[:nr]), "\n")[0]
+	if err := json.Unmarshal([]byte(firstRespObj), &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal command resp")
 	}
 	if strings.HasPrefix(command, "query-") {
 		return response.Return, nil
@@ -757,7 +767,7 @@ func WaitForTCPWithDelay(addr string, duration time.Duration) error {
 			continue
 		}
 		defer conn.Close()
-		if _, err = conn.Read(make([]byte, 1)); err != nil {
+		if _, err := conn.Read(make([]byte, 1)); err != nil {
 			time.Sleep(duration)
 			continue
 		}

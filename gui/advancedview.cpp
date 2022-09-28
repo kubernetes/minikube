@@ -39,6 +39,7 @@ AdvancedView::AdvancedView(QIcon icon)
     deleteButton = new QPushButton(tr("Delete"));
     refreshButton = new QPushButton(tr("Refresh"));
     createButton = new QPushButton(tr("Create"));
+    dockerEnvButton = new QPushButton(tr("docker-env"));
     sshButton = new QPushButton(tr("SSH"));
     dashboardButton = new QPushButton(tr("Dashboard"));
     basicButton = new QPushButton(tr("Basic View"));
@@ -56,6 +57,7 @@ AdvancedView::AdvancedView(QIcon icon)
     bottomButtonLayout->addWidget(stopButton);
     bottomButtonLayout->addWidget(pauseButton);
     bottomButtonLayout->addWidget(deleteButton);
+    bottomButtonLayout->addWidget(dockerEnvButton);
     bottomButtonLayout->addWidget(sshButton);
     bottomButtonLayout->addWidget(dashboardButton);
 
@@ -78,6 +80,7 @@ AdvancedView::AdvancedView(QIcon icon)
     connect(deleteButton, &QAbstractButton::clicked, this, &AdvancedView::delete_);
     connect(refreshButton, &QAbstractButton::clicked, this, &AdvancedView::refresh);
     connect(createButton, &QAbstractButton::clicked, this, &AdvancedView::askName);
+    connect(dockerEnvButton, &QAbstractButton::clicked, this, &AdvancedView::dockerEnv);
     connect(sshButton, &QAbstractButton::clicked, this, &AdvancedView::ssh);
     connect(dashboardButton, &QAbstractButton::clicked, this, &AdvancedView::dashboard);
     connect(basicButton, &QAbstractButton::clicked, this, &AdvancedView::basic);
@@ -94,7 +97,7 @@ static QString getPauseLabel(bool isPaused)
 static QString getStartLabel(bool isRunning)
 {
     if (isRunning) {
-        return "Reload";
+        return "Restart";
     }
     return "Start";
 }
@@ -113,12 +116,19 @@ void AdvancedView::update(Cluster cluster)
     deleteButton->setEnabled(exists);
     dashboardButton->setEnabled(isRunning);
 #if __linux__ || __APPLE__
+    dockerEnvButton->setEnabled(isRunning);
     sshButton->setEnabled(exists);
 #else
+    dockerEnvButton->setEnabled(false);
     sshButton->setEnabled(false);
 #endif
     pauseButton->setText(getPauseLabel(isPaused));
     startButton->setText(getStartLabel(isRunning));
+    QString startToolTip = "";
+    if (isRunning) {
+        startToolTip = "Restart an already running minikube instance to pickup config changes.";
+    }
+    startButton->setToolTip(startToolTip);
 }
 
 void AdvancedView::setSelectedClusterName(QString cluster)
@@ -215,9 +225,9 @@ void AdvancedView::askCustom()
     QComboBox *driverComboBox = new QComboBox;
     driverComboBox->addItems({ "docker", "virtualbox", "vmware", "podman" });
 #if __linux__
-    driverComboBox->addItem("kvm2");
+    driverComboBox->addItems({ "kvm2", "qemu" });
 #elif __APPLE__
-    driverComboBox->addItems({ "hyperkit", "parallels" });
+    driverComboBox->addItems({ "hyperkit", "qemu", "parallels" });
 #else
     driverComboBox->addItem("hyperv");
 #endif
@@ -273,6 +283,7 @@ void AdvancedView::disableButtons()
     stopButton->setEnabled(false);
     pauseButton->setEnabled(false);
     deleteButton->setEnabled(false);
+    dockerEnvButton->setEnabled(false);
     sshButton->setEnabled(false);
     dashboardButton->setEnabled(false);
     basicButton->setEnabled(false);

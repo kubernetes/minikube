@@ -38,14 +38,14 @@ func TestSetNotAllowed(t *testing.T) {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 	err = Set("memory", "10a")
-	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid size: '10a']" {
+	if err == nil || err.Error() != "run validations for \"memory\" with value of \"10a\": [invalid memory size: invalid suffix: 'a']" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 }
 
 func TestSetOK(t *testing.T) {
 	createTestConfig(t)
-	err := Set("driver", "virtualbox")
+	err := Set("driver", "ssh")
 	defer func() {
 		err = Unset("driver")
 		if err != nil {
@@ -59,8 +59,8 @@ func TestSetOK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get returned error for valid property: %+v", err)
 	}
-	if val != "virtualbox" {
-		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
+	if val != "ssh" {
+		t.Fatalf("Get returned %s, expected \"ssh\"", val)
 	}
 }
 

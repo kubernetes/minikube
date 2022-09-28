@@ -313,12 +313,13 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 	scanner := bufio.NewScanner(logs)
 	for scanner.Scan() {
+		line := scanner.Text()
+		klog.Info(line)
 		if nextStepIndex >= len(steps) {
-			scanner.Text()
 			continue
 		}
 		nextStep := steps[nextStepIndex]
-		if !strings.Contains(scanner.Text(), fmt.Sprintf("[%s]", nextStep.logTag)) {
+		if !strings.Contains(line, fmt.Sprintf("[%s]", nextStep.logTag)) {
 			continue
 		}
 		register.Reg.SetStep(nextStep.registerStep)
@@ -987,6 +988,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "copy")
 	}
 
+	if err := k.copyResolvConf(cfg); err != nil {
+		return errors.Wrap(err, "resolv.conf")
+	}
+
 	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
@@ -994,6 +999,23 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
 		return errors.Wrap(err, "host alias")
+	}
+
+	return nil
+}
+
+// copyResolvConf is a workaround for a regression introduced with https://github.com/kubernetes/kubernetes/pull/109441
+// The regression is resolved by making a copy of /etc/resolv.conf, removing the line "search ." from the copy, and setting kubelet to use the copy
+// Only Kubernetes v1.25.0 is affected by this regression
+func (k *Bootstrapper) copyResolvConf(cfg config.ClusterConfig) error {
+	if !bsutil.HasResolvConfSearchRegression(cfg.KubernetesConfig.KubernetesVersion) {
+		return nil
+	}
+	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", "/etc/resolv.conf", "/etc/kubelet-resolv.conf")); err != nil {
+		return errors.Wrap(err, "copy")
+	}
+	if _, err := k.c.RunCmd(exec.Command("sudo", "sed", "-i", "-e", "s/^search .$//", "/etc/kubelet-resolv.conf")); err != nil {
+		return errors.Wrap(err, "sed")
 	}
 
 	return nil
@@ -1067,7 +1089,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
-		// double checking defalut sa was created.
+		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
 		checkSA := func() (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
@@ -1119,7 +1141,7 @@ func adviseNodePressure(err error, name string, drv string) {
 		if driver.IsVM(drv) {
 			out.Styled(style.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.Styled(style.Stopped, "Please increse Desktop's disk size.")
+			out.Styled(style.Stopped, "Please increase Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
 				out.Styled(style.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}

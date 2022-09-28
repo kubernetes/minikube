@@ -136,6 +136,9 @@ const (
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
+	qemuFirmwarePath        = "qemu-firmware-path"
+	socketVMnetClientPath   = "socket-vmnet-client-path"
+	socketVMnetPath         = "socket-vmnet-path"
 )
 
 var (
@@ -175,7 +178,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
 	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
-	startCmd.Flags().String(networkPlugin, "", "Kubelet network plug-in to use (default: auto)")
+	startCmd.Flags().String(networkPlugin, "", "DEPRECATED: Replaced by --cni")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
 	startCmd.Flags().String(cniFlag, "", "CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)")
 	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
@@ -253,6 +256,9 @@ func initDriverFlags() {
 	startCmd.Flags().String(listenAddress, "", "IP Address to use to expose ports (docker and podman driver only)")
 	startCmd.Flags().StringSlice(ports, []string{}, "List of ports that should be exposed (docker and podman driver only)")
 	startCmd.Flags().String(subnet, "", "Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)")
+
+	// qemu
+	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -270,6 +276,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// socket vmnet
+	startCmd.Flags().String(socketVMnetClientPath, "/opt/socket_vmnet/bin/socket_vmnet_client", "Path to the socket vmnet client binary")
+	startCmd.Flags().String(socketVMnetPath, "/var/run/socket_vmnet", "Path to socket vmnet binary")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -426,7 +436,7 @@ func getRepository(cmd *cobra.Command, k8sVersion string) string {
 		repository = autoSelectedRepository
 	}
 
-	if repository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+	if repository == constants.AliyunMirror {
 		download.SetAliyunMirror()
 	}
 
@@ -457,8 +467,12 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 	}
 
-	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName)) && viper.GetString(network) != "" {
-		out.WarningT("--network flag is only valid with the docker/podman and KVM drivers, it will be ignored")
+	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName) || driver.IsQEMU(drvName)) && viper.GetString(network) != "" {
+		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
+	}
+
+	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket" {
+		out.WarningT("Using qemu with --network=socket for 'socket_vmnet' is experimental")
 	}
 
 	checkNumaCount(k8sVersion)
@@ -523,6 +537,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
+		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
+		SocketVMnetClientPath:   viper.GetString(socketVMnetClientPath),
+		SocketVMnetPath:         viper.GetString(socketVMnetPath),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -570,7 +587,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 					exit.Message(reason.Usage, "Using rootless driver was required, but the current driver does not seem rootless")
 				}
 			}
-			out.Styled(style.Notice, "Using {{.driver_name}} driver with the root privilege", out.V{"driver_name": driver.FullName(drvName)})
+			out.Styled(style.Notice, "Using {{.driver_name}} driver with root privileges", out.V{"driver_name": driver.FullName(drvName)})
 		}
 		if si.StorageDriver == "btrfs" {
 			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
@@ -741,6 +758,9 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.MountUID, mountUID)
 	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
 	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
+	updateStringFromFlag(cmd, &cc.CustomQemuFirmwarePath, qemuFirmwarePath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)

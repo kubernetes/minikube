@@ -253,7 +253,7 @@ func saveChecksumFile(k8sVersion, containerRuntime string, checksum []byte) erro
 // verifyChecksum returns true if the checksum of the local binary matches
 // the checksum of the remote binary
 func verifyChecksum(k8sVersion, containerRuntime, path string) error {
-	klog.Infof("verifying checksumm of %s ...", path)
+	klog.Infof("verifying checksum of %s ...", path)
 	// get md5 checksum of tarball path
 	contents, err := os.ReadFile(path)
 	if err != nil {
@@ -286,7 +286,7 @@ var ensureChecksumValid = func(k8sVersion, containerRuntime, targetPath string, 
 	return nil
 }
 
-// CleanUpOlderPreloads deletes preload files beloning to older minikube versions
+// CleanUpOlderPreloads deletes preload files belonging to older minikube versions
 // checks the current preload version and then if the saved tar file is belongs to older minikube it will delete it
 // in case of failure only logs to the user
 func CleanUpOlderPreloads() {

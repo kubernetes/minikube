@@ -455,7 +455,8 @@ choco install minikube
       [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
     }
     ```
-    _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
+    <span style="color:blue">
+    If you used a terminal (like powershell) for the installation, please close the terminal and reopen it before running minikube.</span>
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
@@ -533,11 +534,11 @@ minikube dashboard
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">4</strong></span>Deploy applications</h2>
 
-Create a sample deployment and expose it on port 8080:
+Create a sample deployment and expose it on port 80:
 
 ```shell
-kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
-kubectl expose deployment hello-minikube --type=NodePort --port=8080
+kubectl create deployment hello-minikube --image=docker.io/nginx:1.23
+kubectl expose deployment hello-minikube --type=NodePort --port=80
 ```
 
 It may take a moment, but your deployment will soon show up when you run:
@@ -555,7 +556,7 @@ minikube service hello-minikube
 Alternatively, use kubectl to forward the port:
 
 ```shell
-kubectl port-forward service/hello-minikube 7080:8080
+kubectl port-forward service/hello-minikube 7080:80
 ```
 
 Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/).
@@ -567,8 +568,8 @@ You should be able to see the request metadata from nginx such as the `CLIENT VA
 To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
-kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
-kubectl expose deployment balanced --type=LoadBalancer --port=8080
+kubectl create deployment balanced --image=docker.io/nginx:1.23
+kubectl expose deployment balanced --type=LoadBalancer --port=80
 ```
 
 In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
@@ -583,7 +584,7 @@ To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 kubectl get services balanced
 ```
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
+Your deployment is now available at &lt;EXTERNAL-IP&gt;:80
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 

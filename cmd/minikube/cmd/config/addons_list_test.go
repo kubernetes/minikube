@@ -27,46 +27,57 @@ import (
 )
 
 func TestAddonsList(t *testing.T) {
-	t.Run("NonExistingClusterTable", func(t *testing.T) {
-		r, w, err := os.Pipe()
-		if err != nil {
-			t.Fatalf("failed to create pipe: %v", err)
-		}
-		old := os.Stdout
-		defer func() { os.Stdout = old }()
-		os.Stdout = w
-		printAddonsList(nil)
-		if err := w.Close(); err != nil {
-			t.Fatalf("failed to close pipe: %v", err)
-		}
-		buf := bufio.NewScanner(r)
-		pipeCount := 0
-		got := ""
-		// Pull the first 3 lines from stdout
-		for i := 0; i < 3; i++ {
-			if !buf.Scan() {
-				t.Fatalf("failed to read stdout")
+	tests := []struct {
+		name      string
+		printDocs bool
+		want      int
+	}{
+		{"DisabledDocs", false, 9},
+		{"EnabledDocs", true, 12},
+	}
+
+	for _, tt := range tests {
+		t.Run("NonExistingClusterTable"+tt.name, func(t *testing.T) {
+			r, w, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
 			}
-			pipeCount += strings.Count(buf.Text(), "|")
-			got += buf.Text()
-		}
-		// The lines we pull should look something like
-		// |-----------------------------|-----------------------|
-		// |         ADDON NAME          |      MAINTAINER       |
-		// |-----------------------------|-----------------------|
-		// which has 9 pipes
-		expected := 9
-		if pipeCount != expected {
-			t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
-		}
-	})
+			old := os.Stdout
+			defer func() { os.Stdout = old }()
+			os.Stdout = w
+			printAddonsList(nil, tt.printDocs)
+			if err := w.Close(); err != nil {
+				t.Fatalf("failed to close pipe: %v", err)
+			}
+			buf := bufio.NewScanner(r)
+			pipeCount := 0
+			got := ""
+			// Pull the first 3 lines from stdout
+			for i := 0; i < 3; i++ {
+				if !buf.Scan() {
+					t.Fatalf("failed to read stdout")
+				}
+				pipeCount += strings.Count(buf.Text(), "|")
+				got += buf.Text()
+			}
+			// The lines we pull should look something like
+			// |------------|------------|(------|)
+			// | ADDON NAME | MAINTAINER |( DOCS |)
+			// |------------|------------|(------|)
+			// which has 9 or 12 pipes
+			expected := tt.want
+			if pipeCount != expected {
+				t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)
+			}
+		})
+	}
 
 	t.Run("NonExistingClusterJSON", func(t *testing.T) {
 		type addons struct {
 			Ambassador *interface{} `json:"ambassador"`
 		}
 
-		b := make([]byte, 544)
+		b := make([]byte, 571)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)

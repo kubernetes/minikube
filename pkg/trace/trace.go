@@ -32,7 +32,7 @@ type minikubeTracer interface {
 	Cleanup()
 }
 
-// Initialize intializes the global tracer variable
+// Initialize initializes the global tracer variable
 func Initialize(t string) error {
 	tr, err := getTracer(t)
 	if err != nil {

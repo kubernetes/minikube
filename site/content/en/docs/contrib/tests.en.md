@@ -42,6 +42,8 @@ tests the csi hostpath driver by creating a persistent volume, snapshotting it a
 #### validateGCPAuthAddon
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
+#### validateHeadlampAddon
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
@@ -408,7 +410,7 @@ NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook
 stops `minikube tunnel`
 
 ## TestGuestEnvironment
-verifies files and packges installed inside minikube ISO/Base image
+verifies files and packages installed inside minikube ISO/Base image
 
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
@@ -426,7 +428,7 @@ tests ingress-dns addon activation
 makes sure json output works properly for the start, pause, unpause, and stop commands
 
 #### validateDistinctCurrentSteps
- validateDistinctCurrentSteps makes sure each step has a distinct step number
+makes sure each step has a distinct step number
 
 #### validateIncreasingCurrentSteps
 verifies that for a successful minikube start, 'current step' should be increasing
@@ -445,6 +447,8 @@ verifies the docker/podman driver works with a custom subnet
 
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
+
+## TestMinikubeProfile
 
 ## TestMountStart
 tests using the mount command on start

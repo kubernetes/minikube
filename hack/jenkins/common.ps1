@@ -30,7 +30,7 @@ function Write-GithubStatus {
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
-$GoVersion = "1.18.2"
+$GoVersion = "1.19.1"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 $KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
@@ -50,7 +50,7 @@ If ($lastexitcode -gt 0) {
 	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"$env:JOB_NAME`"}"
 
 	Write-GithubStatus -JsonBody $json
-	docker system prune --all --force
+	docker system prune -a --volumes -f
 	Exit $lastexitcode
 }
 
@@ -68,7 +68,7 @@ if ($CurrentGo -NotLike "*$GoVersion*") {
 
 # Download gopogh and gotestsum
 (New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
-(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.8.1/gotestsum_1.8.1_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
+(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.8.2/gotestsum_1.8.2_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
 tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
 
 # Grab all the scripts we'll need for integration tests
@@ -118,7 +118,7 @@ echo $description
 #Upload logs to gcs
 If($env:EXTERNAL -eq "yes"){
 	# If we're not already in GCP, we won't have credentials to upload to GCS
-	# Instad, move logs to a predictable spot Jenkins can find and upload itself
+	# Instead, move logs to a predictable spot Jenkins can find and upload itself
 	mkdir -p test_reports
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json

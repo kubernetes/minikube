@@ -83,7 +83,6 @@ class QTableView;
 class QProcess;
 QT_END_NAMESPACE
 
-#include "cluster.h"
 #include "basicview.h"
 #include "advancedview.h"
 #include "progresswindow.h"
@@ -92,6 +91,7 @@ QT_END_NAMESPACE
 #include "tray.h"
 #include "hyperkit.h"
 #include "updater.h"
+#include "logger.h"
 
 class Window : public QDialog
 {
@@ -125,6 +125,7 @@ private:
     HyperKit *hyperKit;
     Updater *updater;
     QVBoxLayout *layout;
+    Logger *logger;
 };
 
 #endif // QT_NO_SYSTEMTRAYICON

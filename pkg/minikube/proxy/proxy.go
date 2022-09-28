@@ -29,6 +29,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
 )
 
 // EnvVars are variables we plumb through to the underlying container runtime
@@ -184,16 +185,7 @@ func SetDockerEnv() []string {
 		}
 	}
 
-	// remove duplicates
-	seen := map[string]bool{}
-	uniqueEnvs := []string{}
-	for e := range config.DockerEnv {
-		if !seen[config.DockerEnv[e]] {
-			seen[config.DockerEnv[e]] = true
-			uniqueEnvs = append(uniqueEnvs, config.DockerEnv[e])
-		}
-	}
-	config.DockerEnv = uniqueEnvs
+	config.DockerEnv = util.RemoveDuplicateStrings(config.DockerEnv)
 
 	return config.DockerEnv
 }

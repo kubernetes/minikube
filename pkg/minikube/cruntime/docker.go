@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -107,6 +106,15 @@ func (r *Docker) SocketPath() string {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
+	// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
+	if r.KubernetesVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+		if _, err := exec.LookPath("cri-dockerd"); err != nil {
+			return err
+		}
+		if _, err := exec.LookPath("dockerd"); err != nil {
+			return err
+		}
+	}
 	_, err := exec.LookPath("docker")
 	return err
 }
@@ -121,7 +129,6 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if inUserNamespace {
 		return errors.New("inUserNamespace must not be true for docker")
 	}
-	containerdWasActive := r.Init.Active("containerd")
 
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
@@ -145,15 +152,9 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		if err := r.forceSystemd(); err != nil {
 			return err
 		}
-		return r.Init.Restart("docker")
 	}
 
-	if containerdWasActive && !dockerBoundToContainerd(r.Runner) {
-		// Make sure to use the internal containerd
-		return r.Init.Restart("docker")
-	}
-
-	if err := r.Init.Start("docker"); err != nil {
+	if err := r.Init.Restart("docker"); err != nil {
 		return err
 	}
 
@@ -676,7 +677,7 @@ const (
 	CNICacheDir = "/var/lib/cni/cache"
 )
 
-func dockerConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) error {
+func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin string) error {
 	if networkPlugin == "" {
 		// no-op plugin
 		return nil
@@ -687,6 +688,7 @@ func dockerConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin str
 		args += " --cni-bin-dir=" + CNIBinDir
 		args += " --cni-cache-dir=" + CNICacheDir
 		args += " --cni-conf-dir=" + cni.ConfDir
+		args += " --hairpin-mode=promiscuous-bridge"
 	}
 
 	opts := struct {
@@ -707,7 +709,7 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 		return errors.Wrap(err, "failed to execute template")
 	}
 	criDockerService := b.Bytes()
-	c := exec.Command("sudo", "mkdir", "-p", filepath.Dir(CRIDockerServiceConfFile))
+	c := exec.Command("sudo", "mkdir", "-p", path.Dir(CRIDockerServiceConfFile))
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "failed to create directory")
 	}
@@ -715,5 +717,5 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 	if err := cr.Copy(svc); err != nil {
 		return errors.Wrap(err, "failed to copy template")
 	}
-	return nil
+	return r.Init.Restart("cri-docker")
 }

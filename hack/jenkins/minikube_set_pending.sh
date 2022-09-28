@@ -29,10 +29,6 @@ set -eux -o pipefail
 jobs=(
      'Hyperkit_macOS'
      'Hyper-V_Windows'
-     # 'VirtualBox_Linux'
-     # 'VirtualBox_macOS'
-     # 'VirtualBox_Windows'
-     # 'KVM-GPU_Linux' - Disabled
      'KVM_Linux'
      'KVM_Linux_containerd'
      'KVM_Linux_crio'
@@ -45,8 +41,8 @@ jobs=(
      'Docker_Linux_crio'
      'Docker_macOS'
      'Docker_Windows'
-     # 'Podman_Linux'
      'Docker_Cloud_Shell'
+     'QEMU_macOS'
 )
 
 STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/started_environments.txt"

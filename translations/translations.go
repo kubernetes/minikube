@@ -19,5 +19,6 @@ package translations
 import "embed"
 
 // Translations contains all translation JSON files.
+//
 //go:embed *.json
 var Translations embed.FS

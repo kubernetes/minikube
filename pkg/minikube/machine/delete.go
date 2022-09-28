@@ -35,7 +35,7 @@ import (
 )
 
 // deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
-// used as last effort clean up not returning errors, wont warn user.
+// used as last effort clean up not returning errors, won't warn user.
 func deleteOrphanedKIC(ociBin string, name string) {
 	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
 		return

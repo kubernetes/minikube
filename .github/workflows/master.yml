@@ -14,7 +14,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18.2'
+  GO_VERSION: '1.19.1'
 permissions:
   contents: read
 
@@ -24,11 +24,10 @@ jobs:
   build_minikube:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -51,11 +50,10 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -70,11 +68,10 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -102,7 +99,7 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
       - name: Docker Info
@@ -119,10 +116,9 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install gopogh
 
         shell: bash
@@ -130,9 +126,10 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
+          path: minikube_binaries
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
@@ -202,7 +199,7 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
       - name: Docker Info
@@ -219,10 +216,9 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install gopogh
 
         shell: bash
@@ -230,9 +226,10 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
+          path: minikube_binaries
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
@@ -303,7 +300,7 @@ jobs:
     - name: Install kubectl
       shell: bash
       run: |
-        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
         sudo install kubectl /usr/local/bin/kubectl
         kubectl version --client=true
 
@@ -323,19 +320,19 @@ jobs:
         echo "--------------------------"
         podman ps || true
         echo "--------------------------"
-    - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+    - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
       with:
         go-version: ${{env.GO_VERSION}}
-        stable: true
     - name: Install gopogh
       shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
-      uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+      uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
       with:
         name: minikube_binaries
+        path: minikube_binaries
     - name: Run Integration Test
       continue-on-error: false
       # bash {0} to allow test to continue to next step. in case of
@@ -401,18 +398,17 @@ jobs:
       JOB_NAME: "functional_virtualbox_macos"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: macos-10.15
+    runs-on: macos-12
     steps:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/darwin/amd64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install gopogh
 
         shell: bash
@@ -435,9 +431,10 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
+          path: minikube_binaries
       - name: Run Integration Test
         continue-on-error: false
         # bash {0} to allow test to continue to next step. in case of
@@ -505,24 +502,30 @@ jobs:
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+        with:
+          go-version: ${{env.GO_VERSION}}
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+      # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
       - name: Install tools for none
         shell: bash
         run: |
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
-          VERSION="v1.17.0"
-          curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
-          sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
-        with:
-          go-version: ${{env.GO_VERSION}}
-          stable: true
+          CRI_DOCKERD_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+          CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}"
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+          sudo chmod +x /usr/bin/cri-dockerd
+          CRICTL_VERSION="v1.17.0"
+          curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+          sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
       - name: Install gopogh
 
         shell: bash
@@ -530,9 +533,10 @@ jobs:
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download Binaries
-        uses: actions/download-artifact@fdafc3f9f2e2a522dc1d230e6a03de57a1e71c95
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
         with:
           name: minikube_binaries
+          path: minikube_binaries
       - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
@@ -568,9 +572,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
-          name: none_ubuntu18_04
+          name: functional_baremetal_ubuntu18_04
           path: minikube_binaries/report
-      - name: The End Result - None on Ubuntu 18:04
+      - name: The End Result functional_baremetal_ubuntu18_04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -603,7 +607,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all reports
-        uses: actions/download-artifact@9fde3de0b74bd6bc202952485c264b551a4f9405
+        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
       - name: upload all reports
         shell: bash {0}
         continue-on-error: true

@@ -15,8 +15,8 @@ make out/mkcmp
 ./out/mkcmp ./out/minikube pr://400
 ```
 
-mkcmp is primarily used for our prbot, which comments mkcmp output on valid PRs [example](https://github.com/kubernetes/minikube/pull/10430#issuecomment-776311409).
-To make changes to the prbot output, submitting a PR to change mkcmp code should be sufficient.
+mkcmp is primarily used for our pr-bot, which comments mkcmp output on valid PRs [example](https://github.com/kubernetes/minikube/pull/10430#issuecomment-776311409).
+To make changes to the pr-bot output, submitting a PR to change mkcmp code should be sufficient.
 
 Note: STDOUT from mkcmp is *exactly* what is commented on github, so we want it to be in Markdown.
 

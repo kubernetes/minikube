@@ -159,9 +159,6 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	// check addon status before enabling/disabling it
 	if isAddonAlreadySet(cc, addon, enable) {
-		if addon.Name() == "gcp-auth" {
-			return nil
-		}
 		klog.Warningf("addon %s should already be in state %v", name, val)
 		if !enable {
 			return nil
@@ -192,7 +189,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		exit.Error(reason.HostSaveProfile, "Failed to persist images", err)
 	}
 
-	if cc.KubernetesConfig.ImageRepository == "registry.cn-hangzhou.aliyuncs.com/google_containers" {
+	if cc.KubernetesConfig.ImageRepository == constants.AliyunMirror {
 		images, customRegistries = assets.FixAddonImagesAndRegistries(addon, images, customRegistries)
 	}
 
@@ -224,7 +221,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
+	data := assets.GenerateTemplateData(addon, cc, networkInfo, images, customRegistries, enable)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 

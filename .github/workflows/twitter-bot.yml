@@ -1,11 +1,10 @@
 name: "Tweet the release"
 on:
   workflow_dispatch:
-  push:
-    tags:
-      - 'v*'
   release:
     types: [published]
+permissions:
+  contents: read
 jobs:
   twitter-release:
     runs-on: ubuntu-20.04

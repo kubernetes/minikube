@@ -61,8 +61,6 @@ func TestStartStop(t *testing.T) {
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
-				// TODO: Remove network-plugin config when newest is 1.24
-				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			}},
 			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
@@ -447,11 +445,14 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 // Remove container-specific prefixes for naming consistency
 // for example in `docker` runtime we get this:
-// 		$ docker@minikube:~$ sudo crictl images -o json | grep dash
-// 	         "kubernetesui/dashboard:vX.X.X"
+//
+//		$ docker@minikube:~$ sudo crictl images -o json | grep dash
+//	         "kubernetesui/dashboard:vX.X.X"
+//
 // but for 'containerd' we get full name
-// 		$ docker@minikube:~$  sudo crictl images -o json | grep dash
-//        	 "docker.io/kubernetesui/dashboard:vX.X.X"
+//
+//			$ docker@minikube:~$  sudo crictl images -o json | grep dash
+//	       	 "docker.io/kubernetesui/dashboard:vX.X.X"
 func trimImageName(name string) string {
 	name = strings.TrimPrefix(name, "docker.io/")
 	name = strings.TrimPrefix(name, "localhost/")
@@ -463,7 +464,7 @@ func defaultImage(name string) bool {
 	if strings.Contains(name, ":latest") {
 		return false
 	}
-	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
+	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "registry.k8s.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
 		return true
 	}
 	return false

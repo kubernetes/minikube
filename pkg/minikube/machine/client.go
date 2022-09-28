@@ -187,7 +187,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"bootstrapping certificates",
 			func() error {
-				// Lock is needed to avoid race conditiion in parallel Docker-Env test because issue #10107.
+				// Lock is needed to avoid race condition in parallel Docker-Env test because issue #10107.
 				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
 				lockErr := api.flock.LockWithTimeout(time.Second * 5)
 				if lockErr != nil {
@@ -196,7 +196,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 				defer func() {
 					lockErr = api.flock.Unlock()
 					if lockErr != nil {
-						klog.Errorf("falied to release bootstrap cert client lock: %v", lockErr.Error())
+						klog.Errorf("failed to release bootstrap cert client lock: %v", lockErr.Error())
 					}
 				}()
 				certErr := cert.BootstrapCertificates(h.AuthOptions())

@@ -30,19 +30,19 @@ func TestSupportedDrivers(t *testing.T) {
 	got := SupportedDrivers()
 	found := false
 	for _, s := range SupportedDrivers() {
-		if s == VirtualBox {
+		if s == SSH {
 			found = true
 		}
 	}
 
 	if found == false {
-		t.Errorf("%s not in supported drivers: %v", VirtualBox, got)
+		t.Errorf("%s not in supported drivers: %v", SSH, got)
 	}
 }
 
 func TestSupported(t *testing.T) {
-	if !Supported(VirtualBox) {
-		t.Errorf("Supported(%s) is false", VirtualBox)
+	if !Supported(SSH) {
+		t.Errorf("Supported(%s) is false", SSH)
 	}
 	if Supported("yabba?") {
 		t.Errorf("Supported(yabba?) is true")

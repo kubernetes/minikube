@@ -80,8 +80,9 @@ type Interface struct {
 // lookupInInterfaces iterates over all local network interfaces
 // and tries to match "ip" with associated networks
 // returns (network parameters, ip network, nil) if found
-// 		   (nil, nil, nil) it nof
-// 		   (nil, nil, error) if any error happened
+//
+//	(nil, nil, nil) it nof
+//	(nil, nil, error) if any error happened
 func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
 	// check local network interfaces
 	ifaces, err := net.Interfaces()
@@ -255,8 +256,9 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 }
 
 // reserveSubnet returns if subnet was successfully reserved for given period:
-//  - false, if it already has unexpired reservation
-//  - true, if new reservation was created or expired one renewed
+//   - false, if it already has unexpired reservation
+//   - true, if new reservation was created or expired one renewed
+//
 // uses sync.Map to manage reservations thread-safe
 func reserveSubnet(subnet string, period time.Duration) bool {
 	// put 'zero' reservation{} Map value for subnet Map key

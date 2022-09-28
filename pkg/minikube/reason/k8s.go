@@ -47,6 +47,12 @@ var k8sIssues = []K8sIssue{
 		Description: "Kubernetes {{.version}} has a known performance issue on cluster startup. It might take 2 to 3 minutes for a cluster to start.",
 		URL:         "https://github.com/kubernetes/kubeadm/issues/2395",
 	},
+	{
+		// https://github.com/kubernetes/kubernetes/pull/109441 will be fixed in v1.25.1
+		VersionsAffected: []string{"1.25.0"},
+		Description:      "Kubernetes {{.version}} has a known issue with resolv.conf. minikube is using a workaround that should work for most use cases.",
+		URL:              "https://github.com/kubernetes/kubernetes/issues/112135",
+	},
 }
 
 // ProblematicK8sVersion checks for the supplied Kubernetes version and checks if there's a known issue with it.

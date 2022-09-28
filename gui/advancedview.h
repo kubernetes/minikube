@@ -32,6 +32,7 @@ signals:
     void pause();
     void delete_();
     void refresh();
+    void dockerEnv();
     void ssh();
     void dashboard();
     void basic();
@@ -47,6 +48,7 @@ private:
     QPushButton *pauseButton;
     QPushButton *deleteButton;
     QPushButton *refreshButton;
+    QPushButton *dockerEnvButton;
     QPushButton *sshButton;
     QPushButton *dashboardButton;
     QPushButton *basicButton;

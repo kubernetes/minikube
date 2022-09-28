@@ -6,7 +6,7 @@ on:
       - "translations/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.18.2'
+  GO_VERSION: '1.19.1'
 permissions:
   contents: read
 
@@ -14,11 +14,10 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@629c2de402a417ea7690ca6ce3f33229e27606a5
-      - uses: actions/setup-go@b22fbbc2921299758641fab08929b4ac52b32923
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
         with:
           go-version: ${{env.GO_VERSION}}
-          stable: true
       - name: Install libvirt
         run: |
           sudo apt-get update

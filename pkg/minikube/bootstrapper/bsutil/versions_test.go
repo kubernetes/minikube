@@ -49,7 +49,7 @@ func TestVersionIsBetween(t *testing.T) {
 			ver:         semver.MustParse("2.8.0"),
 			gte:         semver.MustParse("1.7.0"),
 			lte:         semver.MustParse("1.9.0"),
-			expected:    true,
+			expected:    false,
 		},
 		{
 			description: "equal to max version",
@@ -66,22 +66,23 @@ func TestVersionIsBetween(t *testing.T) {
 			expected:    true,
 		},
 		{
-			description: "alpha between",
+			description: "alpha before",
 			ver:         semver.MustParse("1.8.0-alpha.0"),
 			gte:         semver.MustParse("1.8.0"),
 			lte:         semver.MustParse("1.9.0"),
-			expected:    true,
+			expected:    false,
 		},
 		{
 			description: "beta greater than alpha",
 			ver:         semver.MustParse("1.8.0-beta.1"),
-			gte:         semver.MustParse("1.8.0"),
-			lte:         semver.MustParse("1.8.0-alpha.0"),
-			expected:    false,
+			gte:         semver.MustParse("1.8.0-alpha.0"),
+			lte:         semver.MustParse("1.8.0"),
+			expected:    true,
 		},
 	}
 
 	for _, test := range tests {
+		test := test // capture range variable
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			between := versionIsBetween(test.ver, test.gte, test.lte)

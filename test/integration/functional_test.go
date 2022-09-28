@@ -94,7 +94,7 @@ func TestFunctional(t *testing.T) {
 			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
 			{"AuditLog", validateAuditAfterStart},           // check audit feature works
-			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
+			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didn't change.
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
@@ -276,7 +276,7 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format, 
 func expectedImageFormat(format string) []string {
 	return []string{
 		fmt.Sprintf(format, "k8s.gcr.io/pause"),
-		fmt.Sprintf(format, "k8s.gcr.io/kube-apiserver"),
+		fmt.Sprintf(format, "registry.k8s.io/kube-apiserver"),
 	}
 }
 

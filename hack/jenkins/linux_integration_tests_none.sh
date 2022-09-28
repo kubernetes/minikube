@@ -30,13 +30,17 @@ ARCH="amd64"
 DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
-EXPECTED_DEFAULT_DRIVER="kvm2"
 
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
+if ! kubeadm &>/dev/null; then
+  echo "WARNING: kubeadm is not installed. will try to install."
+  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubeadm"
+  sudo install kubeadm /usr/local/bin/kubeadm
+fi
 # "none" driver specific cleanup from previous runs.
-sudo kubeadm reset -f || true
+sudo kubeadm reset -f --cri-socket unix:///var/run/cri-dockerd.sock || true
 # kubeadm reset may not stop pods immediately
 docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 
@@ -51,18 +55,37 @@ sudo systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop -f kubelet
 
- # conntrack is required for kubernetes 1.18 and higher for none driver
+# conntrack is required for Kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
-  echo "WARNING: contrack is not installed. will try to install."
+  echo "WARNING: conntrack is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install conntrack
 fi
 
- # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+# socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
 if ! which socat &>/dev/null; then
   echo "WARNING: socat is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install socat
+fi
+
+# cri-dockerd is required for Kubernetes 1.24 and higher for none driver
+if ! cri-dockerd --version &>/dev/null; then
+  echo "WARNING: cri-dockerd is not installed. will try to install."
+  CRI_DOCKERD_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+  CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_VERSION}"
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+  sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+  sudo chmod +x /usr/bin/cri-dockerd
+fi
+
+# crictl is required for Kubernetes 1.24 and higher for none driver
+if ! crictl &>/dev/null; then
+  echo "WARNING: crictl is not installed. will try to install."
+  CRICTL_VERSION="v1.17.0"
+  curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+  sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
 
 # We need this for reasons now

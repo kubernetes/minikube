@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v43/github"
 
 	"k8s.io/klog/v2"
 )

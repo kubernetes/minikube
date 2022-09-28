@@ -168,6 +168,10 @@ var settings = []Setting{
 		name: config.Rootless,
 		set:  SetBool,
 	},
+	{
+		name: config.MaxAuditEntries,
+		set:  SetInt,
+	},
 }
 
 // ConfigCmd represents the config command

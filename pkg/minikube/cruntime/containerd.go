@@ -21,12 +21,12 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/url"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -45,13 +45,12 @@ import (
 const (
 	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
-	containerdConfigFile         = "/etc/containerd/config.toml"
-	containerdImportedConfigFile = "/etc/containerd/containerd.conf.d/02-containerd.conf"
-	containerdConfigTemplate     = `version = 2
-{{ range .InsecureRegistry -}}
-[plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{. -}}"]
-  endpoint = ["http://{{. -}}"]
-{{ end -}}
+	containerdConfigFile               = "/etc/containerd/config.toml"
+	containerdMirrorsRoot              = "/etc/containerd/certs.d"
+	containerdInsecureRegistryTemplate = `server = "{{.InsecureRegistry -}}"
+
+[host."{{.InsecureRegistry -}}"]
+  skip_verify = true
 `
 )
 
@@ -142,28 +141,35 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
-	imports := `imports = ["/etc/containerd/containerd.conf.d/02-containerd.conf"]`
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^# imports|%s|' -i %s", imports, containerdConfigFile))); err != nil {
-		return errors.Wrap(err, "update conf_dir")
-	}
 
-	cPath := containerdImportedConfigFile
-	t, err := template.New("02-containerd.conf").Parse(containerdConfigTemplate)
-	if err != nil {
-		return err
-	}
-	opts := struct {
-		InsecureRegistry []string
-	}{
-		InsecureRegistry: insecureRegistry,
-	}
-	var b bytes.Buffer
-	if err := t.Execute(&b, opts); err != nil {
-		return err
-	}
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generate containerd cfg")
+	for _, registry := range insecureRegistry {
+		addr := registry
+		if strings.HasPrefix(strings.ToLower(registry), "http://") || strings.HasPrefix(strings.ToLower(registry), "https://") {
+			i := strings.Index(addr, "//")
+			addr = addr[i+2:]
+		} else {
+			registry = "http://" + registry
+		}
+
+		t, err := template.New("hosts.toml").Parse(containerdInsecureRegistryTemplate)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse insecure registry template")
+		}
+		opts := struct {
+			InsecureRegistry string
+		}{
+			InsecureRegistry: registry,
+		}
+		var b bytes.Buffer
+		if err := t.Execute(&b, opts); err != nil {
+			return errors.Wrap(err, "unable to create insecure registry template")
+		}
+		regRootPath := path.Join(containerdMirrorsRoot, addr)
+
+		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", regRootPath, base64.StdEncoding.EncodeToString(b.Bytes()), path.Join(regRootPath, "hosts.toml")))
+		if _, err := cr.RunCmd(c); err != nil {
+			return errors.Wrap(err, "unable to generate insecure registry cfg")
+		}
 	}
 	return nil
 }

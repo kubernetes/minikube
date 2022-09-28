@@ -30,6 +30,5 @@ ARCH="amd64"
 DRIVER="virtualbox"
 JOB_NAME="VirtualBox_Linux"
 EXTRA_TEST_ARGS=""
-EXPECTED_DEFAULT_DRIVER="kvm2"
 
 source ./common.sh 2h

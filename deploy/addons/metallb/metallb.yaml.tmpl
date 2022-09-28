@@ -4,7 +4,7 @@ metadata:
   labels:
     app: metallb
   name: metallb-system
----
+---{{ if .LegacyPodSecurityPolicy }}
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
@@ -33,7 +33,7 @@ spec:
     rule: RunAsAny
   volumes:
   - '*'
----
+---{{ end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:

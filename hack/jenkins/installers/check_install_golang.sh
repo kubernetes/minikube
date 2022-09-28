@@ -22,7 +22,7 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=1.18.2
+VERSION_TO_INSTALL=1.19.1
 INSTALL_PATH=${1}
 
 function current_arch() {
@@ -30,7 +30,7 @@ function current_arch() {
   "x86_64" | "i386")
      echo "amd64"
   ;;
-  "aarch64")
+  "aarch64" | "arm64")
     echo "arm64"
   ;;
   *)

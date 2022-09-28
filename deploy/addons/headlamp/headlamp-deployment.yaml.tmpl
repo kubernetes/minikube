@@ -1,0 +1,42 @@
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+  namespace: headlamp
+  labels:
+    app.kubernetes.io/name: headlamp
+    app.kubernetes.io/instance: headlamp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: headlamp
+      app.kubernetes.io/instance: headlamp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: headlamp
+        app.kubernetes.io/instance: headlamp
+    spec:
+      serviceAccountName: headlamp
+      containers:
+        - name: headlamp
+          image: {{.CustomRegistries.Headlamp  | default .ImageRepository | default .Registries.Headlamp }}{{.Images.Headlamp}}
+          imagePullPolicy: IfNotPresent
+          args:
+            - "-in-cluster"
+            - "-plugins-dir=/headlamp/plugins"
+          ports:
+            - name: http
+              containerPort: 4466
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http

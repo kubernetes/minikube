@@ -2,6 +2,84 @@
     {
         "checksums": {
             "amd64": {
+                "darwin": "fca0cbabad64868cf00d37349b953b16c06bafa13569595ef7721bd9178b4a5c",
+                "linux": "b6ab1207474255b9ea755ced4394b4b618a1cfa7b8394ddd1d307288130fb495",
+                "windows": "ebecc7633b3a91b652a81fb17faa4d1bb35fecff94e6309533e95933c9224ef7"
+            },
+            "arm": {
+                "linux": "4ab5323f1f365589d944818dc73700f1ceb9d930932de47e0dc0012a22c51f38"
+            },
+            "arm64": {
+                "darwin": "6b0a3d392c57ba97659a3d8a6a063e6d6e212fbd1b32bd2c5044ab4a611d5314",
+                "linux": "5d698c417d41d42e577e33eeb3666d33232c1f45585665cd6d4f6dacb8aeb0d2"
+            },
+            "ppc64le": {
+                "linux": "2387199325ba90dd944ea0685a2672f16b66ed188674e15970f2286f1f3a7505"
+            },
+            "s390x": {
+                "linux": "39da0ad9e879c715402af432d90580f0e17eec6f76e59c6bd0622fd815c53428"
+            },
+            "darwin": "fca0cbabad64868cf00d37349b953b16c06bafa13569595ef7721bd9178b4a5c",
+            "linux": "b6ab1207474255b9ea755ced4394b4b618a1cfa7b8394ddd1d307288130fb495",
+            "windows": "ebecc7633b3a91b652a81fb17faa4d1bb35fecff94e6309533e95933c9224ef7"
+        },
+        "name": "v1.27.0"
+    },
+    {
+        "checksums": {
+            "amd64": {
+                "darwin": "57578517edec2fcf8425b47ef9535c56c1b7c0f383b4d676ebf3787076ac4ede",
+                "linux": "9acd25706661b932ee98063147e58080cb949b92fd0d97b3b96dc5f898dcad21",
+                "windows": "9c9934a396acdd164e2b2449def5d831aeb1577571b8ac9d922ffe466b0f270e"
+            },
+            "arm": {
+                "linux": "6aa8bdb2b0eb7a1c306907cf5941d9d1e7d3cd623471b859c1da81cea2cd189d"
+            },
+            "arm64": {
+                "darwin": "61b0543ee7a27b48992517df17ce7a56ad687762210f55112c7f2eb8a0e55655",
+                "linux": "419f65fb0dc1045a07943192f11f6fc91858ee576b4f9ddb0be5b3f637e36ab0"
+            },
+            "ppc64le": {
+                "linux": "a87b01d9776b5e2f941d3bf9a8dbe9ccde12c154eff89494eb579346bbb4343b"
+            },
+            "s390x": {
+                "linux": "b655a3ad176746260dc937974c179477487bac45c5adfa046612d50691530e99"
+            },
+            "darwin": "57578517edec2fcf8425b47ef9535c56c1b7c0f383b4d676ebf3787076ac4ede",
+            "linux": "9acd25706661b932ee98063147e58080cb949b92fd0d97b3b96dc5f898dcad21",
+            "windows": "9c9934a396acdd164e2b2449def5d831aeb1577571b8ac9d922ffe466b0f270e"
+        },
+        "name": "v1.26.1"
+    },
+    {
+        "checksums": {
+            "amd64": {
+                "darwin": "cdfbbbdd01de8e8819d7d917f155c7a7cc6236af1ac97c4ae6f3ff9252b150b7",
+                "linux": "a988b7c890d9dc34033155b8b721827b3eff0e22c3d436409a8a3310aa564547",
+                "windows": "08c06e6ddff4f2e47a2d094365aeb85a3ac8ad1b86361db9b06a02f3668bd5a3"
+            },
+            "arm": {
+                "linux": "5319911f90d173d3f1156082e608c3d7bde5e0d0d5706e61a968972b44e8885d"
+            },
+            "arm64": {
+                "darwin": "39f90dc37d5cf4b6d150b177a4c9d2967d9d923cd8eb7d5b99268987a0287aba",
+                "linux": "7b6e79f51e671d2708afe8daea4d0bc0d9464992d9cf3d4415f608205c26a6ff"
+            },
+            "ppc64le": {
+                "linux": "bc8794ae7b5f3a02151085a316b02a39463dbac279ac0698b9d0edaef562b11e"
+            },
+            "s390x": {
+                "linux": "efc5765244660a48b6ef3c866b9db3b3a05913ef22c37e0286a221498c88469c"
+            },
+            "darwin": "cdfbbbdd01de8e8819d7d917f155c7a7cc6236af1ac97c4ae6f3ff9252b150b7",
+            "linux": "a988b7c890d9dc34033155b8b721827b3eff0e22c3d436409a8a3310aa564547",
+            "windows": "08c06e6ddff4f2e47a2d094365aeb85a3ac8ad1b86361db9b06a02f3668bd5a3"
+        },
+        "name": "v1.26.0"
+    },
+    {
+        "checksums": {
+            "amd64": {
                 "darwin": "d125772083a2e9d6f6e8bd9791e3fd0d2cbac071416962a490b1ce19a045f486",
                 "linux": "ef610fa83571920f1b6c8538bb31a8dc5e10ff7e1fcdca071b2a8544c349c6fd",
                 "windows": "06c99a08efb8ea540fb6aa6e4c5bcb35c7688a0b04f60d938366355bdd491eee"
