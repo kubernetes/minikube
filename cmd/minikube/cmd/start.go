@@ -148,11 +148,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	displayVersion(version.GetVersion())
 	go download.CleanUpOlderPreloads()
 
-	// No need to do the update check if no one is going to see it
-	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
-		// Avoid blocking execution on optional HTTP fetches
-		go notify.MaybePrintUpdateTextFromGithub()
-	}
+	// Avoid blocking execution on optional HTTP fetches
+	go notify.MaybePrintUpdateTextFromGithub()
 
 	displayEnviron(os.Environ())
 	if viper.GetBool(force) {
