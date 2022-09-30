@@ -94,14 +94,14 @@ clusters:
   name: minikube
 contexts:
 - context:
-    cluster: la-croix
-    user: la-croix
-  name: la-croix
-current-context: la-croix
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
 kind: Config
 preferences: {}
 users:
-- name: la-croix
+- name: minikube
   user:
     client-certificate: /home/la-croix/apiserver.crt
     client-key: /home/la-croix/apiserver.key
@@ -116,14 +116,14 @@ clusters:
   name: minikube
 contexts:
 - context:
-    cluster: la-croix
-    user: la-croix
-  name: la-croix
-current-context: la-croix
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
 kind: Config
 preferences: {}
 users:
-- name: la-croix
+- name: minikube
   user:
     client-certificate: /home/la-croix/apiserver.crt
     client-key: /home/la-croix/apiserver.key
@@ -138,14 +138,14 @@ clusters:
   name: minikube
 contexts:
 - context:
-    cluster: la-croix
-    user: la-croix
-  name: la-croix
-current-context: la-croix
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
 kind: Config
 preferences: {}
 users:
-- name: la-croix
+- name: minikube
   user:
     client-certificate: /home/la-croix/apiserver.crt
     client-key: /home/la-croix/apiserver.key
@@ -176,6 +176,70 @@ current-context: minikube
 kind: Config
 preferences: {}
 users:
+- name: minikube
+  user:
+    client-certificate: /home/la-croix/.minikube/profiles/minikube/client.crt
+    client-key: /home/la-croix/.minikube/profiles/minikube/client.key
+`)
+
+var kubeConfigMissingContext = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: https://192.168.10.100:8443
+  name: la-croix
+- cluster:
+    certificate-authority: /home/la-croix/.minikube/ca.crt
+    server: https://192.168.10.100:8080
+  name: minikube
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+- name: minikube
+  user:
+    client-certificate: /home/la-croix/.minikube/profiles/minikube/client.crt
+    client-key: /home/la-croix/.minikube/profiles/minikube/client.key
+`)
+
+var kubeConfigFixedContext = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: https://192.168.10.100:8443
+  name: la-croix
+- cluster:
+    certificate-authority: /home/la-croix/.minikube/ca.crt
+    server: https://192.168.10.100:8080
+  name: minikube
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
 - name: minikube
   user:
     client-certificate: /home/la-croix/.minikube/profiles/minikube/client.crt
@@ -424,6 +488,27 @@ func TestUpdateIP(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func TestMissingContext(t *testing.T) {
+	t.Parallel()
+	os.Setenv(localpath.MinikubeHome, "/home/la-croix")
+	configFilename := tempFile(t, kubeConfigMissingContext)
+	defer os.Remove(configFilename)
+	if _, err := UpdateEndpoint("minikube", "192.168.10.100", 8080, configFilename, nil); err != nil {
+		t.Fatal(err)
+	}
+	actual, err := readOrNew(configFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected, err := decode(kubeConfigFixedContext)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !configEquals(actual, expected) {
+		t.Fatalf("configs did not match: Actual:\n%+v\n Expected:\n%+v", actual, expected)
 	}
 }
 

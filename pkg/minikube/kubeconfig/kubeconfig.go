@@ -103,13 +103,32 @@ func Endpoint(contextName string, configPath ...string) (string, int, error) {
 	return u.Hostname(), port, nil
 }
 
+// verifyKubeconfig verifies that the cluster and context entries in the kubeconfig are valid
+func verifyKubeconfig(contextName string, hostname string, port int, configPath ...string) error {
+	if err := VerifyEndpoint(contextName, hostname, port, configPath...); err != nil {
+		return err
+	}
+	path := PathFromEnv()
+	if configPath != nil {
+		path = configPath[0]
+	}
+	apiCfg, err := readOrNew(path)
+	if err != nil {
+		return errors.Wrap(err, "read")
+	}
+	if _, ok := apiCfg.Contexts[contextName]; !ok {
+		return errors.Errorf("%q does not appear in %s", contextName, path)
+	}
+	return nil
+}
+
 // UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
 func UpdateEndpoint(contextName string, hostname string, port int, confpath string, ext *Extension) (bool, error) {
 	if hostname == "" {
 		return false, fmt.Errorf("empty ip")
 	}
 
-	err := VerifyEndpoint(contextName, hostname, port, confpath)
+	err := verifyKubeconfig(contextName, hostname, port, confpath)
 	if err == nil {
 		return false, nil
 	}
@@ -122,8 +141,8 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 
 	address := "https://" + hostname + ":" + strconv.Itoa(port)
 
-	// if the cluster setting is missed in the kubeconfig, create new one
-	if _, ok := cfg.Clusters[contextName]; !ok {
+	// if the cluster or context setting is missing in the kubeconfig, create it
+	if configNeedsRepair(contextName, cfg) {
 		klog.Infof("%q context is missing from %s - will repair!", contextName, confpath)
 		lp := localpath.Profile(contextName)
 		gp := localpath.MiniPath()
@@ -152,6 +171,16 @@ func UpdateEndpoint(contextName string, hostname string, port int, confpath stri
 	}
 
 	return true, nil
+}
+
+func configNeedsRepair(contextName string, cfg *api.Config) bool {
+	if _, ok := cfg.Clusters[contextName]; !ok {
+		return true
+	}
+	if _, ok := cfg.Contexts[contextName]; !ok {
+		return true
+	}
+	return false
 }
 
 // writeToFile encodes the configuration and writes it to the given file.
