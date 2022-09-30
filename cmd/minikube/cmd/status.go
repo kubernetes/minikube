@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -219,6 +220,7 @@ var statusCmd = &cobra.Command{
 		}
 
 		out.SetJSON(output == "json")
+		go notify.MaybePrintUpdateTextFromGithub()
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
