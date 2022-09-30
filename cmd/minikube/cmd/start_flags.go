@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -463,10 +464,12 @@ func getNetwork(driverName string) string {
 		return n
 	}
 	if n == "" {
-		out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
+		if runtime.GOOS == "darwin" {
+			out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
+		}
 		n = "user"
 	}
-	if n == "user" {
+	if n == "user" && runtime.GOOS == "darwin" {
 		out.WarningT("You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands.\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking")
 	}
 	return n

@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -58,7 +59,11 @@ var tunnelCmd = &cobra.Command{
 		co := mustload.Healthy(cname)
 
 		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the user network on QEMU, try starting minikube with '--network=socket_vmnet'")
+			msg := "minikube tunnel is not currently implemented with the user network on QEMU"
+			if runtime.GOOS == "darwin" {
+				msg += ", try starting minikube with '--network=socket_vmnet'"
+			}
+			exit.Message(reason.Unimplemented, msg)
 		}
 
 		if cleanup {

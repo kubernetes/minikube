@@ -88,7 +88,11 @@ var serviceCmd = &cobra.Command{
 		co := mustload.Healthy(cname)
 
 		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			exit.Message(reason.Unimplemented, "minikube service is not currently implemented with the user network on QEMU, try starting minikube with '--network=socket_vmnet'")
+			msg := "minikube service is not currently implemented with the user network on QEMU"
+			if runtime.GOOS == "darwin" {
+				msg += ", try starting minikube with '--network=socket_vmnet'"
+			}
+			exit.Message(reason.Unimplemented, msg)
 		}
 
 		var services service.URLs
