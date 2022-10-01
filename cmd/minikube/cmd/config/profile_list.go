@@ -213,7 +213,7 @@ func printProfilesJSON() {
 	} else {
 		body["error"] = err
 		jsonString, _ := json.Marshal(body)
-		out.String(string(jsonString))
+		os.Stdout.Write(jsonString)
 		os.Exit(reason.ExGuestError)
 	}
 }
