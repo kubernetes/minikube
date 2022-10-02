@@ -44,6 +44,10 @@ var (
 	//go:embed storage-provisioner-gluster/*.tmpl
 	StorageProvisionerGlusterAssets embed.FS
 
+	// StorageProvisionerRancherAssets assets for storage-provisioner-rancher addon
+	//go:embed storage-provisioner-rancher/*.tmpl
+	StorageProvisionerRancherAssets embed.FS
+
 	// EfkAssets assets for efk addon
 	//go:embed efk/*.tmpl
 	EfkAssets embed.FS
