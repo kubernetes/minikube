@@ -64,6 +64,10 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	}
 
 	if enable {
+		// Enable addon before marking it as default
+		if err = EnableOrDisableAddon(cc, name, val); err != nil {
+			return err
+		}
 		// Only StorageClass for 'name' should be marked as default
 		err = storageclass.SetDefaultStorageClass(storagev1, class)
 		if err != nil {
@@ -75,7 +79,10 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 		if err != nil {
 			return errors.Wrapf(err, "Error disabling %s as the default storage class", class)
 		}
+		if err = EnableOrDisableAddon(cc, name, val); err != nil {
+			return err
+		}
 	}
 
-	return EnableOrDisableAddon(cc, name, val)
+	return nil
 }
