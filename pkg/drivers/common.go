@@ -37,14 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-const (
-	// LeasesPath is the path to dhcpd leases
-	LeasesPath = "/var/db/dhcpd_leases"
-)
+// LeasesPath is the path to dhcpd leases
+const LeasesPath = "/var/db/dhcpd_leases"
 
-var (
-	leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
-)
+var leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
 
 // This file is for common code shared among internal machine drivers
 // Code here should not be called from within minikube
