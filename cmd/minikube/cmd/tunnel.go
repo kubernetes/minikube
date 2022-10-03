@@ -85,7 +85,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) {
+		if useSSHTunnel(co.Config.Driver) {
 			port, err := oci.ForwardedPort(co.Config.Driver, cname, 22)
 			if err != nil {
 				exit.Error(reason.DrvPortForward, "error getting ssh port", err)
@@ -109,6 +109,16 @@ var tunnelCmd = &cobra.Command{
 		}
 		<-done
 	},
+}
+
+func useSSHTunnel(driverName string) bool {
+	if !driver.IsKIC(driverName) {
+		return false
+	}
+	if driver.NeedsPortForward(driverName) {
+		return true
+	}
+	return bindAddress != ""
 }
 
 func outputTunnelStarted() {
