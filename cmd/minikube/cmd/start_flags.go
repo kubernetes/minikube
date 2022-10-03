@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -457,6 +458,23 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
+func getNetwork(driverName string) string {
+	n := viper.GetString(network)
+	if !driver.IsQEMU(driverName) {
+		return n
+	}
+	if n == "" {
+		if runtime.GOOS == "darwin" {
+			out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
+		}
+		n = "user"
+	}
+	if n == "user" && runtime.GOOS == "darwin" {
+		out.WarningT("You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands.\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking")
+	}
+	return n
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -471,8 +489,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
 	}
 
-	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket" {
-		out.WarningT("Using qemu with --network=socket for 'socket_vmnet' is experimental")
+	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket_vmnet" {
+		out.WarningT("Using qemu with 'socket_vmnet' network is experimental")
 	}
 
 	checkNumaCount(k8sVersion)
@@ -485,7 +503,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
-		Network:                 viper.GetString(network),
+		Network:                 getNetwork(drvName),
 		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),

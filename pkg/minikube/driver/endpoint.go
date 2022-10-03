@@ -24,11 +24,12 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/network"
 )
 
 // ControlPlaneEndpoint returns the location where callers can reach this cluster
 func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName string) (string, net.IP, int, error) {
-	if NeedsPortForward(driverName) && IsKIC(driverName) {
+	if NeedsPortForward(driverName) {
 		port, err := oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
 		if err != nil {
 			klog.Warningf("failed to get forwarded control plane port %v", err)
@@ -45,7 +46,7 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			hostname = cc.KubernetesConfig.APIServerName
 		}
 		return hostname, ips[0], port, err
-	} else if NeedsPortForward(driverName) && IsQEMU(driverName) {
+	} else if IsQEMU(driverName) && network.IsUser(cc.Network) {
 		return "localhost", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 

@@ -218,6 +218,11 @@ func isSubnetPrivate(subnet string) bool {
 	return false
 }
 
+// IsUser returns if network is user.
+func IsUser(network string) bool {
+	return network == "user"
+}
+
 // FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.
 func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 	for try := 0; try < tries; try++ {
