@@ -163,6 +163,7 @@
 	"Downloading Kubernetes {{.version}} preload ...": "ロード済み Kubernetes {{.version}} をダウンロードしています...",
 	"Downloading VM boot image ...": "VM ブートイメージをダウンロードしています...",
 	"Downloading driver {{.driver}}:": "{{.driver}} ドライバーをダウンロードしています:",
+	"Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "minikube 証明書の有効期限。デフォルトは 3 年間 (26280h)。",
 	"ERROR creating `registry-creds-acr` secret": "`registry-creds-acr` シークレット作成中にエラーが発生しました",
 	"ERROR creating `registry-creds-dpr` secret": "`registry-creds-dpr` シークレット作成中にエラーが発生しました",
