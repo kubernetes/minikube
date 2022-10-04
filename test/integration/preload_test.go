@@ -32,17 +32,13 @@ func TestPreload(t *testing.T) {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
 
-	if arm64Platform() {
-		t.Skipf("skipping %s - not yet supported on arm64. See https://github.com/kubernetes/minikube/issues/10144", t.Name())
-	}
-
 	profile := UniqueProfileName("test-preload")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	startArgs := []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "--wait=true", "--preload=false"}
 	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion := "v1.17.0"
+	k8sVersion := "v1.24.4"
 	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -63,10 +59,10 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	// Restart minikube with v1.17.3, which has a preloaded tarball
+	// Restart minikube with v1.24.6, which has a preloaded tarball
 	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion = "v1.17.3"
+	k8sVersion = "v1.24.6"
 	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
