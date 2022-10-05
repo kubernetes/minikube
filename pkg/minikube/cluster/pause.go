@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"os/exec"
 	"time"
 
 	"github.com/pkg/errors"
@@ -63,7 +64,17 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 		return ids, nil
 	}
 
-	return ids, cr.PauseContainers(ids)
+	if err := cr.PauseContainers(ids); err != nil {
+		return ids, errors.Wrap(err, "pausing containers")
+	}
+
+	if isTouchingKubeSystem(namespaces) {
+		if _, err := r.RunCmd(exec.Command("touch", "paused")); err != nil {
+			klog.Errorf("failed to create paused file, apiserver may display incorrect status")
+		}
+	}
+
+	return ids, nil
 }
 
 // Unpause unpauses a Kubernetes cluster, retrying if necessary
@@ -99,6 +110,12 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 		return ids, errors.Wrap(err, "kubelet start")
 	}
 
+	if isTouchingKubeSystem(namespaces) {
+		if _, err := r.RunCmd(exec.Command("rm", "-f", "paused")); err != nil {
+			klog.Errorf("failed to remove paused file, apiserver may display incorrect status")
+		}
+	}
+
 	return ids, nil
 }
 
@@ -114,4 +131,17 @@ func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// isTouchingKubeSystem returns if the user is pausing or unpausing the kube-system namespace
+func isTouchingKubeSystem(namespaces []string) bool {
+	if namespaces == nil {
+		return true
+	}
+	for _, ns := range namespaces {
+		if ns == "kube-system" {
+			return true
+		}
+	}
+	return false
 }
