@@ -7,7 +7,7 @@ description: >
 
 ## minikube pause
 
-Pauses a running local Kubernetes cluster
+Pauses a running API-Server for the active Kubernetes cluster
 
 ### Synopsis
 
@@ -48,4 +48,3 @@ minikube pause [flags]
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
-
