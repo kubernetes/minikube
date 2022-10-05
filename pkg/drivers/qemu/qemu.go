@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
@@ -55,33 +56,30 @@ type Driver struct {
 	EnginePort int
 	FirstQuery bool
 
-	Memory           int
-	DiskSize         int
-	CPU              int
-	Program          string
-	BIOS             bool
-	CPUType          string
-	MachineType      string
-	Firmware         string
-	Display          bool
-	DisplayType      string
-	Nographic        bool
-	VirtioDrives     bool
-	Network          string
-	PrivateNetwork   string
-	Boot2DockerURL   string
-	NetworkInterface string
-	NetworkAddress   string
-	NetworkSocket    string
-	NetworkBridge    string
-	CaCertPath       string
-	PrivateKeyPath   string
-	DiskPath         string
-	CacheMode        string
-	IOMode           string
-	UserDataFile     string
-	CloudConfigRoot  string
-	LocalPorts       string
+	Memory          int
+	DiskSize        int
+	CPU             int
+	Program         string
+	BIOS            bool
+	CPUType         string
+	MachineType     string
+	Firmware        string
+	Display         bool
+	DisplayType     string
+	Nographic       bool
+	VirtioDrives    bool
+	Network         string
+	PrivateNetwork  string
+	Boot2DockerURL  string
+	CaCertPath      string
+	PrivateKeyPath  string
+	DiskPath        string
+	CacheMode       string
+	IOMode          string
+	UserDataFile    string
+	CloudConfigRoot string
+	LocalPorts      string
+	MACAddress      string
 }
 
 func (d *Driver) GetMachineName() string {
@@ -89,7 +87,10 @@ func (d *Driver) GetMachineName() string {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "localhost", nil
+	if d.Network == "user" {
+		return "localhost", nil
+	}
+	return d.IPAddress, nil
 }
 
 func (d *Driver) GetSSHKeyPath() string {
@@ -105,7 +106,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 
 func (d *Driver) GetSSHUsername() string {
 	if d.SSHUser == "" {
-		d.SSHUser = "docker"
+		d.SSHUser = defaultSSHUser
 	}
 	return d.SSHUser
 }
@@ -146,7 +147,7 @@ func (d *Driver) GetIP() (string, error) {
 	if d.Network == "user" {
 		return "127.0.0.1", nil
 	}
-	return d.NetworkAddress, nil
+	return d.IPAddress, nil
 }
 
 func (d *Driver) GetPort() int {
@@ -210,7 +211,8 @@ func (d *Driver) PreCreateCheck() error {
 
 func (d *Driver) Create() error {
 	var err error
-	if d.Network == "user" {
+	switch d.Network {
+	case "user":
 		minPort, maxPort, err := parsePortRange(d.LocalPorts)
 		log.Debugf("port range: %d -> %d", minPort, maxPort)
 		if err != nil {
@@ -231,6 +233,11 @@ func (d *Driver) Create() error {
 				continue
 			}
 			break
+		}
+	case "socket_vmnet":
+		d.SSHPort, err = d.GetSSHPort()
+		if err != nil {
+			return err
 		}
 	}
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
@@ -408,20 +415,12 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
-	case "tap":
+	case "socket_vmnet":
 		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("tap,model=virtio,ifname=%s,script=no,downscript=no", d.NetworkInterface),
-		)
-	case "vde":
-		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("vde,model=virtio,sock=%s", d.NetworkSocket),
-		)
-	case "bridge":
-		startCmd = append(startCmd,
-			"-nic", fmt.Sprintf("bridge,model=virtio,br=%s", d.NetworkBridge),
+			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=3",
 		)
 	default:
-		log.Errorf("unknown network: %s", d.Network)
+		return fmt.Errorf("unknown network: %s", d.Network)
 	}
 
 	startCmd = append(startCmd,
@@ -445,19 +444,59 @@ func (d *Driver) Start() error {
 			d.diskPath())
 	}
 
-	if stdout, stderr, err := cmdOutErr(d.Program, startCmd...); err != nil {
+	// If socket network, start with socket_vmnet.
+	startProgram := d.Program
+	if d.Network == "socket_vmnet" {
+		startProgram = viper.GetString("socket-vmnet-client-path")
+		socketVMnetPath := viper.GetString("socket-vmnet-path")
+		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
+	}
+
+	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
-	log.Infof("Waiting for VM to start (ssh -p %d docker@localhost)...", d.SSHPort)
 
-	return WaitForTCPWithDelay(fmt.Sprintf("localhost:%d", d.SSHPort), time.Second)
+	switch d.Network {
+	case "user":
+		d.IPAddress = "127.0.0.1"
+	case "socket_vmnet":
+		var err error
+		getIP := func() error {
+			// QEMU requires MAC address with leading 0s
+			// But socket_vmnet writes the MAC address to the dhcp leases file with leading 0s stripped
+			mac := pkgdrivers.TrimMacAddress(d.MACAddress)
+			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+			if err != nil {
+				return errors.Wrap(err, "failed to get IP address")
+			}
+			return nil
+		}
+		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
+		for i := 0; i < 30; i++ {
+			log.Debugf("Attempt %d", i)
+			err = getIP()
+			if err == nil {
+				break
+			}
+			time.Sleep(2 * time.Second)
+		}
+
+		if err != nil {
+			return errors.Wrap(err, "IP address never found in dhcp leases file")
+		}
+		log.Debugf("IP: %s", d.IPAddress)
+	}
+
+	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+
+	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
 }
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
-	log.Debugf("executing: %v %v", cmdStr, strings.Join(args, " "))
+	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -465,8 +504,8 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	err := cmd.Run()
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
-	log.Debugf("STDOUT: %v", stdoutStr)
-	log.Debugf("STDERR: %v", stderrStr)
+	log.Debugf("STDOUT: %s", stdoutStr)
+	log.Debugf("STDERR: %s", stderrStr)
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
 			err = fmt.Errorf("mystery error: %v", ee)
@@ -659,7 +698,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// connect to monitor
 	conn, err := net.Dial("unix", d.monitorPath())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "connect")
 	}
 	defer conn.Close()
 
@@ -667,7 +706,7 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	var buf [1024]byte
 	nr, err := conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read initial resp")
 	}
 	type qmpInitialResponse struct {
 		QMP struct {
@@ -684,9 +723,8 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 
 	var initialResponse qmpInitialResponse
-	err = json.Unmarshal(buf[:nr], &initialResponse)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &initialResponse); err != nil {
+		return nil, errors.Wrap(err, "unmarshal initial resp")
 	}
 
 	// run 'qmp_capabilities' to switch to command mode
@@ -696,22 +734,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	}
 	jsonCommand, err := json.Marshal(qmpCommand{Command: "qmp_capabilities"})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal qmp_capabilities")
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "write qmp_capabilities")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read qmp_capabilities resp")
 	}
 	type qmpResponse struct {
 		Return map[string]interface{} `json:"return"`
 	}
 	var response qmpResponse
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(buf[:nr], &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal qmp_capabilities resp")
 	}
 	// expecting empty response
 	if len(response.Return) != 0 {
@@ -721,18 +758,21 @@ func (d *Driver) RunQMPCommand(command string) (map[string]interface{}, error) {
 	// { "execute": command }
 	jsonCommand, err = json.Marshal(qmpCommand{Command: command})
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "marshal command")
 	}
 	if _, err := conn.Write(jsonCommand); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "write command")
 	}
 	nr, err = conn.Read(buf[:])
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read command resp")
 	}
-	err = json.Unmarshal(buf[:nr], &response)
-	if err != nil {
-		return nil, err
+
+	// Sometimes QEMU returns two JSON objects with the first object being the command response
+	// and the second object being an event log (unimportant)
+	firstRespObj := strings.Split(string(buf[:nr]), "\n")[0]
+	if err := json.Unmarshal([]byte(firstRespObj), &response); err != nil {
+		return nil, errors.Wrap(err, "unmarshal command resp")
 	}
 	if strings.HasPrefix(command, "query-") {
 		return response.Return, nil

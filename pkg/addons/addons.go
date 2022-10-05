@@ -221,7 +221,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		out.WarningT("At least needs control plane nodes to enable addon")
 	}
 
-	data := assets.GenerateTemplateData(addon, cc.KubernetesConfig, networkInfo, images, customRegistries, enable)
+	data := assets.GenerateTemplateData(addon, cc, networkInfo, images, customRegistries, enable)
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
@@ -247,7 +247,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	}
 
 	if name == "registry" {
-		if driver.NeedsPortForward(cc.Driver) && driver.IsKIC(cc.Driver) {
+		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
 				return false, errors.Wrap(err, "registry port")

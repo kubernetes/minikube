@@ -17,6 +17,7 @@ limitations under the License.
 package qemu2
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 	"os/exec"
@@ -37,9 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu2/"
-)
+const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -160,6 +159,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	mac, err := generateMACAddress()
+	if err != nil {
+		return nil, fmt.Errorf("generating MAC address: %v", err)
+	}
+
 	return qemu.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
@@ -179,9 +183,10 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		CPUType:        qemuCPU,
 		Firmware:       qemuFirmware,
 		VirtioDrives:   false,
-		Network:        "user",
+		Network:        cc.Network,
 		CacheMode:      "default",
 		IOMode:         "threads",
+		MACAddress:     mac,
 	}, nil
 }
 
@@ -191,8 +196,7 @@ func status() registry.State {
 		return registry.State{Error: err, Doc: docURL}
 	}
 
-	_, err = exec.LookPath(qemuSystem)
-	if err != nil {
+	if _, err := exec.LookPath(qemuSystem); err != nil {
 		return registry.State{Error: err, Fix: "Install qemu-system", Doc: docURL}
 	}
 
@@ -206,4 +210,15 @@ func status() registry.State {
 	}
 
 	return registry.State{Installed: true, Healthy: true, Running: true}
+}
+
+func generateMACAddress() (string, error) {
+	buf := make([]byte, 6)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
+	}
+	// Set local bit, ensure unicast address, socket_vmnet doesn't support multicast
+	buf[0] = (buf[0] | 2) & 0xfe
+	mac := fmt.Sprintf("%02x:%02x:%02x:%02x:%02x:%02x", buf[0], buf[1], buf[2], buf[3], buf[4], buf[5])
+	return mac, nil
 }

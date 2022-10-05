@@ -95,10 +95,11 @@ The default container runtime in minikube varies. You can select one explicitly 
 minikube start --container-runtime=docker
 ```
 
-Other options available are:
+Options available are:
 
-* [containerd](https://github.com/containerd/containerd)
-* [cri-o](https://github.com/cri-o/cri-o)
+* [containerd]({{<ref "/docs/runtimes/containerd">}})
+* [cri-o]({{<ref "/docs/runtimes/cri-o">}})
+* [docker]({{<ref "/docs/runtimes/docker">}})
 
 See <https://kubernetes.io/docs/setup/production-environment/container-runtimes/>
 

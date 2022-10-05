@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 26
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 27
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.26.1
+ISO_VERSION ?= v1.27.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,7 +33,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.19
+GO_VERSION ?= 1.19.1
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.25.0
 
@@ -44,7 +44,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.12
 # the go version on the line below is for the ISO and does not need to be updated often
-GOLANG_OPTIONS = GO_VERSION=1.18.3 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.19.1 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -76,7 +76,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases 
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.48.0
+GOLINT_VERSION ?= v1.49.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -111,7 +111,7 @@ GVISOR_TAG ?= latest
 AUTOPAUSE_HOOK_TAG ?= v0.0.2
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.2
+PROW_TEST_TAG ?= v0.0.3
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
@@ -409,7 +409,7 @@ out/unittest.json: $(SOURCE_FILES) $(GOTEST_FILES)
 	-coverprofile=out/coverage.out -json > out/unittest.json
 out/coverage.out: out/unittest.json
 
-# Generate go test report (from gotest) as a a HTML page
+# Generate go test report (from gotest) as a HTML page
 out/unittest.html: out/unittest.json
 	$(if $(quiet),@echo "  REPORT   $@")
 	$(Q)go-test-report < $< -o $@

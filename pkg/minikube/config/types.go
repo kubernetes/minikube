@@ -102,6 +102,8 @@ type ClusterConfig struct {
 	DisableOptimizations    bool
 	DisableMetrics          bool
 	CustomQemuFirmwarePath  string
+	SocketVMnetClientPath   string
+	SocketVMnetPath         string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

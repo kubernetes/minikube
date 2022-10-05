@@ -3,8 +3,8 @@
 # containerd
 #
 ################################################################################
-CONTAINERD_BIN_VERSION = v1.6.6
-CONTAINERD_BIN_COMMIT = 10c12954828e7c7c9b6e0ea9b0c02b01407d3ae1
+CONTAINERD_BIN_VERSION = v1.6.8
+CONTAINERD_BIN_COMMIT = 9cd3357b7fd7218e4aec3eae239db1f68a5a6ec6
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/archive
 CONTAINERD_BIN_SOURCE = $(CONTAINERD_BIN_VERSION).tar.gz
 CONTAINERD_BIN_DEPENDENCIES = host-go libgpgme
@@ -54,6 +54,9 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm644 \
 		$(CONTAINERD_BIN_PKGDIR)/config.toml \
 		$(TARGET_DIR)/etc/containerd/config.toml
+	$(INSTALL) -Dm644 \
+		$(CONTAINERD_BIN_PKGDIR)/containerd_docker_io_hosts.toml \
+		$(TARGET_DIR)/etc/containerd/certs.d/docker.io/hosts.toml
 endef
 
 define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD
