@@ -63,11 +63,14 @@ var addonsEnableCmd = &cobra.Command{
 You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS`,
 					out.V{"addon": addon, "maintainer": maintainer})
 			} else {
-				out.Styled(style.Warning, `{{.addon}} is a 3rd party addon and not maintained or verified by minikube maintainers, enable at your own risk.`,
+				out.Styled(style.Warning, `{{.addon}} is a 3rd party addon and is not maintained or verified by minikube maintainers, enable at your own risk.`,
 					out.V{"addon": addon})
 				if addonBundle.VerifiedMaintainer != "" {
 					out.Styled(style.Tip, `{{.addon}} is maintained by {{.maintainer}} for any concerns contact {{.verifiedMaintainer}} on GitHub.`,
 						out.V{"addon": addon, "maintainer": maintainer, "verifiedMaintainer": addonBundle.VerifiedMaintainer})
+				} else if addonBundle.Maintainer == "3rd party (unknown)" {
+					out.Styled(style.Warning, `{{.addon}} does not currently have an associated maintainer.`,
+						out.V{"addon": addon})
 				}
 			}
 		}
