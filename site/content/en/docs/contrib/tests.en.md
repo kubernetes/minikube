@@ -697,6 +697,9 @@ verifies that minikube pause works
 ## TestInsufficientStorage
 makes sure minikube status displays the correct info if there is insufficient disk space on the machine
 
+## TestInvalidService
+makes sure minikube will not start a tunnel for a unavailable service who has no running pods
+
 ## TestRunningBinaryUpgrade
 upgrades a running legacy cluster to minikube at HEAD
 

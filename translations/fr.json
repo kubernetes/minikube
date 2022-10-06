@@ -934,6 +934,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "mode simulation. Valide la configuration, mais ne modifie pas l'état du système",
 	"dry-run validation complete!": "validation de la simulation terminée !",
 	"enable failed": "échec de l'activation",
+	"error checking service": "",
 	"error creating clientset": "erreur lors de la création de l'ensemble de clients",
 	"error creating urls": "erreur lors de la création d'urls",
 	"error getting defaults: {{.error}}": "erreur lors de l'obtention des valeurs par défaut : {{.error}}",
