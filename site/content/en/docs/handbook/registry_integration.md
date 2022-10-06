@@ -1,25 +1,63 @@
 ---
-title: "Registry Integration"
-linkTitle: "Registry Integration"
+title: "Google Artifact Registry Integration"
+linkTitle: "Google Artifact Registry Integration"
 weight: 6
 description: >
-  Cloud provider registry integration (Google Artifact Registry + Service Account + Permission)
+  Pull an image from Google's Artifact Registry into a minikube pod
 aliases:
- - /docs/tasks/registry_integration
+ - /docs/tasks/artifact_registry_integration
 ---
 
-## Push Ngnix image to private Google Artifact Registry
+## Push Image to Google Artifact Registry
 
- - Push a Nginx image to a private Google Artifact Registry using GCP-Auth addon.
+##### Authenticate with Artifact Registry:
 
-## Deploy a pod (yaml) to minikube using that image
+`gcloud beta auth configure-docker us-central1-docker.pkg.dev`
 
-Create a new pod with your Nginx image:
+##### Configure Docker with Artifact Registry Credentials:
+
+Check Github for the latest [GoogleCloudPlatform/docker-credential-gcr](https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases) release.
+
+ - `VERSION=2.1.6`
+
+For Linux, enter "linux", for Apple Mac OS, enter "darwin" and for Microsoft Windows, enter "windows".
+
+ - `OS=linux`
+
+For AMD64, enter "amd64", for ARM64, enter "arm64" and for 32-bit OS', enter "386".
+
+ - `ARCH=amd64`
+
+ Curl the appropriate version of `docker-credential-gcr`:
+
+```
+curl -fsSL "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_${OS}_${ARCH}-${VERSION}.tar.gz" \
+  | tar xz --to-stdout ./docker-credential-gcr \
+  > /usr/bin/docker-credential-gcr
+```
+
+Make `docker-credential-gcr` executable:
+
+`chmod +x /usr/bin/docker-credential-gcr`
+
+##### Configure Docker Artifact Registry Interaction
+
+`docker-credential-gcr configure-docker --registries=us-central1-docker.pkg.dev`
+
+##### Run Docker Push
+
+Run `docker push` to push an image from Docker to Artifact Registry.
+
+See [Docker push documentation](https://docs.docker.com/engine/reference/commandline/push/) for more information.
+
+## Deploy a pod to minikube with Artifact Registry Image
+
+Create a new pod with your Image:
 ```
 kubectl run nginx --image=nginx --restart=Never --command -- sleep infinity
 ```
 
-## Ensure that the Pod is working (running)
+## Ensure Pod is Running
 
 Obtain a list of all pods:
 
@@ -93,3 +131,5 @@ Events:
   Normal  Created    3m23s  kubelet            Created container nginx
   Normal  Started    3m23s  kubelet            Started container nginx
 ```
+
+If you have any questions or comments please do not hesitate to reach out to the [community](http://localhost:1313/community/).
