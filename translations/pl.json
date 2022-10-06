@@ -182,6 +182,7 @@
 	"Downloading VM boot image ...": "Pobieranie obrazu maszyny wirtualnej ...",
 	"Downloading driver {{.driver}}:": "",
 	"Downloading {{.name}} {{.version}}": "Pobieranie {{.name}} {{.version}}",
+	"Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues": "",
 	"Duration until minikube certificate expiration, defaults to three years (26280h).": "",
 	"ERROR creating `registry-creds-acr` secret": "",
 	"ERROR creating `registry-creds-dpr` secret": "",

@@ -672,7 +672,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kub
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion, ip)
 	return ip, nil
 }
 
@@ -728,7 +728,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -747,6 +747,10 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string, ku
 		klog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
+		// using QEMU with the user network
+		if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
+			out.WarningT("Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues")
+		}
 	}
 }
 
