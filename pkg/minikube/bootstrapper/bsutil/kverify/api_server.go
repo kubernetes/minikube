@@ -207,6 +207,7 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	return apiServerHealthz(hostname, port)
 }
 
+// nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used
 func nonFreezerServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	rr, err := cr.RunCmd(exec.Command("ls"))
 	if err != nil {

@@ -17,13 +17,13 @@ limitations under the License.
 package cluster
 
 import (
-	"os/exec"
 	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	pkgpause "k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -68,10 +68,8 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 		return ids, errors.Wrap(err, "pausing containers")
 	}
 
-	if isTouchingKubeSystem(namespaces) {
-		if _, err := r.RunCmd(exec.Command("touch", "paused")); err != nil {
-			klog.Errorf("failed to create paused file, apiserver may display incorrect status")
-		}
+	if doesNamespaceContainKubeSystem(namespaces) {
+		pkgpause.CreatePausedFile(r)
 	}
 
 	return ids, nil
@@ -110,10 +108,8 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 		return ids, errors.Wrap(err, "kubelet start")
 	}
 
-	if isTouchingKubeSystem(namespaces) {
-		if _, err := r.RunCmd(exec.Command("rm", "-f", "paused")); err != nil {
-			klog.Errorf("failed to remove paused file, apiserver may display incorrect status")
-		}
+	if doesNamespaceContainKubeSystem(namespaces) {
+		pkgpause.RemovePausedFile(r)
 	}
 
 	return ids, nil
@@ -133,8 +129,10 @@ func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
 	return false, nil
 }
 
-// isTouchingKubeSystem returns if the user is pausing or unpausing the kube-system namespace
-func isTouchingKubeSystem(namespaces []string) bool {
+// doesNamespaceContainKubeSystem returns true if kube-system is contained in the namespace list
+// This is used to only mark the apiserver as paused/unpaused when the kube-system namespace is specified
+func doesNamespaceContainKubeSystem(namespaces []string) bool {
+	// nil slice indicates all namespaces
 	if namespaces == nil {
 		return true
 	}
