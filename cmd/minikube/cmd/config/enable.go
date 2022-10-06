@@ -68,7 +68,7 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 				if addonBundle.VerifiedMaintainer != "" {
 					out.Styled(style.Tip, `{{.addon}} is maintained by {{.maintainer}} for any concerns contact {{.verifiedMaintainer}} on GitHub.`,
 						out.V{"addon": addon, "maintainer": maintainer, "verifiedMaintainer": addonBundle.VerifiedMaintainer})
-				} else if addonBundle.Maintainer == "3rd party (unknown)" {
+				} else {
 					out.Styled(style.Warning, `{{.addon}} does not currently have an associated maintainer.`,
 						out.V{"addon": addon})
 				}
