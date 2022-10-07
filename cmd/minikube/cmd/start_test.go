@@ -489,12 +489,12 @@ func TestValidatePorts(t *testing.T) {
 		{
 			isTarget: true,
 			ports:    []string{"0:80"},
-			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80]",
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
 		},
 		{
 			isTarget: true,
 			ports:    []string{"0:80/tcp"},
-			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0:80/tcp]",
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
 		},
 		{
 			isTarget: true,
@@ -504,12 +504,12 @@ func TestValidatePorts(t *testing.T) {
 		{
 			isTarget: true,
 			ports:    []string{"0-1:80-81/tcp"},
-			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0-1:80-81/tcp]",
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
 		},
 		{
 			isTarget: true,
 			ports:    []string{"0-1:80-81/udp"},
-			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range [0-1:80-81/udp]",
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
 		},
 		{
 			isTarget: !isMicrosoftWSL,
@@ -519,22 +519,22 @@ func TestValidatePorts(t *testing.T) {
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"80:80"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [80:80]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 80",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"1023-1025:8023-8025"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 1023",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"1023-1025:8023-8025/tcp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025/tcp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 1023",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"1023-1025:8023-8025/udp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [1023-1025:8023-8025/udp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 1023",
 		},
 		{
 			isTarget: true,
@@ -554,27 +554,72 @@ func TestValidatePorts(t *testing.T) {
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"127.0.0.1:80:80"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80:80]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 80",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"127.0.0.1:81:81/tcp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:81:81/tcp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 81",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"127.0.0.1:81:81/udp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:81:81/udp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 81",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"127.0.0.1:80-83:80-83/tcp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80-83:80-83/tcp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 80",
 		},
 		{
 			isTarget: isMicrosoftWSL,
 			ports:    []string{"127.0.0.1:80-83:80-83/udp"},
-			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024) [127.0.0.1:80-83:80-83/udp]",
+			errorMsg: "Sorry, you cannot use privileged ports on the host (below 1024): 80",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"80"},
+			errorMsg: "",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"80", "65535", "65536"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 65536",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"0", "80", "65535"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"cats"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid: cats",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"127.0.0.1:81:0/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is outside range: 0",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"127.0.0.1:81:65536/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [127.0.0.1:81:65536/tcp] (Invalid containerPort: 65536)",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"1-65536:80-81/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [1-65536:80-81/tcp] (Invalid hostPort: 1-65536)",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"1-80:0-81/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [1-80:0-81/tcp] (Invalid ranges specified for container and host Ports: 0-81 and 1-80)",
+		},
+		{
+			isTarget: true,
+			ports:    []string{"1-80:1-65536/tcp"},
+			errorMsg: "Sorry, one of the ports provided with --ports flag is not valid [1-80:1-65536/tcp] (Invalid containerPort: 1-65536)",
 		},
 	}
 	for _, test := range tests {
