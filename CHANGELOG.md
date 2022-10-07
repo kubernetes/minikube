@@ -3,7 +3,8 @@
 ## Version 1.27.1 - 2022-10-07
 
 Features (Experimental):
-* Implement socket_vmnet network (QEMU) for macOS [#14989](https://github.com/kubernetes/minikube/pull/14989)
+* QEMU Driver: Add support for dedicated network on macOS (socket_vmnet) [#14989](https://github.com/kubernetes/minikube/pull/14989)
+* QEMU Driver: Add support minikube service and tunnel on macOS [#14989](https://github.com/kubernetes/minikube/pull/14989)
 
 Minor Imprevements:
 * Check if context is invalid during update-context command [#15032](https://github.com/kubernetes/minikube/pull/15032)
