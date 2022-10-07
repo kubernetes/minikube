@@ -1,5 +1,57 @@
 # Release Notes
 
+## Version 1.27.1 - 2022-10-07
+
+Features (Experimental):
+* Implement socket_vmnet network (QEMU) for macOS [#14989](https://github.com/kubernetes/minikube/pull/14989)
+
+Minor Imprevements:
+* Check if context is invalid during update-context command [#15032](https://github.com/kubernetes/minikube/pull/15032)
+* Use SSH tunnel if user specifies bindAddress [#14951](https://github.com/kubernetes/minikube/pull/14951)
+* Warn QEMU users if DNS issue detected [#15073](https://github.com/kubernetes/minikube/pull/15073)
+
+Bug Fixes:
+* Fix status command taking a long time on docker driver while paused [#15077](https://github.com/kubernetes/minikube/pull/15077)
+* Fix not allowing passing only an exposed port to --ports [#15085](https://github.com/kubernetes/minikube/pull/15085)
+* Fix `minikube dashboard` failing on macOS [#15037](https://github.com/kubernetes/minikube/pull/15037)
+* Fix incorrect command in powershell command tip [#15012](https://github.com/kubernetes/minikube/pull/15012)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.25.2 and latest: v1.25.2 [#14995](https://github.com/kubernetes/minikube/pull/14995)
+* Upgrade kubernetes dashboard from v2.6.0 to v2.7.0 [#15000](https://github.com/kubernetes/minikube/pull/15000)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anthony Nandaa
+- Jeff MAURY
+- Medya Ghazizadeh
+- Rob Leland
+- Steven Powell
+- Yuiko Mouri
+- cokia
+- klaases
+- ziyi-xie
+
+Thank you to our PR reviewers for this release!
+
+- eiffel-fl (9 comments)
+- medyagh (6 comments)
+- AkihiroSuda (2 comments)
+- klaases (2 comments)
+- t-inu (1 comments)
+
+Thank you to our triage members for this release!
+
+- klaases (31 comments)
+- RA489 (30 comments)
+- afbjorklund (17 comments)
+- nikimanoledaki (7 comments)
+- medyagh (3 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.27.1/) for this release!
+
 ## Version 1.27.0 - 2022-09-15
 
 Kubernetes v1.25:
