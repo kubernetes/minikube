@@ -68,6 +68,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgtrace "k8s.io/minikube/pkg/trace"
@@ -407,6 +408,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 			}
 		}
 	}
+
+	pause.RemovePausedFile(starter.Runner)
 
 	return kubeconfig, nil
 }

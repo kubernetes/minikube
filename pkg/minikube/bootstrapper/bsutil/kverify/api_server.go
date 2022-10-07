@@ -174,7 +174,7 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
 		klog.Warningf("unable to find freezer cgroup: %v", err)
-		return apiServerHealthz(hostname, port)
+		return nonFreezerServerStatus(cr, hostname, port)
 
 	}
 	freezer := strings.TrimSpace(rr.Stdout.String())
@@ -182,7 +182,7 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 	fparts := strings.Split(freezer, ":")
 	if len(fparts) != 3 {
 		klog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
-		return apiServerHealthz(hostname, port)
+		return nonFreezerServerStatus(cr, hostname, port)
 	}
 
 	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
@@ -196,12 +196,24 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 			klog.Warningf("unable to get freezer state: %s", rr.Stderr.String())
 		}
 
-		return apiServerHealthz(hostname, port)
+		return nonFreezerServerStatus(cr, hostname, port)
 	}
 
 	fs := strings.TrimSpace(rr.Stdout.String())
 	klog.Infof("freezer state: %q", fs)
 	if fs == "FREEZING" || fs == "FROZEN" {
+		return state.Paused, nil
+	}
+	return apiServerHealthz(hostname, port)
+}
+
+// nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used
+func nonFreezerServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
+	rr, err := cr.RunCmd(exec.Command("ls"))
+	if err != nil {
+		return state.None, err
+	}
+	if strings.Contains(rr.Stdout.String(), "paused") {
 		return state.Paused, nil
 	}
 	return apiServerHealthz(hostname, port)
