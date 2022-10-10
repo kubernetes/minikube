@@ -23,6 +23,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	pkgpause "k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -63,7 +64,15 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 		return ids, nil
 	}
 
-	return ids, cr.PauseContainers(ids)
+	if err := cr.PauseContainers(ids); err != nil {
+		return ids, errors.Wrap(err, "pausing containers")
+	}
+
+	if doesNamespaceContainKubeSystem(namespaces) {
+		pkgpause.CreatePausedFile(r)
+	}
+
+	return ids, nil
 }
 
 // Unpause unpauses a Kubernetes cluster, retrying if necessary
@@ -99,6 +108,10 @@ func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 		return ids, errors.Wrap(err, "kubelet start")
 	}
 
+	if doesNamespaceContainKubeSystem(namespaces) {
+		pkgpause.RemovePausedFile(r)
+	}
+
 	return ids, nil
 }
 
@@ -114,4 +127,19 @@ func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+// doesNamespaceContainKubeSystem returns true if kube-system is contained in the namespace list
+// This is used to only mark the apiserver as paused/unpaused when the kube-system namespace is specified
+func doesNamespaceContainKubeSystem(namespaces []string) bool {
+	// nil slice indicates all namespaces
+	if namespaces == nil {
+		return true
+	}
+	for _, ns := range namespaces {
+		if ns == "kube-system" {
+			return true
+		}
+	}
+	return false
 }

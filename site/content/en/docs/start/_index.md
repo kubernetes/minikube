@@ -605,10 +605,10 @@ Halt the cluster:
 minikube stop
 ```
 
-Increase the default memory limit (requires a restart):
+Change the default memory limit (requires a restart):
 
 ```shell
-minikube config set memory 16384
+minikube config set memory 9001
 ```
 
 Browse the catalog of easily installed Kubernetes services:

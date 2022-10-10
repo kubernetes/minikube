@@ -68,6 +68,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgtrace "k8s.io/minikube/pkg/trace"
@@ -407,6 +408,8 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 			}
 		}
 	}
+
+	pause.RemovePausedFile(starter.Runner)
 
 	return kubeconfig, nil
 }
@@ -1253,23 +1256,47 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 // validatePorts validates that the --ports are not below 1024 for the host and not outside range
 func validatePorts(ports []string) error {
-	_, portBindingsMap, err := nat.ParsePortSpecs(ports)
+	var exposedPorts, hostPorts, portSpecs []string
+	for _, p := range ports {
+		if strings.Contains(p, ":") {
+			portSpecs = append(portSpecs, p)
+		} else {
+			exposedPorts = append(exposedPorts, p)
+		}
+	}
+	_, portBindingsMap, err := nat.ParsePortSpecs(portSpecs)
 	if err != nil {
 		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s (%v)", ports, err)
 	}
-	for _, portBindings := range portBindingsMap {
+	for exposedPort, portBindings := range portBindingsMap {
+		exposedPorts = append(exposedPorts, exposedPort.Port())
 		for _, portBinding := range portBindings {
-			p, err := strconv.Atoi(portBinding.HostPort)
-			if err != nil {
-				return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid %s", ports)
-			}
-			if p > 65535 || p < 1 {
-				return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range %s", ports)
-			}
-			if detect.IsMicrosoftWSL() && p < 1024 {
-				return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024) %s", ports)
-			}
+			hostPorts = append(hostPorts, portBinding.HostPort)
 		}
+	}
+	for _, p := range exposedPorts {
+		if err := validatePort(p, false); err != nil {
+			return err
+		}
+	}
+	for _, p := range hostPorts {
+		if err := validatePort(p, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validatePort(port string, isHost bool) error {
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return errors.Errorf("Sorry, one of the ports provided with --ports flag is not valid: %s", port)
+	}
+	if p > 65535 || p < 1 {
+		return errors.Errorf("Sorry, one of the ports provided with --ports flag is outside range: %s", port)
+	}
+	if isHost && detect.IsMicrosoftWSL() && p < 1024 {
+		return errors.Errorf("Sorry, you cannot use privileged ports on the host (below 1024): %s", port)
 	}
 	return nil
 }
