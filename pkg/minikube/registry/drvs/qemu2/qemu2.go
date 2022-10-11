@@ -117,7 +117,8 @@ func qemuVersion() (semver.Version, error) {
 	if err != nil {
 		return semver.Version{}, err
 	}
-	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
+	v := strings.Fields(strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0])[0]
+
 	return semver.Make(v)
 }
 
