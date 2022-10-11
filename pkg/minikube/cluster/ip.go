@@ -68,12 +68,9 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		// user network case
 		if ipString == "127.0.0.1" {
 			return net.ParseIP("10.0.2.2"), nil
+		} else {
+			return net.ParseIP("192.168.105.1"), nil
 		}
-		ip := net.ParseIP(ipString).To4()
-		if ip == nil {
-			return []byte{}, errors.Wrap(err, "Error converting IP address to IPv4 address")
-		}
-		return ip, nil
 	case driver.HyperV:
 		v := reflect.ValueOf(host.Driver).Elem()
 		var hypervVirtualSwitch string
