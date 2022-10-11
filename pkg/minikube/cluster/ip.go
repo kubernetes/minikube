@@ -68,10 +68,9 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		if ipString == "127.0.0.1" {
 			// user network case
 			return net.ParseIP("10.0.2.2"), nil
-		} else {
-			// socket_vmnet network case
-			return net.ParseIP("192.168.105.1"), nil
 		}
+		// socket_vmnet network case
+		return net.ParseIP("192.168.105.1"), nil
 	case driver.HyperV:
 		v := reflect.ValueOf(host.Driver).Elem()
 		var hypervVirtualSwitch string
