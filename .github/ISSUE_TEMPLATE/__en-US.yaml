@@ -49,6 +49,6 @@ body:
         - SSH
         - VMware
         - Parallels
-        - Qemu
+        - QEMU
     validations:
       required: false
