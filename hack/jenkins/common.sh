@@ -270,10 +270,14 @@ function cleanup_procs() {
   # cleaning up stale hyperkits
   if type -P hyperkit; then
     for pid in $(pgrep hyperkit); do
+      info=$(ps -f -p "$pid")
+      if [[ $info == *"com.docker.hyperkit"* ]]; then
+        continue
+      fi
       echo "Killing stale hyperkit $pid"
-      ps -f -p $pid || true
-      kill $pid || true
-      kill -9 $pid || true
+      echo "$info" || true
+      kill "$pid" || true
+      kill -9 "$pid" || true
     done
   fi
 
