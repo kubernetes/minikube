@@ -1,6 +1,10 @@
 name: English
 description: Report an issue
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file an issue. It may take awhile for the community to respond. Please visit [Triaging Minikube Issues](https://minikube.sigs.k8s.io/docs/contrib/triage/) if you would like to contribute.
   - type: textarea
     id: problem
     attributes:
