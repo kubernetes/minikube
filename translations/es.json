@@ -968,6 +968,7 @@
 	"minikube is not meant for production use. You are opening non-local traffic": "",
 	"minikube is unable to access the Google Container Registry. You may need to configure it to use a HTTP proxy.": "",
 	"minikube is unable to connect to the VM: {{.error}}\n\n\tThis is likely due to one of two reasons:\n\n\t- VPN or firewall interference\n\t- {{.hypervisor}} network configuration issue\n\n\tSuggested workarounds:\n\n\t- Disable your local VPN or firewall software\n\t- Configure your local VPN or firewall to allow access to {{.ip}}\n\t- Restart or reinstall {{.hypervisor}}\n\t- Use an alternative --vm-driver\n\t- Use --force to override this connectivity check\n\t": "",
+	"minikube mount is not currently implemented with the user network on QEMU": "",
 	"minikube profile was successfully set to {{.profile_name}}": "",
 	"minikube provisions and manages local Kubernetes clusters optimized for development workflows.": "",
 	"minikube quickly sets up a local Kubernetes cluster": "",
