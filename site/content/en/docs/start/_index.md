@@ -506,6 +506,13 @@ From a terminal with administrator access (but not logged in as root), run:
 minikube start
 ```
 
+If you receive an error that access was denied to .kubeconfig or config not found please set the KUBECONFIG environment variable before executing minikube start.
+
+```shell
+set KUBECONFIG=c:\users\<username>\.kube\config
+minikube start
+```
+
 If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) for help setting up a compatible container or virtual-machine manager.
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Interact with your cluster</h2>
