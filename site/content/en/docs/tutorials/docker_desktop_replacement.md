@@ -87,32 +87,32 @@ minikube start --container-runtime=docker --vm=true
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Point Docker CLI to minikube</h2>
 Use the `minikube docker-env` command to point your terminal's Docker CLI to the Docker instance inside minikube.
 
-<br>Note: the default minikube profile name is "minikube".
+<br>Note: if you are using a different profile name than default (minikube) you can pass it by -p.
 
 {{% tabs %}}
 {{% tab "bash/zsh" %}}
 ```
-eval $(minikube -p <profile> docker-env)
+eval $(minikube docker-env)
 ```
 {{% /tab %}}
 {{% tab PowerShell %}}
 ```
-& minikube -p <profile> docker-env --shell powershell | Invoke-Expression
+& minikube docker-env --shell powershell | Invoke-Expression
 ```
 {{% /tab %}}
 {{% tab cmd %}}
 ```
-@FOR /f "tokens=*" %i IN ('minikube -p <profile> docker-env --shell cmd') DO @%i
+@FOR /f "tokens=*" %i IN ('minikube docker-env --shell cmd') DO @%i
 ```
 {{% /tab %}}
 {{% tab fish %}}
 ```
-minikube -p <profile> docker-env | source
+minikube docker-env | source
 ```
 {{% /tab %}}
 {{% tab tcsh %}}
 ```
-eval `minikube -p <profile> docker-env`
+eval `minikube docker-env`
 ```
 {{% /tab %}}
 {{% /tabs %}}
