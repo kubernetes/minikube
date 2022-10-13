@@ -6,7 +6,9 @@
 
 ## HyperKit installation
 
-* With [Brew Package Manager](https://formulae.brew.sh/formula/hyperkit#default), run:
+* minikube will automatically download HyperKit if not found on the host.
+
+* To manually install with [Brew Package Manager](https://formulae.brew.sh/formula/hyperkit#default), run:
 
 ```shell
 brew install hyperkit
