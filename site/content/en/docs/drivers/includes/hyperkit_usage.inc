@@ -1,18 +1,18 @@
 ## Requirements
 
-- macOS 10.11+
+- macOS 10.11+, darwin/x86_64
+  - Note: no support for arm64.
 - HyperKit
 
 ## HyperKit installation
 
-* If Docker for Desktop is installed, you already have HyperKit
-* Otherwise, if you have [Brew Package Manager](https://brew.sh/), run:
+* With [Brew Package Manager](https://formulae.brew.sh/formula/hyperkit#default), run:
 
 ```shell
 brew install hyperkit
 ```
 
-* As a final alternative, you may [Install HyperKit from GitHub](https://github.com/moby/hyperkit)
+* Else, [Install HyperKit from GitHub](https://github.com/moby/hyperkit).
 
 ## Usage
 
