@@ -17,13 +17,17 @@ limitations under the License.
 package driver
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/docker/docker/client"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
@@ -141,15 +145,67 @@ func IsDocker(name string) bool {
 	return name == Docker
 }
 
-// IsDockerDesktop checks if the driver is a Docker for Desktop (Docker on windows or MacOs)
+func IsLinuxDockerDesktop(name string) bool {
+	if IsDocker(name) {
+		cmd := exec.Command("docker", "version")
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return false
+		}
+		if err := cmd.Start(); err != nil {
+			return false
+		}
+		data, err := ioutil.ReadAll(stdout)
+		if err != nil {
+			return false
+		}
+		output := string(data)
+		return strings.Contains(output, "Desktop")
+	}
+	return false
+}
+
+// IsDockerDesktop checks if the driver is a Docker for Desktop
 // for linux and exotic archs, this will be false
 func IsDockerDesktop(name string) bool {
 	if IsDocker(name) {
 		if runtime.GOOS == "darwin" || runtime.GOOS == "windows" {
 			return true
 		}
+		return IsLinuxDockerDesktop(name)
 	}
 	return false
+}
+
+// GenerateClientForLinuxDockerDesktop returns the host of docker daemon when using linux docker desktop
+func GenerateClientForLinuxDockerDesktop() (*client.Client, error) {
+	cmd := exec.Command("docker", "context", "inspect", "desktop-linux")
+	stdout, _ := cmd.StdoutPipe()
+	cmd.Start()
+	data, _ := ioutil.ReadAll(stdout)
+	var objs []interface{}
+	json.Unmarshal(data, &objs)
+	objForDesktopLinux, ok := objs[0].(map[string]interface{})
+	if !ok {
+		cli, _ := client.NewClientWithOpts(client.FromEnv)
+		return cli, fmt.Errorf("failed to run acquire uinx sock host for docker desktop")
+	}
+	objForEndpoints, ok := objForDesktopLinux["Endpoints"].(map[string]interface{})
+	if !ok {
+		cli, _ := client.NewClientWithOpts(client.FromEnv)
+		return cli, fmt.Errorf("failed to run acquire uinx sock host for docker desktop")
+	}
+	objForDocker, ok := objForEndpoints["docker"].(map[string]interface{})
+	if !ok {
+		cli, _ := client.NewClientWithOpts(client.FromEnv)
+		return cli, fmt.Errorf("failed to run acquire uinx sock host for docker desktop")
+	}
+	objforHost, ok := objForDocker["Host"].(string)
+	if !ok {
+		cli, _ := client.NewClientWithOpts(client.FromEnv)
+		return cli, fmt.Errorf("failed to run acquire uinx sock host for docker desktop")
+	}
+	return client.NewClientWithOpts(client.WithHost(objforHost))
 }
 
 // IsMock checks if the driver is a mock
@@ -203,8 +259,11 @@ func NeedsPortForward(name string) bool {
 	if oci.IsExternalDaemonHost(name) {
 		return true
 	}
+	if detect.IsMicrosoftWSL() {
+		return true
+	}
 	// Docker for Desktop
-	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" || detect.IsMicrosoftWSL() {
+	if IsDockerDesktop(name) {
 		return true
 	}
 

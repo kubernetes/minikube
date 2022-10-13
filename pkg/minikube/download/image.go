@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -215,7 +216,13 @@ func CacheToDaemon(img string) error {
 		return errors.Wrap(err, "tarball")
 	}
 
-	resp, err := daemon.Write(*tag, i)
+	options := []daemon.Option{}
+	if driver.IsLinuxDockerDesktop("docker") {
+		c, _ := driver.GenerateClientForLinuxDockerDesktop()
+		options = append(options, daemon.WithClient(c))
+	}
+
+	resp, err := daemon.Write(*tag, i, options...)
 	klog.V(2).Infof("response: %s", resp)
 	return err
 }

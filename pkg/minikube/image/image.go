@@ -37,6 +37,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -168,7 +169,13 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 }
 
 func retrieveDaemon(ref name.Reference) (v1.Image, error) {
-	img, err := daemon.Image(ref)
+	options := []daemon.Option{}
+	if driver.IsLinuxDockerDesktop("docker") {
+		c, _ := driver.GenerateClientForLinuxDockerDesktop()
+		options = append(options, daemon.WithClient(c))
+	}
+
+	img, err := daemon.Image(ref, options...)
 	if err == nil {
 		klog.Infof("found %s locally: %+v", ref.Name(), img)
 		return img, nil
