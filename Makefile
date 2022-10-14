@@ -1048,3 +1048,7 @@ update-gopogh-version: ## update gopogh version
 update-gotestsum-version:
 	(cd hack/update/gotestsum_version && \
 	 go run update_gotestsum_version.go)
+
+.PHONY: generate-licenses
+generate-licenses:
+	./hack/generate_licenses.sh $(RAW_VERSION)
