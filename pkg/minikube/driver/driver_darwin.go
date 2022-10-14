@@ -31,6 +31,7 @@ var supportedDrivers = func() []string {
 			Docker,
 			Podman,
 			SSH,
+			Parallels,
 		}
 	}
 	// PowerPC does not support podman
