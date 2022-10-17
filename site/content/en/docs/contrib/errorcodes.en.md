@@ -367,6 +367,9 @@ minikube failed to cache the kubectl binary
 "INET_CACHE_TAR" (Exit code ExInternetError)  
 minikube failed to cache required images to tar files  
 
+"INET_LICENSES" (Exit code ExInternetError)  
+minikube failed to download licenses  
+
 "INET_REPO" (Exit code ExInternetError)  
 minikube was unable to access main repository and mirrors for images  
 

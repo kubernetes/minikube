@@ -1051,4 +1051,4 @@ update-gotestsum-version:
 
 .PHONY: generate-licenses
 generate-licenses:
-	./hack/generate_licenses.sh $(RAW_VERSION)
+	./hack/generate_licenses.sh

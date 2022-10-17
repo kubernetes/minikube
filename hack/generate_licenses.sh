@@ -18,13 +18,11 @@ set -eu -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-version=$1
-
 GOBIN="$DIR" go install github.com/google/go-licenses@latest
 
 rm -rf ./out/licenses
 "${DIR}/go-licenses" save k8s.io/minikube/cmd/minikube --save_path="out/licenses" --force
 pushd ./out
-tar -zcvf "licenses-$version.tar.gz" ./licenses
+tar -zcvf licenses.tar.gz ./licenses
 rm -rf ./licenses
 popd
