@@ -612,7 +612,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
 		}
 		if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
-			out.WarningT("For an improved experience it's recommended to use Docker Engine over Docker Desktop")
+			out.WarningT("For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server")
 		}
 	}
 

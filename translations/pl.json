@@ -306,7 +306,7 @@
 	"Filter to use only VM Drivers": "",
 	"Flags": "",
 	"Follow": "",
-	"For an improved experience it's recommended to use Docker Engine over Docker Desktop": "",
+	"For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server": "",
 	"For improved {{.driver}} performance, {{.fix}}": "",
 	"For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}": "",
 	"For more information, see: https://minikube.sigs.k8s.io/docs/reference/drivers/none/": "",
