@@ -714,7 +714,7 @@ var Addons = map[string]*Addon{
 			"portainer.yaml",
 			"0640"),
 	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
-		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
+		"Portainer": "portainer/portainer-ce:2.15.1@sha256:5466af30b8eaf3f75edd3c74703d1c9973f0963acd6ef164913ea6f195d640c2",
 	}, map[string]string{
 		"Portainer": "docker.io",
 	}),

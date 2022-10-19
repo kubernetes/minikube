@@ -14,7 +14,7 @@ metadata:
   labels:
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.4.0"
+    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
 ---
 # Source: portainer/templates/pvc.yaml
 kind: "PersistentVolumeClaim"
@@ -28,7 +28,7 @@ metadata:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.4.0"
+    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
 spec:
   accessModes:
     - "ReadWriteOnce"
@@ -44,7 +44,7 @@ metadata:
   labels:
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.4.0"
+    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -64,7 +64,7 @@ metadata:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.4.0"
+    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
     kubernetes.io/minikube-addons-endpoint: portainer
 spec:
   type: NodePort
@@ -73,7 +73,12 @@ spec:
       targetPort: 9000
       protocol: TCP
       name: http
-      nodePort: 30777
+      nodePort: 30777  
+    - port: 9443
+      targetPort: 9443
+      protocol: TCP
+      name: https
+      nodePort: 30779      
     - port: 30776
       targetPort: 30776
       protocol: TCP
@@ -93,7 +98,7 @@ metadata:
     io.portainer.kubernetes.application.stack: portainer
     app.kubernetes.io/name: portainer
     app.kubernetes.io/instance: portainer
-    app.kubernetes.io/version: "ce-latest-ee-2.4.0"
+    app.kubernetes.io/version: "ce-latest-ee-2.15.1"
 spec:
   replicas: 1
   strategy:
@@ -112,32 +117,37 @@ spec:
         {}
       serviceAccountName: portainer-sa-clusteradmin
       volumes:
-         - name: "data"
-           persistentVolumeClaim:
-             claimName: portainer      
+        - name: "data"
+          persistentVolumeClaim:
+            claimName: portainer
       containers:
         - name: portainer
           image: {{.CustomRegistries.Portainer | default .ImageRepository | default .Registries.Portainer}}{{.Images.Portainer}}
           imagePullPolicy: Always
-          args:  [ '--tunnel-port','30776' ]          
+          args:
+          - '--tunnel-port=30776'          
           volumeMounts:
             - name: data
-              mountPath: /data
+              mountPath: /data              
           ports:
             - name: http
               containerPort: 9000
               protocol: TCP
+            - name: https
+              containerPort: 9443
+              protocol: TCP                
             - name: tcp-edge
               containerPort: 8000
               protocol: TCP              
           livenessProbe:
             httpGet:
               path: /
-              port: 9000
+              port: 9443
+              scheme: HTTPS
           readinessProbe:
             httpGet:
               path: /
-              port: 9000
+              port: 9443
+              scheme: HTTPS        
           resources:
             {}
-
