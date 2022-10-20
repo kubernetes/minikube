@@ -1,11 +1,11 @@
 ---
-title: "credits"
+title: "license"
 description: >
   Outputs the licenses of dependencies to a directory
 ---
 
 
-## minikube credits
+## minikube license
 
 Outputs the licenses of dependencies to a directory
 
@@ -14,7 +14,7 @@ Outputs the licenses of dependencies to a directory
 Outputs the licenses of dependencies to a directory
 
 ```shell
-minikube credits [flags]
+minikube license [flags]
 ```
 
 ### Options

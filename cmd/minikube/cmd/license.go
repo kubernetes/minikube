@@ -25,9 +25,9 @@ import (
 
 var dir string
 
-// creditsCmd represents the credits command
-var creditsCmd = &cobra.Command{
-	Use:   "credits",
+// licenseCmd represents the credits command
+var licenseCmd = &cobra.Command{
+	Use:   "license",
 	Short: "Outputs the licenses of dependencies to a directory",
 	Long:  "Outputs the licenses of dependencies to a directory",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -38,5 +38,5 @@ var creditsCmd = &cobra.Command{
 }
 
 func init() {
-	creditsCmd.Flags().StringVarP(&dir, "dir", "d", ".", "Directory to output licenses to")
+	licenseCmd.Flags().StringVarP(&dir, "dir", "d", ".", "Directory to output licenses to")
 }
