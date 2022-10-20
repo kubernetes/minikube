@@ -746,7 +746,7 @@ index e595c0f0..4770fe49 100644
  			return PPM_FAILURE_INVALID_USER_MEMORY;
 @@ -2394,7 +2411,7 @@ int f_sys_mount_e(struct event_filler_arguments *args)
  	 * Fix mount flags in arg 3.
- 	 * See http://lxr.free-electrons.com/source/fs/namespace.c?v=4.2#L2650
+ 	 * See https://elixir.bootlin.com/linux/v4.2/source/fs/namespace.c#L2650
  	 */
 -	syscall_get_arguments(current, args->regs, 3, 1, &val);
 +	syscall_get_arguments_deprecated(current, args->regs, 3, 1, &val);
