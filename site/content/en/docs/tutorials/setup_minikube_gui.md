@@ -54,7 +54,7 @@ Expand-Archive minikube-gui-windows.zip
 
 3. Open the application
 ```shell
-.\minikube-gui-windows\dist\systray.exe
+.\minikube-gui-windows\dist\minikube.exe
 ```
 
 4. If you see the following, click `More info` and then `Run anyway`
@@ -74,7 +74,7 @@ unzip minikube-gui-linux.zip
 
 3. Open the application
 ```shell
-dist/systray
+dist/minikube
 ```
 {{% /linuxtab %}}
 {{% /tabs %}}
