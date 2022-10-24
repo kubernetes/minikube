@@ -18,6 +18,7 @@ package tunnel
 
 import (
 	"fmt"
+	"reflect"
 
 	"io"
 	"strings"
@@ -38,7 +39,7 @@ type simpleReporter struct {
 const noErrors = "no errors"
 
 func (r *simpleReporter) Report(tunnelState *Status) {
-	if r.lastState == tunnelState {
+	if reflect.DeepEqual(r.lastState, tunnelState) {
 		return
 	}
 	r.lastState = tunnelState
