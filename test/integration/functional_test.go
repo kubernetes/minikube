@@ -2212,7 +2212,6 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 // validateLicenseCmd asserts that the `minikube license` command downloads and untars the licenses
 // Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
 func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
-	MaybeParallel(t)
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "license")); err != nil {
 		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
 	}
