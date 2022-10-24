@@ -119,7 +119,7 @@ jobs:
           go-version: ${{env.GO_VERSION}}
 
       - name: Download Binaries
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -203,7 +203,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all extra reports
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
       - name: upload all extra reports
         shell: bash {0}
         continue-on-error: true
