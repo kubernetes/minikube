@@ -4,6 +4,7 @@ description: >
   Starts a local Kubernetes cluster
 ---
 
+
 ## minikube start
 
 Starts a local Kubernetes cluster
@@ -55,7 +56,6 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
-      -- gateway                          Gateway to be used on the kic clutser. With the docker driver, minikube uses a defualt gateway of 192.168.49.1.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
@@ -92,7 +92,7 @@ minikube start [flags]
       --namespace string                  The named space to activate after start (default "default")
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
-      --network string                    Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. Using a user-defined docker/podman brigde network requires both a subnet and gateway as accompanying options.
+      --network string                    network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.
       --network-plugin string             DEPRECATED: Replaced by --cni
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
@@ -126,7 +126,7 @@ minikube start [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
-  -h, --help
+  -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
       --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
@@ -142,3 +142,4 @@ minikube start [flags]
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
