@@ -157,6 +157,7 @@ func TestFunctional(t *testing.T) {
 			{"ImageCommands", validateImageCommands},
 			{"NonActiveRuntimeDisabled", validateNotActiveRuntimeDisabled},
 			{"Version", validateVersionCmd},
+			{"License", validateLicenseCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -2206,4 +2207,28 @@ func validateVersionCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	})
 
+}
+
+// validateLicenseCmd asserts that the `minikube license` command downloads and untars the licenses
+// Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
+func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "license")); err != nil {
+		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
+	}
+	rr, err := Run(t, exec.CommandContext(ctx, "ls", "./licenses"))
+	if err != nil {
+		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
+	}
+	expectedDir := "cloud.google.com"
+	if !strings.Contains(rr.Stdout.String(), expectedDir) {
+		t.Fatalf("expected licenses dir to contain %s dir, but was not found", expectedDir)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "cat", "./licenses/cloud.google.com/go/compute/metadata/LICENSE"))
+	if err != nil {
+		t.Errorf("command %q failed: %v", rr.Stdout.String(), err)
+	}
+	expectedString := "Apache License"
+	if !strings.Contains(rr.Stdout.String(), expectedString) {
+		t.Errorf("expected license file to contain %q, but was not found", expectedString)
+	}
 }

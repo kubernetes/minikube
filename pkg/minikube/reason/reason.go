@@ -392,6 +392,8 @@ var (
 	InetCacheKubectl = Kind{ID: "INET_CACHE_KUBECTL", ExitCode: ExInternetError}
 	// minikube failed to cache required images to tar files
 	InetCacheTar = Kind{ID: "INET_CACHE_TAR", ExitCode: ExInternetError}
+	// minikube failed to download licenses
+	InetLicenses = Kind{ID: "INET_LICENSES", ExitCode: ExInternetError}
 	// minikube was unable to access main repository and mirrors for images
 	InetRepo = Kind{ID: "INET_REPO", ExitCode: ExInternetError}
 	// minikube was unable to access any known image repositories

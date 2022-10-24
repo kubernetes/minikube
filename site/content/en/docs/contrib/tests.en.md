@@ -376,6 +376,10 @@ Steps:
 - Run `minikube version --short` and make sure the returned version is a valid semver
 - Run `minikube version --components` and make sure the component versions are returned
 
+#### validateLicenseCmd
+asserts that the `minikube license` command downloads and untars the licenses
+Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
+
 #### validateMountCmd
 verifies the minikube mount command works properly
 
