@@ -52,8 +52,9 @@ cloud.google.com/go/firestore v1.1.0/go.mod h1:ulACoGHTpvq5r8rxGJ4ddJZBZqakUQqCl
 cloud.google.com/go/firestore v1.6.0/go.mod h1:afJwI0vaXwAG54kI7A//lP/lSPDkQORQuMkv56TxEPU=
 cloud.google.com/go/iam v0.3.0 h1:exkAomrVUuzx9kWFI1wm3KI0uoDeUFPB4kKGzx6x+Gc=
 cloud.google.com/go/iam v0.3.0/go.mod h1:XzJPvDayI+9zsASAFO68Hk07u3z+f+JrT2xXNdp4bnY=
-cloud.google.com/go/monitoring v1.1.0 h1:ZnyNdf/XRcynMmKzRSNTOdOyYPs6G7do1l2D2hIvIKo=
 cloud.google.com/go/monitoring v1.1.0/go.mod h1:L81pzz7HKn14QCMaCs6NTQkdBnE87TElyanS95vIcl4=
+cloud.google.com/go/monitoring v1.6.0 h1:+x5AA2mFkiHK/ySN6NWKbeKBV+Z/DN+h51kBzcW08zU=
+cloud.google.com/go/monitoring v1.6.0/go.mod h1:w+OY1TYCk4MtvY7WfEHlIp5mP8SV/gDSqOsvGhVa2KM=
 cloud.google.com/go/pubsub v1.0.1/go.mod h1:R0Gpsv3s54REJCy4fxDixWD93lHJMoZTyQ2kNxGRt3I=
 cloud.google.com/go/pubsub v1.1.0/go.mod h1:EwwdRX2sKPjnvnqCa270oGRyludottCI76h+R3AArQw=
 cloud.google.com/go/pubsub v1.2.0/go.mod h1:jhfEVHT8odbXTkndysNHCcx0awwzvfOlguIAii9o8iA=
