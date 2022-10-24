@@ -399,6 +399,7 @@
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "NAT ネットワークに使用する NIC タイプ。Am79C970A、Am79C973、82540EM、82543GC、82545EM、virtio のいずれか (virtualbox ドライバーのみ)",
 	"NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...": "注意: トンネルにアクセスするにはこのプロセスが存続しなければならないため、このターミナルはクローズしないでください ...",
 	"NOTE: This process must stay alive for the mount to be accessible ...": "注意: マウントにアクセスするにはこのプロセスが存続しなければなりません ...",
+	"Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. User-defined docker/podman brigde networks need to be created with both a subnet and gateway.": "",
 	"Networking and Connectivity Commands:": "ネットワーキングおよび接続性コマンド:",
 	"No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/": "IP アドレスが提供されていません。--ssh-ip-address 指定を試すか、https://minikube.sigs.k8s.io/docs/drivers/ssh/ を参照してください",
 	"No changes required for the \"{{.context}}\" context": "「{{.context}}」コンテキストに必要な変更がありません",
