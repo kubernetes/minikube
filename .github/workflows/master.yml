@@ -43,7 +43,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: minikube_binaries
           path: out
@@ -165,7 +165,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -265,7 +265,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -368,7 +368,7 @@ jobs:
         echo 'STAT<<EOF' >> $GITHUB_ENV
         echo "${STAT}" >> $GITHUB_ENV
         echo 'EOF' >> $GITHUB_ENV
-    - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+    - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
       with:
         name: functional_podman_ubuntu
         path: minikube_binaries/report
@@ -468,7 +468,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: functional_virtualbox_macos
           path: minikube_binaries/report
@@ -570,7 +570,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: functional_baremetal_ubuntu18_04
           path: minikube_binaries/report
@@ -620,7 +620,7 @@ jobs:
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
 
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: all_reports
           path: all_reports

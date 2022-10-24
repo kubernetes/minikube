@@ -46,7 +46,7 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: minikube_binaries
           path: out
@@ -166,7 +166,7 @@ jobs:
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: functional_docker_ubuntu_arm64
           path: minikube_binaries/report
@@ -210,7 +210,7 @@ jobs:
         run: |
           mkdir -p all_reports
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
           name: all_reports
           path: all_reports
