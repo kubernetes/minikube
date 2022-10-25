@@ -69,11 +69,10 @@ func ImageExistsInCache(img string) bool {
 
 var checkImageExistsInCache = ImageExistsInCache
 
-// Remove docker.io prefix since it won't be included in images names
-// when we call 'docker images'
+// Remove docker.io prefix since it won't be included in image names
+// when we call `docker images`.
 func TrimDockerIO(name string) string {
-	name = strings.TrimPrefix(name, "docker.io/")
-	return name
+	return strings.TrimPrefix(name, "docker.io/")
 }
 
 // ImageExistsInDaemon if img exist in local docker daemon
