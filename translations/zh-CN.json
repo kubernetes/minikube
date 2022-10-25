@@ -374,6 +374,7 @@
 	"Filter to use only VM Drivers": "",
 	"Flags": "标志",
 	"Follow": "跟踪",
+	"For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server": "",
 	"For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/": "为获得最佳结果，请安装 kubectl：https://kubernetes.io/docs/tasks/tools/install-kubectl/",
 	"For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/__1": "为获得最佳结果，请安装 kubectl：https://kubernetes.io/docs/tasks/tools/install-kubectl/",
 	"For improved {{.driver}} performance, {{.fix}}": "",

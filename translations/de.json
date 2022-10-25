@@ -297,6 +297,7 @@
 	"Filter to use only VM Drivers": "Filtern um nur VM Treiber zu verwenden",
 	"Flags": "",
 	"Follow": "Fehler beim Folgen der Logs",
+	"For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server": "",
 	"For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/": "Für beste Ergebnisse installieren Sie kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/",
 	"For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/__1": "Für beste Ergebnisse installieren Sie kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/",
 	"For improved {{.driver}} performance, {{.fix}}": "Um die {{.driver}} Performance zu verbessern, {{.fix}}",

@@ -35,6 +35,7 @@ type SysInfo struct {
 	Rootless      bool     // Weather or not the docker is running on rootless mode
 	StorageDriver string   // the storage driver for the daemon  (for example overlay2)
 	Errors        []string // any server issues
+	DockerOS      string   // used to detect if using Docker Desktop or Docker Engine on Linux
 }
 
 var (
@@ -70,7 +71,7 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 			break
 		}
 	}
-	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", Rootless: rootless, StorageDriver: d.Driver, Errors: d.ServerErrors}
+	cachedSysInfo = &SysInfo{CPUs: d.NCPU, TotalMemory: d.MemTotal, OSType: d.OSType, Swarm: d.Swarm.LocalNodeState == "active", Rootless: rootless, StorageDriver: d.Driver, Errors: d.ServerErrors, DockerOS: d.OperatingSystem}
 	return *cachedSysInfo, err
 }
 
