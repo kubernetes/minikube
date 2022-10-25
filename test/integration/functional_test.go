@@ -2215,20 +2215,27 @@ func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "license")); err != nil {
 		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
 	}
-	rr, err := Run(t, exec.CommandContext(ctx, "ls", "./licenses"))
+	files, err := os.ReadDir("./licenses")
 	if err != nil {
-		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
+		t.Fatalf("failed to read licenses dir: %v", err)
 	}
 	expectedDir := "cloud.google.com"
-	if !strings.Contains(rr.Stdout.String(), expectedDir) {
+	found := false
+	for _, file := range files {
+		if file.Name() == expectedDir {
+			found = true
+			break
+		}
+	}
+	if !found {
 		t.Fatalf("expected licenses dir to contain %s dir, but was not found", expectedDir)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, "cat", "./licenses/cloud.google.com/go/compute/metadata/LICENSE"))
+	data, err := os.ReadFile("./licenses/cloud.google.com/go/compute/metadata/LICENSE")
 	if err != nil {
-		t.Errorf("command %q failed: %v", rr.Stdout.String(), err)
+		t.Fatalf("failed to read license: %v", err)
 	}
 	expectedString := "Apache License"
-	if !strings.Contains(rr.Stdout.String(), expectedString) {
+	if !strings.Contains(string(data), expectedString) {
 		t.Errorf("expected license file to contain %q, but was not found", expectedString)
 	}
 }
