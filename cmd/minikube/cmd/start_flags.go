@@ -192,7 +192,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
-	startCmd.Flags().StringP(network, "", "", "Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. User-defined docker/podman brigde networks need to be created with both a subnet and gateway.")
+	startCmd.Flags().StringP(network, "", "", "Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. User-defined docker/podman bridge networks need to be created with both a subnet and gateway.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
