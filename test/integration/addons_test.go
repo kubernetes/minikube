@@ -66,7 +66,7 @@ func TestAddons(t *testing.T) {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, "--addons=cloud-spanner", StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -759,7 +759,7 @@ func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string
 	if _, err := PodWait(ctx, t, profile, "default", "app=cloud-spanner-emulator", Minutes(6)); err != nil {
 		t.Errorf("failed waiting for app=cloud-spanner-emulator pod: %v", err)
 	}
-	if rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
 		t.Errorf("failed to disable cloud-spanner addon: args %q : %v", rr.Command(), err)
 	}
 }
