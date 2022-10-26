@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -75,7 +76,7 @@ func ImageExistsInDaemon(img string) bool {
 	klog.Infof("Checking for %s in local docker daemon", img)
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), img) {
+		if strings.Contains(string(output), image.TrimDockerIO(img)) {
 			klog.Infof("Found %s in local docker daemon, skipping pull", img)
 			return true
 		}
