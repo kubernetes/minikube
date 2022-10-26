@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -604,7 +605,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	preloadedImages := map[string]struct{}{}
 	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		i = download.TrimDockerIO(i)
+		i = image.TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}
 
@@ -612,7 +613,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 
 	// Make sure images == imgs
 	for _, i := range images {
-		i = download.TrimDockerIO(i)
+		i = image.TrimDockerIO(i)
 		if _, ok := preloadedImages[i]; !ok {
 			klog.Infof("%s wasn't preloaded", i)
 			return false
