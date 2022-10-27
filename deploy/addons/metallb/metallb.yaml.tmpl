@@ -234,7 +234,7 @@ spec:
           readOnlyRootFilesystem: true
       hostNetwork: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       serviceAccountName: speaker
       terminationGracePeriodSeconds: 0
       tolerations:
@@ -285,7 +285,7 @@ spec:
             - all
           readOnlyRootFilesystem: true
       nodeSelector:
-        beta.kubernetes.io/os: linux
+        kubernetes.io/os: linux
       securityContext:
         runAsNonRoot: true
         runAsUser: 65534
