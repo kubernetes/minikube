@@ -436,7 +436,7 @@
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...": "",
 	"NOTE: This process must stay alive for the mount to be accessible ...": "",
-	"Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. User-defined docker/podman brigde networks need to be created with both a subnet and gateway.": "",
+	"Network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network. User-defined docker/podman bridge networks need to be created with both a subnet and gateway.": "",
 	"Networking and Connectivity Commands:": "",
 	"No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/": "Nie znaleziono adresu IP. Spróbuj przekazać adres IP za pomocą flagi --ssh-ip-address lub odwiedź https://minikube.sigs.k8s.io/docs/drivers/ssh/",
 	"No changes required for the \"{{.context}}\" context": "Żadne zmiany nie są wymagane dla kontekstu \"{{.context}}\"",
