@@ -44,6 +44,9 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 
 #### validateHeadlampAddon
 
+#### validateCloudSpannerAddon
+tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 

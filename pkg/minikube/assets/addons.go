@@ -742,6 +742,13 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Headlamp": "ghcr.io",
 		}),
+	"cloud-spanner": NewAddon([]*BinAsset{
+		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
+	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
+		"CloudSpannerAddon": "cloud-spanner-emulator/emulator",
+	}, map[string]string{
+		"CloudSpannerAddon": "gcr.io",
+	}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
