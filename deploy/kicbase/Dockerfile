@@ -29,6 +29,7 @@ COPY deploy/addons ./deploy/addons
 COPY translations/ ./translations
 COPY third_party/ ./third_party
 COPY go.mod go.sum ./
+
 ARG TARGETARCH
 ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
@@ -53,8 +54,8 @@ COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
 COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
+COPY deploy/kicbase/CHANGELOG ./CHANGELOG
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
-
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -132,7 +133,7 @@ RUN echo "Installing cri-dockerd" && \
 # install system requirements from the regular distro repositories
 RUN clean-install \
     lz4 \
-    gnupg \ 
+    gnupg \
     sudo \
     openssh-server \
     dnsutils \
@@ -198,6 +199,10 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     mkdir -p /etc/tmpfiles.d && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create; fi
+
+# install version.json
+ARG VERSION_JSON
+RUN echo "${VERSION_JSON}" > /version.json
 
 # automount service
 COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount

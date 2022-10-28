@@ -46,6 +46,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"k8s.io/minikube/pkg/minikube/command"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -78,6 +79,13 @@ import (
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
+
+type versionJSON struct {
+	IsoVersion      string `json:"iso_version"`
+	KicbaseVersion  string `json:"kicbase_version"`
+	MinikubeVersion string `json:"minikube_version"`
+	Commit          string `json:"commit"`
+}
 
 var (
 	registryMirror   []string
@@ -146,6 +154,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.Message(reason.Usage, "error initializing tracing: {{.Error}}", out.V{"Error": err.Error()})
 	}
 	defer pkgtrace.Cleanup()
+
 	displayVersion(version.GetVersion())
 	go download.CleanUpOlderPreloads()
 
@@ -249,6 +258,8 @@ func runStart(cmd *cobra.Command, args []string) {
 			}
 		}
 	}
+
+	validateKicBaseVersion(starter.Runner)
 
 	if existing != nil && driver.IsKIC(existing.Driver) {
 		if viper.GetBool(createMount) {
@@ -357,6 +368,24 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		Cfg:            &cc,
 		Node:           &n,
 	}, nil
+}
+
+func validateKicBaseVersion(r command.Runner) {
+	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
+	if err != nil {
+		out.WarningT("Unable to open version.json: {{.error}}", out.V{"error": err})
+		return
+	}
+
+	var versionDetails versionJSON
+	if err := json.Unmarshal(res.Stdout.Bytes(), &versionDetails); err != nil {
+		out.WarningT("Unable to parse version.json: {{.error}}, json: {{.json}}", out.V{"error": err, "json": res.Stdout.String()})
+		return
+	}
+
+	if versionDetails.MinikubeVersion != version.GetVersion() {
+		out.WarningT("Image was not built for the current minikube version. To resolve this you can delete and recreate your minikube cluster using the latest images. Expected minikube version: {{.imageMinikubeVersion}} -> Actual minikube version: {{.minikubeVersion}}", out.V{"imageMinikubeVersion": versionDetails.MinikubeVersion, "minikubeVersion": version.GetVersion()})
+	}
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
