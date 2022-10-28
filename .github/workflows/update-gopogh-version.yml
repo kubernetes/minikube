@@ -22,7 +22,7 @@ jobs:
         id: bumpGopogh
         run: |
           make update-gopogh-version
-          echo "::set-output name=changes::$(git status --porcelain)"
+          echo "changes=$(git status --porcelain)" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.bumpGopogh.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7

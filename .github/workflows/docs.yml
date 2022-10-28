@@ -26,7 +26,7 @@ jobs:
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
           c="${c//$'\r'/'%0D'}"
-          echo "::set-output name=changes::$c"
+          echo "changes=$c" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.gendocs.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
