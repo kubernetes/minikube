@@ -64,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
@@ -561,7 +562,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
-	if driver.IsQEMU(host.Driver.DriverName()) {
+	if driver.IsQEMU(host.Driver.DriverName()) && network.IsUser(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
 			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
@@ -664,15 +665,26 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kub
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) && !driver.IsQEMU(h.Driver.DriverName()) {
+	if shouldTrySSH(h.Driver.DriverName(), ip) {
 		if err := trySSH(h, ip); err != nil {
 			return ip, err
 		}
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion, ip)
 	return ip, nil
+}
+
+func shouldTrySSH(driverName, ip string) bool {
+	if driver.BareMetal(driverName) || driver.IsKIC(driverName) {
+		return false
+	}
+	// QEMU with user network
+	if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
+		return false
+	}
+	return true
 }
 
 func trySSH(h *host.Host, ip string) error {
@@ -716,7 +728,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -735,6 +747,10 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string, ku
 		klog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
+		// using QEMU with the user network
+		if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
+			out.WarningT("Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues")
+		}
 	}
 }
 

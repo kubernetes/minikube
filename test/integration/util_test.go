@@ -34,8 +34,8 @@ func UniqueProfileName(prefix string) string {
 	if NoneDriver() {
 		return "minikube"
 	}
-	// example: prefix-20200413162239-3215
-	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102150405"), os.Getpid())
+	// example: prefix-162239
+	return fmt.Sprintf("%s-%s", prefix, time.Now().Format("150405"))
 }
 
 // auditContains checks if the provided string is contained within the logs.

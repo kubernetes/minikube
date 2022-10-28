@@ -1,0 +1,5 @@
+config BR2_PACKAGE_VBOX_MOUNT_SERVICE
+	bool "vbox-mount-service"
+	depends on BR2_x86_64
+	depends on BR2_LINUX_KERNEL
+	default y

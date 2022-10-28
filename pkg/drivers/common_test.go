@@ -46,3 +46,81 @@ func Test_createDiskImage(t *testing.T) {
 		t.Errorf("Disk size is %v, want %v", fi.Size(), sizeInBytes)
 	}
 }
+
+var validLeases = []byte(`{
+        name=foo
+        ip_address=1.2.3.4
+        hw_address=1,a1:b2:c3:d4:e5:f6
+        identifier=1,a2:b3:c4:d5:e6:f7
+        lease=0x597e1267
+}
+{
+        name=bar
+        ip_address=192.168.64.3
+        hw_address=1,a4:b5:c6:d7:e8:f9
+        identifier=1,a0:b0:c0:d0:e0:f0
+        lease=0x597e1267
+}
+{
+        name=bar
+        ip_address=192.168.64.4
+        hw_address=1,a5:b6:c7:d8:e9:f1
+        identifier=1,a5:b6:c7:d8:e9:f1
+        lease=0x597e1268
+}`)
+
+func Test_getIpAddressFromFile(t *testing.T) {
+	tmpdir := tests.MakeTempDir(t)
+
+	dhcpFile := filepath.Join(tmpdir, "dhcp")
+	if err := os.WriteFile(dhcpFile, validLeases, 0644); err != nil {
+		t.Fatalf("writefile: %v", err)
+	}
+
+	invalidFile := filepath.Join(tmpdir, "invalid")
+	if err := os.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
+		t.Fatalf("writefile: %v", err)
+	}
+
+	type args struct {
+		mac  string
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			"valid",
+			args{"a1:b2:c3:d4:e5:f6", dhcpFile},
+			"1.2.3.4",
+			false,
+		},
+		{
+			"duplicate",
+			args{"a4:b5:c6:d7:e8:f9", dhcpFile},
+			"192.168.64.3",
+			false,
+		},
+		{
+			"invalid",
+			args{"a1:b2:c3:d4:e5:f6", invalidFile},
+			"",
+			true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getIPAddressFromFile(tt.args.mac, tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getIPAddressFromFile() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getIPAddressFromFile() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

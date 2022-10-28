@@ -180,6 +180,10 @@ func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, p
 func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
 	bc := make(chan byte, 1)
 	ec := make(chan error, 1)
+	defer func() {
+		close(bc)
+		close(ec)
+	}()
 	go func() {
 		b, err := r.ReadByte()
 		if err != nil {
@@ -187,8 +191,6 @@ func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, er
 		} else {
 			bc <- b
 		}
-		close(bc)
-		close(ec)
 	}()
 	select {
 	case b := <-bc:

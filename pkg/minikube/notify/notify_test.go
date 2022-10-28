@@ -36,6 +36,7 @@ import (
 )
 
 func TestShouldCheckURLVersion(t *testing.T) {
+	viper.Set("interactive", true)
 	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
@@ -74,6 +75,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 }
 
 func TestShouldCheckURLBetaVersion(t *testing.T) {
+	viper.Set("interactive", true)
 	tempDir := tests.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")

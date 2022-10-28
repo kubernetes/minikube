@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"time"
 
@@ -137,6 +138,8 @@ const (
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
 	qemuFirmwarePath        = "qemu-firmware-path"
+	socketVMnetClientPath   = "socket-vmnet-client-path"
+	socketVMnetPath         = "socket-vmnet-path"
 )
 
 var (
@@ -274,6 +277,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(sshSSHUser, defaultSSHUser, "SSH user (ssh driver only)")
 	startCmd.Flags().String(sshSSHKey, "", "SSH key (ssh driver only)")
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
+
+	// socket vmnet
+	startCmd.Flags().String(socketVMnetClientPath, "/opt/socket_vmnet/bin/socket_vmnet_client", "Path to the socket vmnet client binary")
+	startCmd.Flags().String(socketVMnetPath, "/var/run/socket_vmnet", "Path to socket vmnet binary")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -451,6 +458,23 @@ func getCNIConfig(cmd *cobra.Command) string {
 	return chosenCNI
 }
 
+func getNetwork(driverName string) string {
+	n := viper.GetString(network)
+	if !driver.IsQEMU(driverName) {
+		return n
+	}
+	if n == "" {
+		if runtime.GOOS == "darwin" {
+			out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
+		}
+		n = "user"
+	}
+	if n == "user" && runtime.GOOS == "darwin" {
+		out.WarningT("You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands.\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking")
+	}
+	return n
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -461,8 +485,12 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 	}
 
-	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName)) && viper.GetString(network) != "" {
-		out.WarningT("--network flag is only valid with the docker/podman and KVM drivers, it will be ignored")
+	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName) || driver.IsQEMU(drvName)) && viper.GetString(network) != "" {
+		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
+	}
+
+	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket_vmnet" {
+		out.WarningT("Using qemu with 'socket_vmnet' network is experimental")
 	}
 
 	checkNumaCount(k8sVersion)
@@ -475,7 +503,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
 		KicBaseImage:            viper.GetString(kicBaseImage),
-		Network:                 viper.GetString(network),
+		Network:                 getNetwork(drvName),
 		Subnet:                  viper.GetString(subnet),
 		Memory:                  getMemorySize(cmd, drvName),
 		CPUs:                    getCPUCount(drvName),
@@ -528,6 +556,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
+		SocketVMnetClientPath:   viper.GetString(socketVMnetClientPath),
+		SocketVMnetPath:         viper.GetString(socketVMnetPath),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -580,6 +610,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		if si.StorageDriver == "btrfs" {
 			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
+		}
+		if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
+			out.WarningT("For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server")
 		}
 	}
 
@@ -747,6 +780,8 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.BinaryMirror, binaryMirror)
 	updateBoolFromFlag(cmd, &cc.DisableOptimizations, disableOptimizations)
 	updateStringFromFlag(cmd, &cc.CustomQemuFirmwarePath, qemuFirmwarePath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
+	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)

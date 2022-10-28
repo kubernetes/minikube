@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	pkgnetwork "k8s.io/minikube/pkg/network"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
@@ -296,12 +297,12 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
-		if driver.NeedsPortForward(driverName) && driver.IsKIC(driverName) {
+		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.Message(reason.DrvPortForward, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
-		} else if driver.NeedsPortForward(driverName) && driverName == driver.QEMU2 {
+		} else if driver.IsQEMU(driverName) && pkgnetwork.IsUser(co.Config.Network) {
 			port = d.(*qemu.Driver).EnginePort
 		}
 

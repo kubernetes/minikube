@@ -51,7 +51,7 @@ func enableOrDisableAutoPause(cc *config.ClusterConfig, name, val string) error 
 	port := co.CP.Port // API server port
 	if enable {        // if enable, calculate the forwarded port
 		port = constants.AutoPauseProxyPort
-		if driver.NeedsPortForward(cc.Driver) && driver.IsKIC(cc.Driver) {
+		if driver.NeedsPortForward(cc.Driver) {
 			port, err = oci.ForwardedPort(cc.Driver, cc.Name, port)
 			if err != nil {
 				klog.ErrorS(err, "failed to get forwarded port for", "auto-pause port", port)

@@ -197,9 +197,6 @@ func AllowsPreload(driverName string) bool {
 
 // NeedsPortForward returns true if driver is unable provide direct IP connectivity
 func NeedsPortForward(name string) bool {
-	if IsQEMU(name) {
-		return true
-	}
 	if !IsKIC(name) {
 		return false
 	}
@@ -214,6 +211,9 @@ func NeedsPortForward(name string) bool {
 	si, err := oci.CachedDaemonInfo(name)
 	if err != nil {
 		panic(err)
+	}
+	if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
+		return true
 	}
 	return si.Rootless
 }

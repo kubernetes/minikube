@@ -66,7 +66,7 @@ func TestAddons(t *testing.T) {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -97,6 +97,7 @@ func TestAddons(t *testing.T) {
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"Headlamp", validateHeadlampAddon},
+			{"CloudSpanner", validateCloudSpannerAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -741,5 +742,24 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 
 	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for headlamp pod: %v", err)
+	}
+}
+
+// validateCloudSpannerAddon tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
+func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+	if err := kapi.WaitForDeploymentToStabilize(client, "default", "cloud-spanner-emulator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for cloud-spanner-emulator deployment to stabilize: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "default", "app=cloud-spanner-emulator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for app=cloud-spanner-emulator pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
+		t.Errorf("failed to disable cloud-spanner addon: args %q : %v", rr.Command(), err)
 	}
 }

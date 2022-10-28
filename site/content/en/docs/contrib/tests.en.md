@@ -44,6 +44,9 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 
 #### validateHeadlampAddon
 
+#### validateCloudSpannerAddon
+tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
@@ -375,6 +378,10 @@ asserts `minikube version` command works fine for both --short and --components
 Steps:
 - Run `minikube version --short` and make sure the returned version is a valid semver
 - Run `minikube version --components` and make sure the component versions are returned
+
+#### validateLicenseCmd
+asserts that the `minikube license` command downloads and untars the licenses
+Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
 
 #### validateMountCmd
 verifies the minikube mount command works properly
