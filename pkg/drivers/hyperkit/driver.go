@@ -262,7 +262,7 @@ func (d *Driver) Start() error {
 	}
 
 	// Need to strip 0's
-	mac = trimMacAddress(mac)
+	mac = pkgdrivers.TrimMacAddress(mac)
 	log.Debugf("Generated MAC %s", mac)
 
 	log.Debugf("Starting with cmdline: %s", d.Cmdline)
@@ -288,7 +288,7 @@ func (d *Driver) setupIP(mac string) error {
 			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
 		}
 
-		d.IPAddress, err = GetIPAddressByMACAddress(mac)
+		d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
 		if err != nil {
 			return &tempError{err}
 		}

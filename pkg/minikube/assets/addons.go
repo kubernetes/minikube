@@ -137,7 +137,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640"),
 		MustBinAsset(addons.DashboardAssets, "dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640"),
 	}, false, "dashboard", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/dashboard/", map[string]string{
-		"Dashboard":      "kubernetesui/dashboard:v2.6.0@sha256:4af9580485920635d888efe1eddbd67e12f9d5d84dba87100e93feb4e46636b3",
+		"Dashboard":      "kubernetesui/dashboard:v2.7.0@sha256:2e500d29e9d5f4a086b908eb8dfe7ecac57d2ab09d65b24f588b1d449841ef93",
 		"MetricsScraper": "kubernetesui/metrics-scraper:v1.0.8@sha256:76049887f07a0476dc93efc2d3569b9529bf982b22d29f356092ce206e98765c",
 	}, map[string]string{
 		"Dashboard":      "docker.io",
@@ -714,7 +714,7 @@ var Addons = map[string]*Addon{
 			"portainer.yaml",
 			"0640"),
 	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
-		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
+		"Portainer": "portainer/portainer-ce:2.15.1@sha256:5466af30b8eaf3f75edd3c74703d1c9973f0963acd6ef164913ea6f195d640c2",
 	}, map[string]string{
 		"Portainer": "docker.io",
 	}),
@@ -737,11 +737,18 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "kinvolk/headlamp:v0.11.1@sha256:2547c6f5d5186a2c01822648989d49d9853fecda14bca96a0bf4a0547ea1d613",
+			"Headlamp": "kinvolk/headlamp:v0.13.0@sha256:910c9b060b1c253a4576836daac49730932258f91205c3160e2c1588a24a9387",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
 		}),
+	"cloud-spanner": NewAddon([]*BinAsset{
+		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
+	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
+		"CloudSpannerAddon": "cloud-spanner-emulator/emulator",
+	}, map[string]string{
+		"CloudSpannerAddon": "gcr.io",
+	}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

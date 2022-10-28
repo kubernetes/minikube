@@ -247,7 +247,7 @@ func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, run
 	}
 
 	if name == "registry" {
-		if driver.NeedsPortForward(cc.Driver) && driver.IsKIC(cc.Driver) {
+		if driver.NeedsPortForward(cc.Driver) {
 			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
 				return false, errors.Wrap(err, "registry port")

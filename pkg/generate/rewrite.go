@@ -55,6 +55,10 @@ func rewriteFlags(command *cobra.Command) error {
 		}, {
 			flag:  "mount-string",
 			usage: "The argument to pass the minikube mount command on start.",
+		}, {
+			flag:       "iso-url",
+			usage:      "Locations to fetch the minikube ISO from. The list depends on the machine architecture.",
+			defaultVal: "[]",
 		}},
 	}
 	rws, ok := rewrites[command.Name()]

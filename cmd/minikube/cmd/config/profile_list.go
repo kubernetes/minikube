@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -49,7 +50,11 @@ var profileListCmd = &cobra.Command{
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
-		switch strings.ToLower(profileOutput) {
+		output := strings.ToLower(profileOutput)
+		out.SetJSON(output == "json")
+		go notify.MaybePrintUpdateTextFromGithub()
+
+		switch output {
 		case "json":
 			printProfilesJSON()
 		case "table":
@@ -204,11 +209,11 @@ func printProfilesJSON() {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
 		jsonString, _ := json.Marshal(body)
-		out.String(string(jsonString))
+		os.Stdout.Write(jsonString)
 	} else {
 		body["error"] = err
 		jsonString, _ := json.Marshal(body)
-		out.String(string(jsonString))
+		os.Stdout.Write(jsonString)
 		os.Exit(reason.ExGuestError)
 	}
 }

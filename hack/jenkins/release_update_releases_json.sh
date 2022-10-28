@@ -62,7 +62,7 @@ else
   now=$(date +"%b %d, %Y")
   sed -i "s/Latest Release: .* (/Latest Release: ${TAGNAME} - ${now} (/" site/content/en/docs/_index.md
 
-  git add deploy/minikube/*
+  git add deploy/minikube/* site/content/en/docs/_index.md
   git commit -m "Update releases.json & releases-v2.json to include ${TAGNAME}"
   git remote add minikube-bot git@github.com:minikube-bot/minikube.git
   git push -f minikube-bot jenkins-releases.json-${TAGNAME}

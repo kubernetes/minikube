@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
+	pkgnetwork "k8s.io/minikube/pkg/network"
 )
 
 var cleanup bool
@@ -56,9 +58,12 @@ var tunnelCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		// Bail cleanly for qemu2 until implemented
-		if driver.IsQEMU(co.Config.Driver) {
-			exit.Message(reason.Unimplemented, "minikube tunnel is not currently implemented with the qemu2 driver. See https://github.com/kubernetes/minikube/issues/14146 for details.")
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
+			msg := "minikube tunnel is not currently implemented with the user network on QEMU"
+			if runtime.GOOS == "darwin" {
+				msg += ", try starting minikube with '--network=socket_vmnet'"
+			}
+			exit.Message(reason.Unimplemented, msg)
 		}
 
 		if cleanup {
@@ -85,7 +90,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if driver.NeedsPortForward(co.Config.Driver) && driver.IsKIC(co.Config.Driver) {
+		if driver.NeedsPortForward(co.Config.Driver) || bindAddress != "" {
 			port, err := oci.ForwardedPort(co.Config.Driver, cname, 22)
 			if err != nil {
 				exit.Error(reason.DrvPortForward, "error getting ssh port", err)

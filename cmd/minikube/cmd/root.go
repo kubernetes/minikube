@@ -282,6 +282,7 @@ func init() {
 				updateCheckCmd,
 				versionCmd,
 				optionsCmd,
+				licenseCmd,
 			},
 		},
 	}

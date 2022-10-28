@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	pkgnetwork "k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -124,6 +125,13 @@ var mountCmd = &cobra.Command{
 		co := mustload.Running(ClusterFlagValue())
 		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.Message(reason.Usage, `'none' driver does not support 'minikube mount' command`)
+		}
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
+			msg := "minikube mount is not currently implemented with the user network on QEMU"
+			if runtime.GOOS == "darwin" {
+				msg += ", try starting minikube with '--network=socket_vmnet'"
+			}
+			exit.Message(reason.Unimplemented, msg)
 		}
 
 		var ip net.IP

@@ -98,3 +98,7 @@ If you had already deployed pods to your minikube cluster before enabling the gc
 1. If you use a Deployment to deploy your pods, just delete the existing pods with `kubectl delete pod <pod_name>`. The deployment will then automatically recreate the pod and it will have the correct credentials.
 
 2. minikube can delete and recreate your pods for you, by running `minikube addons enable gcp-auth --refresh`. It does not matter if you have already enabled the addon or not. 
+
+## Adding new namespaces
+
+If you have created a new namespace after enabling the gcp-auth addon, then the namespace will be missing the image pull secret. To resolve this issue run `minikube addons enable gcp-auth --refresh`.
