@@ -88,7 +88,6 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 			return nil, errors.Wrap(err, "get gateway ip from lima host name")
 		}
 		if gatewayIP != nil {
-			klog.Infof("Will use the following gateway IP: %s (ociBin: %s, GOOS: %s)", gatewayIP, ociBin, runtime.GOOS)
 			return gatewayIP, nil
 		}	
 	}
