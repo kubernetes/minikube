@@ -129,10 +129,10 @@ data:
   sidecar-istio-proxy-image: "cilium/istio_proxy"
 
   # Name of the cluster. Only relevant when building a mesh of clusters.
-  cluster-name: default
+  cluster-name: cluster
   # Unique ID of the cluster. Must be unique across all conneted clusters and
   # in the range of 1 and 255. Only relevant when building a mesh of clusters.
-  cluster-id: ""
+  cluster-id: "1"
 
   # Encapsulation mode for communication between nodes
   # Possible values:
@@ -299,6 +299,22 @@ rules:
   - list
   - watch
   - delete
+  - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  # To remove node taints
+  - nodes
+  # To set NetworkUnavailable false on startup
+  - nodes/status
+  verbs:
+  - patch
 - apiGroups:
   - discovery.k8s.io
   resources:
@@ -444,7 +460,7 @@ spec:
           httpGet:
             host: '127.0.0.1'
             path: /healthz
-            port: 9876
+            port: 9879
             scheme: HTTP
             httpHeaders:
             - name: "brief"
@@ -461,7 +477,7 @@ spec:
           httpGet:
             host: '127.0.0.1'
             path: /healthz
-            port: 9876
+            port: 9879
             scheme: HTTP
             httpHeaders:
             - name: "brief"
@@ -508,7 +524,7 @@ spec:
               key: custom-cni-conf
               name: cilium-config
               optional: true
-        image: "quay.io/cilium/cilium:v1.9.9@sha256:a85d5cff13f8231c2e267d9fc3c6e43d24be4a75dac9f641c11ec46e7f17624d"
+        image: "quay.io/cilium/cilium:v1.12.3@sha256:30de50c4dc0a1e1077e9e7917a54d5cab253058b3f779822aec00f5c817ca826"
         imagePullPolicy: IfNotPresent
         lifecycle:
           postStart:
@@ -570,7 +586,7 @@ spec:
           # same directory where we install cilium cni plugin so that exec permissions
           # are available.
           - 'cp /usr/bin/cilium-mount /hostbin/cilium-mount && nsenter --cgroup=/hostproc/1/ns/cgroup --mount=/hostproc/1/ns/mnt "${BIN_PATH}/cilium-mount" $CGROUP_ROOT; rm /hostbin/cilium-mount'
-        image: "quay.io/cilium/cilium:v1.9.9@sha256:a85d5cff13f8231c2e267d9fc3c6e43d24be4a75dac9f641c11ec46e7f17624d"
+        image: "quay.io/cilium/cilium:v1.12.3@sha256:30de50c4dc0a1e1077e9e7917a54d5cab253058b3f779822aec00f5c817ca826"
         imagePullPolicy: IfNotPresent
         volumeMounts:
           - mountPath: /hostproc
@@ -600,7 +616,7 @@ spec:
               key: wait-bpf-mount
               name: cilium-config
               optional: true
-        image: "quay.io/cilium/cilium:v1.9.9@sha256:a85d5cff13f8231c2e267d9fc3c6e43d24be4a75dac9f641c11ec46e7f17624d"
+        image: "quay.io/cilium/cilium:v1.12.3@sha256:30de50c4dc0a1e1077e9e7917a54d5cab253058b3f779822aec00f5c817ca826"
         imagePullPolicy: IfNotPresent
         name: clean-cilium-state
         securityContext:
@@ -762,7 +778,7 @@ spec:
               key: debug
               name: cilium-config
               optional: true
-        image: "quay.io/cilium/operator-generic:v1.9.9@sha256:3726a965cd960295ca3c5e7f2b543c02096c0912c6652eb8bbb9ce54bcaa99d8"
+        image: "quay.io/cilium/operator-generic:v1.12.3@sha256:816ec1da586139b595eeb31932c61a7c13b07fb4a0255341c0e0f18608e84eff"
         imagePullPolicy: IfNotPresent
         name: cilium-operator
         livenessProbe:
