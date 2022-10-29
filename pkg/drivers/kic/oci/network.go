@@ -81,7 +81,7 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 	if runtime.GOOS == "linux" {
 		return containerGatewayIP(ociBin, containerName)
 	}
-	// try lima host record
+	// on macos, try lima host record
 	if runtime.GOOS == "darwin" {
 		gatewayIP, err :=  digDNS(ociBin, containerName, "host.lima.internal")
 		if err != nil {
