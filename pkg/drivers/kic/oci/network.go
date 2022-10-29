@@ -81,15 +81,16 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 	if runtime.GOOS == "linux" {
 		return containerGatewayIP(ociBin, containerName)
 	}
-	// on macos, try lima host record
-	if runtime.GOOS == "darwin" {
+
+	// on mac os and podman, try lima host record
+	if ociBin == "podman" && runtime.GOOS == "darwin" {
 		gatewayIP, err :=  digDNS(ociBin, containerName, "host.lima.internal")
 		if err != nil {
 			return nil, errors.Wrap(err, "get gateway ip from lima host name")
 		}
 		if gatewayIP != nil {
 			return gatewayIP, nil
-		}	
+		}
 	}
 
 	return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for linux")
