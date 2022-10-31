@@ -68,7 +68,7 @@ require (
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/otel v1.11.1
-	go.opentelemetry.io/otel/sdk v1.11.0
+	go.opentelemetry.io/otel/sdk v1.11.1
 	go.opentelemetry.io/otel/trace v1.11.1
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.1.0
