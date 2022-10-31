@@ -601,6 +601,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
+		klog.Warning(err)
 		return false
 	}
 	preloadedImages := map[string]struct{}{}
