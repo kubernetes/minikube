@@ -65,7 +65,23 @@ When using the `user` network (default) the guest uses **only** the first `names
 
 ##### Workarounds:
 1. If possible, reorder your `/etc/resolv.conf` to have a general `nameserver` entry first (eg. `8.8.8.8`) and reboot your machine.
-2. (Coming soon) Use `--network=socket_vmnet`
+2. Use `--network=socket_vmnet`
+
+### 2. `/var/db/dhcpd_leases` errors
+
+If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the following:
+1. Uninstall `socket_vmnet`:
+```shell
+cd socket_vmnet
+sudo make uninstll
+sudo rm /var/run/socket_vmnet
+```
+2. Reboot
+3. Reinsitall `socket_vmnet`:
+```shell
+cd socket_vmnet
+sudo make install
+```
 
 [Full list of open 'qemu' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fqemu-driver)
 
