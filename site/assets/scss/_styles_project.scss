@@ -1,10 +1,10 @@
 .td-sidebar-nav {
-    padding-left: 1rem;
+    padding-left: 0.625rem;
 
     &__section {
          @include media-breakpoint-up(md) {
              & > ul {
-                 padding-left: 2rem;
+                 padding-left: 1rem;
              }
          }
      }
