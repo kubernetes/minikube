@@ -10,21 +10,10 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 
 ## Prerequisites
 
+* A recent GNU Make distribution (>=4.0)
 * A recent Go distribution (>=1.16)
-* If you are on Windows, you'll need Docker to be installed.
+* If you are on Windows or Mac, you'll need Docker to be installed.
 * 4GB of RAM
-* Build tools:
-
-```shell
-sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
-    unzip bc gcc-multilib automake libtool locales
-```
-
-Additionally, if you are on Fedora, you will need to install `glibc-static`:
-
-```shell
-sudo dnf install -y glibc-static
-```
 
 ## Downloading the source
 
@@ -33,8 +22,9 @@ git clone https://github.com/kubernetes/minikube.git
 cd minikube
 ```
 
-### Building
+## Building
 
+### Building in Docker
 To build for x86
 ```shell
 $ make buildroot-image
@@ -47,17 +37,31 @@ $ make buildroot-image
 $ make out/minikube-arm64.iso
 ```
 
-The build will occur inside a docker container. If you want to do this on
-baremetal, replace `make out/minikube-<arch>.iso` with `IN_DOCKER=1 make out/minikube-<arch>.iso`.
+The build will occur inside a docker container. 
 The bootable ISO image will be available in `out/minikube-<arch>.iso`.
 
-### Using a local ISO image
+### Building on Baremetal
+If you want to do this on baremetal, replace `make out/minikube-<arch>.iso` with `IN_DOCKER=1 make out/minikube-<arch>.iso`.
+
+* Prerequisite build tools to install:
+```shell
+sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
+    unzip bc gcc-multilib automake libtool locales
+```
+
+Additionally, if you are on Fedora, you will need to install `glibc-static`:
+
+```shell
+sudo dnf install -y glibc-static
+```
+
+## Using a local ISO image
 
 ```shell
 $ ./out/minikube start --iso-url=file://$(pwd)/out/minikube-<arch>.iso
 ```
 
-### Modifying buildroot components
+## Modifying buildroot components
 
 To change which Linux userland components are included by the guest VM, use this to modify the buildroot configuration:
 
@@ -75,7 +79,7 @@ make savedefconfig
 
 The changes will be reflected in the `minikube-iso/configs/minikube_defconfig` file.
 
-### Adding kernel modules
+## Adding kernel modules
 
 To make kernel configuration changes and save them, execute:
 
@@ -86,7 +90,7 @@ $ make linux-menuconfig
 This will open the kernel configuration menu, and then save your changes to our
 iso directory after they've been selected.
 
-### Adding third-party packages
+## Adding third-party packages
 
 To add your own package to the minikube ISO, create a package directory under `iso/minikube-iso/package`.  This directory will require at least 3 files:
 
