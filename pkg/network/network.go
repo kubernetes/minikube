@@ -92,6 +92,7 @@ func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
 
 	for _, iface := range ifaces {
 
+		klog.Infof("iterating over %+v for %s", iface, ip)
 		ifAddrs, err := iface.Addrs()
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed listing addresses of network interface %+v: %w", iface, err)
