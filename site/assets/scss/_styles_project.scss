@@ -1,0 +1,25 @@
+.td-sidebar-nav {
+    padding-left: 0.625rem;
+
+    &__section {
+         @include media-breakpoint-up(md) {
+             & > ul {
+                 padding-left: 1rem;
+             }
+         }
+     }
+}
+
+.td-sidebar-link__section {
+    position: relative;
+
+    &::before {
+        position: absolute;
+        left: -1rem;
+        content: '\29be';
+    }
+
+    &.active::before {
+        content: '\29bf';
+    }
+}

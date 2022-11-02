@@ -27,7 +27,7 @@ jobs:
         id: yearlyLeaderboard
         run: |
           make update-yearly-leaderboard
-          echo "::set-output name=changes::$(git status --porcelain)"
+          echo "changes=$(git status --porcelain)" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR

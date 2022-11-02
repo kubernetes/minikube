@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -600,11 +601,12 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
+		klog.Warning(err)
 		return false
 	}
 	preloadedImages := map[string]struct{}{}
 	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		i = trimDockerIO(i)
+		i = image.TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}
 
@@ -612,7 +614,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 
 	// Make sure images == imgs
 	for _, i := range images {
-		i = trimDockerIO(i)
+		i = image.TrimDockerIO(i)
 		if _, ok := preloadedImages[i]; !ok {
 			klog.Infof("%s wasn't preloaded", i)
 			return false
@@ -642,13 +644,6 @@ func addDockerIO(name string) string {
 		return reg + "/" + usr + "/" + img
 	}
 	return reg + "/" + img
-}
-
-// Remove docker.io prefix since it won't be included in images names
-// when we call 'docker images'
-func trimDockerIO(name string) string {
-	name = strings.TrimPrefix(name, "docker.io/")
-	return name
 }
 
 func dockerBoundToContainerd(runner command.Runner) bool {
