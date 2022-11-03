@@ -197,7 +197,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 		urls, err = mutateURLs(svc.Name, urls)
 
 		if err != nil {
-			exit.Error(reason.SvcTunnelStart, "error creatings urls", err)
+			exit.Error(reason.SvcTunnelStart, "error creating urls", err)
 		}
 
 		defer serviceTunnel.Stop()
