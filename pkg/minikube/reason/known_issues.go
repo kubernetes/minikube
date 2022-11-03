@@ -1265,7 +1265,7 @@ var serviceIssues = []match{
 		Kind: Kind{
 			ID:       "SVC_OPEN_NOT_FOUND",
 			ExitCode: ExSvcNotFound,
-			Advice:   "Use 'kubect get po -A' to find the correct and namespace name",
+			Advice:   "Use 'kubectl get po -A' to find the correct and namespace name",
 			Issues:   []int{5836},
 		},
 		Regexp: re(`Error opening service.*not found`),
