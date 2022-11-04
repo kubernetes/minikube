@@ -17,6 +17,7 @@ limitations under the License.
 package detect
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,7 +26,9 @@ import (
 	"strings"
 
 	"github.com/klauspost/cpuid"
+	"github.com/spf13/viper"
 	"golang.org/x/sys/cpu"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -128,4 +131,19 @@ func KICCacheDir() string {
 // ISOCacheDir returns the path in the minikube home directory to the virtual machine image cache for the current architecture
 func ISOCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "iso"), runtime.GOARCH)
+}
+
+// SocketVMNetInstalled returns if socket_vmnet is installed
+func SocketVMNetInstalled() bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	_, err := os.Stat(viper.GetString("socket-vmnet-path"))
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		klog.Warningf("failed to check for socket_vmnet: %v", err)
+	}
+	return false
 }
