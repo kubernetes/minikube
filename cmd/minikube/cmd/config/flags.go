@@ -19,16 +19,9 @@ package config
 import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 // ClusterFlagValue returns the current cluster name based on flags
 func ClusterFlagValue() string {
 	return viper.GetString(config.ProfileName)
-}
-
-// ClusterKubernetesVersion returns the current Kubernetes version of the cluster
-func ClusterKubernetesVersion(clusterProfile string) string {
-	_, cc := mustload.Partial(clusterProfile)
-	return cc.KubernetesConfig.KubernetesVersion
 }
