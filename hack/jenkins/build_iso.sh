@@ -28,7 +28,8 @@ set -x -o pipefail
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
 # Generate changelog for latest github PRs merged
-./hack/jenkins/build_changelog.sh ./deploy/iso/minikube-iso/CHANGELOG
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG
 
 # Make sure all required packages are installed
 sudo apt-get update
