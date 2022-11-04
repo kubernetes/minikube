@@ -1,5 +1,69 @@
 # Release Notes
 
+## Version 1.28.0 - 2022-11-04
+
+**SECURITY WARNING:** Log4j CVEs were detected in an image the `efk` addon uses, if you don't use the `efk` addon no action is required. If you use the addon we recommend running `minikube addons disable efk` to terminate the vulnerable pods.
+See [#15280[(https://github.com/kubernetes/minikube/issues/15280) for more details.
+
+Security:
+* Prevent enabling `efk` addon due to containing Log4j CVE [#15281](https://github.com/kubernetes/minikube/pull/15281)
+
+Features:
+* Auto select network on QEMU [#15266](https://github.com/kubernetes/minikube/pull/15266)
+* Implement mounting on QEMU with socket_vmnet [#15108](https://github.com/kubernetes/minikube/pull/15108)
+* Added cloud-spanner emulator addon [#15160](https://github.com/kubernetes/minikube/pull/15160)
+* Add `minikube license` command [#15158](https://github.com/kubernetes/minikube/pull/15158)
+
+Minor Improvements:
+* Allow port forwarding on Linux with Docker Desktop [#15126](https://github.com/kubernetes/minikube/pull/15126)
+* Add back service to mount VirtualBox host directory into the guest. [#14784](https://github.com/kubernetes/minikube/pull/14784)
+* ISO: Add FANOTIFY_ACCESS_PERMISSIONS to kernel configs [#15232](https://github.com/kubernetes/minikube/pull/15232)
+* When enabling addon warn if addon has no associated Github username [#15081](https://github.com/kubernetes/minikube/pull/15081)
+
+Bug Fixes:
+* Fix detecting preload cache of size 0 as valid [#15256](https://github.com/kubernetes/minikube/pull/15256)
+* Fix always writing to daemon by trimming `docker.io` from image name [#14956](https://github.com/kubernetes/minikube/pull/14956)
+* Fix minikube tunnel repeated printout of status [#14933](https://github.com/kubernetes/minikube/pull/14933)
+
+Version Upgrades:
+* Upgrade Portainer addon to 2.15.1 & HTTPS access enabled [#15172](https://github.com/kubernetes/minikube/pull/15172)
+* Upgrade Headlamp addon to 0.13.0 [#15186](https://github.com/kubernetes/minikube/pull/15186)
+* ISO: Upgrade Docker from 20.10.18 to 20.10.20 [#15159](https://github.com/kubernetes/minikube/pull/15159)
+* KIC: Upgrade base image from ubuntu:focal-20220826 to ubuntu:focal-20220922 [#15075](https://github.com/kubernetes/minikube/pull/15075)
+* KCI: Upgrade base image from ubuntu:focal-20220922 to ubuntu:focal-20221019 [#15219](https://github.com/kubernetes/minikube/pull/15219)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Chris Kannon
+- Francis Laniel
+- Jeff MAURY
+- Jevon Tane
+- Medya Ghazizadeh
+- Nitin Agarwal
+- Oldřich Jedlička
+- Rahil Patel
+- Steven Powell
+- Tian
+- Yue Yang
+- joaquimrocha
+- klaases
+- shixiuguo
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (25 comments)
+- medyagh (14 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (64 comments)
+- klaases (39 comments)
+- afbjorklund (23 comments)
+- spowelljr (22 comments)
+- medyagh (4 comments)
+
 ## Version 1.27.1 - 2022-10-07
 
 Features (Experimental):
