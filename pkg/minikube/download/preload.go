@@ -144,7 +144,7 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
-	if _, err := checkCache(targetPath); err == nil {
+	if f, err := checkCache(targetPath); err == nil && f.Size() != 0 {
 		klog.Infof("Found local preload: %s", targetPath)
 		setPreloadState(k8sVersion, containerRuntime, true)
 		return true
@@ -170,7 +170,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		return err
 	}
 
-	if _, err := checkCache(targetPath); err == nil {
+	if f, err := checkCache(targetPath); err == nil && f.Size() != 0 {
 		klog.Infof("Found %s in cache, skipping download", targetPath)
 		return nil
 	}
