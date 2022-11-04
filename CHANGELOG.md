@@ -3,7 +3,7 @@
 ## Version 1.28.0 - 2022-11-04
 
 **SECURITY WARNING:** Log4j CVEs were detected in an image the `efk` addon uses, if you don't use the `efk` addon no action is required. If you use the addon we recommend running `minikube addons disable efk` to terminate the vulnerable pods.
-See [#15280[(https://github.com/kubernetes/minikube/issues/15280) for more details.
+See [#15280](https://github.com/kubernetes/minikube/issues/15280) for more details.
 
 Security:
 * Prevent enabling `efk` addon due to containing Log4j CVE [#15281](https://github.com/kubernetes/minikube/pull/15281)
