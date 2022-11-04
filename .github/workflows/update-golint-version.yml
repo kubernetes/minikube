@@ -22,7 +22,9 @@ jobs:
         id: bumpGolint
         run: |
           make update-golint-version
-          echo "changes=$(git status --porcelain)" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.bumpGolint.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7

@@ -25,7 +25,9 @@ jobs:
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
           c="${c//$'\r'/'%0D'}"
-          echo "changes=$c" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$c" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
