@@ -16,8 +16,7 @@
 
 # This script can take the following env variables
 # ARGS: args to pass into the make rule
-# 	ISO_BUCKET = the bucket location to upload the ISO (e.g. minikube-builds/PR_NUMBER)
-# 	ISO_VERSION = the suffix for the iso (i.e. minikube-$(ISO_VERSION).iso)
+# 	OUTPUT_LOCATION = the location to write the changelog file to
 
 set -x -o pipefail
 
