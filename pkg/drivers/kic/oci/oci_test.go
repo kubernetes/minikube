@@ -22,10 +22,10 @@ import (
 )
 
 func TestPointToHostDockerDaemonEmpty(t *testing.T) {
-	_ = os.Setenv("DOCKER_HOST", "foo_host")
-	_ = os.Setenv("DOCKER_CERT_PATH", "foo_cert_path")
-	_ = os.Setenv("DOCKER_TLS_VERIFY", "foo_tls_verify")
-	_ = os.Setenv("MINIKUBE_ACTIVE_DOCKERD", "minikube")
+	t.Setenv("DOCKER_HOST", "foo_host")
+	t.Setenv("DOCKER_CERT_PATH", "foo_cert_path")
+	t.Setenv("DOCKER_TLS_VERIFY", "foo_tls_verify")
+	t.Setenv("MINIKUBE_ACTIVE_DOCKERD", "minikube")
 
 	_ = os.Unsetenv("MINIKUBE_EXISTING_DOCKER_HOST")
 	_ = os.Unsetenv("MINIKUBE_EXISTING_DOCKER_CERT_PATH")
@@ -45,13 +45,14 @@ func TestPointToHostDockerDaemonEmpty(t *testing.T) {
 }
 
 func TestPointToHostDockerDaemon(t *testing.T) {
-	_ = os.Setenv("DOCKER_HOST", "foo_host")
-	_ = os.Setenv("DOCKER_CERT_PATH", "foo_cert_path")
-	_ = os.Setenv("DOCKER_TLS_VERIFY", "foo_tls_verify")
+	t.Setenv("DOCKER_HOST", "foo_host")
+	t.Setenv("DOCKER_CERT_PATH", "foo_cert_path")
+	t.Setenv("DOCKER_TLS_VERIFY", "foo_tls_verify")
+	t.Setenv("MINIKUBE_ACTIVE_DOCKERD", "minikube")
 
-	_ = os.Setenv("MINIKUBE_EXISTING_DOCKER_HOST", "bar_host")
-	_ = os.Setenv("MINIKUBE_EXISTING_DOCKER_CERT_PATH", "bar_cert_path")
-	_ = os.Setenv("MINIKUBE_EXISTING_DOCKER_TLS_VERIFY", "bar_tls_verify")
+	t.Setenv("MINIKUBE_EXISTING_DOCKER_HOST", "bar_host")
+	t.Setenv("MINIKUBE_EXISTING_DOCKER_CERT_PATH", "bar_cert_path")
+	t.Setenv("MINIKUBE_EXISTING_DOCKER_TLS_VERIFY", "bar_tls_verify")
 
 	if err := PointToHostDockerDaemon(); err != nil {
 		t.Fatalf("failed to set docker environment: got %v", err)
@@ -72,8 +73,8 @@ func TestPointToHostDockerDaemon(t *testing.T) {
 }
 
 func TestPointToHostPodmanEmpty(t *testing.T) {
-	_ = os.Setenv("CONTAINER_HOST", "foo_host")
-	_ = os.Setenv("MINIKUBE_ACTIVE_PODMAN", "minikube")
+	t.Setenv("CONTAINER_HOST", "foo_host")
+	t.Setenv("MINIKUBE_ACTIVE_PODMAN", "minikube")
 
 	_ = os.Unsetenv("MINIKUBE_EXISTING_CONTAINER_HOST")
 
@@ -91,9 +92,10 @@ func TestPointToHostPodmanEmpty(t *testing.T) {
 }
 
 func TestPointToHostPodman(t *testing.T) {
-	_ = os.Setenv("CONTAINER_HOST", "foo_host")
+	t.Setenv("CONTAINER_HOST", "foo_host")
+	t.Setenv("MINIKUBE_ACTIVE_PODMAN", "minikube")
 
-	_ = os.Setenv("MINIKUBE_EXISTING_CONTAINER_HOST", "bar_host")
+	t.Setenv("MINIKUBE_EXISTING_CONTAINER_HOST", "bar_host")
 
 	if err := PointToHostPodman(); err != nil {
 		t.Fatalf("failed to set podman environment: got %v", err)
@@ -130,8 +132,8 @@ func TestDaemonHost(t *testing.T) {
 		{"docker", "", "ssh://127.0.0.1/bar", "127.0.0.1", true},
 	}
 	for _, test := range tests {
-		_ = os.Setenv("CONTAINER_HOST", test.containerHost)
-		_ = os.Setenv("DOCKER_HOST", test.dockerHost)
+		t.Setenv("CONTAINER_HOST", test.containerHost)
+		t.Setenv("DOCKER_HOST", test.dockerHost)
 		if v := IsExternalDaemonHost(test.driver); v != test.expectedExternal {
 			t.Errorf("invalid result of IsExternalDaemonHost. got: %v, want: %v", v, test.expectedExternal)
 		}

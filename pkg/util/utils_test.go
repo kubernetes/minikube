@@ -129,9 +129,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		if err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "1"); nil != err {
-			t.Error("failed to set env: CHANGE_MINIKUBE_NONE_USER")
-		}
+		t.Setenv("CHANGE_MINIKUBE_NONE_USER", "1")
 	}
 
 	if os.Getenv("SUDO_USER") == "" {
@@ -139,11 +137,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 		if nil != err {
 			t.Error("fail to get user")
 		}
-		os.Setenv("SUDO_USER", user.Username)
-		err = os.Setenv("SUDO_USER", user.Username)
-		if nil != err {
-			t.Error("failed to set env: SUDO_USER")
-		}
+		t.Setenv("SUDO_USER", user.Username)
 	}
 
 	cases := []struct {

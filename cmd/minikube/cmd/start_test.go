@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -172,13 +171,6 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	// Set default disk size value in lieu of flag init
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 
-	originalEnv := os.Getenv("HTTP_PROXY")
-	defer func() {
-		err := os.Setenv("HTTP_PROXY", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env HTTP_PROXY to it's original value. Got err: %s", err)
-		}
-	}()
 	k8sVersion := constants.NewestKubernetesVersion
 	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
@@ -222,9 +214,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
-				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
-			}
+			t.Setenv("HTTP_PROXY", test.proxy)
 
 			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
 			proxy.SetDockerEnv()

@@ -19,7 +19,6 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strings"
 	"testing"
 
@@ -443,7 +442,7 @@ func TestValidDockerProxy(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		os.Setenv("ALL_PROXY", tc.proxy)
+		t.Setenv("ALL_PROXY", tc.proxy)
 		valid := isValidDockerProxy("ALL_PROXY")
 		if tc.isValid && valid != tc.isValid {
 			t.Errorf("Expect %#v to be valid docker proxy", tc.proxy)

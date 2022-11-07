@@ -557,14 +557,6 @@ func revertK8sClient(k K8sClient) {
 }
 
 func TestGetCoreClient(t *testing.T) {
-	originalEnv := os.Getenv("KUBECONFIG")
-	defer func() {
-		err := os.Setenv("KUBECONFIG", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env KUBECONFIG to its original value. Got err (%s)", err)
-		}
-	}()
-
 	mockK8sConfig := `apiVersion: v1
 clusters:
 - cluster:
@@ -616,7 +608,7 @@ users:
 			if err != nil {
 				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)
 			}
-			os.Setenv("KUBECONFIG", mockK8sConfigPath)
+			t.Setenv("KUBECONFIG", mockK8sConfigPath)
 
 			k8s := K8sClientGetter{}
 			_, err = k8s.GetCoreClient("minikube")
