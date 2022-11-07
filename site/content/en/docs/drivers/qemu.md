@@ -78,8 +78,7 @@ If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the follo
 
 ```shell
 cd socket_vmnet
-sudo make uninstll
-sudo rm /var/run/socket_vmnet
+sudo make uninstall
 ```
 2. Reboot
 3. Reinstall `socket_vmnet`:
