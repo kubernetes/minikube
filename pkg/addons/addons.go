@@ -76,6 +76,8 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 		return errors.Wrap(err, "running validations")
 	}
 
+	preStartMessages(name, value)
+
 	// Run any callbacks for this property
 	if err := run(cc, name, value, a.callbacks); err != nil {
 		if errors.Is(err, ErrSkipThisAddon) {
@@ -83,7 +85,79 @@ func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
 		}
 		return errors.Wrap(err, "running callbacks")
 	}
+
+	postStartMessages(cc, name, value)
+
 	return nil
+}
+
+func preStartMessages(name, value string) {
+	if value != "true" {
+		return
+	}
+	switch name {
+	case "ambassador":
+		out.Styled(style.Warning, "The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73")
+	case "olm":
+		out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
+	}
+}
+
+func postStartMessages(cc *config.ClusterConfig, name, value string) {
+	if value != "true" {
+		return
+	}
+	clusterName := cc.Name
+	tipProfileArg := ""
+	if clusterName != constants.DefaultClusterName {
+		tipProfileArg = fmt.Sprintf(" -p %s", clusterName)
+	}
+	switch name {
+	case "dashboard":
+		out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
+
+	minikube{{.profileArg}} addons enable metrics-server	
+
+`, out.V{"profileArg": tipProfileArg})
+	case "headlamp":
+		out.Styled(style.Tip, `To access Headlamp, use the following command:
+minikube service headlamp -n headlamp
+
+`)
+		tokenGenerationTip := "To authenticate in Headlamp, fetch the Authentication Token using the following command:"
+		createSvcAccountToken := "kubectl create token headlamp --duration 24h -n headlamp"
+		getSvcAccountToken := `export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
+kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} | base64 --decode`
+
+		clusterVersion := cc.KubernetesConfig.KubernetesVersion
+		parsedClusterVersion, err := util.ParseKubernetesVersion(clusterVersion)
+		if err != nil {
+			tokenGenerationTip = fmt.Sprintf("%s\nIf Kubernetes Version is <1.24:\n%s\n\nIf Kubernetes Version is >=1.24:\n%s\n", tokenGenerationTip, createSvcAccountToken, getSvcAccountToken)
+		} else {
+			if parsedClusterVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
+				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, createSvcAccountToken)
+			} else {
+				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, getSvcAccountToken)
+			}
+		}
+		out.Styled(style.Tip, fmt.Sprintf("%s\n", tokenGenerationTip))
+		out.Styled(style.Tip, `Headlamp can display more detailed information when metrics-server is installed. To install it, run:
+
+minikube{{.profileArg}} addons enable metrics-server	
+
+`, out.V{"profileArg": tipProfileArg})
+	}
+}
+
+// Deprecations if the selected addon is deprecated return the replacement addon, otherwise return the passed in addon
+func Deprecations(name string) (bool, string, string) {
+	switch name {
+	case "heapster":
+		return true, "metrics-server", "using metrics-server addon, heapster is deprecated"
+	case "efk":
+		return true, "", "The current images used in the efk addon contain Log4j vulnerabilities, the addon will be disabled until images are updated, see: https://github.com/kubernetes/minikube/issues/15280"
+	}
+	return false, "", ""
 }
 
 // Set sets a value in the config (not threadsafe)
@@ -426,9 +500,13 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	// Apply new addons
 	for _, name := range additional {
-		// replace heapster as metrics-server because heapster is deprecated
-		if name == "heapster" {
-			name = "metrics-server"
+		isDeprecated, replacement, msg := Deprecations(name)
+		if isDeprecated && replacement == "" {
+			out.FailureT(msg)
+			continue
+		} else if isDeprecated {
+			out.Styled(style.Waiting, msg)
+			name = replacement
 		}
 		// if the specified addon doesn't exist, skip enabling
 		_, e := isAddonValid(name)

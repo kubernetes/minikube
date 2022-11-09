@@ -369,7 +369,7 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 		memString := viper.GetString(memory)
 		var err error
 		if memString == constants.MaxResources {
-			mem = noLimitMemory(sysLimit, containerLimit)
+			mem = noLimitMemory(sysLimit, containerLimit, drvName)
 		} else {
 			mem, err = pkgutil.CalculateSizeInMB(memString)
 			if err != nil {
@@ -463,14 +463,31 @@ func getNetwork(driverName string) string {
 	if !driver.IsQEMU(driverName) {
 		return n
 	}
-	if n == "" {
-		if runtime.GOOS == "darwin" {
-			out.WarningT("The default network for QEMU will change from 'user' to 'socket_vmnet' in a future release")
+	switch n {
+	case "socket_vmnet":
+		if runtime.GOOS != "darwin" {
+			exit.Message(reason.Usage, "The socket_vmnet network is only supported on macOS")
 		}
-		n = "user"
+		if !detect.SocketVMNetInstalled() {
+			exit.Message(reason.NotFoundSocketVMNet, "\n\n")
+		}
+	case "":
+		if detect.SocketVMNetInstalled() {
+			n = "socket_vmnet"
+		} else {
+			n = "user"
+		}
+		out.Styled(style.Internet, "Automatically selected the {{.network}} network", out.V{"network": n})
+	case "user":
+	default:
+		exit.Message(reason.Usage, "--network with QEMU must be 'user' or 'socket_vmnet'")
 	}
-	if n == "user" && runtime.GOOS == "darwin" {
-		out.WarningT("You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands.\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking")
+	if n == "user" {
+		msg := "You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands."
+		if runtime.GOOS == "darwin" {
+			msg += "\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking"
+		}
+		out.WarningT(msg)
 	}
 	return n
 }
@@ -487,10 +504,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 
 	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName) || driver.IsQEMU(drvName)) && viper.GetString(network) != "" {
 		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
-	}
-
-	if driver.IsQEMU(drvName) && viper.GetString(network) == "socket_vmnet" {
-		out.WarningT("Using qemu with 'socket_vmnet' network is experimental")
 	}
 
 	checkNumaCount(k8sVersion)

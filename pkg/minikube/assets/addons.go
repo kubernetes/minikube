@@ -296,7 +296,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/tutorials/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
+		"Kubectl": "bitnami/kubectl:1.24.7@sha256:195f5a7a40cfb06e308701ae850abfa436d23baf9d39c0282298e540c9d07863",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
@@ -745,7 +745,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpannerAddon": "cloud-spanner-emulator/emulator",
+		"CloudSpannerAddon": "cloud-spanner-emulator/emulator:1.4.6@sha256:b9341271be665a97f8ef778a752f0f63bea8c8a90bcdf79c03fb6c3444a8478d",
 	}, map[string]string{
 		"CloudSpannerAddon": "gcr.io",
 	}),

@@ -443,6 +443,8 @@ minikube was unable to safely downgrade installed Kubernetes version
 
 "NOT_FOUND_DOCKERD" (Exit code ExProgramNotFound)  
 
+"NOT_FOUND_SOCKET_VMNET" (Exit code ExProgramNotFound)  
+
 ## Error Codes
 
 

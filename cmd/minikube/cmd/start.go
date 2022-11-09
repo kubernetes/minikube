@@ -507,7 +507,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion, rtime, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilites with Kubernetes {{.cluster_version}}.",
+		out.WarningT("{{.path}} is version {{.client_version}}, which may have incompatibilities with Kubernetes {{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
 		out.Infof("Want kubectl {{.version}}? Try 'minikube kubectl -- get pods -A'", out.V{"version": k8sVersion})
 	}
@@ -1399,7 +1399,7 @@ func validateChangedMemoryFlags(drvName string) {
 		if err != nil {
 			klog.Warningf("Unable to query memory limits: %+v", err)
 		}
-		req = noLimitMemory(sysLimit, containerLimit)
+		req = noLimitMemory(sysLimit, containerLimit, drvName)
 	} else {
 		req, err = util.CalculateSizeInMB(memString)
 		if err != nil {
@@ -1409,12 +1409,18 @@ func validateChangedMemoryFlags(drvName string) {
 	validateRequestedMemorySize(req, drvName)
 }
 
-func noLimitMemory(sysLimit int, containerLimit int) int {
+func noLimitMemory(sysLimit, containerLimit int, drvName string) int {
 	if containerLimit != 0 {
 		return containerLimit
 	}
 	// Recommend 1GB to handle OS/VM overhead
-	return sysLimit - 1024
+	sysOverhead := 1024
+	if drvName == "virtualbox" {
+		// VirtualBox fully allocates all requested memory on start, it doesn't dynamically allocate when needed like other drivers
+		// Because of this allow more system overhead to prevent out of memory issues
+		sysOverhead = 1536
+	}
+	return sysLimit - sysOverhead
 }
 
 // This function validates if the --registry-mirror

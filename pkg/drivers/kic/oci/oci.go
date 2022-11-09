@@ -79,7 +79,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 	_, err := ContainerStatus(ociBin, name)
 	if err == context.DeadlineExceeded {
-		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
+		out.WarningT("{{.ocibin}} is taking an unusually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
 	} else if err != nil {
 		klog.Warningf("error getting container status, will try to delete anyways: %v", err)
 	}
