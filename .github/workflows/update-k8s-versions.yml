@@ -27,7 +27,10 @@ jobs:
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
           c="${c//$'\r'/'%0D'}"
-          echo "changes=$c" >> $GITHUB_OUTPUT
+          # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$c" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.bumpk8s.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7

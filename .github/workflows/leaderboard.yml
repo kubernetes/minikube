@@ -25,7 +25,10 @@ jobs:
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
           c="${c//$'\r'/'%0D'}"
-          echo "changes=$c" >> $GITHUB_OUTPUT
+          # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$c" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
