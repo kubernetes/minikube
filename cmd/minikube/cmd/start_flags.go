@@ -620,9 +620,18 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			}
 			out.Styled(style.Notice, "Using {{.driver_name}} driver with root privileges", out.V{"driver_name": driver.FullName(drvName)})
 		}
+		// for btrfs: if k8s < v1.25.0-beta.0 set kubelet's LocalStorageCapacityIsolation feature gate flag to false,
+		// and if k8s >= v1.25.0-beta.0 (when it went ga and removed as feature gate), set kubelet's localStorageCapacityIsolation option (via kubeadm config) to false.
+		// ref: https://github.com/kubernetes/minikube/issues/14728#issue-1327885840
 		if si.StorageDriver == "btrfs" {
-			klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
-			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
+			if semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)).LT(semver.MustParse("1.25.0-beta.0")) {
+				klog.Info("auto-setting LocalStorageCapacityIsolation to false because using btrfs storage driver")
+				cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "LocalStorageCapacityIsolation=false")
+			} else if !cc.KubernetesConfig.ExtraOptions.Exists("kubelet.localStorageCapacityIsolation=false") {
+				if err := cc.KubernetesConfig.ExtraOptions.Set("kubelet.localStorageCapacityIsolation=false"); err != nil {
+					exit.Error(reason.InternalConfigSet, "failed to set extra option", err)
+				}
+			}
 		}
 		if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
 			out.WarningT("For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server")
