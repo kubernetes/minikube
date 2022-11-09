@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2022 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,5 @@ if (($# < 1)); then
   exit 1
 fi
 
-# Make sure gh is installed and configured
-#./hack/jenkins/installers/check_install_gh.sh
 OUTPUT_LOCATION=${1}
 gh search prs --merged --sort updated --limit 100 --repo kubernetes/minikube --json number,title,closedAt --template '{{range .}}{{tablerow (printf "#%v" .number | autocolor "green") .title (timeago .closedAt)}}{{end}}' > ${OUTPUT_LOCATION}

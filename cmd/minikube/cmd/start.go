@@ -259,7 +259,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	validateKicBaseVersion(starter.Runner)
+	validateBuiltImageVersion(starter.Runner)
 
 	if existing != nil && driver.IsKIC(existing.Driver) {
 		if viper.GetBool(createMount) {
@@ -370,7 +370,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}, nil
 }
 
-func validateKicBaseVersion(r command.Runner) {
+func validateBuiltImageVersion(r command.Runner) {
 	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
 	if err != nil {
 		out.WarningT("Unable to open version.json: {{.error}}", out.V{"error": err})
