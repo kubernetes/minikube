@@ -369,7 +369,7 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 		memString := viper.GetString(memory)
 		var err error
 		if memString == constants.MaxResources {
-			mem = noLimitMemory(sysLimit, containerLimit)
+			mem = noLimitMemory(sysLimit, containerLimit, drvName)
 		} else {
 			mem, err = pkgutil.CalculateSizeInMB(memString)
 			if err != nil {
