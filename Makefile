@@ -33,7 +33,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.19.2
+GO_VERSION ?= 1.19.3
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.25.0
 
