@@ -48,7 +48,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Preferred,
+		Priority: registry.Default,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
