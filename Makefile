@@ -108,7 +108,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.2
+AUTOPAUSE_HOOK_TAG ?= v0.0.3
 
 # prow-test tag to push changes to
 PROW_TEST_TAG ?= v0.0.3
