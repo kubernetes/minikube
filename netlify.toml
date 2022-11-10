@@ -1,7 +1,7 @@
 [build]
 base = "site/"
 publish = "site/public/"
-command = "pwd && cd themes/docsy && git submodule update -f --init && cd ../.. && hugo"
+command = "pwd && cd themes/docsy && npm install && git submodule update -f --init && cd ../.. && hugo"
 
 [build.environment]
 HUGO_VERSION = "0.105.0"
