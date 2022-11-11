@@ -56,8 +56,27 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
 	minikube cp <source file path> <target file absolute path> (example: "minikube cp a/b.txt /copied.txt")`)
 		}
 
-		src := newRemotePath(args[0])
-		dst := newRemotePath(args[1])
+		// This check has been introduced to enable support to copy using the following syntax
+		// minikube cp <HOST>/tmp/filename.xyz /tmp/
+
+		sourcePathList := strings.Split(args[0], "/")
+		destinationPathList := strings.Split(args[1], "/")
+
+		sourceFileName := sourcePathList[len(sourcePathList)-1]
+		destinationFileName := destinationPathList[len(destinationPathList)-1]
+
+		var arg0, arg1 string
+
+		if sourceFileName == destinationFileName {
+			arg0 = args[0]
+			arg1 = args[1]
+		} else {
+			arg0 = args[0]
+			arg1 = args[1] + sourceFileName
+		}
+
+		src := newRemotePath(arg0)
+		dst := newRemotePath(arg1)
 		validateArgs(src, dst)
 
 		co := mustload.Running(ClusterFlagValue())
