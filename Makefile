@@ -921,10 +921,11 @@ endif
 
 
 site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
-	git submodule update -f --init --recursive
+	git submodule update -f --init
 
 out/hugo/hugo:
 	mkdir -p out
+	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
 	(cd out/hugo && go build --tags extended)
 
