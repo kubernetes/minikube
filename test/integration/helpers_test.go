@@ -514,6 +514,12 @@ func cpTestMinikubePath() string {
 	return "/home/docker/cp-test.txt"
 }
 
+// cpTestAltMinikubePath is the folder
+// where the test file will be located
+func cpTestAltMinikubePath() string {
+	return "/home/docker/"
+}
+
 // cpTestLocalPath is where the test file located in host os
 func cpTestLocalPath() string {
 	return filepath.Join(*testdataDir, "cp-test.txt")

@@ -1,0 +1,78 @@
+### This builds, packages, signs, performs AV and malware scanning, and
+### creates a new GitHub release for the newest version of go-getter. 
+### The GitHub release step performs the actions outlined in 
+### release.goreleaser.yml. A release is triggered when a new tag 
+### is pushed in the format vX.X.X
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.15'
+      - name: Setup signore
+        uses: hashicorp/setup-signore@v1
+        with:
+          github-token: ${{secrets.SIGNORE_TOKEN}}
+      - name: Install hc-codesign
+        id: codesign
+        run: |
+          docker login docker.pkg.github.com -u docker -p $GITHUB_TOKEN && \
+          docker pull docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION && \
+          echo "::set-output name=image::docker.pkg.github.com/hashicorp/hc-codesign/hc-codesign:$VERSION"
+        env:
+          VERSION: v0
+          GITHUB_TOKEN: ${{ secrets.CODESIGN_GITHUB_TOKEN }}
+      - name: Install wget & clamAV antivirus scanner
+        run : |
+           sudo apt-get update
+           sudo apt-get -qq install -y ca-certificates wget clamav
+           wget --version
+      - name: Install maldet malware scanner
+        run: |
+          wget --no-verbose -O maldet-$VERSION.tar.gz https://github.com/rfxn/linux-malware-detect/archive/$VERSION.tar.gz
+          sha256sum -c - <<< "$SHA256SUM  maldet-$VERSION.tar.gz"
+          sudo mkdir -p maldet-$VERSION
+          sudo tar -xzf maldet-$VERSION.tar.gz --strip-components=1 -C maldet-$VERSION
+          cd maldet-$VERSION
+          sudo ./install.sh
+          sudo maldet -u
+        env: 
+          VERSION: 1.6.4
+          SHA256SUM: 3ad66eebd443d32dd6c811dcf2d264b78678c75ed1d40c15434180d4453e60d2
+      - name: GitHub Release
+        uses: goreleaser/goreleaser-action@v1
+        with:
+          version: latest
+          args: release --skip-validate --timeout "60m"
+        env:
+          PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+          CODESIGN_IMAGE: ${{ steps.codesign.outputs.image }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          CIRCLE_TOKEN: ${{ secrets.CIRCLE_TOKEN }}
+          SIGNORE_SIGNER: ${{secrets.SIGNORE_SIGNER}}
+          SIGNORE_CLIENT_ID: ${{secrets.SIGNORE_CLIENT_ID}}
+          SIGNORE_CLIENT_SECRET: ${{secrets.SIGNORE_CLIENT_SECRET}}
+      - name: Run clamAV antivirus scanner
+        run: sudo clamscan /home/runner/work/$REPO/$REPO/dist/
+        env:
+          REPO: ${{ github.event.repository.name }}
+      - name: Run maldet malware scanner
+        run: sudo maldet -a /home/runner/work/$REPO/$REPO/dist/
+        env:
+          REPO: ${{ github.event.repository.name }}

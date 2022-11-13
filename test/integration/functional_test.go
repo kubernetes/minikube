@@ -147,6 +147,7 @@ func TestFunctional(t *testing.T) {
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
 			{"CpCmd", validateCpCmd},
+			{"CpAltCmd", validateAltCpCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"CertSync", validateCertSync},
@@ -1705,6 +1706,32 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
 	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
+}
+
+// validateAltCpCmd assets basic "cp" command with
+// new feature that can handle destination file path
+// without need of specifying filename in destination
+func validateAltCpCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: cp is unsupported by none driver")
+	}
+
+	srcPath := cpTestLocalPath()
+	dstPath := cpTestAltMinikubePath()
+
+	srcPathList := strings.Split(srcPath, "/")
+	fileName := srcPathList[len(srcPathList)-1]
+
+	dstPath += fileName
+
+	testCpCmd(ctx, t, profile, "", srcPath, "", dstPath)
+
+	// copy from node
+	tmpDir := t.TempDir()
+
+	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
+	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
+
 }
 
 // validateMySQL validates a minimalist MySQL deployment
