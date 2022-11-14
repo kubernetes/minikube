@@ -109,7 +109,7 @@ rules:
 - apiGroups:
   - ""
   resourceNames:
-  - ingress-controller-leader
+  - ingress-nginx-leader
   resources:
   - configmaps
   verbs:
@@ -122,12 +122,35 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - coordination.k8s.io
+  resourceNames:
+  - ingress-nginx-leader
+  resources:
+  - leases
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+- apiGroups:
   - ""
   resources:
   - events
   verbs:
   - create
   - patch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - list
+  - watch
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -164,6 +187,13 @@ rules:
   - pods
   - secrets
   - namespaces
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
   verbs:
   - list
   - watch
@@ -216,6 +246,14 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - discovery.k8s.io
+  resources:
+  - endpointslices
+  verbs:
+  - list
+  - watch
+  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -429,7 +467,7 @@ spec:
       containers:
       - args:
         - /nginx-ingress-controller
-        - --election-id=ingress-controller-leader
+        - --election-id=ingress-nginx-leader
         {{- if eq .IngressAPIVersion "v1"}}
         - --controller-class=k8s.io/ingress-nginx
         - --watch-ingress-without-class=true
