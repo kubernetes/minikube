@@ -29,6 +29,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
@@ -82,8 +83,9 @@ func RoutableHostIPFromInside(ociBin string, clusterName string, containerName s
 		return containerGatewayIP(ociBin, containerName)
 	}
 
-	// on mac os and podman, try lima host record
-	if ociBin == "podman" && runtime.GOOS == "darwin" {
+	// if running in a VM managed by Lima
+	if detect.IsLimaVM() {
+		klog.Infof("Running in a LimaVM host")
 		gatewayIP, err := digDNS(ociBin, containerName, "host.lima.internal")
 		if err != nil {
 			return nil, errors.Wrap(err, "get gateway ip from lima host name")

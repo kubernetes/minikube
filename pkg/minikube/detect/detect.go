@@ -129,3 +129,9 @@ func KICCacheDir() string {
 func ISOCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "iso"), runtime.GOARCH)
 }
+
+// IsLimaVM determines whether minikube is running inside a VM managed by Lima
+func IsLimaVM() bool {
+	e := os.Getenv("LIMA_VM")
+	return e == "true"
+}
