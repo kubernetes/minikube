@@ -1,22 +1,28 @@
-# System Tray Icon
+# minikube GUI
+
+## Prerequisites
+
+- minikube setup and available on your path, follow the [Getting Start doc](https://minikube.sigs.k8s.io/docs/start/) if not already done
 
 ## Running
 
-Open in [Qt Creator](https://doc.qt.io/qtcreator/) GUI:
+### From binary (end-user)
+
+View our documentation for downloading and running the GUI: [Setting Up minikube GUI](https://minikube.sigs.k8s.io/docs/tutorials/setup_minikube_gui/)
+
+### From Qt Creator
+
+Open in [Qt Creator](https://doc.qt.io/qtcreator/) via:
 
 ```shell
-qtcreator systray.pro
+qtcreator minikube.pro
 ```
 
-Or on the command line:
+### From Command Line
 
 ```console
 $ qmake
 $ make
 ...
-$ ./systray
+$ ./minikube
 ```
-
-----
-
-See <https://doc.qt.io/qt-5/qtwidgets-desktop-systray-example.html>
