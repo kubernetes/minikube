@@ -17,6 +17,7 @@ limitations under the License.
 package detect
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"os/exec"
@@ -25,7 +26,9 @@ import (
 	"strings"
 
 	"github.com/klauspost/cpuid"
+	"github.com/spf13/viper"
 	"golang.org/x/sys/cpu"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -134,4 +137,19 @@ func ISOCacheDir() string {
 func IsLimaVM() bool {
 	e := os.Getenv("LIMA_VM")
 	return e == "true"
+}
+
+// SocketVMNetInstalled returns if socket_vmnet is installed
+func SocketVMNetInstalled() bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	_, err := os.Stat(viper.GetString("socket-vmnet-path"))
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		klog.Warningf("failed to check for socket_vmnet: %v", err)
+	}
+	return false
 }

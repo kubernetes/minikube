@@ -307,3 +307,27 @@ func TestEtcdExtraArgs(t *testing.T) {
 		t.Errorf("machines mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestKubeletConfig(t *testing.T) {
+	expected := map[string]string{
+		"localStorageCapacityIsolation": "false",
+	}
+	extraOpts := append(getExtraOpts(), []config.ExtraOption{
+		{
+			Component: Kubelet,
+			Key:       "unsupported-config-option",
+			Value:     "any",
+		}, {
+			Component: Kubelet,
+			Key:       "localStorageCapacityIsolation",
+			Value:     "false",
+		}, {
+			Component: Kubelet,
+			Key:       "kubelet.cgroups-per-qos",
+			Value:     "false",
+		}}...)
+	actual := kubeletConfigOpts(extraOpts)
+	if diff := cmp.Diff(expected, actual); diff != "" {
+		t.Errorf("machines mismatch (-want +got):\n%s", diff)
+	}
+}

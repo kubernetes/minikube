@@ -36,6 +36,11 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// kubeletConfigParams are the only allowed kubelet parameters for kubeadmin config file and not to be used as kubelet flags
+var kubeletConfigParams = []string{
+	"localStorageCapacityIsolation",
+}
+
 func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
@@ -93,6 +98,11 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 
 	if kubeletFeatureArgs != "" {
 		extraOpts["feature-gates"] = kubeletFeatureArgs
+	}
+
+	// filter out non-flag extra kubelet config options
+	for _, opt := range kubeletConfigParams {
+		delete(extraOpts, opt)
 	}
 
 	return extraOpts, nil
