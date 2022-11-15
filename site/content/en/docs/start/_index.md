@@ -587,6 +587,101 @@ kubectl get services balanced
 
 Your deployment is now available at &lt;EXTERNAL-IP&gt;:80
 {{% /tab %}}
+{{% tab Ingress %}}
+Enable ingress addon:
+```shell
+minikube addons enable ingress
+```
+
+The following example creates simple echo-server services and an Ingress object to route to these services.
+```shell
+kind: Pod
+apiVersion: v1
+metadata:
+  name: foo-app
+  labels:
+    app: foo
+spec:
+  containers:
+  - name: foo-app
+    image: docker.io/ealen/echo-server:0.7.0
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: foo-service
+spec:
+  selector:
+    app: foo
+  ports:
+  # Default port used by the image
+  - port: 80
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: bar-app
+  labels:
+    app: bar
+spec:
+  containers:
+  - name: bar-app
+    image: docker.io/ealen/echo-server:0.7.0
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: bar-service
+spec:
+  selector:
+    app: bar
+  ports:
+  # Default port used by the image
+  - port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/foo"
+        backend:
+          service:
+            name: foo-service
+            port:
+              number: 80
+      - pathType: Prefix
+        path: "/bar"
+        backend:
+          service:
+            name: bar-service
+            port:
+              number: 80
+---
+```
+
+Apply the contents
+```shell
+kubectl apply -f https://storage.googleapis.com/minikube-site-examples/ingress-example.yaml
+```
+
+Wait for ingress address
+```shell
+kubectl get ingress
+NAME              CLASS   HOSTS   ADDRESS          PORTS   AGE
+example-ingress   nginx   *       <your_ip_here>   80      5m45s
+```
+
+Now verify that the ingress works
+```shell
+curl <ip_from_above>/foo
+curl <ip_from_above>/bar
+```
+{{% /tab %}}
 {{% /tabs %}}
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
