@@ -14,7 +14,7 @@ date: 2022-02-25
 
 ## Before You Begin
 
-- You will need to already have minikube setup on your machine, follow the [Getting Start doc]({{< ref "/docs/commands/start" >}}) if not already done.
+- minikube setup and available on your path, follow the [Getting Start doc]({{< ref "/docs/start" >}}) if not already done
 
 ## Steps
 
