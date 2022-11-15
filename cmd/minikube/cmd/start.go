@@ -373,7 +373,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 func validateBuiltImageVersion(r command.Runner) {
 	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
 	if err != nil {
-		out.WarningT("Unable to open version.json: {{.error}}", out.V{"error": err})
+		klog.Warningf("Unable to open version.json: %s", err)
 		return
 	}
 
