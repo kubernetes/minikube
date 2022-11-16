@@ -456,7 +456,7 @@ func TestUpdateIP(t *testing.T) {
 		},
 	}
 
-	os.Setenv(localpath.MinikubeHome, "/home/la-croix")
+	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
 
 	for _, test := range tests {
 		test := test
@@ -492,8 +492,7 @@ func TestUpdateIP(t *testing.T) {
 }
 
 func TestMissingContext(t *testing.T) {
-	t.Parallel()
-	os.Setenv(localpath.MinikubeHome, "/home/la-croix")
+	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
 	configFilename := tempFile(t, kubeConfigMissingContext)
 	defer os.Remove(configFilename)
 	if _, err := UpdateEndpoint("minikube", "192.168.10.100", 8080, configFilename, nil); err != nil {
@@ -796,7 +795,7 @@ func TestGetKubeConfigPath(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
+		t.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
 		if result := PathFromEnv(); result != os.ExpandEnv(test.want) {
 			t.Errorf("Expected first split chunk, got: %s", result)
 		}

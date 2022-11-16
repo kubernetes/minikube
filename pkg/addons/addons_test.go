@@ -32,9 +32,7 @@ func createTestProfile(t *testing.T) string {
 	t.Helper()
 	td := t.TempDir()
 
-	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
-		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
-	}
+	t.Setenv(localpath.MinikubeHome, td)
 
 	// Not necessary, but it is a handy random alphanumeric
 	name := filepath.Base(td)

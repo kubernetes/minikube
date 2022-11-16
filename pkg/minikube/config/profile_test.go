@@ -284,65 +284,56 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		// To save converted config file from old style config at ./testdata/.minikube,
-		// rather than at env(MINIKUBE_HOME) which depends on test environment
-		originalMinikubeHomeEnv := os.Getenv("MINIKUBE_HOME")
-		err = os.Setenv("MINIKUBE_HOME", miniDir)
-		if err != nil {
-			t.Fatalf("Failed to set ENV \"MINIKUBE_HOME\" for %s", miniDir)
-		}
+		t.Run(tc.description, func(t *testing.T) {
+			// To save converted config file from old style config at ./testdata/.minikube,
+			// rather than at env(MINIKUBE_HOME) which depends on test environment
+			t.Setenv("MINIKUBE_HOME", miniDir)
 
-		cc, err := DefaultLoader.LoadConfigFromFile(tc.profile, miniDir)
-		if err != nil {
-			t.Fatalf("Failed to load config for %s", tc.description)
-		}
-
-		// temporarily copy the original profile config
-		originalFilePath := profileFilePath(tc.profile, miniDir)
-		tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
-
-		d, err := os.ReadFile(originalFilePath)
-		if err != nil {
-			t.Fatalf("Failed to read config file : %s", originalFilePath)
-		}
-
-		err = os.WriteFile(tempFilePath, d, 0644)
-		if err != nil {
-			t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
-		}
-
-		// get primary control plane
-		viper.Set(ProfileName, tc.profile)
-		n, err := PrimaryControlPlane(cc)
-		if err != nil {
-			t.Fatalf("Unexpected error getting primary control plane: %v", err)
-		}
-
-		if n.Name != tc.expectedName {
-			t.Errorf("Unexpected name. expected: %s, got: %s", tc.expectedName, n.Name)
-		}
-
-		if n.IP != tc.expectedIP {
-			t.Errorf("Unexpected name. expected: %s, got: %s", tc.expectedIP, n.IP)
-		}
-
-		if n.Port != tc.expectedPort {
-			t.Errorf("Unexpected name. expected: %d, got: %d", tc.expectedPort, n.Port)
-		}
-
-		defer func() {
-			// reset profile config
-			err = os.Rename(tempFilePath, originalFilePath)
+			cc, err := DefaultLoader.LoadConfigFromFile(tc.profile, miniDir)
 			if err != nil {
-				t.Fatalf("Failed to move temporal config file (%s) to original file path (%s)",
-					tempFilePath, originalFilePath)
+				t.Fatalf("Failed to load config for %s", tc.description)
 			}
 
-			// reset env(MINIKUBE_HOME)
-			err = os.Setenv("MINIKUBE_HOME", originalMinikubeHomeEnv)
+			// temporarily copy the original profile config
+			originalFilePath := profileFilePath(tc.profile, miniDir)
+			tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
+			t.Cleanup(func() {
+				// reset profile config
+				err = os.Rename(tempFilePath, originalFilePath)
+				if err != nil {
+					t.Fatalf("Failed to move temporal config file (%s) to original file path (%s)",
+						tempFilePath, originalFilePath)
+				}
+			})
+
+			d, err := os.ReadFile(originalFilePath)
 			if err != nil {
-				t.Fatalf("Failed to reset ENV \"MINIKUBE_HOME\" to original value (%s)", originalMinikubeHomeEnv)
+				t.Fatalf("Failed to read config file : %s", originalFilePath)
 			}
-		}()
+
+			err = os.WriteFile(tempFilePath, d, 0644)
+			if err != nil {
+				t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
+			}
+
+			// get primary control plane
+			viper.Set(ProfileName, tc.profile)
+			n, err := PrimaryControlPlane(cc)
+			if err != nil {
+				t.Fatalf("Unexpected error getting primary control plane: %v", err)
+			}
+
+			if n.Name != tc.expectedName {
+				t.Errorf("Unexpected name. expected: %s, got: %s", tc.expectedName, n.Name)
+			}
+
+			if n.IP != tc.expectedIP {
+				t.Errorf("Unexpected name. expected: %s, got: %s", tc.expectedIP, n.IP)
+			}
+
+			if n.Port != tc.expectedPort {
+				t.Errorf("Unexpected name. expected: %d, got: %d", tc.expectedPort, n.Port)
+			}
+		})
 	}
 }

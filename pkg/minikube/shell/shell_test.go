@@ -123,10 +123,7 @@ set -e bar;`},
 }
 
 func TestDetectSet(t *testing.T) {
-	orgShellEnv := os.Getenv("SHELL")
-	defer os.Setenv("SHELL", orgShellEnv)
-
-	os.Setenv("SHELL", "/bin/bash")
+	t.Setenv("SHELL", "/bin/bash")
 	if s, err := Detect(); err != nil {
 		t.Fatalf("unexpected error: '%v' during shell detection. Returned shell: %s", err, s)
 	} else if s == "" {
