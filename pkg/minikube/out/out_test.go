@@ -60,7 +60,7 @@ func TestOutT(t *testing.T) {
 		for _, override := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
 				// Set MINIKUBE_IN_STYLE=<override>
-				os.Setenv(OverrideEnv, strconv.FormatBool(override))
+				t.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := tests.NewFakeFile()
 				SetOutFile(f)
 				Step(tc.style, tc.message, tc.params)
@@ -78,7 +78,7 @@ func TestOutT(t *testing.T) {
 }
 
 func TestOut(t *testing.T) {
-	os.Setenv(OverrideEnv, "")
+	t.Setenv(OverrideEnv, "")
 
 	testCases := []struct {
 		format string
@@ -108,7 +108,7 @@ func TestOut(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
-	os.Setenv(OverrideEnv, "0")
+	t.Setenv(OverrideEnv, "0")
 	f := tests.NewFakeFile()
 	SetErrFile(f)
 	Err("xyz123 %s\n", "%s%%%d")

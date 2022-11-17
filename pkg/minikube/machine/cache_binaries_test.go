@@ -18,7 +18,6 @@ package machine
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -85,9 +84,6 @@ func TestCopyBinary(t *testing.T) {
 func TestCacheBinariesForBootstrapper(t *testing.T) {
 	download.DownloadMock = download.CreateDstDownloadMock
 
-	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
-	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
-
 	minikubeHome := t.TempDir()
 
 	var tc = []struct {
@@ -110,7 +106,7 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	}
 	for _, test := range tc {
 		t.Run(test.version, func(t *testing.T) {
-			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
+			t.Setenv("MINIKUBE_HOME", test.minikubeHome)
 			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper, nil, "")
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
@@ -134,11 +130,8 @@ func TestExcludedBinariesNotDownloaded(t *testing.T) {
 		return download.CreateDstDownloadMock(src, dst)
 	}
 
-	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
-	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
-
 	minikubeHome := t.TempDir()
-	os.Setenv("MINIKUBE_HOME", minikubeHome)
+	t.Setenv("MINIKUBE_HOME", minikubeHome)
 
 	if err := CacheBinariesForBootstrapper("v1.16.0", clusterBootstrapper, []string{binaryToExclude}, ""); err != nil {
 		t.Errorf("Failed to cache binaries: %v", err)

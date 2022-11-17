@@ -134,17 +134,7 @@ func TestCheckEnv(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.envName), func(t *testing.T) {
-			originalEnv := os.Getenv(tc.envName)
-			defer func() { // revert to pre-test env var
-				err := os.Setenv(tc.envName, originalEnv)
-				if err != nil {
-					t.Fatalf("Error reverting env (%s) to its original value (%s) var after test ", tc.envName, originalEnv)
-				}
-			}()
-
-			if err := os.Setenv(tc.envName, tc.mockEnvValue); err != nil {
-				t.Error("Error setting env var for taste case")
-			}
+			t.Setenv(tc.envName, tc.mockEnvValue)
 			if got := checkEnv(tc.ip, tc.envName); got != tc.want {
 				t.Errorf("CheckEnv(%v,%v) got  %v ; want is %v", tc.ip, tc.envName, got, tc.want)
 			}
@@ -166,17 +156,8 @@ func TestIsIPExcluded(t *testing.T) {
 		{"foo", "1.2.3.4", false},
 	}
 	for _, tc := range testCases {
-		originalEnv := os.Getenv("NO_PROXY")
-		defer func() { // revert to pre-test env var
-			err := os.Setenv("NO_PROXY", originalEnv)
-			if err != nil {
-				t.Fatalf("Error reverting env NO_PROXY to its original value (%s) var after test ", originalEnv)
-			}
-		}()
 		t.Run(fmt.Sprintf("exclude %s NO_PROXY(%v)", tc.ip, tc.env), func(t *testing.T) {
-			if err := os.Setenv("NO_PROXY", tc.env); err != nil {
-				t.Errorf("Error during setting env: %v", err)
-			}
+			t.Setenv("NO_PROXY", tc.env)
 			if excluded := IsIPExcluded(tc.ip); excluded != tc.excluded {
 				t.Fatalf("IsIPExcluded(%v) should return %v. NO_PROXY=%v", tc.ip, tc.excluded, tc.env)
 			}
@@ -196,18 +177,9 @@ func TestExcludeIP(t *testing.T) {
 		{"foo", "", true},
 		{"foo", "1.2.3.4", true},
 	}
-	originalEnv := os.Getenv("NO_PROXY")
-	defer func() { // revert to pre-test env var
-		err := os.Setenv("NO_PROXY", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env NO_PROXY to its original value (%s) var after test ", originalEnv)
-		}
-	}()
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("exclude %s NO_PROXY(%s)", tc.ip, tc.env), func(t *testing.T) {
-			if err := os.Setenv("NO_PROXY", tc.env); err != nil {
-				t.Errorf("Error during setting env: %v", err)
-			}
+			t.Setenv("NO_PROXY", tc.env)
 			err := ExcludeIP(tc.ip)
 			if err != nil && !tc.wantAErr {
 				t.Errorf("ExcludeIP(%v) returned unexpected error %v", tc.ip, err)

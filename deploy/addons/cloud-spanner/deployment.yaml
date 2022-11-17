@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: cloud-spanner-emulator
-          image: gcr.io/cloud-spanner-emulator/emulator:latest
+          image: {{.CustomRegistries.CloudSpanner | default .ImageRepository | default .Registries.CloudSpanner}}{{.Images.CloudSpanner}}
           imagePullPolicy: IfNotPresent
           ports:
           - containerPort: 9020

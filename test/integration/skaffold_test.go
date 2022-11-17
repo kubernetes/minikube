@@ -89,8 +89,7 @@ func TestSkaffold(t *testing.T) {
 		}
 	}
 
-	oldPath := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s%s%s", filepath.Dir(abs), pathSeparator, os.Getenv("PATH")))
+	t.Setenv("PATH", fmt.Sprintf("%s%s%s", filepath.Dir(abs), pathSeparator, os.Getenv("PATH")))
 
 	// make sure 'docker' and 'minikube' are now in PATH
 	for _, binary := range []string{"minikube", "docker"} {
@@ -99,10 +98,6 @@ func TestSkaffold(t *testing.T) {
 			t.Fatalf("%q is not in path", binary)
 		}
 	}
-
-	defer func() {
-		os.Setenv("PATH", oldPath)
-	}()
 
 	// make sure "skaffold run" exits without failure
 	cmd := exec.CommandContext(ctx, tf.Name(), "run", "--minikube-profile", profile, "--kube-context", profile, "--status-check=true", "--port-forward=false", "--interactive=false")

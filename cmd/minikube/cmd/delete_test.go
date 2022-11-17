@@ -86,9 +86,7 @@ func TestDeleteProfile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
-				t.Errorf("setenv: %v", err)
-			}
+			t.Setenv(localpath.MinikubeHome, td)
 
 			beforeProfiles, err := fileNames(filepath.Join(localpath.MiniPath(), "profiles"))
 			if err != nil {
@@ -163,9 +161,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Fatalf("copy: %v", err)
 	}
 
-	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
-		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
-	}
+	t.Setenv(localpath.MinikubeHome, td)
 
 	pFiles, err := fileNames(filepath.Join(localpath.MiniPath(), "profiles"))
 	if err != nil {

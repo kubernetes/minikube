@@ -109,6 +109,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ControlPlaneAddress        string
 		KubeProxyOptions           map[string]string
 		ResolvConfSearchRegression bool
+		KubeletConfigOpts          map[string]string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -133,6 +134,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ControlPlaneAddress:        constants.ControlPlaneAlias,
 		KubeProxyOptions:           createKubeProxyOptions(k8s.ExtraOptions),
 		ResolvConfSearchRegression: HasResolvConfSearchRegression(k8s.KubernetesVersion),
+		KubeletConfigOpts:          kubeletConfigOpts(k8s.ExtraOptions),
 	}
 
 	if k8s.ServiceCIDR != "" {
@@ -214,4 +216,18 @@ func HasResolvConfSearchRegression(k8sVersion string) bool {
 		return false
 	}
 	return versionSemver.EQ(semver.Version{Major: 1, Minor: 25})
+}
+
+// kubeletConfigOpts extracts only those kubelet extra options allowed by kubeletConfigParams.
+func kubeletConfigOpts(extraOpts config.ExtraOptionSlice) map[string]string {
+	args := map[string]string{}
+	for _, eo := range extraOpts {
+		if eo.Component != Kubelet {
+			continue
+		}
+		if config.ContainsParam(kubeletConfigParams, eo.Key) {
+			args[eo.Key] = eo.Value
+		}
+	}
+	return args
 }

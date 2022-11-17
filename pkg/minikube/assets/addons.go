@@ -120,7 +120,7 @@ var Addons = map[string]*Addon{
 
 		// GuestPersistentDir
 	}, false, "auto-pause", "Google", "", "", map[string]string{
-		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.2@sha256:c76be418df5ca9c66d0d11c2c68461acbf4072c1cdfc17e64729c5ef4d5a4128",
+		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.3@sha256:2ff12878e569802afa75baf65701ab913a88fe61a1cbb22fdc852b1345af2a5c",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
 	}),
@@ -247,16 +247,16 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/c32f9a43279425920c41ba2e54dfcb1a54c0daf7/deploy/static/provider/kind/deploy.yaml#L834
-		"IngressController": "ingress-nginx/controller:v1.2.1@sha256:5516d103a9c2ecc4f026efbd4b40662ce22dc1f824fb129ed121460aaa5c47f8",
-		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L621
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
-		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L673
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L458
+		"IngressController": "ingress-nginx/controller:v1.5.1@sha256:4ba73c697770664c1e00e9f968de14e08f606ff961c76e5d7033a4a9c593c629",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L565
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L614
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
 	}, map[string]string{
-		"IngressController":        "k8s.gcr.io",
-		"KubeWebhookCertgenCreate": "k8s.gcr.io",
-		"KubeWebhookCertgenPatch":  "k8s.gcr.io",
+		"IngressController":        "registry.k8s.io",
+		"KubeWebhookCertgenCreate": "registry.k8s.io",
+		"KubeWebhookCertgenPatch":  "registry.k8s.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioProvisionerAssets,
@@ -296,7 +296,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/tutorials/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
+		"Kubectl": "bitnami/kubectl:1.24.7@sha256:195f5a7a40cfb06e308701ae850abfa436d23baf9d39c0282298e540c9d07863",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
@@ -745,9 +745,9 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpannerAddon": "cloud-spanner-emulator/emulator",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.4.6@sha256:b9341271be665a97f8ef778a752f0f63bea8c8a90bcdf79c03fb6c3444a8478d",
 	}, map[string]string{
-		"CloudSpannerAddon": "gcr.io",
+		"CloudSpanner": "gcr.io",
 	}),
 }
 

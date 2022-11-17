@@ -123,8 +123,8 @@ func TestRunDriver(t *testing.T) {
 	// called with the proper environment variables, we setup the libmachine driver.
 	testutil.MakeTempDir(t)
 
-	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
-	os.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)
+	t.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
+	t.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)
 
 	// Capture stdout and reset it later.
 	old := os.Stdout

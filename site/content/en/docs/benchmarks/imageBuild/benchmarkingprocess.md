@@ -2,7 +2,7 @@
 title: "About the Benchmarking Process"
 linkTitle: "About the Benchmarking Process"
 weight: 1
---- 
+---
 
 ## What's the difference between the four images?
 In the benchmarking charts you'll see four images: Few Large Layers, Few Small Layers, Many Large Layers, and Many Small Layers
