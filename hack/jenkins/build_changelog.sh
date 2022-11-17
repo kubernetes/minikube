@@ -27,4 +27,4 @@ if (($# < 1)); then
 fi
 
 OUTPUT_LOCATION=${1}
-gh search prs --merged --sort updated --limit 100 --repo kubernetes/minikube --json number,title,closedAt --template '{{range .}}{{tablerow (printf "#%v" .number | autocolor "green") .title (timeago .closedAt)}}{{end}}' > ${OUTPUT_LOCATION}
+gh search prs --merged --sort updated --limit 100 --repo kubernetes/minikube --json number,title,closedAt --template '{{range .}}{{tablerow (printf "#%v" .number | autocolor "green") .title (timeago .closedAt)}}{{end}}' > "${OUTPUT_LOCATION}"

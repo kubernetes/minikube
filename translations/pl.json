@@ -818,7 +818,6 @@
 	"Unable to load config: {{.error}}": "",
 	"Unable to load host": "",
 	"Unable to load profile: {{.error}}": "",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "",
 	"Unable to parse version.json: {{.error}}, json: {{.json}}": "",

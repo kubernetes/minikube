@@ -807,7 +807,6 @@
 	"Unable to load config: {{.error}}": "Konfig kann nicht geladen werden: {{.error}}",
 	"Unable to load host": "Kann Host nicht laden",
 	"Unable to load profile: {{.error}}": "Kann Profil nicht laden: {{.error}}",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "\"{{.kubernetes_version}}\" kann nicht geparst werden: {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "Kann Speicher nicht parsen: '{{.memory}}': {{.error}}",
 	"Unable to parse version.json: {{.error}}, json: {{.json}}": "",

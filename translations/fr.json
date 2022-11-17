@@ -780,7 +780,6 @@
 	"Unable to load config: {{.error}}": "Impossible de charger la configuration : {{.error}}",
 	"Unable to load host": "Impossible de charger l'hôte",
 	"Unable to load profile: {{.error}}": "Impossible de charger le profil : {{.error}}",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "Impossible d'analyser la version \"{{.kubernetes_version}}\" : {{.error}}",
 	"Unable to parse default Kubernetes version from constants: {{.error}}": "Impossible d'analyser la version Kubernetes par défaut à partir des constantes : {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "Impossible d'analyser la mémoire '{{.memory}}' : {{.error}}",

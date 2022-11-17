@@ -806,7 +806,6 @@
 	"Unable to load config: {{.error}}": "컨피그를 로드할 수 없습니다: {{.error}}",
 	"Unable to load host": "",
 	"Unable to load profile: {{.error}}": "",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": " \"{{.kubernetes_version}}\" 를 파싱할 수 없습니다: {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "",
 	"Unable to parse version.json: {{.error}}, json: {{.json}}": "",

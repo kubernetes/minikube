@@ -749,7 +749,6 @@
 	"Unable to load config: {{.error}}": "設定を読み込めません: {{.error}}",
 	"Unable to load host": "ホストを読み込めません",
 	"Unable to load profile: {{.error}}": "プロファイルを読み込めません: {{.error}}",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "「{{.kubernetes_version}}」を解析できません: {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "メモリー '{{.memory}}' を解析できません: {{.error}}",
 	"Unable to parse version.json: {{.error}}, json: {{.json}}": "",

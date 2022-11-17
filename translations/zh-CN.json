@@ -913,7 +913,6 @@
 	"Unable to load config: {{.error}}": "无法加载配置：{{.error}}",
 	"Unable to load host": "",
 	"Unable to load profile: {{.error}}": "",
-	"Unable to open version.json: {{.error}}": "",
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "无法解析“{{.kubernetes_version}}”：{{.error}}",
 	"Unable to parse default Kubernetes version from constants: {{.error}}": "无法从常量中解析默认的 Kubernetes 版本号： {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "",
