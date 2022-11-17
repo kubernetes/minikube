@@ -8,6 +8,8 @@
 _obj
 _test
 
+test/integration/licenses/
+
 #Don't ignore arch linux .SRCINFO
 !.SRCINFO
 
