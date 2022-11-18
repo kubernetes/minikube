@@ -27,6 +27,10 @@ set -x -o pipefail
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
+# Generate changelog for latest github PRs merged
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG
+
 # Make sure all required packages are installed
 sudo apt-get update
 sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full
@@ -37,7 +41,6 @@ if [[ -z $ISO_VERSION ]]; then
 	now=$(date +%s)
 	export ISO_VERSION=$IV-$now-$ghprbPullId
 	export ISO_BUCKET=minikube-builds/iso/$ghprbPullId
-	echo "#$ghprPullId - $ghprPullTitle" >> deploy/iso/minikube-iso/CHANGELOG
 else
 	release=true
 	export ISO_VERSION
@@ -109,4 +112,4 @@ else
 	git push -f minikube-bot ${branch}
 
 	gh pr create --fill --base master --head minikube-bot:${branch}
-fi	
+fi

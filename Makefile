@@ -23,7 +23,8 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.28.0-1668110411-15341
+ISO_VERSION ?= v1.28.0-1668700269-15235
+
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -52,6 +53,7 @@ REGISTRY ?= gcr.io/k8s-minikube
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
+COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
 # source code for image: https://github.com/spowelljr/xcgo
 HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.17
 
@@ -74,7 +76,7 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 5.10.57
-# latest from https://github.com/golangci/golangci-lint/releases 
+# latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v1.50.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -158,6 +160,9 @@ HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -
 
 # autopush artefacts
 AUTOPUSH ?=
+
+# version file json
+VERSION_JSON := "{\"iso_version\": \"$(ISO_VERSION)\", \"kicbase_version\": \"$(KIC_VERSION)\", \"minikube_version\": \"$(VERSION)\", \"commit\": \"$(COMMIT_NOQUOTES)\"}"
 
 # don't ask for user confirmation
 IN_CI := false
@@ -286,6 +291,7 @@ minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
 minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
@@ -419,7 +425,7 @@ out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
-.PHONY: extract 
+.PHONY: extract
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
@@ -562,13 +568,13 @@ out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--REVISION--/'$(DEB_REVISION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
-  
+
 	if [ "$*" = "amd64" ]; then \
 	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
 	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-  
+
 	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
 	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
 	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
@@ -714,7 +720,7 @@ update-cri-dockerd:
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) .
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) .
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
@@ -729,9 +735,9 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-builder ## Build multi-arch local/kicbase:latest
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) .
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
 
-.PHONY: push-kic-base-image 
+.PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
@@ -744,7 +750,7 @@ ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg PREBUILT_AUTO_PAUSE=true .
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
 out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
