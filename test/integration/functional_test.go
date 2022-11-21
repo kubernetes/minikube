@@ -2215,6 +2215,7 @@ func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "license")); err != nil {
 		t.Fatalf("command %q failed: %v", rr.Stdout.String(), err)
 	}
+	defer os.Remove("./licenses")
 	files, err := os.ReadDir("./licenses")
 	if err != nil {
 		t.Fatalf("failed to read licenses dir: %v", err)
