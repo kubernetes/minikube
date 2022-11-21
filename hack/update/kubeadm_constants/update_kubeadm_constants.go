@@ -74,7 +74,7 @@ func main() {
 				continue
 			}
 			// skip out-of-range versions
-			if (minver != "" && semver.Compare(minver, ver) == 1) {
+			if minver != "" && semver.Compare(minver, ver) == 1 {
 				continue
 			}
 			releases = append([]string{ver}, releases...)
