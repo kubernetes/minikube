@@ -93,6 +93,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-gh-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,

@@ -1056,6 +1056,11 @@ update-gotestsum-version:
 	(cd hack/update/gotestsum_version && \
 	 go run update_gotestsum_version.go)
 
+.PHONY: update-gh-version
+update-gh-version:
+	(cd hack/update/gh_version && \
+	 go run update_gh_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
