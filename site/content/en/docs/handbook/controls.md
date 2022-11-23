@@ -25,7 +25,7 @@ minikube dashboard
 Once started, you can interact with your cluster using `kubectl`, just like any other Kubernetes cluster. For instance, starting a server:
 
 ```shell
-kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
 ```
 
 Exposing a service as a NodePort
