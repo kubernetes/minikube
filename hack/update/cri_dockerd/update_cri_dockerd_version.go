@@ -57,7 +57,7 @@ var (
 	}
 )
 
-// Data holds stable gotestsum version in semver format.
+// Data holds stable cri-dockerd version in semver format.
 type Data struct {
 	FullCommit  string
 	ShortCommit string
@@ -76,7 +76,7 @@ func main() {
 	update.Apply(schema, data)
 
 	if out, err := exec.Command("./update_cri_dockerd.sh", commit, archs).CombinedOutput(); err != nil {
-		log.Fatalf("failed to build and upload cri-docker binaries: %s", string(out))
+		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
 	}
 
 	fmt.Println("Don't forget you still need to update the hash files!")

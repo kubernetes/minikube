@@ -16,12 +16,14 @@
 
 set -eux -o pipefail
 
+GH_VERSION="2.18.1"
+
 echo "Installing latest version of gh"
-curl -qLO "https://github.com/cli/cli/releases/download/v2.18.1/gh_2.18.1_linux_amd64.tar.gz"
-tar -xf gh_2.18.1_linux_amd64.tar.gz &&
-sudo mv gh_2.18.1_linux_amd64/bin/gh /usr/local/bin/gh
-rm gh_2.18.1_linux_amd64.tar.gz
-rm -rf gh_2.18.1_linux_amd64
+curl -qLO "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz"
+tar -xf "gh_${GH_VERSION}_linux_amd64.tar.gz" &&
+sudo mv "gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh
+rm "gh_${GH_VERSION}_linux_amd64.tar.gz"
+rm -rf "gh_${GH_VERSION}_linux_amd64"
 
 echo "Authorizing bot with gh"
 echo "${access_token}" | gh auth login --with-token

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Kubernetes Authors All rights reserved.
+Copyright 2022 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -33,15 +34,15 @@ const (
 
 var (
 	schema = map[string]update.Item{
-		"Makefile": {
+		"hack/jenkins/installers/check_install_gh.sh": {
 			Replace: map[string]string{
-				`GOLINT_VERSION \?= v1.*`: `GOLINT_VERSION ?= {{.StableVersion}}`,
+				`GH_VERSION=".*"`: `GH_VERSION="{{.StableVersion}}"`,
 			},
 		},
 	}
 )
 
-// Data holds stable golint version in semver format.
+// Data holds stable gh version in semver format.
 type Data struct {
 	StableVersion string
 }
@@ -51,23 +52,23 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// get Golint stable version
-	stable, err := golintVersion(ctx, "golangci", "golangci-lint")
+	// get gh stable version
+	stable, err := ghVersion(ctx, "cli", "cli")
 	if err != nil {
-		klog.Fatalf("Unable to get Golint stable version: %v", err)
+		klog.Fatalf("Unable to get gh stable version: %v", err)
 	}
 	data := Data{StableVersion: stable}
-	klog.Infof("Golint stable version: %s", data.StableVersion)
+	klog.Infof("gh stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
 }
 
-// golintVersions returns stable version in semver format.
-func golintVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+// ghVersion returns stable version in semver format.
+func ghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
 	// get Kubernetes versions from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err
 	}
-	return stable, nil
+	return strings.TrimPrefix(stable, "v"), nil
 }
