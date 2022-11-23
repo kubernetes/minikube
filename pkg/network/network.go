@@ -230,14 +230,14 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 		if err != nil {
 			return nil, err
 		}
-		startSubnet = n.IP
-		if isSubnetPrivate(startSubnet) {
-			taken, err := isSubnetTaken(startSubnet)
+		subnet := n.IP
+		if isSubnetPrivate(subnet) {
+			taken, err := isSubnetTaken(subnet)
 			if err != nil {
 				return nil, err
 			}
 			if !taken {
-				if ok := reserveSubnet(startSubnet, defaultReservationPeriod); ok {
+				if ok := reserveSubnet(subnet, defaultReservationPeriod); ok {
 					klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
 					return n, nil
 				}
