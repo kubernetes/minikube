@@ -174,4 +174,19 @@ Kubeadm has certain software and hardware requirements to maintain a stable Kube
 minikube start --force --extra-config=kubeadm.skip-phases=preflight
 ```
 This is not recommended, but for some users who are willing to accept potential performance or stability issues, this may be the only option.
+## I am in China, and I encounter errors when trying to start minikube, what should I do?
+
+After executing `minikube start`, minikube will try to pulling images from `gcr.io` or Docker Hub. However, it has been confirmed that Chinese (mainland) users may not have access to `gcr.io` or Docker Hub. So in China mainland, it is very likely that `minikube start` will fail.
+
+For Chinese users, the reason is that China mainland government has set up GFW firewall to block any access to `gcr.io` or Docker Hub from China mainland. 
+
+Minikube is an open community and we are always willing to help users from any corner of the world to use our open-source software, and provide possible assistance when possible. Here are 3 possible ways to resolve the blockade.
+
+1. Use `minikube start --image-mirror-country='cn'` instead. Aliyun (a Chinese corporation) provides a mirror repository (`registry.cn-hangzhou.aliyuncs.com/google_containers`) for those images, to which Chinese users have access. By using `--image-mirror-country='cn'` flag, minikube will try to pull the image from Aliyun mirror site as first priority. <br/><br/> *Note: when a new image is published on gcr.io, it may take several days for the image to be synchronized to Aliyun mirror repo. However, minikube will always try to pull the newest image by default, which will cause a failure of pulling image. Under this circumstance, you HAVE TO use `--kubernetes-version` flag AS WELL to tell minikube to use an older version image which is available on Aliyun repo.* <br/><br/> *For example, `minikube start --image-mirror-country='cn'  --kubernetes-version=v1.23.8` will tell minikube to pull v1.23.8 k8s image from Aliyun.*
+
+2. If you have a private mirror repository provided by your own cloud provider, you can specify that via `--image-repository` flag. For example, using `minikube start --image-repository='registry.cn-hangzhou.aliyuncs.com/google_containers'` will tell minikube to try to pull images from `registry.cn-hangzhou.aliyuncs.com/google_containers` mirror repository as first priority. 
+  
+3. Use a proxy server/VPN, if you have one. <br/> *Note: please obey the local laws. In some area, using an unauthorized proxy server/VPN is ILLEGAL* 
+
+
 
