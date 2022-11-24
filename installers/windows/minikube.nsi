@@ -121,6 +121,8 @@ Function .onInit
 FunctionEnd
 
 Section "Install"
+  SetShellVarContext all
+
 	# Files for the install directory - to build the installer, these should be in the same directory as the install script (this file)
 	SetOutPath $INSTDIR
 	# Files added here should be removed by the uninstaller (see section "uninstall")
@@ -166,6 +168,7 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
+  SetShellVarContext all
 
 	# Remove Start Menu launcher
 	Delete /REBOOTOK "$SMPROGRAMS\${COMPANYNAME}\${APPNAME}.lnk"
