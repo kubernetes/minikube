@@ -121,8 +121,8 @@ Function .onInit
 FunctionEnd
 
 Section "Install"
-  # Required to create a system-wide Start Menu shortcut 
-  SetShellVarContext all
+	# Required to create a system-wide Start Menu shortcut 
+	SetShellVarContext all
 
 	# Files for the install directory - to build the installer, these should be in the same directory as the install script (this file)
 	SetOutPath $INSTDIR
@@ -169,8 +169,8 @@ Section "Install"
 SectionEnd
 
 Section "Uninstall"
-  # Required to remove the system-wide Start Menu shortcut
-  SetShellVarContext all
+	# Required to remove the system-wide Start Menu shortcut
+	SetShellVarContext all
 
 	# Remove Start Menu launcher
 	Delete /REBOOTOK "$SMPROGRAMS\${COMPANYNAME}\${APPNAME}.lnk"
