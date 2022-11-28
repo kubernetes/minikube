@@ -322,9 +322,9 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.6.1@sha256:5ddc6458eb95f5c70bd13fdab90cbd7d6ad1066e5b528ad1dcb28b76c5fb2f00",
+		"MetricsServer": "metrics-server/metrics-server:v0.6.2@sha256:f977ad859fb500c1302d9c3428c6271db031bb7431e7076213b676b345a88dc2",
 	}, map[string]string{
-		"MetricsServer": "k8s.gcr.io",
+		"MetricsServer": "registry.k8s.io",
 	}),
 	"olm": NewAddon([]*BinAsset{
 		MustBinAsset(addons.OlmAssets,
