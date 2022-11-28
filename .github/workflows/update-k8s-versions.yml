@@ -35,7 +35,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.bumpk8s.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: bump default/newest kubernetes versions
