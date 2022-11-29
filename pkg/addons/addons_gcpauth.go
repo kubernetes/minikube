@@ -88,7 +88,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Patch service accounts for all namespaces to include the image pull secret.
 	// The image registry pull secret is added to the namespaces in the webhook.
 	if err := patchServiceAccounts(cfg); err != nil {
-		return errors.Wrap(err, "pull secret")
+		return errors.Wrap(err, "patching service accounts")
 	}
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
