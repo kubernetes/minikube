@@ -7,7 +7,7 @@ pkgver=$PKG_VERSION
 pkgrel=1
 pkgdesc="Minikube is a tool that makes it easy to run Kubernetes locally"
 url="https://github.com/kubernetes/minikube"
-license=('Apache')
+license=('Apache-2.0')
 arch=('x86_64')
 depends=(
   'net-tools'
