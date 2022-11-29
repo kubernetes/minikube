@@ -577,7 +577,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.11@sha256:82efb346863dc47701586bebadd4cef998d4c6692d802ec3de68d451c87fb613",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.12@sha256:0f2df44dd380376ff32144390b94283b52b0be00c1c1f117803578dd2c5dcadd",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",
