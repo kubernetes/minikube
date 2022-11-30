@@ -100,11 +100,11 @@ github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7Pam
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2 h1:rMamBsR6iCT9Y5m2Il6vFGJvY7FAgck4AoA/LobheKU=
 github.com/GoogleCloudPlatform/docker-credential-gcr v0.0.0-20210713212222-faed5e8b8ca2/go.mod h1:BB1eHdMLYEFuFdBlRMb0N7YGVdM5s6Pt0njxgvfbGGs=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.1 h1:E0Hwk1YC0lWXJboAvQrOnDSyVpmdlqC2v4m+GNmNszA=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.1/go.mod h1:ZWWusXNLjdTConvbpJZf+/5xxtLfu7y3hRfKjmb/DOI=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.34.1 h1:2G1eO4RSvcTNncDivyGTd3Zh9tozmMeA2JpF07QEYlc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1 h1:2zV0DiJaSJ+zoaYwMuWAkqMQyLggPfStnrwrFNv+ty4=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.1/go.mod h1:oBeOrlgeIZVX6bRZ+TDJiEuL1bsDdgAWKa4iETycZf8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2 h1:mZ/DetsTFTLmOQq1B9l1ADBpJAYErGULD1C4oNLXjhI=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.10.2/go.mod h1:wSSk0tKu5LMPxly6isD4u/myjFfXbqjzDbWRiLbXseE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.34.2 h1:svYLYCkrSUba1GQNyugC+4KVer/J9w8QPqoxWk8Rx58=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.2 h1:zb7KO+Ti/CUnMpS6gdzhyi3jw1W5q1S2aiIBJ7LAfO4=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.34.2/go.mod h1:bVzzMryjn/wyTtxukT/IkUqbnRAKzEdz/ZFoNpcy+Jo=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
@@ -1118,8 +1118,8 @@ go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqe
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
-go.uber.org/atomic v1.9.0 h1:ECmE8Bn/WFTYwEW/bpKD3M8VtR/zQVbavAoalC1PYyE=
-go.uber.org/atomic v1.9.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
+go.uber.org/atomic v1.10.0 h1:9qC72Qh0+3MqyJbAn8YU5xVq1frD8bn3JtD2oXtafVQ=
+go.uber.org/atomic v1.10.0/go.mod h1:LUxbIzbOniOlMKjJjyPfpl4v+PKK2cNJn91OQbhoJI0=
 go.uber.org/goleak v1.1.11/go.mod h1:cwTWslyiVhfpKIDGSZEM2HlOvcqm+tG4zioyIeLoqMQ=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
 go.uber.org/multierr v1.1.0/go.mod h1:wR5kodmAFQ0UK8QlbwjlSNy0Z68gJhDJUG5sjR94q/0=
