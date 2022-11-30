@@ -432,8 +432,8 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 
 func init() {
 	statusCmd.Flags().StringVarP(&statusFormat, "format", "f", defaultStatusFormat,
-		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
+		`Go template format string for the status output.  The format for Go templates can be found here: https://pkg.go.dev/text/template
+For the list accessible variables for the template, see the struct values here: https://pkg.go.dev/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
 		`minikube status --output OUTPUT. json, text`)
 	statusCmd.Flags().StringVarP(&layout, "layout", "l", "nodes",
