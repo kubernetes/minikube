@@ -123,7 +123,7 @@ func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
 // inspect initialises IPv4 network parameters struct from given address addr.
 // addr can be single address (like "192.168.17.42"), network address (like "192.168.17.0") or in CIDR form (like "192.168.17.42/24 or "192.168.17.0/24").
 // If addr belongs to network of local network interface, parameters will also contain info about that network interface.
-func inspect(addr string) (*Parameters, error) {
+var inspect = func(addr string) (*Parameters, error) {
 
 	// extract ip from addr
 	ip, network, err := net.ParseCIDR(addr)
@@ -191,7 +191,7 @@ func inspect(addr string) (*Parameters, error) {
 
 // isSubnetTaken returns if local network subnet exists and any error occurred.
 // If will return false in case of an error.
-func isSubnetTaken(subnet string) (bool, error) {
+var isSubnetTaken = func(subnet string) (bool, error) {
 	ifAddrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, fmt.Errorf("failed listing network interface addresses: %w", err)
@@ -225,8 +225,9 @@ func IsUser(network string) bool {
 
 // FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.
 func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
+	currSubnet := startSubnet
 	for try := 0; try < tries; try++ {
-		n, err := inspect(startSubnet)
+		n, err := inspect(currSubnet)
 		if err != nil {
 			return nil, err
 		}
@@ -249,13 +250,13 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 			klog.Infof("skipping subnet %s that is not private", n.CIDR)
 		}
 		prefix, _ := net.ParseIP(n.IP).DefaultMask().Size()
-		nextSubnet := net.ParseIP(startSubnet).To4()
+		nextSubnet := net.ParseIP(currSubnet).To4()
 		if prefix <= 16 {
 			nextSubnet[1] += byte(step)
 		} else {
 			nextSubnet[2] += byte(step)
 		}
-		startSubnet = nextSubnet.String()
+		currSubnet = nextSubnet.String()
 	}
 	return nil, fmt.Errorf("no free private network subnets found with given parameters (start: %q, step: %d, tries: %d)", startSubnet, step, tries)
 }
@@ -265,7 +266,7 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 //   - true, if new reservation was created or expired one renewed
 //
 // uses sync.Map to manage reservations thread-safe
-func reserveSubnet(subnet string, period time.Duration) bool {
+var reserveSubnet = func(subnet string, period time.Duration) bool {
 	// put 'zero' reservation{} Map value for subnet Map key
 	// to block other processes from concurrently changing this subnet
 	zero := reservation{}
