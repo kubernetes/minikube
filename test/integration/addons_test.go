@@ -598,9 +598,24 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 }
 
+// validateGCPAuthNamespaces validates that newly created namespaces contain the gcp-auth secret.
+func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "ns", "new-namespace"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Command(), err)
+	}
+}
+
 // validateGCPAuthAddon tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+
+	validateGCPAuthNamespaces(ctx, t, profile)
 
 	// schedule a pod to check environment variables
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
