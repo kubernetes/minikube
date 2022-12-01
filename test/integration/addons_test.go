@@ -605,9 +605,16 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Command(), err)
+	getSecret := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := retry.Expo(getSecret, Seconds(1), Seconds(10)); err != nil {
+		t.Errorf("failed to get secret: %v", err)
 	}
 }
 

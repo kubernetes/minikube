@@ -186,7 +186,7 @@ func Minutes(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Minute
 }
 
-// Seconds will return timeout in minutes based on how slow the machine is
+// Seconds will return timeout in seconds based on how slow the machine is
 func Seconds(n int) time.Duration {
 	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }
