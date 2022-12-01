@@ -39,9 +39,9 @@ The primary duty of the driver shim is to register a VM driver with minikube, an
 
 ### Registering your driver
 
-The godoc of registry is available here: <https://godoc.org/k8s.io/minikube/pkg/minikube/registry>
+The docs on registry are available here: <https://pkg.go.dev/k8s.io/minikube/pkg/minikube/registry>
 
-[DriverDef](https://godoc.org/k8s.io/minikube/pkg/minikube/registry#DriverDef) is the main
+[DriverDef](https://pkg.go.dev/k8s.io/minikube/pkg/minikube/registry#DriverDef) is the main
 struct to define a driver metadata. Essentially, you need to define 4 things at most, which is
 pretty simple once you understand your driver well:
 
