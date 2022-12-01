@@ -1061,6 +1061,11 @@ update-gh-version:
 	(cd hack/update/gh_version && \
 	 go run update_gh_version.go)
 
+.PHONY: update-docsy-version
+update-docsy-version:
+	(cd hack/update/docsy_version && \
+	 go run update_docsy_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh

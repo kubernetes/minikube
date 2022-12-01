@@ -84,7 +84,7 @@ func main() {
 
 // gopoghVersion returns gopogh stable version in semver format.
 func gopoghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get gopogh versions from GitHub Releases
+	// get gopogh version from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err
