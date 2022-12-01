@@ -535,6 +535,10 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+      - name: Set fs.protected_regular
+        shell: bash
+        run: |
+          sudo sysctl fs.protected_regular=0
       - name: Download Binaries
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
         with:
