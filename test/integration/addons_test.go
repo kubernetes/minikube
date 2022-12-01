@@ -615,7 +615,9 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	validateGCPAuthNamespaces(ctx, t, profile)
+	t.Run("Namespaces", func(t *testing.T) {
+		validateGCPAuthNamespaces(ctx, t, profile)
+	})
 
 	// schedule a pod to check environment variables
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
