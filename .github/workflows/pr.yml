@@ -491,16 +491,16 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_baremetal_ubuntu18_04:
+  functional_baremetal_ubuntu20_04:
     permissions:
       contents: none
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_baremetal_ubuntu18_04"
+      JOB_NAME: "functional_baremetal_ubuntu20_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -576,9 +576,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
-          name: functional_baremetal_ubuntu18_04
+          name: functional_baremetal_ubuntu20_04
           path: minikube_binaries/report
-      - name: The End Result functional_baremetal_ubuntu18_04
+      - name: The End Result functional_baremetal_ubuntu20_04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -606,7 +606,7 @@ jobs:
         functional_docker_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_virtualbox_macos,
-        functional_baremetal_ubuntu18_04,
+        functional_baremetal_ubuntu20_04,
       ]
     runs-on: ubuntu-20.04
     steps:
@@ -622,7 +622,7 @@ jobs:
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
-          cp -r ./functional_baremetal_ubuntu18_04 ./all_reports/
+          cp -r ./functional_baremetal_ubuntu20_04 ./all_reports/
 
       - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
         with:
