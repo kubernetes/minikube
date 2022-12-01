@@ -62,9 +62,9 @@ func main() {
 	update.Apply(schema, data)
 }
 
-// golintVersions returns stable version in semver format.
+// golintVersion returns stable version in semver format.
 func golintVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get Kubernetes versions from GitHub Releases
+	// get Golint version from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err

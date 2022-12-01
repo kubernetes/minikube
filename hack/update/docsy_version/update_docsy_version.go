@@ -18,7 +18,7 @@ package main
 
 import (
 	"context"
-	"strings"
+	"os/exec"
 	"time"
 
 	"golang.org/x/mod/semver"
@@ -32,43 +32,29 @@ const (
 	cxTimeout = 5 * time.Minute
 )
 
-var (
-	schema = map[string]update.Item{
-		"hack/jenkins/installers/check_install_gh.sh": {
-			Replace: map[string]string{
-				`GH_VERSION=".*"`: `GH_VERSION="{{.StableVersion}}"`,
-			},
-		},
-	}
-)
-
-// Data holds stable gh version in semver format.
-type Data struct {
-	StableVersion string
-}
-
 func main() {
 	// set a context with defined timeout
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	// get gh stable version
-	stable, err := ghVersion(ctx, "cli", "cli")
+	// get Docsy stable version
+	stable, err := docsyVersion(ctx, "google", "docsy")
 	if err != nil {
-		klog.Fatalf("Unable to get gh stable version: %v", err)
+		klog.Fatalf("Unable to get Doscy stable version: %v", err)
 	}
-	data := Data{StableVersion: stable}
-	klog.Infof("gh stable version: %s", data.StableVersion)
+	klog.Infof("Doscy stable version: %s", stable)
 
-	update.Apply(schema, data)
+	if err := exec.CommandContext(ctx, "./update_docsy_version.sh", stable).Run(); err != nil {
+		klog.Fatalf("failed to update docsy commit: %v", err)
+	}
 }
 
-// ghVersion returns stable version in semver format.
-func ghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
-	// get gh version from GitHub Releases
+// docsyVersion returns stable version in semver format.
+func docsyVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+	// get Docsy version from GitHub Releases
 	stable, _, _, err = update.GHReleases(ctx, owner, repo)
 	if err != nil || !semver.IsValid(stable) {
 		return "", err
 	}
-	return strings.TrimPrefix(stable, "v"), nil
+	return stable, nil
 }

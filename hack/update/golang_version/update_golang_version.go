@@ -168,7 +168,7 @@ func main() {
 	update.Apply(schema, data)
 }
 
-// goVersion returns Golang stable version.
+// goVersions returns Golang stable version.
 func goVersions() (stable, stableMM, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
