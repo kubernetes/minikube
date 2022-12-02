@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>images/minikube.png</file>
-    </qresource>
-</RCC>
