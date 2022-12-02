@@ -56,6 +56,8 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -123,6 +125,8 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Install gopogh
 
         shell: bash
@@ -223,8 +227,9 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Install gopogh
-
         shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
@@ -326,7 +331,9 @@ jobs:
         echo "--------------------------"
     - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
       with:
-        go-version: ${{env.GO_VERSION}}
+          go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
     - name: Install gopogh
       shell: bash
       run: |
@@ -413,6 +420,8 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Install gopogh
 
         shell: bash
@@ -512,6 +521,8 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
       # cri-dockerd is required for Kubernetes 1.24 and higher for none driver

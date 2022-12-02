@@ -119,7 +119,8 @@ jobs:
       - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
         with:
           go-version: ${{env.GO_VERSION}}
-
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Download Binaries
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
         with:
