@@ -131,6 +131,7 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 
 	img, cname, err := retrieveImage(ref, iname)
 	if err != nil {
+		klog.V(2).ErrorS(err, "an error while retrieving the image")
 		return errCacheImageDoesntExist
 	}
 	if img == nil {
