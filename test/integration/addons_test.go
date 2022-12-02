@@ -613,7 +613,7 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 		return nil
 	}
 
-	if err := retry.Expo(getSecret, Seconds(1), Seconds(10)); err != nil {
+	if err := retry.Expo(getSecret, Minutes(2), Minutes(10)); err != nil {
 		t.Errorf("failed to get secret: %v", err)
 	}
 }
