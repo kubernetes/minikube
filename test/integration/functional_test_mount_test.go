@@ -52,6 +52,9 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 	if HyperVDriver() {
 		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
 	}
+	if RootlessDriver() {
+		t.Skip("skipping: rootless driver does not support mount (because 9p is not mountable inside UserNS)")
+	}
 
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping: mount broken on windows: https://github.com/kubernetes/minikube/issues/8303")
