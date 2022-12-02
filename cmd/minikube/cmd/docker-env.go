@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -306,14 +307,23 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		if len(co.Config.Nodes) > 1 {
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
-
-		if co.Config.KubernetesConfig.ContainerRuntime != constants.Docker {
-			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
-				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
+		cr := co.Config.KubernetesConfig.ContainerRuntime
+		// nerdctld supports amd64 and arm64
+		if !(cr == constants.Docker || cr == constants.Containerd && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64")) {
+			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" or "containerd"(amd64/arm64) runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+				out.V{"runtime": cr})
+		}
+		// for the sake of docker-env command, download and start nerdctl and nerdctld
+		if cr == constants.Containerd {
+			out.WarningT("Using docker-env command with containerd-runtime  is a highly experimental feature, and please provide feedback or contribute to make it better")
+			startNerdctld()
 		}
 
 		r := co.CP.Runner
-		ensureDockerd(cname, r)
+
+		if cr == constants.Docker {
+			ensureDockerd(cname, r)
+		}
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort

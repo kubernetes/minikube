@@ -79,6 +79,9 @@ makes sure the --force-systemd flag worked with the cri-o container runtime
 ## TestForceSystemdEnv
 makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the --force-systemd flag
 
+## TestDockerEnvContainerd
+makes sure that minikube docker-env command works when the runtime is containerd
+
 ## TestKVMDriverInstallOrUpdate
 makes sure our docker-machine-driver-kvm2 binary can be installed properly
 
