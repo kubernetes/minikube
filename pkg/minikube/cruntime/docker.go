@@ -678,13 +678,14 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 		return nil
 	}
 
-	args := ""
-	if networkPlugin == "cni" {
-		args += " --cni-bin-dir=" + CNIBinDir
-		args += " --cni-cache-dir=" + CNICacheDir
-		args += " --cni-conf-dir=" + cni.ConfDir
-		args += " --hairpin-mode=promiscuous-bridge"
+	if err := cni.NameLoopback(r.Runner); err != nil {
+		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
 	}
+
+	args := " --cni-bin-dir=" + CNIBinDir
+	args += " --cni-cache-dir=" + CNICacheDir
+	args += " --cni-conf-dir=" + cni.ConfDir
+	args += " --hairpin-mode=promiscuous-bridge"
 
 	opts := struct {
 		NetworkPlugin  string

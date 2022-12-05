@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -182,6 +183,17 @@ func manifestAsset(b []byte) assets.CopyableFile {
 
 // applyManifest applies a CNI manifest
 func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) error {
+	if err := NameLoopback(r); err != nil {
+		klog.Warningf("unable to name loopback interface in applyManifest: %v", err)
+	}
+
+	if driver.IsKIC(cc.Driver) {
+		klog.Info("disabling CRIO bridge for Docker driver ...")
+		if err := disableCrioBridge(r); err != nil {
+			klog.Warningf("disabling CRIO bridge for Docker driver: %v", err)
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -235,6 +247,36 @@ func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
 		} else {
 			ConfDir = CustomConfDir
 		}
+	}
+	return nil
+}
+
+// NameLoopback ensures loopback has a name in its config file in /etc/cni/net.d
+// cri-o is leaving it out atm (https://github.com/cri-o/cri-o/pull/6273)
+// avoid errors like:
+// Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
+// failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
+func NameLoopback(r Runner) error {
+	loopback := "/etc/cni/net.d/*loopback.conf" // usually: 200-loopback.conf
+	// turn { "cniVersion": "0.3.1", "type": "loopback" }
+	// into { "cniVersion": "0.3.1", "name": "loopback", "type": "loopback" }
+	if _, err := r.RunCmd(exec.Command("stat", loopback)); err != nil {
+		klog.Warningf("%q not found, skipping patching loopback config step: %v", loopback, err)
+	} else if _, err := r.RunCmd(exec.Command(
+		"sudo", "find", filepath.Dir(loopback), "-name", filepath.Base(loopback), "-type", "f", "-exec", "sh", "-c",
+		`grep -q loopback {} && ( grep -q name {} || sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} )`, ";")); err != nil {
+		return fmt.Errorf("unable to patch loopback config %q: %v", loopback, err)
+	}
+	return nil
+}
+
+// disableCrioBridge disables cri-o bridge by prefixing its config file in /etc/cni/net.d with "DISABLED" (effectively deprioritising its lexicographical order placement)
+func disableCrioBridge(r Runner) error {
+	conflict := "/etc/cni/net.d/100-crio-bridge.conf"
+	if _, err := r.RunCmd(exec.Command("stat", conflict)); err != nil {
+		klog.Warningf("%q not found, skipping disabling cri-o bridge config step: %v", conflict, err)
+	} else if _, err = r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict)))); err != nil {
+		return fmt.Errorf("unable to disable cri-o bridge config %q: %v", conflict, err)
 	}
 	return nil
 }

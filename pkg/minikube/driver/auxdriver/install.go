@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/juju/mutex"
+	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"

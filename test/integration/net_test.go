@@ -51,19 +51,20 @@ func TestNetworkPlugins(t *testing.T) {
 			args          []string
 			kubeletPlugin string
 			podLabel      string
+			namespace     string
 			hairpin       bool
 		}{
 			// for containerd and crio runtimes kindnet CNI is used by default and hairpin is enabled
-			{"auto", []string{}, "", "", ContainerRuntime() != "docker"},
-			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", true},
-			{"bridge", []string{"--cni=bridge"}, "cni", "", true},
-			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", true},
-			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", true},
-			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", true},
-			{"false", []string{"--cni=false"}, "", "", false},
-			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", true},
-			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", true},
-			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", true},
+			{"auto", []string{}, "", "", "", ContainerRuntime() != "docker"},
+			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", "", true},
+			{"bridge", []string{"--cni=bridge"}, "cni", "", "", true},
+			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", "", true},
+			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", "kube-flannel", true},
+			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", "kube-system", true},
+			{"false", []string{"--cni=false"}, "", "", "", false},
+			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", "kube-flannel", true},
+			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", "kube-system", true},
+			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", "kube-system", true},
 		}
 
 		for _, tc := range tests {
@@ -74,10 +75,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
-
-				if DockerDriver() && strings.Contains(tc.name, "flannel") {
-					t.Skipf("flannel is not yet compatible with Docker driver: iptables v1.8.3 (legacy): Couldn't load target `CNI-x': No such file or directory")
-				}
 
 				if ContainerRuntime() != "docker" && tc.name == "false" {
 					// CNI is required for current container runtime
@@ -94,7 +91,7 @@ func TestNetworkPlugins(t *testing.T) {
 				start := time.Now()
 				MaybeParallel(t)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--wait=true", "--wait-timeout=5m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--wait-timeout=10m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -106,7 +103,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if !t.Failed() && tc.podLabel != "" {
 					t.Run("ControllerPod", func(t *testing.T) {
-						if _, err := PodWait(ctx, t, profile, "kube-system", tc.podLabel, Minutes(10)); err != nil {
+						if _, err := PodWait(ctx, t, profile, tc.namespace, tc.podLabel, Minutes(10)); err != nil {
 							t.Fatalf("failed waiting for %s labeled pod: %v", tc.podLabel, err)
 						}
 					})

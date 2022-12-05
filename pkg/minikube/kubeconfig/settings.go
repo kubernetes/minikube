@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"sync/atomic"
 
-	"github.com/juju/mutex"
+	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"

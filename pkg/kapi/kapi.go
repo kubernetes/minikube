@@ -223,8 +223,12 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
 		scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
 		if err != nil {
-			klog.Warningf("failed getting deployment scale, will retry: %v", err)
-			return false, nil
+			if IsRetryableAPIError(err) {
+				klog.Warningf("failed getting %q deployment scale, will retry: %v", deploymentName, err)
+				return false, nil
+			}
+			klog.Info("non-retryable failure while getting %q deployment scale: %v", deploymentName, err)
+			return false, err
 		}
 		if scale.Spec.Replicas != int32(replicas) {
 			scale.Spec.Replicas = int32(replicas)
@@ -238,7 +242,7 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 		return true, nil
 	})
 	if err != nil {
-		klog.Infof("timed out trying to rescale deployment %q in namespace %q and context %q to %d: %v", deploymentName, namespace, kcontext, replicas, err)
+		klog.Infof("failed to rescale deployment %q in namespace %q and context %q to %d: %v", deploymentName, namespace, kcontext, replicas, err)
 		return err
 	}
 	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, kcontext, replicas)
