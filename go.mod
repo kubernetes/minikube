@@ -78,7 +78,7 @@ require (
 	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.2.0
 	golang.org/x/term v0.2.0
-	golang.org/x/text v0.4.0
+	golang.org/x/text v0.5.0
 	gonum.org/v1/plot v0.12.0
 	google.golang.org/api v0.103.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
