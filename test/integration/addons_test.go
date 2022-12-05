@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -605,15 +606,23 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	getSecret := func() error {
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+	getLogs := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
 		if err != nil {
 			return err
 		}
-		return nil
+		return errors.New(rr.Output())
 	}
 
-	if err := retry.Expo(getSecret, Minutes(2), Minutes(10)); err != nil {
+	getSecret := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+		if err != nil {
+			err = getLogs()
+		}
+		return err
+	}
+
+	if err := retry.Expo(getSecret, Seconds(2), Minutes(1)); err != nil {
 		t.Errorf("failed to get secret: %v", err)
 	}
 }
