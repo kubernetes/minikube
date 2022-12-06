@@ -46,7 +46,7 @@ var (
 )
 
 // imagePathInCache returns path in local cache directory
-func imagePathInCache(img string) string {
+func imagePathInMinikubeCache(img string) string {
 	f := filepath.Join(detect.KICCacheDir(), path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 	return f
@@ -54,7 +54,7 @@ func imagePathInCache(img string) string {
 
 // ImageExistsInCache if img exist in local cache directory
 func ImageExistsInCache(img string) bool {
-	f := imagePathInCache(img)
+	f := imagePathInMinikubeCache(img)
 
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local cache directory", img)

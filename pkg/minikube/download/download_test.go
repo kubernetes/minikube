@@ -168,7 +168,7 @@ func testImageToCache(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if err := ImageToCache("testimg"); err != nil {
+		if err := ImageToMinikubeCache("testimg"); err != nil {
 			t.Errorf("Failed to download preload: %+v", err)
 		}
 		group.Done()
@@ -193,7 +193,7 @@ func testImageToDaemon(t *testing.T) {
 	var group sync.WaitGroup
 	group.Add(2)
 	dlCall := func() {
-		if err := ImageToCache("testimg"); err != nil {
+		if err := ImageToMinikubeCache("testimg"); err != nil {
 			t.Errorf("Failed to download preload: %+v", err)
 		}
 		group.Done()
