@@ -246,6 +246,43 @@ func CacheToDaemon(img string) error {
 	return err
 }
 
+// ImageToKicDriver
+// Makes a direct pull of the specified image to the kicdriver's cache
+// maintaining reference to the image digest.
+func ImageToKicDriver(ociBin, img string) error {
+	_, ref, err := parseImage(img)
+	if err != nil {
+		return err
+	}
+	
+	fileLock := filepath.Join(detect.KICCacheDir(), path.Base(img)+".d.lock")
+	fileLock = localpath.SanitizeCacheDir(fileLock)
+	releaser, err := lockDownload(fileLock)
+	if releaser != nil {
+		defer releaser.Release()
+	}
+	if err != nil {
+		return err
+	}
+	
+	if ImageExistsInKicDriver(ociBin, img) {
+		klog.Infof("%s exists in KicDriver, skipping pull", img)
+		return nil
+	}
+
+	
+	if DownloadMock != nil {
+		klog.Infof("Mock download: %s -> daemon", img)
+		return DownloadMock(img, "daemon")
+	}
+
+	klog.V(3).Infof("Pulling image %v", ref)
+	if _, err := oci.PullImage(ociBin, img); err != nil {
+		return errors.Wrap(err, "pulling remote image")
+	}
+	return nil
+}
+
 // ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
 func ImageToDaemon(img string) error {
 	fileLock := filepath.Join(detect.KICCacheDir(), path.Base(img)+".d.lock")
