@@ -114,7 +114,11 @@ func doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL strin
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries, binariesURL)
 }
 
-// beginDownloadKicBaseImage downloads the kic image
+// beginDownloadKicBaseImage
+// Its behaviour changes based on on ClusterConfig and flags..
+// It downloads the tar archive of the specified kicbase image to the local minikube cache (if not already present)
+// It updates the KicDriver's cache with the just downloaded image archive for offline usage
+// It pulls the kicbase image to the KicDriver at the specified digest
 func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, downloadOnly bool) {
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
