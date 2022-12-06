@@ -87,9 +87,19 @@ func ImageExistsInDaemon(img string) bool {
 
 var checkImageExistsInDaemon = ImageExistsInDaemon
 
-// ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
-func ImageToCache(img string) error {
-	f := imagePathInCache(img)
+// ImageToCache
+// downloads specified container image in tar format, to local minikube's cache
+// does nothing if image is already present.
+func ImageToMinikubeCache(img string) error {
+	tag, ref, err := parseImage(img)
+	// do not use cache if image is set in format <name>:latest
+	if _, ok := ref.(name.Tag); ok {
+		if tag.Name() == "latest" {
+			return fmt.Errorf("can't cache 'latest' tag")
+		}
+	}
+
+	f := imagePathInMinikubeCache(img)
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)
@@ -118,14 +128,6 @@ func ImageToCache(img string) error {
 	c := make(chan v1.Update, 200)
 
 	klog.Infof("Writing %s to local cache", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
-	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
-	if err != nil {
-		return errors.Wrap(err, "parsing tag")
-	}
 	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {
