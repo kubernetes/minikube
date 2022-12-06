@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -69,6 +70,19 @@ func ImageExistsInCache(img string) bool {
 }
 
 var checkImageExistsInCache = ImageExistsInCache
+
+// ImageExistsInKICDriver
+// checks for the specified image in the container engine's local cache
+func ImageExistsInKicDriver(ociBin, img string) bool {
+	klog.Infof("Checking for %s in local KICdriver's cache", img)
+	inCache := oci.IsImageInCache(ociBin, img)
+	if inCache {
+		klog.Infof("Found %s in local KICdriver's cache, skipping pull", img)
+		return true
+	} else {
+		return false
+	}
+}
 
 // ImageExistsInDaemon if img exist in local docker daemon
 func ImageExistsInDaemon(img string) bool {
@@ -198,9 +212,18 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 	return &tag, ref, nil
 }
 
+// CacheToKICDriver
+// loads a locally minikube-cached container image, to the KIC-driver's cache
+func CacheToKicDriver(ociBin string, img string) (error) {
+	p := imagePathInMinikubeCache(img)	
+	resp, err := oci.ArchiveToDriverCache(ociBin, p)
+	klog.V(2).Infof("response: %s", resp)
+	return err
+}
+
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
 func CacheToDaemon(img string) error {
-	p := imagePathInCache(img)
+	p := imagePathInMinikubeCache(img)
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
