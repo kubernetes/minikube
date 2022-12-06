@@ -34,7 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/driver"
+	// "k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -142,14 +142,14 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			var err error
 			var isFromCache bool
 
-			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
-				klog.Infof("%s exists in daemon, skipping load", img)
+			if !downloadOnly && download.ImageExistsInKicDriver(cc.Driver, img) {
+				klog.Infof("%s exists in KicDriver, skipping load", img)
 				finalImg = img
 				return nil
 			}
 
 			klog.Infof("Downloading %s to local cache", img)
-			err = download.ImageToCache(img)
+			err = download.ImageToMinikubeCache(img)
 			if err == nil {
 				klog.Infof("successfully saved %s as a tarball", img)
 				finalImg = img
@@ -158,31 +158,25 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				return err
 			}
 
-			if cc.Driver == driver.Podman {
-				return fmt.Errorf("not yet implemented, see issue #8426")
-			}
-			if driver.IsDocker(cc.Driver) {
-				klog.Infof("Loading %s from local cache", img)
-				err = download.CacheToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully loaded %s from cached tarball", img)
-					isFromCache = true
-				}
+			klog.Infof("Loading %s from local cache", img)
+			err = download.CacheToKicDriver(cc.Driver, img)
+			if err == nil {
+				klog.Infof("successfully loaded %s from cached tarball", img)
+				isFromCache = true
+ 			}
+
+			klog.Infof("Downloading %s to local KicDriver", img)
+			err = download.ImageToKicDriver(cc.Driver, img)
+			if err == nil {
+				klog.Infof("successfully downloaded %s", img)
+				finalImg = img
+				return nil
+			} else if isFromCache {
+				klog.Infof("use image loaded from cache %s", strings.Split(img, "@")[0])
+				finalImg = strings.Split(img, "@")[0]
+				return nil
 			}
 
-			if driver.IsDocker(cc.Driver) {
-				klog.Infof("Downloading %s to local daemon", img)
-				err = download.ImageToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully downloaded %s", img)
-					finalImg = img
-					return nil
-				} else if isFromCache {
-					klog.Infof("use image loaded from cache %s", strings.Split(img, "@")[0])
-					finalImg = strings.Split(img, "@")[0]
-					return nil
-				}
-			}
 			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 		}
 		return fmt.Errorf("failed to download kic base image or any fallback image")
