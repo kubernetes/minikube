@@ -67,6 +67,15 @@ func TestAddons(t *testing.T) {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
 
+		// MOCK_GOOGLE_TOKEN forces the gcp-auth webhook to use a mock token instead of trying to get a valid one from the credentials.
+		err = os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+		t.Cleanup(func() {
+			os.Unsetenv("MOCK_GOOGLE_TOKEN")
+		})
+		if err != nil {
+			t.Fatalf("Failed setting MOCK_GOOGLE_TOKEN env var: %v", err)
+		}
+
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
@@ -606,7 +615,7 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	getLogs := func() error {
+	logsAsError := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
 		if err != nil {
 			return err
@@ -617,7 +626,7 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 	getSecret := func() error {
 		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
 		if err != nil {
-			err = getLogs()
+			err = fmt.Errorf("%w: gcp-auth container logs: %v", err, logsAsError())
 		}
 		return err
 	}
