@@ -44,7 +44,7 @@ open dist/minikube.app
 {{% windowstab %}}
 1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip) (faster)
 ```shell
-Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip' -UseBasicParsing
+Invoke-WebRequest -OutFile 'minikube-gui-windows.zip' -Uri 'https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip' -UseBasicParsing
 ```
 
 2. Unzip
