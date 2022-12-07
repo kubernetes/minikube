@@ -1,8 +1,8 @@
 package oci
 
 import (
-	"os/exec"
 	"bytes"
+	"os/exec"
 )
 
 func PullImage(ociBin, img string) (bytes.Buffer, error) {

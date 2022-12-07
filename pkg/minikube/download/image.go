@@ -76,9 +76,8 @@ func ImageExistsInKicDriver(ociBin, img string) bool {
 	if inCache {
 		klog.Infof("Found %s in local KICdriver's cache, skipping pull", img)
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
 // ImageToCache
@@ -194,8 +193,8 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 
 // CacheToKICDriver
 // loads a locally minikube-cached container image, to the KIC-driver's cache
-func CacheToKicDriver(ociBin string, img string) (error) {
-	p := imagePathInMinikubeCache(img)	
+func CacheToKicDriver(ociBin string, img string) error {
+	p := imagePathInMinikubeCache(img)
 	resp, err := oci.ArchiveToDriverCache(ociBin, p)
 	klog.V(2).Infof("response: %s", resp)
 	return err
@@ -209,7 +208,7 @@ func ImageToKicDriver(ociBin, img string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	fileLock := filepath.Join(detect.KICCacheDir(), path.Base(img)+".d.lock")
 	fileLock = localpath.SanitizeCacheDir(fileLock)
 	releaser, err := lockDownload(fileLock)
@@ -219,13 +218,12 @@ func ImageToKicDriver(ociBin, img string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if ImageExistsInKicDriver(ociBin, img) {
 		klog.Infof("%s exists in KicDriver, skipping pull", img)
 		return nil
 	}
 
-	
 	if DownloadMock != nil {
 		klog.Infof("Mock download: %s -> daemon", img)
 		return DownloadMock(img, "daemon")

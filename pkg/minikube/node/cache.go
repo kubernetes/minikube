@@ -34,7 +34,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
-	// "k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -163,7 +162,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			if err == nil {
 				klog.Infof("successfully loaded %s from cached tarball", img)
 				isFromCache = true
- 			}
+			}
 
 			klog.Infof("Downloading %s to local KicDriver", img)
 			err = download.ImageToKicDriver(cc.Driver, img)

@@ -3,7 +3,7 @@ package oci
 import (
 	"os/exec"
 	"strings"
-	
+
 	"k8s.io/minikube/pkg/minikube/image"
 )
 
@@ -17,7 +17,7 @@ func ArchiveToDriverCache(ociBin, path string) (string, error) {
 
 // IsInCache
 // searches in OCIBIN's cache for the IMG; returns true if found. no error handling
-func IsImageInCache(ociBin, img string) (bool) {
+func IsImageInCache(ociBin, img string) bool {
 	res, err := runCmd(exec.Command(ociBin, "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}"))
 	if err != nil {
 		// only the docker binary seems to have this issue..
@@ -25,8 +25,8 @@ func IsImageInCache(ociBin, img string) (bool) {
 		if ociBin == Docker {
 			img = image.TrimDockerIO(img)
 		}
-		
-		if strings.Contains(res.Stdout.String(), img){
+
+		if strings.Contains(res.Stdout.String(), img) {
 			return true
 		}
 	}
