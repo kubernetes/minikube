@@ -147,16 +147,11 @@ Hello from hello-695c67cf9c-frcvw (10.244.0.3)
 - Multiple nodes!
 
 - Referenced YAML files
-{{% tabs %}}
-{{% tab hello-deployment.yaml %}}
-
-```
-{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
-```
-{{% /tab %}}
-{{% tab hello-svc.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
-```
-{{% /tab %}}
-{{% /tabs %}}
+{{< tabs >}}
+{{< tab hello-deployment.yaml >}}
+{{< readfile file="/docs/tutorials/includes/hello-deployment.yaml" code="true" lang="yaml" >}}
+{{< /tab >}}
+{{< tab hello-svc.yaml >}}
+{{< readfile file="/docs/tutorials/includes/hello-svc.yaml" code="true" lang="yaml" >}}
+{{< /tab >}}
+{{< /tabs >}}
