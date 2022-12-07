@@ -94,7 +94,7 @@ func TestNetworkPlugins(t *testing.T) {
 				start := time.Now()
 				MaybeParallel(t)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--wait-timeout=10m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--wait-timeout=20m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
