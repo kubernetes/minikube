@@ -40,6 +40,9 @@ import (
 // Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 // Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 func TestNetworkPlugins(t *testing.T) {
+	// generate reasonably unique profile name suffix to be used for all tests
+	suffix := UniqueProfileName("")
+
 	MaybeParallel(t)
 	if NoneDriver() {
 		t.Skip("skipping since test for none driver")
@@ -71,7 +74,7 @@ func TestNetworkPlugins(t *testing.T) {
 			tc := tc
 
 			t.Run(tc.name, func(t *testing.T) {
-				profile := UniqueProfileName(tc.name)
+				profile := tc.name + suffix
 
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)

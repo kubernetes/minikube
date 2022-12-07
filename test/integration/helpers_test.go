@@ -263,10 +263,12 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 			t.Logf("%s: %v", rr.Command(), rerr)
 			return
 		}
-		notRunning := strings.Split(rr.Stdout.String(), " ")
-		if len(notRunning) == 0 {
+		// strings.Split("", " ") results in [""] slice of len 1 !
+		out := strings.TrimSpace(rr.Stdout.String())
+		if len(out) == 0 {
 			continue
 		}
+		notRunning := strings.Split(out, " ")
 		t.Logf("non-running pods: %s", strings.Join(notRunning, " "))
 
 		t.Logf("======> post-mortem[%s]: describe non-running pods <======", t.Name())

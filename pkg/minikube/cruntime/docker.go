@@ -682,9 +682,12 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
 	}
 
-	args := " --cni-bin-dir=" + CNIBinDir
-	args += " --cni-cache-dir=" + CNICacheDir
-	args += " --cni-conf-dir=" + cni.ConfDir
+	args := ""
+	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.2")) {
+		args += " --cni-bin-dir=" + CNIBinDir
+		args += " --cni-cache-dir=" + CNICacheDir
+		args += " --cni-conf-dir=" + cni.ConfDir
+	}
 	args += " --hairpin-mode=promiscuous-bridge"
 
 	opts := struct {

@@ -28,7 +28,8 @@ import (
 )
 
 // bridge is what minikube defaulted to when `--enable-default-cni=true`
-// https://github.com/containernetworking/plugins/blob/master/plugins/main/bridge/README.md
+// ref: https://www.cni.dev/plugins/current/main/bridge/
+// ref: https://www.cni.dev/plugins/current/meta/portmap/
 
 var bridgeConf = template.Must(template.New("bridge").Parse(`
 {

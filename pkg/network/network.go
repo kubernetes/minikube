@@ -262,20 +262,18 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 }
 
 // reserveSubnet returns if subnet was successfully reserved for given period:
-//   - false, if it already has unexpired reservation
-//   - true, if new reservation was created or expired one renewed
-//
+// - false, if it already has unexpired reservation
+// - true, if new reservation was created or expired one renewed
 // uses sync.Map to manage reservations thread-safe
 var reserveSubnet = func(subnet string, period time.Duration) bool {
-	// put 'zero' reservation{} Map value for subnet Map key
+	// put nil reservation{} Map value for subnet Map key
 	// to block other processes from concurrently changing this subnet
-	zero := reservation{}
-	r, loaded := reservedSubnets.LoadOrStore(subnet, zero)
+	r, loaded := reservedSubnets.LoadOrStore(subnet, nil)
 	// check if there was previously issued reservation
 	if loaded {
-		// back off if previous reservation was already set to 'zero'
+		// back off if previous reservation was already set to 'nil'
 		// as then other process is already managing this subnet concurrently
-		if r == zero {
+		if r == nil {
 			klog.Infof("backing off reserving subnet %s (other process is managing it!): %+v", subnet, &reservedSubnets)
 			return false
 		}

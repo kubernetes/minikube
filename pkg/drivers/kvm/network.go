@@ -477,19 +477,20 @@ func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterf
 	}
 	defer func() { _ = dom.Free() }()
 
-	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
-	if ifs == nil {
-		if err != nil {
-			log.Debugf("failed listing network interface addresses of domain %s(source=arp): %w", domain, err)
-		} else {
-			log.Debugf("No network interface addresses found for domain %s(source=arp)", domain)
-		}
-		log.Debugf("trying to list again with source=lease")
-
-		ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
-		if err != nil {
-			return nil, fmt.Errorf("failed listing network interface addresses of domain %s(source=lease): %w", domain, err)
-		}
+	// check lease first, then arp
+	// ref: https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainInterfaceAddresses
+	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+	if err == nil && len(ifs) > 0 {
+		return ifs, nil
+	}
+	if err != nil {
+		log.Debugf("failed listing network interface addresses of domain %s using lease (will try arp): %v", domain, err)
+	} else if len(ifs) == 0 {
+		log.Debugf("no network interface addresses found for domain %s using lease (will try arp)", domain)
+	}
+	ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+	if err != nil {
+		return nil, fmt.Errorf("failed listing network interface addresses of domain %s using arp: %w", domain, err)
 	}
 
 	return ifs, nil

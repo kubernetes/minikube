@@ -188,9 +188,9 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		klog.Info("disabling CRIO bridge for Docker driver ...")
+		klog.Infof("disabling cri-o bridge for %s driver ... ", cc.Driver)
 		if err := disableCrioBridge(r); err != nil {
-			klog.Warningf("disabling CRIO bridge for Docker driver: %v", err)
+			klog.Warningf("unable to disable cri-o bridge for %s driver: %v", cc.Driver, err)
 		}
 	}
 
@@ -244,8 +244,6 @@ func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
 				// respect user-specified custom CNI Config Directory
 				ConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
 			}
-		} else {
-			ConfDir = CustomConfDir
 		}
 	}
 	return nil
@@ -257,25 +255,32 @@ func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
 // Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
 // failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
 func NameLoopback(r Runner) error {
-	loopback := "/etc/cni/net.d/*loopback.conf" // usually: 200-loopback.conf
+	loopback := "/etc/cni/net.d/*loopback.conf*" // usually: 200-loopback.conf
 	// turn { "cniVersion": "0.3.1", "type": "loopback" }
 	// into { "cniVersion": "0.3.1", "name": "loopback", "type": "loopback" }
-	if _, err := r.RunCmd(exec.Command("stat", loopback)); err != nil {
-		klog.Warningf("%q not found, skipping patching loopback config step: %v", loopback, err)
-	} else if _, err := r.RunCmd(exec.Command(
-		"sudo", "find", filepath.Dir(loopback), "-name", filepath.Base(loopback), "-type", "f", "-exec", "sh", "-c",
-		`grep -q loopback {} && ( grep -q name {} || sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} )`, ";")); err != nil {
+	if _, err := r.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("stat %s", loopback))); err != nil {
+		klog.Warningf("%q not found, skipping patching loopback config step", loopback)
+		return nil
+	}
+	if _, err := r.RunCmd(exec.Command(
+		"sudo", "find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-exec", "sh", "-c",
+		`grep -q loopback {} && ( grep -q name {} || sudo sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} )`, ";")); err != nil {
 		return fmt.Errorf("unable to patch loopback config %q: %v", loopback, err)
 	}
 	return nil
 }
 
-// disableCrioBridge disables cri-o bridge by prefixing its config file in /etc/cni/net.d with "DISABLED" (effectively deprioritising its lexicographical order placement)
+// disableCrioBridge disables cri-o bridge config file in /etc/cni/net.d by changing extension to "mk_disabled"
+// ref: https://github.com/containernetworking/cni/blob/6e5ac36b42c0b582358e67ac581d0316507967cb/libcni/conf.go#L176-L184
 func disableCrioBridge(r Runner) error {
-	conflict := "/etc/cni/net.d/100-crio-bridge.conf"
-	if _, err := r.RunCmd(exec.Command("stat", conflict)); err != nil {
-		klog.Warningf("%q not found, skipping disabling cri-o bridge config step: %v", conflict, err)
-	} else if _, err = r.RunCmd(exec.Command("sudo", "mv", conflict, filepath.Join(filepath.Dir(conflict), "DISABLED-"+filepath.Base(conflict)))); err != nil {
+	conflict := "/etc/cni/net.d/*crio-bridge.conf" // usually: 100-crio-bridge.conf
+	if _, err := r.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("stat %s", conflict))); err != nil {
+		klog.Warningf("%q not found, skipping disabling cri-o bridge config step", conflict)
+		return nil
+	}
+	if _, err := r.RunCmd(exec.Command(
+		"sudo", "find", filepath.Dir(conflict), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(conflict), "-exec", "sh", "-c",
+		`sudo mv {} {}.mk_disabled`, ";")); err != nil {
 		return fmt.Errorf("unable to disable cri-o bridge config %q: %v", conflict, err)
 	}
 	return nil
