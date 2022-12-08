@@ -323,9 +323,9 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.6.1@sha256:5ddc6458eb95f5c70bd13fdab90cbd7d6ad1066e5b528ad1dcb28b76c5fb2f00",
+		"MetricsServer": "metrics-server/metrics-server:v0.6.2@sha256:f977ad859fb500c1302d9c3428c6271db031bb7431e7076213b676b345a88dc2",
 	}, map[string]string{
-		"MetricsServer": "k8s.gcr.io",
+		"MetricsServer": "registry.k8s.io",
 	}),
 	"olm": NewAddon([]*BinAsset{
 		MustBinAsset(addons.OlmAssets,
@@ -739,7 +739,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "kinvolk/headlamp:v0.13.0@sha256:910c9b060b1c253a4576836daac49730932258f91205c3160e2c1588a24a9387",
+			"Headlamp": "kinvolk/headlamp:v0.14.0@sha256:00ed93805a5250f8840ce301cf44c1686fb0f46fafc7bd64b71c874cafef90a3",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
@@ -747,7 +747,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.4.6@sha256:b9341271be665a97f8ef778a752f0f63bea8c8a90bcdf79c03fb6c3444a8478d",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.4.8@sha256:5469945589399bd79ead8bed929f5eb4d1c5ee98d095df5b0ebe35f0b7160a84",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),

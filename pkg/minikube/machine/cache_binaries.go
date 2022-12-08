@@ -51,7 +51,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, ex
 		if isExcluded(bin, excludeBinaries) {
 			continue
 		}
-		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
+		bin := bin // https://go.dev/doc/faq#closures_and_goroutines
 		g.Go(func() error {
 			if _, err := download.Binary(bin, version, "linux", detect.EffectiveArch(), binariesURL); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)

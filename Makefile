@@ -38,7 +38,7 @@ GO_VERSION ?= 1.19.3
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.25.0
 
-# replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
+# replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
@@ -1060,6 +1060,16 @@ update-gotestsum-version:
 update-gh-version:
 	(cd hack/update/gh_version && \
 	 go run update_gh_version.go)
+
+.PHONY: update-docsy-version
+update-docsy-version:
+	(cd hack/update/docsy_version && \
+	 go run update_docsy_version.go)
+
+.Phony: update-hugo-version
+update-hugo-version:
+	(cd hack/update/hugo_version && \
+	 go run update_hugo_version.go)
 
 .PHONY: generate-licenses
 generate-licenses:

@@ -27,7 +27,7 @@ import (
 
 const (
 	// ghListPerPage uses max value (100) for PerPage to avoid hitting the rate limits.
-	// (ref: https://godoc.org/github.com/google/go-github/github#hdr-Rate_Limiting)
+	// (ref: https://pkg.go.dev/github.com/google/go-github/github#hdr-Rate_Limiting)
 	ghListPerPage = 100
 
 	// ghSearchLimit limits the number of searched items to be <= N * ghListPerPage.

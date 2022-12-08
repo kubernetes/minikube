@@ -98,6 +98,16 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-docsy-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
+		".github/workflows/update-hugo-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/time-to-k8s-public-chart.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
@@ -168,7 +178,7 @@ func main() {
 	update.Apply(schema, data)
 }
 
-// goVersion returns Golang stable version.
+// goVersions returns Golang stable version.
 func goVersions() (stable, stableMM, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")

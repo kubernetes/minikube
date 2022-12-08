@@ -1,4 +1,6 @@
-# Copyright 2019 The Kubernetes Authors All rights reserved.
+#!/bin/bash
+
+# Copyright 2022 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
+set -eux -o pipefail
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-		gcc \
-		libc6-dev \
-		make \
-		pkg-config \
-		curl \
-		libvirt-dev \
-		git \
-	&& rm -rf /var/lib/apt/lists/*
+if [ "$#" -ne 1 ]; then
+  echo "Usage: update_docsy_version.sh <version>" >&2
+  exit 1
+fi
 
-ARG GO_VERSION
+readonly version=$1
 
-RUN curl -sSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
-
-ENV GOPATH /go
-ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin
+git submodule update --init
+pushd ../../../site/themes/docsy/
+git checkout "$1"
+popd

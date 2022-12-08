@@ -16,7 +16,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 * 2GB of free memory
 * 20GB of free disk space
 * Internet connection
-* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
+* Container or virtual machine manager, such as: [Docker]({{<ref "/docs/drivers/docker">}}), [QEMU]({{<ref "/docs/drivers/qemu">}}), [Hyperkit]({{<ref "/docs/drivers/hyperkit">}}), [Hyper-V]({{<ref "/docs/drivers/hyperv">}}), [KVM]({{<ref "/docs/drivers/kvm2">}}), [Parallels]({{<ref "/docs/drivers/parallels">}}), [Podman]({{<ref "/docs/drivers/podman">}}), [VirtualBox]({{<ref "/docs/drivers/virtualbox">}}), or [VMware Fusion/Workstation]({{<ref "/docs/drivers/vmware">}})
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
@@ -539,8 +539,8 @@ minikube dashboard
 Create a sample deployment and expose it on port 80:
 
 ```shell
-kubectl create deployment hello-minikube --image=docker.io/nginx:1.23
-kubectl expose deployment hello-minikube --type=NodePort --port=80
+kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
 It may take a moment, but your deployment will soon show up when you run:
@@ -558,19 +558,19 @@ minikube service hello-minikube
 Alternatively, use kubectl to forward the port:
 
 ```shell
-kubectl port-forward service/hello-minikube 7080:80
+kubectl port-forward service/hello-minikube 7080:8080
 ```
 
 Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/).
 
-You should be able to see the request metadata from nginx such as the `CLIENT VALUES`, `SERVER VALUES`, `HEADERS RECEIVED` and the `BODY` in the application output. Try changing the path of the request and observe the changes in the `CLIENT VALUES`. Similarly, you can do a POST request to the same and observe the body show up in `BODY` section of the output.
+You should be able to see the request metadata in the application output. Try changing the path of the request and observe the changes. Similarly, you can do a POST request and observe the body show up in the output.
 {{% /tab %}}
 {{% tab LoadBalancer %}}
 To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
-kubectl create deployment balanced --image=docker.io/nginx:1.23
-kubectl expose deployment balanced --type=LoadBalancer --port=80
+kubectl create deployment balanced --image=kicbase/echo-server:1.0
+kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
 In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
@@ -585,7 +585,7 @@ To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 kubectl get services balanced
 ```
 
-Your deployment is now available at &lt;EXTERNAL-IP&gt;:80
+Your deployment is now available at &lt;EXTERNAL-IP&gt;:8080
 {{% /tab %}}
 {{% tab Ingress %}}
 Enable ingress addon:
@@ -604,7 +604,7 @@ metadata:
 spec:
   containers:
   - name: foo-app
-    image: docker.io/ealen/echo-server:0.7.0
+    image: kicbase/echo-server:1.0
 ---
 kind: Service
 apiVersion: v1
@@ -615,7 +615,7 @@ spec:
     app: foo
   ports:
   # Default port used by the image
-  - port: 80
+  - port: 8080
 ---
 kind: Pod
 apiVersion: v1
@@ -626,7 +626,7 @@ metadata:
 spec:
   containers:
   - name: bar-app
-    image: docker.io/ealen/echo-server:0.7.0
+    image: kicbase/echo-server:1.0
 ---
 kind: Service
 apiVersion: v1
@@ -637,7 +637,7 @@ spec:
     app: bar
   ports:
   # Default port used by the image
-  - port: 80
+  - port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -653,14 +653,14 @@ spec:
           service:
             name: foo-service
             port:
-              number: 80
+              number: 8080
       - pathType: Prefix
         path: "/bar"
         backend:
           service:
             name: bar-service
             port:
-              number: 80
+              number: 8080
 ---
 ```
 
@@ -678,8 +678,13 @@ example-ingress   nginx   *       <your_ip_here>   80      5m45s
 
 Now verify that the ingress works
 ```shell
-curl <ip_from_above>/foo
-curl <ip_from_above>/bar
+$ curl <ip_from_above>/foo
+Request served by foo-app
+...
+
+$ curl <ip_from_above>/bar
+Request served by bar-app
+...
 ```
 {{% /tab %}}
 {{% /tabs %}}
