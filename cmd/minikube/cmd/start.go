@@ -717,14 +717,8 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			altNames = append(altNames, a.String())
 		}
 		out.Step(style.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
-		if viper.GetString("driver") == "" && pick.Name == driver.VirtualBox {
-			viper.SetDefault(config.WantVirtualBoxDriverWarning, false)
-		}
 	} else {
 		out.Step(style.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
-		if viper.GetString("driver") == "" && pick.Name == driver.VirtualBox {
-			viper.SetDefault(config.WantVirtualBoxDriverWarning, false)
-		}
 	}
 	return pick, alts, false
 }

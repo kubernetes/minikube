@@ -179,7 +179,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	}
 
 	// discourage use of the virtualbox driver
-	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) && viper.GetString("driver") != "" {
 		warnVirtualBox()
 	}
 
