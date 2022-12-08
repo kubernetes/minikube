@@ -579,7 +579,6 @@ var Addons = map[string]*Addon{
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.13@sha256:08a49cb7a588d81723b7e02c16082c75418b6e0a54cf2e44668bd77f79a41a40",
-		"MockGoogleToken":    os.Getenv("MOCK_GOOGLE_TOKEN"), // TODO: move this. Maybe we should have a misc map?
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",
@@ -886,24 +885,28 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		Registries              map[string]string
 		CustomRegistries        map[string]string
 		NetworkInfo             map[string]string
+		Environment             map[string]string
 		LegacyPodSecurityPolicy bool
 		LegacyRuntimeClass      bool
 	}{
-		KubernetesVersion:       make(map[string]uint64),
-		PreOneTwentyKubernetes:  false,
-		Arch:                    a,
-		ExoticArch:              ea,
-		ImageRepository:         cfg.ImageRepository,
-		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
-		CustomIngressCert:       cfg.CustomIngressCert,
-		RegistryAliases:         cfg.RegistryAliases,
-		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:        cfg.ContainerRuntime,
-		Images:                  images,
-		Registries:              addon.Registries,
-		CustomRegistries:        customRegistries,
-		NetworkInfo:             make(map[string]string),
+		KubernetesVersion:      make(map[string]uint64),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		RegistryAliases:        cfg.RegistryAliases,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
+		Environment: map[string]string{
+			"MockGoogleToken": os.Getenv("MOCK_GOOGLE_TOKEN"),
+		},
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 	}
