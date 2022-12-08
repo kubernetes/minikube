@@ -18,6 +18,7 @@ package assets
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -578,6 +579,7 @@ var Addons = map[string]*Addon{
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.13@sha256:08a49cb7a588d81723b7e02c16082c75418b6e0a54cf2e44668bd77f79a41a40",
+		"MockGoogleToken":    os.Getenv("MOCK_GOOGLE_TOKEN"), // TODO: move this. Maybe we should have a misc map?
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",

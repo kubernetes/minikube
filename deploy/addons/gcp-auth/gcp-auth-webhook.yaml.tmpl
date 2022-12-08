@@ -107,6 +107,8 @@ spec:
           env:
           - name: GOOGLE_APPLICATION_CREDENTIALS
             value: /google-app-creds.json
+          - name: MOCK_GOOGLE_TOKEN
+            value: "{{.Images.MockGoogleToken}}"
           ports:
             - containerPort: 8443
           volumeMounts:
