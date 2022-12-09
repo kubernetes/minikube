@@ -68,13 +68,7 @@ func TestAddons(t *testing.T) {
 		}
 
 		// MOCK_GOOGLE_TOKEN forces the gcp-auth webhook to use a mock token instead of trying to get a valid one from the credentials.
-		err = os.Setenv("MOCK_GOOGLE_TOKEN", "true")
-		t.Cleanup(func() {
-			os.Unsetenv("MOCK_GOOGLE_TOKEN")
-		})
-		if err != nil {
-			t.Fatalf("Failed setting MOCK_GOOGLE_TOKEN env var: %v", err)
-		}
+		t.Setenv("MOCK_GOOGLE_TOKEN", "true")
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
