@@ -373,7 +373,6 @@ func (r *Docker) KubeletOptions() map[string]string {
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": r.SocketPath(),
 			"image-service-endpoint":     r.SocketPath(),
-			"runtime-request-timeout":    "15m",
 		}
 	}
 	return map[string]string{
@@ -688,7 +687,7 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 		args += " --cni-cache-dir=" + CNICacheDir
 		args += " --cni-conf-dir=" + cni.ConfDir
 	}
-	args += " --hairpin-mode=promiscuous-bridge"
+	args += " --hairpin-mode=hairpin-veth"
 
 	opts := struct {
 		NetworkPlugin  string

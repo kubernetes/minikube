@@ -86,6 +86,20 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	}
 	klog.Infof("Using pod CIDR: %s", podCIDR)
 
+	// ref: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
+	kubeletConfigOpts := kubeletConfigOpts(k8s.ExtraOptions)
+	// set hairpin mode to hairpin-veth to achieve hairpin NAT, because promiscuous-bridge assumes the existence of a container bridge named cbr0
+	// ref: https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/#a-pod-fails-to-reach-itself-via-the-service-ip
+	kubeletConfigOpts["hairpinMode"] = k8s.ExtraOptions.Get("hairpin-mode", Kubelet)
+	if kubeletConfigOpts["hairpinMode"] == "" {
+		kubeletConfigOpts["hairpinMode"] = "hairpin-veth"
+	}
+	// set timeout for all runtime requests except long running requests - pull, logs, exec and attach
+	kubeletConfigOpts["runtimeRequestTimeout"] = k8s.ExtraOptions.Get("runtime-request-timeout", Kubelet)
+	if kubeletConfigOpts["runtimeRequestTimeout"] == "" {
+		kubeletConfigOpts["runtimeRequestTimeout"] = "15m"
+	}
+
 	opts := struct {
 		CertDir                    string
 		ServiceCIDR                string
@@ -134,7 +148,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ControlPlaneAddress:        constants.ControlPlaneAlias,
 		KubeProxyOptions:           createKubeProxyOptions(k8s.ExtraOptions),
 		ResolvConfSearchRegression: HasResolvConfSearchRegression(k8s.KubernetesVersion),
-		KubeletConfigOpts:          kubeletConfigOpts(k8s.ExtraOptions),
+		KubeletConfigOpts:          kubeletConfigOpts,
 	}
 
 	if k8s.ServiceCIDR != "" {

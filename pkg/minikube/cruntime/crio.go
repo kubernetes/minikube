@@ -356,7 +356,6 @@ func (r *CRIO) KubeletOptions() map[string]string {
 		"container-runtime":          "remote",
 		"container-runtime-endpoint": r.SocketPath(),
 		"image-service-endpoint":     r.SocketPath(),
-		"runtime-request-timeout":    "15m",
 	}
 }
 

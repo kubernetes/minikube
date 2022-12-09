@@ -31,6 +31,8 @@ import (
 // ref: https://www.cni.dev/plugins/current/main/bridge/
 // ref: https://www.cni.dev/plugins/current/meta/portmap/
 
+// note: "cannot set hairpin mode and promiscuous mode at the same time"
+// ref: https://github.com/containernetworking/plugins/blob/7e9ada51e751740541969e1ea5a803cbf45adcf3/plugins/main/bridge/bridge.go#L424
 var bridgeConf = template.Must(template.New("bridge").Parse(`
 {
   "cniVersion": "0.3.1",
@@ -105,4 +107,9 @@ func (c Bridge) Apply(r Runner) error {
 // CIDR returns the default CIDR used by this CNI
 func (c Bridge) CIDR() string {
 	return DefaultPodCIDR
+}
+
+// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
+func (c Bridge) Ready() bool {
+	return true
 }

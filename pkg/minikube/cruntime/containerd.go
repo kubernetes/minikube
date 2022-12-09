@@ -410,7 +410,6 @@ func (r *Containerd) KubeletOptions() map[string]string {
 		"container-runtime":          "remote",
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
 		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
-		"runtime-request-timeout":    "15m",
 	}
 }
 

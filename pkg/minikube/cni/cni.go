@@ -76,6 +76,9 @@ type Manager interface {
 
 	// String representation
 	String() string
+
+	// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
+	Ready() bool
 }
 
 // tmplInputs are inputs to CNI templates

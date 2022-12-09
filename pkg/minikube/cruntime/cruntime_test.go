@@ -154,13 +154,11 @@ func TestKubeletOptions(t *testing.T) {
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "/var/run/crio/crio.sock",
 			"image-service-endpoint":     "/var/run/crio/crio.sock",
-			"runtime-request-timeout":    "15m",
 		}},
 		{"containerd", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
 			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
-			"runtime-request-timeout":    "15m",
 		}},
 	}
 	for _, tc := range tests {
