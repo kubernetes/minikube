@@ -50,15 +50,15 @@ func imagePathInMinikubeCache(img string) string {
 	return f
 }
 
-// ImageExistsInCache if img exist in local cache directory
-func ImageExistsInCache(img string) bool {
+// ImageExistsInCache if img exist in local minikube cache directory
+func ImageExistsInMinikubeCache(img string) bool {
 	f := imagePathInMinikubeCache(img)
 
 	// Check if image exists locally
-	klog.Infof("Checking for %s in local cache directory", img)
+	klog.Infof("Checking for %s in local minikube cache directory", img)
 	if st, err := os.Stat(f); err == nil {
 		if st.Size() > 0 {
-			klog.Infof("Found %s in local cache directory, skipping pull", img)
+			klog.Infof("Found %s in local minikube cache directory, skipping pull", img)
 			return true
 		}
 	}
@@ -66,7 +66,7 @@ func ImageExistsInCache(img string) bool {
 	return false
 }
 
-var checkImageExistsInCache = ImageExistsInCache
+var checkImageExistsInMinikubeCache = ImageExistsInMinikubeCache
 
 // ImageExistsInKICDriver
 // checks for the specified image in the container engine's local cache
@@ -103,13 +103,13 @@ func ImageToMinikubeCache(img string) error {
 		return err
 	}
 
-	if checkImageExistsInCache(img) {
-		klog.Infof("%s exists in cache, skipping pull", img)
+	if checkImageExistsInMinikubeCache(img) {
+		klog.Infof("%s exists in minikube cache, skipping pull", img)
 		return nil
 	}
 
 	if err := os.MkdirAll(filepath.Dir(f), 0777); err != nil {
-		return errors.Wrapf(err, "making cache image directory: %s", f)
+		return errors.Wrapf(err, "making minikube cache image directory: %s", f)
 	}
 
 	if DownloadMock != nil {
@@ -120,7 +120,7 @@ func ImageToMinikubeCache(img string) error {
 	// buffered channel
 	c := make(chan v1.Update, 200)
 
-	klog.Infof("Writing %s to local cache", img)
+	klog.Infof("Writing %s to local minikube cache", img)
 	klog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
 	if err != nil {

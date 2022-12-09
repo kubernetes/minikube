@@ -163,7 +163,7 @@ func testImageToCache(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
+	checkImageExistsInMinikubeCache = func(img string) bool { return downloadNum > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
@@ -188,7 +188,7 @@ func testImageToDaemon(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
-	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
+	checkImageExistsInMinikubeCache = func(img string) bool { return downloadNum > 0 }
 
 	var group sync.WaitGroup
 	group.Add(2)
