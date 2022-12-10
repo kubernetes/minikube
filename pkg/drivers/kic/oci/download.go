@@ -17,11 +17,15 @@ limitations under the License.
 package oci
 
 import (
-	"bytes"
 	"os/exec"
+	"strings"
 )
 
-func PullImage(ociBin, img string) (bytes.Buffer, error) {
-	res, err := runCmd(exec.Command(ociBin, "pull", "--quiet", img))
-	return res.Stdout, err
+func PullImage(ociBin, img string) error {
+	rr, err := runCmd(exec.Command(ociBin, "pull", "--quiet", img))
+	if strings.Contains(rr.Stdout.String(), "Loaded image:") {
+		return nil
+	}
+	return err
+
 }

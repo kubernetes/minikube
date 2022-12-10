@@ -195,8 +195,7 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 // loads a locally minikube-cached container image, to the KIC-driver's cache
 func CacheToKicDriver(ociBin string, img string) error {
 	p := imagePathInMinikubeCache(img)
-	resp, err := oci.ArchiveToDriverCache(ociBin, p)
-	klog.V(2).Infof("response: %s", resp)
+	err := oci.ArchiveToDriverCache(ociBin, p)
 	return err
 }
 
@@ -230,7 +229,9 @@ func ImageToKicDriver(ociBin, img string) error {
 	}
 
 	klog.V(3).Infof("Pulling image %v", ref)
-	if _, err := oci.PullImage(ociBin, img); err != nil {
+	// an image pull for the digest at this point is not a bad thing..
+	// images are pulled by layers and we already have the biggest part
+	if err := oci.PullImage(ociBin, img); err != nil {
 		return errors.Wrap(err, "pulling remote image")
 	}
 	return nil

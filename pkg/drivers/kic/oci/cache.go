@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 
@@ -26,9 +27,12 @@ import (
 // ToDriverCache
 // calls OCIBIN's load command at specified path:
 // loads the archived container image at provided PATH.
-func ArchiveToDriverCache(ociBin, path string) (string, error) {
-	_, err := runCmd(exec.Command(ociBin, "load", "-i", path))
-	return "", err
+func ArchiveToDriverCache(ociBin, path string) error {
+	cmd := exec.Command(ociBin, "load", "-i", path)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	return err
 }
 
 // IsInCache
