@@ -122,7 +122,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 
 	klog.Infof("Beginning downloading kic base image for %s with %s", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	register.Reg.SetStep(register.PullingBaseImage)
-	out.Step(style.Pulling, "Pulling base image ...")
+	out.Step(style.Pulling, "Pulling base image to minikube cache ...")
 	g.Go(func() error {
 		baseImg := cc.KicBaseImage
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
@@ -157,6 +157,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				return err
 			}
 
+			out.Step(style.Waiting, "Loading cached image to KicDriver...")
 			klog.Infof("Loading %s from local cache", img)
 			err = download.CacheToKicDriver(cc.Driver, img)
 			if err == nil {
@@ -164,6 +165,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				isFromCache = true
 			}
 
+			out.Step(style.FileDownload, "Downloading digest-specific layer to KicDriver...")
 			klog.Infof("Downloading %s to local KicDriver", img)
 			err = download.ImageToKicDriver(cc.Driver, img)
 			if err == nil {
