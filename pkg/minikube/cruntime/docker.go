@@ -697,6 +697,12 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 		ExtraArguments: args,
 	}
 
+	// TODO: remove once cri-dockerd is updated in future minikube release
+	klog.Info("replacing original cri-dockerd with v0.2.6: %v")
+	if err := downloadCRIDockerdBinary(cr, "0.2.6"); err != nil {
+		klog.Warningf("unable to replace original cri-dockerd with v0.2.6: %v", err)
+	}
+
 	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
 	var CRIDockerServiceConfTemplate = template.Must(template.New("criDockerServiceConfTemplate").Parse(`[Service]
 ExecStart=
@@ -716,4 +722,23 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 		return errors.Wrap(err, "failed to copy template")
 	}
 	return r.Init.Restart("cri-docker")
+}
+
+// download cri-dockerd version
+func downloadCRIDockerdBinary(cr CommandRunner, version string) error {
+	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c",
+		`curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6.amd64.tgz | tar -xz -C /tmp`)); err != nil {
+		return fmt.Errorf("unable to download new cri-dockerd: %v", err)
+	}
+	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
+		return fmt.Errorf("unable to backup org cri-dockerd: %v", err)
+	}
+	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/tmp/cri-dockerd/cri-dockerd", "/usr/bin/cri-dockerd")); err != nil {
+		if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
+			return fmt.Errorf("unable to install new cri-dockerd and restore org cri-dockerd - it's broken!: %v", err)
+		} else {
+			return fmt.Errorf("unable to install new cri-dockerd: %v", err)
+		}
+	}
+	return nil
 }

@@ -242,13 +242,13 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) { //no
 func waitCNIReady(cm cni.Manager, wait time.Duration) (time.Duration, error) {
 	start := time.Now()
 
-	klog.Infof("will wait %s for %s cni to become ready", wait, cm.String())
+	klog.Infof("will wait %s for %s to become ready", wait, cm.String())
 
 	query := func() error {
 		if cm.Ready() {
 			return nil
 		}
-		return fmt.Errorf("%s cni not ready yet", cm.String())
+		return fmt.Errorf("%s not ready yet", cm.String())
 	}
 	return time.Since(start), retry.Local(query, wait)
 }
