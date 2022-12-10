@@ -726,8 +726,8 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 
 // download cri-dockerd version
 func downloadCRIDockerdBinary(cr CommandRunner, version string) error {
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c",
-		`curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v0.2.6/cri-dockerd-0.2.6.amd64.tgz | tar -xz -C /tmp`)); err != nil {
+	curl := fmt.Sprintf("curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.amd64.tgz | tar -xz -C /tmp", version, version)
+	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
 		return fmt.Errorf("unable to download new cri-dockerd: %v", err)
 	}
 	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
@@ -736,9 +736,8 @@ func downloadCRIDockerdBinary(cr CommandRunner, version string) error {
 	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/tmp/cri-dockerd/cri-dockerd", "/usr/bin/cri-dockerd")); err != nil {
 		if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
 			return fmt.Errorf("unable to install new cri-dockerd and restore org cri-dockerd - it's broken!: %v", err)
-		} else {
-			return fmt.Errorf("unable to install new cri-dockerd: %v", err)
 		}
+		return fmt.Errorf("unable to install new cri-dockerd: %v", err)
 	}
 	return nil
 }
