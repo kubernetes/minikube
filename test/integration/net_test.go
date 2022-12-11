@@ -178,7 +178,7 @@ func TestNetworkPlugins(t *testing.T) {
 						want := []byte("10.96.0.1")
 						if !bytes.Contains(rr.Stdout.Bytes(), want) {
 							start := time.Now()
-							t.Logf(">>> debugDNS logs:\n%s\n<<< debugDNS took %v", debugDNS(t, profile), time.Since(start))
+							t.Logf(">>> debugDNS logs:\n%s\n<<< debugDNS took %v", debugDNS(profile), time.Since(start))
 							t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 						}
 					})
@@ -271,7 +271,7 @@ func verifyKubeletFlagsOutput(t *testing.T, k8sVersion, kubeletPlugin, out strin
 	}
 }
 
-func debugDNS(t *testing.T, profile string) string {
+func debugDNS(profile string) string {
 	var output strings.Builder
 
 	cmd := exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-type=a", "kubernetes.default")
@@ -354,6 +354,10 @@ func debugDNS(t *testing.T, profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: svcs:\n%s\n", out))
 
+	cmd = exec.Command("kubectl", "--context", profile, "get", "ep", "-A", "-owide")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> k8s: eps:\n%s\n", out))
+
 	cmd = exec.Command("kubectl", "--context", profile, "get", "pods", "-A", "-owide")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: pods:\n%s\n", out))
@@ -382,6 +386,10 @@ func debugDNS(t *testing.T, profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker svc:\n%s\n", out))
 
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/systemd/system/cri-docker.service.d/10-cni.conf")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /etc/systemd/system/cri-docker.service.d/10-cni.conf:\n%s\n", out))
+
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cri-dockerd --version")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri-dockerd version:\n%s\n", out))
@@ -389,6 +397,10 @@ func debugDNS(t *testing.T, profile string) string {
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo ip a s")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: ip a s:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo ip r s")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: ip r s:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo iptables-save")
 	out, _ = cmd.CombinedOutput()
@@ -399,6 +411,10 @@ func debugDNS(t *testing.T, profile string) string {
 	output.WriteString(fmt.Sprintf("\n>>> host: iptables table nat:\n%s\n", out))
 
 	cmd = exec.Command("kubectl", "--context", profile, "-n", "kube-system", "logs", "--selector=k8s-app=kube-proxy", "--tail=-1")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> k8s: kube-proxy logs:\n%s\n", out))
+
+	cmd = exec.Command("kubectl", "--context", profile, "-n", "kube-system", "logs", "--selector=k8s-app=kube-dns", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: kube-proxy logs:\n%s\n", out))
 

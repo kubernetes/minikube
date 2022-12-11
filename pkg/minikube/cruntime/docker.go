@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -698,9 +699,9 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 	}
 
 	// TODO: remove once cri-dockerd is updated in future minikube release
-	klog.Info("replacing original cri-dockerd with v0.2.6: %v")
-	if err := downloadCRIDockerdBinary(cr, "0.2.6"); err != nil {
-		klog.Warningf("unable to replace original cri-dockerd with v0.2.6: %v", err)
+	klog.Infof("replacing original cri-dockerd with v0.2.6-%s", runtime.GOARCH)
+	if err := downloadCRIDockerdBinary(cr, "0.2.6", runtime.GOARCH); err != nil {
+		klog.Warningf("unable to replace original cri-dockerd with v0.2.6-%s: %v", runtime.GOARCH, err)
 	}
 
 	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
@@ -725,8 +726,8 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 }
 
 // download cri-dockerd version
-func downloadCRIDockerdBinary(cr CommandRunner, version string) error {
-	curl := fmt.Sprintf("curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.amd64.tgz | tar -xz -C /tmp", version, version)
+func downloadCRIDockerdBinary(cr CommandRunner, version, arch string) error {
+	curl := fmt.Sprintf("curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.%s.tgz | tar -xz -C /tmp", version, version, arch)
 	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
 		return fmt.Errorf("unable to download new cri-dockerd: %v", err)
 	}

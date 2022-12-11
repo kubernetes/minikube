@@ -846,13 +846,24 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	}
 
 	// inject hosts block with host record into coredns configmap
-	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	sed := fmt.Sprintf("sed -e '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
 	// check if hosts block already exists in coredns configmap
 	hosts := regexp.MustCompile(`(?smU)^ *hosts {.*}`)
 	if hosts.MatchString(cm) {
 		// inject host record into existing coredns configmap hosts block instead
 		klog.Info("CoreDNS already contains hosts block, will inject host record there...")
-		sed = fmt.Sprintf("sed '/^        hosts {.*/a \\           %s %s'", ip, name)
+		sed = fmt.Sprintf("sed -e '/^        hosts {.*/a \\           %s %s'", ip, name)
+	}
+
+	res, _ := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s", get, sed)))
+	klog.Info("coredns sed: %s\n%s", sed, res.Output())
+	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
+	logs := regexp.MustCompile(`(?smU)^ *log *$`)
+	if !logs.MatchString(cm) {
+		// inject log plugin into coredns configmap
+		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
+		res, _ := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s", get, sed)))
+		klog.Info("coredns sed: %s\n%s", sed, res.Output())
 	}
 
 	// replace coredns configmap via kubectl
