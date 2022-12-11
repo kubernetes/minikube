@@ -446,7 +446,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
-	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
+	err = cr.Enable(disableOthers, forceSystemd(kv), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
@@ -465,8 +465,13 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	return cr
 }
 
-func forceSystemd() bool {
-	return viper.GetBool("force-systemd") || os.Getenv(constants.MinikubeForceSystemdEnv) == "true"
+func forceSystemd(kv semver.Version) bool {
+	// starting from k8s v1.22: "kubeadm clusters should be using the systemd driver"
+	// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
+	// still, respect user preference, if present
+	return kv.GTE(semver.Version{Major: 1, Minor: 22}) &&
+		os.Getenv(constants.MinikubeForceSystemdEnv) != "false" &&
+		(!viper.IsSet("force-systemd") || viper.GetBool("force-systemd"))
 }
 
 func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
@@ -855,15 +860,11 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 		sed = fmt.Sprintf("sed -e '/^        hosts {.*/a \\           %s %s'", ip, name)
 	}
 
-	res, _ := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s", get, sed)))
-	klog.Info("coredns sed: %s\n%s", sed, res.Output())
 	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
 	logs := regexp.MustCompile(`(?smU)^ *log *$`)
 	if !logs.MatchString(cm) {
 		// inject log plugin into coredns configmap
 		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
-		res, _ := runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s | %s", get, sed)))
-		klog.Info("coredns sed: %s\n%s", sed, res.Output())
 	}
 
 	// replace coredns configmap via kubectl

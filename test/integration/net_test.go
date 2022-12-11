@@ -177,8 +177,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 						want := []byte("10.96.0.1")
 						if !bytes.Contains(rr.Stdout.Bytes(), want) {
-							start := time.Now()
-							t.Logf(">>> debugDNS logs:\n%s\n<<< debugDNS took %v", debugDNS(profile), time.Since(start))
 							t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 						}
 					})
@@ -202,6 +200,14 @@ func TestNetworkPlugins(t *testing.T) {
 						validateHairpinMode(ctx, t, profile, tc.hairpin)
 					})
 				}
+
+				if t.Failed() {
+					start := time.Now()
+					t.Logf(">>> debugLogs:\n%s\n<<< debugLogs took %v", debugLogs(profile), time.Since(start))
+				}
+				// if err := os.WriteFile(fmt.Sprintf("%s/%s.log", os.TempDir(), profile), []byte(debugLogs(profile)), 0644); err != nil {
+				// 	t.Logf("cannot write debug logs: %v", err)
+				// }
 
 				t.Logf("%q test finished in %s, failed=%v", tc.name, time.Since(start), t.Failed())
 			})
@@ -271,7 +277,8 @@ func verifyKubeletFlagsOutput(t *testing.T, k8sVersion, kubeletPlugin, out strin
 	}
 }
 
-func debugDNS(profile string) string {
+// debug logs for dns and other network issues
+func debugLogs(profile string) string {
 	var output strings.Builder
 
 	cmd := exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-type=a", "kubernetes.default")
@@ -416,7 +423,7 @@ func debugDNS(profile string) string {
 
 	cmd = exec.Command("kubectl", "--context", profile, "-n", "kube-system", "logs", "--selector=k8s-app=kube-dns", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
-	output.WriteString(fmt.Sprintf("\n>>> k8s: kube-proxy logs:\n%s\n", out))
+	output.WriteString(fmt.Sprintf("\n>>> k8s: coredns logs:\n%s\n", out))
 
 	return output.String()
 }
