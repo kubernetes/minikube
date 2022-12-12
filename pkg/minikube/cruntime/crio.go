@@ -219,7 +219,7 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		}
 	}
 	// NOTE: before we start crio explicitly here, crio might be already started automatically
-	return r.Init.Start("crio")
+	return r.Init.Restart("crio")
 }
 
 // Disable idempotently disables CRIO on a host

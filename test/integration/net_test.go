@@ -377,21 +377,29 @@ func debugLogs(profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: /var/lib/kubelet/config.yaml:\n%s\n", out))
 
-	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo", "find /etc/cni -type f -exec sh -c 'echo {}; cat {}' \\;")
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo find /etc/cni -type f -exec sh -c 'echo {}; cat {}' \\;")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: /etc/cni:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status docker | cat")
 	out, _ = cmd.CombinedOutput()
-	output.WriteString(fmt.Sprintf("\n>>> host: docker svc:\n%s\n", out))
+	output.WriteString(fmt.Sprintf("\n>>> host: docker daemon:\n%s\n", out))
 
-	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status containerd | cat")
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/docker/daemon.json")
 	out, _ = cmd.CombinedOutput()
-	output.WriteString(fmt.Sprintf("\n>>> host: containerd svc:\n%s\n", out))
+	output.WriteString(fmt.Sprintf("\n>>> host: /etc/docker/daemon.json:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo docker system info")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: docker system info:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status cri-docker | cat")
 	out, _ = cmd.CombinedOutput()
-	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker svc:\n%s\n", out))
+	output.WriteString(fmt.Sprintf("\n>>> host: cri daemon:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /usr/lib/systemd/system/cri-docker.service")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /usr/lib/systemd/system/cri-docker.service:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/systemd/system/cri-docker.service.d/10-cni.conf")
 	out, _ = cmd.CombinedOutput()
@@ -400,6 +408,30 @@ func debugLogs(profile string) string {
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cri-dockerd --version")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri-dockerd version:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status containerd | cat")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: containerd daemon:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/containerd/config.toml")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /etc/containerd/config.toml:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo containerd config dump")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: containerd config dump:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status crio | cat")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: crio daemon:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo find /etc/crio -type f -exec sh -c 'echo {}; cat {}' \\;")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /etc/crio:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo crio config")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: crio config:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo ip a s")
 	out, _ = cmd.CombinedOutput()

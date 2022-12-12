@@ -164,7 +164,7 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		if err := r.Init.Enable(r.CRIService); err != nil {
 			return err
 		}
-		if err := r.Init.Start(r.CRIService); err != nil {
+		if err := r.Init.Restart(r.CRIService); err != nil {
 			return err
 		}
 	}

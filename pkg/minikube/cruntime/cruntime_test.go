@@ -685,7 +685,7 @@ func TestEnable(t *testing.T) {
 			map[string]serviceState{
 				"docker":        SvcExited,
 				"containerd":    SvcExited,
-				"crio":          SvcRunning,
+				"crio":          SvcRestarted,
 				"crio-shutdown": SvcExited,
 			}},
 	}

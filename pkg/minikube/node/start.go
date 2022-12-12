@@ -468,10 +468,16 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 func forceSystemd(kv semver.Version) bool {
 	// starting from k8s v1.22: "kubeadm clusters should be using the systemd driver"
 	// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
+	// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
+	// ref: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
 	// still, respect user preference, if present
-	return kv.GTE(semver.Version{Major: 1, Minor: 22}) &&
-		os.Getenv(constants.MinikubeForceSystemdEnv) != "false" &&
-		(!viper.IsSet("force-systemd") || viper.GetBool("force-systemd"))
+	if viper.IsSet("force-systemd") {
+		return viper.GetBool("force-systemd")
+	}
+	if env := os.Getenv(constants.MinikubeForceSystemdEnv); env != "" {
+		return env == "true"
+	}
+	return kv.GTE(semver.Version{Major: 1, Minor: 22})
 }
 
 func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
