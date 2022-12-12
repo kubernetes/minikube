@@ -79,6 +79,18 @@ func TestNetworkPlugins(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
+				defer func() {
+					if t.Failed() {
+						start := time.Now()
+						logs := debugLogs(profile)
+						t.Logf(">>> debugLogs:\n%s\n<<< debugLogs took %v", logs, time.Since(start))
+						// 	if err := os.WriteFile(fmt.Sprintf("%s/%s.log", os.TempDir(), profile), []byte(logs), 0644); err != nil {
+						// 		t.Logf("cannot write debug logs: %v", err)
+						// 	}
+						// }
+					}
+				}()
+
 				if ContainerRuntime() != "docker" && tc.name == "false" {
 					// CNI is required for current container runtime
 					validateFalseCNI(ctx, t, profile)
@@ -152,7 +164,6 @@ func TestNetworkPlugins(t *testing.T) {
 						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(15)); err != nil {
 							t.Fatalf("failed waiting for netcat pod: %v", err)
 						}
-
 					})
 				}
 
@@ -200,14 +211,6 @@ func TestNetworkPlugins(t *testing.T) {
 						validateHairpinMode(ctx, t, profile, tc.hairpin)
 					})
 				}
-
-				if t.Failed() {
-					start := time.Now()
-					t.Logf(">>> debugLogs:\n%s\n<<< debugLogs took %v", debugLogs(profile), time.Since(start))
-				}
-				// if err := os.WriteFile(fmt.Sprintf("%s/%s.log", os.TempDir(), profile), []byte(debugLogs(profile)), 0644); err != nil {
-				// 	t.Logf("cannot write debug logs: %v", err)
-				// }
 
 				t.Logf("%q test finished in %s, failed=%v", tc.name, time.Since(start), t.Failed())
 			})
@@ -456,6 +459,10 @@ func debugLogs(profile string) string {
 	cmd = exec.Command("kubectl", "--context", profile, "-n", "kube-system", "logs", "--selector=k8s-app=kube-dns", "--tail=-1")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: coredns logs:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo journalctl -xeu kubelet --all --no-pager")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> k8s: kubelet logs:\n%s\n", out))
 
 	return output.String()
 }

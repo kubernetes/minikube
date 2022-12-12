@@ -306,7 +306,7 @@ func podStatusMsg(pod core.Pod) string {
 	return sb.String()
 }
 
-// PodWait waits for pods to achieve a running state.
+// PodWait waits for pods to achieve a Ready state.
 func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selector string, timeout time.Duration) ([]string, error) {
 	t.Helper()
 	client, err := kapi.Client(profile)
@@ -355,6 +355,15 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 				}
 				podStart = time.Time{}
 				return false, nil
+			}
+			for _, c := range pod.Status.Conditions {
+				if c.Type == core.PodReady {
+					if c.Status != core.ConditionTrue {
+						t.Logf("%s: pod %q is not yet ready - current phase/status: %s/%s:%s\n", t.Name(), selector, pod.Status.Phase, core.PodReady, c.Status)
+						podStart = time.Time{}
+						return false, nil
+					}
+				}
 			}
 
 			if podStart.IsZero() {

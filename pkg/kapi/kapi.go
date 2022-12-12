@@ -69,7 +69,7 @@ func Client(context string) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(c)
 }
 
-// WaitForPods waits for all matching pods to become Running or finish successfully and at least one matching pod exists.
+// WaitForPods waits for all matching pods to become Ready or finish successfully and at least one matching pod exists.
 func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...time.Duration) error {
 	start := time.Now()
 	klog.Infof("Waiting for pod with label %q in ns %q ...", selector, ns)
@@ -93,11 +93,20 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 
 		for _, pod := range pods.Items {
 			if pod.Status.Phase != core.PodRunning && pod.Status.Phase != core.PodSucceeded {
-				klog.Infof("waiting for pod %q, current state: %s: [%v]\n", selector, pod.Status.Phase, err)
+				klog.Infof("waiting for pod %q, current phase: %s", selector, pod.Status.Phase)
 				return false, nil
 			}
+			if pod.Status.Phase == core.PodRunning {
+				for _, c := range pod.Status.Conditions {
+					if c.Type == core.PodReady {
+						if c.Status != core.ConditionTrue {
+							klog.Infof("waiting for pod %q, current phase/status: %s/%s:%s\n", selector, pod.Status.Phase, core.PodReady, c.Status)
+							return false, nil
+						}
+					}
+				}
+			}
 		}
-
 		return true, nil
 	}
 	t := ReasonableStartTime
