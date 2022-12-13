@@ -138,7 +138,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = %t|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update SystemdCgroup")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.DefaultConfDir, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
 

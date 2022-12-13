@@ -23,9 +23,9 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -34,8 +34,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -44,15 +44,9 @@ const (
 
 	// DefaultConfDir is the default CNI Config Directory path
 	DefaultConfDir = "/etc/cni/net.d"
-	// CustomConfDir is the custom CNI Config Directory path used to avoid conflicting CNI configs
-	// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
-	CustomConfDir = "/etc/cni/net.mk"
 )
 
 var (
-	// ConfDir is the CNI Config Directory path that can be customised, defaulting to DefaultConfDir
-	ConfDir = DefaultConfDir
-
 	// Network is the network name that CNI should use (eg, "kindnet").
 	// Currently, only crio (and podman) can use it, so that setting custom ConfDir is not necessary.
 	// ref: https://github.com/cri-o/cri-o/issues/2121 (and https://github.com/containers/podman/issues/2370)
@@ -117,10 +111,6 @@ func New(cc *config.ClusterConfig) (Manager, error) {
 		cnm = Flannel{cc: *cc}
 	default:
 		cnm, err = NewCustom(*cc, cc.KubernetesConfig.CNI)
-	}
-
-	if err := configureCNI(cc, cnm); err != nil {
-		klog.Errorf("unable to set CNI Config Directory: %v", err)
 	}
 
 	return cnm, err
@@ -190,13 +180,6 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 		klog.Warningf("unable to name loopback interface in applyManifest: %v", err)
 	}
 
-	if driver.IsKIC(cc.Driver) {
-		klog.Infof("disabling cri-o bridge for %s driver ... ", cc.Driver)
-		if err := disableCrioBridge(r); err != nil {
-			klog.Warningf("unable to disable cri-o bridge for %s driver: %v", cc.Driver, err)
-		}
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -212,43 +195,6 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
 
-	return nil
-}
-
-// configureCNI - to avoid conflicting CNI configs, it sets:
-// - for crio: 'cni_default_network' config param via cni.Network
-// - for containerd and docker: kubelet's '--cni-conf-dir' flag to custom CNI Config Directory path (same used also by CNI Deployment).
-// ref: https://github.com/kubernetes/minikube/issues/10984 and https://github.com/kubernetes/minikube/pull/11106
-// Note: currently, this change affects only Kindnet CNI (and all multinodes using it), but it can be easily expanded to other/all CNIs if needed.
-// Note2: Cilium does not need workaround as they automatically restart pods after CNI is successfully deployed.
-func configureCNI(cc *config.ClusterConfig, cnm Manager) error {
-	if _, kindnet := cnm.(KindNet); kindnet {
-		// crio only needs CNI network name; hopefully others (containerd, docker and kubeadm/kubelet) will follow eventually
-		if cc.KubernetesConfig.ContainerRuntime == constants.CRIO {
-			Network = "kindnet"
-			return nil
-		}
-		version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
-		if err != nil {
-			return err
-		}
-		// The CNI configuration is handled by CRI in 1.24+
-		if version.LT(semver.MustParse("1.24.0-alpha.2")) {
-			// for containerd and docker: auto-set custom CNI via kubelet's 'cni-conf-dir' param, if not user-specified
-			eo := fmt.Sprintf("kubelet.cni-conf-dir=%s", CustomConfDir)
-			if !cc.KubernetesConfig.ExtraOptions.Exists(eo) {
-				klog.Infof("auto-setting extra-config to %q", eo)
-				if err := cc.KubernetesConfig.ExtraOptions.Set(eo); err != nil {
-					return fmt.Errorf("failed auto-setting extra-config %q: %v", eo, err)
-				}
-				ConfDir = CustomConfDir
-				klog.Infof("extra-config set to %q", eo)
-			} else {
-				// respect user-specified custom CNI Config Directory
-				ConfDir = cc.KubernetesConfig.ExtraOptions.Get("cni-conf-dir", "kubelet")
-			}
-		}
-	}
 	return nil
 }
 
@@ -273,18 +219,32 @@ func NameLoopback(r Runner) error {
 	return nil
 }
 
-// disableCrioBridge disables cri-o bridge config file in /etc/cni/net.d by changing extension to "mk_disabled"
-// ref: https://github.com/containernetworking/cni/blob/6e5ac36b42c0b582358e67ac581d0316507967cb/libcni/conf.go#L176-L184
-func disableCrioBridge(r Runner) error {
-	conflict := "/etc/cni/net.d/*crio-bridge.conf" // usually: 100-crio-bridge.conf
-	if _, err := r.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("stat %s", conflict))); err != nil {
-		klog.Warningf("%q not found, skipping disabling cri-o bridge config step", conflict)
+// DisableBridgeCNIs disables all default bridge CNIs on a node (designated by runner) by changing extension to "mk_disabled" of *bridge* config file(s) found in /etc/cni/net.d.
+// It's usually called before deploying new CNI or on restarts, to avoid conflicts and flip-flopping of pods' ip addresses.
+// ref: https://github.com/containernetworking/cni/blob/main/libcni/conf.go
+func DisableAllBridgeCNIs(r Runner, cc config.ClusterConfig) error {
+	path := "/etc/cni/net.d"
+	out, err := r.RunCmd(exec.Command(
+		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*.mk_disabled", "-printf", "%p|", "-exec", "sh", "-c",
+		`sudo mv {} {}.mk_disabled`, ";"))
+	if err != nil {
+		return fmt.Errorf("failed to disable all bridge cni configs in %q: %v", path, err)
+	}
+	configs := strings.Trim(out.Stdout.String(), "|")
+	if len(configs) == 0 {
+		klog.Infof("no bridge cni config found in %q - nothing to disable", configs, path)
 		return nil
 	}
-	if _, err := r.RunCmd(exec.Command(
-		"sudo", "find", filepath.Dir(conflict), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(conflict), "-exec", "sh", "-c",
-		`sudo mv {} {}.mk_disabled`, ";")); err != nil {
-		return fmt.Errorf("unable to disable cri-o bridge config %q: %v", conflict, err)
+	svc := cc.KubernetesConfig.ContainerRuntime
+	klog.Infof("disabled [%s] bridge cni config(s) in %q, now restarting selected %q container runtime", configs, path, svc)
+
+	if svc == "cri-o" {
+		svc = "crio"
 	}
+	if err := sysinit.New(r).Restart(svc); err != nil {
+		klog.Warningf("failed to restart %q container runtime service in %q: %v", svc, cc.Name, err)
+		return err
+	}
+
 	return nil
 }

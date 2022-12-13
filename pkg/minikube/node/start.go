@@ -294,7 +294,7 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
 	}
 
-	if !starter.Cfg.DisableOptimizations && starter.Cfg.KubernetesConfig.CNI != "" {
+	if !starter.Cfg.DisableOptimizations && starter.Cfg.KubernetesConfig.NetworkPlugin == "cni" {
 		// CoreDNS needs CNI to be Ready - scale down to 0 replica if not, so we don't "count" this into waiting time for CoreDNS to come up and we don't hit max CrashLoopBackOff delay later (5 mins atm).
 		cnm, err := cni.New(starter.Cfg)
 		if err != nil {
@@ -439,6 +439,11 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
+	// if cni is used, ensure all default CNI(s) are disabled on every node start
+	if err := cni.DisableAllBridgeCNIs(runner, cc); err != nil {
+		klog.Errorf("unable to disable default CNI(s): %v", err)
+	}
+
 	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
 			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
@@ -462,6 +467,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
+
 	return cr
 }
 
@@ -879,7 +885,7 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 		klog.Errorf("failed to inject {%q: %s} host record into CoreDNS", name, ip)
 		return err
 	}
-	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
+	klog.Infof("{%q: %s} host record injected into CoreDNS's ConfigMap", name, ip)
 
 	return nil
 }

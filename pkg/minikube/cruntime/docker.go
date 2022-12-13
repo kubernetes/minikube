@@ -668,7 +668,6 @@ func (r *Docker) ImagesPreloaded(images []string) bool {
 
 const (
 	CNIBinDir   = "/opt/cni/bin"
-	CNIConfDir  = "/etc/cni/net.d"
 	CNICacheDir = "/var/lib/cni/cache"
 )
 
@@ -683,10 +682,12 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 	}
 
 	args := ""
-	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.2")) {
+	// The CNI configuration is handled by CRI in 1.24+
+	// ref: https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#installation
+	if networkPlugin == "cni" && r.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		args += " --cni-bin-dir=" + CNIBinDir
 		args += " --cni-cache-dir=" + CNICacheDir
-		args += " --cni-conf-dir=" + cni.ConfDir
+		args += " --cni-conf-dir=" + cni.DefaultConfDir
 	}
 	args += " --hairpin-mode=hairpin-veth"
 
