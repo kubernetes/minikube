@@ -219,7 +219,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) { //no
 		} else if !cm.Ready() {
 			// wait for cni to become ready up to half of the total waitTimeout
 			if delay, err = waitCNIReady(cm, timeout/2); err != nil {
-				klog.Warningf("cni did not appear ready after %s (will continue): %v", cm.String(), delay, err)
+				klog.Warningf("%s cni did not appear ready after %s (will continue): %v", cm.String(), delay, err)
 			}
 		}
 		// scale coredns to 1 replica
@@ -248,7 +248,7 @@ func waitCNIReady(cm cni.Manager, wait time.Duration) (time.Duration, error) {
 		if cm.Ready() {
 			return nil
 		}
-		return fmt.Errorf("%s not ready yet", cm.String())
+		return fmt.Errorf("%s cni not ready yet", cm.String())
 	}
 	return time.Since(start), retry.Local(query, wait)
 }

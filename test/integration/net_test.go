@@ -79,18 +79,6 @@ func TestNetworkPlugins(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				defer func() {
-					if t.Failed() {
-						start := time.Now()
-						logs := debugLogs(profile)
-						t.Logf(">>> debugLogs:\n%s\n<<< debugLogs took %v", logs, time.Since(start))
-						// 	if err := os.WriteFile(fmt.Sprintf("%s/%s.log", os.TempDir(), profile), []byte(logs), 0644); err != nil {
-						// 		t.Logf("cannot write debug logs: %v", err)
-						// 	}
-						// }
-					}
-				}()
-
 				if ContainerRuntime() != "docker" && tc.name == "false" {
 					// CNI is required for current container runtime
 					validateFalseCNI(ctx, t, profile)
@@ -112,6 +100,7 @@ func TestNetworkPlugins(t *testing.T) {
 				t.Run("Start", func(t *testing.T) {
 					_, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 					if err != nil {
+						t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
 						t.Fatalf("failed start: %v", err)
 					}
 				})
@@ -119,6 +108,7 @@ func TestNetworkPlugins(t *testing.T) {
 				if !t.Failed() && tc.podLabel != "" {
 					t.Run("ControllerPod", func(t *testing.T) {
 						if _, err := PodWait(ctx, t, profile, tc.namespace, tc.podLabel, Minutes(10)); err != nil {
+							t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
 							t.Fatalf("failed waiting for %s labeled pod: %v", tc.podLabel, err)
 						}
 					})
@@ -134,6 +124,7 @@ func TestNetworkPlugins(t *testing.T) {
 							rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "pgrep -a kubelet"))
 						}
 						if err != nil {
+							t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
 							t.Fatalf("ssh failed: %v", err)
 						}
 						out := rr.Stdout.String()
@@ -154,6 +145,7 @@ func TestNetworkPlugins(t *testing.T) {
 
 						client, err := kapi.Client(profile)
 						if err != nil {
+							t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
 							t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
 						}
 
@@ -162,6 +154,7 @@ func TestNetworkPlugins(t *testing.T) {
 						}
 
 						if _, err := PodWait(ctx, t, profile, "default", "app=netcat", Minutes(15)); err != nil {
+							t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
 							t.Fatalf("failed waiting for netcat pod: %v", err)
 						}
 					})
@@ -212,6 +205,10 @@ func TestNetworkPlugins(t *testing.T) {
 					})
 				}
 
+				if t.Failed() {
+					t.Logf(">>> debugLogs:\n%s\n<<<", debugLogs(profile))
+				}
+
 				t.Logf("%q test finished in %s, failed=%v", tc.name, time.Since(start), t.Failed())
 			})
 		}
@@ -255,7 +252,7 @@ func validateHairpinMode(ctx context.Context, t *testing.T, profile string, hair
 		}
 	} else {
 		if tryHairPin() == nil {
-			t.Fatalf("hairpin connection unexpectedly succeeded - misconfigured test?")
+			t.Errorf("hairpin connection unexpectedly succeeded - misconfigured test?")
 		}
 	}
 }
