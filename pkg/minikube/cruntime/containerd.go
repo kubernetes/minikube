@@ -175,6 +175,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 }
 
 // Enable idempotently enables containerd on a host
+// It is also called by docker.Enable() - if bound to containerd, to enforce proper containerd configuration completed by service restart.
 func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
@@ -509,7 +510,7 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 	return r.Restart()
 }
 
-// Restart restarts Docker on a host
+// Restart restarts this container runtime on a host
 func (r *Containerd) Restart() error {
 	return r.Init.Restart("containerd")
 }

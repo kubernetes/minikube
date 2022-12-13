@@ -137,6 +137,14 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 			klog.Warningf("disableOthers: %v", err)
 		}
 	}
+	// check if containerd is still alive (hopefully because being being bound to docker), and if so: ensure it's configured properly by calling its Enable() method
+	cdr, errCdR := New(Config{Type: "containerd", Runner: r.Runner})
+	if errCdR == nil && cdr.Active() {
+		errCdR = cdr.Enable(false, forceSystemd, inUserNamespace)
+	}
+	if errCdR != nil {
+		klog.Warningf("cannot ensure containerd (as bound to docker) is configured properly and reloaded - cluster might be unstable: %v", errCdR)
+	}
 
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err

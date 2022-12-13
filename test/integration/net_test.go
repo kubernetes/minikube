@@ -357,6 +357,10 @@ func debugLogs(profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: cms:\n%s\n", out))
 
+	cmd = exec.Command("kubectl", "--context", profile, "get", "node", "-A", "-owide")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> k8s: nodes:\n%s\n", out))
+
 	cmd = exec.Command("kubectl", "--context", profile, "get", "svc", "-A", "-owide")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: svcs:\n%s\n", out))
@@ -369,9 +373,17 @@ func debugLogs(profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: pods:\n%s\n", out))
 
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo crictl pods")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: crictl pods:\n%s\n", out))
+
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/kubernetes/kubelet.conf")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /etc/kubernetes/kubelet.conf:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /var/lib/kubelet/config.yaml")
 	out, _ = cmd.CombinedOutput()
@@ -397,13 +409,13 @@ func debugLogs(profile string) string {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri daemon:\n%s\n", out))
 
-	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /usr/lib/systemd/system/cri-docker.service")
-	out, _ = cmd.CombinedOutput()
-	output.WriteString(fmt.Sprintf("\n>>> host: /usr/lib/systemd/system/cri-docker.service:\n%s\n", out))
-
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/systemd/system/cri-docker.service.d/10-cni.conf")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: /etc/systemd/system/cri-docker.service.d/10-cni.conf:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /usr/lib/systemd/system/cri-docker.service")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /usr/lib/systemd/system/cri-docker.service:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cri-dockerd --version")
 	out, _ = cmd.CombinedOutput()
@@ -412,6 +424,10 @@ func debugLogs(profile string) string {
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status containerd | cat")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: containerd daemon:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /lib/systemd/system/containerd.service")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /lib/systemd/system/containerd.service:\n%s\n", out))
 
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /etc/containerd/config.toml")
 	out, _ = cmd.CombinedOutput()
@@ -460,6 +476,10 @@ func debugLogs(profile string) string {
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo journalctl -xeu kubelet --all --no-pager")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> k8s: kubelet logs:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /run/flannel/subnet.env")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: /run/flannel/subnet.env:\n%s\n", out))
 
 	return output.String()
 }
