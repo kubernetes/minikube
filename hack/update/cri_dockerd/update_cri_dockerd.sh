@@ -35,7 +35,8 @@ git checkout $version
 for (( i=0; i < ${#archarray[*]}; i++ ))
 do
 	arch=${archarray[i]#"linux/"}
-	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags "-X github.com/Mirantis/cri-dockerd/version.GitCommit=${version:0:7}" -o cri-dockerd-$arch
+	# If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
+	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags "-X github.com/Mirantis/cri-dockerd/cmd/version.GitCommit=${version:0:7}" -o cri-dockerd-$arch
 	gsutil cp cri-dockerd-$arch gs://kicbase-artifacts/cri-dockerd/$version/$arch/cri-dockerd
 
 done

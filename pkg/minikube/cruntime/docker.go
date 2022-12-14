@@ -707,7 +707,10 @@ func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin stri
 		ExtraArguments: args,
 	}
 
-	// TODO: remove once cri-dockerd is updated in future minikube release
+	// TODO (@prezha): remove once cri-dockerd is updated in future minikube release:
+	// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
+	// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
+	// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
 	klog.Infof("replacing original cri-dockerd with v0.2.6-%s", runtime.GOARCH)
 	if err := downloadCRIDockerdBinary(cr, "0.2.6", runtime.GOARCH); err != nil {
 		klog.Warningf("unable to replace original cri-dockerd with v0.2.6-%s: %v", runtime.GOARCH, err)

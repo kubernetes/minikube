@@ -395,7 +395,7 @@ func (r *Containerd) CGroupDriver() (string, error) {
 	if !ok {
 		return "", errors.Wrapf(err, "config not map")
 	}
-	cgroupManager := "cgroupfs" // default
+	cgroupManager := "systemd" // default: https://github.com/containerd/containerd/blob/main/docs/cri/config.md#cgroup-driver
 	switch config["systemdCgroup"] {
 	case false:
 		cgroupManager = "cgroupfs"

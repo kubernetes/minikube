@@ -4,6 +4,9 @@
 #
 ################################################################################
 
+# If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
+# This uses the static make target at the top level Makefile, since that builds everything, then picks out the arm64 binary
+
 # As of 2022-06-09
 CRI_DOCKERD_AARCH64_VER = 0.2.2
 CRI_DOCKERD_AARCH64_REV = 0737013
@@ -24,8 +27,6 @@ CRI_DOCKERD_AARCH64_ENV = \
 CRI_DOCKERD_AARCH64_COMPILE_SRC = $(CRI_DOCKERD_AARCH64_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_AARCH64_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_AARCH64_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_AARCH64_REV)'"
 
-# If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
-# This uses the static make target at the top level Makefile, since that builds everything, then picks out the arm64 binary
 define CRI_DOCKERD_AARCH64_BUILD_CMDS
 	$(CRI_DOCKERD_AARCH64_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_AARCH64_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_AARCH64_VER) REVISION=$(CRI_DOCKERD_AARCH64_REV) static
 endef

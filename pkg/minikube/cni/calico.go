@@ -50,6 +50,7 @@ type Calico struct {
 }
 
 type calicoTmplStruct struct {
+	PodCIDR                   string
 	DeploymentImageName       string
 	DaemonSetImageName        string
 	BinaryImageName           string
@@ -69,6 +70,7 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 	}
 
 	input := &calicoTmplStruct{
+		PodCIDR:                   DefaultPodCIDR,
 		DeploymentImageName:       images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
 		DaemonSetImageName:        images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
 		BinaryImageName:           images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),

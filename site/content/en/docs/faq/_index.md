@@ -55,8 +55,8 @@ minikube addons enable auto-pause
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
-By default minikube uses the `cgroupfs` cgroup manager for Kubernetes clusters. If you are on a system with a systemd cgroup manager, this could cause conflicts.
-To use the `systemd` cgroup manager, run:
+By default minikube uses the `systemd` cgroup manager for Kubernetes clusters. If you are on a system with a cgroupfs cgroup manager, this could cause conflicts.
+To force the `systemd` cgroup manager, run:
 
 ```bash
 minikube start --force-systemd=true
