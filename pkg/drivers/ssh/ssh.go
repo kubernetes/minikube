@@ -146,7 +146,7 @@ func (d *Driver) Create() error {
 		if err != nil {
 			return errors.Wrap(err, "groups")
 		}
-		if !strings.Contains(groups.Stderr.String(), "docker") {
+		if !strings.Contains(groups.Stdout.String(), "docker") {
 			if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
 				return errors.Wrap(err, "usermod")
 			}
