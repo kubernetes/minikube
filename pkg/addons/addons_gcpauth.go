@@ -19,15 +19,12 @@ package addons
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"strconv"
-	"strings"
 	"time"
 
-	gcr_config "github.com/GoogleCloudPlatform/docker-credential-gcr/config"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -88,10 +85,10 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 		}
 	}
 
-	// Create a registry secret in every namespace we can find
-	// Always create the pull secret, no matter where we are
-	if err := createPullSecret(cfg, creds); err != nil {
-		return errors.Wrap(err, "pull secret")
+	// Patch service accounts for all namespaces to include the image pull secret.
+	// The image registry pull secret is added to the namespaces in the webhook.
+	if err := patchServiceAccounts(cfg); err != nil {
+		return errors.Wrap(err, "patching service accounts")
 	}
 
 	// If the env var is explicitly set, even in GCE, then defer to the user and continue
@@ -101,7 +98,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	}
 
 	if creds.JSON == nil {
-		out.WarningT("You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue. The image pull secret has been imported.")
+		out.WarningT("You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue.")
 		return nil
 	}
 
@@ -139,110 +136,50 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 }
 
-func createPullSecret(cc *config.ClusterConfig, creds *google.Credentials) error {
-	if creds == nil {
-		return errors.New("no credentials, skipping creating pull secret")
+func patchServiceAccounts(cc *config.ClusterConfig) error {
+	client, err := service.K8s.GetCoreClient(cc.Name)
+	if err != nil {
+		return err
 	}
 
-	token, err := creds.TokenSource.Token()
-	// Only try to add secret if Token was found
-	if err == nil {
-		client, err := service.K8s.GetCoreClient(cc.Name)
+	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, n := range namespaces.Items {
+		// Now patch the secret into all the service accounts we can find
+		serviceaccounts := client.ServiceAccounts(n.Name)
+		salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
 
-		namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			return err
-		}
-
-		var dockercfg string
-		registries := append(gcr_config.DefaultGCRRegistries[:], gcr_config.DefaultARRegistries[:]...)
-		for _, reg := range registries {
-			dockercfg += fmt.Sprintf(`"https://%s":{"username":"oauth2accesstoken","password":"%s","email":"none"},`, reg, token.AccessToken)
-		}
-
-		dockercfg = strings.TrimSuffix(dockercfg, ",")
-
-		data := map[string][]byte{
-			".dockercfg": []byte(fmt.Sprintf(`{%s}`, dockercfg)),
-		}
-
-		for _, n := range namespaces.Items {
-			if skipNamespace(n.Name) {
-				continue
-			}
-			secrets := client.Secrets(n.Name)
-
-			exists := false
-			secList, err := secrets.List(context.TODO(), metav1.ListOptions{})
+		// Let's make sure we at least find the default service account
+		for len(salist.Items) == 0 {
+			salist, err = serviceaccounts.List(context.TODO(), metav1.ListOptions{})
 			if err != nil {
 				return err
 			}
-			for _, s := range secList.Items {
-				if s.Name == secretName {
-					exists = true
+			time.Sleep(1 * time.Second)
+		}
+
+		ips := corev1.LocalObjectReference{Name: secretName}
+		for _, sa := range salist.Items {
+			add := true
+			for _, ps := range sa.ImagePullSecrets {
+				if ps.Name == secretName {
+					add = false
 					break
 				}
 			}
-
-			if !exists || Refresh {
-				secretObj := &corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: secretName,
-					},
-					Data: data,
-					Type: "kubernetes.io/dockercfg",
-				}
-
-				if exists && Refresh {
-					_, err := secrets.Update(context.TODO(), secretObj, metav1.UpdateOptions{})
-					if err != nil {
-						return err
-					}
-				} else {
-					_, err = secrets.Create(context.TODO(), secretObj, metav1.CreateOptions{})
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			// Now patch the secret into all the service accounts we can find
-			serviceaccounts := client.ServiceAccounts(n.Name)
-			salist, err := serviceaccounts.List(context.TODO(), metav1.ListOptions{})
-			if err != nil {
-				return err
-			}
-
-			// Let's make sure we at least find the default service account
-			for len(salist.Items) == 0 {
-				salist, err = serviceaccounts.List(context.TODO(), metav1.ListOptions{})
+			if add {
+				sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
+				_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
 				if err != nil {
 					return err
 				}
-				time.Sleep(1 * time.Second)
 			}
-
-			ips := corev1.LocalObjectReference{Name: secretName}
-			for _, sa := range salist.Items {
-				add := true
-				for _, ps := range sa.ImagePullSecrets {
-					if ps.Name == secretName {
-						add = false
-						break
-					}
-				}
-				if add {
-					sa.ImagePullSecrets = append(sa.ImagePullSecrets, ips)
-					_, err := serviceaccounts.Update(context.TODO(), &sa, metav1.UpdateOptions{})
-					if err != nil {
-						return err
-					}
-				}
-			}
-
 		}
 	}
 	return nil

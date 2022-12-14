@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -65,6 +66,9 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
+
+		// MOCK_GOOGLE_TOKEN forces the gcp-auth webhook to use a mock token instead of trying to get a valid one from the credentials.
+		t.Setenv("MOCK_GOOGLE_TOKEN", "true")
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
@@ -598,9 +602,41 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 }
 
+// validateGCPAuthNamespaces validates that newly created namespaces contain the gcp-auth secret.
+func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "ns", "new-namespace"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	logsAsError := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
+		if err != nil {
+			return err
+		}
+		return errors.New(rr.Output())
+	}
+
+	getSecret := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+		if err != nil {
+			err = fmt.Errorf("%w: gcp-auth container logs: %v", err, logsAsError())
+		}
+		return err
+	}
+
+	if err := retry.Expo(getSecret, Seconds(2), Minutes(1)); err != nil {
+		t.Errorf("failed to get secret: %v", err)
+	}
+}
+
 // validateGCPAuthAddon tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+
+	t.Run("Namespaces", func(t *testing.T) {
+		validateGCPAuthNamespaces(ctx, t, profile)
+	})
 
 	// schedule a pod to check environment variables
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
