@@ -39,6 +39,9 @@ tests the OLM addon
 #### validateCSIDriverAndSnapshots
 tests the csi hostpath driver by creating a persistent volume, snapshotting it and restoring it.
 
+#### validateGCPAuthNamespaces
+validates that newly created namespaces contain the gcp-auth secret.
+
 #### validateGCPAuthAddon
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
