@@ -59,7 +59,7 @@ anchor = "smart"
 [services]
 [services.googleAnalytics]
 # Comment out the next line to disable GA tracking. Also disables the feature described in [params.ui.feedback].
-#id = "UA-00000000-0"
+id = "G-JPP6RFM2BP"
 
 # Language configuration
 [languages]
