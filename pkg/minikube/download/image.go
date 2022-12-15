@@ -43,14 +43,14 @@ var (
 	}
 )
 
-// imagePathInCache returns path in local cache directory
+// imagePathInMinikubeCache returns path in local cache directory
 func imagePathInMinikubeCache(img string) string {
 	f := filepath.Join(detect.KICCacheDir(), path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 	return f
 }
 
-// ImageExistsInCache if img exist in local minikube cache directory
+// ImageExistsInMinikubeCache if img exist in local minikube cache directory
 func ImageExistsInMinikubeCache(img string) bool {
 	f := imagePathInMinikubeCache(img)
 
@@ -68,7 +68,7 @@ func ImageExistsInMinikubeCache(img string) bool {
 
 var checkImageExistsInMinikubeCache = ImageExistsInMinikubeCache
 
-// ImageExistsInKICDriver
+// ImageExistsInKicDriver
 // checks for the specified image in the container engine's local cache
 func ImageExistsInKicDriver(ociBin, img string) bool {
 	klog.Infof("Checking for %s in local KICdriver's cache", img)
@@ -80,7 +80,7 @@ func ImageExistsInKicDriver(ociBin, img string) bool {
 	return false
 }
 
-// ImageToCache
+// ImageToMinikubeCache
 // downloads specified container image in tar format, to local minikube's cache
 // does nothing if image is already present.
 func ImageToMinikubeCache(img string) error {
@@ -191,7 +191,7 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 	return &tag, ref, nil
 }
 
-// CacheToKICDriver
+// CacheToKicDriver
 // loads a locally minikube-cached container image, to the KIC-driver's cache
 func CacheToKicDriver(ociBin string, img string) error {
 	p := imagePathInMinikubeCache(img)

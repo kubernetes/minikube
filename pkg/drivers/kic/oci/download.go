@@ -23,9 +23,12 @@ import (
 
 func PullImage(ociBin, img string) error {
 	rr, err := runCmd(exec.Command(ociBin, "pull", "--quiet", img))
+	if err != nil {
+	        return err
+	}
 	if strings.Contains(rr.Stdout.String(), "Loaded image:") {
 		return nil
 	}
-	return err
+	return fmt.Errorf("Image wasn't loaded: %s", rr.Stdout.String())
 
 }
