@@ -163,14 +163,6 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 					klog.Infof("successfully loaded and using %s from cached tarball", img)
 					return nil
 				}
-
-				klog.Infof("Downloading %s to local daemon", img)
-				err = download.ImageToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully downloaded %s", img)
-					finalImg = img
-					return nil
-				}
 			}
 			klog.Infof("failed to download %s, will try fallback image if available: %v", img, err)
 		}
