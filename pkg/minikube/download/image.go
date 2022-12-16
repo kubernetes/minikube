@@ -197,28 +197,37 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 }
 
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
-func CacheToDaemon(img string) error {
+func CacheToDaemon(img string) (string, error) {
 	p := imagePathInCache(img)
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
-		return err
+		return img, err
 	}
 	// do not use cache if image is set in format <name>:latest
 	if _, ok := ref.(name.Tag); ok {
 		if tag.Name() == "latest" {
-			return fmt.Errorf("can't cache 'latest' tag")
+			return img, fmt.Errorf("can't cache 'latest' tag")
 		}
 	}
 
 	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
-		return errors.Wrap(err, "tarball")
+		return img, errors.Wrap(err, "tarball")
 	}
 
 	resp, err := daemon.Write(*tag, i)
 	klog.V(2).Infof("response: %s", resp)
-	return err
+	if err != nil {
+		return img, err
+	}
+
+	if err := pullDigest(img); err != nil {
+		klog.Warning(err)
+		return strings.Split(img, "@")[0], err
+	}
+
+	return img, nil
 }
 
 // ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
@@ -306,9 +315,13 @@ loop:
 	}
 	klog.V(3).Infof("Pulling image %v", ref)
 	// Pull digest
+	return pullDigest(img)
+}
+
+func pullDigest(img string) error {
 	cmd := exec.Command("docker", "pull", "--quiet", img)
 	if _, err := cmd.Output(); err != nil {
-		return errors.Wrap(err, "pulling remote image")
+		return errors.Wrap(err, "pulling image digest")
 	}
 	return nil
 }

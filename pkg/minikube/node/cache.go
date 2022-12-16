@@ -129,14 +129,13 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
-			if finalImg != "" && finalImg != baseImg {
+			if finalImg != "" && image.Tag(finalImg) != image.Tag(baseImg) {
 				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
 				cc.KicBaseImage = finalImg
 			}
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
-			var isFromCache bool
 
 			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
 				klog.Infof("%s exists in daemon, skipping load", img)
@@ -159,23 +158,17 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			}
 			if driver.IsDocker(cc.Driver) {
 				klog.Infof("Loading %s from local cache", img)
-				err = download.CacheToDaemon(img)
+				finalImg, err = download.CacheToDaemon(img)
 				if err == nil {
-					klog.Infof("successfully loaded %s from cached tarball", img)
-					isFromCache = true
+					klog.Infof("successfully loaded and using %s from cached tarball", img)
+					return nil
 				}
-			}
 
-			if driver.IsDocker(cc.Driver) {
 				klog.Infof("Downloading %s to local daemon", img)
 				err = download.ImageToDaemon(img)
 				if err == nil {
 					klog.Infof("successfully downloaded %s", img)
 					finalImg = img
-					return nil
-				} else if isFromCache {
-					klog.Infof("use image loaded from cache %s", strings.Split(img, "@")[0])
-					finalImg = strings.Split(img, "@")[0]
 					return nil
 				}
 			}
