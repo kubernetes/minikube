@@ -85,8 +85,6 @@ func ImageExistsInDaemon(img string) bool {
 	return false
 }
 
-var checkImageExistsInDaemon = ImageExistsInDaemon
-
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
 	f := imagePathInCache(img)
@@ -202,30 +200,30 @@ func CacheToDaemon(img string) (string, error) {
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
-		return img, err
+		return "", err
 	}
 	// do not use cache if image is set in format <name>:latest
 	if _, ok := ref.(name.Tag); ok {
 		if tag.Name() == "latest" {
-			return img, fmt.Errorf("can't cache 'latest' tag")
+			return "", fmt.Errorf("can't cache 'latest' tag")
 		}
 	}
 
 	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
-		return img, errors.Wrap(err, "tarball")
+		return "", errors.Wrap(err, "tarball")
 	}
 
 	resp, err := daemon.Write(*tag, i)
 	klog.V(2).Infof("response: %s", resp)
 	if err != nil {
-		return img, err
+		return "", err
 	}
 
 	cmd := exec.Command("docker", "pull", "--quiet", img)
 	if _, err := cmd.Output(); err != nil {
 		klog.Warning(err)
-		return image.Tag(img), err
+		img = image.Tag(img)
 	}
 
 	return img, nil

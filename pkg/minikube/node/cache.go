@@ -147,19 +147,17 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			err = download.ImageToCache(img)
 			if err == nil {
 				klog.Infof("successfully saved %s as a tarball", img)
-				finalImg = img
 			}
-			if downloadOnly {
-				return err
+			if downloadOnly && err == nil {
+				return nil
 			}
 
 			if cc.Driver == driver.Podman {
 				return fmt.Errorf("not yet implemented, see issue #8426")
 			}
-			if driver.IsDocker(cc.Driver) {
+			if driver.IsDocker(cc.Driver) && err == nil {
 				klog.Infof("Loading %s from local cache", img)
-				finalImg, err = download.CacheToDaemon(img)
-				if err == nil {
+				if finalImg, err = download.CacheToDaemon(img); err == nil {
 					klog.Infof("successfully loaded and using %s from cached tarball", img)
 					return nil
 				}
