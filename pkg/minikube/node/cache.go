@@ -176,7 +176,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
 				klog.Warningf("Error downloading kic artifacts: %v", err)
-				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
+				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
 				out.Styled(style.Documentation, `Please visit the following link for documentation around this: 
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages

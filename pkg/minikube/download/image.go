@@ -122,7 +122,7 @@ func ImageToCache(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
 		return errors.Wrap(err, "parsing tag")
 	}
@@ -142,7 +142,7 @@ func ImageToCache(img string) error {
 	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
+	fn := image.Tag(ref.Name())
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
@@ -177,7 +177,7 @@ func ImageToCache(img string) error {
 func parseImage(img string) (*name.Tag, name.Reference, error) {
 
 	var ref name.Reference
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse image reference")
 	}
@@ -225,7 +225,7 @@ func CacheToDaemon(img string) (string, error) {
 	cmd := exec.Command("docker", "pull", "--quiet", img)
 	if _, err := cmd.Output(); err != nil {
 		klog.Warning(err)
-		return strings.Split(img, "@")[0], err
+		return image.Tag(img), err
 	}
 
 	return img, nil
