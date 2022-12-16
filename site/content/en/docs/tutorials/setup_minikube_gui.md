@@ -9,7 +9,7 @@ date: 2022-02-25
 
 - This guide will show you how to setup the minikube GUI
 - **WARNING!** This GUI is a prototype and therefore may be unstable or contain bugs. Please use at your own risk, we are not responsible for damages.
-- If you experience any bugs or have suggestions to improve the GUI feel free to create a [GitHub Issue](https://github.com/kubernetes/minikube/issues/new/choose).
+- If you experience any bugs or have suggestions to improve the GUI feel free to create a [GitHub Issue](https://github.com/kubernetes-sigs/minikube-gui/issues/new).
 - Please note that the SSH functionality currently only works on Linux.
 
 ## Before You Begin
