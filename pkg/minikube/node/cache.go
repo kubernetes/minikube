@@ -129,9 +129,11 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
-			if finalImg != "" && image.Tag(finalImg) != image.Tag(baseImg) {
-				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
+			if finalImg != "" {
 				cc.KicBaseImage = finalImg
+				if image.Tag(finalImg) != image.Tag(baseImg) {
+					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
+				}
 			}
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
