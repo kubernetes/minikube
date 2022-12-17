@@ -18,6 +18,7 @@ package assets
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -577,7 +578,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.11@sha256:82efb346863dc47701586bebadd4cef998d4c6692d802ec3de68d451c87fb613",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.13@sha256:08a49cb7a588d81723b7e02c16082c75418b6e0a54cf2e44668bd77f79a41a40",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",
@@ -737,7 +738,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "kinvolk/headlamp:v0.14.0@sha256:00ed93805a5250f8840ce301cf44c1686fb0f46fafc7bd64b71c874cafef90a3",
+			"Headlamp": "kinvolk/headlamp:v0.14.1@sha256:162f6888461362125f4f8c60cd0a9c4031a81de15f1ed4c67bd3600b48b24029",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
@@ -884,24 +885,28 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		Registries              map[string]string
 		CustomRegistries        map[string]string
 		NetworkInfo             map[string]string
+		Environment             map[string]string
 		LegacyPodSecurityPolicy bool
 		LegacyRuntimeClass      bool
 	}{
-		KubernetesVersion:       make(map[string]uint64),
-		PreOneTwentyKubernetes:  false,
-		Arch:                    a,
-		ExoticArch:              ea,
-		ImageRepository:         cfg.ImageRepository,
-		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
-		CustomIngressCert:       cfg.CustomIngressCert,
-		RegistryAliases:         cfg.RegistryAliases,
-		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:        cfg.ContainerRuntime,
-		Images:                  images,
-		Registries:              addon.Registries,
-		CustomRegistries:        customRegistries,
-		NetworkInfo:             make(map[string]string),
+		KubernetesVersion:      make(map[string]uint64),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		RegistryAliases:        cfg.RegistryAliases,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
+		Environment: map[string]string{
+			"MockGoogleToken": os.Getenv("MOCK_GOOGLE_TOKEN"),
+		},
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 	}
