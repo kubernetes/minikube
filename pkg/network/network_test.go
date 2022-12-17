@@ -114,3 +114,48 @@ func TestFreeSubnet(t *testing.T) {
 		}
 	})
 }
+
+func TestParseAddr(t *testing.T) {
+	t.Run("ValidIP", func(t *testing.T) {
+		addr := "192.168.9.0"
+		ip, _, err := ParseAddr(addr)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ip.String() != addr {
+			t.Errorf("expected IP = %q; got = %q", addr, ip.String())
+		}
+	})
+
+	t.Run("ValidCIDR", func(t *testing.T) {
+		addr := "192.168.9.0/30"
+		ip, cidr, err := ParseAddr(addr)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		expected := "192.168.9.0"
+		if ip.String() != expected {
+			t.Errorf("expected IP = %q; got = %q", expected, ip.String())
+		}
+
+		mask, _ := cidr.Mask.Size()
+		expectedMask := 30
+		if mask != expectedMask {
+			t.Errorf("expected mask = %q; got = %q", mask, expectedMask)
+		}
+	})
+
+	t.Run("InvalidAddr", func(t *testing.T) {
+		tests := []string{
+			"192.168.9",
+			"192.168.9.0/30000",
+		}
+		for _, test := range tests {
+			_, _, err := ParseAddr(test)
+			if err == nil {
+				t.Fatalf("expected to fail since address is invalid")
+			}
+		}
+	})
+}
