@@ -47,6 +47,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/minikube/pkg/minikube/command"
+	netutil "k8s.io/minikube/pkg/network"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -1212,6 +1213,13 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	}
 
+	if cmd.Flags().Changed(subnet) {
+		err := validateSubnet(viper.GetString(subnet))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		err := validateRuntime(viper.GetString(containerRuntime))
 		if err != nil {
@@ -1761,6 +1769,24 @@ func validateDockerStorageDriver(drvName string) {
 	}
 	out.WarningT("{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance", out.V{"StorageDriver": si.StorageDriver, "Driver": drvName})
 	viper.Set(preload, false)
+}
+
+func validateSubnet(subnet string) error {
+	ip, cidr, err := netutil.ParseAddr(subnet)
+	if err != nil {
+		return err
+	}
+	if !ip.IsPrivate() {
+		return errors.Errorf("Sorry, %s is not a private IP", ip)
+	}
+
+	if cidr != nil {
+		mask, _ := cidr.Mask.Size()
+		if mask > 30 {
+			return errors.Errorf("Sorry, mask must be less than /30")
+		}
+	}
+	return nil
 }
 
 func exitIfNotForced(r reason.Kind, message string, v ...out.V) {
