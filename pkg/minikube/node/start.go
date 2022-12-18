@@ -441,7 +441,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 
 	// if cni is used, ensure all default CNI(s) are disabled on every node start
 	if err := cni.DisableAllBridgeCNIs(runner, cc); err != nil {
-		klog.Errorf("unable to disable default CNI(s): %v", err)
+		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
 	}
 
 	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
