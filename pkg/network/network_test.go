@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/juju/mutex/v2"
 )
 
 func TestIsSubnetPrivate(t *testing.T) {
@@ -49,7 +51,7 @@ func TestIsSubnetPrivate(t *testing.T) {
 }
 
 func TestFreeSubnet(t *testing.T) {
-	reserveSubnet = func(subnet string, period time.Duration) bool { return true }
+	reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) { return nil, nil }
 
 	t.Run("NoRetriesSuccess", func(t *testing.T) {
 		startingSubnet := "192.168.0.0"
