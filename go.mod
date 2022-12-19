@@ -16,7 +16,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/cheggaaa/pb/v3 v3.1.0
 	github.com/cloudevents/sdk-go/v2 v2.12.0
-	github.com/docker/docker v20.10.21+incompatible
+	github.com/docker/docker v20.10.22+incompatible
 	github.com/docker/go-units v0.5.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
