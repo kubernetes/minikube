@@ -410,6 +410,14 @@ func debugLogs(t *testing.T, profile string) {
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe flannel pod(s):\n%s\n", out))
 
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: flannel container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-flannel", "--selector=app=flannel", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: flannel container(s) logs (previous):\n%s\n", out))
+
 		cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo cat /run/flannel/subnet.env")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> host: /run/flannel/subnet.env:\n%s\n", out))
@@ -428,6 +436,14 @@ func debugLogs(t *testing.T, profile string) {
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico daemon set pod(s):\n%s\n", out))
 
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: calico daemon set container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-node", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: calico daemon set container(s) logs (previous):\n%s\n", out))
+
 		cmd = exec.Command("kubectl", "--context", profile, "describe", "deploy", "-A", "--selector=k8s-app=calico-kube-controllers")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico deployment:\n%s\n", out))
@@ -435,6 +451,14 @@ func debugLogs(t *testing.T, profile string) {
 		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=k8s-app=calico-kube-controllers")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe calico deployment pod(s):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: calico deployment container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=calico-kube-controllers", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: calico deployment container(s) logs (previous):\n%s\n", out))
 	}
 
 	if strings.Contains(profile, "cilium") {
@@ -446,6 +470,14 @@ func debugLogs(t *testing.T, profile string) {
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium daemon set pod(s):\n%s\n", out))
 
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium daemon set container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=k8s-app=cilium", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium daemon set container(s) logs (previous):\n%s\n", out))
+
 		cmd = exec.Command("kubectl", "--context", profile, "describe", "deploy", "-A", "--selector=name=cilium-operator")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium deployment:\n%s\n", out))
@@ -453,6 +485,14 @@ func debugLogs(t *testing.T, profile string) {
 		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=name=cilium-operator")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe cilium deployment pod(s):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium deployment container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=name=cilium-operator", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: cilium deployment container(s) logs (previous):\n%s\n", out))
 	}
 
 	if strings.Contains(profile, "kindnet") {
@@ -463,6 +503,14 @@ func debugLogs(t *testing.T, profile string) {
 		cmd = exec.Command("kubectl", "--context", profile, "describe", "pods", "-A", "--selector=app=kindnet")
 		out, _ = cmd.CombinedOutput()
 		output.WriteString(fmt.Sprintf("\n>>> k8s: describe kindnet pod(s):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: kindnet container(s) logs (current):\n%s\n", out))
+
+		cmd = exec.Command("kubectl", "--context", profile, "logs", "--namespace=kube-system", "--selector=app=kindnet", "--all-containers", "--prefix", "--ignore-errors", "--previous")
+		out, _ = cmd.CombinedOutput()
+		output.WriteString(fmt.Sprintf("\n>>> k8s: kindnet container(s) logs (previous):\n%s\n", out))
 	}
 
 	cmd = exec.Command("kubectl", "--context", profile, "describe", "ds", "-n", "kube-system", "--selector=k8s-app=kube-proxy")

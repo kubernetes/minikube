@@ -480,8 +480,9 @@ func forceSystemd(kv semver.Version) bool {
 	if viper.IsSet("force-systemd") {
 		return viper.GetBool("force-systemd")
 	}
-	if env := os.Getenv(constants.MinikubeForceSystemdEnv); env != "" {
-		return env == "true"
+	env := os.Getenv(constants.MinikubeForceSystemdEnv)
+	if force, err := strconv.ParseBool(env); env != "" && err == nil {
+		return force
 	}
 	return kv.GTE(semver.Version{Major: 1, Minor: 22})
 }
