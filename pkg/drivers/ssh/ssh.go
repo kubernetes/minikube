@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -141,8 +142,14 @@ func (d *Driver) Create() error {
 	}
 
 	if d.runtime.Name() == "Docker" {
-		if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
-			return errors.Wrap(err, "usermod")
+		groups, err := d.exec.RunCmd(exec.Command("groups", d.GetSSHUsername()))
+		if err != nil {
+			return errors.Wrap(err, "groups")
+		}
+		if !strings.Contains(groups.Stdout.String(), "docker") {
+			if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
+				return errors.Wrap(err, "usermod")
+			}
 		}
 	}
 
