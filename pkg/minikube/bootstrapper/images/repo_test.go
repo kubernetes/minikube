@@ -42,11 +42,43 @@ func Test_kubernetesRepo(t *testing.T) {
 		},
 		{
 			"",
-			semver.MustParse("1.24.0"),
+			// all versions -1.21
+			semver.MustParse("1.21.0"),
 			OldDefaultKubernetesRepo,
 		},
 		{
 			"",
+			semver.MustParse("1.22.17"),
+			OldDefaultKubernetesRepo,
+		},
+		{
+			"",
+			semver.MustParse("1.22.18"),
+			NewDefaultKubernetesRepo,
+		},
+		{
+			"",
+			semver.MustParse("1.23.14"),
+			OldDefaultKubernetesRepo,
+		},
+		{
+			"",
+			semver.MustParse("1.23.15"),
+			NewDefaultKubernetesRepo,
+		},
+		{
+			"",
+			semver.MustParse("1.24.8"),
+			OldDefaultKubernetesRepo,
+		},
+		{
+			"",
+			semver.MustParse("1.24.9"),
+			NewDefaultKubernetesRepo,
+		},
+		{
+			"",
+			// all versions 1.25+
 			semver.MustParse("1.25.0"),
 			NewDefaultKubernetesRepo,
 		},
@@ -54,7 +86,7 @@ func Test_kubernetesRepo(t *testing.T) {
 	for _, tc := range tests {
 		got := kubernetesRepo(tc.mirror, tc.version)
 		if !cmp.Equal(got, tc.want) {
-			t.Errorf("mirror miss match, want: %s, got: %s", tc.want, got)
+			t.Errorf("mirror mismatch for v%s, want: %s, got: %s", tc.version, tc.want, got)
 		}
 	}
 
