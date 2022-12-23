@@ -1752,19 +1752,21 @@ func validateDockerStorageDriver(drvName string) {
 	viper.Set(preload, false)
 }
 
+// validateSubnet checks that the subnet provided has a private IP
+// and does not have a mask of more that /30
 func validateSubnet(subnet string) error {
 	ip, cidr, err := netutil.ParseAddr(subnet)
 	if err != nil {
 		return err
 	}
 	if !ip.IsPrivate() {
-		return errors.Errorf("Sorry, %s is not a private IP", ip)
+		return errors.Errorf("Sorry, the subnet %s is not a private IP", ip)
 	}
 
 	if cidr != nil {
 		mask, _ := cidr.Mask.Size()
 		if mask > 30 {
-			return errors.Errorf("Sorry, mask must be less than /30")
+			return errors.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
 		}
 	}
 	return nil

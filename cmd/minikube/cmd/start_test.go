@@ -641,7 +641,7 @@ func TestValidateSubnet(t *testing.T) {
 		},
 		{
 			subnet:   "193.169.1.1",
-			errorMsg: "Sorry, 193.169.1.1 is not a private IP",
+			errorMsg: "Sorry, the subnet 193.169.1.1 is not a private IP",
 		},
 		{
 			subnet:   "192.168.1.1/24",
@@ -649,7 +649,7 @@ func TestValidateSubnet(t *testing.T) {
 		},
 		{
 			subnet:   "192.168.1.1/32",
-			errorMsg: "Sorry, mask must be less than /30",
+			errorMsg: "Sorry, the subnet provided does not have a mask less than or equal to /30",
 		},
 	}
 	for _, test := range tests {
