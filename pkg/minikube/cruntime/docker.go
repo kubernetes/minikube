@@ -34,9 +34,9 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -127,7 +127,7 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
 		return errors.New("inUserNamespace must not be true for docker")
 	}
@@ -136,14 +136,6 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
 		}
-	}
-	// check if containerd is still alive (hopefully because being being bound to docker), and if so: ensure it's configured properly by calling its Enable() method
-	cdr, errCdR := New(Config{Type: "containerd", Runner: r.Runner})
-	if errCdR == nil && cdr.Active() {
-		errCdR = cdr.Enable(false, forceSystemd, inUserNamespace)
-	}
-	if errCdR != nil {
-		klog.Warningf("cannot ensure containerd (as bound to docker) is configured properly and reloaded - cluster might be unstable: %v", errCdR)
 	}
 
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
@@ -158,10 +150,8 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
 
-	if forceSystemd {
-		if err := r.forceSystemd(); err != nil {
-			return err
-		}
+	if err := r.setCGroup(cgroupDriver); err != nil {
+		return err
 	}
 
 	if err := r.Init.Restart("docker"); err != nil {
@@ -169,6 +159,16 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	}
 
 	if r.CRIService != "" {
+		// TODO (@prezha): remove this hack after proper version update in minikube release
+		// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
+		// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
+		// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
+		targetVersion := "0.2.6"
+		klog.Infof("replacing original cri-dockerd with v%s-%s", targetVersion, runtime.GOARCH)
+		if err := updateCRIDockerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
+			klog.Warningf("unable to replace original cri-dockerd with v%s-%s: %v", targetVersion, runtime.GOARCH, err)
+		}
+
 		if err := r.Init.Enable(r.CRIService); err != nil {
 			return err
 		}
@@ -515,18 +515,23 @@ func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
 }
 
-// ForceSystemd forces the docker daemon to use systemd as cgroup manager
-func (r *Docker) forceSystemd() error {
-	klog.Infof("Forcing docker to use systemd as cgroup manager...")
-	daemonConfig := `{
-"exec-opts": ["native.cgroupdriver=systemd"],
+// setCGroup configures the docker daemon to use driver as cgroup manager
+// ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
+func (r *Docker) setCGroup(driver string) error {
+	if driver == constants.UnknownCgroupDriver {
+		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
+	}
+
+	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
+	daemonConfig := fmt.Sprintf(`{
+"exec-opts": ["native.cgroupdriver=%s"],
 "log-driver": "json-file",
 "log-opts": {
 	"max-size": "100m"
 },
 "storage-driver": "overlay2"
 }
-`
+`, driver)
 	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
 }
@@ -680,40 +685,24 @@ const (
 )
 
 func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin string) error {
+	// $ cri-dockerd --version
+	// cri-dockerd 0.2.6 (d8accf7)
+	// $ cri-dockerd --help | grep -i cni
+	// --cni-bin-dir string                      A comma-separated list of full paths of directories in which to search for CNI plugin binaries. (default "/opt/cni/bin")
+	// --cni-cache-dir string                    The full path of the directory in which CNI should store cache files. (default "/var/lib/cni/cache")
+	// --cni-conf-dir string                     The full path of the directory in which to search for CNI config files (default "/etc/cni/net.d")
+	// --network-plugin string                   The name of the network plugin to be invoked for various events in kubelet/pod lifecycle. (default "cni")
+	args := " --hairpin-mode=hairpin-veth"
+	// if network plugin is not selected - use default "cni"
 	if networkPlugin == "" {
-		// no-op plugin
-		return nil
+		networkPlugin = "cni"
 	}
-
-	if err := cni.NameLoopback(r.Runner); err != nil {
-		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
-	}
-
-	args := ""
-	// The CNI configuration is handled by CRI in 1.24+
-	// ref: https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/#installation
-	if networkPlugin == "cni" && r.KubernetesVersion.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		args += " --cni-bin-dir=" + CNIBinDir
-		args += " --cni-cache-dir=" + CNICacheDir
-		args += " --cni-conf-dir=" + cni.DefaultConfDir
-	}
-	args += " --hairpin-mode=hairpin-veth"
-
 	opts := struct {
 		NetworkPlugin  string
 		ExtraArguments string
 	}{
 		NetworkPlugin:  networkPlugin,
 		ExtraArguments: args,
-	}
-
-	// TODO (@prezha): remove once cri-dockerd is updated in future minikube release:
-	// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
-	// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
-	// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
-	klog.Infof("replacing original cri-dockerd with v0.2.6-%s", runtime.GOARCH)
-	if err := downloadCRIDockerdBinary(cr, "0.2.6", runtime.GOARCH); err != nil {
-		klog.Warningf("unable to replace original cri-dockerd with v0.2.6-%s: %v", runtime.GOARCH, err)
 	}
 
 	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
@@ -735,22 +724,4 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 		return errors.Wrap(err, "failed to copy template")
 	}
 	return r.Init.Restart("cri-docker")
-}
-
-// download cri-dockerd version
-func downloadCRIDockerdBinary(cr CommandRunner, version, arch string) error {
-	curl := fmt.Sprintf("curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.%s.tgz | tar -xz -C /tmp", version, version, arch)
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
-		return fmt.Errorf("unable to download new cri-dockerd: %v", err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
-		return fmt.Errorf("unable to backup org cri-dockerd: %v", err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/tmp/cri-dockerd/cri-dockerd", "/usr/bin/cri-dockerd")); err != nil {
-		if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/usr/bin/cri-dockerd", "/usr/bin/cri-dockerd-org")); err != nil {
-			return fmt.Errorf("unable to install new cri-dockerd and restore org cri-dockerd - it's broken!: %v", err)
-		}
-		return fmt.Errorf("unable to install new cri-dockerd: %v", err)
-	}
-	return nil
 }

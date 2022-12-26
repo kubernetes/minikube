@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -127,18 +129,36 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, inUserNamespace bool) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string, insecureRegistry []string, inUserNamespace bool) error {
 	pauseImage := images.Pause(kv, imageRepository)
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*sandbox_image = .*$|sandbox_image = \"%s\"|' -i %s", pauseImage, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)sandbox_image = .*$|\1sandbox_image = %q|' %s`, pauseImage, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update sandbox_image")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = %t|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)restrict_oom_score_adj = .*$|\1restrict_oom_score_adj = %t|' %s`, inUserNamespace, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update restrict_oom_score_adj")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = %t|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
-		return errors.Wrap(err, "update SystemdCgroup")
+	// configure cgroup driver
+	if cgroupDriver != constants.UnknownCgroupDriver {
+		klog.Infof("configuring containerd to use %q as cgroup driver...", cgroupDriver)
+		useSystemd := cgroupDriver == constants.SystemdCgroupDriver
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)SystemdCgroup = .*$|\1SystemdCgroup = %t|g' %s`, useSystemd, containerdConfigFile))); err != nil {
+			return errors.Wrap(err, "configuring SystemdCgroup")
+		}
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.DefaultConfDir, containerdConfigFile))); err != nil {
+	// handle deprecated features
+	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#deprecated-features
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|"io.containerd.runtime.v1.linux"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring io.containerd.runtime version")
+	}
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|"io.containerd.runc.v1"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring io.containerd.runc version")
+	}
+	// ensure conf_dir is using '/etc/cni/net.d'
+	// TODO (@prezha): this should be removed (ie, not needed) once we remove "hardcoded" '/etc/cni/net.mk' folder in minikube distro
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", `sudo rm -rf /etc/cni/net.mk`)); err != nil {
+		return fmt.Errorf("unable to remove /etc/cni/net.mk directory: %v", err)
+	}
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)conf_dir = .*$|\1conf_dir = %q|g' %s`, cni.DefaultConfDir, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
 
@@ -176,7 +196,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 
 // Enable idempotently enables containerd on a host
 // It is also called by docker.Enable() - if bound to containerd, to enforce proper containerd configuration completed by service restart.
-func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
 			// For using overlayfs
@@ -195,11 +215,23 @@ func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry, inUserNamespace); err != nil {
+
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver, r.InsecureRegistry, inUserNamespace); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
+	}
+
+	// TODO (@prezha): remove this hack after proper version update in minikube release
+	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support
+	targetVersion := "1.6.14"
+	currentVersion, err := r.Version()
+	if err == nil && semver.MustParse(targetVersion).GT(semver.MustParse(currentVersion)) {
+		klog.Infof("replacing original containerd with v%s-%s-%s", targetVersion, runtime.GOOS, runtime.GOARCH)
+		if err := updateContainerdBinary(r.Runner, targetVersion, runtime.GOOS, runtime.GOARCH); err != nil {
+			klog.Warningf("unable to replace original containerd with v%s-%s-%s: %v", targetVersion, runtime.GOOS, runtime.GOARCH, err)
+		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'

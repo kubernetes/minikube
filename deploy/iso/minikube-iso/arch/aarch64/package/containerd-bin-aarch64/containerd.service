@@ -9,7 +9,7 @@ EnvironmentFile=-/etc/sysconfig/containerd
 EnvironmentFile=-/etc/sysconfig/containerd.minikube
 EnvironmentFile=/var/run/minikube/env
 Environment=GOTRACEBACK=crash
-ExecStartPre=-/sbin/modprobe overlay
+ExecStartPre=/sbin/modprobe overlay
 ExecStart=/usr/bin/containerd \
       $CONTAINERD_OPTIONS \
       $CONTAINERD_MINIKUBE_OPTIONS \

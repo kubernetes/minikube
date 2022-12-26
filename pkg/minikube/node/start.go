@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -439,8 +440,14 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	// if cni is used, ensure all default CNI(s) are disabled on every node start
-	if err := cni.DisableAllBridgeCNIs(runner, cc); err != nil {
+	// ensure loopback is properly configured
+	if err := cni.ConfigureLoopback(runner); err != nil {
+		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
+	}
+
+	// ensure all default CNI(s) are properly configured on each and every node (re)start
+	// make sure container runtime is restarted afterwards for these changes to take effect
+	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
 		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
 	}
 
@@ -451,7 +458,24 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
-	err = cr.Enable(disableOthers, forceSystemd(kv), inUserNamespace)
+	// for docker container runtime: ensure containerd is properly configured by calling Enable(), as docker could be bound to containerd
+	// it will also "soft" start containerd, but it will not disable others; docker will disable containerd if not used in the next step
+	if co.Type == "docker" {
+		containerd, err := cruntime.New(cruntime.Config{
+			Type:              "containerd",
+			Socket:            "", // use default
+			Runner:            co.Runner,
+			ImageRepository:   co.ImageRepository,
+			KubernetesVersion: co.KubernetesVersion,
+			InsecureRegistry:  co.InsecureRegistry})
+		if err == nil {
+			err = containerd.Enable(false, cgroupDriver(cc), inUserNamespace) // do not disableOthers, as it's not primary cr
+		}
+		if err != nil {
+			klog.Warningf("cannot ensure containerd is configured properly and reloaded for docker - cluster might be unstable: %v", err)
+		}
+	}
+	err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
@@ -471,20 +495,40 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	return cr
 }
 
-func forceSystemd(kv semver.Version) bool {
-	// starting from k8s v1.22: "kubeadm clusters should be using the systemd driver"
-	// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
-	// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
-	// ref: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
-	// still, respect user preference, if present
-	if viper.IsSet("force-systemd") {
-		return viper.GetBool("force-systemd")
+// cgroupDriver returns cgroup driver that should be used to further configure container runtime, node(s) and cluster.
+// It is based on:
+// - (forced) user preference (set via flags or env), if present, or
+// - existing k8s cluster config, if present, or
+// - host os config detection, if possible, or
+// - constants.DefaultCgroupDriver, otherwise.
+// Possible mappings are: "v1" (legacy) cgroups => "cgroupfs", "v2" (unified) cgroups => "systemd" and "" (unknown) cgroups => constants.DefaultCgroupDriver.
+// Note: starting from k8s v1.22, "kubeadm clusters should be using the systemd driver":
+// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
+// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
+// ref: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
+func cgroupDriver(cc config.ClusterConfig) string {
+	klog.Info("detecting cgroup driver to use...")
+
+	// check flags for user preference
+	if viper.GetBool("force-systemd") {
+		klog.Infof("using %q cgroup driver as enforced via flags", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
 	}
+
+	// check env for user preference
 	env := os.Getenv(constants.MinikubeForceSystemdEnv)
-	if force, err := strconv.ParseBool(env); env != "" && err == nil {
-		return force
+	if force, err := strconv.ParseBool(env); env != "" && err == nil && force {
+		klog.Infof("using %q cgroup driver as enforced via env", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
 	}
-	return kv.GTE(semver.Version{Major: 1, Minor: 22})
+
+	// check current cluster config
+	if cc.KubernetesConfig.CgroupDriver != "" {
+		klog.Infof("using %q cgroup driver from existing cluster config", cc.KubernetesConfig.CgroupDriver)
+		return cc.KubernetesConfig.CgroupDriver
+	}
+
+	return detect.CgroupDriver()
 }
 
 func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {

@@ -28,7 +28,9 @@ import (
 	"github.com/klauspost/cpuid"
 	"github.com/spf13/viper"
 	"golang.org/x/sys/cpu"
+	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -146,4 +148,51 @@ func SocketVMNetInstalled() bool {
 		klog.Warningf("failed to check for socket_vmnet: %v", err)
 	}
 	return false
+}
+
+// CgroupDriver returns detected cgroup driver as configured on host os.
+// If unable to detect, it will return constants.DefaultCgroupDriver instead.
+func CgroupDriver() string {
+	switch cgroupVersion() {
+	case "v1":
+		klog.Infof("detected %q cgroup driver on host os", constants.CgroupfsCgroupDriver)
+		return constants.CgroupfsCgroupDriver
+	case "v2":
+		klog.Infof("detected %q cgroup driver on host os", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
+	default:
+		klog.Warningf("unable to detect host's os cgroup driver - will continue and try with %q as per default, but things might break", constants.DefaultCgroupDriver)
+		return constants.DefaultCgroupDriver // try with default rather than just give up
+	}
+}
+
+// cgroupVersion returns cgroup version as set on the linux OS host machine (where minikube runs).
+// Possible options are: "v1", "v2" or "" (unknown).
+// ref: https://kubernetes.io/docs/concepts/architecture/cgroups/#check-cgroup-version
+// ref: https://man7.org/linux/man-pages/man7/cgroups.7.html
+func cgroupVersion() string {
+	if runtime.GOOS != "linux" {
+		return ""
+	}
+
+	// check '/sys/fs/cgroup' or '/sys/fs/cgroup/unified' type
+	var stat unix.Statfs_t
+	if err := unix.Statfs("/sys/fs/cgroup", &stat); err != nil {
+		return ""
+	}
+	// fallback, but could be misleading
+	if stat.Type != unix.TMPFS_MAGIC && stat.Type != unix.CGROUP_SUPER_MAGIC && stat.Type != unix.CGROUP2_SUPER_MAGIC {
+		if err := unix.Statfs("/sys/fs/cgroup/unified", &stat); err != nil {
+			return ""
+		}
+	}
+
+	switch stat.Type {
+	case unix.TMPFS_MAGIC, unix.CGROUP_SUPER_MAGIC: // tmpfs, cgroupfs
+		return "v1"
+	case unix.CGROUP2_SUPER_MAGIC: // cgroup2fs
+		return "v2"
+	default:
+		return ""
+	}
 }

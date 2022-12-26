@@ -20,6 +20,7 @@ package cni
 import (
 	"context"
 	"fmt"
+	"net"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -34,7 +35,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -176,10 +176,6 @@ func manifestAsset(b []byte) assets.CopyableFile {
 
 // applyManifest applies a CNI manifest
 func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) error {
-	if err := NameLoopback(r); err != nil {
-		klog.Warningf("unable to name loopback interface in applyManifest: %v", err)
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -198,12 +194,12 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	return nil
 }
 
-// NameLoopback ensures loopback has a name in its config file in /etc/cni/net.d
-// cri-o is leaving it out atm (https://github.com/cri-o/cri-o/pull/6273)
+// ConfigureLoopback ensures loopback has expected version ("1.0.0") and valid name ("loopback") in its config file in /etc/cni/net.d
+// cri-o is leaving name out atm (https://github.com/cri-o/cri-o/pull/6273)
 // avoid errors like:
 // Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
 // failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
-func NameLoopback(r Runner) error {
+func ConfigureLoopback(r Runner) error {
 	loopback := "/etc/cni/net.d/*loopback.conf*" // usually: 200-loopback.conf
 	// turn { "cniVersion": "0.3.1", "type": "loopback" }
 	// into { "cniVersion": "0.3.1", "name": "loopback", "type": "loopback" }
@@ -213,38 +209,90 @@ func NameLoopback(r Runner) error {
 	}
 	if _, err := r.RunCmd(exec.Command(
 		"sudo", "find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-exec", "sh", "-c",
-		`grep -q loopback {} && ( grep -q name {} || sudo sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} )`, ";")); err != nil {
+		`grep -q loopback {} && ( grep -q name {} || sudo sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} ) && sudo sed -i 's|"cniVersion": ".*"|"cniVersion": "1.0.0"|g' {}`, ";")); err != nil {
 		return fmt.Errorf("unable to patch loopback config %q: %v", loopback, err)
 	}
 	return nil
 }
 
-// DisableBridgeCNIs disables all default bridge CNIs on a node (designated by runner) by changing extension to "mk_disabled" of *bridge* config file(s) found in /etc/cni/net.d.
-// It's usually called before deploying new CNI or on restarts, to avoid conflicts and flip-flopping of pods' ip addresses.
+// ConfigureDefaultBridgeCNIs configures all default bridge CNIs on a node (designated by runner).
+// If network plugin is set (could be, eg "cni" or "kubenet"), it will disable all default bridges by changing extension to "mk_disabled" of *bridge* config file(s) found in /etc/cni/net.d to avoid conflicts.
+// Otherwise, it will change ip address range to match DefaultPodCIDR in all *bridge* config file(s) found in /etc/cni/net.d.
+// It's usually called before deploying new CNI and on node restarts, to avoid conflicts and flip-flopping of pods' ip addresses.
+// It is caller's responsibility to restart container runtime for these changes to take effect.
 // ref: https://github.com/containernetworking/cni/blob/main/libcni/conf.go
-func DisableAllBridgeCNIs(r Runner, cc config.ClusterConfig) error {
+// ref: https://kubernetes.io/docs/tasks/administer-cluster/migrating-from-dockershim/troubleshooting-cni-plugin-related-errors/
+func ConfigureDefaultBridgeCNIs(r Runner, networkPlugin string) error {
+	if networkPlugin != "" {
+		return disableAllBridgeCNIs(r)
+	}
+
+	return configureAllBridgeCNIs(r, DefaultPodCIDR)
+}
+
+func disableAllBridgeCNIs(r Runner) error {
 	path := "/etc/cni/net.d"
+
 	out, err := r.RunCmd(exec.Command(
-		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*.mk_disabled", "-printf", "%p|", "-exec", "sh", "-c",
+		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
 		`sudo mv {} {}.mk_disabled`, ";"))
 	if err != nil {
 		return fmt.Errorf("failed to disable all bridge cni configs in %q: %v", path, err)
 	}
-	configs := strings.Trim(out.Stdout.String(), "|")
+	configs := strings.Trim(out.Stdout.String(), ", ")
 	if len(configs) == 0 {
-		klog.Infof("no bridge cni config found in %q - nothing to disable", configs, path)
+		klog.Infof("no bridge cni configs found in %q - nothing to disable", configs, path)
 		return nil
 	}
-	svc := cc.KubernetesConfig.ContainerRuntime
-	klog.Infof("disabled [%s] bridge cni config(s) in %q, now restarting selected %q container runtime", configs, path, svc)
+	klog.Infof("disabled [%s] bridge cni config(s)", configs)
 
-	if svc == "cri-o" {
-		svc = "crio"
+	return nil
+}
+
+func configureAllBridgeCNIs(r Runner, cidr string) error {
+	path := "/etc/cni/net.d"
+	configs := ""
+
+	// non-podman configs:
+	out, err := r.RunCmd(exec.Command(
+		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+		// remove ipv6 entries to avoid "failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
+		// ref: https://github.com/cri-o/cri-o/issues/3555
+		// then also remove trailing comma after ipv4 elements, if any
+		// ie, this will transform from, eg:
+		// from: "ranges": [ [{ "subnet": "10.85.0.0/16" }], [{ "subnet": "1100:200::/24" }] ]
+		// to:   "ranges": [ [{ "subnet": "10.244.0.0/16" }] ]
+		// getting something similar to https://github.com/cri-o/cri-o/blob/main/contrib/cni/11-crio-ipv4-bridge.conflist
+		fmt.Sprintf(`sudo sed -i -r -e '/"dst": ".*:.*"/d' -e 's|^(.*)"dst": (.*)[,*]$|\1"dst": \2|g' -e '/"subnet": ".*:.*"/d' -e 's|^(.*)"subnet": ".*"(.*)[,*]$|\1"subnet": "%s"\2|g' {}`, cidr), ";"))
+	if err != nil {
+		klog.Errorf("failed to configure non-podman bridge cni configs in %q: %v", path, err)
+	} else {
+		configs = out.Stdout.String()
 	}
-	if err := sysinit.New(r).Restart(svc); err != nil {
-		klog.Warningf("failed to restart %q container runtime service in %q: %v", svc, cc.Name, err)
-		return err
+
+	// podman config(s):
+	// ref: https://github.com/containers/podman/blob/main/cni/87-podman-bridge.conflist
+	ip, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil || ip.To4() == nil {
+		klog.Errorf("cidr %q is not valid ipv4 address: %v", cidr, err)
+	} else {
+		gateway := ip.Mask(ipnet.Mask)
+		gateway[3]++
+		out, err = r.RunCmd(exec.Command(
+			"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+			fmt.Sprintf(`sudo sed -i -r -e 's|^(.*)"subnet": ".*"(.*)$|\1"subnet": "%s"\2|g' -e 's|^(.*)"gateway": ".*"(.*)$|\1"gateway": "%s"\2|g' {}`, cidr, gateway), ";"))
+		if err != nil {
+			klog.Errorf("failed to configure podman bridge cni configs in %q: %v", path, err)
+		} else {
+			configs += out.Stdout.String()
+		}
 	}
+
+	if len(strings.Trim(configs, ", ")) == 0 {
+		klog.Infof("no bridge cni configs found in %q - nothing to configure", configs, path)
+		return nil
+	}
+	klog.Infof("configured [%s] bridge cni config(s)", configs)
 
 	return nil
 }

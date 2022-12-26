@@ -57,14 +57,13 @@ func TestNetworkPlugins(t *testing.T) {
 			namespace     string
 			hairpin       bool
 		}{
-			// for containerd and crio runtimes kindnet CNI is used by default and hairpin is enabled
-			{"auto", []string{}, "", "", "", ContainerRuntime() != "docker"},
+			{"auto", []string{}, "", "", "", true},
 			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", "", true},
 			{"flannel", []string{"--cni=flannel"}, "cni", "app=flannel", "kube-flannel", true},
 			{"kindnet", []string{"--cni=kindnet"}, "cni", "app=kindnet", "kube-system", true},
-			{"false", []string{"--cni=false"}, "", "", "", false},
+			{"false", []string{"--cni=false"}, "", "", "", true},
 			{"custom-flannel", []string{fmt.Sprintf("--cni=%s", filepath.Join(*testdataDir, "kube-flannel.yaml"))}, "cni", "", "kube-flannel", true},
 			{"calico", []string{"--cni=calico"}, "cni", "k8s-app=calico-node", "kube-system", true},
 			{"cilium", []string{"--cni=cilium"}, "cni", "k8s-app=cilium", "kube-system", true},
@@ -93,10 +92,19 @@ func TestNetworkPlugins(t *testing.T) {
 					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
 
+				// (current) cilium is known to mess up the system when interfering with other network tests, so we disable it for now - probably needs updating?
+				// hint: most probably the problem is in combination of: containerd + (outdated) cgroup_v1(cgroupfs) + (outdated) cilium, on systemd it should work
+				// unfortunately, cilium changed how cni is deployed and does not provide manifests anymore (since v1.9) so that we can "just update" ours
+				// ref: https://docs.cilium.io/en/stable/gettingstarted/k8s-install-default/
+				// ref: https://docs.cilium.io/en/stable/gettingstarted/k8s-install-kubeadm/
+				if tc.name == "cilium" {
+					t.Skip("Skipping the test as it's interfering with other tests and is outdated")
+				}
+
 				start := time.Now()
 				MaybeParallel(t)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--wait-timeout=20m"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--wait-timeout=15m"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 
 				t.Run("Start", func(t *testing.T) {
@@ -155,10 +163,6 @@ func TestNetworkPlugins(t *testing.T) {
 							t.Fatalf("failed waiting for netcat pod: %v", err)
 						}
 					})
-				}
-
-				if strings.Contains(tc.name, "weave") {
-					t.Skipf("skipping remaining tests for weave, as results can be unpredictable")
 				}
 
 				if !t.Failed() {

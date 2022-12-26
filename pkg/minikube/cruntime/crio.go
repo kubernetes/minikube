@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -72,10 +73,15 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	return nil
 }
 
-func (r *CRIO) forceSystemd() error {
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cgroup_manager = .*$|cgroup_manager = \"systemd\"|' -i %s", crioConfigFile))
+func (r *CRIO) setCGroup(driver string) error {
+	if driver == constants.UnknownCgroupDriver {
+		return fmt.Errorf("unable to configure cri-o to use unknown cgroup driver")
+	}
+
+	klog.Infof("configuring cri-o to use %q as cgroup driver...", driver)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)cgroup_manager = .*$|\1cgroup_manager = %q|' %s`, driver, crioConfigFile))
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "force systemd")
+		return errors.Wrap(err, "configuring cgroup_manager")
 	}
 
 	return nil
@@ -185,7 +191,7 @@ Environment="_CRIO_ROOTLESS=1"
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+func (r *CRIO) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -200,10 +206,8 @@ func (r *CRIO) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-	if forceSystemd {
-		if err := r.forceSystemd(); err != nil {
-			return err
-		}
+	if err := r.setCGroup(cgroupDriver); err != nil {
+		return err
 	}
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {

@@ -54,6 +54,7 @@ const (
 	SSHPort = 22
 	// RegistryAddonPort os the default registry addon port
 	RegistryAddonPort = 5000
+
 	// Containerd is the default name and spelling for the containerd container runtime
 	Containerd = "containerd"
 	// CRIO is the default name and spelling for the cri-o container runtime
@@ -62,6 +63,12 @@ const (
 	Docker = "docker"
 	// DefaultContainerRuntime is our default container runtime
 	DefaultContainerRuntime = ""
+
+	// cgroup drivers
+	DefaultCgroupDriver  = "systemd"
+	CgroupfsCgroupDriver = "cgroupfs"
+	SystemdCgroupDriver  = "systemd"
+	UnknownCgroupDriver  = ""
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"

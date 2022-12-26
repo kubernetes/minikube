@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestName(t *testing.T) {
@@ -699,7 +700,7 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			err = cr.Enable(true, false, false)
+			err = cr.Enable(true, constants.CgroupfsCgroupDriver, false)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
 			}

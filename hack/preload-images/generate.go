@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util"
@@ -93,7 +94,8 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	if err != nil {
 		return errors.Wrap(err, "failed create new runtime")
 	}
-	if err := cr.Enable(true, false, false); err != nil {
+
+	if err := cr.Enable(true, detect.CgroupDriver(), false); err != nil {
 		return errors.Wrap(err, "enable container runtime")
 	}
 
