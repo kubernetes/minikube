@@ -104,6 +104,7 @@ type ClusterConfig struct {
 	CustomQemuFirmwarePath  string
 	SocketVMnetClientPath   string
 	SocketVMnetPath         string
+	StaticIP                string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

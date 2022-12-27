@@ -385,6 +385,8 @@ var (
 	IfMountPort = Kind{ID: "IF_MOUNT_PORT", ExitCode: ExLocalNetworkError}
 	// minikube failed to access an ssh client on the host machine
 	IfSSHClient = Kind{ID: "IF_SSH_CLIENT", ExitCode: ExLocalNetworkError}
+	// minikube failed to create a dedicated network
+	IfDedicatedNetwork = Kind{ID: "IF_DEDICATED_NETWORK", ExitCode: ExLocalNetworkError}
 
 	// minikube failed to cache kubernetes binaries for the current runtime
 	InetCacheBinaries = Kind{ID: "INET_CACHE_BINARIES", ExitCode: ExInternetError}

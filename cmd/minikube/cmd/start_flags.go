@@ -140,6 +140,7 @@ const (
 	qemuFirmwarePath        = "qemu-firmware-path"
 	socketVMnetClientPath   = "socket-vmnet-client-path"
 	socketVMnetPath         = "socket-vmnet-path"
+	staticIP                = "static-ip"
 )
 
 var (
@@ -200,6 +201,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
+	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254 (Docker and Podman drivers only)")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -571,6 +573,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
 		SocketVMnetClientPath:   viper.GetString(socketVMnetClientPath),
 		SocketVMnetPath:         viper.GetString(socketVMnetPath),
+		StaticIP:                viper.GetString(staticIP),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),
@@ -745,6 +748,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	checkExtraDiskOptions(cmd, cc.Driver)
 	if cmd.Flags().Changed(extraDisks) && viper.GetInt(extraDisks) != existing.ExtraDisks {
 		out.WarningT("You cannot add or remove extra disks for an existing minikube cluster. Please first delete the cluster.")
+	}
+
+	if cmd.Flags().Changed(staticIP) && viper.GetString(staticIP) != existing.StaticIP {
+		out.WarningT("You cannot change the static IP of an existing minikube cluster. Please first delete the cluster.")
 	}
 
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)

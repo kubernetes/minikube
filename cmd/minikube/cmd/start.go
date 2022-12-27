@@ -1228,6 +1228,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
+	if cmd.Flags().Changed(staticIP) {
+		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
 	if driver.IsSSH(drvName) {
 		sshIPAddress := viper.GetString(sshIPAddress)
 		if sshIPAddress == "" {
@@ -1768,6 +1774,30 @@ func validateSubnet(subnet string) error {
 		if mask > 30 {
 			return errors.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
 		}
+	}
+	return nil
+}
+
+func validateStaticIP(staticIP, drvName, subnet string) error {
+	if !driver.IsKIC(drvName) {
+		if staticIP != "" {
+			out.WarningT("--static-ip is only implemented on Docker and Podman drivers, flag will be ignored")
+		}
+		return nil
+	}
+	if subnet != "" {
+		out.WarningT("--static-ip overrides --subnet, --subnet will be ignored")
+	}
+	ip := net.ParseIP(staticIP)
+	if !ip.IsPrivate() {
+		return fmt.Errorf("static IP must be private")
+	}
+	if ip.To4() == nil {
+		return fmt.Errorf("static IP must be IPv4")
+	}
+	lastOctet, _ := strconv.Atoi(strings.Split(ip.String(), ".")[3])
+	if lastOctet < 2 || lastOctet > 254 {
+		return fmt.Errorf("static IPs last octet must be between 2 and 254 (ex. X.X.X.2 - X.X.X.254)")
 	}
 	return nil
 }
