@@ -334,7 +334,7 @@
 	"Format output. One of: short|table|json|yaml": "",
 	"Format to print stdout in. Options include: [text,json]": "",
 	"Forwards all services in a namespace (defaults to \"false\")": "",
-	"Found docker, but the docker service isn't running. Try restarting the docker service.": "",
+	"Found docker, but the docker service isn't running. Try restarting the docker service.": "도커를 찾았으나 docker service 가 실행중이지 않습니다, docker service 를 다시 시작해주세요",
 	"Found driver(s) but none were healthy. See above for suggestions how to fix installed drivers.": "",
 	"Found network options:": "네트워크 옵션을 찾았습니다",
 	"Found {{.number}} invalid profile(s) !": "{{.number}} 개의 무효한 프로필을 찾았습니다",
