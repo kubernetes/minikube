@@ -78,6 +78,6 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	if !strings.Contains(rr.Output(), image) {
-		t.Fatalf("Expected to find %s in output of `docker images`, instead got %s", image, rr.Output())
+		t.Fatalf("Expected to find %s in image list output, instead got %s", image, rr.Output())
 	}
 }

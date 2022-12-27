@@ -197,8 +197,9 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 // ConfigureLoopback ensures loopback has expected version ("1.0.0") and valid name ("loopback") in its config file in /etc/cni/net.d
 // cri-o is leaving name out atm (https://github.com/cri-o/cri-o/pull/6273)
 // avoid errors like:
-// Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
-// failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
+// - Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
+// - failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
+// It is caller's responsibility to restart container runtime for these changes to take effect.
 func ConfigureLoopback(r Runner) error {
 	loopback := "/etc/cni/net.d/*loopback.conf*" // usually: 200-loopback.conf
 	// turn { "cniVersion": "0.3.1", "type": "loopback" }
@@ -226,7 +227,6 @@ func ConfigureDefaultBridgeCNIs(r Runner, networkPlugin string) error {
 	if networkPlugin != "" {
 		return disableAllBridgeCNIs(r)
 	}
-
 	return configureAllBridgeCNIs(r, DefaultPodCIDR)
 }
 
@@ -241,7 +241,7 @@ func disableAllBridgeCNIs(r Runner) error {
 	}
 	configs := strings.Trim(out.Stdout.String(), ", ")
 	if len(configs) == 0 {
-		klog.Infof("no bridge cni configs found in %q - nothing to disable", configs, path)
+		klog.Infof("no bridge cni configs found in %q - nothing to disable", path)
 		return nil
 	}
 	klog.Infof("disabled [%s] bridge cni config(s)", configs)
@@ -289,7 +289,7 @@ func configureAllBridgeCNIs(r Runner, cidr string) error {
 	}
 
 	if len(strings.Trim(configs, ", ")) == 0 {
-		klog.Infof("no bridge cni configs found in %q - nothing to configure", configs, path)
+		klog.Infof("no bridge cni configs found in %q - nothing to configure", path)
 		return nil
 	}
 	klog.Infof("configured [%s] bridge cni config(s)", configs)

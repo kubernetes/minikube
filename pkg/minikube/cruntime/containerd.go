@@ -229,6 +229,7 @@ func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace
 	currentVersion, err := r.Version()
 	if err == nil && semver.MustParse(targetVersion).GT(semver.MustParse(currentVersion)) {
 		klog.Infof("replacing original containerd with v%s-%s-%s", targetVersion, runtime.GOOS, runtime.GOARCH)
+		r.Init.ForceStop("containerd")
 		if err := updateContainerdBinary(r.Runner, targetVersion, runtime.GOOS, runtime.GOARCH); err != nil {
 			klog.Warningf("unable to replace original containerd with v%s-%s-%s: %v", targetVersion, runtime.GOOS, runtime.GOARCH, err)
 		}
