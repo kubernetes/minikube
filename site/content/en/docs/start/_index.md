@@ -676,6 +676,10 @@ NAME              CLASS   HOSTS   ADDRESS          PORTS   AGE
 example-ingress   nginx   *       <your_ip_here>   80      5m45s
 ```
 
+**Note for Docker Desktop Users:**
+<br>
+To get ingress to work you'll need to open a new terminal window and run `minikube tunnel` and in the following step use `0.0.0.0` in place of `<ip_from_above>`.
+
 Now verify that the ingress works
 ```shell
 $ curl <ip_from_above>/foo
