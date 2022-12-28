@@ -423,16 +423,15 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err := cni.ConfigureLoopback(runner); err != nil {
 		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
 	}
-	// ensure all default CNI(s) are properly configured on each and every node (re)start
-	// make sure container runtime is restarted afterwards for these changes to take effect
-	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
-		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
-	}
-
 	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
 			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
 		}
+	}
+	// ensure all default CNI(s) are properly configured on each and every node (re)start
+	// make sure container runtime is restarted afterwards for these changes to take effect
+	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
 	}
 
 	// Preload is overly invasive for bare metal, and caching is not meaningful.

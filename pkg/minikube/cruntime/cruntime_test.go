@@ -460,7 +460,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
-		for _, id := range args[1:] {
+		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")

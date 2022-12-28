@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -156,6 +158,18 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 			return KindNet{cc: cc}
 		}
+		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		return Bridge{cc: cc}
+	}
+
+	// for docker container runtime and k8s v1.24+ where dockershim and kubenet were removed, we fallback to bridge cni for cri-docker(d)
+	// ref: https://github.com/Mirantis/cri-dockerd#important
+	// ref: https://github.com/Mirantis/cri-dockerd#to-use-with-kubernetes
+	// note: currently, default cni that we "distribute" (in /etc/cni/net.d) is based on cri-o bridge, and
+	// because it does not currently use portmap plugin, we pick "our" bridge instead (cri-o one will be disabled automatically)
+	// ref: https://github.com/cri-o/cri-o/blob/f317b267ddef21aee5ffc92d890a77112b006815/contrib/cni/10-crio-bridge.conflist
+	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}
