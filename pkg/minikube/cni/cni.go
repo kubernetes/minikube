@@ -170,7 +170,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	// ref: https://github.com/cri-o/cri-o/blob/f317b267ddef21aee5ffc92d890a77112b006815/contrib/cni/10-crio-bridge.conflist
 	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		klog.Infof("%q driver + %s runtime found on kunernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}
 

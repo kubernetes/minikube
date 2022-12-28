@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/docker/machine/libmachine/state"
@@ -71,8 +72,11 @@ func legacyVersion() string {
 	}
 	// the version containerd in ISO was upgraded to 1.4.2
 	// we need it to use runc.v2 plugin
+	// also, to avoid "getting the runtime version failed: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" error
+	// we need minikube v1.21+
+	// ref: https://containerd.io/releases/#kubernetes-support
 	if ContainerRuntime() == "containerd" {
-		version = "v1.16.0"
+		version = "v1.22.0"
 	}
 	return version
 }
@@ -87,6 +91,11 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
+	}
+
+	if detect.CgroupDriver() == constants.SystemdCgroupDriver {
+		// will block containerd on systemd user machine with "failed to create containerd task: cgroups: cgroup mountpoint does not exist: unknown" error
+		t.Skipf("skipping, test is not stable on system with systemd cgroups driver and legacy minikube version")
 	}
 
 	MaybeParallel(t)
@@ -145,6 +154,11 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	// not supported till v1.10, and passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
+	}
+
+	if detect.CgroupDriver() == constants.SystemdCgroupDriver {
+		// will block containerd on systemd user machine with "failed to create containerd task: cgroups: cgroup mountpoint does not exist: unknown" error
+		t.Skipf("skipping, test is not stable on system with systemd cgroups driver and legacy minikube version")
 	}
 
 	MaybeParallel(t)

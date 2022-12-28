@@ -742,6 +742,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() {
+		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
 		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
 		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}

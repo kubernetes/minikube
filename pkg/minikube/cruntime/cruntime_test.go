@@ -468,7 +468,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			delete(f.containers, id)
 		}
 	case "rm":
-		for _, id := range args[1:] {
+		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
