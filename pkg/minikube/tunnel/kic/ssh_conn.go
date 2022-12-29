@@ -47,6 +47,7 @@ func createSSHConn(name, sshPort, sshKey, bindAddress string, resourcePorts []in
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "IdentitiesOnly=yes",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
