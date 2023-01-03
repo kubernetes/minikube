@@ -77,7 +77,7 @@ minikube kubectl -- get pods
 Creating a deployment inside kubernetes cluster
 
 ```shell
-minikube kubectl -- create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
+minikube kubectl -- create deployment hello-minikube --image=kicbase/echo-server:1.0
 ```
 
 Exposing the deployment with a NodePort service

@@ -20,6 +20,7 @@ div.code-tabs li.nav-tab {
     border-left: 1px solid #ccc;
     border-right: 1px solid #ccc;
     margin-right: 0.5em;
+    margin-bottom: 0;
 
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
@@ -52,6 +53,9 @@ div.code-tabs div.highlight {
     background-color: #fff;
 }
 
+.tab-content .tab-pane .highlight {
+    margin-bottom: 1.25em;
+}
 
 div.code-tabs a.nav-tab {
     all: unset;
