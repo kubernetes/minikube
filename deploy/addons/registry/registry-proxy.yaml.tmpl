@@ -28,6 +28,6 @@ spec:
           hostPort: 5000
         env:
         - name: REGISTRY_HOST
-          value: registry.kube-system.svc.cluster.local
+          value: registry.kube-system.svc.{{.NetworkInfo.DNSDomain}}
         - name: REGISTRY_PORT
           value: "80"

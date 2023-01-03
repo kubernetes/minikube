@@ -929,6 +929,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 	// Network info for generating template
 	opts.NetworkInfo["ControlPlaneNodeIP"] = netInfo.ControlPlaneNodeIP
 	opts.NetworkInfo["ControlPlaneNodePort"] = fmt.Sprint(netInfo.ControlPlaneNodePort)
+	opts.NetworkInfo["DNSDomain"] = cfg.DNSDomain
 
 	// Append postfix "/" to registries
 	for k, v := range opts.Registries {
