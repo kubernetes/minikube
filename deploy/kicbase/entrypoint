@@ -447,6 +447,8 @@ enable_network_magic(){
       -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
       `# switch docker DNS SNAT rules rules to our chosen IP` \
       -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
+      `# add mssing port condition in DNS DNAT rules` \
+      -e "s/p -j DNAT --to-destination ${docker_embedded_dns_ip}/p --dport 53 -j DNAT --to-destination ${docker_embedded_dns_ip}/g"\
     | iptables-restore
 
   # now we can ensure that DNS is configured to use our IP
