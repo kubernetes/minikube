@@ -17,13 +17,16 @@ limitations under the License.
 package kic
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
 
 	"github.com/phayes/freeport"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -44,6 +47,7 @@ func createSSHConn(name, sshPort, sshKey, bindAddress string, resourcePorts []in
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "IdentitiesOnly=yes",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
@@ -116,6 +120,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 		// TODO: document the options here
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking=no",
+		"-o", "IdentitiesOnly=yes",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
@@ -157,10 +162,14 @@ func (c *sshConn) startAndWait() error {
 		out.Step(style.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
 	}
 
+	r, w := io.Pipe()
+	c.cmd.Stdout = w
+	c.cmd.Stderr = w
 	err := c.cmd.Start()
 	if err != nil {
 		return err
 	}
+	go logOutput(r, c.service)
 
 	c.activeConn = true
 	// we ignore wait error because the process will be killed
@@ -170,6 +179,13 @@ func (c *sshConn) startAndWait() error {
 	c.activeConn = false
 
 	return nil
+}
+
+func logOutput(r io.Reader, service string) {
+	s := bufio.NewScanner(r)
+	for s.Scan() {
+		klog.Infof("%s tunnel: %s", service, s.Text())
+	}
 }
 
 func (c *sshConn) stop() error {
