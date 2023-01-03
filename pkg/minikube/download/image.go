@@ -195,6 +195,9 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 }
 
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
+// It returns the img that was loaded into the daemon
+// If online it will be: image:tag@sha256
+// If offline it will be: image:tag
 func CacheToDaemon(img string) (string, error) {
 	p := imagePathInCache(img)
 
