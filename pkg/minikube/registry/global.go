@@ -123,14 +123,10 @@ func Available(vm bool) []DriverState {
 		if !s.Healthy {
 			priority = Unhealthy
 		}
-
-		if vm {
-			if IsVM(d.Name) {
-				sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
-			}
-		} else {
-			sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
+		if vm && !IsVM(d.Name) {
+			continue
 		}
+		sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
 	}
 
 	// Descending priority for predictability
