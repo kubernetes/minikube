@@ -32,7 +32,6 @@ func TestDownload(t *testing.T) {
 	t.Run("BinaryDownloadPreventsMultipleDownload", testBinaryDownloadPreventsMultipleDownload)
 	t.Run("PreloadDownloadPreventsMultipleDownload", testPreloadDownloadPreventsMultipleDownload)
 	t.Run("ImageToCache", testImageToCache)
-	t.Run("ImageToDaemon", testImageToDaemon)
 	t.Run("PreloadNotExists", testPreloadNotExists)
 	t.Run("PreloadChecksumMismatch", testPreloadChecksumMismatch)
 	t.Run("PreloadExistsCaching", testPreloadExistsCaching)
@@ -160,31 +159,6 @@ func testPreloadChecksumMismatch(t *testing.T) {
 }
 
 func testImageToCache(t *testing.T) {
-	downloadNum := 0
-	DownloadMock = mockSleepDownload(&downloadNum)
-
-	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
-
-	var group sync.WaitGroup
-	group.Add(2)
-	dlCall := func() {
-		if err := ImageToCache("testimg"); err != nil {
-			t.Errorf("Failed to download preload: %+v", err)
-		}
-		group.Done()
-	}
-
-	go dlCall()
-	go dlCall()
-
-	group.Wait()
-
-	if downloadNum != 1 {
-		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
-	}
-}
-
-func testImageToDaemon(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 

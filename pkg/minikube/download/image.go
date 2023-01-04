@@ -85,8 +85,6 @@ func ImageExistsInDaemon(img string) bool {
 	return false
 }
 
-var checkImageExistsInDaemon = ImageExistsInDaemon
-
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
 	f := imagePathInCache(img)
@@ -122,7 +120,7 @@ func ImageToCache(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
 		return errors.Wrap(err, "parsing tag")
 	}
@@ -142,7 +140,7 @@ func ImageToCache(img string) error {
 	klog.V(3).Infof("Writing image %v", tag)
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
+	fn := image.Tag(ref.Name())
 	// abbreviate filename for progress
 	maxwidth := 30 - len("...")
 	if len(fn) > maxwidth {
@@ -177,7 +175,7 @@ func ImageToCache(img string) error {
 func parseImage(img string) (*name.Tag, name.Reference, error) {
 
 	var ref name.Reference
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	tag, err := name.NewTag(image.Tag(img))
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to parse image reference")
 	}
@@ -197,118 +195,39 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 }
 
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
-func CacheToDaemon(img string) error {
+// It returns the img that was loaded into the daemon
+// If online it will be: image:tag@sha256
+// If offline it will be: image:tag
+func CacheToDaemon(img string) (string, error) {
 	p := imagePathInCache(img)
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
-		return err
+		return "", err
 	}
 	// do not use cache if image is set in format <name>:latest
 	if _, ok := ref.(name.Tag); ok {
 		if tag.Name() == "latest" {
-			return fmt.Errorf("can't cache 'latest' tag")
+			return "", fmt.Errorf("can't cache 'latest' tag")
 		}
 	}
 
 	i, err := tarball.ImageFromPath(p, tag)
 	if err != nil {
-		return errors.Wrap(err, "tarball")
+		return "", errors.Wrap(err, "tarball")
 	}
 
 	resp, err := daemon.Write(*tag, i)
 	klog.V(2).Infof("response: %s", resp)
-	return err
-}
-
-// ImageToDaemon downloads img (if not present in daemon) and writes it to the local docker daemon
-func ImageToDaemon(img string) error {
-	fileLock := filepath.Join(detect.KICCacheDir(), path.Base(img)+".d.lock")
-	fileLock = localpath.SanitizeCacheDir(fileLock)
-
-	releaser, err := lockDownload(fileLock)
-	if releaser != nil {
-		defer releaser.Release()
-	}
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if checkImageExistsInDaemon(img) {
-		klog.Infof("%s exists in daemon, skipping pull", img)
-		return nil
-	}
-	// buffered channel
-	c := make(chan v1.Update, 200)
-
-	klog.Infof("Writing %s to local daemon", img)
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
-	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
-	if err != nil {
-		return errors.Wrap(err, "parsing tag")
-	}
-
-	if DownloadMock != nil {
-		klog.Infof("Mock download: %s -> daemon", img)
-		return DownloadMock(img, "daemon")
-	}
-
-	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
-	if err != nil {
-		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
-			ErrGithubNeedsLogin := errors.New(err.Error())
-			return ErrGithubNeedsLogin
-		} else if strings.Contains(err.Error(), "UNAUTHORIZED") {
-			ErrNeedsLogin := errors.New(err.Error())
-			return ErrNeedsLogin
-		}
-
-		return errors.Wrap(err, "getting remote image")
-	}
-
-	klog.V(3).Infof("Writing image %v", tag)
-	errchan := make(chan error)
-	p := pb.Full.Start64(0)
-	fn := strings.Split(ref.Name(), "@")[0]
-	// abbreviate filename for progress
-	maxwidth := 30 - len("...")
-	if len(fn) > maxwidth {
-		fn = fn[0:maxwidth] + "..."
-	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
-
-	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(79)
-
-	go func() {
-		_, err = daemon.Write(tag, i)
-		errchan <- err
-	}()
-	var update v1.Update
-loop:
-	for {
-		select {
-		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
-		case err = <-errchan:
-			p.Finish()
-			if err != nil {
-				return errors.Wrap(err, "writing daemon image")
-			}
-			break loop
-		}
-	}
-	klog.V(3).Infof("Pulling image %v", ref)
-	// Pull digest
 	cmd := exec.Command("docker", "pull", "--quiet", img)
-	if _, err := cmd.Output(); err != nil {
-		return errors.Wrap(err, "pulling remote image")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)
+		img = image.Tag(img)
 	}
-	return nil
+
+	return img, nil
 }
