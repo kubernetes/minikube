@@ -159,3 +159,9 @@ $env:MINIKUBE_HOME = "D:\.minikube"
 
 minikube start
 ```
+
+## Can I set a static IP for the minikube cluster?
+
+Currently a static IP can only be set when using the Docker or Podman driver.
+
+For more details see the [static IP tutorial]({{< ref "docs/tutorials/static_ip.md" >}}).
