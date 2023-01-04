@@ -205,7 +205,7 @@ func printProfilesJSON() {
 	updateProfilesStatus(validProfiles)
 
 	var body = map[string]interface{}{}
-	if err == nil || config.IsNotExist(err) {
+	if err == nil || os.IsNotExist(err) {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
 		jsonString, _ := json.Marshal(body)
