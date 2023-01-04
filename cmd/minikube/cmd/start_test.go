@@ -690,17 +690,17 @@ func TestValidateStaticIP(t *testing.T) {
 		{
 			staticIP: "192.168.49.0",
 			drvName:  "docker",
-			errorMsg: "static IPs last octet must be between 2 and 254 (ex. X.X.X.2 - X.X.X.254)",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
 		},
 		{
 			staticIP: "192.168.49.1",
 			drvName:  "docker",
-			errorMsg: "static IPs last octet must be between 2 and 254 (ex. X.X.X.2 - X.X.X.254)",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
 		},
 		{
 			staticIP: "192.168.49.255",
 			drvName:  "docker",
-			errorMsg: "static IPs last octet must be between 2 and 254 (ex. X.X.X.2 - X.X.X.254)",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
 		},
 		{
 			staticIP: "192.168.49.2",

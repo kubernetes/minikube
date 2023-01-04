@@ -111,7 +111,7 @@ minikube start [flags]
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)
       --ssh-user string                   SSH user (ssh driver only) (default "root")
-      --static-ip string                  Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254 (Docker and Podman drivers only)
+      --static-ip string                  Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)
       --subnet string                     Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)

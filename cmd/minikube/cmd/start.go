@@ -1797,7 +1797,7 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 	}
 	lastOctet, _ := strconv.Atoi(strings.Split(ip.String(), ".")[3])
 	if lastOctet < 2 || lastOctet > 254 {
-		return fmt.Errorf("static IPs last octet must be between 2 and 254 (ex. X.X.X.2 - X.X.X.254)")
+		return fmt.Errorf("static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200")
 	}
 	return nil
 }
