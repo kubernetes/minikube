@@ -1757,7 +1757,7 @@ func validateDockerStorageDriver(drvName string) {
 func validateSubnet(subnet string) error {
 	ip, cidr, err := netutil.ParseAddr(subnet)
 	if err != nil {
-		return err
+		return errors.Errorf("Sorry, unable to parse subnet: %v", err)
 	}
 	if !ip.IsPrivate() {
 		return errors.Errorf("Sorry, the subnet %s is not a private IP", ip)
