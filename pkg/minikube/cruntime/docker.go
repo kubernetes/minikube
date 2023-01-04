@@ -163,12 +163,18 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
 		// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
 		// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
-		targetVersion := "0.2.6"
+		targetVersion := "0.3.0"
 		klog.Infof("replacing original cri-dockerd with v%s-%s", targetVersion, runtime.GOARCH)
 		if err := updateCRIDockerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
 			klog.Warningf("unable to replace original cri-dockerd with v%s-%s: %v", targetVersion, runtime.GOARCH, err)
 		}
 
+		if err := r.Init.Enable("cri-docker.socket"); err != nil {
+			return err
+		}
+		if err := r.Init.Unmask(r.CRIService); err != nil {
+			return err
+		}
 		if err := r.Init.Enable(r.CRIService); err != nil {
 			return err
 		}
@@ -187,25 +193,34 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	if r.CRIService != "" {
-		if err := r.Init.Stop(r.CRIService); err != nil {
-			return err
-		}
-		if err := r.Init.Disable(r.CRIService); err != nil {
-			return err
-		}
+	// even if r.CRIService is undefined, it might still be available, so try to disable it and just warn then fallthrough if unsuccessful
+	klog.Info("disabling cri-docker service (if available) ...")
+	criSocket := "cri-docker.socket"
+	criService := "cri-docker.service"
+	if err := r.Init.ForceStop(criSocket); err != nil {
+		klog.Warningf("Failed to stop socket %q (might be ok): %v", criSocket, err)
 	}
+	if err := r.Init.ForceStop(criService); err != nil {
+		klog.Warningf("Failed to stop service %q (might be ok): %v", criService, err)
+	}
+	if err := r.Init.Disable(criSocket); err != nil {
+		klog.Warningf("Failed to disable socket %q (might be ok): %v", criSocket, err)
+	}
+	if err := r.Init.Mask(criService); err != nil {
+		klog.Warningf("Failed to mask service %q (might be ok): %v", criService, err)
+	}
+
 	klog.Info("disabling docker service ...")
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
+		klog.ErrorS(err, "Failed to stop", "socket", "docker.socket")
 	}
 	if err := r.Init.ForceStop("docker.service"); err != nil {
 		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
 		return err
 	}
 	if err := r.Init.Disable("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+		klog.ErrorS(err, "Failed to disable", "socket", "docker.socket")
 	}
 	return r.Init.Mask("docker.service")
 }

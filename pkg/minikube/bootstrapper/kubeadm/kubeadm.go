@@ -1113,7 +1113,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 // stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
 func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 	klog.Info("stopping kube-system containers ...")
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "new cruntime")
 	}

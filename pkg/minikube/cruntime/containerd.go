@@ -145,16 +145,22 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 			return errors.Wrap(err, "configuring SystemdCgroup")
 		}
 	}
-	// handle deprecated features
+	// handle deprecated/removed features
 	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#deprecated-features
-	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|"io.containerd.runtime.v1.linux"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runtime.v1.linux"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring io.containerd.runtime version")
 	}
-	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|"io.containerd.runc.v1"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+	// avoid containerd v1.6.14 "failed to load plugin io.containerd.grpc.v1.cri" error="invalid plugin config: `systemd_cgroup` only works for runtime io.containerd.runtime.v1.linux" error
+	// that then leads to crictl "getting the runtime version: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" error
+	// ref: https://github.com/containerd/containerd/issues/4203
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/systemd_cgroup/d' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "removing deprecated systemd_cgroup param")
+	}
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runc.v1"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring io.containerd.runc version")
 	}
 	// ensure conf_dir is using '/etc/cni/net.d'
-	// TODO (@prezha): this should be removed (ie, not needed) once we remove "hardcoded" '/etc/cni/net.mk' folder in minikube distro
+	// we might still want to try removing '/etc/cni/net.mk' in case of upgrade from previous minikube version that had/used it
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", `sudo rm -rf /etc/cni/net.mk`)); err != nil {
 		return fmt.Errorf("unable to remove /etc/cni/net.mk directory: %v", err)
 	}

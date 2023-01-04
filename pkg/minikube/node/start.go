@@ -527,6 +527,18 @@ func cgroupDriver(cc config.ClusterConfig) string {
 		return cc.KubernetesConfig.CgroupDriver
 	}
 
+	// vm driver uses iso that boots with cgroupfs cgroup driver by default atm (keep in sync!)
+	if driver.IsVM(cc.Driver) {
+		return constants.CgroupfsCgroupDriver
+	}
+
+	// for "remote baremetal", we assume cgroupfs and user can "force-systemd" with flag to override
+	// potential improvement: use systemd as default (in line with k8s) and allow user to override it with new flag (eg, "cgroup-driver", that would replace "force-systemd")
+	if driver.IsSSH(cc.Driver) {
+		return constants.CgroupfsCgroupDriver
+	}
+
+	// in all other cases - try to detect and use what's on user's machine
 	return detect.CgroupDriver()
 }
 

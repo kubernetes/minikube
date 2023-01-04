@@ -742,7 +742,12 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() {
-		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
+		// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
+		// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
+		os.Unsetenv("MOCK_GOOGLE_TOKEN")
+		// re-set MOCK_GOOGLE_TOKEN once we're done
+		defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
 		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
 		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}

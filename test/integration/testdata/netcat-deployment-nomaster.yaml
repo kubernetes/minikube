@@ -17,7 +17,8 @@ spec:
       containers:
         # dnsutils is easier to debug DNS issues with than the standard busybox image
         - name: dnsutils
-          image: k8s.gcr.io/e2e-test-images/agnhost:2.32
+          # https://github.com/kubernetes/kubernetes/blob/master/test/images/agnhost/README.md
+          image: registry.k8s.io/e2e-test-images/agnhost:2.40
           command:
             ["/bin/sh", "-c", "while true; do echo hello | nc -l -p 8080; done"]
       affinity:

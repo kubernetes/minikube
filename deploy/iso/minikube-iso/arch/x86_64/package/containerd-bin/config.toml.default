@@ -56,7 +56,6 @@ oom_score = 0
     selinux_category_range = 1024
     sandbox_image = "k8s.gcr.io/pause:3.2"
     stats_collect_period = 10
-    systemd_cgroup = false
     enable_tls_streaming = false
     max_container_log_line_size = 16384
     disable_cgroup = false
@@ -75,7 +74,7 @@ oom_score = 0
       disable_snapshot_annotations = true
       discard_unpacked_layers = false
       [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
-        runtime_type = ""
+        runtime_type = "io.containerd.runc.v2"
         runtime_engine = ""
         runtime_root = ""
         privileged_without_host_devices = false
@@ -114,12 +113,6 @@ oom_score = 0
     content_sharing_policy = "shared"
   [plugins."io.containerd.monitor.v1.cgroups"]
     no_prometheus = false
-  [plugins."io.containerd.runtime.v1.linux"]
-    shim = "containerd-shim"
-    runtime = "runc"
-    runtime_root = ""
-    no_shim = false
-    shim_debug = false
   [plugins."io.containerd.runtime.v2.task"]
     platforms = ["linux/amd64"]
   [plugins."io.containerd.service.v1.diff-service"]
