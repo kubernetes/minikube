@@ -47,6 +47,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/minikube/pkg/minikube/command"
+	netutil "k8s.io/minikube/pkg/network"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -1212,32 +1213,19 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	}
 
+	if cmd.Flags().Changed(subnet) {
+		err := validateSubnet(viper.GetString(subnet))
+		if err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
 	if cmd.Flags().Changed(containerRuntime) {
 		err := validateRuntime(viper.GetString(containerRuntime))
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 		validateCNI(cmd, viper.GetString(containerRuntime))
-	}
-
-	if driver.BareMetal(drvName) {
-		if ClusterFlagValue() != constants.DefaultClusterName {
-			exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
-		}
-
-		// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
-		rtime := viper.GetString(containerRuntime)
-		if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime(getKubernetesVersion(nil)) {
-			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": rtime})
-		}
-
-		// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
-		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
-		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
-			if _, err := exec.LookPath("conntrack"); err != nil {
-				exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
-			}
-		}
 	}
 
 	if driver.IsSSH(drvName) {
@@ -1279,6 +1267,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		exit.Message(reason.Usage, "Sorry, please set the --output flag to one of the following valid options: [text,json]")
 	}
 
+	validateBareMetal(drvName)
 	validateRegistryMirror()
 	validateInsecureRegistry()
 }
@@ -1761,6 +1750,50 @@ func validateDockerStorageDriver(drvName string) {
 	}
 	out.WarningT("{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance", out.V{"StorageDriver": si.StorageDriver, "Driver": drvName})
 	viper.Set(preload, false)
+}
+
+// validateSubnet checks that the subnet provided has a private IP
+// and does not have a mask of more that /30
+func validateSubnet(subnet string) error {
+	ip, cidr, err := netutil.ParseAddr(subnet)
+	if err != nil {
+		return errors.Errorf("Sorry, unable to parse subnet: %v", err)
+	}
+	if !ip.IsPrivate() {
+		return errors.Errorf("Sorry, the subnet %s is not a private IP", ip)
+	}
+
+	if cidr != nil {
+		mask, _ := cidr.Mask.Size()
+		if mask > 30 {
+			return errors.Errorf("Sorry, the subnet provided does not have a mask less than or equal to /30")
+		}
+	}
+	return nil
+}
+
+func validateBareMetal(drvName string) {
+	if !driver.BareMetal(drvName) {
+		return
+	}
+
+	if ClusterFlagValue() != constants.DefaultClusterName {
+		exit.Message(reason.DrvUnsupportedProfile, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
+	}
+
+	// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
+	rtime := viper.GetString(containerRuntime)
+	if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime(getKubernetesVersion(nil)) {
+		out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": rtime})
+	}
+
+	// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
+	version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+	if version.GTE(semver.MustParse("1.18.0-beta.1")) {
+		if _, err := exec.LookPath("conntrack"); err != nil {
+			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+		}
+	}
 }
 
 func exitIfNotForced(r reason.Kind, message string, v ...out.V) {

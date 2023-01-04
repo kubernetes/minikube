@@ -628,3 +628,40 @@ func TestValidatePorts(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSubnet(t *testing.T) {
+	type subnetTest struct {
+		subnet   string
+		errorMsg string
+	}
+	var tests = []subnetTest{
+		{
+			subnet:   "192.168.1.1",
+			errorMsg: "",
+		},
+		{
+			subnet:   "193.169.1.1",
+			errorMsg: "Sorry, the subnet 193.169.1.1 is not a private IP",
+		},
+		{
+			subnet:   "192.168.1.1/24",
+			errorMsg: "",
+		},
+		{
+			subnet:   "192.168.1.1/32",
+			errorMsg: "Sorry, the subnet provided does not have a mask less than or equal to /30",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.subnet, func(t *testing.T) {
+			gotError := ""
+			got := validateSubnet(test.subnet)
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateSubnet(subnet=%v): got %v, expected %v", test.subnet, got, test.errorMsg)
+			}
+		})
+	}
+}

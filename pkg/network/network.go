@@ -126,12 +126,9 @@ func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
 var inspect = func(addr string) (*Parameters, error) {
 
 	// extract ip from addr
-	ip, network, err := net.ParseCIDR(addr)
+	ip, network, err := ParseAddr(addr)
 	if err != nil {
-		ip = net.ParseIP(addr)
-		if ip == nil {
-			return nil, fmt.Errorf("failed parsing address %s: %w", addr, err)
-		}
+		return nil, err
 	}
 
 	n := &Parameters{}
@@ -259,6 +256,19 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 		currSubnet = nextSubnet.String()
 	}
 	return nil, fmt.Errorf("no free private network subnets found with given parameters (start: %q, step: %d, tries: %d)", startSubnet, step, tries)
+}
+
+// ParseAddr will try to parse an ip or a cidr address
+func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
+	ip, network, err := net.ParseCIDR(addr)
+	if err != nil {
+		ip = net.ParseIP(addr)
+		if ip == nil {
+			return nil, nil, fmt.Errorf("failed parsing address %s: %w", addr, err)
+		}
+		err = nil
+	}
+	return ip, network, err
 }
 
 // reserveSubnet returns if subnet was successfully reserved for given period:
