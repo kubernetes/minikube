@@ -111,6 +111,9 @@ func Available(vm bool) []DriverState {
 	klog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
 	for _, d := range globalRegistry.List() {
+		if vm && !IsVM(d.Name) {
+			continue
+		}
 		if d.Status == nil {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
@@ -123,14 +126,7 @@ func Available(vm bool) []DriverState {
 		if !s.Healthy {
 			priority = Unhealthy
 		}
-
-		if vm {
-			if IsVM(d.Name) {
-				sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
-			}
-		} else {
-			sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
-		}
+		sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
 	}
 
 	// Descending priority for predictability
