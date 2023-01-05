@@ -59,11 +59,15 @@ func TestPreload(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	// Restart minikube with v1.24.6, which has a preloaded tarball
+	// stop the cluster
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	// re-start the cluster and check if image is preserved
 	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion = "v1.24.6"
-	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
