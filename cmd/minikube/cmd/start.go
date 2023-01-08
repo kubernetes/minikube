@@ -218,9 +218,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	useForce := viper.GetBool(force)
+
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
-		node.ExitIfFatal(err)
+		node.ExitIfFatal(err, useForce)
 		machine.MaybeDisplayAdvice(err, ds.Name)
 		if specified {
 			// If the user specified a driver, don't fallback to anything else
@@ -280,7 +282,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kubeconfig, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
-		node.ExitIfFatal(err)
+		node.ExitIfFatal(err, useForce)
 		exit.Error(reason.GuestStart, "failed to start node", err)
 	}
 
