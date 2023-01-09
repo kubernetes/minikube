@@ -665,3 +665,62 @@ func TestValidateSubnet(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateStaticIP(t *testing.T) {
+	tests := []struct {
+		staticIP string
+		drvName  string
+		errorMsg string
+	}{
+		{
+			staticIP: "8.8.8.8",
+			drvName:  "docker",
+			errorMsg: "static IP must be private",
+		},
+		{
+			staticIP: "8.8.8.8",
+			drvName:  "hyperkit",
+			errorMsg: "",
+		},
+		{
+			staticIP: "fdfc:a4c0:e99e:7ad3::",
+			drvName:  "docker",
+			errorMsg: "static IP must be IPv4",
+		},
+		{
+			staticIP: "192.168.49.0",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.1",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.255",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.2",
+			drvName:  "docker",
+			errorMsg: "",
+		},
+		{
+			staticIP: "192.168.49.254",
+			drvName:  "docker",
+			errorMsg: "",
+		},
+	}
+	for _, tt := range tests {
+		gotError := ""
+		got := validateStaticIP(tt.staticIP, tt.drvName, "")
+		if got != nil {
+			gotError = got.Error()
+		}
+		if gotError != tt.errorMsg {
+			t.Errorf("validateStaticIP(%s, %s): got %v, expected %v", tt.staticIP, tt.drvName, got, tt.errorMsg)
+		}
+	}
+}

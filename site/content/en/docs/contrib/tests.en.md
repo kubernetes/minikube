@@ -455,6 +455,9 @@ verifies the docker driver and run with an existing network
 ## TestKicCustomSubnet
 verifies the docker/podman driver works with a custom subnet
 
+## TestKicStaticIP
+starts minikube with the static IP flag
+
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag
 

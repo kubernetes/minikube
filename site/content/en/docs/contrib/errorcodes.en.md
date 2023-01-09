@@ -358,6 +358,9 @@ minikube failed to parse or find port for mount
 "IF_SSH_CLIENT" (Exit code ExLocalNetworkError)  
 minikube failed to access an ssh client on the host machine  
 
+"IF_DEDICATED_NETWORK" (Exit code ExLocalNetworkError)  
+minikube failed to create a dedicated network  
+
 "INET_CACHE_BINARIES" (Exit code ExInternetError)  
 minikube failed to cache kubernetes binaries for the current runtime  
 

@@ -41,7 +41,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
@@ -92,8 +94,17 @@ func (d *Driver) Create() error {
 	if networkName == "" {
 		networkName = d.NodeConfig.ClusterName
 	}
-	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName, d.NodeConfig.Subnet); err != nil {
-		out.WarningT("Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}", out.V{"error": err})
+	staticIP := d.NodeConfig.StaticIP
+	if gateway, err := oci.CreateNetwork(d.OCIBinary, networkName, d.NodeConfig.Subnet, staticIP); err != nil {
+		msg := "Unable to create dedicated network, this might result in cluster IP change after restart: {{.error}}"
+		args := out.V{"error": err}
+		if staticIP != "" {
+			exit.Message(reason.IfDedicatedNetwork, msg, args)
+		}
+		out.WarningT(msg, args)
+	} else if gateway != nil && staticIP != "" {
+		params.Network = networkName
+		params.IP = staticIP
 	} else if gateway != nil {
 		params.Network = networkName
 		ip := gateway.To4()
