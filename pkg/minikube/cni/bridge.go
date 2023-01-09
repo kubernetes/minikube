@@ -108,8 +108,3 @@ func (c Bridge) Apply(r Runner) error {
 func (c Bridge) CIDR() string {
 	return DefaultPodCIDR
 }
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-func (c Bridge) Ready() bool {
-	return true
-}

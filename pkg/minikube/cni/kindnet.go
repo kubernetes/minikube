@@ -20,12 +20,8 @@ import (
 	"bytes"
 	"os/exec"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -198,16 +194,4 @@ func (c KindNet) Apply(r Runner) error {
 // CIDR returns the default CIDR used by this CNI
 func (c KindNet) CIDR() string {
 	return DefaultPodCIDR
-}
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-// KindNet uses app=kindnet or k8s-app=kindnet label.
-func (c KindNet) Ready() bool {
-	client, err := kapi.Client(c.cc.Name)
-	if err != nil {
-		klog.Errorf("unable to get k8s client for %s: %v", c.cc.Name, err)
-		return false
-	}
-
-	return kapi.WaitForPods(client, meta.NamespaceAll, "app=kindnet", 10*time.Millisecond) == nil
 }

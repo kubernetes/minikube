@@ -4,9 +4,6 @@
 #
 ################################################################################
 
-# If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
-# This uses the static make target at the top level Makefile, since that builds everything, then picks out the amd64 binary
-
 # As of 2022-06-09
 CRI_DOCKERD_VER = 0.2.2
 CRI_DOCKERD_REV = 0737013

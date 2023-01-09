@@ -19,7 +19,6 @@ package cni
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	// goembed needs this
 	_ "embed"
@@ -27,9 +26,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -97,16 +93,4 @@ func (c Calico) Apply(r Runner) error {
 func (c Calico) CIDR() string {
 	// Calico docs specify 192.168.0.0/16 - but we do this for compatibility with other CNI's.
 	return DefaultPodCIDR
-}
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-// Calico uses k8s-app=calico-node and k8s-app=calico-kube-controllers labels.
-func (c Calico) Ready() bool {
-	client, err := kapi.Client(c.cc.Name)
-	if err != nil {
-		klog.Errorf("unable to get k8s client for %s: %v", c.cc.Name, err)
-		return false
-	}
-
-	return kapi.WaitForPods(client, meta.NamespaceAll, "k8s-app in (calico-node, calico-kube-controllers)", 10*time.Millisecond) == nil
 }

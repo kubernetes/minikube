@@ -72,9 +72,6 @@ type Manager interface {
 
 	// String representation
 	String() string
-
-	// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-	Ready() bool
 }
 
 // tmplInputs are inputs to CNI templates
@@ -155,10 +152,10 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 
 	if cc.KubernetesConfig.ContainerRuntime != constants.Docker {
 		if driver.IsKIC(cc.Driver) {
-			klog.Infof("%q driver + %s runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+			klog.Infof("%q driver + %q runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 			return KindNet{cc: cc}
 		}
-		klog.Infof("%q driver + %s runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		klog.Infof("%q driver + %q runtime found, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}
 
@@ -170,7 +167,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	// ref: https://github.com/cri-o/cri-o/blob/f317b267ddef21aee5ffc92d890a77112b006815/contrib/cni/10-crio-bridge.conflist
 	kv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err == nil && kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		klog.Infof("%q driver + %q container runtime found on kunernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
+		klog.Infof("%q driver + %q container runtime found on kubernetes v1.24+, recommending bridge", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 		return Bridge{cc: cc}
 	}
 

@@ -150,12 +150,14 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runtime.v1.linux"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring io.containerd.runtime version")
 	}
-	// avoid containerd v1.6.14 "failed to load plugin io.containerd.grpc.v1.cri" error="invalid plugin config: `systemd_cgroup` only works for runtime io.containerd.runtime.v1.linux" error
+	// avoid containerd v1.6.14+ "failed to load plugin io.containerd.grpc.v1.cri" error="invalid plugin config: `systemd_cgroup` only works for runtime io.containerd.runtime.v1.linux" error
 	// that then leads to crictl "getting the runtime version: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" error
 	// ref: https://github.com/containerd/containerd/issues/4203
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/systemd_cgroup/d' %s`, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "removing deprecated systemd_cgroup param")
 	}
+	// "runtime_type" has to be specified and it should be "io.containerd.runc.v2"
+	// ref: https://github.com/containerd/containerd/issues/6964#issuecomment-1132378279
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runc.v1"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring io.containerd.runc version")
 	}
@@ -231,7 +233,7 @@ func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace
 
 	// TODO (@prezha): remove this hack after proper version update in minikube release
 	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support
-	targetVersion := "1.6.14"
+	targetVersion := "1.6.15"
 	currentVersion, err := r.Version()
 	if err == nil && semver.MustParse(targetVersion).GT(semver.MustParse(currentVersion)) {
 		klog.Infof("replacing original containerd with v%s-%s-%s", targetVersion, runtime.GOOS, runtime.GOARCH)
@@ -427,21 +429,41 @@ func (r *Containerd) CGroupDriver() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if info["config"] == nil {
-		return "", errors.Wrapf(err, "missing config")
+
+	// crictl also returns default ('false') value for "systemdCgroup" - deprecated "systemd_cgroup" config param that is now irrelevant
+	// ref: https://github.com/containerd/containerd/blob/5e7baa2eb3dab4c4365dd63c05ed8b3fa94b9271/pkg/cri/config/config.go#L277-L280
+	// ref: https://github.com/containerd/containerd/issues/4574#issuecomment-1298727099
+	// so, we try to extract runc's "SystemdCgroup" option that we care about
+	// ref: https://github.com/containerd/containerd/issues/4203#issuecomment-651532765
+	j, err := json.Marshal(info)
+	if err != nil {
+		return "", fmt.Errorf("marshalling: %v", err)
 	}
-	config, ok := info["config"].(map[string]interface{})
-	if !ok {
-		return "", errors.Wrapf(err, "config not map")
+	s := struct {
+		Config struct {
+			Containerd struct {
+				Runtimes struct {
+					Runc struct {
+						Options struct {
+							SystemdCgroup bool `json:"SystemdCgroup"`
+						} `json:"options"`
+					} `json:"runc"`
+				} `json:"runtimes"`
+			} `json:"containerd"`
+		} `json:"config"`
+	}{}
+	if err := json.Unmarshal(j, &s); err != nil {
+		return "", fmt.Errorf("unmarshalling: %v", err)
 	}
-	cgroupManager := "systemd" // default: https://github.com/containerd/containerd/blob/main/docs/cri/config.md#cgroup-driver
-	switch config["systemdCgroup"] {
-	case false:
-		cgroupManager = "cgroupfs"
+	// note: if "path" does not exists, SystemdCgroup will evaluate to false as 'default' value for bool => constants.CgroupfsCgroupDriver
+	switch s.Config.Containerd.Runtimes.Runc.Options.SystemdCgroup {
 	case true:
-		cgroupManager = "systemd"
+		return constants.SystemdCgroupDriver, nil
+	case false:
+		return constants.CgroupfsCgroupDriver, nil
+	default:
+		return constants.DefaultCgroupDriver, nil
 	}
-	return cgroupManager, nil
 }
 
 // KubeletOptions returns kubelet options for a containerd

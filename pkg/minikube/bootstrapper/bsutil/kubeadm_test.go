@@ -212,7 +212,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
 		"crio config":                            "cgroup_manager = \"systemd\"\n",
-		"sudo crictl info":                       "{\"config\": {\"systemdCgroup\": true}}",
+		"sudo crictl info":                       "{\"config\": {\"containerd\": {\"runtimes\": {\"runc\": {\"options\": {\"SystemdCgroup\": true}}}}}}",
 	})
 	tests := []struct {
 		name      string

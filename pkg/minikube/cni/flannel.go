@@ -21,12 +21,8 @@ import (
 	_ "embed"
 	"os/exec"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -83,16 +79,4 @@ func (c Flannel) manifest() (assets.CopyableFile, error) {
 // CIDR returns the default CIDR used by this CNI
 func (c Flannel) CIDR() string {
 	return DefaultPodCIDR
-}
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-// Flannel uses app=flannel label.
-func (c Flannel) Ready() bool {
-	client, err := kapi.Client(c.cc.Name)
-	if err != nil {
-		klog.Errorf("unable to get k8s client for %s: %v", c.cc.Name, err)
-		return false
-	}
-
-	return kapi.WaitForPods(client, meta.NamespaceAll, "app=flannel", 10*time.Millisecond) == nil
 }

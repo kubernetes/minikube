@@ -151,6 +151,7 @@ func SocketVMNetInstalled() bool {
 
 // CgroupDriver returns detected cgroup driver as configured on host os.
 // If unable to detect, it will return constants.DefaultCgroupDriver instead.
+// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
 func CgroupDriver() string {
 	switch cgroupVersion() {
 	case "v1":

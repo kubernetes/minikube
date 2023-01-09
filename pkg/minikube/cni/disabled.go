@@ -51,8 +51,3 @@ func (c Disabled) CIDR() string {
 	// Even without any CNI we want our nodes to have spec.PodCIDR set.
 	return DefaultPodCIDR
 }
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-func (c Disabled) Ready() bool {
-	return true
-}

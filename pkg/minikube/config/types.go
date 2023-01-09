@@ -115,7 +115,6 @@ type KubernetesConfig struct {
 	APIServerNames      []string
 	APIServerIPs        []net.IP
 	DNSDomain           string
-	CgroupDriver        string
 	ContainerRuntime    string
 	CRISocket           string
 	NetworkPlugin       string
@@ -145,7 +144,6 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
-	CgroupDriver      string
 	ContainerRuntime  string
 	ControlPlane      bool
 	Worker            bool

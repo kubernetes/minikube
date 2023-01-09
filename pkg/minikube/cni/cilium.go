@@ -20,12 +20,9 @@ import (
 	"bytes"
 	"os/exec"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -864,17 +861,4 @@ func (c Cilium) Apply(r Runner) error {
 	}
 
 	return applyManifest(c.cc, r, manifestAsset(ciliumCfg))
-}
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-// Cilium uses k8s-app=cilium and name=cilium-operator labels.
-func (c Cilium) Ready() bool {
-	client, err := kapi.Client(c.cc.Name)
-	if err != nil {
-		klog.Errorf("unable to get k8s client for %s: %v", c.cc.Name, err)
-		return false
-	}
-
-	return kapi.WaitForPods(client, meta.NamespaceAll, "k8s-app=cilium", 10*time.Millisecond) == nil &&
-		kapi.WaitForPods(client, meta.NamespaceAll, "name=cilium-operator", 10*time.Millisecond) == nil
 }

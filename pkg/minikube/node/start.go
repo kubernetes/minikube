@@ -91,7 +91,7 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
-func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) { //nolint to temporary suppress cyclomatic complexity 31 of func `Start` is high (> 30)
+func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var wg sync.WaitGroup
 	stopk8s, err := handleNoKubernetes(starter)
 	if err != nil {
@@ -211,26 +211,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) { //no
 		}
 	}
 
-	timeout := viper.GetDuration(waitTimeout)
-	delay := time.Duration(0)
 	if !starter.Cfg.DisableOptimizations {
-		cm, err := cni.New(starter.Cfg)
-		if err != nil {
-			klog.Warning("unable to create cni manager - will skip waiting for cni to become ready")
-		} else if !cm.Ready() {
-			// wait for cni to become ready up to half of the total waitTimeout
-			if delay, err = waitCNIReady(cm, timeout/2); err != nil {
-				klog.Warningf("%s cni did not appear ready after %s (will continue): %v", cm.String(), delay, err)
-			}
-		}
-		// scale coredns to 1 replica
+		// Scale down CoreDNS from default 2 to 1 replica.
 		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("unable to scale deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 		}
 	}
-	klog.Infof("Will wait %s for node %+v", timeout-delay, starter.Node)
-	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, timeout-delay); err != nil {
-		return nil, errors.Wrapf(err, "wait %s for node", timeout-delay)
+
+	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
+	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
 
 	klog.Infof("waiting for startup goroutines ...")
@@ -238,20 +228,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) { //no
 
 	// Write enabled addons to the config before completion
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
-}
-
-func waitCNIReady(cm cni.Manager, wait time.Duration) (time.Duration, error) {
-	start := time.Now()
-
-	klog.Infof("will wait %s for %s to become ready", wait, cm.String())
-
-	query := func() error {
-		if cm.Ready() {
-			return nil
-		}
-		return fmt.Errorf("%s cni not ready yet", cm.String())
-	}
-	return time.Since(start), retry.Local(query, wait)
 }
 
 // handleNoKubernetes handles starting minikube without Kubernetes.
@@ -293,19 +269,6 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
-	}
-
-	if !starter.Cfg.DisableOptimizations && starter.Cfg.KubernetesConfig.NetworkPlugin == "cni" {
-		// CoreDNS needs CNI to be Ready - scale down to 0 replica if not, so we don't "count" this into waiting time for CoreDNS to come up and we don't hit max CrashLoopBackOff delay later (5 mins atm).
-		cnm, err := cni.New(starter.Cfg)
-		if err != nil {
-			klog.Warning("unable to create cni manager - will skip scaling corens down to 0")
-		} else if !cnm.Ready() {
-			klog.Infof("%s cni is not yet ready - will scale coredns down to 0 for now", cnm.String())
-			if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 0); err != nil {
-				klog.Errorf("unable to scale coredns down to 0: %v", err)
-			}
-		}
 	}
 
 	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
@@ -497,9 +460,8 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 // cgroupDriver returns cgroup driver that should be used to further configure container runtime, node(s) and cluster.
 // It is based on:
 // - (forced) user preference (set via flags or env), if present, or
-// - existing k8s cluster config, if present, or
-// - host os config detection, if possible, or
-// - constants.DefaultCgroupDriver, otherwise.
+// - default settings for vm or ssh driver, if user, or
+// - host os config detection, if possible.
 // Possible mappings are: "v1" (legacy) cgroups => "cgroupfs", "v2" (unified) cgroups => "systemd" and "" (unknown) cgroups => constants.DefaultCgroupDriver.
 // Note: starting from k8s v1.22, "kubeadm clusters should be using the systemd driver":
 // ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
@@ -519,12 +481,6 @@ func cgroupDriver(cc config.ClusterConfig) string {
 	if force, err := strconv.ParseBool(env); env != "" && err == nil && force {
 		klog.Infof("using %q cgroup driver as enforced via env", constants.SystemdCgroupDriver)
 		return constants.SystemdCgroupDriver
-	}
-
-	// check current cluster config
-	if cc.KubernetesConfig.CgroupDriver != "" {
-		klog.Infof("using %q cgroup driver from existing cluster config", cc.KubernetesConfig.CgroupDriver)
-		return cc.KubernetesConfig.CgroupDriver
 	}
 
 	// vm driver uses iso that boots with cgroupfs cgroup driver by default atm (keep in sync!)

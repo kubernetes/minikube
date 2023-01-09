@@ -15,6 +15,7 @@ ExecStart=/usr/bin/containerd \
       $CONTAINERD_MINIKUBE_OPTIONS \
       --root ${PERSISTENT_DIR}/var/lib/containerd
 TasksMax=8192
+# ref: https://github.com/containerd/containerd/blob/main/docs/ops.md#systemd
 Delegate=yes
 KillMode=process
 LimitNOFILE=1048576

@@ -69,8 +69,3 @@ func (c Custom) Apply(r Runner) error {
 func (c Custom) CIDR() string {
 	return DefaultPodCIDR
 }
-
-// Ready returns if CNI is ready (eg, all required pods have Ready PodCondition).
-func (c Custom) Ready() bool {
-	return true
-}
