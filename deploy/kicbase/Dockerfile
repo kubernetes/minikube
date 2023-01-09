@@ -37,7 +37,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20221019 as kicbase
+FROM ubuntu:jammy as kicbase
 
 ARG BUILDKIT_VERSION="v0.10.3"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -54,7 +54,6 @@ COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
 COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
-COPY deploy/kicbase/CHANGELOG ./CHANGELOG
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
@@ -143,7 +142,7 @@ RUN clean-install \
 # install docker
 # use the bionic packages for arm32
 RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
+    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="jammy"; fi && \
     sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
