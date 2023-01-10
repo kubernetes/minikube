@@ -267,7 +267,7 @@ func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
 	return ip, network, err
 }
 
-// reserveSubnet returns releaser if subnet was successfully reserved for given period, creating lock for subnet to avoid race condition between multiple minikube instances (especially white testing in parallel).
+// reserveSubnet returns releaser if subnet was successfully reserved for given period, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
 var reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(subnet)
 	spec.Timeout = 1 * time.Millisecond // practically: just check, don't wait
