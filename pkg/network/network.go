@@ -28,28 +28,7 @@ import (
 
 const defaultReservationPeriod = 1 * time.Minute
 
-var (
-	reservedSubnets = sync.Map{}
-
-	// valid private network subnets (RFC1918)
-	privateSubnets = []net.IPNet{
-		// 10.0.0.0/8
-		{
-			IP:   []byte{10, 0, 0, 0},
-			Mask: []byte{255, 0, 0, 0},
-		},
-		// 172.16.0.0/12
-		{
-			IP:   []byte{172, 16, 0, 0},
-			Mask: []byte{255, 240, 0, 0},
-		},
-		// 192.168.0.0/16
-		{
-			IP:   []byte{192, 168, 0, 0},
-			Mask: []byte{255, 255, 0, 0},
-		},
-	}
-)
+var reservedSubnets = sync.Map{}
 
 // reservation of free private subnet is held for defined reservation period from createdAt time.
 type reservation struct {
@@ -66,6 +45,7 @@ type Parameters struct {
 	ClientMin string // second IP address
 	ClientMax string // last IP address before broadcast
 	Broadcast string // last IP address
+	IsPrivate bool   // whether the IP is private or not
 	Interface
 }
 
@@ -158,6 +138,7 @@ var inspect = func(addr string) (*Parameters, error) {
 	n.Netmask = net.IP(network.Mask).String() // dotted-decimal format ('a.b.c.d')
 	n.Prefix, _ = network.Mask.Size()
 	n.CIDR = network.String()
+	n.IsPrivate = network.IP.IsPrivate()
 
 	networkIP := binary.BigEndian.Uint32(network.IP)                      // IP address of network
 	networkMask := binary.BigEndian.Uint32(network.Mask)                  // network mask
@@ -205,16 +186,6 @@ var isSubnetTaken = func(subnet string) (bool, error) {
 	return false, nil
 }
 
-// isSubnetPrivate returns if subnet is private network.
-func isSubnetPrivate(subnet string) bool {
-	for _, ipnet := range privateSubnets {
-		if ipnet.Contains(net.ParseIP(subnet)) {
-			return true
-		}
-	}
-	return false
-}
-
 // IsUser returns if network is user.
 func IsUser(network string) bool {
 	return network == "user"
@@ -229,7 +200,7 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 			return nil, err
 		}
 		subnet := n.IP
-		if isSubnetPrivate(subnet) {
+		if n.IsPrivate {
 			taken, err := isSubnetTaken(subnet)
 			if err != nil {
 				return nil, err
