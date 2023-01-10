@@ -281,7 +281,7 @@ func debugLogs(t *testing.T, profile string) {
 	start := time.Now()
 
 	var output strings.Builder
-	output.WriteString(fmt.Sprintf("<<< debugLogs: %s [pass: %v] head >>>\n\n", profile, !t.Failed()))
+	output.WriteString(fmt.Sprintf("----------------------- debugLogs start: %s [pass: %v] --------------------------------", profile, !t.Failed()))
 
 	// basic nslookup
 	cmd := exec.Command("kubectl", "--context", profile, "exec", "deployment/netcat", "--", "nslookup", "-timeout=5", "kubernetes.default")
@@ -629,5 +629,6 @@ func debugLogs(t *testing.T, profile string) {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: crio config:\n%s\n", out))
 
-	t.Logf("%s\n>>> debugLogs: %s [pass: %v] took: %v <<<\n\n", output.String(), profile, !t.Failed(), time.Since(start))
+	output.WriteString(fmt.Sprintf("----------------------- debugLogs end: %s [took: %v] --------------------------------", profile, time.Since(start)))
+	t.Logf("\n%s\n", output.String())
 }

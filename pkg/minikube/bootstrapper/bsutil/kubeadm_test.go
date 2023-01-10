@@ -221,13 +221,13 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 		cfg       config.ClusterConfig
 	}{
 		{"default", "docker", false, config.ClusterConfig{Name: "mk"}},
-		{"containerd", "containerd", false, config.ClusterConfig{Name: "mk"}},
+		{"containerd", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ContainerRuntime: constants.Containerd}}},
 		{"crio", "crio", false, config.ClusterConfig{Name: "mk"}},
 		{"options", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts}}},
 		{"crio-options-gates", "crio", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}}},
 		{"unknown-component", "docker", true, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}}},
-		{"containerd-api-port", "containerd", false, config.ClusterConfig{Name: "mk", Nodes: []config.Node{{Port: 12345}}}},
-		{"containerd-pod-network-cidr", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}}},
+		{"containerd-api-port", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ContainerRuntime: constants.Containerd}, Nodes: []config.Node{{Port: 12345}}}},
+		{"containerd-pod-network-cidr", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ContainerRuntime: constants.Containerd, ExtraOptions: extraOptsPodCidr}}},
 		{"image-repository", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
 	}
 	for _, version := range versions {

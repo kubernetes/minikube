@@ -71,7 +71,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	// TODO: investigate why containerd (v1.6.15) does not work with k8s (v1.25.3) when both are set to use systemd cgroup driver
 	// for the time being, the workaround is to configure kubelet to use cgroupfs when containerd is using systemd
 	// note: pkg/minikube/bootstrapper/bsutil/kubeadm_test.go::TestGenerateKubeadmYAML also extects this override (for now)
-	if r.Name() == constants.Containerd && cgroupDriver == constants.SystemdCgroupDriver {
+	if cc.KubernetesConfig.ContainerRuntime == constants.Containerd && cgroupDriver == constants.SystemdCgroupDriver {
 		cgroupDriver = constants.CgroupfsCgroupDriver
 	}
 

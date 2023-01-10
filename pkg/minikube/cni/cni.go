@@ -228,12 +228,10 @@ func ConfigureLoopback(r Runner) error {
 }
 
 // ConfigureDefaultBridgeCNIs configures all default bridge CNIs on a node (designated by runner).
-// If network plugin is set (could be, eg "cni" or "kubenet"), it will disable all default bridges by changing extension to "mk_disabled" of *bridge* config file(s) found in /etc/cni/net.d to avoid conflicts.
-// Otherwise, it will change ip address range to match DefaultPodCIDR in all *bridge* config file(s) found in /etc/cni/net.d.
+// If network plugin is set (could be, eg "cni" or "kubenet"), it will disable all default bridges to avoid conflicts.
+// Otherwise, it will configure all default bridges to match DefaultPodCIDR subnet range.
 // It's usually called before deploying new CNI and on node restarts, to avoid conflicts and flip-flopping of pods' ip addresses.
 // It is caller's responsibility to restart container runtime for these changes to take effect.
-// ref: https://github.com/containernetworking/cni/blob/main/libcni/conf.go
-// ref: https://kubernetes.io/docs/tasks/administer-cluster/migrating-from-dockershim/troubleshooting-cni-plugin-related-errors/
 func ConfigureDefaultBridgeCNIs(r Runner, networkPlugin string) error {
 	if networkPlugin != "" {
 		return disableAllBridgeCNIs(r)
@@ -241,6 +239,7 @@ func ConfigureDefaultBridgeCNIs(r Runner, networkPlugin string) error {
 	return configureAllBridgeCNIs(r, DefaultPodCIDR)
 }
 
+// disableAllBridgeCNIs disables all bridge cnis by changing extension to "mk_disabled" of all *bridge* config file(s) found in default location (ie, /etc/cni/net.d).
 func disableAllBridgeCNIs(r Runner) error {
 	path := "/etc/cni/net.d"
 
@@ -252,21 +251,20 @@ func disableAllBridgeCNIs(r Runner) error {
 	}
 	configs := strings.Trim(out.Stdout.String(), ", ")
 	if len(configs) == 0 {
-		klog.Infof("no bridge cni configs found in %q - nothing to disable", path)
+		klog.Infof("no active bridge cni configs found in %q - nothing to disable", path)
 		return nil
 	}
 	klog.Infof("disabled [%s] bridge cni config(s)", configs)
-
 	return nil
 }
 
+// configureAllBridgeCNIs configures all bridge cnis by changing ip address range to match DefaultPodCIDR in all *bridge* config file(s) found in default location (ie, /etc/cni/net.d).
+// ref: https://github.com/containernetworking/cni/blob/main/libcni/conf.go
+// ref: https://kubernetes.io/docs/tasks/administer-cluster/migrating-from-dockershim/troubleshooting-cni-plugin-related-errors/
 func configureAllBridgeCNIs(r Runner, cidr string) error {
-	path := "/etc/cni/net.d"
-	configs := ""
-
 	// non-podman configs:
 	out, err := r.RunCmd(exec.Command(
-		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+		"sudo", "find", DefaultConfDir, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
 		// remove ipv6 entries to avoid "failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
 		// ref: https://github.com/cri-o/cri-o/issues/3555
 		// then also remove trailing comma after ipv4 elements, if any
@@ -276,34 +274,31 @@ func configureAllBridgeCNIs(r Runner, cidr string) error {
 		// getting something similar to https://github.com/cri-o/cri-o/blob/main/contrib/cni/11-crio-ipv4-bridge.conflist
 		fmt.Sprintf(`sudo sed -i -r -e '/"dst": ".*:.*"/d' -e 's|^(.*)"dst": (.*)[,*]$|\1"dst": \2|g' -e '/"subnet": ".*:.*"/d' -e 's|^(.*)"subnet": ".*"(.*)[,*]$|\1"subnet": "%s"\2|g' {}`, cidr), ";"))
 	if err != nil {
-		klog.Errorf("failed to configure non-podman bridge cni configs in %q: %v", path, err)
-	} else {
-		configs = out.Stdout.String()
+		return fmt.Errorf("failed to configure non-podman bridge cni configs in %q: %v", DefaultConfDir, err)
 	}
+	configs := out.Stdout.String()
 
 	// podman config(s):
 	// ref: https://github.com/containers/podman/blob/main/cni/87-podman-bridge.conflist
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil || ip.To4() == nil {
-		klog.Errorf("cidr %q is not valid ipv4 address: %v", cidr, err)
-	} else {
-		gateway := ip.Mask(ipnet.Mask)
-		gateway[3]++
-		out, err = r.RunCmd(exec.Command(
-			"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
-			fmt.Sprintf(`sudo sed -i -r -e 's|^(.*)"subnet": ".*"(.*)$|\1"subnet": "%s"\2|g' -e 's|^(.*)"gateway": ".*"(.*)$|\1"gateway": "%s"\2|g' {}`, cidr, gateway), ";"))
-		if err != nil {
-			klog.Errorf("failed to configure podman bridge cni configs in %q: %v", path, err)
-		} else {
-			configs += out.Stdout.String()
-		}
+		return fmt.Errorf("cidr %q is not valid ipv4 address: %v", cidr, err)
 	}
+	gateway := ip.Mask(ipnet.Mask)
+	gateway[3]++
+	out, err = r.RunCmd(exec.Command(
+		"sudo", "find", DefaultConfDir, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+		fmt.Sprintf(`sudo sed -i -r -e 's|^(.*)"subnet": ".*"(.*)$|\1"subnet": "%s"\2|g' -e 's|^(.*)"gateway": ".*"(.*)$|\1"gateway": "%s"\2|g' {}`, cidr, gateway), ";"))
+	if err != nil {
+		return fmt.Errorf("failed to configure podman bridge cni configs in %q: %v", DefaultConfDir, err)
+	}
+	configs += out.Stdout.String()
 
-	if len(strings.Trim(configs, ", ")) == 0 {
-		klog.Infof("no bridge cni configs found in %q - nothing to configure", path)
+	configs = strings.Trim(configs, ", ")
+	if len(configs) == 0 {
+		klog.Infof("no active bridge cni configs found in %q - nothing to configure", DefaultConfDir)
 		return nil
 	}
 	klog.Infof("configured [%s] bridge cni config(s)", configs)
-
 	return nil
 }

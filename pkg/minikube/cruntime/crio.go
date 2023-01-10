@@ -79,7 +79,7 @@ func (r *CRIO) setCGroup(driver string) error {
 	}
 
 	klog.Infof("configuring cri-o to use %q as cgroup driver...", driver)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)cgroup_manager = .*$|\1cgroup_manager = %q|' %s`, driver, crioConfigFile))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`sudo sed -i 's|^.*cgroup_manager = .*$|cgroup_manager = %q|' %s`, driver, crioConfigFile))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "configuring cgroup_manager")
 	}
