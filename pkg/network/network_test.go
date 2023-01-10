@@ -24,32 +24,6 @@ import (
 	"github.com/juju/mutex/v2"
 )
 
-func TestIsSubnetPrivate(t *testing.T) {
-	tests := []struct {
-		subnet   string
-		expected bool
-	}{
-		{"9.255.255.255", false},
-		{"10.0.0.0", true},
-		{"10.255.255.255", true},
-		{"11.0.0.0", false},
-		{"172.15.255.255", false},
-		{"172.16.0.0", true},
-		{"172.31.255.255", true},
-		{"172.32.0.0", false},
-		{"192.167.255.255", false},
-		{"192.168.0.0", true},
-		{"192.168.255.255", true},
-		{"192.169.0.0", false},
-	}
-	for _, test := range tests {
-		got := isSubnetPrivate(test.subnet)
-		if got != test.expected {
-			t.Errorf("isSubnetPrivate(%q) = %t; expected = %t", test.subnet, got, test.expected)
-		}
-	}
-}
-
 func TestFreeSubnet(t *testing.T) {
 	reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) { return nil, nil }
 
@@ -67,6 +41,11 @@ func TestFreeSubnet(t *testing.T) {
 
 	t.Run("FirstSubnetTaken", func(t *testing.T) {
 		count := 0
+		originalIsSubnetTaken := isSubnetTaken
+		defer func() {
+			isSubnetTaken = originalIsSubnetTaken
+		}()
+
 		isSubnetTaken = func(subnet string) (bool, error) {
 			count++
 			return count == 1, nil
@@ -85,11 +64,17 @@ func TestFreeSubnet(t *testing.T) {
 
 	t.Run("FirstSubnetIPV6NetworkFound", func(t *testing.T) {
 		count := 0
+		originalInspect := inspect
+		defer func() {
+			inspect = originalInspect
+		}()
+
 		inspect = func(addr string) (*Parameters, error) {
 			count++
-			p := &Parameters{IP: addr}
+			p := &Parameters{IP: addr, IsPrivate: true}
 			if count == 1 {
 				p.IP = "0.0.0.0"
+				p.IsPrivate = false
 			}
 			return p, nil
 		}

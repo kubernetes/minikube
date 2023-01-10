@@ -60,6 +60,7 @@ type Parameters struct {
 	ClientMin string // second IP address
 	ClientMax string // last IP address before broadcast
 	Broadcast string // last IP address
+	IsPrivate bool   // whether the IP is private or not
 	Interface
 	reservation mutex.Releaser // subnet reservation has lifespan of the process: "If a process dies while the mutex is held, the mutex is automatically released."
 }
@@ -153,6 +154,7 @@ var inspect = func(addr string) (*Parameters, error) {
 	n.Netmask = net.IP(network.Mask).String() // dotted-decimal format ('a.b.c.d')
 	n.Prefix, _ = network.Mask.Size()
 	n.CIDR = network.String()
+	n.IsPrivate = network.IP.IsPrivate()
 
 	networkIP := binary.BigEndian.Uint32(network.IP)                      // IP address of network
 	networkMask := binary.BigEndian.Uint32(network.Mask)                  // network mask
@@ -200,16 +202,6 @@ var isSubnetTaken = func(subnet string) (bool, error) {
 	return false, nil
 }
 
-// isSubnetPrivate returns if subnet is private network.
-func isSubnetPrivate(subnet string) bool {
-	for _, ipnet := range privateSubnets {
-		if ipnet.Contains(net.ParseIP(subnet)) {
-			return true
-		}
-	}
-	return false
-}
-
 // IsUser returns if network is user.
 func IsUser(network string) bool {
 	return network == "user"
@@ -224,7 +216,7 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 			return nil, err
 		}
 		subnet := n.IP
-		if isSubnetPrivate(subnet) {
+		if n.IsPrivate {
 			taken, err := isSubnetTaken(subnet)
 			if err != nil {
 				return nil, err
