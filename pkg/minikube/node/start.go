@@ -433,10 +433,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	disableOthers := true
-	if driver.BareMetal(cc.Driver) {
-		disableOthers = false
-	}
+	disableOthers := !driver.BareMetal(cc.Driver)
 	err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace)
 	if err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
