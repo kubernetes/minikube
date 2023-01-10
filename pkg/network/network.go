@@ -29,27 +29,6 @@ import (
 
 const defaultReservationPeriod = 1 * time.Minute
 
-var (
-	// valid private network subnets (RFC1918)
-	privateSubnets = []net.IPNet{
-		// 10.0.0.0/8
-		{
-			IP:   []byte{10, 0, 0, 0},
-			Mask: []byte{255, 0, 0, 0},
-		},
-		// 172.16.0.0/12
-		{
-			IP:   []byte{172, 16, 0, 0},
-			Mask: []byte{255, 240, 0, 0},
-		},
-		// 192.168.0.0/16
-		{
-			IP:   []byte{192, 168, 0, 0},
-			Mask: []byte{255, 255, 0, 0},
-		},
-	}
-)
-
 // Parameters contains main network parameters.
 type Parameters struct {
 	IP        string // IP address of network
