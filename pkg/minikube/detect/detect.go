@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/klauspost/cpuid"
@@ -164,4 +165,22 @@ func CgroupDriver() string {
 		klog.Warningf("unable to detect host's os cgroup driver - will continue and try with %q as per default, but things might break", constants.DefaultCgroupDriver)
 		return constants.DefaultCgroupDriver // try with default rather than just give up
 	}
+}
+
+// MacOS13Plus returns if the current machine is running macOS 13+
+func MacOS13Plus() bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	o, err := exec.Command("sw_vers", "-productVersion").Output()
+	if err != nil {
+		klog.Warningf("failed to get macOS version: %v", err)
+		return false
+	}
+	major, err := strconv.Atoi(strings.Split(string(o), ".")[0])
+	if err != nil {
+		klog.Warningf("failed to convert macOS version to int: %v", err)
+		return false
+	}
+	return major >= 13
 }
