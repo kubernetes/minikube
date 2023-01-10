@@ -87,6 +87,8 @@ minikube start --container-runtime=docker --vm=true
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Point Docker CLI to minikube</h2>
 Use the `minikube docker-env` command to point your terminal's Docker CLI to the Docker instance inside minikube.
 
+<br>Note: the default profile name is `minikube`
+
 {{% tabs %}}
 {{% tab "bash/zsh" %}}
 ```
