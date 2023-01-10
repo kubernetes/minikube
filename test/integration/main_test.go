@@ -156,10 +156,7 @@ func KicDriver() bool {
 
 // VMDriver checks if the driver is a VM
 func VMDriver() bool {
-	if KicDriver() || NoneDriver() {
-		return false
-	}
-	return true
+	return !KicDriver() && !NoneDriver()
 }
 
 // ContainerRuntime returns the name of a specific container runtime if it was specified
