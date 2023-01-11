@@ -913,7 +913,6 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make $@ COMMIT=$(COMMIT))
 else
 	$(if $(quiet),@echo "  GO       $@")
-	uname -a
 	$(Q)GOARCH=$* \
 	go build \
 	        -buildvcs=false \
