@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var (
@@ -138,6 +139,12 @@ func ImageToCache(img string) error {
 		return errors.Wrap(err, "getting remote image")
 	}
 	klog.V(3).Infof("Writing image %v", tag)
+	if out.JSON {
+		if err := tarball.WriteToFile(f, tag, i); err != nil {
+			return errors.Wrap(err, "writing tarball image")
+		}
+		return nil
+	}
 	errchan := make(chan error)
 	p := pb.Full.Start64(0)
 	fn := image.Tag(ref.Name())
