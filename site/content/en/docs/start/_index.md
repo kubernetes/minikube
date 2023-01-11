@@ -536,7 +536,7 @@ minikube dashboard
 
 {{% tabs %}}
 {{% tab Service %}}
-Create a sample deployment and expose it on port 80:
+Create a sample deployment and expose it on port 8080:
 
 ```shell
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
