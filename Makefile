@@ -912,6 +912,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_AMD64) || $(MAKE) kvm-image-amd64
 	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make $@ COMMIT=$(COMMIT))
 	strings $@ | grep ^LIBVIRT | sort
+	shasum -a 256 $@
 else
 	$(if $(quiet),@echo "  GO       $@")
 	uname -a
