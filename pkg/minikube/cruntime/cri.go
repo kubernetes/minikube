@@ -232,7 +232,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	klog.Infof("Stopping containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
-	// bring crictl stop timeout on pair with docker:
+	// bring crictl stop timeout on par with docker:
 	// - docker stop --help => -t, --time int   Seconds to wait for stop before killing it (default 10)
 	// - crictl stop --help => --timeout value, -t value  Seconds to wait to kill the container after a graceful stop is requested (default: 0)
 	// to prevent "stuck" containers blocking ports (eg, "[ERROR Port-2379|2380]: Port 2379|2380 is in use" for etcd during "hot" k8s upgrade)
