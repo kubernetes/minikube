@@ -368,8 +368,8 @@ func updateCRIDockerdBinary(cr CommandRunner, version, arch string) error {
 }
 
 // updateContainerdBinary updates containerd to version
-func updateContainerdBinary(cr CommandRunner, version, os, arch string) error {
-	curl := fmt.Sprintf("curl -sSfL https://github.com/containerd/containerd/releases/download/v%s/containerd-%s-%s-%s.tar.gz | tar -xz -C /tmp", version, version, os, arch)
+func updateContainerdBinary(cr CommandRunner, version, arch string) error {
+	curl := fmt.Sprintf("curl -sSfL https://github.com/containerd/containerd/releases/download/v%s/containerd-%s-linux-%s.tar.gz | tar -xz -C /tmp", version, version, arch)
 	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
 		return fmt.Errorf("unable to download containerd version %s: %v", version, err)
 	}
