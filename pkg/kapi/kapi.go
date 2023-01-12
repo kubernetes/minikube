@@ -242,7 +242,7 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 		return true, nil
 	})
 	if err != nil {
-		klog.Infof("failed rescaling %q deployment in %q namespace and %q context to %d replicas: %v", deploymentName, namespace, kcontext, replicas, err)
+		klog.Warningf("failed rescaling %q deployment in %q namespace and %q context to %d replicas: %v", deploymentName, namespace, kcontext, replicas, err)
 		return err
 	}
 	klog.Infof("%q deployment in %q namespace and %q context rescaled to %d replicas", deploymentName, namespace, kcontext, replicas)
