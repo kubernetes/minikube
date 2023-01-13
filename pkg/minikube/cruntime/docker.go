@@ -699,7 +699,7 @@ const (
 	CNICacheDir = "/var/lib/cni/cache"
 )
 
-func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin string) error {
+func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error {
 	// $ cri-dockerd --version
 	// cri-dockerd 0.2.6 (d8accf7)
 	// $ cri-dockerd --help | grep -i cni
@@ -738,5 +738,5 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 	if err := cr.Copy(svc); err != nil {
 		return errors.Wrap(err, "failed to copy template")
 	}
-	return r.Init.Restart("cri-docker")
+	return nil
 }

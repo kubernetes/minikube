@@ -417,9 +417,9 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
 	// for docker container runtime: ensure containerd is properly configured by calling Enable(), as docker could be bound to containerd
 	// it will also "soft" start containerd, but it will not disable others; docker will disable containerd if not used in the next step
-	if co.Type == "docker" {
+	if co.Type == constants.Docker {
 		containerd, err := cruntime.New(cruntime.Config{
-			Type:              "containerd",
+			Type:              constants.Containerd,
 			Socket:            "", // use default
 			Runner:            co.Runner,
 			ImageRepository:   co.ImageRepository,
@@ -434,20 +434,17 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	}
 
 	disableOthers := !driver.BareMetal(cc.Driver)
-	err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace)
-	if err != nil {
+	if err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
 
 	// Wait for the CRI to be "live", before returning it
-	err = waitForCRISocket(runner, cr.SocketPath(), 60, 1)
-	if err != nil {
+	if err = waitForCRISocket(runner, cr.SocketPath(), 60, 1); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
 
 	// Wait for the CRI to actually work, before returning
-	err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10)
-	if err != nil {
+	if err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
 

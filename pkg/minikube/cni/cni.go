@@ -138,11 +138,6 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 		return Bridge{}
 	}
 
-	if driver.BareMetal(cc.Driver) {
-		klog.Infof("Driver %s used, CNI unnecessary in this configuration, recommending no CNI", cc.Driver)
-		return Disabled{cc: cc}
-	}
-
 	if len(cc.Nodes) > 1 || cc.MultiNodeRequested {
 		// Enables KindNet CNI in master in multi node cluster, This solves the network problem
 		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.

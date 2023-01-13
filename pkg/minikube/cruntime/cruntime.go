@@ -345,11 +345,7 @@ func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) e
 		}
 		return nil
 	}
-	dm, ok := r.(*Docker)
-	if !ok {
-		return fmt.Errorf("name and type mismatch")
-	}
-	return dockerConfigureNetworkPlugin(*dm, cr, networkPlugin)
+	return dockerConfigureNetworkPlugin(cr, networkPlugin)
 }
 
 // updateCRIDockerdBinary updates cri-dockerd to version
