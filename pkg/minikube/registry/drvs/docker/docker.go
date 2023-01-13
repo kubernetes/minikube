@@ -102,7 +102,7 @@ func status() (retState registry.State) {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")
 	o, err := cmd.Output()
 	if err != nil {
 		reason := ""
@@ -135,12 +135,15 @@ func status() (retState registry.State) {
 		}
 	}()
 
+	versions := strings.Split(string(o), ":")
+	dockerEngineVersion := versions[0]
+	dockerPlatformVersion := versions[1]
 	klog.Infof("docker version: %s", o)
 	if !viper.GetBool("force") {
-		if s := checkDockerDesktopVersion(); s != nil {
+		if s := checkDockerDesktopVersion(dockerPlatformVersion); s != nil {
 			return *s
 		}
-		s := checkDockerEngineVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
+		s := checkDockerEngineVersion(strings.TrimSpace(dockerEngineVersion)) // remove '\n' from o at the end
 		if s.Error != nil {
 			return s
 		}
@@ -243,16 +246,8 @@ func checkDockerEngineVersion(o string) registry.State {
 		Doc:              docURL + "#requirements"}
 }
 
-func checkDockerDesktopVersion() *registry.State {
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-
-	o, err := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Platform.Name}}").Output()
-	if err != nil {
-		klog.Warningf("failed to get docker version: %v", err)
-		return nil
-	}
-	fields := strings.Fields(string(o))
+func checkDockerDesktopVersion(version string) *registry.State {
+	fields := strings.Fields(version)
 	if len(fields) < 3 || fields[0] != "Docker" || fields[1] != "Desktop" {
 		return nil
 	}
