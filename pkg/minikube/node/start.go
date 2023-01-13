@@ -471,8 +471,15 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 
 	klog.Infof("Will wait %ds for crictl version", wait)
 
+	cmd := exec.Command("which", "crictl")
+	rr, err := runner.RunCmd(cmd)
+	if err != nil {
+		return err
+	}
+	crictl := strings.TrimSuffix(rr.Stdout.String(), "\n")
+
 	chkInfo := func() error {
-		args := []string{"crictl", "version"}
+		args := []string{crictl, "version"}
 		cmd := exec.Command("sudo", args...)
 		rr, err := runner.RunCmd(cmd)
 		if err != nil && !os.IsNotExist(err) {
