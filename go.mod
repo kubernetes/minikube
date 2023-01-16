@@ -78,7 +78,7 @@ require (
 	golang.org/x/term v0.4.0
 	golang.org/x/text v0.6.0
 	gonum.org/v1/plot v0.12.0
-	google.golang.org/api v0.106.0
+	google.golang.org/api v0.107.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.0
