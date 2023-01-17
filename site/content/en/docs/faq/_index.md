@@ -172,5 +172,5 @@ KubeAdm has several software/hardware requirements to ensure a healthy Kubernete
 ```
 minikube start --force --extra-config=kubeadm.skip-phases=preflight
 ```
-note that, this is not recommended but might be the only way for some users who are okay with performance/stablity side-effects.
+This is not recommended, but for some users who are willing to accept potential performance or stability issues, this may be the only option.
 
