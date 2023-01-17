@@ -166,7 +166,7 @@ Currently a static IP can only be set when using the Docker or Podman driver.
 
 For more details see the [static IP tutorial]({{< ref "docs/tutorials/static_ip.md" >}}).
 
-## How to ignore the kubeadm requirements and pre-flight checks (such as CPUs numbers) ?
+## How to ignore the kubeadm requirements and pre-flight checks (such as minimum CPU count)?
 
 KubeAdm has several software/hardware requirements to ensure a healthy Kubernetes cluster, to ignore all of them,
 (For example if you want to run minikube on 1 CPU, you can run:
