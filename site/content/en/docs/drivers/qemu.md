@@ -34,10 +34,7 @@ minikube start supports some qemu specific flags:
 The QEMU driver has two networking options, `user` & `socket_vmnet`.
 
 {{% tabs %}}
-{{% tab "user - limited functionality" %}}
-The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
-{{% /tab %}}
-{{% tab "socket_vmnet - experimental/needs installation" %}}
+{{% tab "socket_vmnet - needs installation" %}}
 
 ### Requirements
 
@@ -56,6 +53,9 @@ minikube start --driver qemu --network socket_vmnet
 ```
 
 The `socket_vmnet` network is a dedicated network and supports the `minikube service` and `minikube tunnel` commands.
+{{% /tab %}}
+{{% tab "user - limited functionality" %}}
+The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
 {{% /tab %}}
 {{% /tabs %}}
 
