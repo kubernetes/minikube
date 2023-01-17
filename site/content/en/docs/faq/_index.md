@@ -165,3 +165,12 @@ minikube start
 Currently a static IP can only be set when using the Docker or Podman driver.
 
 For more details see the [static IP tutorial]({{< ref "docs/tutorials/static_ip.md" >}}).
+
+## How to ignore the kubeadm requirements and pre-flight checks (such as minimum CPU count)?
+
+Kubeadm has certain software and hardware requirements to maintain a stable Kubernetes cluster. However, these requirements can be ignored (such as when running minikube on a single CPU) by running the following:
+```
+minikube start --force --extra-config=kubeadm.skip-phases=preflight
+```
+This is not recommended, but for some users who are willing to accept potential performance or stability issues, this may be the only option.
+
