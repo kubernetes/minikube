@@ -169,7 +169,6 @@ For more details see the [static IP tutorial]({{< ref "docs/tutorials/static_ip.
 ## How to ignore the kubeadm requirements and pre-flight checks (such as minimum CPU count)?
 
 KubeAdm has several software/hardware requirements to ensure a healthy Kubernetes cluster, to ignore all of them,
-(For example if you want to run minikube on 1 CPU, you can run:
 ```
 minikube start --force --extra-config=kubeadm.skip-phases=preflight
 ```
