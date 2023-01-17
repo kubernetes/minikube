@@ -149,6 +149,11 @@ func PodmanDriver() bool {
 	return strings.Contains(*startArgs, "--driver=podman") || strings.Contains(*startArgs, "--vm-driver=podman")
 }
 
+// Rootless returns whether or not this test is using the rootless KIC driver
+func RootlessDriver() bool {
+	return strings.Contains(*startArgs, "--rootless")
+}
+
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
@@ -171,9 +176,9 @@ func arm64Platform() bool {
 }
 
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
-// (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
+// (Docker on non-Linux platforms and rootless KIC requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
-	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || detect.IsMicrosoftWSL()
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin") || detect.IsMicrosoftWSL() || RootlessDriver()
 }
 
 // CanCleanup returns if cleanup is allowed

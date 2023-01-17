@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -51,6 +52,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	_ "k8s.io/minikube/pkg/provision"
+
+	dconfig "github.com/docker/cli/cli/config"
+	ddocker "github.com/docker/cli/cli/context/docker"
+	dstore "github.com/docker/cli/cli/context/store"
 )
 
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
@@ -67,6 +72,8 @@ var (
 func main() {
 	bridgeLogMessages()
 	defer klog.Flush()
+
+	propagateDockerContextToEnv()
 
 	// Don't parse flags when running as kubectl
 	_, callingCmd := filepath.Split(os.Args[0])
@@ -245,5 +252,56 @@ func setLastStartFlags() {
 	}
 	if err := pflag.Set("log_file", fp); err != nil {
 		klog.Warningf("Unable to set default flag value for log_file: %v", err)
+	}
+}
+
+// propagateDockerContextToEnv propagates the current context in ~/.docker/config.json to $DOCKER_HOST,
+// so that google/go-containerregistry can pick it up.
+func propagateDockerContextToEnv() {
+	if os.Getenv("DOCKER_HOST") != "" {
+		// Already explicitly set
+		return
+	}
+	currentContext := os.Getenv("DOCKER_CONTEXT")
+	if currentContext == "" {
+		dockerConfigDir := dconfig.Dir()
+		if _, err := os.Stat(dockerConfigDir); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				klog.Warning(err)
+			}
+			return
+		}
+		cf, err := dconfig.Load(dockerConfigDir)
+		if err != nil {
+			klog.Warningf("Unable to load the current Docker config from %q", dockerConfigDir)
+			return
+		}
+		currentContext = cf.CurrentContext
+	}
+	if currentContext == "" {
+		return
+	}
+	storeConfig := dstore.NewConfig(
+		func() interface{} { return &ddocker.EndpointMeta{} },
+		dstore.EndpointTypeGetter(ddocker.DockerEndpoint, func() interface{} { return &ddocker.EndpointMeta{} }),
+	)
+	st := dstore.New(dconfig.ContextStoreDir(), storeConfig)
+	md, err := st.GetMetadata(currentContext)
+	if err != nil {
+		klog.Warningf("Unable to resolve the current Docker CLI context %q: %v", currentContext, err)
+		return
+	}
+	dockerEP, ok := md.Endpoints[ddocker.DockerEndpoint]
+	if !ok {
+		// No warning (the context is not for Docker)
+		return
+	}
+	dockerEPMeta, ok := dockerEP.(ddocker.EndpointMeta)
+	if !ok {
+		klog.Warningf("expected docker.EndpointMeta, got %T", dockerEP)
+		return
+	}
+	if dockerEPMeta.Host != "" {
+		os.Setenv("DOCKER_HOST", dockerEPMeta.Host)
 	}
 }
