@@ -382,7 +382,9 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if runtime.GOARCH == "arm64" {
 		driver = "qemu"
 	}
-	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. We recommend using the {{.driver}} driver: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}/
+	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as docker or {{.driver}}.
+    https://minikube.sigs.k8s.io/docs/drivers/docker/
+    https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}/
 
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
 `, out.V{"driver": driver})
