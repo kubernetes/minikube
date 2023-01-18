@@ -381,9 +381,16 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		exit.Error(reason.InternalRuntime, "Failed runtime", err)
 	}
 
+	// 87-podman.conflist cni conf potentially conflicts with others and is created by podman on its first invocation,
+	// so we "provoke" it here to ensure it's generated and that we can disable it
+	// note: using 'help' or '--help' would be cheaper, but does not trigger that; 'version' seems to be next best option
+	if co.Type == constants.CRIO {
+		_, _ = runner.RunCmd(exec.Command("sudo", "sh", "-c", `podman version >/dev/null`))
+	}
 	// ensure loopback is properly configured
 	// make sure container runtime is restarted afterwards for these changes to take effect
-	if err := cni.ConfigureLoopback(runner); err != nil {
+	disableLoopback := co.Type == constants.CRIO
+	if err := cni.ConfigureLoopbackCNI(runner, disableLoopback); err != nil {
 		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
 	}
 	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {

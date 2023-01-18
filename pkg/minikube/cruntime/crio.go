@@ -31,7 +31,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -41,7 +40,7 @@ import (
 )
 
 const (
-	// CRIOConfFile is the path to the CRI-O configuration
+	// crioConfigFile is the path to the CRI-O configuration
 	crioConfigFile = "/etc/crio/crio.conf.d/02-crio.conf"
 )
 
@@ -54,34 +53,36 @@ type CRIO struct {
 	Init              sysinit.Manager
 }
 
-// generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
+// generateCRIOConfig sets up pause image and cgroup manager for cri-o in crioConfigFile
+func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string) error {
 	pauseImage := images.Pause(kv, imageRepository)
-
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, crioConfigFile))
+	klog.Infof("configure cri-o to use %q pause image...", pauseImage)
+	c := exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*pause_image = .*$|pause_image = %q|' %s`, pauseImage, crioConfigFile))
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "generateCRIOConfig")
+		return errors.Wrap(err, "update pause_image")
 	}
 
-	if cni.Network != "" {
-		klog.Infof("Updating CRIO to use the custom CNI network %q", cni.Network)
-		if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*cni_default_network = .*$|cni_default_network = \"%s\"|' -i %s", cni.Network, crioConfigFile))); err != nil {
-			return errors.Wrap(err, "update network_dir")
-		}
+	// configure cgroup driver
+	if cgroupDriver == constants.UnknownCgroupDriver {
+		klog.Warningf("unable to configure cri-o to use unknown cgroup driver, will use default %q instead", constants.DefaultCgroupDriver)
+		cgroupDriver = constants.DefaultCgroupDriver
 	}
-
-	return nil
-}
-
-func (r *CRIO) setCGroup(driver string) error {
-	if driver == constants.UnknownCgroupDriver {
-		return fmt.Errorf("unable to configure cri-o to use unknown cgroup driver")
-	}
-
-	klog.Infof("configuring cri-o to use %q as cgroup driver...", driver)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`sudo sed -i 's|^.*cgroup_manager = .*$|cgroup_manager = %q|' %s`, driver, crioConfigFile))
-	if _, err := r.Runner.RunCmd(c); err != nil {
+	klog.Infof("configuring cri-o to use %q as cgroup driver...", cgroupDriver)
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*cgroup_manager = .*$|cgroup_manager = %q|' %s`, cgroupDriver, crioConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring cgroup_manager")
+	}
+	// avoid errors like:
+	// - level=fatal msg="Validating runtime config: conmon cgroup should be 'pod' or a systemd slice"
+	// - level=fatal msg="Validating runtime config: cgroupfs manager conmon cgroup should be 'pod' or empty"
+	// ref: https://github.com/cri-o/cri-o/pull/3940
+	// ref: https://github.com/cri-o/cri-o/issues/6047
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/cgroup_manager = .*/a conmon_cgroup = %q' %s`, "pod", crioConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring conmon_cgroup")
+	}
+
+	// we might still want to try removing '/etc/cni/net.mk' in case of upgrade from previous minikube version that had/used it
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", `sudo rm -rf /etc/cni/net.mk`)); err != nil {
+		klog.Warningf("unable to remove /etc/cni/net.mk directory: %v", err)
 	}
 
 	return nil
@@ -200,13 +201,10 @@ func (r *CRIO) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool)
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
-		return err
-	}
-	if err := r.setCGroup(cgroupDriver); err != nil {
 		return err
 	}
 	if inUserNamespace {

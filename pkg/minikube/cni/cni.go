@@ -48,14 +48,6 @@ const (
 	DefaultConfDir = "/etc/cni/net.d"
 )
 
-var (
-	// Network is the network name that CNI should use (eg, "kindnet").
-	// Currently, only crio (and podman) can use it, so that setting custom ConfDir is not necessary.
-	// ref: https://github.com/cri-o/cri-o/issues/2121 (and https://github.com/containers/podman/issues/2370)
-	// ref: https://github.com/cri-o/cri-o/blob/master/docs/crio.conf.5.md#crionetwork-table
-	Network = ""
-)
-
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
@@ -200,25 +192,41 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	return nil
 }
 
-// ConfigureLoopback ensures loopback has expected version ("1.0.0") and valid name ("loopback") in its config file in /etc/cni/net.d
-// cri-o is leaving name out atm (https://github.com/cri-o/cri-o/pull/6273)
-// avoid errors like:
+// ConfigureLoopbackCNI configures loopback cni.
+// If disable is true, sets extension of its config file in /etc/cni/net.d to "mk_disabled".
+// Otherwise, ensures loopback cni has expected version ("1.0.0") and valid name ("loopback") in its config file in /etc/cni/net.d.
+// Note: cri-o is leaving out name atm (https://github.com/cri-o/cri-o/pull/6273).
+// Avoid errors like:
 // - Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
 // - failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
 // It is caller's responsibility to restart container runtime for these changes to take effect.
-func ConfigureLoopback(r Runner) error {
+func ConfigureLoopbackCNI(r Runner, disable bool) error {
 	loopback := "/etc/cni/net.d/*loopback.conf*" // usually: 200-loopback.conf
 	// turn { "cniVersion": "0.3.1", "type": "loopback" }
 	// into { "cniVersion": "0.3.1", "name": "loopback", "type": "loopback" }
 	if _, err := r.RunCmd(exec.Command("sh", "-c", fmt.Sprintf("stat %s", loopback))); err != nil {
-		klog.Warningf("%q not found, skipping patching loopback config step", loopback)
+		klog.Warningf("loopback cni configuration skipped: %q not found", loopback)
 		return nil
 	}
-	if _, err := r.RunCmd(exec.Command(
-		"sudo", "find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-exec", "sh", "-c",
-		`grep -q loopback {} && ( grep -q name {} || sudo sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} ) && sudo sed -i 's|"cniVersion": ".*"|"cniVersion": "1.0.0"|g' {}`, ";")); err != nil {
-		return fmt.Errorf("unable to patch loopback config %q: %v", loopback, err)
+
+	findExec := []string{"find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-exec", "sh", "-c"}
+
+	if disable {
+		if _, err := r.RunCmd(exec.Command(
+			"sudo", append(findExec,
+				`sudo mv {} {}.mk_disabled`, ";")...)); err != nil {
+			return fmt.Errorf("unable to disable loopback cni %q: %v", loopback, err)
+		}
+		klog.Infof("loopback cni configuration disabled: %q found", loopback)
+		return nil
 	}
+
+	if _, err := r.RunCmd(exec.Command(
+		"sudo", append(findExec,
+			`grep -q loopback {} && ( grep -q name {} || sudo sed -i '/"type": "loopback"/i \ \ \ \ "name": "loopback",' {} ) && sudo sed -i 's|"cniVersion": ".*"|"cniVersion": "1.0.0"|g' {}`, ";")...)); err != nil {
+		return fmt.Errorf("unable to patch loopback cni config %q: %v", loopback, err)
+	}
+	klog.Infof("loopback cni configuration patched: %q found", loopback)
 	return nil
 }
 
@@ -239,7 +247,8 @@ func disableAllBridgeCNIs(r Runner) error {
 	path := "/etc/cni/net.d"
 
 	out, err := r.RunCmd(exec.Command(
-		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+		// for cri-o, we also disable 87-podman.conflist (that does not have 'bridge' in its name)
+		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "(", "-name", "*bridge*", "-or", "-name", "*podman*", "-and", "-not", "-name", "*.mk_disabled", ")", "-printf", "%p, ", "-exec", "sh", "-c",
 		`sudo mv {} {}.mk_disabled`, ";"))
 	if err != nil {
 		return fmt.Errorf("failed to disable all bridge cni configs in %q: %v", path, err)
@@ -257,7 +266,7 @@ func disableAllBridgeCNIs(r Runner) error {
 // ref: https://github.com/containernetworking/cni/blob/main/libcni/conf.go
 // ref: https://kubernetes.io/docs/tasks/administer-cluster/migrating-from-dockershim/troubleshooting-cni-plugin-related-errors/
 func configureAllBridgeCNIs(r Runner, cidr string) error {
-	// non-podman configs:
+	// non-podman bridge configs:
 	out, err := r.RunCmd(exec.Command(
 		"sudo", "find", DefaultConfDir, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-not", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
 		// remove ipv6 entries to avoid "failed to set bridge addr: could not add IP address to \"cni0\": permission denied"
@@ -273,7 +282,8 @@ func configureAllBridgeCNIs(r Runner, cidr string) error {
 	}
 	configs := out.Stdout.String()
 
-	// podman config(s):
+	// podman bridge config(s):
+	// could be eg, 87-podman-bridge.conflist or 87-podman.conflist
 	// ref: https://github.com/containers/podman/blob/main/cni/87-podman-bridge.conflist
 	ip, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil || ip.To4() == nil {
@@ -282,7 +292,7 @@ func configureAllBridgeCNIs(r Runner, cidr string) error {
 	gateway := ip.Mask(ipnet.Mask)
 	gateway[3]++
 	out, err = r.RunCmd(exec.Command(
-		"sudo", "find", DefaultConfDir, "-maxdepth", "1", "-type", "f", "-name", "*bridge*", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
+		"sudo", "find", DefaultConfDir, "-maxdepth", "1", "-type", "f", "-name", "*podman*", "-not", "-name", "*.mk_disabled", "-printf", "%p, ", "-exec", "sh", "-c",
 		fmt.Sprintf(`sudo sed -i -r -e 's|^(.*)"subnet": ".*"(.*)$|\1"subnet": "%s"\2|g' -e 's|^(.*)"gateway": ".*"(.*)$|\1"gateway": "%s"\2|g' {}`, cidr, gateway), ";"))
 	if err != nil {
 		return fmt.Errorf("failed to configure podman bridge cni configs in %q: %v", DefaultConfDir, err)

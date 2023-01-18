@@ -218,6 +218,11 @@ func TestNetworkPlugins(t *testing.T) {
 func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
 	cr := ContainerRuntime()
 
+	// override cri-o name
+	if cr == "cri-o" {
+		cr = "crio"
+	}
+
 	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false"}
 	startArgs = append(startArgs, StartArgs()...)
 
