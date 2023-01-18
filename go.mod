@@ -69,7 +69,8 @@ require (
 	golang.org/x/term v0.4.0
 	golang.org/x/text v0.6.0
 	gonum.org/v1/plot v0.12.0
-	google.golang.org/api v0.106.0
+	google.golang.org/api v0.107.0
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
@@ -79,13 +80,14 @@ require (
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/kubectl v0.26.0
 	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
-	libvirt.org/go/libvirt v1.8009.0
+	libvirt.org/go/libvirt v1.9000.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
 require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/docker/cli v20.10.22+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v43 v43.0.0
 	github.com/juju/clock v1.0.2
@@ -121,13 +123,13 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v20.10.20+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fvbommel/sortorder v1.0.1 // indirect
 	github.com/go-fonts/liberation v0.2.0 // indirect
 	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect

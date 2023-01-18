@@ -34,9 +34,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.19.3
+GO_VERSION ?= 1.19.5
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.25.0
+GO_K8S_VERSION_PREFIX ?= v1.26.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -901,7 +901,7 @@ else
 		-buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt.1.3.1 without_lxc" \
+		-tags "libvirt_without_lxc" \
 		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
@@ -911,15 +911,14 @@ out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_AMD64) || $(MAKE) kvm-image-amd64
 	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make $@ COMMIT=$(COMMIT))
-	# make extra sure that we are linking with the older version of libvirt (1.3.1)
-	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOARCH=$* \
 	go build \
+	        -buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt.1.3.1 without_lxc" \
+		-tags "libvirt_without_lxc" \
 		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif

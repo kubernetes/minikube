@@ -425,6 +425,24 @@ verifies files and packages installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestImageBuild
+makes sure the 'minikube image build' command works fine
+
+#### validateNormalImageBuild
+is normal test case for minikube image build, with -t parameter
+
+#### validateNormalImageBuildWithSpecifiedDockerfile
+is normal test case for minikube image build, with -t and -f parameter
+
+#### validateImageBuildWithBuildArg
+is a test case building with --build-opt
+
+#### validateImageBuildWithBuildEnv
+is a test case building with --build-env
+
+#### validateImageBuildWithDockerIgnore
+is a test case building with .dockerignore
+
 ## TestIngressAddonLegacy
 tests ingress and ingress-dns addons with legacy k8s version <1.19
 

@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.19.3'
+  GO_VERSION: '1.19.5'
 permissions:
   contents: read
 
@@ -274,6 +274,125 @@ jobs:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
       - name: The End Result functional_docker_containerd_ubuntu
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
+  functional_docker_rootless_containerd_ubuntu:
+    permissions:
+      contents: none
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_docker_rootless_containerd_ubuntu"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+      DEBIAN_FRONTEND: noninteractive
+    # ubuntu-22.04 is needed for cgroup v2
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
+      # https://rootlesscontaine.rs/getting-started/common/cgroup2/
+      - name: Set up cgroup v2 delegation
+        run: |
+          sudo mkdir -p /etc/systemd/system/user@.service.d
+          cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+          [Service]
+          Delegate=cpu cpuset io memory pids
+          EOF
+          sudo systemctl daemon-reload
+      - name: Set up Rootless Docker
+        run: |
+          sudo apt-get remove moby-engine-*
+          curl https://get.docker.com | sudo sh
+          dockerd-rootless-setuptool.sh install -f
+          docker context use rootless
+      - name: Docker Info
+        shell: bash
+        run: |
+          echo "--------------------------"
+          docker version || true
+          echo "--------------------------"
+          docker info || true
+          echo "--------------------------"
+          docker system df || true
+          echo "--------------------------"
+          docker system info --format='{{json .}}'|| true
+          echo "--------------------------"
+          docker ps || true
+          echo "--------------------------"
+      - uses: actions/setup-go@d0a58c1c4d2b25278816e339b944508c875f3613
+        with:
+          go-version: ${{env.GO_VERSION}}
+      - name: Install gopogh
+
+        shell: bash
+        run: |
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
+          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+      - name: Download Binaries
+        uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
+        with:
+          name: minikube_binaries
+          path: minikube_binaries
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --rootless --container-runtime=containerd" -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - uses: actions/upload-artifact@83fd05a356d7e2593de66fc9913b3002723633cb
+        with:
+          name: functional_docker_rootless_containerd_ubuntu
+          path: minikube_binaries/report
+      - name: The End Result functional_docker_rootless_containerd_ubuntu
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -611,6 +730,7 @@ jobs:
       [
         functional_docker_ubuntu,
         functional_docker_containerd_ubuntu,
+        functional_docker_rootless_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_virtualbox_macos,
         functional_baremetal_ubuntu20_04,
@@ -627,6 +747,7 @@ jobs:
           ls -lah
           cp -r ./functional_docker_ubuntu ./all_reports/
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
+          cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_baremetal_ubuntu20_04 ./all_reports/

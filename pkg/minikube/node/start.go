@@ -261,7 +261,7 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 	err = bs.StartCluster(*starter.Cfg)
 	if err != nil {
-		ExitIfFatal(err)
+		ExitIfFatal(err, false)
 		out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 		return nil, bs, err
 	}
