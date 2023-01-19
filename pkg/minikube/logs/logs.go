@@ -30,6 +30,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -265,7 +266,11 @@ func OutputOffline(lines int, logOutput *os.File) {
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
-	for _, pod := range importantPods {
+	pods := importantPods
+	if assets.Addons["gcp-auth"].IsEnabled(&cfg) {
+		pods = append(pods, "gcp-auth")
+	}
+	for _, pod := range pods {
 		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
 		if err != nil {
 			klog.Errorf("Failed to list containers for %q: %v", pod, err)
