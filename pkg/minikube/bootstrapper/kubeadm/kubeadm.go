@@ -601,7 +601,8 @@ func (k *Bootstrapper) needsReconfigure(conf string, hostname string, port int, 
 	}
 
 	// cruntime.Enable() may restart kube-apiserver but does not wait for it to return back
-	apiStatusTimeout := 3000 * time.Millisecond
+	// could take five-ish seconds, so hopefully 10 seconds is sufficient to wait for api server to come back up
+	apiStatusTimeout := 10 * time.Second
 	st, err := kverify.WaitForAPIServerStatus(k.c, apiStatusTimeout, hostname, port)
 	if err != nil {
 		klog.Infof("needs reconfigure: apiserver error: %v", err)
@@ -1117,7 +1118,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 // stopKubeSystem stops all the containers in the kube-system to prevent #8740 when doing hot upgrade
 func (k *Bootstrapper) stopKubeSystem(cfg config.ClusterConfig) error {
 	klog.Info("stopping kube-system containers ...")
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "new cruntime")
 	}

@@ -35,7 +35,7 @@ func UniqueProfileName(prefix string) string {
 		return "minikube"
 	}
 	// example: prefix-162239
-	return fmt.Sprintf("%s-%s", prefix, time.Now().Format("150405"))
+	return fmt.Sprintf("%s-%s", prefix, fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
 }
 
 // auditContains checks if the provided string is contained within the logs.

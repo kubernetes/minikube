@@ -20,20 +20,14 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
+	"github.com/juju/mutex/v2"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 const defaultReservationPeriod = 1 * time.Minute
-
-var reservedSubnets = sync.Map{}
-
-// reservation of free private subnet is held for defined reservation period from createdAt time.
-type reservation struct {
-	createdAt time.Time
-}
 
 // Parameters contains main network parameters.
 type Parameters struct {
@@ -47,6 +41,7 @@ type Parameters struct {
 	Broadcast string // last IP address
 	IsPrivate bool   // whether the IP is private or not
 	Interface
+	reservation mutex.Releaser // subnet reservation has lifespan of the process: "If a process dies while the mutex is held, the mutex is automatically released."
 }
 
 // Interface contains main network interface parameters.
@@ -206,7 +201,8 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 				return nil, err
 			}
 			if !taken {
-				if ok := reserveSubnet(subnet, defaultReservationPeriod); ok {
+				if reservation, err := reserveSubnet(subnet, defaultReservationPeriod); err == nil {
+					n.reservation = reservation
 					klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
 					return n, nil
 				}
@@ -242,39 +238,13 @@ func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
 	return ip, network, err
 }
 
-// reserveSubnet returns if subnet was successfully reserved for given period:
-//   - false, if it already has unexpired reservation
-//   - true, if new reservation was created or expired one renewed
-//
-// uses sync.Map to manage reservations thread-safe
-var reserveSubnet = func(subnet string, period time.Duration) bool {
-	// put 'zero' reservation{} Map value for subnet Map key
-	// to block other processes from concurrently changing this subnet
-	zero := reservation{}
-	r, loaded := reservedSubnets.LoadOrStore(subnet, zero)
-	// check if there was previously issued reservation
-	if loaded {
-		// back off if previous reservation was already set to 'zero'
-		// as then other process is already managing this subnet concurrently
-		if r == zero {
-			klog.Infof("backing off reserving subnet %s (other process is managing it!): %+v", subnet, &reservedSubnets)
-			return false
-		}
-		// check if previous reservation expired
-		createdAt := r.(reservation).createdAt
-		if time.Since(createdAt) < period {
-			// unexpired reservation: restore original createdAt value
-			reservedSubnets.Store(subnet, reservation{createdAt: createdAt})
-			klog.Infof("skipping subnet %s that has unexpired reservation: %+v", subnet, &reservedSubnets)
-			return false
-		}
-		// expired reservation: renew setting createdAt to now
-		reservedSubnets.Store(subnet, reservation{createdAt: time.Now()})
-		klog.Infof("reusing subnet %s that has expired reservation: %+v", subnet, &reservedSubnets)
-		return true
+// reserveSubnet returns releaser if subnet was successfully reserved for given period, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
+var reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) {
+	spec := lock.PathMutexSpec(subnet)
+	spec.Timeout = 1 * time.Millisecond // practically: just check, don't wait
+	reservation, err := mutex.Acquire(spec)
+	if err != nil {
+		return nil, err
 	}
-	// new reservation
-	klog.Infof("reserving subnet %s for %v: %+v", subnet, period, &reservedSubnets)
-	reservedSubnets.Store(subnet, reservation{createdAt: time.Now()})
-	return true
+	return reservation, nil
 }

@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -33,9 +34,9 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -126,7 +127,7 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
 		return errors.New("inUserNamespace must not be true for docker")
 	}
@@ -149,10 +150,8 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
 
-	if forceSystemd {
-		if err := r.forceSystemd(); err != nil {
-			return err
-		}
+	if err := r.setCGroup(cgroupDriver); err != nil {
+		return err
 	}
 
 	if err := r.Init.Restart("docker"); err != nil {
@@ -160,10 +159,26 @@ func (r *Docker) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
 	}
 
 	if r.CRIService != "" {
+		// TODO (@prezha): remove this hack after proper version update in minikube release
+		// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
+		// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
+		// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
+		targetVersion := "0.3.0"
+		klog.Infof("replacing original cri-dockerd with v%s-%s", targetVersion, runtime.GOARCH)
+		if err := updateCRIDockerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
+			klog.Warningf("unable to replace original cri-dockerd with v%s-%s: %v", targetVersion, runtime.GOARCH, err)
+		}
+
+		if err := r.Init.Enable("cri-docker.socket"); err != nil {
+			return err
+		}
+		if err := r.Init.Unmask(r.CRIService); err != nil {
+			return err
+		}
 		if err := r.Init.Enable(r.CRIService); err != nil {
 			return err
 		}
-		if err := r.Init.Start(r.CRIService); err != nil {
+		if err := r.Init.Restart(r.CRIService); err != nil {
 			return err
 		}
 	}
@@ -178,25 +193,34 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	if r.CRIService != "" {
-		if err := r.Init.Stop(r.CRIService); err != nil {
-			return err
-		}
-		if err := r.Init.Disable(r.CRIService); err != nil {
-			return err
-		}
+	// even if r.CRIService is undefined, it might still be available, so try to disable it and just warn then fallthrough if unsuccessful
+	klog.Info("disabling cri-docker service (if available) ...")
+	criSocket := "cri-docker.socket"
+	criService := "cri-docker.service"
+	if err := r.Init.ForceStop(criSocket); err != nil {
+		klog.Warningf("Failed to stop socket %q (might be ok): %v", criSocket, err)
 	}
+	if err := r.Init.ForceStop(criService); err != nil {
+		klog.Warningf("Failed to stop service %q (might be ok): %v", criService, err)
+	}
+	if err := r.Init.Disable(criSocket); err != nil {
+		klog.Warningf("Failed to disable socket %q (might be ok): %v", criSocket, err)
+	}
+	if err := r.Init.Mask(criService); err != nil {
+		klog.Warningf("Failed to mask service %q (might be ok): %v", criService, err)
+	}
+
 	klog.Info("disabling docker service ...")
 	// because #10373
 	if err := r.Init.ForceStop("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to stop", "service", "docker.socket")
+		klog.ErrorS(err, "Failed to stop", "socket", "docker.socket")
 	}
 	if err := r.Init.ForceStop("docker.service"); err != nil {
 		klog.ErrorS(err, "Failed to stop", "service", "docker.service")
 		return err
 	}
 	if err := r.Init.Disable("docker.socket"); err != nil {
-		klog.ErrorS(err, "Failed to disable", "service", "docker.socket")
+		klog.ErrorS(err, "Failed to disable", "socket", "docker.socket")
 	}
 	return r.Init.Mask("docker.service")
 }
@@ -373,7 +397,6 @@ func (r *Docker) KubeletOptions() map[string]string {
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": r.SocketPath(),
 			"image-service-endpoint":     r.SocketPath(),
-			"runtime-request-timeout":    "15m",
 		}
 	}
 	return map[string]string{
@@ -507,18 +530,23 @@ func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
 }
 
-// ForceSystemd forces the docker daemon to use systemd as cgroup manager
-func (r *Docker) forceSystemd() error {
-	klog.Infof("Forcing docker to use systemd as cgroup manager...")
-	daemonConfig := `{
-"exec-opts": ["native.cgroupdriver=systemd"],
+// setCGroup configures the docker daemon to use driver as cgroup manager
+// ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
+func (r *Docker) setCGroup(driver string) error {
+	if driver == constants.UnknownCgroupDriver {
+		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
+	}
+
+	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
+	daemonConfig := fmt.Sprintf(`{
+"exec-opts": ["native.cgroupdriver=%s"],
 "log-driver": "json-file",
 "log-opts": {
 	"max-size": "100m"
 },
 "storage-driver": "overlay2"
 }
-`
+`, driver)
 	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
 }
@@ -668,24 +696,22 @@ func (r *Docker) ImagesPreloaded(images []string) bool {
 
 const (
 	CNIBinDir   = "/opt/cni/bin"
-	CNIConfDir  = "/etc/cni/net.d"
 	CNICacheDir = "/var/lib/cni/cache"
 )
 
-func dockerConfigureNetworkPlugin(r Docker, cr CommandRunner, networkPlugin string) error {
+func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error {
+	// $ cri-dockerd --version
+	// cri-dockerd 0.2.6 (d8accf7)
+	// $ cri-dockerd --help | grep -i cni
+	// --cni-bin-dir string                      A comma-separated list of full paths of directories in which to search for CNI plugin binaries. (default "/opt/cni/bin")
+	// --cni-cache-dir string                    The full path of the directory in which CNI should store cache files. (default "/var/lib/cni/cache")
+	// --cni-conf-dir string                     The full path of the directory in which to search for CNI config files (default "/etc/cni/net.d")
+	// --network-plugin string                   The name of the network plugin to be invoked for various events in kubelet/pod lifecycle. (default "cni")
+	args := " --hairpin-mode=hairpin-veth"
+	// if network plugin is not selected - use default "cni"
 	if networkPlugin == "" {
-		// no-op plugin
-		return nil
+		networkPlugin = "cni"
 	}
-
-	args := ""
-	if networkPlugin == "cni" {
-		args += " --cni-bin-dir=" + CNIBinDir
-		args += " --cni-cache-dir=" + CNICacheDir
-		args += " --cni-conf-dir=" + cni.ConfDir
-		args += " --hairpin-mode=promiscuous-bridge"
-	}
-
 	opts := struct {
 		NetworkPlugin  string
 		ExtraArguments string
@@ -712,5 +738,5 @@ ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plug
 	if err := cr.Copy(svc); err != nil {
 		return errors.Wrap(err, "failed to copy template")
 	}
-	return r.Init.Restart("cri-docker")
+	return nil
 }

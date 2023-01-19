@@ -38,6 +38,7 @@ import (
 	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -68,7 +69,14 @@ func TestAddons(t *testing.T) {
 		}
 
 		// MOCK_GOOGLE_TOKEN forces the gcp-auth webhook to use a mock token instead of trying to get a valid one from the credentials.
-		t.Setenv("MOCK_GOOGLE_TOKEN", "true")
+		os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
+		// for some reason, (Docker_Cloud_Shell) sets 'MINIKUBE_FORCE_SYSTEMD=true' while having cgroupfs set in docker (and probably os itself), which might make it unstable and occasionally fail:
+		// - I1226 15:05:24.834294   11286 out.go:177]   - MINIKUBE_FORCE_SYSTEMD=true
+		// - I1226 15:05:25.070037   11286 info.go:266] docker info: {... CgroupDriver:cgroupfs ...}
+		// ref: https://storage.googleapis.com/minikube-builds/logs/15463/27154/Docker_Cloud_Shell.html
+		// so we override that here to let minikube auto-detect appropriate cgroup driver
+		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
 		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
@@ -733,7 +741,14 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
-	if detect.IsOnGCE() && !detect.IsCloudShell() {
+	if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
+		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
+		// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
+		// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
+		os.Unsetenv("MOCK_GOOGLE_TOKEN")
+		// re-set MOCK_GOOGLE_TOKEN once we're done
+		defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
 		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
 		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}

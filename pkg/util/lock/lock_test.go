@@ -19,7 +19,7 @@ package lock
 import (
 	"testing"
 
-	"github.com/juju/mutex"
+	"github.com/juju/mutex/v2"
 )
 
 func TestUserMutexSpec(t *testing.T) {

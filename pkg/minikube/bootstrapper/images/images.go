@@ -174,7 +174,7 @@ func KindNet(repo string) string {
 }
 
 // all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
-const calicoVersion = "v3.20.0"
+const calicoVersion = "v3.24.5"
 const calicoRepo = "docker.io/calico"
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet
@@ -186,11 +186,6 @@ func CalicoDaemonSet(repo string) string {
 // CalicoDeployment returns the image used for calicoDeployment
 func CalicoDeployment(repo string) string {
 	return calicoCommon(repo, "kube-controllers")
-}
-
-// CalicoFelixDriver returns image used for felix driver
-func CalicoFelixDriver(repo string) string {
-	return calicoCommon(repo, "pod2daemon-flexvol")
 }
 
 // CalicoBin returns image used for calico binary image

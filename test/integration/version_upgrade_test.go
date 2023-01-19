@@ -71,8 +71,9 @@ func legacyVersion() string {
 	}
 	// the version containerd in ISO was upgraded to 1.4.2
 	// we need it to use runc.v2 plugin
+	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
 	if ContainerRuntime() == "containerd" {
-		version = "v1.16.0"
+		version = "v1.22.0"
 	}
 	return version
 }
@@ -120,8 +121,8 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create temp file for legacy kubeconfig %v", err)
 		}
-
 		defer os.Remove(legacyKubeConfig.Name()) // clean up
+
 		legacyEnv = append(legacyEnv, fmt.Sprintf("KUBECONFIG=%s", legacyKubeConfig.Name()))
 		c.Env = legacyEnv
 		rr, err = Run(t, c)

@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 	"time"
 
@@ -37,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -127,18 +129,51 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
-func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, forceSystemd bool, insecureRegistry []string, inUserNamespace bool) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, cgroupDriver string, insecureRegistry []string, inUserNamespace bool) error {
 	pauseImage := images.Pause(kv, imageRepository)
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*sandbox_image = .*$|sandbox_image = \"%s\"|' -i %s", pauseImage, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)sandbox_image = .*$|\1sandbox_image = %q|' %s`, pauseImage, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update sandbox_image")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*restrict_oom_score_adj = .*$|restrict_oom_score_adj = %t|' -i %s", inUserNamespace, containerdConfigFile))); err != nil {
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)restrict_oom_score_adj = .*$|\1restrict_oom_score_adj = %t|' %s`, inUserNamespace, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update restrict_oom_score_adj")
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*SystemdCgroup = .*$|SystemdCgroup = %t|' -i %s", forceSystemd, containerdConfigFile))); err != nil {
-		return errors.Wrap(err, "update SystemdCgroup")
+
+	// configure cgroup driver
+	if cgroupDriver == constants.UnknownCgroupDriver {
+		klog.Warningf("unable to configure containerd to use unknown cgroup driver, will use default %q instead", constants.DefaultCgroupDriver)
+		cgroupDriver = constants.DefaultCgroupDriver
 	}
-	if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^.*conf_dir = .*$|conf_dir = \"%s\"|' -i %s", cni.ConfDir, containerdConfigFile))); err != nil {
+	klog.Infof("configuring containerd to use %q as cgroup driver...", cgroupDriver)
+	useSystemd := cgroupDriver == constants.SystemdCgroupDriver
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)SystemdCgroup = .*$|\1SystemdCgroup = %t|g' %s`, useSystemd, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring SystemdCgroup")
+	}
+
+	// handle deprecated/removed features
+	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#deprecated-features
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runtime.v1.linux"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring io.containerd.runtime version")
+	}
+
+	// avoid containerd v1.6.14+ "failed to load plugin io.containerd.grpc.v1.cri" error="invalid plugin config: `systemd_cgroup` only works for runtime io.containerd.runtime.v1.linux" error
+	// that then leads to crictl "getting the runtime version: rpc error: code = Unimplemented desc = unknown service runtime.v1alpha2.RuntimeService" error
+	// ref: https://github.com/containerd/containerd/issues/4203
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/systemd_cgroup/d' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "removing deprecated systemd_cgroup param")
+	}
+
+	// "runtime_type" has to be specified and it should be "io.containerd.runc.v2"
+	// ref: https://github.com/containerd/containerd/issues/6964#issuecomment-1132378279
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|"io.containerd.runc.v1"|"io.containerd.runc.v2"|g' %s`, containerdConfigFile))); err != nil {
+		return errors.Wrap(err, "configuring io.containerd.runc version")
+	}
+
+	// ensure conf_dir is using '/etc/cni/net.d'
+	// we might still want to try removing '/etc/cni/net.mk' in case of upgrade from previous minikube version that had/used it
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", `sudo rm -rf /etc/cni/net.mk`)); err != nil {
+		klog.Warningf("unable to remove /etc/cni/net.mk directory: %v", err)
+	}
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)conf_dir = .*$|\1conf_dir = %q|g' %s`, cni.DefaultConfDir, containerdConfigFile))); err != nil {
 		return errors.Wrap(err, "update conf_dir")
 	}
 
@@ -175,7 +210,8 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error {
+// It is also called by docker.Enable() - if bound to containerd, to enforce proper containerd configuration completed by service restart.
+func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
 			// For using overlayfs
@@ -194,11 +230,24 @@ func (r *Containerd) Enable(disOthers, forceSystemd, inUserNamespace bool) error
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, forceSystemd, r.InsecureRegistry, inUserNamespace); err != nil {
+
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, cgroupDriver, r.InsecureRegistry, inUserNamespace); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
+	}
+
+	// TODO (@prezha): remove this hack after proper version update in minikube release
+	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support
+	targetVersion := "1.6.15"
+	currentVersion, err := r.Version()
+	if err == nil && semver.MustParse(targetVersion).GT(semver.MustParse(currentVersion)) {
+		klog.Infof("replacing original containerd with v%s-linux-%s", targetVersion, runtime.GOARCH)
+		_ = r.Init.ForceStop("containerd")
+		if err := updateContainerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
+			klog.Warningf("unable to replace original containerd with v%s-linux-%s: %v", targetVersion, runtime.GOARCH, err)
+		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
@@ -387,21 +436,41 @@ func (r *Containerd) CGroupDriver() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if info["config"] == nil {
-		return "", errors.Wrapf(err, "missing config")
+
+	// crictl also returns default ('false') value for "systemdCgroup" - deprecated "systemd_cgroup" config param that is now irrelevant
+	// ref: https://github.com/containerd/containerd/blob/5e7baa2eb3dab4c4365dd63c05ed8b3fa94b9271/pkg/cri/config/config.go#L277-L280
+	// ref: https://github.com/containerd/containerd/issues/4574#issuecomment-1298727099
+	// so, we try to extract runc's "SystemdCgroup" option that we care about
+	// ref: https://github.com/containerd/containerd/issues/4203#issuecomment-651532765
+	j, err := json.Marshal(info)
+	if err != nil {
+		return "", fmt.Errorf("marshalling: %v", err)
 	}
-	config, ok := info["config"].(map[string]interface{})
-	if !ok {
-		return "", errors.Wrapf(err, "config not map")
+	s := struct {
+		Config struct {
+			Containerd struct {
+				Runtimes struct {
+					Runc struct {
+						Options struct {
+							SystemdCgroup bool `json:"SystemdCgroup"`
+						} `json:"options"`
+					} `json:"runc"`
+				} `json:"runtimes"`
+			} `json:"containerd"`
+		} `json:"config"`
+	}{}
+	if err := json.Unmarshal(j, &s); err != nil {
+		return "", fmt.Errorf("unmarshalling: %v", err)
 	}
-	cgroupManager := "cgroupfs" // default
-	switch config["systemdCgroup"] {
-	case false:
-		cgroupManager = "cgroupfs"
+	// note: if "path" does not exists, SystemdCgroup will evaluate to false as 'default' value for bool => constants.CgroupfsCgroupDriver
+	switch s.Config.Containerd.Runtimes.Runc.Options.SystemdCgroup {
 	case true:
-		cgroupManager = "systemd"
+		return constants.SystemdCgroupDriver, nil
+	case false:
+		return constants.CgroupfsCgroupDriver, nil
+	default:
+		return constants.DefaultCgroupDriver, nil
 	}
-	return cgroupManager, nil
 }
 
 // KubeletOptions returns kubelet options for a containerd
@@ -410,7 +479,6 @@ func (r *Containerd) KubeletOptions() map[string]string {
 		"container-runtime":          "remote",
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
 		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
-		"runtime-request-timeout":    "15m",
 	}
 }
 
@@ -500,7 +568,7 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
-	klog.Infof("Took %f seconds t extract the tarball", time.Since(t).Seconds())
+	klog.Infof("Took %f seconds to extract the tarball", time.Since(t).Seconds())
 
 	//  remove the tarball in the VM
 	if err := r.Runner.Remove(fa); err != nil {
@@ -510,7 +578,7 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 	return r.Restart()
 }
 
-// Restart restarts Docker on a host
+// Restart restarts this container runtime on a host
 func (r *Containerd) Restart() error {
 	return r.Init.Restart("containerd")
 }

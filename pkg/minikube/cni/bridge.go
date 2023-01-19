@@ -28,8 +28,11 @@ import (
 )
 
 // bridge is what minikube defaulted to when `--enable-default-cni=true`
-// https://github.com/containernetworking/plugins/blob/master/plugins/main/bridge/README.md
+// ref: https://www.cni.dev/plugins/current/main/bridge/
+// ref: https://www.cni.dev/plugins/current/meta/portmap/
 
+// note: "cannot set hairpin mode and promiscuous mode at the same time"
+// ref: https://github.com/containernetworking/plugins/blob/7e9ada51e751740541969e1ea5a803cbf45adcf3/plugins/main/bridge/bridge.go#L424
 var bridgeConf = template.Must(template.New("bridge").Parse(`
 {
   "cniVersion": "0.3.1",

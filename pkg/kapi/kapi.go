@@ -97,7 +97,6 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 				return false, nil
 			}
 		}
-
 		return true, nil
 	}
 	t := ReasonableStartTime
@@ -223,14 +222,19 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
 		scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
 		if err != nil {
-			klog.Warningf("failed getting deployment scale, will retry: %v", err)
+			if !IsRetryableAPIError(err) {
+				return false, fmt.Errorf("non-retryable failure while getting %q deployment scale: %v", deploymentName, err)
+			}
+			klog.Warningf("failed getting %q deployment scale, will retry: %v", deploymentName, err)
 			return false, nil
 		}
 		if scale.Spec.Replicas != int32(replicas) {
 			scale.Spec.Replicas = int32(replicas)
-			_, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{})
-			if err != nil {
-				klog.Warningf("failed rescaling deployment, will retry: %v", err)
+			if _, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{}); err != nil {
+				if !IsRetryableAPIError(err) {
+					return false, fmt.Errorf("non-retryable failure while rescaling %s deployment: %v", deploymentName, err)
+				}
+				klog.Warningf("failed rescaling %s deployment, will retry: %v", deploymentName, err)
 			}
 			// repeat (if change was successful - once again to check & confirm requested scale)
 			return false, nil
@@ -238,10 +242,10 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 		return true, nil
 	})
 	if err != nil {
-		klog.Infof("timed out trying to rescale deployment %q in namespace %q and context %q to %d: %v", deploymentName, namespace, kcontext, replicas, err)
+		klog.Warningf("failed rescaling %q deployment in %q namespace and %q context to %d replicas: %v", deploymentName, namespace, kcontext, replicas, err)
 		return err
 	}
-	klog.Infof("deployment %q in namespace %q and context %q rescaled to %d", deploymentName, namespace, kcontext, replicas)
+	klog.Infof("%q deployment in %q namespace and %q context rescaled to %d replicas", deploymentName, namespace, kcontext, replicas)
 
 	return nil
 }

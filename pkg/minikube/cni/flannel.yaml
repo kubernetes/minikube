@@ -31,6 +31,13 @@ rules:
   - nodes/status
   verbs:
   - patch
+- apiGroups:
+  - "networking.k8s.io"
+  resources:
+  - clustercidrs
+  verbs:
+  - list
+  - watch
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -82,7 +89,7 @@ data:
     }
   net-conf.json: |
     {
-      "Network": "10.244.0.0/16",
+      "Network": "{{ .PodCIDR }}",
       "Backend": {
         "Type": "vxlan"
       }
@@ -123,8 +130,8 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni-plugin
-       #image: flannelcni/flannel-cni-plugin:v1.1.0 for ppc64le and mips64le (dockerhub limitations may apply)
-        image: docker.io/rancher/mirrored-flannelcni-flannel-cni-plugin:v1.1.0
+        #image: flannelcni/flannel-cni-plugin:v1.1.2 #for ppc64le and mips64le (dockerhub limitations may apply)
+        image: docker.io/rancher/mirrored-flannelcni-flannel-cni-plugin:v1.1.2
         command:
         - cp
         args:
@@ -135,7 +142,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-       #image: flannelcni/flannel:v0.20.2 for ppc64le and mips64le (dockerhub limitations may apply)
+       #image: flannelcni/flannel:v0.20.2 #for ppc64le and mips64le (dockerhub limitations may apply)
         image: docker.io/rancher/mirrored-flannelcni-flannel:v0.20.2
         command:
         - cp
@@ -150,7 +157,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-       #image: flannelcni/flannel:v0.20.2 for ppc64le and mips64le (dockerhub limitations may apply)
+       #image: flannelcni/flannel:v0.20.2 #for ppc64le and mips64le (dockerhub limitations may apply)
         image: docker.io/rancher/mirrored-flannelcni-flannel:v0.20.2
         command:
         - /opt/bin/flanneld

@@ -145,6 +145,7 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 
 	rr, err := runCmd(exec.Command(ociBin, args...))
 	if err != nil {
+		klog.Errorf("failed to create %s network %s %s with gateway %s and mtu of %d: %v", ociBin, name, subnet.CIDR, subnet.Gateway, mtu, err)
 		// Pool overlaps with other one on this address space
 		if strings.Contains(rr.Output(), "Pool overlaps") {
 			return nil, ErrNetworkSubnetTaken

@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sys/cpu"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -146,4 +147,21 @@ func SocketVMNetInstalled() bool {
 		klog.Warningf("failed to check for socket_vmnet: %v", err)
 	}
 	return false
+}
+
+// CgroupDriver returns detected cgroup driver as configured on host os.
+// If unable to detect, it will return constants.DefaultCgroupDriver instead.
+// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
+func CgroupDriver() string {
+	switch cgroupVersion() {
+	case "v1":
+		klog.Infof("detected %q cgroup driver on host os", constants.CgroupfsCgroupDriver)
+		return constants.CgroupfsCgroupDriver
+	case "v2":
+		klog.Infof("detected %q cgroup driver on host os", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
+	default:
+		klog.Warningf("unable to detect host's os cgroup driver - will continue and try with %q as per default, but things might break", constants.DefaultCgroupDriver)
+		return constants.DefaultCgroupDriver // try with default rather than just give up
+	}
 }

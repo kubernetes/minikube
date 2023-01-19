@@ -51,7 +51,9 @@ kind: KubeletConfiguration
 authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
-cgroupDriver: systemd
+cgroupDriver: cgroupfs
+hairpinMode: hairpin-veth
+runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100

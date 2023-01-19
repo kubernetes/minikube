@@ -159,6 +159,11 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+// VMDriver checks if the driver is a VM
+func VMDriver() bool {
+	return !KicDriver() && !NoneDriver()
+}
+
 // ContainerRuntime returns the name of a specific container runtime if it was specified
 func ContainerRuntime() string {
 	flag := "--container-runtime="
