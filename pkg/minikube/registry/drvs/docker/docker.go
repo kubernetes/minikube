@@ -102,7 +102,7 @@ func status() (retState registry.State) {
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}")
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")
 	o, err := cmd.Output()
 	if err != nil {
 		reason := ""
@@ -135,9 +135,15 @@ func status() (retState registry.State) {
 		}
 	}()
 
+	versions := strings.Split(string(o), ":")
+	dockerEngineVersion := versions[0]
+	dockerPlatformVersion := versions[1]
 	klog.Infof("docker version: %s", o)
 	if !viper.GetBool("force") {
-		s := checkDockerVersion(strings.TrimSpace(string(o))) // remove '\n' from o at the end
+		if s := checkDockerDesktopVersion(dockerPlatformVersion); s != nil {
+			return *s
+		}
+		s := checkDockerEngineVersion(strings.TrimSpace(dockerEngineVersion)) // remove '\n' from o at the end
 		if s.Error != nil {
 			return s
 		}
@@ -159,7 +165,7 @@ func status() (retState registry.State) {
 	return checkNeedsImprovement()
 }
 
-func checkDockerVersion(o string) registry.State {
+func checkDockerEngineVersion(o string) registry.State {
 	parts := strings.SplitN(o, "-", 2)
 	if len(parts) != 2 {
 		return registry.State{
@@ -238,6 +244,27 @@ func checkDockerVersion(o string) registry.State {
 		NeedsImprovement: true,
 		Fix:              hintUpdate,
 		Doc:              docURL + "#requirements"}
+}
+
+func checkDockerDesktopVersion(version string) *registry.State {
+	fields := strings.Fields(version)
+	if len(fields) < 3 || fields[0] != "Docker" || fields[1] != "Desktop" {
+		return nil
+	}
+	currSemver, err := semver.Parse(fields[2])
+	if err != nil {
+		return nil
+	}
+	if currSemver.EQ(semver.MustParse("4.16.0")) {
+		return &registry.State{
+			Reason:    "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
+			Running:   true,
+			Error:     errors.New("Docker Desktop 4.16.0 has a regression that prevents minikube from starting"),
+			Installed: true,
+			Fix:       "Update Docker Desktop to 4.16.1 or greater",
+		}
+	}
+	return nil
 }
 
 // checkNeedsImprovement if overlay mod is installed on a system

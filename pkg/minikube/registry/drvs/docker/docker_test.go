@@ -64,7 +64,7 @@ func stringToIntSlice(t *testing.T, s string) []int {
 	return []int{int(sem.Major), int(sem.Minor), int(sem.Patch)}
 }
 
-func TestCheckDockerVersion(t *testing.T) {
+func TestCheckDockerEngineVersion(t *testing.T) {
 	recParts := stringToIntSlice(t, recommendedDockerVersion)
 	minParts := stringToIntSlice(t, minDockerVersion)
 
@@ -135,8 +135,8 @@ func TestCheckDockerVersion(t *testing.T) {
 	}...)
 
 	for _, c := range tc {
-		t.Run("checkDockerVersion test", func(t *testing.T) {
-			s := checkDockerVersion(c.version)
+		t.Run("checkDockerEngineVersion test", func(t *testing.T) {
+			s := checkDockerEngineVersion(c.version)
 			if s.Error != nil {
 				if c.expect != s.Reason {
 					t.Errorf("Error %v expected. but got %q. (version string : %s)", c.expect, s.Reason, c.version)
@@ -148,5 +148,25 @@ func TestCheckDockerVersion(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCheckDockerDesktopVersion(t *testing.T) {
+	tests := []struct {
+		input             string
+		shouldReturnState bool
+	}{
+		{"Docker Desktop", false},
+		{"Cat Desktop 4.16.0", false},
+		{"Docker Playground 4.16.0", false},
+		{"Docker Desktop 4.15.0", false},
+		{"Docker Desktop 4.16.0", true},
+		{"  Docker  Desktop  4.16.0  ", true},
+	}
+	for _, tt := range tests {
+		state := checkDockerDesktopVersion(tt.input)
+		if (state == nil && tt.shouldReturnState) || (state != nil && !tt.shouldReturnState) {
+			t.Errorf("checkDockerDesktopVersion(%q) = %v; expected shouldRetunState = %t", tt.input, state, tt.shouldReturnState)
+		}
 	}
 }
