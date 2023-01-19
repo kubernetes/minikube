@@ -71,11 +71,15 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i 's|^.*cgroup_manager = .*$|cgroup_manager = %q|' %s`, cgroupDriver, crioConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring cgroup_manager")
 	}
-	// avoid errors like:
+	// explicitly set conmon_cgroup to avoid errors like:
 	// - level=fatal msg="Validating runtime config: conmon cgroup should be 'pod' or a systemd slice"
 	// - level=fatal msg="Validating runtime config: cgroupfs manager conmon cgroup should be 'pod' or empty"
 	// ref: https://github.com/cri-o/cri-o/pull/3940
 	// ref: https://github.com/cri-o/cri-o/issues/6047
+	// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-driver
+	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/conmon_cgroup = .*/d' %s`, crioConfigFile))); err != nil {
+		return errors.Wrap(err, "removing conmon_cgroup")
+	}
 	if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/cgroup_manager = .*/a conmon_cgroup = %q' %s`, "pod", crioConfigFile))); err != nil {
 		return errors.Wrap(err, "configuring conmon_cgroup")
 	}

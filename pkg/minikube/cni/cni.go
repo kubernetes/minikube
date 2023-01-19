@@ -209,7 +209,7 @@ func ConfigureLoopbackCNI(r Runner, disable bool) error {
 		return nil
 	}
 
-	findExec := []string{"find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-exec", "sh", "-c"}
+	findExec := []string{"find", filepath.Dir(loopback), "-maxdepth", "1", "-type", "f", "-name", filepath.Base(loopback), "-not", "-name", "*.mk_disabled", "-exec", "sh", "-c"}
 
 	if disable {
 		if _, err := r.RunCmd(exec.Command(
@@ -248,7 +248,7 @@ func disableAllBridgeCNIs(r Runner) error {
 
 	out, err := r.RunCmd(exec.Command(
 		// for cri-o, we also disable 87-podman.conflist (that does not have 'bridge' in its name)
-		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "(", "-name", "*bridge*", "-or", "-name", "*podman*", "-and", "-not", "-name", "*.mk_disabled", ")", "-printf", "%p, ", "-exec", "sh", "-c",
+		"sudo", "find", path, "-maxdepth", "1", "-type", "f", "(", "(", "-name", "*bridge*", "-or", "-name", "*podman*", ")", "-and", "-not", "-name", "*.mk_disabled", ")", "-printf", "%p, ", "-exec", "sh", "-c",
 		`sudo mv {} {}.mk_disabled`, ";"))
 	if err != nil {
 		return fmt.Errorf("failed to disable all bridge cni configs in %q: %v", path, err)
