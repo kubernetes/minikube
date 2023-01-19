@@ -101,10 +101,10 @@ minikube start --extra-config kubeadm.ignore-preflight-errors=SystemVerification
 
 ## What is the minimum resource allocation necessary for a Knative setup using minikube?
 
-Please allocate sufficient resources for Knative setup using minikube, especially when running minikube cluster on your local machine. We recommend allocating at least 6 CPUs and 8G memory:
+Please allocate sufficient resources for Knative setup using minikube, especially when running minikube cluster on your local machine. We recommend allocating at least 3 CPUs and 3G memory.
 
 ```shell
-minikube start --cpus 6 --memory 8000
+minikube start --cpus 3 --memory 3072
 ```
 
 ## Do I need to install kubectl locally?
