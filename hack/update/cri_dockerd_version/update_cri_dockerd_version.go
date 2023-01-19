@@ -75,7 +75,7 @@ func main() {
 
 	update.Apply(schema, data)
 
-	if out, err := exec.Command("./update_cri_dockerd.sh", commit, archs).CombinedOutput(); err != nil {
+	if out, err := exec.Command("./update_cri_dockerd_version.sh", commit, archs).CombinedOutput(); err != nil {
 		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
 	}
 
