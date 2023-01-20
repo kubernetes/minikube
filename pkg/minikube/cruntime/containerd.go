@@ -26,7 +26,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
 	"strings"
 	"time"
 
@@ -236,18 +235,6 @@ func (r *Containerd) Enable(disOthers bool, cgroupDriver string, inUserNamespace
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
-	}
-
-	// TODO (@prezha): remove this hack after proper version update in minikube release
-	// ref: https://github.com/containerd/containerd/blob/main/RELEASES.md#kubernetes-support
-	targetVersion := "1.6.15"
-	currentVersion, err := r.Version()
-	if err == nil && semver.MustParse(targetVersion).GT(semver.MustParse(currentVersion)) {
-		klog.Infof("replacing original containerd with v%s-linux-%s", targetVersion, runtime.GOARCH)
-		_ = r.Init.ForceStop("containerd")
-		if err := updateContainerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
-			klog.Warningf("unable to replace original containerd with v%s-linux-%s: %v", targetVersion, runtime.GOARCH, err)
-		}
 	}
 
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
