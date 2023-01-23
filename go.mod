@@ -89,7 +89,7 @@ require (
 	github.com/docker/cli v20.10.23+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v43 v43.0.0
-	github.com/juju/clock v1.0.2
+	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/opencontainers/runc v1.1.4
