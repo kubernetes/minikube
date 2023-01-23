@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/out/register"
 )
 
 var (
@@ -113,9 +115,6 @@ func ImageToCache(img string) error {
 		return DownloadMock(img, f)
 	}
 
-	// buffered channel
-	c := make(chan v1.Update, 200)
-
 	klog.Infof("Writing %s to local cache", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
@@ -139,38 +138,54 @@ func ImageToCache(img string) error {
 		return errors.Wrap(err, "getting remote image")
 	}
 	klog.V(3).Infof("Writing image %v", tag)
-	if out.JSON {
-		if err := tarball.WriteToFile(f, tag, i); err != nil {
-			return errors.Wrap(err, "writing tarball image")
-		}
-		return nil
-	}
 	errchan := make(chan error)
-	p := pb.Full.Start64(0)
-	fn := image.Tag(ref.Name())
-	// abbreviate filename for progress
-	maxwidth := 30 - len("...")
-	if len(fn) > maxwidth {
-		fn = fn[0:maxwidth] + "..."
-	}
-	p.Set("prefix", "    > "+fn+": ")
-	p.Set(pb.Bytes, true)
+	// buffered channel
+	c := make(chan v1.Update, 200)
+	var p *pb.ProgressBar
+	if out.JSON {
+		register.PrintDownloadProgress(img, "0")
+	} else {
+		// if we need to print progress bar to stdout
+		p = pb.Full.Start64(0)
+		fn := image.Tag(ref.Name())
+		// abbreviate filename for progress
+		maxwidth := 30 - len("...")
+		if len(fn) > maxwidth {
+			fn = fn[0:maxwidth] + "..."
+		}
+		p.Set("prefix", "    > "+fn+": ")
+		p.Set(pb.Bytes, true)
 
-	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(79)
+		// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
+		p.SetWidth(79)
+	}
 
 	go func() {
 		err = tarball.WriteToFile(f, tag, i, tarball.WithProgress(c))
 		errchan <- err
 	}()
 	var update v1.Update
+	previousTime := time.Now()
 	for {
 		select {
 		case update = <-c:
-			p.SetCurrent(update.Complete)
-			p.SetTotal(update.Total)
+			if out.JSON {
+				now := time.Now()
+				if update.Complete == update.Total || now.Sub(previousTime) > time.Second*5 {
+					register.PrintDownloadProgress(img, fmt.Sprintf("%f", float64(update.Complete)/float64(update.Total)))
+					previousTime = now
+				}
+			} else {
+				p.SetCurrent(update.Complete)
+				p.SetTotal(update.Total)
+			}
+
 		case err = <-errchan:
-			p.Finish()
+			if out.JSON {
+				register.PrintDownloadProgress(img, "1")
+			} else {
+				p.Finish()
+			}
 			if err != nil {
 				return errors.Wrap(err, "writing tarball image")
 			}
