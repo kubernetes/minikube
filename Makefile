@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.28.0-1668700269-15235
+ISO_VERSION ?= v1.28.0-1674164545-15541
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -715,7 +715,7 @@ KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
 .PHONY: update-cri-dockerd
 update-cri-dockerd:
-	(cd hack/update/cri_dockerd && \
+	(cd hack/update/cri_dockerd_version && \
 	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH))
 
 .PHONY: local-kicbase

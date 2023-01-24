@@ -347,33 +347,3 @@ func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) e
 	}
 	return dockerConfigureNetworkPlugin(cr, networkPlugin)
 }
-
-// updateCRIDockerdBinary updates cri-dockerd to version
-func updateCRIDockerdBinary(cr CommandRunner, version, arch string) error {
-	curl := fmt.Sprintf("curl -sSfL https://github.com/Mirantis/cri-dockerd/releases/download/v%s/cri-dockerd-%s.%s.tgz | tar -xz -C /tmp", version, version, arch)
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
-		return fmt.Errorf("unable to download cri-dockerd version %s: %v", version, err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "chmod", "a+x", "/tmp/cri-dockerd/cri-dockerd")); err != nil {
-		return fmt.Errorf("unable to chmod cri-dockerd version %s: %v", version, err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "mv", "/tmp/cri-dockerd/cri-dockerd", "/usr/bin/cri-dockerd")); err != nil {
-		return fmt.Errorf("unable to install cri-dockerd version %s: %v", version, err)
-	}
-	return nil
-}
-
-// updateContainerdBinary updates containerd to version
-func updateContainerdBinary(cr CommandRunner, version, arch string) error {
-	curl := fmt.Sprintf("curl -sSfL https://github.com/containerd/containerd/releases/download/v%s/containerd-%s-linux-%s.tar.gz | tar -xz -C /tmp", version, version, arch)
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", curl)); err != nil {
-		return fmt.Errorf("unable to download containerd version %s: %v", version, err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", "chmod a+x /tmp/bin/*")); err != nil { // note: has to run in subshell because of wildcard!
-		return fmt.Errorf("unable to chmod containerd version %s: %v", version, err)
-	}
-	if _, err := cr.RunCmd(exec.Command("sudo", "sh", "-c", "mv /tmp/bin/* /usr/bin/")); err != nil { // note: has to run in subshell because of wildcard!
-		return fmt.Errorf("unable to install containerd version %s: %v", version, err)
-	}
-	return nil
-}

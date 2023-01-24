@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -159,16 +158,6 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 	}
 
 	if r.CRIService != "" {
-		// TODO (@prezha): remove this hack after proper version update in minikube release
-		// deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.*
-		// deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.*
-		// note: https://github.com/Mirantis/cri-dockerd/blob/master/Makefile changed => also needs updating .mk files?!
-		targetVersion := "0.3.0"
-		klog.Infof("replacing original cri-dockerd with v%s-%s", targetVersion, runtime.GOARCH)
-		if err := updateCRIDockerdBinary(r.Runner, targetVersion, runtime.GOARCH); err != nil {
-			klog.Warningf("unable to replace original cri-dockerd with v%s-%s: %v", targetVersion, runtime.GOARCH, err)
-		}
-
 		if err := r.Init.Enable("cri-docker.socket"); err != nil {
 			return err
 		}

@@ -17,7 +17,7 @@
 set -eux -o pipefail
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: update_cri_dockerd.sh <version> <archlist>" >&2
+  echo "Usage: update_cri_dockerd_version.sh <version> <archlist>" >&2
   exit 1
 fi
 
