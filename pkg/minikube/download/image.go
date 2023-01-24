@@ -46,8 +46,8 @@ var (
 	}
 )
 
-// imagePathInCache returns path in local cache directory
-func imagePathInCache(img string) string {
+// ImagePathInCache returns path in local cache directory
+func ImagePathInCache(img string) string {
 	f := filepath.Join(detect.KICCacheDir(), path.Base(img)+".tar")
 	f = localpath.SanitizeCacheDir(f)
 	return f
@@ -55,7 +55,7 @@ func imagePathInCache(img string) string {
 
 // ImageExistsInCache if img exist in local cache directory
 func ImageExistsInCache(img string) bool {
-	f := imagePathInCache(img)
+	f := ImagePathInCache(img)
 
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local cache directory", img)
@@ -88,7 +88,7 @@ func ImageExistsInDaemon(img string) bool {
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
-	f := imagePathInCache(img)
+	f := ImagePathInCache(img)
 	fileLock := f + ".lock"
 
 	releaser, err := lockDownload(fileLock)
@@ -206,7 +206,7 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 // If online it will be: image:tag@sha256
 // If offline it will be: image:tag
 func CacheToDaemon(img string) (string, error) {
-	p := imagePathInCache(img)
+	p := ImagePathInCache(img)
 
 	tag, ref, err := parseImage(img)
 	if err != nil {
