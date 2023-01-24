@@ -179,7 +179,7 @@ func fileExists(filePath string) bool {
 		return true
 	}
 	if !errors.Is(err, os.ErrNotExist) {
-		klog.Warningf("failed to check for existance of %s: %v", filePath, err)
+		klog.Warningf("failed to check for existence of %s: %v", filePath, err)
 	}
 	return false
 }
