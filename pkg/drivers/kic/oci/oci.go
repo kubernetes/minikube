@@ -421,6 +421,14 @@ func IsImageLoaded(ociBin, cd string) (bool, error) {
 	return strings.Contains(rr.Stdout.String(), cd), err
 }
 
+// LoadTarball
+// given a PATH to an archived image,
+// it loads it into the kicDriver
+func LoadTarball(ociBin, path string) error {
+	_, err := runCmd(exec.Command(ociBin, "load", "-i", path))
+	return err
+}
+
 /*
 This is adapted from:
 https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155

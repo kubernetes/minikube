@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -199,6 +200,13 @@ func parseImage(img string) (*name.Tag, name.Reference, error) {
 		ref = digest
 	}
 	return &tag, ref, nil
+}
+
+// CacheToKicDriver
+// loads a kicBase cached image to the OCIBIN kicDriver
+func CacheToKicDriver(ociBin, img string) error {
+	tarpath := ImagePathInCache(img)
+	return oci.LoadTarball(ociBin, tarpath)
 }
 
 // CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
