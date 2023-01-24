@@ -300,6 +300,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		klog.Errorf("Error autoSetOptions : %v", err)
 	}
 
+	virtualBoxMacOS13PlusWarning(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -371,6 +372,22 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		Cfg:            &cc,
 		Node:           &n,
 	}, nil
+}
+
+func virtualBoxMacOS13PlusWarning(driverName string) {
+	if driverName != "virtualbox" || !detect.MacOS13Plus() {
+		return
+	}
+	driver := "hyperkit"
+	if runtime.GOARCH == "arm64" {
+		driver = "qemu"
+	}
+	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as docker or {{.driver}}.
+    https://minikube.sigs.k8s.io/docs/drivers/docker/
+    https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}/
+
+    For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
+`, out.V{"driver": driver})
 }
 
 func validateBuiltImageVersion(r command.Runner) {
