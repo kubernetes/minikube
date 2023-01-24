@@ -38,9 +38,9 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 const (
@@ -447,8 +447,8 @@ func (d *Driver) Start() error {
 	// If socket network, start with socket_vmnet.
 	startProgram := d.Program
 	if d.Network == "socket_vmnet" {
-		startProgram = viper.GetString("socket-vmnet-client-path")
-		socketVMnetPath := viper.GetString("socket-vmnet-path")
+		startProgram = detect.SocketVMNetClientPath()
+		socketVMnetPath := detect.SocketVMNetPath()
 		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
 	}
 
