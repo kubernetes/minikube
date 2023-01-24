@@ -49,7 +49,7 @@ kind: KubeletConfiguration
 authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
-cgroupDriver: cgroupfs
+cgroupDriver: systemd
 hairpinMode: hairpin-veth
 runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"
