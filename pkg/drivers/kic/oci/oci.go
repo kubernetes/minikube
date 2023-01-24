@@ -410,6 +410,17 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 	return lines, err
 }
 
+// IsImageLoaded
+// takes a binary name OCIBIN to call,
+// and a contentDigest(a.k.a. ImageID) CD to look for
+func IsImageLoaded(ociBin, cd string) (bool, error) {
+	rr, err := runCmd(exec.Command(ociBin, "images", "--no-trunc", "--format", "{{.ID}}"))
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(rr.Stdout.String(), cd), err
+}
+
 /*
 This is adapted from:
 https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8314204/pkg/kubelet/dockershim/helpers.go#L115-L155
