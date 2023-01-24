@@ -17,9 +17,7 @@ limitations under the License.
 package download
 
 import (
-	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -28,7 +26,6 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
@@ -71,21 +68,6 @@ func ImageExistsInCache(img string) bool {
 }
 
 var checkImageExistsInCache = ImageExistsInCache
-
-// ImageExistsInDaemon if img exist in local docker daemon
-func ImageExistsInDaemon(img string) bool {
-	// Check if image exists locally
-	klog.Infof("Checking for %s in local docker daemon", img)
-	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), image.TrimDockerIO(img)) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
-	}
-	// Else, pull it
-	return false
-}
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
 func ImageToCache(img string) error {
@@ -180,69 +162,9 @@ func ImageToCache(img string) error {
 	}
 }
 
-func parseImage(img string) (*name.Tag, name.Reference, error) {
-
-	var ref name.Reference
-	tag, err := name.NewTag(image.Tag(img))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to parse image reference")
-	}
-	digest, err := name.NewDigest(img)
-	if err != nil {
-		_, ok := err.(*name.ErrBadName)
-		if !ok {
-			return nil, nil, errors.Wrap(err, "new ref")
-		}
-		// ErrBadName means img contains no digest
-		// It happens if its value is name:tag for example.
-		ref = tag
-	} else {
-		ref = digest
-	}
-	return &tag, ref, nil
-}
-
 // CacheToKicDriver
 // loads a kicBase cached image to the OCIBIN kicDriver
 func CacheToKicDriver(ociBin, img string) error {
 	tarpath := ImagePathInCache(img)
 	return oci.LoadTarball(ociBin, tarpath)
-}
-
-// CacheToDaemon loads image from tarball in the local cache directory to the local docker daemon
-// It returns the img that was loaded into the daemon
-// If online it will be: image:tag@sha256
-// If offline it will be: image:tag
-func CacheToDaemon(img string) (string, error) {
-	p := ImagePathInCache(img)
-
-	tag, ref, err := parseImage(img)
-	if err != nil {
-		return "", err
-	}
-	// do not use cache if image is set in format <name>:latest
-	if _, ok := ref.(name.Tag); ok {
-		if tag.Name() == "latest" {
-			return "", fmt.Errorf("can't cache 'latest' tag")
-		}
-	}
-
-	i, err := tarball.ImageFromPath(p, tag)
-	if err != nil {
-		return "", errors.Wrap(err, "tarball")
-	}
-
-	resp, err := daemon.Write(*tag, i)
-	klog.V(2).Infof("response: %s", resp)
-	if err != nil {
-		return "", err
-	}
-
-	cmd := exec.Command("docker", "pull", "--quiet", img)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)
-		img = image.Tag(img)
-	}
-
-	return img, nil
 }
