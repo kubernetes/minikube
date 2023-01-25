@@ -478,42 +478,19 @@ func verifyAddonStatusInternal(cc *config.ClusterConfig, name string, val string
 	return nil
 }
 
-// Start enables the default addons for a profile, plus any additional
-func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
+// Enable tries to enable the default addons for a profile plus any additional, and returns a single slice of all successfully enabled addons via channel (thread-safe).
+// Since Enable is called asynchronously (so is not thread-safe for concurrent addons map updating/reading), to avoid race conditions,
+// ToEnable should be called synchronously before Enable to get complete list of addons to enable, and
+// UpdateConfig should be called synchronously after Enable to update the config with successfully enabled addons.
+func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, enabled chan<- []string) {
 	defer wg.Done()
 
 	start := time.Now()
-	klog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
+	klog.Infof("enable addons start: toEnable=%v", toEnable)
+	var enabledAddons []string
 	defer func() {
-		klog.Infof("enableAddons completed in %s", time.Since(start))
+		klog.Infof("enable addons completed in %s: enabled=%v", time.Since(start), enabledAddons)
 	}()
-
-	// Get the default values of any addons not saved to our config
-	for name, a := range assets.Addons {
-		defaultVal := a.IsEnabled(cc)
-
-		_, exists := toEnable[name]
-		if !exists {
-			toEnable[name] = defaultVal
-		}
-	}
-
-	// Apply new addons
-	for _, name := range additional {
-		isDeprecated, replacement, msg := Deprecations(name)
-		if isDeprecated && replacement == "" {
-			out.FailureT(msg)
-			continue
-		} else if isDeprecated {
-			out.Styled(style.Waiting, msg)
-			name = replacement
-		}
-		// if the specified addon doesn't exist, skip enabling
-		_, e := isAddonValid(name)
-		if e {
-			toEnable[name] = true
-		}
-	}
 
 	toEnableList := []string{}
 	for k, v := range toEnable {
@@ -524,8 +501,6 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 	sort.Strings(toEnableList)
 
 	var awg sync.WaitGroup
-
-	var enabledAddons []string
 
 	defer func() { // making it show after verifications (see #7613)
 		register.Reg.SetStep(register.EnablingAddons)
@@ -544,10 +519,52 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 		}(a)
 	}
 
-	// Wait until all of the addons are enabled before updating the config (not thread safe)
+	// Wait until all of the addons are enabled
 	awg.Wait()
 
-	for _, a := range enabledAddons {
+	// send the slice of all successfully enabled addons to channel and close
+	enabled <- enabledAddons
+	close(enabled)
+}
+
+// ToEnable returns the final list of addons to enable (not thread-safe).
+func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []string) map[string]bool {
+	// start from existing
+	enable := map[string]bool{}
+	for k, v := range existing {
+		enable[k] = v
+	}
+
+	// Get the default values of any addons not saved to our config
+	for name, a := range assets.Addons {
+		if _, exists := existing[name]; !exists {
+			enable[name] = a.IsEnabled(cc)
+		}
+	}
+
+	// Apply new addons
+	for _, name := range additional {
+		isDeprecated, replacement, msg := Deprecations(name)
+		if isDeprecated && replacement == "" {
+			out.FailureT(msg)
+			continue
+		} else if isDeprecated {
+			out.Styled(style.Waiting, msg)
+			name = replacement
+		}
+		// if the specified addon doesn't exist, skip enabling
+		if _, e := isAddonValid(name); e {
+			enable[name] = true
+		}
+	}
+
+	return enable
+}
+
+// UpdateConfig tries to update config with all enabled addons (not thread-safe).
+// Any error will be logged and it will continue.
+func UpdateConfig(cc *config.ClusterConfig, enabled []string) {
+	for _, a := range enabled {
 		if err := Set(cc, a, "true"); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
