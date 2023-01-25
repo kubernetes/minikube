@@ -40,7 +40,6 @@ import (
 	"github.com/pkg/errors"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/minikube/detect"
 )
 
 const (
@@ -56,30 +55,32 @@ type Driver struct {
 	EnginePort int
 	FirstQuery bool
 
-	Memory          int
-	DiskSize        int
-	CPU             int
-	Program         string
-	BIOS            bool
-	CPUType         string
-	MachineType     string
-	Firmware        string
-	Display         bool
-	DisplayType     string
-	Nographic       bool
-	VirtioDrives    bool
-	Network         string
-	PrivateNetwork  string
-	Boot2DockerURL  string
-	CaCertPath      string
-	PrivateKeyPath  string
-	DiskPath        string
-	CacheMode       string
-	IOMode          string
-	UserDataFile    string
-	CloudConfigRoot string
-	LocalPorts      string
-	MACAddress      string
+	Memory                int
+	DiskSize              int
+	CPU                   int
+	Program               string
+	BIOS                  bool
+	CPUType               string
+	MachineType           string
+	Firmware              string
+	Display               bool
+	DisplayType           string
+	Nographic             bool
+	VirtioDrives          bool
+	Network               string
+	PrivateNetwork        string
+	Boot2DockerURL        string
+	CaCertPath            string
+	PrivateKeyPath        string
+	DiskPath              string
+	CacheMode             string
+	IOMode                string
+	UserDataFile          string
+	CloudConfigRoot       string
+	LocalPorts            string
+	MACAddress            string
+	SocketVMNetPath       string
+	SocketVMNetClientPath string
 }
 
 func (d *Driver) GetMachineName() string {
@@ -447,9 +448,8 @@ func (d *Driver) Start() error {
 	// If socket network, start with socket_vmnet.
 	startProgram := d.Program
 	if d.Network == "socket_vmnet" {
-		startProgram = detect.SocketVMNetClientPath()
-		socketVMnetPath := detect.SocketVMNetPath()
-		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
+		startProgram = d.SocketVMNetClientPath
+		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
 	}
 
 	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {

@@ -143,25 +143,28 @@ func SocketVMNetInstalled() bool {
 	return SocketVMNetPath() != "" && SocketVMNetClientPath() != ""
 }
 
-// SocketVMNetPath returns the path of socket_vmnet
+// SocketVMNetPath returns the path of socket_vmnet (QEMU driver only)
 func SocketVMNetPath() string {
-	return checkSocketVMnetInstallLocations("socket-vmnet-path", "/var/run/socket_vmnet")
-}
-
-// SocketVMNetClientPath returns the path of socket_vmnet_client
-func SocketVMNetClientPath() string {
-	return checkSocketVMnetInstallLocations("socket-vmnet-client-path", "/opt/socket_vmnet/bin/socket_vmnet_client")
-}
-
-// checkSocketVMnetInstallLocations accepts a flag name and relative file path
-// if the flag value is non-empty, returns the flag value
-// otherwise, checks the three possible socket_vmnet install locations for the binary
-// if the binary is found it returns the full path, otherwise if returns an empty string
-func checkSocketVMnetInstallLocations(flagName, path string) string {
-	p := viper.GetString(flagName)
+	p := viper.GetString("socket-vmnet-path")
 	if p != "" {
 		return p
 	}
+	return checkSocketVMNetInstallLocations("/var/run/socket_vmnet")
+}
+
+// SocketVMNetClientPath returns the path of socket_vmnet_client (QEMU driver only)
+func SocketVMNetClientPath() string {
+	p := viper.GetString("socket-vmnet-client-path")
+	if p != "" {
+		return p
+	}
+	return checkSocketVMNetInstallLocations("/opt/socket_vmnet/bin/socket_vmnet_client")
+}
+
+// checkSocketVMNetInstallLocations accepts a relative file path
+// checks the three possible socket_vmnet install locations for existance of the file path
+// if the file path exists it returns the full path, otherwise if returns an empty string
+func checkSocketVMNetInstallLocations(path string) string {
 	// source install, arm64 brew install, amd64 brew install
 	prefixes := []string{"", "/opt/homebrew", "/usr/local"}
 	for _, prefix := range prefixes {

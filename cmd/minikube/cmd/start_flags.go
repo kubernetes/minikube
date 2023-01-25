@@ -281,8 +281,8 @@ func initNetworkingFlags() {
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
 
 	// socket vmnet
-	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary")
-	startCmd.Flags().String(socketVMnetPath, "", "Path to socket vmnet binary")
+	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
+	startCmd.Flags().String(socketVMnetPath, "", "Path to socket vmnet binary (QEMU driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
