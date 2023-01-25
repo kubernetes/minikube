@@ -162,7 +162,7 @@ func SocketVMNetClientPath() string {
 }
 
 // checkSocketVMNetInstallLocations accepts a relative file path
-// checks the three possible socket_vmnet install locations for existance of the file path
+// checks the three possible socket_vmnet install locations for existence of the file path
 // if the file path exists it returns the full path, otherwise if returns an empty string
 func checkSocketVMNetInstallLocations(path string) string {
 	// source install, arm64 brew install, amd64 brew install
