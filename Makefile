@@ -17,6 +17,7 @@ VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 29
 VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+VERSION ?= $(MINIKUBE_VERSION)
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)

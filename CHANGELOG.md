@@ -3,18 +3,20 @@
 ## Version 1.29.0 - 2023-01-26
 
 Features:
-* Graduate QEMU driver from experimental to GA [#15556](https://github.com/kubernetes/minikube/pull/15556)
-* Implement --static-ip flag (Docker only) [#15553](https://github.com/kubernetes/minikube/pull/15553)
-* Implement Kicbase/ISO version validation when starting existing clusters [#15235](https://github.com/kubernetes/minikube/pull/15235)
-* GCP-Auth addon automatically integrates with newly created namespaces [#15403](https://github.com/kubernetes/minikube/pull/15403)
+* Bump QEMU driver priority from experimental to default [#15556](https://github.com/kubernetes/minikube/pull/15556)
+* Ability to set static-ip for Docker driver [#15553](https://github.com/kubernetes/minikube/pull/15553)
+* GCP-Auth Addon: automatically attach credentials to newly created namespaces [#15403](https://github.com/kubernetes/minikube/pull/15403)
+* Allow forcing 1 CPU on Linux with docker and none driver [#15611](https://github.com/kubernetes/minikube/pull/15611) [#15610](https://github.com/kubernetes/minikube/pull/15610)
+
+Major Improvements:
 * Large improvements to cgroup detection and CNI and CRI configurations [#15463](https://github.com/kubernetes/minikube/pull/15463)
+* Prevent redownloading kicbase when already downloaded [#15528](https://github.com/kubernetes/minikube/pull/15528)
+* Warn when using an old ISO/Kicbase image [#15235](https://github.com/kubernetes/minikube/pull/15235)
 
 Minor Improvements:
-* Prevent redownloading kicbase when already downloaded [#15528](https://github.com/kubernetes/minikube/pull/15528)
 * Check brew install paths for socket_vmnet [#15701](https://github.com/kubernetes/minikube/pull/15701)
 * Include gcp-auth logs in 'minikube logs' output [#15666](https://github.com/kubernetes/minikube/pull/15666)
 * Use absolute path when calling crictl version [#15642](https://github.com/kubernetes/minikube/pull/15642)
-* Allow forcing 1 CPU on Linux with docker and none driver [#15611](https://github.com/kubernetes/minikube/pull/15611) [#15610](https://github.com/kubernetes/minikube/pull/15610)
 * Add additional memory overhead for VirtualBox when `--memory=max` [#15317](https://github.com/kubernetes/minikube/pull/15317)
 * Update Windows installer to create system-wide shortcut [#15405](https://github.com/kubernetes/minikube/pull/15405)
 * Add `--subnet` validation [#15530](https://github.com/kubernetes/minikube/pull/15530)
