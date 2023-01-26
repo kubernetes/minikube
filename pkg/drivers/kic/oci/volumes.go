@@ -144,16 +144,15 @@ func ExtractTarballToVolume(ociBin string, tarballPath, volumeName, imageName st
 // createVolume creates a volume to be attached to the container with correct labels and prefixes based on profile name
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 func createVolume(ociBin string, profile string, nodeName string) error {
-	rr, err := runCmd(exec.Command(ociBin, "volume", "ls"))
-	if err == nil {
-		if strings.Contains(rr.Output(), nodeName) {
-			klog.Infof("Trying to create %s volume using %s: Volume already exists !", nodeName, ociBin)
+	if rr, err := runCmd(exec.Command(ociBin, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))); err != nil {
+		if strings.Contains(rr.Stderr.String(), "volume already exists") && ociBin == Podman {
+			// podman doesn't fail as gracefully as docker when a volume already exists.
+			// we're reusing the same NODENAME volume:
 			return nil
 		}
-
-		_, err = runCmd(exec.Command(ociBin, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true")))
+		return err
 	}
-	return err
+	return nil
 }
 
 // prepareVolumeSideCar will copy the initial content of the mount point by starting a temporary container to check the expected content
