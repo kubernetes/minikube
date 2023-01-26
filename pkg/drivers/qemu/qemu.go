@@ -509,6 +509,8 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
 			err = fmt.Errorf("mystery error: %v", ee)
+		} else {
+			err = fmt.Errorf("%s: %v", strings.Trim(stderrStr, "\n"), err)
 		}
 	} else {
 		// also catch error messages in stderr, even if the return code looks OK

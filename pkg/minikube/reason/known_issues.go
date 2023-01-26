@@ -578,6 +578,16 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 		},
 		Regexp: re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
 	},
+
+	// QEMU
+	{
+		Kind: Kind{
+			ID:       "PR_QEMU_SOCKET_VMNET_DENIED",
+			ExitCode: ExProviderError,
+			Advice:   "socket_vmnet was installed with an incorrect group, delete this cluster 'minikube delete' and update the group 'sudo chown root:$(stat -f \"%Sg\" ~) /var/run/socket_vmnet' and try again.",
+		},
+		Regexp: re(`Failed to connect to "/var/run/socket_vmnet": Permission denied`),
+	},
 }
 
 // driverIssues are specific to a libmachine driver
