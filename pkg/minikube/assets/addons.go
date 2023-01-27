@@ -150,7 +150,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
+	}, false, "default-storageclass", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/", nil, nil),
 	"pod-security-policy": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PodSecurityPolicyAssets,
 			"pod-security-policy/pod-security-policy.yaml.tmpl",
@@ -164,7 +164,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640"),
-	}, true, "storage-provisioner", "Google", "", "", map[string]string{
+	}, false, "storage-provisioner", "Google", "", "", map[string]string{
 		"StorageProvisioner": fmt.Sprintf("k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion()),
 	}, map[string]string{
 		"StorageProvisioner": "gcr.io",
