@@ -128,7 +128,9 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 
 		return net.ParseIP(ip), nil
 	case driver.HyperKit:
-		return net.ParseIP("192.168.64.1"), nil
+		vmIPString, _ := host.Driver.GetIP()
+		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
+		return net.ParseIP(gatewayIPString), nil
 	case driver.VMware:
 		vmIPString, err := host.Driver.GetIP()
 		if err != nil {
