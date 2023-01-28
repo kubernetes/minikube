@@ -193,7 +193,7 @@ var mountCmd = &cobra.Command{
 			bindIP = "127.0.0.1"
 		}
 		out.Step(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
-		out.Infof("Mount type:   {{.name}}", out.V{"type": cfg.Type})
+		out.Infof("Mount type:   {{.name}}", out.V{"name": cfg.Type})
 		out.Infof("User ID:      {{.userID}}", out.V{"userID": cfg.UID})
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
 		out.Infof("Version:      {{.version}}", out.V{"version": cfg.Version})
