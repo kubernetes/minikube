@@ -536,7 +536,7 @@ minikube dashboard
 
 {{% tabs %}}
 {{% tab Service %}}
-Create a sample deployment and expose it on port 8080:
+Create a sample deployment and expose it on port 8080, if you are using apple m1, replace the image with `k8s.gcr.io/echoserver-arm:1.8`:
 
 ```shell
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
