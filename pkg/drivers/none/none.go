@@ -47,9 +47,10 @@ var cleanupPaths = []string{
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL     string
-	runtime cruntime.Manager
-	exec    command.Runner
+	URL        string
+	runtime    cruntime.Manager
+	exec       command.Runner
+	NodeConfig Config
 }
 
 // Config is configuration for the None driver
@@ -61,24 +62,26 @@ type Config struct {
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := command.NewExecRunner(true)
-	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
-	// Libraries shouldn't panic, but there is no way for drivers to return error :(
-	if err != nil {
-		klog.Fatalf("unable to create container runtime: %v", err)
-	}
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		runtime: runtime,
-		exec:    runner,
+		NodeConfig: c,
 	}
 }
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
+	runner := command.NewExecRunner(true)
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: runner})
+	if err != nil {
+		klog.Fatalf("unable to create container runtime: %v", err)
+	}
+
+	d.runtime = runtime
+	d.exec = runner
+
 	return d.runtime.Available()
 }
 
