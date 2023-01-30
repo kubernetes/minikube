@@ -118,6 +118,7 @@ var logsCmd = &cobra.Command{
 			if err != nil {
 				klog.Errorf("failed to output last start logs: %V", err)
 			}
+		}
 		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
 		if err != nil {
 			out.Ln("")
