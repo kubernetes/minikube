@@ -16,13 +16,14 @@
 
 set -eux -o pipefail
 
-if [ "$#" -ne 2 ]; then
-  echo "Usage: update_cri_dockerd_version.sh <version> <archlist>" >&2
+if [ "$#" -ne 3 ]; then
+  echo "Usage: update_cri_dockerd_version.sh <version> <commit> <archlist>" >&2
   exit 1
 fi
 
 readonly version=$1
-archlist=$2
+readonly commit=$2
+archlist=$3
 
 IFS=, read -a archarray <<< "$archlist"
 
@@ -30,18 +31,18 @@ tmpdir=$(mktemp -d)
 pushd $tmpdir
 git clone -n https://github.com/Mirantis/cri-dockerd
 cd cri-dockerd
-git checkout $version
+git checkout $commit
 
 for (( i=0; i < ${#archarray[*]}; i++ ))
 do
 	arch=${archarray[i]#"linux/"}
-	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags "-X github.com/Mirantis/cri-dockerd/version.GitCommit=${version:0:7}" -o cri-dockerd-$arch
-	gsutil cp cri-dockerd-$arch gs://kicbase-artifacts/cri-dockerd/$version/$arch/cri-dockerd
+	env GOOS=linux GOARCH=$arch CGO_ENABLED=0 go build -ldflags "-X github.com/Mirantis/cri-dockerd/version.Version=${version} -X github.com/Mirantis/cri-dockerd/version.GitCommit=${commit:0:7}" -o cri-dockerd-$arch
+	gsutil cp cri-dockerd-$arch gs://kicbase-artifacts/cri-dockerd/$commit/$arch/cri-dockerd
 
 done
 
-gsutil cp ./packaging/systemd/cri-docker.service gs://kicbase-artifacts/cri-dockerd/$version/cri-docker.service
-gsutil cp ./packaging/systemd/cri-docker.socket gs://kicbase-artifacts/cri-dockerd/$version/cri-docker.socket
+gsutil cp ./packaging/systemd/cri-docker.service gs://kicbase-artifacts/cri-dockerd/$commit/cri-docker.service
+gsutil cp ./packaging/systemd/cri-docker.socket gs://kicbase-artifacts/cri-dockerd/$commit/cri-docker.socket
 
 popd
 rm -rf $tmpdir

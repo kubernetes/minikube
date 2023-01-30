@@ -17,11 +17,17 @@ limitations under the License.
 package main
 
 import (
+	"crypto/sha256"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
+	"golang.org/x/mod/semver"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
 
@@ -29,27 +35,32 @@ var (
 	schema = map[string]update.Item{
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		"hack/jenkins/linux_integration_tests_none.sh": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.FullCommit}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/aarch64/package/cri-dockerd-aarch64/cri-dockerd.mk": {
 			Replace: map[string]string{
+				`CRI_DOCKERD_AARCH64_VER = .*`:     `CRI_DOCKERD_AARCH64_VER = {{.Version}}`,
 				`CRI_DOCKERD_AARCH64_VERSION = .*`: `CRI_DOCKERD_AARCH64_VERSION = {{.FullCommit}}`,
 				`CRI_DOCKERD_AARCH64_REV = .*`:     `CRI_DOCKERD_AARCH64_REV = {{.ShortCommit}}`,
 			},
 		},
 		"deploy/iso/minikube-iso/arch/x86_64/package/cri-dockerd/cri-dockerd.mk": {
 			Replace: map[string]string{
+				`CRI_DOCKERD_VER = .*`:     `CRI_DOCKERD_VER = {{.Version}}`,
 				`CRI_DOCKERD_VERSION = .*`: `CRI_DOCKERD_VERSION = {{.FullCommit}}`,
 				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
 			},
@@ -59,25 +70,67 @@ var (
 
 // Data holds stable cri-dockerd version in semver format.
 type Data struct {
+	Version     string
 	FullCommit  string
 	ShortCommit string
 }
 
 func main() {
-	if len(os.Args) < 3 {
-		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <archlist>")
+	if len(os.Args) < 4 {
+		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <commit> <archlist>")
 	}
 
-	commit := os.Args[1]
-	archs := os.Args[2]
+	version := os.Args[1]
+	commit := os.Args[2]
+	archs := os.Args[3]
 
-	data := Data{FullCommit: commit, ShortCommit: commit[:7]}
+	if !semver.IsValid(version) {
+		klog.Fatal(fmt.Errorf("invalid version %v", version))
+	}
+	version = strings.Replace(version, "v", "", 1)
+
+	data := Data{Version: version, FullCommit: commit, ShortCommit: commit[:7]}
 
 	update.Apply(schema, data)
 
-	if out, err := exec.Command("./update_cri_dockerd_version.sh", commit, archs).CombinedOutput(); err != nil {
+	if out, err := exec.Command("./update_cri_dockerd_version.sh", version, commit, archs).CombinedOutput(); err != nil {
 		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
 	}
 
-	fmt.Println("Don't forget you still need to update the hash files!")
+	if err := updateHashFiles(commit); err != nil {
+		log.Fatalf("failed to update hash files: %v", err)
+	}
+}
+
+func updateHashFiles(commit string) error {
+	r, err := http.Get(fmt.Sprintf("https://github.com/Mirantis/cri-dockerd/archive/%s.tar.gz", commit))
+	if err != nil {
+		return fmt.Errorf("failed to download source code: %v", err)
+	}
+	defer r.Body.Close()
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err)
+	}
+	sum := sha256.Sum256(b)
+	filePathBase := "../../../deploy/iso/minikube-iso/arch/"
+	if err := updateHashFile(filePathBase+"aarch64/package/cri-dockerd-aarch64/cri-dockerd.hash", commit, sum); err != nil {
+		return fmt.Errorf("aarch64: %v", err)
+	}
+	if err := updateHashFile(filePathBase+"x86_64/package/cri-dockerd/cri-dockerd.hash", commit, sum); err != nil {
+		return fmt.Errorf("x86_64: %v", err)
+	}
+	return nil
+}
+
+func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open hash file: %v", err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(fmt.Sprintf("sha256 %x %s.tar.gz\n", shaSum, commit)); err != nil {
+		return fmt.Errorf("failed to write to hash file: %v", err)
+	}
+	return nil
 }
