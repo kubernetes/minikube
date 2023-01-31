@@ -232,8 +232,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	if starter.ExistingAddons != nil {
 		klog.Infof("waiting for cluster config update ...")
 		if ea, ok := <-enabledAddons; ok {
-			addons.UpdateConfig(starter.Cfg, ea)
+			addons.UpdateConfigToEnable(starter.Cfg, ea)
 		}
+	} else {
+		addons.UpdateConfigToDisable(starter.Cfg)
 	}
 
 	// Write enabled addons to the config before completion
