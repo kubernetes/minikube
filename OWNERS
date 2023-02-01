@@ -8,7 +8,6 @@ reviewers:
   - spowelljr
 approvers:
   - afbjorklund
-  - sharifelgamal
   - medyagh
   - spowelljr
   - prezha
@@ -21,3 +20,4 @@ emeritus_approvers:
   - priyawadhwa
   - josedonizetti
   - tstromberg
+  - sharifelgamal
