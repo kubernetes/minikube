@@ -217,6 +217,15 @@ func goVersions() (stable, stableMM, k8sVersion string, err error) {
 }
 
 func updateGoHashFile(version string) error {
+	hashFilePath := "../../../deploy/iso/minikube-iso/go.hash"
+	b, err := os.ReadFile(hashFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read hash file: %v", err)
+	}
+	if strings.Contains(string(b), version) {
+		klog.Infof("hash file already contains %q", version)
+		return nil
+	}
 	r, err := http.Get(fmt.Sprintf("https://dl.google.com/go/go%s.src.tar.gz.sha256", version))
 	if err != nil {
 		return fmt.Errorf("failed to download golang sha256 file: %v", err)
@@ -226,7 +235,7 @@ func updateGoHashFile(version string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
-	f, err := os.OpenFile("../../../deploy/iso/minikube-iso/go.hash", os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(hashFilePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open go.hash file: %v", err)
 	}
