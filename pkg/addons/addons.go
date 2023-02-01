@@ -570,3 +570,14 @@ func UpdateConfig(cc *config.ClusterConfig, enabled []string) {
 		}
 	}
 }
+
+// Disable all addons in the cluster configuration
+func DisableAddons(cc *config.ClusterConfig) {
+	for _, a := range Addons {
+		if err := Set(cc, a.name, "false"); err != nil {
+			out.Step(style.Failure, `"Error disabling '{{.minikube_addon}}' addon`, out.V{"minikube_addon": a.name})
+		} else {
+			out.Step(style.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": a.name})
+		}
+	}
+}

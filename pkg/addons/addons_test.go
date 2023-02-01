@@ -140,3 +140,22 @@ func TestStart(t *testing.T) {
 		t.Errorf("expected dashboard to be enabled")
 	}
 }
+
+func TestStartWithAddonsDisabled(t *testing.T) {
+	// this test will write a config.json into MinikubeHome, create a temp dir for it
+	tests.MakeTempDir(t)
+
+	cc := &config.ClusterConfig{
+		Name:             "start",
+		CPUs:             2,
+		Memory:           2500,
+		KubernetesConfig: config.KubernetesConfig{},
+	}
+
+	DisableAddons(cc)
+	for _, a := range Addons {
+		if assets.Addons[a.name].IsEnabled(cc) {
+			t.Errorf("addon '%v' expected to be disabled", a.name)
+		}
+	}
+}

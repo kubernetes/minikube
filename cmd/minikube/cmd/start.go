@@ -46,6 +46,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/command"
 	netutil "k8s.io/minikube/pkg/network"
 
@@ -344,7 +345,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	var existingAddons map[string]bool
-	if viper.GetBool(installAddons) {
+	if viper.GetBool(disableAddons) {
+		addons.DisableAddons(&cc)
+	} else {
+		// configure existing addons
 		existingAddons = map[string]bool{}
 		if existing != nil && existing.Addons != nil {
 			existingAddons = existing.Addons

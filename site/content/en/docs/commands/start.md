@@ -35,6 +35,7 @@ minikube start [flags]
       --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
+      --disable-addons                    If set, disable all addons (default false).
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
       --disable-metrics                   If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.
       --disable-optimizations             If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.
@@ -67,7 +68,6 @@ minikube start [flags]
       --image-mirror-country string       Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.
       --image-repository string           Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to "auto" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers
       --insecure-registry strings         Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.
-      --install-addons                    If set, install addons. Defaults to true. (default true)
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. The list depends on the machine architecture.
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.

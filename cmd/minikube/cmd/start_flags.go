@@ -72,7 +72,7 @@ const (
 	kvmHidden               = "kvm-hidden"
 	kvmNUMACount            = "kvm-numa-count"
 	minikubeEnvPrefix       = "MINIKUBE"
-	installAddons           = "install-addons"
+	disableAddons           = "disable-addons"
 	defaultDiskSize         = "20000mb"
 	keepContext             = "keep-context"
 	createMount             = "mount"
@@ -187,7 +187,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes or host to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
-	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
+	startCmd.Flags().Bool(disableAddons, false, "If set, disable all addons (default false).")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
