@@ -52,6 +52,8 @@ var (
 	fileOutput string
 	// auditLogs only shows the audit logs
 	auditLogs bool
+	// lastStartOnly shows logs from last start
+	lastStartOnly bool
 )
 
 // logsCmd represents the logs command
@@ -111,6 +113,12 @@ var logsCmd = &cobra.Command{
 			logs.OutputProblems(problems, numberOfProblems, logOutput)
 			return
 		}
+		if lastStartOnly {
+			err := logs.OutputLastStart()
+			if err != nil {
+				klog.Errorf("failed to output last start logs: %V", err)
+			}
+		}
 		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
 		if err != nil {
 			out.Ln("")
@@ -150,4 +158,5 @@ func init() {
 	logsCmd.Flags().StringVar(&nodeName, "node", "", "The node to get logs from. Defaults to the primary control plane.")
 	logsCmd.Flags().StringVar(&fileOutput, "file", "", "If present, writes to the provided file instead of stdout.")
 	logsCmd.Flags().BoolVar(&auditLogs, "audit", false, "Show only the audit logs")
+	logsCmd.Flags().BoolVar(&lastStartOnly, "last-start-only", false, "Show logs from last start.")
 }
