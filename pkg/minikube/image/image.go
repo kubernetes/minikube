@@ -319,3 +319,9 @@ func normalizeTagName(image string) string {
 	}
 	return base + ":" + tag
 }
+
+// Remove docker.io prefix since it won't be included in image names
+// when we call `docker images`.
+func TrimDockerIO(name string) string {
+	return strings.TrimPrefix(name, "docker.io/")
+}

@@ -50,6 +50,8 @@ authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
+hairpinMode: hairpin-veth
+runtimeRequestTimeout: 15m
 clusterDomain: "minikube.local"
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
@@ -59,7 +61,6 @@ evictionHard:
   imagefs.available: "0%"
 failSwapOn: false
 staticPodPath: /etc/kubernetes/manifests
-resolvConf: /etc/kubelet-resolv.conf
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration

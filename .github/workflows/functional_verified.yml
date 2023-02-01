@@ -22,7 +22,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.19.2'
+  GO_VERSION: '1.19.5'
 
 permissions:
   contents: read
@@ -34,10 +34,12 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
-      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
         with:
           go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -46,7 +48,7 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: minikube_binaries
           path: out
@@ -114,12 +116,11 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
-      - uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
         with:
           go-version: ${{env.GO_VERSION}}
-
       - name: Download Binaries
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -166,7 +167,7 @@ jobs:
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: functional_docker_ubuntu_arm64
           path: minikube_binaries/report
@@ -203,14 +204,14 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all extra reports
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
       - name: upload all extra reports
         shell: bash {0}
         continue-on-error: true
         run: |
           mkdir -p all_reports
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-      - uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: all_reports
           path: all_reports

@@ -34,7 +34,7 @@ Run the `kic-release` job in Jenkins, which will automatically create a PR which
 Run the following script from your local upstream repo copy to generate updated release notes:
 
 ```shell
-hack/release_notes.sh
+make release-notes
 ```
 
 Paste the output into CHANGELOG.md, sorting changes by importance to an end-user. If there are >8 changes, split them into *Improvements* and *Bug fixes*

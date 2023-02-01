@@ -29,7 +29,11 @@ _testmain.go
 /deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause
 /deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/usr/bin/auto-pause
 /deploy/iso/minikube-iso/Config.in
+/deploy/iso/minikube-iso/CHANGELOG
+/deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG
+/deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
 /deploy/kicbase/auto-pause
+/deploy/kicbase/CHANGELOG
 /deploy/addons/auto-pause/auto-pause-hook
 /out
 /_gopath
@@ -37,8 +41,8 @@ _testmain.go
 #iso version file
 deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/VERSION
 deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/VERSION
-deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/etc/CHANGELOG
-deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/etc/CHANGELOG
+deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/version.json
+deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/version.json
 
 /minikube
 

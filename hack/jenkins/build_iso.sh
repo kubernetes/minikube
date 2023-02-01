@@ -27,6 +27,10 @@ set -x -o pipefail
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
+# Generate changelog for latest github PRs merged
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
+./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG
+
 # Make sure all required packages are installed
 sudo apt-get update
 sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full
@@ -37,34 +41,22 @@ if [[ -z $ISO_VERSION ]]; then
 	now=$(date +%s)
 	export ISO_VERSION=$IV-$now-$ghprbPullId
 	export ISO_BUCKET=minikube-builds/iso/$ghprbPullId
-	echo "#$ghprPullId - $ghprPullTitle" >> deploy/iso/minikube-iso/CHANGELOG
 else
 	release=true
 	export ISO_VERSION
 	export ISO_BUCKET
 fi
 
-if [ "$release" = false ]; then
-	# Build a new ISO for the PR
-	make release-iso | tee iso-logs.txt
-	# Abort with error message if above command failed
-	ec=$?
-	if [ $ec -gt 0 ]; then
-		if [ "$release" = false ]; then
-			gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.  
-			See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
-			"
-		fi
-		exit $ec
+make release-iso | tee iso-logs.txt
+# Abort with error message if above command failed
+ec=$?
+if [ $ec -gt 0 ]; then
+	if [ "$release" = false ]; then
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.
+		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+		"
 	fi
-else
-	# Copy the most recently built PR ISO for release
-	CURRENT_ISO_VERSION=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3)
-	CURRENT_ISO_BUCKET=$(egrep "isoBucket :=" pkg/minikube/download/iso.go | cut -d " " -f 3 | cut -d '"' -f 2)
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-amd64.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-amd64.iso
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-amd64.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-amd64.iso.sha256
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-arm64.iso gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-arm64.iso
-	gsutil cp gs://${CURRENT_ISO_BUCKET}/minikube-${CURRENT_ISO_VERSION}-arm64.iso.sha256 gs://${ISO_BUCKET}/minikube-${ISO_VERSION}-arm64.iso.sha256
+	exit $ec
 fi
 
 git config user.name "minikube-bot"
@@ -109,4 +101,4 @@ else
 	git push -f minikube-bot ${branch}
 
 	gh pr create --fill --base master --head minikube-bot:${branch}
-fi	
+fi

@@ -51,8 +51,8 @@ var configViewCmd = &cobra.Command{
 
 func init() {
 	configViewCmd.Flags().StringVar(&viewFormat, "format", defaultConfigViewFormat,
-		`Go template format string for the config view output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate`)
+		`Go template format string for the config view output.  The format for Go templates can be found here: https://pkg.go.dev/text/template
+For the list of accessible variables for the template, see the struct values here: https://pkg.go.dev/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate`)
 	ConfigCmd.AddCommand(configViewCmd)
 }
 

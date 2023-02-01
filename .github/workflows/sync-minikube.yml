@@ -6,7 +6,7 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.19.2'
+  GO_VERSION: '1.19.5'
 permissions:
   contents: read
 
@@ -17,15 +17,17 @@ jobs:
       run:
         working-directory: ./image-syncer
     steps:
-    - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+    - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
       with:
         repository: denverdino/image-syncer
         path: ./image-syncer
 
     - name: Set up Go
-      uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f
+      uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
       with:
         go-version: ${{env.GO_VERSION}}
+        cache: true
+        cache-dependency-path: ./go.sum
 
     - name: Build
       run: make

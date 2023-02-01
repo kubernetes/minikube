@@ -39,10 +39,16 @@ tests the OLM addon
 #### validateCSIDriverAndSnapshots
 tests the csi hostpath driver by creating a persistent volume, snapshotting it and restoring it.
 
+#### validateGCPAuthNamespaces
+validates that newly created namespaces contain the gcp-auth secret.
+
 #### validateGCPAuthAddon
 tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 
 #### validateHeadlampAddon
+
+#### validateCloudSpannerAddon
+tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
@@ -376,6 +382,10 @@ Steps:
 - Run `minikube version --short` and make sure the returned version is a valid semver
 - Run `minikube version --components` and make sure the component versions are returned
 
+#### validateLicenseCmd
+asserts that the `minikube license` command downloads and untars the licenses
+Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
+
 #### validateMountCmd
 verifies the minikube mount command works properly
 
@@ -415,6 +425,24 @@ verifies files and packages installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestImageBuild
+makes sure the 'minikube image build' command works fine
+
+#### validateNormalImageBuild
+is normal test case for minikube image build, with -t parameter
+
+#### validateNormalImageBuildWithSpecifiedDockerfile
+is normal test case for minikube image build, with -t and -f parameter
+
+#### validateImageBuildWithBuildArg
+is a test case building with --build-opt
+
+#### validateImageBuildWithBuildEnv
+is a test case building with --build-env
+
+#### validateImageBuildWithDockerIgnore
+is a test case building with .dockerignore
+
 ## TestIngressAddonLegacy
 tests ingress and ingress-dns addons with legacy k8s version <1.19
 
@@ -444,6 +472,9 @@ verifies the docker driver and run with an existing network
 
 ## TestKicCustomSubnet
 verifies the docker/podman driver works with a custom subnet
+
+## TestKicStaticIP
+starts minikube with the static IP flag
 
 ## TestingKicBaseImage
 will return true if the integraiton test is running against a passed --base-image flag

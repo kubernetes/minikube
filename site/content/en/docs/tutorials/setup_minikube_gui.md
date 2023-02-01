@@ -9,12 +9,12 @@ date: 2022-02-25
 
 - This guide will show you how to setup the minikube GUI
 - **WARNING!** This GUI is a prototype and therefore may be unstable or contain bugs. Please use at your own risk, we are not responsible for damages.
-- If you experience any bugs or have suggestions to improve the GUI feel free to create a [GitHub Issue](https://github.com/kubernetes/minikube/issues/new/choose).
+- If you experience any bugs or have suggestions to improve the GUI feel free to create a [GitHub Issue](https://github.com/kubernetes-sigs/minikube-gui/issues/new).
 - Please note that the SSH functionality currently only works on Linux.
 
 ## Before You Begin
 
-- You will need to already have minikube setup on your machine, follow the [Getting Start doc]({{< ref "/docs/commands/start" >}}) if not already done.
+- minikube setup and available on your path, follow the [Getting Start doc]({{< ref "/docs/start" >}}) if not already done
 
 ## Steps
 
@@ -54,7 +54,7 @@ Expand-Archive minikube-gui-windows.zip
 
 3. Open the application
 ```shell
-.\minikube-gui-windows\dist\systray.exe
+.\minikube-gui-windows\dist\minikube.exe
 ```
 
 4. If you see the following, click `More info` and then `Run anyway`
@@ -74,7 +74,7 @@ unzip minikube-gui-linux.zip
 
 3. Open the application
 ```shell
-dist/systray
+dist/minikube
 ```
 {{% /linuxtab %}}
 {{% /tabs %}}

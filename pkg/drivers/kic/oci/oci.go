@@ -79,7 +79,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 func DeleteContainer(ctx context.Context, ociBin string, name string) error {
 	_, err := ContainerStatus(ociBin, name)
 	if err == context.DeadlineExceeded {
-		out.WarningT("{{.ocibin}} is taking an unsually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
+		out.WarningT("{{.ocibin}} is taking an unusually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
 	} else if err != nil {
 		klog.Warningf("error getting container status, will try to delete anyways: %v", err)
 	}
@@ -488,13 +488,8 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	for _, pm := range portMappings {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
-		if runtime.GOOS == "darwin" {
-			publish := fmt.Sprintf("--publish=%d", pm.ContainerPort)
-			result = append(result, publish)
-		} else {
-			publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
-			result = append(result, publish)
-		}
+		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
+		result = append(result, publish)
 	}
 	return result
 }

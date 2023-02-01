@@ -74,7 +74,7 @@ func TestKicExistingNetwork(t *testing.T) {
 	}
 	// create custom network
 	networkName := "existing-network"
-	if _, err := oci.CreateNetwork(oci.Docker, networkName, ""); err != nil {
+	if _, err := oci.CreateNetwork(oci.Docker, networkName, "", ""); err != nil {
 		t.Fatalf("error creating network: %v", err)
 	}
 	defer func() {
@@ -115,6 +115,34 @@ func TestKicCustomSubnet(t *testing.T) {
 	}
 
 	verifySubnet(ctx, t, profile, subnet)
+}
+
+// TestKicStaticIP starts minikube with the static IP flag
+func TestKicStaticIP(t *testing.T) {
+	if !KicDriver() {
+		t.Skip("only run with docker/podman driver")
+	}
+	profile := UniqueProfileName("static-ip")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(5))
+	defer Cleanup(t, profile, cancel)
+
+	staticIP := "192.168.200.200"
+	startArgs := []string{"start", "-p", profile, fmt.Sprintf("--static-ip=%s", staticIP)}
+	c := exec.CommandContext(ctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("%v failed: %v\n%v", rr.Command(), err, rr.Output())
+	}
+
+	c = exec.CommandContext(ctx, Target(), "-p", profile, "ip")
+	rr, err = Run(t, c)
+	if err != nil {
+		t.Fatalf("%s failed: %v\n%s", rr.Command(), err, rr.Output())
+	}
+
+	if !strings.Contains(rr.Output(), staticIP) {
+		t.Errorf("static IP (%s) not found in output %s", staticIP, rr.Output())
+	}
 }
 
 func verifyNetworkExists(ctx context.Context, t *testing.T, networkName string) {

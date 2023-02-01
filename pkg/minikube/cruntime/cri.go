@@ -190,7 +190,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	klog.Infof("Killing containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
-	args := append([]string{crictl, "rm"}, ids...)
+	args := append([]string{crictl, "rm", "--force"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")
@@ -232,7 +232,11 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	klog.Infof("Stopping containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
-	args := append([]string{crictl, "stop"}, ids...)
+	// bring crictl stop timeout on par with docker:
+	// - docker stop --help => -t, --time int   Seconds to wait for stop before killing it (default 10)
+	// - crictl stop --help => --timeout value, -t value  Seconds to wait to kill the container after a graceful stop is requested (default: 0)
+	// to prevent "stuck" containers blocking ports (eg, "[ERROR Port-2379|2380]: Port 2379|2380 is in use" for etcd during "hot" k8s upgrade)
+	args := append([]string{crictl, "stop", "--timeout=10"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")

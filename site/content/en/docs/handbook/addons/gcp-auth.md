@@ -6,13 +6,15 @@ date: 2020-07-15
 ---
 
 
-The gcp-auth addon automatically and dynamically configures pods to use your credentials, allowing applications to access Google Cloud services as if they were running within Google Cloud.  
+The `gcp-auth` addon automatically and dynamically configures pods to use your credentials, allowing applications to access Google Cloud services as if they were running within Google Cloud.  
 
-The addon normally uses the [Google Application Default Credentials](https://google.aip.dev/auth/4110) as configured with `gcloud auth application-default login`. If you already have a json credentials file you want specify, such as to use a service account, set the GOOGLE_APPLICATION_CREDENTIALS environment variable to point to that file.
+The addon defaults to using your environment's [Application Default Credentials](https://google.aip.dev/auth/4110), which you can configure with `gcloud auth application-default login`. 
+Alternatively, you can specify a JSON credentials file (e.g. service account key) by setting the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the location of that file.
 
-The addon normally uses the default gcloud project as configured with `gcloud config set project <project name>`. If you want to use a different project, set the `GOOGLE_CLOUD_PROJECT` environment variable to the desired project.
+The addon also defaults to using your local gcloud project, which you can configure with `gcloud config set project <project name>`. You can override this by setting the `GOOGLE_CLOUD_PROJECT` environment variable to the name of the desired project.
 
-The pods are configured with the `GOOGLE_APPLICATION_DEFAULTS` environment variable is set, which is automatically used by GCP client libraries, and the `GOOGLE_CLOUD_PROJECT` environment variable is set, as are several other historical environment variables.  The addon also configures  [registry pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/) to allow the cluster to access container images hosted in your project's [Artifact Registry](https://cloud.google.com/artifact-registry) and [Google Container Registry](https://cloud.google.com/container-registry).
+Once the addon is enabled, pods in your cluster will be configured with environment variables (e.g. `GOOGLE_APPLICATION_DEFAULTS`, `GOOGLE_CLOUD_PROJECT`) that are automatically used by GCP client libraries.  Additionally, the addon configures [registry pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/), allowing your cluster to access the container images hosted in [Artifact Registry](https://cloud.google.com/artifact-registry) and [Google Container Registry](https://cloud.google.com/container-registry).
+
 
 ## Tutorial
 
@@ -93,8 +95,14 @@ spec:
 
 ## Refreshing existing pods
 
-If you had already deployed pods to your minikube cluster before enabling the gcp-auth addon, then these pods will not have any GCP credentials. There are two ways to solve this issue.  
+Pods that were deployed to your minikube cluster before the `gcp-auth` addon was enabled will not be configured with GCP credentials. 
+To resolve this problem, run:
 
-1. If you use a Deployment to deploy your pods, just delete the existing pods with `kubectl delete pod <pod_name>`. The deployment will then automatically recreate the pod and it will have the correct credentials.
+`minikube addons enable gcp-auth --refresh`
 
-2. minikube can delete and recreate your pods for you, by running `minikube addons enable gcp-auth --refresh`. It does not matter if you have already enabled the addon or not. 
+## Adding new namespaces
+
+Namespaces that are added after enabling gcp-auth addon will not be configured with the image pull secret. 
+To resolve this problem, run:
+
+`minikube addons enable gcp-auth --refresh`

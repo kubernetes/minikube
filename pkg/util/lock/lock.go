@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/juju/clock"
-	"github.com/juju/mutex"
+	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"

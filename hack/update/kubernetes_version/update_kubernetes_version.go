@@ -130,7 +130,7 @@ func main() {
 	update.Apply(schema, data)
 }
 
-// k8sVersion returns Kubernetes versions.
+// k8sVersions returns Kubernetes versions.
 func k8sVersions(ctx context.Context, owner, repo string) (stable, latest, latestMM, latestP0 string, err error) {
 	// get Kubernetes versions from GitHub Releases
 	stable, latest, _, err = update.GHReleases(ctx, owner, repo)

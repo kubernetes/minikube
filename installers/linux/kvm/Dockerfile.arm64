@@ -33,7 +33,7 @@ RUN DEBIAN_FRONTEND=noninteractive \
     libvirt-dev:arm64 && \
     dpkg --configure -a
 
-RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+RUN curl -sSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
 
 ENV GOPATH /go
 

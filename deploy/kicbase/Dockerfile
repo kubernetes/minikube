@@ -19,7 +19,7 @@
 
 
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.19.2 as auto-pause
+FROM golang:1.19.5 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -29,6 +29,7 @@ COPY deploy/addons ./deploy/addons
 COPY translations/ ./translations
 COPY third_party/ ./third_party
 COPY go.mod go.sum ./
+
 ARG TARGETARCH
 ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
@@ -36,13 +37,13 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20220922 as kicbase
+FROM ubuntu:focal-20221019 as kicbase
 
-ARG BUILDKIT_VERSION="v0.10.3"
+ARG BUILDKIT_VERSION="v0.11.2"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.24"
-ARG CRI_DOCKERD_VERSION="0737013d3c48992724283d151e8a2a767a1839e9"
+ARG CRI_DOCKERD_VERSION="0de30fc57b659cf23b1212d6516e0cceab9c91d1"
 ARG TARGETARCH
 
 # copy in static files (configs, scripts)
@@ -53,8 +54,8 @@ COPY deploy/kicbase/containerd.toml /etc/containerd/config.toml
 COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/docker.io/hosts.toml
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
+COPY deploy/kicbase/CHANGELOG ./CHANGELOG
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
-
 
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
@@ -132,7 +133,7 @@ RUN echo "Installing cri-dockerd" && \
 # install system requirements from the regular distro repositories
 RUN clean-install \
     lz4 \
-    gnupg \ 
+    gnupg \
     sudo \
     openssh-server \
     dnsutils \
@@ -199,6 +200,10 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create; fi
 
+# install version.json
+ARG VERSION_JSON
+RUN echo "${VERSION_JSON}" > /version.json
+
 # automount service
 COPY deploy/kicbase/automount/minikube-automount /usr/sbin/minikube-automount
 COPY deploy/kicbase/automount/minikube-automount.service /usr/lib/systemd/system/minikube-automount.service
@@ -218,8 +223,8 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
-RUN systemctl enable docker.service 
-# making SSH work for docker container 
+RUN systemctl enable docker.service
+# making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
 RUN echo 'root:root' |chpasswd
@@ -235,7 +240,7 @@ RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/contain
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker 
+RUN adduser --ingroup docker --disabled-password --gecos '' docker
 RUN adduser docker sudo
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
@@ -250,5 +255,5 @@ RUN mkdir -p /kind
 RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
-  /usr/share/local/* 
+  /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"

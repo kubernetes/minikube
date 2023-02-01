@@ -38,6 +38,13 @@ rules:
     verbs:
       - get
       - update
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - list
+      - watch
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -92,10 +99,16 @@ spec:
         app: gcp-auth
         kubernetes.io/minikube-addons: gcp-auth
     spec:
+      serviceAccountName: minikube-gcp-auth-certs
       containers:
         - name: gcp-auth
           image: {{.CustomRegistries.GCPAuthWebhook | default .ImageRepository | default .Registries.GCPAuthWebhook}}{{.Images.GCPAuthWebhook}}
           imagePullPolicy: IfNotPresent
+          env:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /google-app-creds.json
+          - name: MOCK_GOOGLE_TOKEN
+            value: "{{.Environment.MockGoogleToken}}"
           ports:
             - containerPort: 8443
           volumeMounts:
@@ -105,6 +118,9 @@ spec:
           - name: gcp-project
             mountPath: /var/lib/minikube/google_cloud_project
             readOnly: true
+          - name: gcp-creds
+            mountPath: /google-app-creds.json
+            readOnly: true
       volumes:
       - name: webhook-certs
         secret:
@@ -112,6 +128,10 @@ spec:
       - name: gcp-project
         hostPath:
           path: /var/lib/minikube/google_cloud_project
+          type: File
+      - name: gcp-creds
+        hostPath:
+          path: /var/lib/minikube/google_application_credentials.json
           type: File
 ---
 apiVersion: batch/v1

@@ -34,11 +34,9 @@ minikube start supports some qemu specific flags:
 The QEMU driver has two networking options, `user` & `socket_vmnet`.
 
 {{% tabs %}}
-{{% tab "user - limited functionality" %}}
-The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
-{{% /tab %}}
-{{% tab "socket_vmnet - experimental/needs installation" %}}
-##### Requirements
+{{% tab "socket_vmnet - needs installation" %}}
+
+### Requirements
 
 Requires macOS 10.15 or later and socket_vmnet.
 
@@ -48,12 +46,16 @@ git clone https://github.com/lima-vm/socket_vmnet.git && cd socket_vmnet
 sudo make PREFIX=/opt/socket_vmnet install
 ```
 
-##### Usage
+### Usage
+
 ```shell
 minikube start --driver qemu --network socket_vmnet
 ```
 
 The `socket_vmnet` network is a dedicated network and supports the `minikube service` and `minikube tunnel` commands.
+{{% /tab %}}
+{{% tab "user - limited functionality" %}}
+The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
 {{% /tab %}}
 {{% /tabs %}}
 
@@ -63,9 +65,28 @@ The `socket_vmnet` network is a dedicated network and supports the `minikube ser
 
 When using the `user` network (default) the guest uses **only** the first `nameserver` entry in the hosts `/etc/resolv.conf` for DNS lookup. If your first `nameserver` entry is a corporate/internal DNS it's likely it will cause an issue. If you see the warning `❗ This VM is having trouble accessing https://registry.k8s.io` on `minikube start` you are likely being affected by this. This may prevent your cluster from starting entirely and you won't be able to pull remote images. More details can be found at: [#15021](https://github.com/kubernetes/minikube/issues/15021)
 
-##### Workarounds:
+#### Workarounds:
+
 1. If possible, reorder your `/etc/resolv.conf` to have a general `nameserver` entry first (eg. `8.8.8.8`) and reboot your machine.
-2. (Coming soon) Use `--network=socket_vmnet`
+2. Use `--network=socket_vmnet`
+
+### 2. `/var/db/dhcpd_leases` errors
+
+If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the following:
+
+1. Uninstall `socket_vmnet`:
+
+```shell
+cd socket_vmnet
+sudo make uninstall
+```
+2. Reboot
+3. Reinstall `socket_vmnet`:
+
+```shell
+cd socket_vmnet
+sudo make install
+```
 
 [Full list of open 'qemu' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fqemu-driver)
 

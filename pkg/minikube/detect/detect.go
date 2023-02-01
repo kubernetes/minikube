@@ -17,15 +17,20 @@ limitations under the License.
 package detect
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/klauspost/cpuid"
+	"github.com/spf13/viper"
 	"golang.org/x/sys/cpu"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -128,4 +133,91 @@ func KICCacheDir() string {
 // ISOCacheDir returns the path in the minikube home directory to the virtual machine image cache for the current architecture
 func ISOCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "iso"), runtime.GOARCH)
+}
+
+// SocketVMNetInstalled returns if socket_vmnet is installed
+func SocketVMNetInstalled() bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	return SocketVMNetPath() != "" && SocketVMNetClientPath() != ""
+}
+
+// SocketVMNetPath returns the path of socket_vmnet (QEMU driver only)
+func SocketVMNetPath() string {
+	p := viper.GetString("socket-vmnet-path")
+	if p != "" {
+		return p
+	}
+	return checkSocketVMNetInstallLocations("/var/run/socket_vmnet")
+}
+
+// SocketVMNetClientPath returns the path of socket_vmnet_client (QEMU driver only)
+func SocketVMNetClientPath() string {
+	p := viper.GetString("socket-vmnet-client-path")
+	if p != "" {
+		return p
+	}
+	return checkSocketVMNetInstallLocations("/opt/socket_vmnet/bin/socket_vmnet_client")
+}
+
+// checkSocketVMNetInstallLocations accepts a relative file path
+// checks the three possible socket_vmnet install locations for existence of the file path
+// if the file path exists it returns the full path, otherwise if returns an empty string
+func checkSocketVMNetInstallLocations(path string) string {
+	// source install, arm64 brew install, amd64 brew install
+	prefixes := []string{"", "/opt/homebrew", "/usr/local"}
+	for _, prefix := range prefixes {
+		fullPath := prefix + path
+		if fileExists(fullPath) {
+			return fullPath
+		}
+	}
+	return ""
+}
+
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
+	if err == nil {
+		return true
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		klog.Warningf("failed to check for existence of %s: %v", filePath, err)
+	}
+	return false
+}
+
+// CgroupDriver returns detected cgroup driver as configured on host os.
+// If unable to detect, it will return constants.DefaultCgroupDriver instead.
+// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
+func CgroupDriver() string {
+	switch cgroupVersion() {
+	case "v1":
+		klog.Infof("detected %q cgroup driver on host os", constants.CgroupfsCgroupDriver)
+		return constants.CgroupfsCgroupDriver
+	case "v2":
+		klog.Infof("detected %q cgroup driver on host os", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
+	default:
+		klog.Warningf("unable to detect host's os cgroup driver - will continue and try with %q as per default, but things might break", constants.DefaultCgroupDriver)
+		return constants.DefaultCgroupDriver // try with default rather than just give up
+	}
+}
+
+// MacOS13Plus returns if the current machine is running macOS 13+
+func MacOS13Plus() bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	o, err := exec.Command("sw_vers", "-productVersion").Output()
+	if err != nil {
+		klog.Warningf("failed to get macOS version: %v", err)
+		return false
+	}
+	major, err := strconv.Atoi(strings.Split(string(o), ".")[0])
+	if err != nil {
+		klog.Warningf("failed to convert macOS version to int: %v", err)
+		return false
+	}
+	return major >= 13
 }

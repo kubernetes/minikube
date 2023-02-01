@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 
@@ -172,13 +171,6 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	// Set default disk size value in lieu of flag init
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 
-	originalEnv := os.Getenv("HTTP_PROXY")
-	defer func() {
-		err := os.Setenv("HTTP_PROXY", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env HTTP_PROXY to it's original value. Got err: %s", err)
-		}
-	}()
 	k8sVersion := constants.NewestKubernetesVersion
 	rtime := constants.DefaultContainerRuntime
 	var tests = []struct {
@@ -222,9 +214,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			cmd := &cobra.Command{}
-			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
-				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
-			}
+			t.Setenv("HTTP_PROXY", test.proxy)
 
 			cfg.DockerEnv = []string{} // clear docker env to avoid pollution
 			proxy.SetDockerEnv()
@@ -636,5 +626,101 @@ func TestValidatePorts(t *testing.T) {
 				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
 			}
 		})
+	}
+}
+
+func TestValidateSubnet(t *testing.T) {
+	type subnetTest struct {
+		subnet   string
+		errorMsg string
+	}
+	var tests = []subnetTest{
+		{
+			subnet:   "192.168.1.1",
+			errorMsg: "",
+		},
+		{
+			subnet:   "193.169.1.1",
+			errorMsg: "Sorry, the subnet 193.169.1.1 is not a private IP",
+		},
+		{
+			subnet:   "192.168.1.1/24",
+			errorMsg: "",
+		},
+		{
+			subnet:   "192.168.1.1/32",
+			errorMsg: "Sorry, the subnet provided does not have a mask less than or equal to /30",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.subnet, func(t *testing.T) {
+			gotError := ""
+			got := validateSubnet(test.subnet)
+			if got != nil {
+				gotError = got.Error()
+			}
+			if gotError != test.errorMsg {
+				t.Errorf("validateSubnet(subnet=%v): got %v, expected %v", test.subnet, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestValidateStaticIP(t *testing.T) {
+	tests := []struct {
+		staticIP string
+		drvName  string
+		errorMsg string
+	}{
+		{
+			staticIP: "8.8.8.8",
+			drvName:  "docker",
+			errorMsg: "static IP must be private",
+		},
+		{
+			staticIP: "8.8.8.8",
+			drvName:  "hyperkit",
+			errorMsg: "",
+		},
+		{
+			staticIP: "fdfc:a4c0:e99e:7ad3::",
+			drvName:  "docker",
+			errorMsg: "static IP must be IPv4",
+		},
+		{
+			staticIP: "192.168.49.0",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.1",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.255",
+			drvName:  "docker",
+			errorMsg: "static IPs last octet must be between 2 and 254 (X.X.X.2 - X.X.X.254), for example 192.168.200.200",
+		},
+		{
+			staticIP: "192.168.49.2",
+			drvName:  "docker",
+			errorMsg: "",
+		},
+		{
+			staticIP: "192.168.49.254",
+			drvName:  "docker",
+			errorMsg: "",
+		},
+	}
+	for _, tt := range tests {
+		gotError := ""
+		got := validateStaticIP(tt.staticIP, tt.drvName, "")
+		if got != nil {
+			gotError = got.Error()
+		}
+		if gotError != tt.errorMsg {
+			t.Errorf("validateStaticIP(%s, %s): got %v, expected %v", tt.staticIP, tt.drvName, got, tt.errorMsg)
+		}
 	}
 }

@@ -44,6 +44,9 @@ export GOPATH=$HOME/go
 echo "Verifying ISO exists ..."
 make verify-iso
 
+# Generate licenses
+make generate-licenses
+
 # Build and upload
 env BUILD_IN_DOCKER=y \
   make -j 16 \

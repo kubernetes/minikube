@@ -33,7 +33,7 @@ import (
 )
 
 // Replace with hardcoded range with CIDR
-// https://play.golang.org/p/m8TNTtygK0
+// https://go.dev/play/p/m8TNTtygK0
 const networkTmpl = `
 <network>
   <name>{{.Name}}</name>

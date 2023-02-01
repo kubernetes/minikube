@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -37,6 +38,7 @@ import (
 	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -66,7 +68,17 @@ func TestAddons(t *testing.T) {
 			t.Fatalf("Failed setting GOOGLE_CLOUD_PROJECT env var: %v", err)
 		}
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth"}, StartArgs()...)
+		// MOCK_GOOGLE_TOKEN forces the gcp-auth webhook to use a mock token instead of trying to get a valid one from the credentials.
+		os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
+		// for some reason, (Docker_Cloud_Shell) sets 'MINIKUBE_FORCE_SYSTEMD=true' while having cgroupfs set in docker (and probably os itself), which might make it unstable and occasionally fail:
+		// - I1226 15:05:24.834294   11286 out.go:177]   - MINIKUBE_FORCE_SYSTEMD=true
+		// - I1226 15:05:25.070037   11286 info.go:266] docker info: {... CgroupDriver:cgroupfs ...}
+		// ref: https://storage.googleapis.com/minikube-builds/logs/15463/27154/Docker_Cloud_Shell.html
+		// so we override that here to let minikube auto-detect appropriate cgroup driver
+		os.Setenv(constants.MinikubeForceSystemdEnv, "")
+
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -97,6 +109,7 @@ func TestAddons(t *testing.T) {
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"Headlamp", validateHeadlampAddon},
+			{"CloudSpanner", validateCloudSpannerAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -597,9 +610,41 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	}
 }
 
+// validateGCPAuthNamespaces validates that newly created namespaces contain the gcp-auth secret.
+func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "ns", "new-namespace"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Command(), err)
+	}
+
+	logsAsError := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "-l", "app=gcp-auth", "-n", "gcp-auth"))
+		if err != nil {
+			return err
+		}
+		return errors.New(rr.Output())
+	}
+
+	getSecret := func() error {
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "secret", "gcp-auth", "-n", "new-namespace"))
+		if err != nil {
+			err = fmt.Errorf("%w: gcp-auth container logs: %v", err, logsAsError())
+		}
+		return err
+	}
+
+	if err := retry.Expo(getSecret, Seconds(2), Minutes(1)); err != nil {
+		t.Errorf("failed to get secret: %v", err)
+	}
+}
+
 // validateGCPAuthAddon tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+
+	t.Run("Namespaces", func(t *testing.T) {
+		validateGCPAuthNamespaces(ctx, t, profile)
+	})
 
 	// schedule a pod to check environment variables
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
@@ -696,7 +741,14 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
-	if detect.IsOnGCE() && !detect.IsCloudShell() {
+	if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
+		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
+		// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
+		// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
+		os.Unsetenv("MOCK_GOOGLE_TOKEN")
+		// re-set MOCK_GOOGLE_TOKEN once we're done
+		defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
 		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
 		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
@@ -741,5 +793,24 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 
 	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for headlamp pod: %v", err)
+	}
+}
+
+// validateCloudSpannerAddon tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
+func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+	if err := kapi.WaitForDeploymentToStabilize(client, "default", "cloud-spanner-emulator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for cloud-spanner-emulator deployment to stabilize: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "default", "app=cloud-spanner-emulator", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for app=cloud-spanner-emulator pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
+		t.Errorf("failed to disable cloud-spanner addon: args %q : %v", rr.Command(), err)
 	}
 }

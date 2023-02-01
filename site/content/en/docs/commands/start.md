@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.35-1665430468-15094@sha256:2c137487f3327e6653ff519ec7fd599d25c0275ae67f44e4a71485aabe1e7191")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.37-1675094849-15728@sha256:674e71e0928a6b8b65fe678e2c3097ad1c85d350c56566396c5ebfc49aca0bb5")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -71,7 +71,7 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. The list depends on the machine architecture.
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.25.2, 'latest' for v1.25.2). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.26.1, 'latest' for v1.26.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
@@ -105,12 +105,13 @@ minikube start [flags]
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
-      --socket-vmnet-client-path string   Path to the socket vmnet client binary (default "/opt/socket_vmnet/bin/socket_vmnet_client")
-      --socket-vmnet-path string          Path to socket vmnet binary (default "/var/run/socket_vmnet")
+      --socket-vmnet-client-path string   Path to the socket vmnet client binary (QEMU driver only)
+      --socket-vmnet-path string          Path to socket vmnet binary (QEMU driver only)
       --ssh-ip-address string             IP address (ssh driver only)
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)
       --ssh-user string                   SSH user (ssh driver only) (default "root")
+      --static-ip string                  Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)
       --subnet string                     Subnet to be used on kic cluster. If left empty, minikube will choose subnet address, beginning from 192.168.49.0. (docker and podman driver only)
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)

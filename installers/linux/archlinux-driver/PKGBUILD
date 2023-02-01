@@ -5,7 +5,7 @@ pkgver=$PKG_VERSION
 pkgrel=1
 pkgdesc="Minikube-maintained KVM driver for docker-machine"
 url="https://github.com/kubernetes/minikube"
-license=('Apache')
+license=('Apache-2.0')
 arch=('x86_64')
 depends=(
   'docker-machine'

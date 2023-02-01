@@ -36,6 +36,16 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// kubeletConfigParams are the only allowed kubelet parameters for kubeadmin config file and not to be used as kubelet flags
+// ref: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/ - look for "DEPRECATED" flags
+// ref: https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/
+// ref: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
+var kubeletConfigParams = []string{
+	"localStorageCapacityIsolation",
+	"runtime-request-timeout",
+	"hairpin-mode",
+}
+
 func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
@@ -93,6 +103,11 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 
 	if kubeletFeatureArgs != "" {
 		extraOpts["feature-gates"] = kubeletFeatureArgs
+	}
+
+	// filter out non-flag extra kubelet config options
+	for _, opt := range kubeletConfigParams {
+		delete(extraOpts, opt)
 	}
 
 	return extraOpts, nil

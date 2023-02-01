@@ -44,15 +44,8 @@ func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants_unix.go
-	pv := "3.6"
 	imageName := "pause"
-	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-
-	if pVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
-		pv = pVersion
-	} else {
-		pv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), pv)
-	}
+	pv := imageVersion(v, mirror, imageName, "3.6")
 
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), pv)
 }
@@ -118,17 +111,10 @@ func coreDNS(v semver.Version, mirror string) string {
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 
 	imageName := "coredns/coredns"
-	cv := "v1.8.6"
 	if semver.MustParseRange("<1.21.0-alpha.1")(v) {
 		imageName = "coredns"
 	}
-
-	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	if cVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
-		cv = cVersion
-	} else {
-		cv = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), cv)
-	}
+	cv := imageVersion(v, mirror, imageName, "v1.8.6")
 
 	if mirror == constants.AliyunMirror {
 		imageName = "coredns"
@@ -142,16 +128,18 @@ func etcd(v semver.Version, mirror string) string {
 	// Note: changing this logic requires bumping the preload version
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	ev := "3.5.0-0"
 	imageName := "etcd"
-	majorMinorVersion := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
-	if eVersion, ok := constants.KubeadmImages[majorMinorVersion][imageName]; ok {
-		ev = eVersion
-	} else {
-		ev = findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), ev)
-	}
+	ev := imageVersion(v, mirror, imageName, "3.5.0-0")
 
 	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), ev)
+}
+
+func imageVersion(v semver.Version, mirror, imageName, defaultVersion string) string {
+	versionString := fmt.Sprintf("v%s", v.String())
+	if ver, ok := constants.KubeadmImages[versionString][imageName]; ok {
+		return ver
+	}
+	return findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), defaultVersion)
 }
 
 // auxiliary returns images that are helpful for running minikube
@@ -186,7 +174,7 @@ func KindNet(repo string) string {
 }
 
 // all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
-const calicoVersion = "v3.20.0"
+const calicoVersion = "v3.24.5"
 const calicoRepo = "docker.io/calico"
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet
@@ -198,11 +186,6 @@ func CalicoDaemonSet(repo string) string {
 // CalicoDeployment returns the image used for calicoDeployment
 func CalicoDeployment(repo string) string {
 	return calicoCommon(repo, "kube-controllers")
-}
-
-// CalicoFelixDriver returns image used for felix driver
-func CalicoFelixDriver(repo string) string {
-	return calicoCommon(repo, "pod2daemon-flexvol")
 }
 
 // CalicoBin returns image used for calico binary image

@@ -40,8 +40,7 @@ oom_score = 0
     [plugins."io.containerd.grpc.v1.cri".containerd]
       discard_unpacked_layers = true
       snapshotter = "overlayfs"
-      [plugins."io.containerd.grpc.v1.cri".containerd.default_runtime]
-        runtime_type = "io.containerd.runc.v2"
+      default_runtime_name = "runc"
       [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime]
         runtime_type = ""
         runtime_engine = ""
@@ -54,7 +53,7 @@ oom_score = 0
 
     [plugins."io.containerd.grpc.v1.cri".cni]
       bin_dir = "/opt/cni/bin"
-      conf_dir = "/etc/cni/net.mk"
+      conf_dir = "/etc/cni/net.d"
       conf_template = ""
     [plugins."io.containerd.grpc.v1.cri".registry]
       config_path = "/etc/containerd/certs.d"

@@ -18,6 +18,7 @@ package assets
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 
@@ -120,7 +121,7 @@ var Addons = map[string]*Addon{
 
 		// GuestPersistentDir
 	}, false, "auto-pause", "Google", "", "", map[string]string{
-		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.2@sha256:c76be418df5ca9c66d0d11c2c68461acbf4072c1cdfc17e64729c5ef4d5a4128",
+		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.3@sha256:2ff12878e569802afa75baf65701ab913a88fe61a1cbb22fdc852b1345af2a5c",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
 	}),
@@ -247,16 +248,16 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/c32f9a43279425920c41ba2e54dfcb1a54c0daf7/deploy/static/provider/kind/deploy.yaml#L834
-		"IngressController": "ingress-nginx/controller:v1.2.1@sha256:5516d103a9c2ecc4f026efbd4b40662ce22dc1f824fb129ed121460aaa5c47f8",
-		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L621
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
-		// https://github.com/kubernetes/ingress-nginx/blob/fc38b9f2aa2d68ee00c417cf97e727b77a00c175/deploy/static/provider/kind/deploy.yaml#L673
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.1.1@sha256:64d8c73dca984af206adf9d6d7e46aa550362b1d7a01f3a0a91b20cc67868660",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L458
+		"IngressController": "ingress-nginx/controller:v1.5.1@sha256:4ba73c697770664c1e00e9f968de14e08f606ff961c76e5d7033a4a9c593c629",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L565
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
+		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L614
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
 	}, map[string]string{
-		"IngressController":        "k8s.gcr.io",
-		"KubeWebhookCertgenCreate": "k8s.gcr.io",
-		"KubeWebhookCertgenPatch":  "k8s.gcr.io",
+		"IngressController":        "registry.k8s.io",
+		"KubeWebhookCertgenCreate": "registry.k8s.io",
+		"KubeWebhookCertgenPatch":  "registry.k8s.io",
 	}),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IstioProvisionerAssets,
@@ -296,7 +297,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/tutorials/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.17@sha256:de642e973d3d0ef60e4d0a1f92286a9fdae245535c5990d4762bbe86fcf95887",
+		"Kubectl": "bitnami/kubectl:1.24.7@sha256:195f5a7a40cfb06e308701ae850abfa436d23baf9d39c0282298e540c9d07863",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
@@ -322,9 +323,9 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.6.1@sha256:5ddc6458eb95f5c70bd13fdab90cbd7d6ad1066e5b528ad1dcb28b76c5fb2f00",
+		"MetricsServer": "metrics-server/metrics-server:v0.6.2@sha256:f977ad859fb500c1302d9c3428c6271db031bb7431e7076213b676b345a88dc2",
 	}, map[string]string{
-		"MetricsServer": "k8s.gcr.io",
+		"MetricsServer": "registry.k8s.io",
 	}),
 	"olm": NewAddon([]*BinAsset{
 		MustBinAsset(addons.OlmAssets,
@@ -577,7 +578,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
 		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
-		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.11@sha256:82efb346863dc47701586bebadd4cef998d4c6692d802ec3de68d451c87fb613",
+		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.13@sha256:08a49cb7a588d81723b7e02c16082c75418b6e0a54cf2e44668bd77f79a41a40",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "k8s.gcr.io",
@@ -714,7 +715,7 @@ var Addons = map[string]*Addon{
 			"portainer.yaml",
 			"0640"),
 	}, false, "portainer", "3rd party (Portainer.io)", "", "", map[string]string{
-		"Portainer": "portainer/portainer-ce:latest@sha256:4f126c5114b63e9d1bceb4b368944d14323329a9a0d4e7bb7eb53c9b7435d498",
+		"Portainer": "portainer/portainer-ce:2.15.1@sha256:5466af30b8eaf3f75edd3c74703d1c9973f0963acd6ef164913ea6f195d640c2",
 	}, map[string]string{
 		"Portainer": "docker.io",
 	}),
@@ -737,11 +738,18 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "6040"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "kinvolk/headlamp:v0.11.1@sha256:2547c6f5d5186a2c01822648989d49d9853fecda14bca96a0bf4a0547ea1d613",
+			"Headlamp": "kinvolk/headlamp:v0.14.1@sha256:162f6888461362125f4f8c60cd0a9c4031a81de15f1ed4c67bd3600b48b24029",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
 		}),
+	"cloud-spanner": NewAddon([]*BinAsset{
+		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
+	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.0@sha256:35ca79ac580aace9fc72e0741654565e487287022db8de255f50f3971e6dba96",
+	}, map[string]string{
+		"CloudSpanner": "gcr.io",
+	}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
@@ -877,24 +885,28 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		Registries              map[string]string
 		CustomRegistries        map[string]string
 		NetworkInfo             map[string]string
+		Environment             map[string]string
 		LegacyPodSecurityPolicy bool
 		LegacyRuntimeClass      bool
 	}{
-		KubernetesVersion:       make(map[string]uint64),
-		PreOneTwentyKubernetes:  false,
-		Arch:                    a,
-		ExoticArch:              ea,
-		ImageRepository:         cfg.ImageRepository,
-		LoadBalancerStartIP:     cfg.LoadBalancerStartIP,
-		LoadBalancerEndIP:       cfg.LoadBalancerEndIP,
-		CustomIngressCert:       cfg.CustomIngressCert,
-		RegistryAliases:         cfg.RegistryAliases,
-		IngressAPIVersion:       "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
-		ContainerRuntime:        cfg.ContainerRuntime,
-		Images:                  images,
-		Registries:              addon.Registries,
-		CustomRegistries:        customRegistries,
-		NetworkInfo:             make(map[string]string),
+		KubernetesVersion:      make(map[string]uint64),
+		PreOneTwentyKubernetes: false,
+		Arch:                   a,
+		ExoticArch:             ea,
+		ImageRepository:        cfg.ImageRepository,
+		LoadBalancerStartIP:    cfg.LoadBalancerStartIP,
+		LoadBalancerEndIP:      cfg.LoadBalancerEndIP,
+		CustomIngressCert:      cfg.CustomIngressCert,
+		RegistryAliases:        cfg.RegistryAliases,
+		IngressAPIVersion:      "v1", // api version for ingress (eg, "v1beta1"; defaults to "v1" for k8s 1.19+)
+		ContainerRuntime:       cfg.ContainerRuntime,
+		Images:                 images,
+		Registries:             addon.Registries,
+		CustomRegistries:       customRegistries,
+		NetworkInfo:            make(map[string]string),
+		Environment: map[string]string{
+			"MockGoogleToken": os.Getenv("MOCK_GOOGLE_TOKEN"),
+		},
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
 	}

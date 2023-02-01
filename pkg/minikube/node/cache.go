@@ -129,14 +129,15 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
-			if finalImg != "" && finalImg != baseImg {
-				out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
+			if finalImg != "" {
 				cc.KicBaseImage = finalImg
+				if image.Tag(finalImg) != image.Tag(baseImg) {
+					out.WarningT(fmt.Sprintf("minikube was unable to download %s, but successfully downloaded %s as a fallback image", image.Tag(baseImg), image.Tag(finalImg)))
+				}
 			}
 		}()
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
 			var err error
-			var isFromCache bool
 
 			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
 				klog.Infof("%s exists in daemon, skipping load", img)
@@ -148,34 +149,18 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 			err = download.ImageToCache(img)
 			if err == nil {
 				klog.Infof("successfully saved %s as a tarball", img)
-				finalImg = img
 			}
-			if downloadOnly {
-				return err
+			if downloadOnly && err == nil {
+				return nil
 			}
 
 			if cc.Driver == driver.Podman {
 				return fmt.Errorf("not yet implemented, see issue #8426")
 			}
-			if driver.IsDocker(cc.Driver) {
+			if driver.IsDocker(cc.Driver) && err == nil {
 				klog.Infof("Loading %s from local cache", img)
-				err = download.CacheToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully loaded %s from cached tarball", img)
-					isFromCache = true
-				}
-			}
-
-			if driver.IsDocker(cc.Driver) {
-				klog.Infof("Downloading %s to local daemon", img)
-				err = download.ImageToDaemon(img)
-				if err == nil {
-					klog.Infof("successfully downloaded %s", img)
-					finalImg = img
-					return nil
-				} else if isFromCache {
-					klog.Infof("use image loaded from cache %s", strings.Split(img, "@")[0])
-					finalImg = strings.Split(img, "@")[0]
+				if finalImg, err = download.CacheToDaemon(img); err == nil {
+					klog.Infof("successfully loaded and using %s from cached tarball", img)
 					return nil
 				}
 			}
@@ -191,7 +176,7 @@ func waitDownloadKicBaseImage(g *errgroup.Group) {
 		if err != nil {
 			if errors.Is(err, image.ErrGithubNeedsLogin) {
 				klog.Warningf("Error downloading kic artifacts: %v", err)
-				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": strings.Split(kic.BaseImage, "@")[0]})
+				out.ErrT(style.Connectivity, "Unfortunately, could not download the base image {{.image_name}} ", out.V{"image_name": image.Tag(kic.BaseImage)})
 				out.WarningT("In order to use the fall back image, you need to log in to the github packages registry")
 				out.Styled(style.Documentation, `Please visit the following link for documentation around this: 
 	https://help.github.com/en/packages/using-github-packages-with-your-projects-ecosystem/configuring-docker-for-use-with-github-packages#authenticating-to-github-packages

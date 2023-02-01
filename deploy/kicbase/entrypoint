@@ -118,16 +118,11 @@ configure_containerd() {
     # we need to switch to 'native' or 'fuse-overlayfs' on zfs
     container_filesystem="$(stat -f -c %T /kind)"
     if [[ "$container_filesystem" == 'zfs' ]]; then
-      # if fuse is present, use fuse-overlayfs, else fallback to native
       # we do not use the ZFS snapshotter because of skew issues vs the host
-      if [[ -e /dev/fuse ]]; then
-        snapshotter="fuse-overlayfs"
-      else
-        snapshotter="native"
-      fi
+      snapshotter="native"
     # fuse likely implies fuse-overlayfs, we should switch to fuse-overlayfs (or native)
-    elif [[ "$container_filesystem" == 'fuseblk' ]]; then
-      snapshotter="fuse-overlayfs"
+    # elif [[ "$container_filesystem" == 'fuseblk' ]]; then skipping temporarily: https://github.com/kubernetes/minikube/issues/15191
+    #  snapshotter="fuse-overlayfs"
     fi
   fi
 

@@ -28,7 +28,7 @@
 
 readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
-readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${DRIVER}-${CONTAINER_RUNTIME}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
 
 export GOPATH="$HOME/go"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"

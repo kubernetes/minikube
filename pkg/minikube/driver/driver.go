@@ -212,6 +212,9 @@ func NeedsPortForward(name string) bool {
 	if err != nil {
 		panic(err)
 	}
+	if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
+		return true
+	}
 	return si.Rootless
 }
 

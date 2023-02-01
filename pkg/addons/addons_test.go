@@ -32,9 +32,7 @@ func createTestProfile(t *testing.T) string {
 	t.Helper()
 	td := t.TempDir()
 
-	if err := os.Setenv(localpath.MinikubeHome, td); err != nil {
-		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
-	}
+	t.Setenv(localpath.MinikubeHome, td)
 
 	// Not necessary, but it is a handy random alphanumeric
 	name := filepath.Base(td)
@@ -128,10 +126,15 @@ func TestStart(t *testing.T) {
 		KubernetesConfig: config.KubernetesConfig{},
 	}
 
+	toEnable := ToEnable(cc, map[string]bool{}, []string{"dashboard"})
+	enabled := make(chan []string, 1)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go Start(&wg, cc, map[string]bool{}, []string{"dashboard"})
+	go Enable(&wg, cc, toEnable, enabled)
 	wg.Wait()
+	if ea, ok := <-enabled; ok {
+		UpdateConfig(cc, ea)
+	}
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {
 		t.Errorf("expected dashboard to be enabled")

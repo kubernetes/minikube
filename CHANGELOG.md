@@ -1,5 +1,176 @@
 # Release Notes
 
+## Version 1.29.0 - 2023-01-26
+
+Features:
+* Bump QEMU driver priority from experimental to default [#15556](https://github.com/kubernetes/minikube/pull/15556)
+* Ability to set static-ip for Docker driver [#15553](https://github.com/kubernetes/minikube/pull/15553)
+* GCP-Auth Addon: automatically attach credentials to newly created namespaces [#15403](https://github.com/kubernetes/minikube/pull/15403)
+* Allow forcing 1 CPU on Linux with docker and none driver [#15611](https://github.com/kubernetes/minikube/pull/15611) [#15610](https://github.com/kubernetes/minikube/pull/15610)
+
+Major Improvements:
+* Large improvements to cgroup detection and CNI and CRI configurations [#15463](https://github.com/kubernetes/minikube/pull/15463)
+* Prevent redownloading kicbase when already downloaded [#15528](https://github.com/kubernetes/minikube/pull/15528)
+* Warn when using an old ISO/Kicbase image [#15235](https://github.com/kubernetes/minikube/pull/15235)
+
+Minor Improvements:
+* Check brew install paths for socket_vmnet [#15701](https://github.com/kubernetes/minikube/pull/15701)
+* Include gcp-auth logs in 'minikube logs' output [#15666](https://github.com/kubernetes/minikube/pull/15666)
+* Use absolute path when calling crictl version [#15642](https://github.com/kubernetes/minikube/pull/15642)
+* Add additional memory overhead for VirtualBox when `--memory=max` [#15317](https://github.com/kubernetes/minikube/pull/15317)
+* Update Windows installer to create system-wide shortcut [#15405](https://github.com/kubernetes/minikube/pull/15405)
+* Add `--subnet` validation [#15530](https://github.com/kubernetes/minikube/pull/15530)
+* Warn users if using VirtualBox on macOS 13+ [#15624](https://github.com/kubernetes/minikube/pull/15624)
+* Add groups check to SSH driver [#15513](https://github.com/kubernetes/minikube/pull/15513)
+* Update references to deprecated beta.kubernetes.io [#15225](https://github.com/kubernetes/minikube/pull/15225)
+
+Bugs:
+* Fix possible race condition when enabling multiple addons [#15706](https://github.com/kubernetes/minikube/pull/15706)
+* Fix cpus config field not supporting max value [#15479](https://github.com/kubernetes/minikube/pull/15479)
+* Fix subnet checking failing if IPv6 network found [#15394](https://github.com/kubernetes/minikube/pull/15394)
+* Fix Docker tunnel failing if too many SSH keys [#15560](https://github.com/kubernetes/minikube/pull/15560)
+* Fix kubelet localStorageCapacityIsolation option [#15336](https://github.com/kubernetes/minikube/pull/15336)
+* Fix setting snapshotter to unimplemented fuse-overlayfs [#15272](https://github.com/kubernetes/minikube/pull/15272)
+* Remove progress bar for kic download with JSON output [#15482](https://github.com/kubernetes/minikube/pull/15482)
+
+Version Upgrades:
+* Bump default Kubernetes version from 1.25.3 to 1.26.1 [#15683](https://github.com/kubernetes/minikube/pull/15683)
+* Addons: Update auto-pause from 0.0.2 to 0.0.3 [#15331](https://github.com/kubernetes/minikube/pull/15331)
+* Addons: Update cloud-spanner from 1.4.6 to 1.5.0 [#15440](https://github.com/kubernetes/minikube/pull/15440) [#15667](https://github.com/kubernetes/minikube/pull/15667) [#15707](https://github.com/kubernetes/minikube/pull/15707)
+* Addons: Update headlamp from 0.13.0 to 0.14.1 [#15401](https://github.com/kubernetes/minikube/pull/15401) [#15515](https://github.com/kubernetes/minikube/pull/15515)
+* Addons: Update ingress from 1.2.1 to 1.5.1 [#15339](https://github.com/kubernetes/minikube/pull/15339)
+* Addons: Update metrics-server from 0.6.1 to 0.6.2 [#15411](https://github.com/kubernetes/minikube/pull/15411)
+* Addons: Update kubevirt from 1.17 to 1.24.7 [#15310](https://github.com/kubernetes/minikube/pull/15310)
+* CNI: Update cilium from 1.9.9 to 1.12.3 [#15242](https://github.com/kubernetes/minikube/pull/15242)
+* Kicbase: Update buildkit from 0.10.3 to v0.11.0 [#15630](https://github.com/kubernetes/minikube/pull/15630)
+* Kicbase/ISO: Update containerd from 1.6.9 to 1.6.15 [#15541](https://github.com/kubernetes/minikube/pull/15541)
+* Kicbase/ISO: Update cri-dockerd from 0.2.2 to 0.3.0 [#15541](https://github.com/kubernetes/minikube/pull/15541)
+* Kicbase/ISO: Update docker from 20.10.20 to 20.10.23 [#15341](https://github.com/kubernetes/minikube/pull/15341) [#15541](https://github.com/kubernetes/minikube/pull/15541) [#15703](https://github.com/kubernetes/minikube/pull/15703)
+* Update KVM-docker-machine amd64 base image from Ubuntu 16.04 to 20.04 [#15628](https://github.com/kubernetes/minikube/pull/15628)
+
+
+For a more detailed changelog see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Aarav Arora
+- Akihiro Suda
+- Anders F Björklund
+- Andrew Stanton
+- Carlos Santana
+- Chris Kannon
+- Eng Zer Jun
+- Felipe Labbate
+- Ian Stewart
+- Jan Hutař
+- Jeff MAURY
+- Kaylen Dart
+- Kush Mansingh
+- Ludovic Maître
+- Medya Ghazizadeh
+- Olivier Lemasle
+- Paco Xu
+- Paul S. Schweigert
+- Predrag Rogic
+- Ronnel Santiago
+- Sharif Elgamal
+- Shubh Bapna
+- Steven Powell
+- Yuiko Mouri
+- ckannon
+- imjoseangel
+- joaquimrocha
+- jongwooo
+- mardi2020
+- shixiuguo
+- Товарищ программист
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (61 comments)
+- medyagh (41 comments)
+- afbjorklund (7 comments)
+- atoato88 (5 comments)
+- t-inu (5 comments)
+- mqasimsarfraz (4 comments)
+- AkihiroSuda (2 comments)
+- sharifelgamal (2 comments)
+- profnandaa (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (98 comments)
+- spowelljr (34 comments)
+- medyagh (10 comments)
+- kant777 (6 comments)
+- kundan2707 (6 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.29.0/) for this release!
+
+## Version 1.28.0 - 2022-11-04
+
+**SECURITY WARNING:** Log4j CVEs were detected in an image the `efk` addon uses, if you don't use the `efk` addon no action is required. If you use the addon we recommend running `minikube addons disable efk` to terminate the vulnerable pods.
+See [#15280](https://github.com/kubernetes/minikube/issues/15280) for more details.
+
+Security:
+* Prevent enabling `efk` addon due to containing Log4j CVE [#15281](https://github.com/kubernetes/minikube/pull/15281)
+
+Features:
+* Auto select network on QEMU [#15266](https://github.com/kubernetes/minikube/pull/15266)
+* Implement mounting on QEMU with socket_vmnet [#15108](https://github.com/kubernetes/minikube/pull/15108)
+* Added cloud-spanner emulator addon [#15160](https://github.com/kubernetes/minikube/pull/15160)
+* Add `minikube license` command [#15158](https://github.com/kubernetes/minikube/pull/15158)
+
+Minor Improvements:
+* Allow port forwarding on Linux with Docker Desktop [#15126](https://github.com/kubernetes/minikube/pull/15126)
+* Add back service to mount VirtualBox host directory into the guest. [#14784](https://github.com/kubernetes/minikube/pull/14784)
+* ISO: Add FANOTIFY_ACCESS_PERMISSIONS to kernel configs [#15232](https://github.com/kubernetes/minikube/pull/15232)
+* When enabling addon warn if addon has no associated Github username [#15081](https://github.com/kubernetes/minikube/pull/15081)
+
+Bug Fixes:
+* Fix detecting preload cache of size 0 as valid [#15256](https://github.com/kubernetes/minikube/pull/15256)
+* Fix always writing to daemon by trimming `docker.io` from image name [#14956](https://github.com/kubernetes/minikube/pull/14956)
+* Fix minikube tunnel repeated printout of status [#14933](https://github.com/kubernetes/minikube/pull/14933)
+
+Version Upgrades:
+* Upgrade Portainer addon to 2.15.1 & HTTPS access enabled [#15172](https://github.com/kubernetes/minikube/pull/15172)
+* Upgrade Headlamp addon to 0.13.0 [#15186](https://github.com/kubernetes/minikube/pull/15186)
+* ISO: Upgrade Docker from 20.10.18 to 20.10.20 [#15159](https://github.com/kubernetes/minikube/pull/15159)
+* KIC: Upgrade base image from ubuntu:focal-20220826 to ubuntu:focal-20220922 [#15075](https://github.com/kubernetes/minikube/pull/15075)
+* KCI: Upgrade base image from ubuntu:focal-20220922 to ubuntu:focal-20221019 [#15219](https://github.com/kubernetes/minikube/pull/15219)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Chris Kannon
+- Francis Laniel
+- Jeff MAURY
+- Jevon Tane
+- Medya Ghazizadeh
+- Nitin Agarwal
+- Oldřich Jedlička
+- Rahil Patel
+- Steven Powell
+- Tian
+- Yue Yang
+- joaquimrocha
+- klaases
+- shixiuguo
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (25 comments)
+- medyagh (14 comments)
+
+Thank you to our triage members for this release!
+
+- RA489 (64 comments)
+- klaases (39 comments)
+- afbjorklund (23 comments)
+- spowelljr (22 comments)
+- medyagh (4 comments)
+
 ## Version 1.27.1 - 2022-10-07
 
 Features (Experimental):

@@ -46,9 +46,9 @@ type Calico struct {
 }
 
 type calicoTmplStruct struct {
+	PodCIDR                   string
 	DeploymentImageName       string
 	DaemonSetImageName        string
-	FelixDriverImageName      string
 	BinaryImageName           string
 	LegacyPodDisruptionBudget bool
 }
@@ -66,9 +66,9 @@ func (c Calico) manifest() (assets.CopyableFile, error) {
 	}
 
 	input := &calicoTmplStruct{
+		PodCIDR:                   DefaultPodCIDR,
 		DeploymentImageName:       images.CalicoDeployment(c.cc.KubernetesConfig.ImageRepository),
 		DaemonSetImageName:        images.CalicoDaemonSet(c.cc.KubernetesConfig.ImageRepository),
-		FelixDriverImageName:      images.CalicoFelixDriver(c.cc.KubernetesConfig.ImageRepository),
 		BinaryImageName:           images.CalicoBin(c.cc.KubernetesConfig.ImageRepository),
 		LegacyPodDisruptionBudget: k8sVersion.LT(semver.Version{Major: 1, Minor: 25}),
 	}

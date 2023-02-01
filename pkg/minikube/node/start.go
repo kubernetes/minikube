@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -170,12 +171,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	addonList := viper.GetStringSlice(config.AddonListFlag)
+	enabledAddons := make(chan []string, 1)
 	if starter.ExistingAddons != nil {
 		if viper.GetBool("force") {
 			addons.Force = true
 		}
+		list := addons.ToEnable(starter.Cfg, starter.ExistingAddons, addonList)
 		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
+		go addons.Enable(&wg, starter.Cfg, list, enabledAddons)
 	}
 
 	// discourage use of the virtualbox driver
@@ -209,6 +212,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "cni apply")
 		}
 	}
+
+	if !starter.Cfg.DisableOptimizations {
+		// Scale down CoreDNS from default 2 to 1 replica.
+		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+		}
+	}
+
 	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
@@ -217,7 +228,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	klog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
+	// update config with enabled addons
+	if starter.ExistingAddons != nil {
+		klog.Infof("waiting for cluster config update ...")
+		if ea, ok := <-enabledAddons; ok {
+			addons.UpdateConfig(starter.Cfg, ea)
+		}
+	}
+
 	// Write enabled addons to the config before completion
+	klog.Infof("writing updated cluster config ...")
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 }
 
@@ -252,7 +272,7 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 	err = bs.StartCluster(*starter.Cfg)
 	if err != nil {
-		ExitIfFatal(err)
+		ExitIfFatal(err, false)
 		out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 		return nil, bs, err
 	}
@@ -260,13 +280,6 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	// Write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper.
 	if err := kubeconfig.Update(kcs); err != nil {
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
-	}
-
-	if !starter.Cfg.DisableOptimizations {
-		// Scale down CoreDNS from default 2 to 1 replica.
-		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-		}
 	}
 
 	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
@@ -379,9 +392,27 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		exit.Error(reason.InternalRuntime, "Failed runtime", err)
 	}
 
-	disableOthers := true
-	if driver.BareMetal(cc.Driver) {
-		disableOthers = false
+	// 87-podman.conflist cni conf potentially conflicts with others and is created by podman on its first invocation,
+	// so we "provoke" it here to ensure it's generated and that we can disable it
+	// note: using 'help' or '--help' would be cheaper, but does not trigger that; 'version' seems to be next best option
+	if co.Type == constants.CRIO {
+		_, _ = runner.RunCmd(exec.Command("sudo", "sh", "-c", `podman version >/dev/null`))
+	}
+	// ensure loopback is properly configured
+	// make sure container runtime is restarted afterwards for these changes to take effect
+	disableLoopback := co.Type == constants.CRIO
+	if err := cni.ConfigureLoopbackCNI(runner, disableLoopback); err != nil {
+		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
+	}
+	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
+		}
+	}
+	// ensure all default CNI(s) are properly configured on each and every node (re)start
+	// make sure container runtime is restarted afterwards for these changes to take effect
+	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
+		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
 	}
 
 	// Preload is overly invasive for bare metal, and caching is not meaningful.
@@ -401,34 +432,82 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 	}
 
-	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
-			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
+	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
+	// for docker container runtime: ensure containerd is properly configured by calling Enable(), as docker could be bound to containerd
+	// it will also "soft" start containerd, but it will not disable others; docker will disable containerd if not used in the next step
+	if co.Type == constants.Docker {
+		containerd, err := cruntime.New(cruntime.Config{
+			Type:              constants.Containerd,
+			Socket:            "", // use default
+			Runner:            co.Runner,
+			ImageRepository:   co.ImageRepository,
+			KubernetesVersion: co.KubernetesVersion,
+			InsecureRegistry:  co.InsecureRegistry})
+		if err == nil {
+			err = containerd.Enable(false, cgroupDriver(cc), inUserNamespace) // do not disableOthers, as it's not primary cr
+		}
+		if err != nil {
+			klog.Warningf("cannot ensure containerd is configured properly and reloaded for docker - cluster might be unstable: %v", err)
 		}
 	}
 
-	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
-	err = cr.Enable(disableOthers, forceSystemd(), inUserNamespace)
-	if err != nil {
+	disableOthers := !driver.BareMetal(cc.Driver)
+	if err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 	}
 
 	// Wait for the CRI to be "live", before returning it
-	err = waitForCRISocket(runner, cr.SocketPath(), 60, 1)
-	if err != nil {
+	if err = waitForCRISocket(runner, cr.SocketPath(), 60, 1); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
 
 	// Wait for the CRI to actually work, before returning
-	err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10)
-	if err != nil {
+	if err = waitForCRIVersion(runner, cr.SocketPath(), 60, 10); err != nil {
 		exit.Error(reason.RuntimeEnable, "Failed to start container runtime", err)
 	}
+
 	return cr
 }
 
-func forceSystemd() bool {
-	return viper.GetBool("force-systemd") || os.Getenv(constants.MinikubeForceSystemdEnv) == "true"
+// cgroupDriver returns cgroup driver that should be used to further configure container runtime, node(s) and cluster.
+// It is based on:
+// - (forced) user preference (set via flags or env), if present, or
+// - default settings for vm or ssh driver, if user, or
+// - host os config detection, if possible.
+// Possible mappings are: "v1" (legacy) cgroups => "cgroupfs", "v2" (unified) cgroups => "systemd" and "" (unknown) cgroups => constants.DefaultCgroupDriver.
+// Note: starting from k8s v1.22, "kubeadm clusters should be using the systemd driver":
+// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#no-really-you-must-read-this-before-you-upgrade
+// ref: https://kubernetes.io/docs/setup/production-environment/container-runtimes/#cgroup-drivers
+// ref: https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/
+func cgroupDriver(cc config.ClusterConfig) string {
+	klog.Info("detecting cgroup driver to use...")
+
+	// check flags for user preference
+	if viper.GetBool("force-systemd") {
+		klog.Infof("using %q cgroup driver as enforced via flags", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
+	}
+
+	// check env for user preference
+	env := os.Getenv(constants.MinikubeForceSystemdEnv)
+	if force, err := strconv.ParseBool(env); env != "" && err == nil && force {
+		klog.Infof("using %q cgroup driver as enforced via env", constants.SystemdCgroupDriver)
+		return constants.SystemdCgroupDriver
+	}
+
+	// vm driver uses iso that boots with cgroupfs cgroup driver by default atm (keep in sync!)
+	if driver.IsVM(cc.Driver) {
+		return constants.CgroupfsCgroupDriver
+	}
+
+	// for "remote baremetal", we assume cgroupfs and user can "force-systemd" with flag to override
+	// potential improvement: use systemd as default (in line with k8s) and allow user to override it with new flag (eg, "cgroup-driver", that would replace "force-systemd")
+	if driver.IsSSH(cc.Driver) {
+		return constants.CgroupfsCgroupDriver
+	}
+
+	// in all other cases - try to detect and use what's on user's machine
+	return detect.CgroupDriver()
 }
 
 func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
@@ -471,8 +550,15 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 
 	klog.Infof("Will wait %ds for crictl version", wait)
 
+	cmd := exec.Command("which", "crictl")
+	rr, err := runner.RunCmd(cmd)
+	if err != nil {
+		return err
+	}
+	crictl := strings.TrimSuffix(rr.Stdout.String(), "\n")
+
 	chkInfo := func() error {
-		args := []string{"crictl", "version"}
+		args := []string{crictl, "version"}
 		cmd := exec.Command("sudo", args...)
 		rr, err := runner.RunCmd(cmd)
 		if err != nil && !os.IsNotExist(err) {
@@ -808,13 +894,20 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	}
 
 	// inject hosts block with host record into coredns configmap
-	sed := fmt.Sprintf("sed '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
+	sed := fmt.Sprintf("sed -e '/^        forward . \\/etc\\/resolv.conf.*/i \\        hosts {\\n           %s %s\\n           fallthrough\\n        }'", ip, name)
 	// check if hosts block already exists in coredns configmap
 	hosts := regexp.MustCompile(`(?smU)^ *hosts {.*}`)
 	if hosts.MatchString(cm) {
 		// inject host record into existing coredns configmap hosts block instead
 		klog.Info("CoreDNS already contains hosts block, will inject host record there...")
-		sed = fmt.Sprintf("sed '/^        hosts {.*/a \\           %s %s'", ip, name)
+		sed = fmt.Sprintf("sed -e '/^        hosts {.*/a \\           %s %s'", ip, name)
+	}
+
+	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
+	logs := regexp.MustCompile(`(?smU)^ *log *$`)
+	if !logs.MatchString(cm) {
+		// inject log plugin into coredns configmap
+		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
 	}
 
 	// replace coredns configmap via kubectl
@@ -823,7 +916,7 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 		klog.Errorf("failed to inject {%q: %s} host record into CoreDNS", name, ip)
 		return err
 	}
-	klog.Infof("{%q: %s} host record injected into CoreDNS", name, ip)
+	klog.Infof("{%q: %s} host record injected into CoreDNS's ConfigMap", name, ip)
 
 	return nil
 }

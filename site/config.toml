@@ -59,7 +59,7 @@ anchor = "smart"
 [services]
 [services.googleAnalytics]
 # Comment out the next line to disable GA tracking. Also disables the feature described in [params.ui.feedback].
-#id = "UA-00000000-0"
+id = "G-JPP6RFM2BP"
 
 # Language configuration
 [languages]
@@ -82,6 +82,8 @@ version_menu = "Releases"
 github_repo = "https://github.com/kubernetes/minikube"
 # An optional link to a related project repo. For example, the sibling repository where your product code lives.
 github_project_repo = ""
+# New versions of Docsy default to main, change it to master
+github_branch = "master"
 
 # Specify a value here if your content directory is not in your repo's root directory
 github_subdir = "site"

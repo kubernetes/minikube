@@ -235,7 +235,7 @@ func TestGetStoragev1(t *testing.T) {
 	defer os.Remove(configFile.Name())
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if err := setK8SConfig(test.config, configFile.Name()); err != nil {
+			if err := setK8SConfig(t, test.config, configFile.Name()); err != nil {
 				t.Fatalf(err.Error())
 			}
 
@@ -251,13 +251,13 @@ func TestGetStoragev1(t *testing.T) {
 	}
 }
 
-func setK8SConfig(config, kubeconfigPath string) error {
+func setK8SConfig(t *testing.T, config, kubeconfigPath string) error {
 	mockK8sConfigByte := []byte(config)
 	mockK8sConfigPath := kubeconfigPath
 	err := os.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 	if err != nil {
 		return fmt.Errorf("Unexpected error when writing to file %v. Error: %v", kubeconfigPath, err)
 	}
-	os.Setenv("KUBECONFIG", mockK8sConfigPath)
+	t.Setenv("KUBECONFIG", mockK8sConfigPath)
 	return nil
 }

@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 27
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 29
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,8 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.27.0-1665430391-15094
+ISO_VERSION ?= v1.29.0-1675184411-15728
+
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 DEB_REVISION ?= 0
@@ -33,18 +34,18 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.19.2
+GO_VERSION ?= 1.19.5
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.25.0
+GO_K8S_VERSION_PREFIX ?= v1.26.0
 
-# replace "x.y.0" => "x.y". kube-cross and golang.org/dl use different formats for x.y.0 go versions
+# replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.12
 # the go version on the line below is for the ISO and does not need to be updated often
-GOLANG_OPTIONS = GO_VERSION=1.19.2 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.19.5 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -52,8 +53,9 @@ REGISTRY ?= gcr.io/k8s-minikube
 COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
-# source code for image: https://github.com/spowelljr/xcgo
-HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.17
+COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
+# source code for image: https://github.com/neilotoole/xcgo
+HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.19.5
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -74,9 +76,9 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 5.10.57
-# latest from https://github.com/golangci/golangci-lint/releases 
+# latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.50.0
+GOLINT_VERSION ?= v1.50.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -108,7 +110,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.2
+AUTOPAUSE_HOOK_TAG ?= v0.0.3
 
 # prow-test tag to push changes to
 PROW_TEST_TAG ?= v0.0.3
@@ -158,6 +160,9 @@ HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -
 
 # autopush artefacts
 AUTOPUSH ?=
+
+# version file json
+VERSION_JSON := "{\"iso_version\": \"$(ISO_VERSION)\", \"kicbase_version\": \"$(KIC_VERSION)\", \"minikube_version\": \"$(VERSION)\", \"commit\": \"$(COMMIT_NOQUOTES)\"}"
 
 # don't ask for user confirmation
 IN_CI := false
@@ -286,6 +291,7 @@ minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
 minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
@@ -419,7 +425,7 @@ out/coverage.html: out/coverage.out
 	$(if $(quiet),@echo "  COVER    $@")
 	$(Q)go tool cover -html=$< -o $@
 
-.PHONY: extract 
+.PHONY: extract
 extract: ## extract internationalization words for translations
 	go run cmd/extract/extract.go
 
@@ -562,13 +568,13 @@ out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_%.deb: out/minikube-linux-%
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--REVISION--/'$(DEB_REVISION)'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control
-  
+
 	if [ "$*" = "amd64" ]; then \
 	    sed -E -i 's/--RECOMMENDS--/virtualbox/' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	else \
 	    sed -E -i '/Recommends: --RECOMMENDS--/d' $(DEB_PACKAGING_DIRECTORY_$*)/DEBIAN/control; \
 	fi
-  
+
 	mkdir -p $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin
 	cp $< $(DEB_PACKAGING_DIRECTORY_$*)/usr/bin/minikube
 	fakeroot dpkg-deb --build $(DEB_PACKAGING_DIRECTORY_$*) $@
@@ -709,12 +715,12 @@ KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
 .PHONY: update-cri-dockerd
 update-cri-dockerd:
-	(cd hack/update/cri_dockerd && \
+	(cd hack/update/cri_dockerd_version && \
 	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(KICBASE_ARCH))
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
-	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION)  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --cache-from $(KICBASE_IMAGE_GCR) .
+	docker build -f ./deploy/kicbase/Dockerfile -t local/kicbase:$(KIC_VERSION) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --cache-from $(KICBASE_IMAGE_GCR) .
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
@@ -729,9 +735,9 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-builder ## Build multi-arch local/kicbase:latest
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) .
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
 
-.PHONY: push-kic-base-image 
+.PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
@@ -744,7 +750,7 @@ ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg PREBUILT_AUTO_PAUSE=true .
+	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
 out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
@@ -895,7 +901,7 @@ else
 		-buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt.1.3.1 without_lxc" \
+		-tags "libvirt_without_lxc" \
 		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
@@ -905,15 +911,14 @@ out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_AMD64) || $(MAKE) kvm-image-amd64
 	$(call DOCKER,$(KVM_BUILD_IMAGE_AMD64),/usr/bin/make $@ COMMIT=$(COMMIT))
-	# make extra sure that we are linking with the older version of libvirt (1.3.1)
-	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOARCH=$* \
 	go build \
+	        -buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt.1.3.1 without_lxc" \
+		-tags "libvirt_without_lxc" \
 		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
@@ -921,10 +926,11 @@ endif
 
 
 site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
-	git submodule update -f --init --recursive
+	git submodule update -f --init
 
 out/hugo/hugo:
 	mkdir -p out
+	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
 	(cd out/hugo && go build --tags extended)
 
@@ -1048,3 +1054,22 @@ update-gopogh-version: ## update gopogh version
 update-gotestsum-version:
 	(cd hack/update/gotestsum_version && \
 	 go run update_gotestsum_version.go)
+
+.PHONY: update-gh-version
+update-gh-version:
+	(cd hack/update/gh_version && \
+	 go run update_gh_version.go)
+
+.PHONY: update-docsy-version
+update-docsy-version:
+	(cd hack/update/docsy_version && \
+	 go run update_docsy_version.go)
+
+.Phony: update-hugo-version
+update-hugo-version:
+	(cd hack/update/hugo_version && \
+	 go run update_hugo_version.go)
+
+.PHONY: generate-licenses
+generate-licenses:
+	./hack/generate_licenses.sh

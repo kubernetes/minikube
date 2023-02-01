@@ -61,9 +61,9 @@ func TestStartStop(t *testing.T) {
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
-				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+				"--extra-config=kubeadm.pod-network-cidr=10.42.0.0/16",
 			}},
-			{"default-k8s-different-port", constants.DefaultKubernetesVersion, []string{
+			{"default-k8s-diff-port", constants.DefaultKubernetesVersion, []string{
 				"--apiserver-port=8444",
 			}},
 			{"no-preload", constants.NewestKubernetesVersion, []string{

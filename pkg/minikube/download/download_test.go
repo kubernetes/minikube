@@ -19,6 +19,7 @@ package download
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -31,10 +32,10 @@ func TestDownload(t *testing.T) {
 	t.Run("BinaryDownloadPreventsMultipleDownload", testBinaryDownloadPreventsMultipleDownload)
 	t.Run("PreloadDownloadPreventsMultipleDownload", testPreloadDownloadPreventsMultipleDownload)
 	t.Run("ImageToCache", testImageToCache)
-	t.Run("ImageToDaemon", testImageToDaemon)
 	t.Run("PreloadNotExists", testPreloadNotExists)
 	t.Run("PreloadChecksumMismatch", testPreloadChecksumMismatch)
 	t.Run("PreloadExistsCaching", testPreloadExistsCaching)
+	t.Run("PreloadWithCachedSizeZero", testPreloadWithCachedSizeZero)
 }
 
 // Returns a mock function that sleeps before incrementing `downloadsCounter` and creates the requested file.
@@ -80,12 +81,20 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
+	f, err := os.CreateTemp("", "preload")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write([]byte("data")); err != nil {
+		t.Fatalf("failed to write to temp file: %v", err)
+	}
 
 	checkCache = func(file string) (fs.FileInfo, error) {
 		if downloadNum == 0 {
 			return nil, fmt.Errorf("some error")
 		}
-		return nil, nil
+		return os.Stat(f.Name())
 	}
 	checkPreloadExists = func(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool { return true }
 	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
@@ -174,31 +183,6 @@ func testImageToCache(t *testing.T) {
 	}
 }
 
-func testImageToDaemon(t *testing.T) {
-	downloadNum := 0
-	DownloadMock = mockSleepDownload(&downloadNum)
-
-	checkImageExistsInCache = func(img string) bool { return downloadNum > 0 }
-
-	var group sync.WaitGroup
-	group.Add(2)
-	dlCall := func() {
-		if err := ImageToCache("testimg"); err != nil {
-			t.Errorf("Failed to download preload: %+v", err)
-		}
-		group.Done()
-	}
-
-	go dlCall()
-	go dlCall()
-
-	group.Wait()
-
-	if downloadNum != 1 {
-		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
-	}
-}
-
 // Validates that preload existence checks correctly caches values retrieved by remote checks.
 func testPreloadExistsCaching(t *testing.T) {
 	checkCache = func(file string) (fs.FileInfo, error) {
@@ -234,5 +218,27 @@ func testPreloadExistsCaching(t *testing.T) {
 	existence = PreloadExists("v2", "c2", "docker", true)
 	if !existence || checkCalled {
 		t.Errorf("Expected preload to exist and no check to be performed. Existence: %v, Check: %v", existence, checkCalled)
+	}
+}
+
+func testPreloadWithCachedSizeZero(t *testing.T) {
+	downloadNum := 0
+	DownloadMock = mockSleepDownload(&downloadNum)
+	f, err := os.CreateTemp("", "preload")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+
+	checkCache = func(file string) (fs.FileInfo, error) { return os.Stat(f.Name()) }
+	checkPreloadExists = func(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool { return true }
+	getChecksum = func(k8sVersion, containerRuntime string) ([]byte, error) { return []byte("check"), nil }
+	ensureChecksumValid = func(k8sVersion, containerRuntime, path string, checksum []byte) error { return nil }
+
+	if err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker"); err != nil {
+		t.Errorf("Expected no error with cached preload of size zero")
+	}
+
+	if downloadNum != 1 {
+		t.Errorf("Expected only 1 download attempt but got %v!", downloadNum)
 	}
 }

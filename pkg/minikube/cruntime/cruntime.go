@@ -81,7 +81,7 @@ type Manager interface {
 	// Version retrieves the current version of this runtime
 	Version() (string, error)
 	// Enable idempotently enables this runtime on a host
-	Enable(bool, bool, bool) error
+	Enable(bool, string, bool) error
 	// Disable idempotently disables this runtime on a host
 	Disable() error
 	// Active returns whether or not a runtime is active on a host
@@ -345,9 +345,5 @@ func ConfigureNetworkPlugin(r Manager, cr CommandRunner, networkPlugin string) e
 		}
 		return nil
 	}
-	dm, ok := r.(*Docker)
-	if !ok {
-		return fmt.Errorf("name and type mismatch")
-	}
-	return dockerConfigureNetworkPlugin(*dm, cr, networkPlugin)
+	return dockerConfigureNetworkPlugin(cr, networkPlugin)
 }

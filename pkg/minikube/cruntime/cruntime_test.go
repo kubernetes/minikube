@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestName(t *testing.T) {
@@ -154,13 +155,11 @@ func TestKubeletOptions(t *testing.T) {
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "/var/run/crio/crio.sock",
 			"image-service-endpoint":     "/var/run/crio/crio.sock",
-			"runtime-request-timeout":    "15m",
 		}},
 		{"containerd", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
 			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
-			"runtime-request-timeout":    "15m",
 		}},
 	}
 	for _, tc := range tests {
@@ -461,7 +460,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
-		for _, id := range args[1:] {
+		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
@@ -469,7 +468,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			delete(f.containers, id)
 		}
 	case "rm":
-		for _, id := range args[1:] {
+		for _, id := range args[2:] {
 			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
@@ -630,7 +629,7 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker.socket", "sudo", "systemctl", "stop", "-f", "docker.service",
+		{"docker", []string{"sudo", "systemctl", "stop", "-f", "cri-docker.socket", "sudo", "systemctl", "stop", "-f", "cri-docker.service", "sudo", "systemctl", "disable", "cri-docker.socket", "sudo", "systemctl", "mask", "cri-docker.service", "sudo", "systemctl", "stop", "-f", "docker.socket", "sudo", "systemctl", "stop", "-f", "docker.service",
 			"sudo", "systemctl", "disable", "docker.socket", "sudo", "systemctl", "mask", "docker.service"}},
 		{"crio", []string{"sudo", "systemctl", "stop", "-f", "crio"}},
 		{"containerd", []string{"sudo", "systemctl", "stop", "-f", "containerd"}},
@@ -687,7 +686,7 @@ func TestEnable(t *testing.T) {
 			map[string]serviceState{
 				"docker":        SvcExited,
 				"containerd":    SvcExited,
-				"crio":          SvcRunning,
+				"crio":          SvcRestarted,
 				"crio-shutdown": SvcExited,
 			}},
 	}
@@ -701,7 +700,7 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			err = cr.Enable(true, false, false)
+			err = cr.Enable(true, constants.CgroupfsCgroupDriver, false)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
 			}

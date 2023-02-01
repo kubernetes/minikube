@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/juju/mutex/v2"
 	"github.com/otiai10/copy"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -46,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
@@ -176,6 +178,17 @@ func generateSharedCACerts() (CACerts, bool, error) {
 			subject:  "proxyClientCA",
 		},
 	}
+
+	// create a lock for "ca-certs" to avoid race condition over multiple minikube instances rewriting shared ca certs
+	hold := filepath.Join(globalPath, "ca-certs")
+	spec := lock.PathMutexSpec(hold)
+	spec.Timeout = 1 * time.Minute
+	klog.Infof("acquiring lock for shared ca certs: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return cc, false, errors.Wrapf(err, "unable to acquire lock for shared ca certs %+v", spec)
+	}
+	defer releaser.Release()
 
 	for _, ca := range caCertSpecs {
 		if isValid(ca.certPath, ca.keyPath) {

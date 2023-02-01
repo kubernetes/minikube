@@ -55,8 +55,9 @@ minikube addons enable auto-pause
 
 ## Docker Driver: How can I set minikube's cgroup manager?
 
-By default minikube uses the `cgroupfs` cgroup manager for Kubernetes clusters. If you are on a system with a systemd cgroup manager, this could cause conflicts.
-To use the `systemd` cgroup manager, run:
+For non-VM and non-SSH drivers, minikube will try to auto-detect your system's cgroups driver/manager and configure all other components accordingly.
+For VM and SSH drivers, minikube will use cgroupfs cgroups driver/manager by default.
+To force the `systemd` cgroup manager, run:
 
 ```bash
 minikube start --force-systemd=true
@@ -101,10 +102,10 @@ minikube start --extra-config kubeadm.ignore-preflight-errors=SystemVerification
 
 ## What is the minimum resource allocation necessary for a Knative setup using minikube?
 
-Please allocate sufficient resources for Knative setup using minikube, especially when running minikube cluster on your local machine. We recommend allocating at least 6 CPUs and 8G memory:
+Please allocate sufficient resources for Knative setup using minikube, especially when running minikube cluster on your local machine. We recommend allocating at least 3 CPUs and 3G memory.
 
 ```shell
-minikube start --cpus 6 --memory 8000
+minikube start --cpus 3 --memory 3072
 ```
 
 ## Do I need to install kubectl locally?
@@ -159,3 +160,18 @@ $env:MINIKUBE_HOME = "D:\.minikube"
 
 minikube start
 ```
+
+## Can I set a static IP for the minikube cluster?
+
+Currently a static IP can only be set when using the Docker or Podman driver.
+
+For more details see the [static IP tutorial]({{< ref "docs/tutorials/static_ip.md" >}}).
+
+## How to ignore the kubeadm requirements and pre-flight checks (such as minimum CPU count)?
+
+Kubeadm has certain software and hardware requirements to maintain a stable Kubernetes cluster. However, these requirements can be ignored (such as when running minikube on a single CPU) by running the following:
+```
+minikube start --force --extra-config=kubeadm.skip-phases=preflight
+```
+This is not recommended, but for some users who are willing to accept potential performance or stability issues, this may be the only option.
+

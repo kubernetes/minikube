@@ -151,4 +151,8 @@ var (
 	// HeadlampAssets assets for headlamp addon
 	//go:embed headlamp/*.yaml headlamp/*.tmpl
 	HeadlampAssets embed.FS
+
+	// CloudSpanner assets for cloud-spanner addon
+	//go:embed cloud-spanner/*.yaml
+	CloudSpanner embed.FS
 )

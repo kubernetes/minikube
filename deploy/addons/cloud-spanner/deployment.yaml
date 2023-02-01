@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-spanner-emulator
+  labels:
+    app: cloud-spanner-emulator
+    gcp-auth-skip-secret: "true"
+    kubernetes.io/minikube-addons-endpoint: cloud-spanner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-spanner-emulator
+  template:
+    metadata:
+      labels:
+        app: cloud-spanner-emulator
+    spec:
+      containers:
+        - name: cloud-spanner-emulator
+          image: {{.CustomRegistries.CloudSpanner | default .ImageRepository | default .Registries.CloudSpanner}}{{.Images.CloudSpanner}}
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 9020
+            name: http
+          - containerPort: 9010
+            name: grpc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-spanner-emulator
+  labels:
+    app: cloud-spanner-emulator
+spec:
+  type: NodePort
+  ports:
+    - port: 9020
+      name: http
+    - port: 9010
+      name: grpc
+  selector:
+    app: cloud-spanner-emulator

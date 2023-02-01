@@ -24,7 +24,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/juju/mutex"
+	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
@@ -131,6 +131,7 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 
 	img, cname, err := retrieveImage(ref, iname)
 	if err != nil {
+		klog.V(2).ErrorS(err, "an error while retrieving the image")
 		return errCacheImageDoesntExist
 	}
 	if img == nil {
