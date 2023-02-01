@@ -26,7 +26,7 @@ minikube start [flags]
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.36-1674164627-15541@sha256:0a2280301e955e0d3910d6e639e0b7341db1f4a25558521ac97b38c782c6189a")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.37-1675094849-15728@sha256:674e71e0928a6b8b65fe678e2c3097ad1c85d350c56566396c5ebfc49aca0bb5")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -105,8 +105,8 @@ minikube start [flags]
       --qemu-firmware-path string         Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\Program Files\qemu\share
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
-      --socket-vmnet-client-path string   Path to the socket vmnet client binary (default "/opt/socket_vmnet/bin/socket_vmnet_client")
-      --socket-vmnet-path string          Path to socket vmnet binary (default "/var/run/socket_vmnet")
+      --socket-vmnet-client-path string   Path to the socket vmnet client binary (QEMU driver only)
+      --socket-vmnet-path string          Path to socket vmnet binary (QEMU driver only)
       --ssh-ip-address string             IP address (ssh driver only)
       --ssh-key string                    SSH key (ssh driver only)
       --ssh-port int                      SSH port (ssh driver only) (default 22)

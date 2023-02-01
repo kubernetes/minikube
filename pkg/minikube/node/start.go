@@ -171,12 +171,14 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	addonList := viper.GetStringSlice(config.AddonListFlag)
+	enabledAddons := make(chan []string, 1)
 	if starter.ExistingAddons != nil {
 		if viper.GetBool("force") {
 			addons.Force = true
 		}
+		list := addons.ToEnable(starter.Cfg, starter.ExistingAddons, addonList)
 		wg.Add(1)
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, addonList)
+		go addons.Enable(&wg, starter.Cfg, list, enabledAddons)
 	}
 
 	// discourage use of the virtualbox driver
@@ -226,7 +228,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	klog.Infof("waiting for startup goroutines ...")
 	wg.Wait()
 
+	// update config with enabled addons
+	if starter.ExistingAddons != nil {
+		klog.Infof("waiting for cluster config update ...")
+		if ea, ok := <-enabledAddons; ok {
+			addons.UpdateConfig(starter.Cfg, ea)
+		}
+	}
+
 	// Write enabled addons to the config before completion
+	klog.Infof("writing updated cluster config ...")
 	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 }
 

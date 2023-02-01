@@ -140,12 +140,49 @@ func SocketVMNetInstalled() bool {
 	if runtime.GOOS != "darwin" {
 		return false
 	}
-	_, err := os.Stat(viper.GetString("socket-vmnet-path"))
+	return SocketVMNetPath() != "" && SocketVMNetClientPath() != ""
+}
+
+// SocketVMNetPath returns the path of socket_vmnet (QEMU driver only)
+func SocketVMNetPath() string {
+	p := viper.GetString("socket-vmnet-path")
+	if p != "" {
+		return p
+	}
+	return checkSocketVMNetInstallLocations("/var/run/socket_vmnet")
+}
+
+// SocketVMNetClientPath returns the path of socket_vmnet_client (QEMU driver only)
+func SocketVMNetClientPath() string {
+	p := viper.GetString("socket-vmnet-client-path")
+	if p != "" {
+		return p
+	}
+	return checkSocketVMNetInstallLocations("/opt/socket_vmnet/bin/socket_vmnet_client")
+}
+
+// checkSocketVMNetInstallLocations accepts a relative file path
+// checks the three possible socket_vmnet install locations for existence of the file path
+// if the file path exists it returns the full path, otherwise if returns an empty string
+func checkSocketVMNetInstallLocations(path string) string {
+	// source install, arm64 brew install, amd64 brew install
+	prefixes := []string{"", "/opt/homebrew", "/usr/local"}
+	for _, prefix := range prefixes {
+		fullPath := prefix + path
+		if fileExists(fullPath) {
+			return fullPath
+		}
+	}
+	return ""
+}
+
+func fileExists(filePath string) bool {
+	_, err := os.Stat(filePath)
 	if err == nil {
 		return true
 	}
 	if !errors.Is(err, os.ErrNotExist) {
-		klog.Warningf("failed to check for socket_vmnet: %v", err)
+		klog.Warningf("failed to check for existence of %s: %v", filePath, err)
 	}
 	return false
 }

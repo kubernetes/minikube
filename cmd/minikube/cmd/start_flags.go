@@ -281,8 +281,8 @@ func initNetworkingFlags() {
 	startCmd.Flags().Int(sshSSHPort, defaultSSHPort, "SSH port (ssh driver only)")
 
 	// socket vmnet
-	startCmd.Flags().String(socketVMnetClientPath, "/opt/socket_vmnet/bin/socket_vmnet_client", "Path to the socket vmnet client binary")
-	startCmd.Flags().String(socketVMnetPath, "/var/run/socket_vmnet", "Path to socket vmnet binary")
+	startCmd.Flags().String(socketVMnetClientPath, "", "Path to the socket vmnet client binary (QEMU driver only)")
+	startCmd.Flags().String(socketVMnetPath, "", "Path to socket vmnet binary (QEMU driver only)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -571,8 +571,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
-		SocketVMnetClientPath:   viper.GetString(socketVMnetClientPath),
-		SocketVMnetPath:         viper.GetString(socketVMnetPath),
+		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
+		SocketVMnetPath:         detect.SocketVMNetPath(),
 		StaticIP:                viper.GetString(staticIP),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,

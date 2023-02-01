@@ -38,7 +38,6 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
@@ -56,30 +55,32 @@ type Driver struct {
 	EnginePort int
 	FirstQuery bool
 
-	Memory          int
-	DiskSize        int
-	CPU             int
-	Program         string
-	BIOS            bool
-	CPUType         string
-	MachineType     string
-	Firmware        string
-	Display         bool
-	DisplayType     string
-	Nographic       bool
-	VirtioDrives    bool
-	Network         string
-	PrivateNetwork  string
-	Boot2DockerURL  string
-	CaCertPath      string
-	PrivateKeyPath  string
-	DiskPath        string
-	CacheMode       string
-	IOMode          string
-	UserDataFile    string
-	CloudConfigRoot string
-	LocalPorts      string
-	MACAddress      string
+	Memory                int
+	DiskSize              int
+	CPU                   int
+	Program               string
+	BIOS                  bool
+	CPUType               string
+	MachineType           string
+	Firmware              string
+	Display               bool
+	DisplayType           string
+	Nographic             bool
+	VirtioDrives          bool
+	Network               string
+	PrivateNetwork        string
+	Boot2DockerURL        string
+	CaCertPath            string
+	PrivateKeyPath        string
+	DiskPath              string
+	CacheMode             string
+	IOMode                string
+	UserDataFile          string
+	CloudConfigRoot       string
+	LocalPorts            string
+	MACAddress            string
+	SocketVMNetPath       string
+	SocketVMNetClientPath string
 }
 
 func (d *Driver) GetMachineName() string {
@@ -447,9 +448,8 @@ func (d *Driver) Start() error {
 	// If socket network, start with socket_vmnet.
 	startProgram := d.Program
 	if d.Network == "socket_vmnet" {
-		startProgram = viper.GetString("socket-vmnet-client-path")
-		socketVMnetPath := viper.GetString("socket-vmnet-path")
-		startCmd = append([]string{socketVMnetPath, d.Program}, startCmd...)
+		startProgram = d.SocketVMNetClientPath
+		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
 	}
 
 	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
@@ -509,6 +509,8 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	if err != nil {
 		if ee, ok := err.(*exec.Error); ok && ee == exec.ErrNotFound {
 			err = fmt.Errorf("mystery error: %v", ee)
+		} else {
+			err = fmt.Errorf("%s: %v", strings.Trim(stderrStr, "\n"), err)
 		}
 	} else {
 		// also catch error messages in stderr, even if the return code looks OK
