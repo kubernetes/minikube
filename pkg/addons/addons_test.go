@@ -156,7 +156,7 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 
 	for name := range assets.Addons {
 		if assets.Addons[name].IsEnabled(cc) {
-			t.Errorf("expected dashboard to be disabled")
+			t.Errorf("expected %s to be disabled", name)
 		}
 	}
 }
