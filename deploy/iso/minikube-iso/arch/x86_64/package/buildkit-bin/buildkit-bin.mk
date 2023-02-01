@@ -4,14 +4,14 @@
 #
 ################################################################################
 
-BUILDKIT_BIN_VERSION = v0.10.3
-BUILDKIT_BIN_COMMIT = c8d25d9a103b70dc300a4fd55e7e576472284e31
+BUILDKIT_BIN_VERSION = v0.11.2
+BUILDKIT_BIN_COMMIT = 944939944ca4cc58a11ace4af714083cfcd9a3c7
 BUILDKIT_BIN_SITE = https://github.com/moby/buildkit/releases/download/$(BUILDKIT_BIN_VERSION)
 BUILDKIT_BIN_SOURCE = buildkit-$(BUILDKIT_BIN_VERSION).linux-amd64.tar.gz
 
 # https://github.com/opencontainers/runc.git
-BUILDKIT_RUNC_VERSION = v1.0.2
-BUILDKIT_RUNC_COMMIT = 52b36a2dd837e8462de8e01458bf02cf9eea47dd
+BUILDKIT_RUNC_VERSION = v1.1.4
+BUILDKIT_RUNC_COMMIT = 5fd4c4d144137e991c4acebb2146ab1483a97925
 
 define BUILDKIT_BIN_USERS
 	- -1 buildkit -1 - - - - -
