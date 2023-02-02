@@ -77,13 +77,13 @@ var logsCmd = &cobra.Command{
 				exit.Error(reason.Usage, "Failed to create file", err)
 			}
 		}
-                if lastStartOnly {
-                        err := logs.OutputLastStart()
-                        if err != nil {
-                                klog.Errorf("failed to output last start logs: %V", err)
-                        }
-                        return
-                }
+		if lastStartOnly {
+			err := logs.OutputLastStart()
+			if err != nil {
+				klog.Errorf("failed to output last start logs: %V", err)
+			}
+			return
+		}
 		if auditLogs {
 			err := logs.OutputAudit(numberOfLines)
 			if err != nil {
