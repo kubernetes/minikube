@@ -290,7 +290,7 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cl
 }
 
 // enabledAddonPods returns the pod names for enabled addons
-// this does not currently include all addons, mostly just addons that we occasionaly get users reporting issues with
+// this does not currently include all addons, mostly just addons that we occasionally get users reporting issues with
 func enabledAddonPods(cfg config.ClusterConfig) []string {
 	addonPodMap := map[string]string{
 		"dashboard":           "kubernetes-dashboard",
