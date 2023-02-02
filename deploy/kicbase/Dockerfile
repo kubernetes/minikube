@@ -243,8 +243,6 @@ RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/*
-# tell systemd that it is in docker (it will check for the container env)
-# https://systemd.io/CONTAINER_INTERFACE/
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 # squash
 FROM scratch
