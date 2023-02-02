@@ -77,6 +77,13 @@ var logsCmd = &cobra.Command{
 				exit.Error(reason.Usage, "Failed to create file", err)
 			}
 		}
+                if lastStartOnly {
+                        err := logs.OutputLastStart()
+                        if err != nil {
+                                klog.Errorf("failed to output last start logs: %V", err)
+                        }
+                        return
+                }
 		if auditLogs {
 			err := logs.OutputAudit(numberOfLines)
 			if err != nil {
@@ -112,12 +119,6 @@ var logsCmd = &cobra.Command{
 			problems := logs.FindProblems(cr, bs, *co.Config, co.CP.Runner)
 			logs.OutputProblems(problems, numberOfProblems, logOutput)
 			return
-		}
-		if lastStartOnly {
-			err := logs.OutputLastStart()
-			if err != nil {
-				klog.Errorf("failed to output last start logs: %V", err)
-			}
 		}
 		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
 		if err != nil {
