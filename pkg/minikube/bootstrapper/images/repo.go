@@ -21,7 +21,7 @@ import (
 )
 
 // OldDefaultKubernetesRepo is the old default Kubernetes repository
-const OldDefaultKubernetesRepo = "k8s.gcr.io"
+const OldDefaultKubernetesRepo = "registry.k8s.io"
 
 // NewDefaultKubernetesRepo is the new default Kubernetes repository
 const NewDefaultKubernetesRepo = "registry.k8s.io"

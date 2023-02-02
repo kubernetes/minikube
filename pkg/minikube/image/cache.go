@@ -61,8 +61,8 @@ func DeleteFromCacheDir(images []string) error {
 // SaveToDir will cache images on the host
 //
 // The cache directory currently caches images using the imagename_tag
-// For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
-// stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
+// For example, registry.k8s.io/kube-addon-manager:v6.5 would be
+// stored at $CACHE_DIR/registry.k8s.io/kube-addon-manager_v6.5
 func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 	var g errgroup.Group
 	for _, image := range images {
