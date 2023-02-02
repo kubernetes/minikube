@@ -37,7 +37,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20221019 as kicbase
+FROM ubuntu:focal-20221019 as build
 
 ARG BUILDKIT_VERSION="v0.11.2"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -107,15 +107,6 @@ RUN echo "Ensuring scripts are executable ..." \
     && systemctl disable udev.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
-
-# tell systemd that it is in docker (it will check for the container env)
-# https://systemd.io/CONTAINER_INTERFACE/
-ENV container docker
-# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
-# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
-STOPSIGNAL SIGRTMIN+3
-# NOTE: this is *only* for documentation, the entrypoint is overridden later
-ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
@@ -235,7 +226,6 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 # https://github.com/kubernetes/minikube/issues/10520
 RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
 
-EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker
 RUN adduser docker sudo
@@ -253,4 +243,18 @@ RUN rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/*
+# tell systemd that it is in docker (it will check for the container env)
+# https://systemd.io/CONTAINER_INTERFACE/
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+# squash
+FROM scratch
+COPY --from=build / /
+EXPOSE 22
+# tell systemd that it is in docker (it will check for the container env)
+# https://systemd.io/CONTAINER_INTERFACE/
+ENV container docker
+# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
+# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
+STOPSIGNAL SIGRTMIN+3
+# NOTE: this is *only* for documentation, the entrypoint is overridden later
+ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
