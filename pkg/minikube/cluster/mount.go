@@ -19,13 +19,20 @@ package cluster
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -73,7 +80,7 @@ func (m *MountError) Error() string {
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
-func Mount(r mountRunner, source string, target string, c *MountConfig) error {
+func Mount(r mountRunner, source string, target string, c *MountConfig, pid int) error {
 	if err := Unmount(r, target); err != nil {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
 	}
@@ -88,6 +95,11 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 			return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
 		}
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
+	}
+
+	profile := viper.GetString("profile")
+	if err := lock.AppendToFile(filepath.Join(localpath.Profile(profile), constants.MountProcessFileName), []byte(fmt.Sprintf("%s ", strconv.Itoa(pid))), 0o644); err != nil {
+		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
 
 	klog.Infof("mount successful: %q", rr.Output())

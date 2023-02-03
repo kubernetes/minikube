@@ -202,14 +202,16 @@ var mountCmd = &cobra.Command{
 		out.Infof("Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
 		var wg sync.WaitGroup
+		pid := make(chan int)
 		if cfg.Type == nineP {
 			wg.Add(1)
-			go func() {
+			go func(pid chan int) {
+				pid <- os.Getpid()
 				out.Styled(style.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.Step(style.Stopped, "Userspace file server is shutdown")
 				wg.Done()
-			}()
+			}(pid)
 		}
 
 		// Unmount if Ctrl-C or kill request is received.
@@ -226,7 +228,7 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, <-pid)
 		if err != nil {
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)

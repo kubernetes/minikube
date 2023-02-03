@@ -608,42 +608,65 @@ func killProcess(path string) error {
 	}
 
 	klog.Infof("Found %s ...", pidPath)
-	out, err := os.ReadFile(pidPath)
+	cnt, err := os.ReadFile(pidPath)
 	if err != nil {
 		return errors.Wrap(err, "ReadFile")
 	}
-	klog.Infof("pidfile contents: %s", out)
-	pid, err := strconv.Atoi(string(out))
-	if err != nil {
-		return errors.Wrap(err, "error parsing pid")
-	}
-	// os.FindProcess does not check if pid is running :(
-	entry, err := ps.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "ps.FindProcess")
-	}
-	if entry == nil {
-		klog.Infof("Stale pid: %d", pid)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing stale pid")
+
+	klog.Infof("pidfile contents: %s", cnt)
+
+	var errs []error
+	ppp := strings.Fields(string(cnt))
+	for _, pp := range ppp {
+		pid, err := strconv.Atoi(pp)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, fmt.Sprintf("error parsing pid for %s", pp)))
+			continue
 		}
-		return nil
+
+		// os.FindProcess does not check if pid is running :(
+		entry, err := ps.FindProcess(pid)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid)))
+			continue
+		}
+		if entry == nil {
+			klog.Infof("Stale pid: %d", pid)
+			errs = append(errs, errors.Wrap(err, fmt.Sprintf("removing stale pid: %d", pid)))
+			continue
+		}
+
+		// We found a process, but it still may not be ours.
+		klog.Infof("Found process %d: %s", pid, entry.Executable())
+		proc, err := os.FindProcess(pid)
+		if err != nil {
+			errs = append(errs, errors.Wrap(err, fmt.Sprintf("os.FindProcess: %d", pid)))
+			continue
+		}
+
+		klog.Infof("Killing pid %d ...", pid)
+		if err := proc.Kill(); err != nil {
+			klog.Infof("Kill failed with %v - removing probably stale pid...", err)
+			errs = append(errs, errors.Wrap(err, fmt.Sprintf("Removing likely stale unkillable pid: %d", pid)))
+			continue
+		}
+
 	}
 
-	// We found a process, but it still may not be ours.
-	klog.Infof("Found process %d: %s", pid, entry.Executable())
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "os.FindProcess")
+	err = nil
+	if len(errs) == 1 {
+		return err
+	} else if len(errs) != 0 {
+		out.Step(style.Failure, "Ecountered multiple errors:")
+		for _, e := range errs {
+			out.Err("%v\n", e)
+		}
+		err = errors.New("multiple errors encountered while closing mount processes")
 	}
 
-	klog.Infof("Killing pid %d ...", pid)
-	if err := proc.Kill(); err != nil {
-		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing likely stale unkillable pid")
-		}
-		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+	if err := os.Remove(pidPath); err != nil {
+		return errors.Wrap(err, "While closing mount-pids file")
 	}
-	return nil
+
+	return err
 }
