@@ -80,7 +80,7 @@ var logsCmd = &cobra.Command{
 		if lastStartOnly {
 			err := logs.OutputLastStart()
 			if err != nil {
-				klog.Errorf("failed to output last start logs: %V", err)
+				klog.Errorf("failed to output last start logs: %v", err)
 			}
 			return
 		}
