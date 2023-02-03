@@ -395,10 +395,6 @@ func (d *Driver) Start() error {
 		// On Linux, enable the Kernel Virtual Machine accelerator.
 		startCmd = append(startCmd,
 			"-accel", "kvm")
-		//} else if runtime.GOOS == "windows" {
-		//	// On Windows, enable the WHPX (Hyper-V) accelerator.
-		//	startCmd = append(startCmd,
-		//		"-accel", "whpx")
 	}
 
 	startCmd = append(startCmd,
