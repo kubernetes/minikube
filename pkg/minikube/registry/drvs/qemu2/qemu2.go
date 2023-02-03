@@ -70,6 +70,9 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	if customPath != "" {
 		return customPath, nil
 	}
+	if runtime.GOOS == "windows" {
+		return "C:\\Program Files\\qemu\\share\\edk2-x86_64-code.fd", nil
+	}
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
