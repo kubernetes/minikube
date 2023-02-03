@@ -159,5 +159,5 @@ func init() {
 	logsCmd.Flags().StringVar(&nodeName, "node", "", "The node to get logs from. Defaults to the primary control plane.")
 	logsCmd.Flags().StringVar(&fileOutput, "file", "", "If present, writes to the provided file instead of stdout.")
 	logsCmd.Flags().BoolVar(&auditLogs, "audit", false, "Show only the audit logs")
-	logsCmd.Flags().BoolVar(&lastStartOnly, "last-start-only", false, "Show logs from last start.")
+	logsCmd.Flags().BoolVar(&lastStartOnly, "last-start-only", false, "Show only the last start logs.")
 }
