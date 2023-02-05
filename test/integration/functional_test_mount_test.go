@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	psutil "github.com/shirou/gopsutil/v3/process"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -279,5 +280,83 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if !match {
 			t.Fatalf("failed to find bind address with port 46464. Mount command out: \n%v", mountText)
 		}
+	})
+
+	t.Run("clean-mechanism", func(t *testing.T) {
+		tempDir := t.TempDir()
+
+		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
+
+		inNodeMounts := []string{"/mount1", "/mount2", "/mount3"}
+
+		var mntProcs []*StartSession
+		for _, guestMount := range inNodeMounts {
+			args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
+			mntProc, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Fatalf("%v failed: %v", args, err)
+			}
+
+			mntProcs = append(mntProcs, mntProc)
+
+		}
+
+		defer func() {
+			cancel()
+			if *cleanup {
+				os.RemoveAll(tempDir)
+			}
+		}()
+
+		// are the mounts alive yet..?
+		checkMount := func() error {
+			for _, mnt := range inNodeMounts {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T", mnt))
+				if err != nil {
+					// if something weird has happened from previous tests..
+					// this could at least spare us some waiting
+					if strings.Contains(rr.Stdout.String(), fmt.Sprintf("Profile \"%s\" not found.", profile)) {
+						t.Fatalf("somehow the profile got cancelled; failing....")
+					}
+					return err
+				}
+			}
+			return nil
+		}
+		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
+			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
+			if runtime.GOOS == "darwin" {
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+			}
+			t.Fatalf("mount was not ready in time: %v", err)
+		}
+
+		checkProcs := func() {
+			procs, err := psutil.Processes()
+			if err != nil {
+				t.Fatalf("failed gathering processes: %v", err)
+			}
+
+			for _, p := range procs {
+				cmdline, err := p.Cmdline()
+				if err != nil {
+					t.Fatalf("failed reading process cmdline: %v", err)
+				}
+
+				for _, mnt := range inNodeMounts {
+					if strings.Contains(cmdline, fmt.Sprintf("-p\x20%s\x20%s:%s", profile, tempDir, mnt)) {
+						t.Fatalf("Found active mount processes")
+					}
+				}
+			}
+		}
+
+		// exec the mount killer
+		_, err := Run(t, exec.Command(Target(), "mount", "-p", profile, "--kill=true"))
+		if err != nil {
+			t.Fatalf("failed while trying to kill mounts")
+		}
+
+		checkProcs()
 	})
 }
