@@ -46,6 +46,10 @@ const (
 )
 
 // validateMountCmd verifies the minikube mount command works properly
+// for the platforms that support it, we're testing:
+// - a generic 9p mount
+// - a 9p mount on a specific port
+// - cleaning-mechanism for profile-specific mounts
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
