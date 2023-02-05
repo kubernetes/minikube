@@ -302,6 +302,14 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 
 		defer func() {
+			// Still trying to stop mount processes that could otherwise
+			// (if something weird happens...) leave the test run hanging
+			// The worst thing that could happen is that we try to kill
+			// something that was aleardy killed...
+			for _, mp := range mntProcs {
+				mp.Stop(t)
+			}
+
 			cancel()
 			if *cleanup {
 				os.RemoveAll(tempDir)
