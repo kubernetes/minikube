@@ -653,15 +653,14 @@ func killProcess(path string) error {
 
 	}
 
-	err = nil
 	if len(errs) == 1 {
-		return err
+		return errs[0]
 	} else if len(errs) != 0 {
 		out.Step(style.Failure, "Ecountered multiple errors:")
 		for _, e := range errs {
 			out.Err("%v\n", e)
 		}
-		err = errors.New("multiple errors encountered while closing mount processes")
+		return errors.New("multiple errors encountered while closing mount processes")
 	}
 
 	if err := os.Remove(pidPath); err != nil {
