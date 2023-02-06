@@ -133,7 +133,9 @@ func main() {
 // k8sVersions returns Kubernetes versions.
 func k8sVersions(ctx context.Context, owner, repo string) (stable, latest, latestMM, latestP0 string, err error) {
 	// get Kubernetes versions from GitHub Releases
-	stable, latest, _, err = update.GHReleases(ctx, owner, repo)
+	stableRls, latestRls, _, err := update.GHReleases(ctx, owner, repo)
+	stable = stableRls.Tag
+	latest = latestRls.Tag
 	if err != nil || !semver.IsValid(stable) || !semver.IsValid(latest) {
 		return "", "", "", "", err
 	}
