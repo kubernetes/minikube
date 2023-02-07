@@ -69,11 +69,11 @@ func main() {
 }
 
 // gotestsumVersion returns gotestsum stable version in semver format.
-func gotestsumVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+func gotestsumVersion(ctx context.Context, owner, repo string) (string, error) {
 	// get gotestsum version from GitHub Releases
-	stable, _, _, err = update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable) {
+	stable, _, _, err := update.GHReleases(ctx, owner, repo)
+	if err != nil || !semver.IsValid(stable.Tag) {
 		return "", err
 	}
-	return stable, nil
+	return stable.Tag, nil
 }

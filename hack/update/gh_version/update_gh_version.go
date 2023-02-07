@@ -64,11 +64,11 @@ func main() {
 }
 
 // ghVersion returns stable version in semver format.
-func ghVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+func ghVersion(ctx context.Context, owner, repo string) (string, error) {
 	// get gh version from GitHub Releases
-	stable, _, _, err = update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable) {
+	stable, _, _, err := update.GHReleases(ctx, owner, repo)
+	if err != nil || !semver.IsValid(stable.Tag) {
 		return "", err
 	}
-	return strings.TrimPrefix(stable, "v"), nil
+	return strings.TrimPrefix(stable.Tag, "v"), nil
 }

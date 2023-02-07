@@ -63,11 +63,11 @@ func main() {
 }
 
 // hugoVersion returns stable version in semver format.
-func hugoVersion(ctx context.Context, owner, repo string) (stable string, err error) {
+func hugoVersion(ctx context.Context, owner, repo string) (string, error) {
 	// get Hugo version from GitHub Releases
-	stable, _, _, err = update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable) {
+	stable, _, _, err := update.GHReleases(ctx, owner, repo)
+	if err != nil || !semver.IsValid(stable.Tag) {
 		return "", err
 	}
-	return stable, nil
+	return stable.Tag, nil
 }
