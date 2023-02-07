@@ -56,9 +56,9 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/otel v1.12.0
+	go.opentelemetry.io/otel v1.13.0
 	go.opentelemetry.io/otel/sdk v1.12.0
-	go.opentelemetry.io/otel/trace v1.12.0
+	go.opentelemetry.io/otel/trace v1.13.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.5.0
 	golang.org/x/exp v0.0.0-20220909182711-5c715a9e8561
