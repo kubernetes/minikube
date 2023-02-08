@@ -221,7 +221,7 @@ func OutputAudit(lines int) error {
 }
 
 // outputLastStart outputs the last start logs.
-func outputLastStart() error {
+func OutputLastStart() error {
 	out.Styled(style.Empty, "")
 	out.Styled(style.Empty, "==> Last Start <==")
 	fp := localpath.LastStartLog()
@@ -256,7 +256,7 @@ func OutputOffline(lines int, logOutput *os.File) {
 	if err := OutputAudit(lines); err != nil {
 		klog.Errorf("failed to output audit logs: %v", err)
 	}
-	if err := outputLastStart(); err != nil {
+	if err := OutputLastStart(); err != nil {
 		klog.Errorf("failed to output last start logs: %v", err)
 	}
 
