@@ -43,7 +43,8 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-// AppendToFile
+// AppendToFile appends DATA bytes to the specified FILENAME in a mutually exclusive way.
+// The file is created if it does not exist, using the specified PERM (before umask)
 func AppendToFile(filename string, data []byte, perm os.FileMode) error {
 	spec := PathMutexSpec(filename)
 	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
