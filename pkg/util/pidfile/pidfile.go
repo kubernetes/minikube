@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 func GetPids(path string) ([]int, error) {
