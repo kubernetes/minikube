@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -52,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util/pidfile"
 )
 
 var (
@@ -584,7 +584,8 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 	}
 }
 
-// killMountProcess kills the mount process, if it is running
+// killMountProcess looks for the legacy path and for profile path for a pidfile,
+// it then tries to kill all the pids listed in the pidfile(one or more)
 func killMountProcess() error {
 	profile := viper.GetString("profile")
 	paths := []string{
@@ -601,61 +602,38 @@ func killMountProcess() error {
 	return nil
 }
 
+// killProcess takes a path to look for a pidfile(space-separated),
+// it reads the file and converts it to a bunch of pid ints,
+// then it tries to kill each one of them.
+// If no errors were ecnountered, it cleans the pidfile
 func killProcess(path string) error {
 	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 		return nil
 	}
-
 	klog.Infof("Found %s ...", pidPath)
-	cnt, err := os.ReadFile(pidPath)
+
+	ppp, err := pidfile.GetPids(pidPath)
 	if err != nil {
-		return errors.Wrap(err, "ReadFile")
+		return err
 	}
 
-	klog.Infof("pidfile contents: %s", cnt)
-
+	// we're giving a change to each pid, to be killed
 	var errs []error
-	ppp := strings.Fields(string(cnt))
 	for _, pp := range ppp {
-		pid, err := strconv.Atoi(pp)
+		err := tryKillOne(pp)
 		if err != nil {
-			errs = append(errs, errors.Wrap(err, fmt.Sprintf("error parsing pid for %s", pp)))
-			continue
-		}
-
-		// os.FindProcess does not check if pid is running :(
-		entry, err := ps.FindProcess(pid)
-		if err != nil {
-			errs = append(errs, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid)))
-			continue
-		}
-		if entry == nil {
-			klog.Infof("Stale pid: %d", pid)
-			errs = append(errs, errors.Wrap(err, fmt.Sprintf("removing stale pid: %d", pid)))
-			continue
-		}
-
-		// We found a process, but it still may not be ours.
-		klog.Infof("Found process %d: %s", pid, entry.Executable())
-		proc, err := os.FindProcess(pid)
-		if err != nil {
-			errs = append(errs, errors.Wrap(err, fmt.Sprintf("os.FindProcess: %d", pid)))
-			continue
-		}
-
-		klog.Infof("Killing pid %d ...", pid)
-		if err := proc.Kill(); err != nil {
-			klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-			errs = append(errs, errors.Wrap(err, fmt.Sprintf("Removing likely stale unkillable pid: %d", pid)))
-			continue
+			errs = append(errs, err)
 		}
 
 	}
 
 	if len(errs) == 1 {
+		// if we've encountered only one error, we're returning it:
 		return errs[0]
 	} else if len(errs) != 0 {
+		// if multiple errors were encountered, we're outputting them
+		// and returning a new multiple-errors error:
 		out.Step(style.Failure, "Ecountered multiple errors:")
 		for _, e := range errs {
 			out.Err("%v\n", e)
@@ -663,9 +641,37 @@ func killProcess(path string) error {
 		return errors.New("multiple errors encountered while closing mount processes")
 	}
 
+	// if no errors were encoutered, it is safe to clean out the pidFile
 	if err := os.Remove(pidPath); err != nil {
 		return errors.Wrap(err, "While closing mount-pids file")
 	}
 
 	return err
+}
+
+// tryKillOne takes a PID as argument and tries to SIGKILL it
+func tryKillOne(pid int) error {
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
+	}
+	if entry == nil {
+		klog.Infof("Stale pid: %d", pid)
+		return errors.Wrap(err, fmt.Sprintf("removing stale pid: %d", pid))
+	}
+
+	// We found a process, but it still may not be ours.
+	klog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("os.FindProcess: %d", pid))
+	}
+
+	klog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		return errors.Wrap(err, fmt.Sprintf("Removing likely stale unkillable pid: %d", pid))
+	}
+
+	return nil
 }
