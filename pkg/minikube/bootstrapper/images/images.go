@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	// builds a docker v2 repository API call in the format https://k8s.gcr.io/v2/coredns/coredns/tags/list
+	// builds a docker v2 repository API call in the format https://registry.k8s.io/v2/coredns/coredns/tags/list
 	tagURLTemplate = "https://%s/v2/%s/tags/list"
 )
 
@@ -70,7 +70,7 @@ func componentImage(name string, v semver.Version, mirror string) string {
 	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror, v), name), v)
 }
 
-// fixes 13136 by getting the latest image version from the k8s.gcr.io repository instead of hardcoded
+// fixes 13136 by getting the latest image version from the registry.k8s.io repository instead of hardcoded
 func findLatestTagFromRepository(url string, lastKnownGood string) string {
 	client := &http.Client{}
 	errorMsg := fmt.Sprintf("Failed to get latest image version for %s, reverting to version %s.", url, lastKnownGood)

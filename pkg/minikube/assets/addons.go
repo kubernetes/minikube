@@ -236,8 +236,8 @@ var Addons = map[string]*Addon{
 		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
 		"Kibana":               "kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f",
 	}, map[string]string{
-		"Elasticsearch":        "k8s.gcr.io",
-		"FluentdElasticsearch": "k8s.gcr.io",
+		"Elasticsearch":        "registry.k8s.io",
+		"FluentdElasticsearch": "registry.k8s.io",
 		"Kibana":               "docker.elastic.co",
 		"Alpine":               "docker.io",
 	}),
@@ -436,8 +436,8 @@ var Addons = map[string]*Addon{
 		"NvidiaDriverInstaller": "minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01",
 		"Pause":                 "pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e",
 	}, map[string]string{
-		"NvidiaDriverInstaller": "k8s.gcr.io",
-		"Pause":                 "k8s.gcr.io",
+		"NvidiaDriverInstaller": "registry.k8s.io",
+		"Pause":                 "registry.k8s.io",
 	}),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaGpuDevicePluginAssets,
@@ -448,7 +448,7 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-gpu-device-plugin", "3rd party (Nvidia)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
-		"NvidiaDevicePlugin": "k8s.gcr.io",
+		"NvidiaDevicePlugin": "registry.k8s.io",
 	}),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.LogviewerAssets,
@@ -581,7 +581,7 @@ var Addons = map[string]*Addon{
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.13@sha256:08a49cb7a588d81723b7e02c16082c75418b6e0a54cf2e44668bd77f79a41a40",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
-		"KubeWebhookCertgen": "k8s.gcr.io",
+		"KubeWebhookCertgen": "registry.k8s.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
@@ -619,7 +619,7 @@ var Addons = map[string]*Addon{
 	}, false, "volumesnapshots", "Kubernetes", "", "https://minikube.sigs.k8s.io/docs/tutorials/volume_snapshots_and_csi/", map[string]string{
 		"SnapshotController": "sig-storage/snapshot-controller:v4.0.0@sha256:00fcc441ea9f72899c25eed61d602272a2a58c5f0014332bdcb5ac24acef08e4",
 	}, map[string]string{
-		"SnapshotController": "k8s.gcr.io",
+		"SnapshotController": "registry.k8s.io",
 	}),
 	"csi-hostpath-driver": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CsiHostpathDriverAssets,
@@ -698,15 +698,15 @@ var Addons = map[string]*Addon{
 		"Snapshotter":           "sig-storage/csi-snapshotter:v4.0.0@sha256:51f2dfde5bccac7854b3704689506aeecfb793328427b91115ba253a93e60782",
 		"Provisioner":           "sig-storage/csi-provisioner:v2.1.0@sha256:20c828075d1e36f679d6a91e905b0927141eef5e15be0c9a1ca4a6a0ed9313d2",
 	}, map[string]string{
-		"Attacher":              "k8s.gcr.io",
-		"HostMonitorAgent":      "k8s.gcr.io",
-		"HostMonitorController": "k8s.gcr.io",
-		"NodeDriverRegistrar":   "k8s.gcr.io",
-		"HostPathPlugin":        "k8s.gcr.io",
-		"LivenessProbe":         "k8s.gcr.io",
-		"Resizer":               "k8s.gcr.io",
-		"Snapshotter":           "k8s.gcr.io",
-		"Provisioner":           "k8s.gcr.io",
+		"Attacher":              "registry.k8s.io",
+		"HostMonitorAgent":      "registry.k8s.io",
+		"HostMonitorController": "registry.k8s.io",
+		"NodeDriverRegistrar":   "registry.k8s.io",
+		"HostPathPlugin":        "registry.k8s.io",
+		"LivenessProbe":         "registry.k8s.io",
+		"Resizer":               "registry.k8s.io",
+		"Snapshotter":           "registry.k8s.io",
+		"Provisioner":           "registry.k8s.io",
 	}),
 	"portainer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.PortainerAssets,
@@ -951,8 +951,8 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		// tl;dr If the user specified a custom image remove the default registry
 		// Without the line below, if you try to overwrite an image the default registry is still used in the templating
 		// Example - image name: MetricsScraper, default registry: docker.io, default image: kubernetesui/metrics-scraper
-		// Passed on addon enable: --images=MetricsScraper=k8s.gcr.io/echoserver:1.4
-		// Without this line the resulting image would be docker.io/k8s.gcr.io/echoserver:1.4
+		// Passed on addon enable: --images=MetricsScraper=registry.k8s.io/echoserver:1.4
+		// Without this line the resulting image would be docker.io/registry.k8s.io/echoserver:1.4
 		if _, ok := cc.CustomAddonImages[name]; ok {
 			opts.Registries[name] = ""
 		}

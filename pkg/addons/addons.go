@@ -381,7 +381,7 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 			}
 			addon.Registries = map[string]string{
-				"IngressController": "k8s.gcr.io",
+				"IngressController": "registry.k8s.io",
 			}
 			return nil
 		}

@@ -276,7 +276,7 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format, 
 
 func expectedImageFormat(format string) []string {
 	return []string{
-		fmt.Sprintf(format, "k8s.gcr.io/pause"),
+		fmt.Sprintf(format, "registry.k8s.io/pause"),
 		fmt.Sprintf(format, "registry.k8s.io/kube-apiserver"),
 	}
 }
@@ -1038,7 +1038,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// docs: Run `minikube cache add` and make sure we can add a remote image to the cache
 		t.Run("add_remote", func(t *testing.T) {
-			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:3.3", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"registry.k8s.io/pause:3.1", "registry.k8s.io/pause:3.3", "registry.k8s.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
 					t.Errorf("failed to 'cache add' remote image %q. args %q err %v", img, rr.Command(), err)
@@ -1091,10 +1091,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		// docs: Run `minikube cache delete` and make sure we can delete an image from the cache
-		t.Run("delete_k8s.gcr.io/pause:3.3", func(t *testing.T) {
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "k8s.gcr.io/pause:3.3"))
+		t.Run("delete_registry.k8s.io/pause:3.3", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "registry.k8s.io/pause:3.3"))
 			if err != nil {
-				t.Errorf("failed to delete image k8s.gcr.io/pause:3.3 from cache. args %q: %v", rr.Command(), err)
+				t.Errorf("failed to delete image registry.k8s.io/pause:3.3 from cache. args %q: %v", rr.Command(), err)
 			}
 		})
 
@@ -1104,11 +1104,11 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err != nil {
 				t.Errorf("failed to do cache list. args %q: %v", rr.Command(), err)
 			}
-			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
-				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got: ***%s***", rr.Output())
+			if !strings.Contains(rr.Output(), "registry.k8s.io/pause") {
+				t.Errorf("expected 'cache list' output to include 'registry.k8s.io/pause' but got: ***%s***", rr.Output())
 			}
-			if strings.Contains(rr.Output(), "k8s.gcr.io/pause:3.3") {
-				t.Errorf("expected 'cache list' output not to include k8s.gcr.io/pause:3.3 but got: ***%s***", rr.Output())
+			if strings.Contains(rr.Output(), "registry.k8s.io/pause:3.3") {
+				t.Errorf("expected 'cache list' output not to include registry.k8s.io/pause:3.3 but got: ***%s***", rr.Output())
 			}
 		})
 
@@ -1126,7 +1126,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// docs: Delete an image from minikube node and run `minikube cache reload` to make sure the image is brought back correctly
 		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
-			img := "k8s.gcr.io/pause:latest"
+			img := "registry.k8s.io/pause:latest"
 			// deleting image inside minikube node manually
 
 			var binary string
@@ -1161,7 +1161,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		// delete will clean up the cached images since they are global and all other tests will load it for no reason
 		t.Run("delete", func(t *testing.T) {
-			for _, img := range []string{"k8s.gcr.io/pause:3.1", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"registry.k8s.io/pause:3.1", "registry.k8s.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", img))
 				if err != nil {
 					t.Errorf("failed to delete %s from cache. args %q: %v", img, rr.Command(), err)
@@ -1425,12 +1425,12 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 	var rr *RunResult
 	var err error
-	// docs: Create a new `k8s.gcr.io/echoserver` deployment
-	// k8s.gcr.io/echoserver is not multi-arch
+	// docs: Create a new `registry.k8s.io/echoserver` deployment
+	// registry.k8s.io/echoserver is not multi-arch
 	if arm64Platform() {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=registry.k8s.io/echoserver-arm:1.8"))
 	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=registry.k8s.io/echoserver:1.8"))
 	}
 
 	if err != nil {
@@ -1551,12 +1551,12 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 
 	var rr *RunResult
 	var err error
-	// docs: Create a new `k8s.gcr.io/echoserver` deployment
-	// k8s.gcr.io/echoserver is not multi-arch
+	// docs: Create a new `registry.k8s.io/echoserver` deployment
+	// registry.k8s.io/echoserver is not multi-arch
 	if arm64Platform() {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=registry.k8s.io/echoserver-arm:1.8"))
 	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=k8s.gcr.io/echoserver:1.8"))
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=registry.k8s.io/echoserver:1.8"))
 	}
 
 	if err != nil {

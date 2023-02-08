@@ -294,7 +294,7 @@ Steps:
 asserts basic "service" command functionality
 
 Steps:
-- Create a new `k8s.gcr.io/echoserver` deployment
+- Create a new `registry.k8s.io/echoserver` deployment
 - Run `minikube service list` to make sure the newly created service is correctly listed in the output
 - Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 - Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
@@ -303,7 +303,7 @@ Steps:
 #### validateServiceCmdConnect
 
 Steps:
-- Create a new `k8s.gcr.io/echoserver` deployment
+- Create a new `registry.k8s.io/echoserver` deployment
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 - Make sure we can hit the endpoint URL with an HTTP GET request
 
