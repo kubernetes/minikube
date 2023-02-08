@@ -286,7 +286,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		}
 	})
 
-	t.Run("clean-mechanism", func(t *testing.T) {
+	t.Run("verify-cleanup", func(t *testing.T) {
 		tempDir := t.TempDir()
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
