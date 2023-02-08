@@ -258,6 +258,7 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 		klog.Warningf("docker info: %v", err)
 		return ds, errors.Wrap(err, "docker system info")
 	}
+	klog.Infof("%s\n", rawJSON)
 	if err := json.Unmarshal([]byte(strings.TrimSpace(rawJSON)), &ds); err != nil {
 		klog.Warningf("unmarshal docker info: %v", err)
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
