@@ -19,7 +19,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine"
@@ -219,4 +221,26 @@ func TestDeleteAllProfiles(t *testing.T) {
 	}
 
 	viper.Set(config.ProfileName, "")
+}
+
+// TestTryKillOne spawns a go child process that waits to be SIGKILLed,
+// then tries to execute the tryKillOne function on it;
+// if after tryKillOne the process still exists, we consider it a failure
+func TestTryKillOne(t *testing.T) {
+	dontkillmeProc := exec.Command("go", "run", "tools/pleasedontkillme/main.go")
+	err := dontkillmeProc.Start()
+	if err != nil {
+		t.Fatalf("while execing child process")
+	}
+	pid := dontkillmeProc.Process.Pid
+
+	err = tryKillOne(pid)
+	if err != nil {
+		t.Fatalf("while trying to kill child proc: %d", pid)
+	}
+
+	// waiting for process to exit
+	if err := dontkillmeProc.Wait(); !strings.Contains(err.Error(), "killed") {
+		t.Fatalf("unable to kill process")
+	}
 }
