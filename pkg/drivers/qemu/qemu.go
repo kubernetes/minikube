@@ -89,7 +89,7 @@ func (d *Driver) GetMachineName() string {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	if network.IsBuiltin(d.Network) {
+	if network.IsBuiltinQEMU(d.Network) {
 		return "localhost", nil
 	}
 	return d.IPAddress, nil
@@ -146,7 +146,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	if network.IsBuiltin(d.Network) {
+	if network.IsBuiltinQEMU(d.Network) {
 		return "127.0.0.1", nil
 	}
 	return d.IPAddress, nil

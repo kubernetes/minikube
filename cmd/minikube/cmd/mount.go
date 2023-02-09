@@ -126,7 +126,7 @@ var mountCmd = &cobra.Command{
 		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.Message(reason.Usage, `'none' driver does not support 'minikube mount' command`)
 		}
-		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltin(co.Config.Network) {
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
 			msg := "minikube mount is not currently implemented with the builtin network on QEMU"
 			if runtime.GOOS == "darwin" {
 				msg += ", try starting minikube with '--network=socket_vmnet'"

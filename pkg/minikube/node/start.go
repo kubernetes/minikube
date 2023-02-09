@@ -648,7 +648,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
 
-	if driver.IsQEMU(host.Driver.DriverName()) && network.IsBuiltin(cfg.Network) {
+	if driver.IsQEMU(host.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
 			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")

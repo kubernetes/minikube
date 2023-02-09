@@ -302,7 +302,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			if err != nil {
 				exit.Message(reason.DrvPortForward, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
-		} else if driver.IsQEMU(driverName) && pkgnetwork.IsBuiltin(co.Config.Network) {
+		} else if driver.IsQEMU(driverName) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
 			port = d.(*qemu.Driver).EnginePort
 		}
 
