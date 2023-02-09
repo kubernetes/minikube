@@ -58,8 +58,8 @@ var tunnelCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			msg := "minikube tunnel is not currently implemented with the user network on QEMU"
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltin(co.Config.Network) {
+			msg := "minikube tunnel is not currently implemented with the builtin network on QEMU"
 			if runtime.GOOS == "darwin" {
 				msg += ", try starting minikube with '--network=socket_vmnet'"
 			}

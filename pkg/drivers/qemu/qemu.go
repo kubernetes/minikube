@@ -88,7 +88,7 @@ func (d *Driver) GetMachineName() string {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	if d.Network == "user" {
+	if d.Network == "builtin" {
 		return "localhost", nil
 	}
 	return d.IPAddress, nil
@@ -145,7 +145,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	if d.Network == "user" {
+	if d.Network == "builtin" {
 		return "127.0.0.1", nil
 	}
 	return d.IPAddress, nil
@@ -213,7 +213,7 @@ func (d *Driver) PreCreateCheck() error {
 func (d *Driver) Create() error {
 	var err error
 	switch d.Network {
-	case "user":
+	case "builtin":
 		minPort, maxPort, err := parsePortRange(d.LocalPorts)
 		log.Debugf("port range: %d -> %d", minPort, maxPort)
 		if err != nil {
@@ -412,7 +412,7 @@ func (d *Driver) Start() error {
 	)
 
 	switch d.Network {
-	case "user":
+	case "builtin":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
@@ -459,7 +459,7 @@ func (d *Driver) Start() error {
 	}
 
 	switch d.Network {
-	case "user":
+	case "builtin":
 		d.IPAddress = "127.0.0.1"
 	case "socket_vmnet":
 		var err error

@@ -9,7 +9,7 @@ aliases:
 
 ## Overview
 
-The `qemu` driver users QEMU (system) for VM creation.
+The `qemu` driver uses QEMU (system) for VM creation.
 
 <https://www.qemu.org/>
 
@@ -31,10 +31,10 @@ minikube start supports some qemu specific flags:
 
 ## Networking
 
-The QEMU driver has two networking options: `socket_vmnet` and `user`. `socket_vmnet` will give you full minikube networking functionality, such as the `service` and `tunnel` commands. On the other hand, the `user` network is built-in to QEMU but is not a dedicated network and therefore commands such as `service` and `tunnel` are not available. [socket_vmnet](https://github.com/lima-vm/socket_vmnet) can be installed via brew or from source (instructions below).
+The QEMU driver has two networking options: `socket_vmnet` and `builtin`. `socket_vmnet` will give you full minikube networking functionality, such as the `service` and `tunnel` commands. On the other hand, the `builtin` network is not a dedicated network and therefore commands such as `service` and `tunnel` are not available. [socket_vmnet](https://github.com/lima-vm/socket_vmnet) can be installed via brew or from source (instructions below).
 
 {{% tabs %}}
-{{% tab "socket_vmnet" %}}
+{{% tab socket_vmnet %}}
 
 ### Requirements
 
@@ -60,11 +60,11 @@ minikube start --driver qemu --network socket_vmnet
 ```
 
 {{% /tab %}}
-{{% tab "user - QEMU built-in" %}}
+{{% tab builtin %}}
 ### Usage
 
 ```shell
-minikube start --driver qemu --network user
+minikube start --driver qemu --network builtin
 ````
 {{% /tab %}}
 {{% /tabs %}}
@@ -72,7 +72,7 @@ minikube start --driver qemu --network user
 ## Known Issues
 
 {{% tabs %}}
-{{% tab "socket_vmnet" %}}
+{{% tab socket_vmnet %}}
 ##  `/var/db/dhcpd_leases` errors
 
 If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the following:
@@ -90,10 +90,10 @@ cd socket_vmnet && sudo make uninstall
 2. Reboot
 3. [Reinstall `socket_vmnet`](#requirements)
 {{% /tab %}}
-{{% tab "user" %}}
+{{% tab builtin %}}
 ## Start stuck on corp machine or with custom DNS
 
-When using the `user` network (default) the guest uses **only** the first `nameserver` entry in the hosts `/etc/resolv.conf` for DNS lookup. If your first `nameserver` entry is a corporate/internal DNS it's likely it will cause an issue. If you see the warning `❗ This VM is having trouble accessing https://registry.k8s.io` on `minikube start` you are likely being affected by this. This may prevent your cluster from starting entirely and you won't be able to pull remote images. More details can be found at: [#15021](https://github.com/kubernetes/minikube/issues/15021)
+When using the `builtin` network (default) the guest uses **only** the first `nameserver` entry in the hosts `/etc/resolv.conf` for DNS lookup. If your first `nameserver` entry is a corporate/internal DNS it's likely it will cause an issue. If you see the warning `❗ This VM is having trouble accessing https://registry.k8s.io` on `minikube start` you are likely being affected by this. This may prevent your cluster from starting entirely and you won't be able to pull remote images. More details can be found at: [#15021](https://github.com/kubernetes/minikube/issues/15021)
 
 #### Workarounds:
 

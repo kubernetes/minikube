@@ -181,9 +181,9 @@ var isSubnetTaken = func(subnet string) (bool, error) {
 	return false, nil
 }
 
-// IsUser returns if network is user.
-func IsUser(network string) bool {
-	return network == "user"
+// IsBuiltin returns if network is builtin.
+func IsBuiltin(network string) bool {
+	return network == "builtin"
 }
 
 // FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.
