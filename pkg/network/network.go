@@ -181,8 +181,11 @@ var isSubnetTaken = func(subnet string) (bool, error) {
 	return false, nil
 }
 
-// IsBuiltin returns if network is builtin.
+// IsBuiltin returns if network is builtin or the legacy value user.
 func IsBuiltin(network string) bool {
+	if network == "user" {
+		return true
+	}
 	return network == "builtin"
 }
 
