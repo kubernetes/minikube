@@ -20,12 +20,13 @@ minikube logs [flags]
 ### Options
 
 ```
-      --audit         Show only the audit logs
-      --file string   If present, writes to the provided file instead of stdout.
-  -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
-  -n, --length int    Number of lines back to go within the log (default 60)
-      --node string   The node to get logs from. Defaults to the primary control plane.
-      --problems      Show only log entries which point to known problems
+      --audit             Show only the audit logs
+      --file string       If present, writes to the provided file instead of stdout.
+  -f, --follow            Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
+      --last-start-only   Show only the last start logs.
+  -n, --length int        Number of lines back to go within the log (default 60)
+      --node string       The node to get logs from. Defaults to the primary control plane.
+      --problems          Show only log entries which point to known problems
 ```
 
 ### Options inherited from parent commands
