@@ -181,9 +181,12 @@ var isSubnetTaken = func(subnet string) (bool, error) {
 	return false, nil
 }
 
-// IsUser returns if network is user.
-func IsUser(network string) bool {
-	return network == "user"
+// IsBuiltinQEMU returns if network is builtin or the legacy value user.
+func IsBuiltinQEMU(network string) bool {
+	if network == "user" {
+		return true
+	}
+	return network == "builtin"
 }
 
 // FreeSubnet will try to find free private network beginning with startSubnet, incrementing it in steps up to number of tries.

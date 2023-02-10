@@ -9,7 +9,7 @@ aliases:
 
 ## Overview
 
-The `qemu` driver users QEMU (system) for VM creation.
+The `qemu` driver uses QEMU (system) for VM creation.
 
 <https://www.qemu.org/>
 
@@ -31,19 +31,26 @@ minikube start supports some qemu specific flags:
 
 ## Networking
 
-The QEMU driver has two networking options, `user` & `socket_vmnet`.
+The QEMU driver has two networking options: `socket_vmnet` and `builtin`. `socket_vmnet` will give you full minikube networking functionality, such as the `service` and `tunnel` commands. On the other hand, the `builtin` network is not a dedicated network and therefore commands such as `service` and `tunnel` are not available. [socket_vmnet](https://github.com/lima-vm/socket_vmnet) can be installed via brew or from source (instructions below).
 
 {{% tabs %}}
-{{% tab "socket_vmnet - needs installation" %}}
+{{% tab socket_vmnet %}}
 
 ### Requirements
 
-Requires macOS 10.15 or later and socket_vmnet.
+Requires macOS 10.15 or later and [socket_vmnet](https://github.com/lima-vm/socket_vmnet).
 
-[lima-vm/socket_vmnet](https://github.com/lima-vm/socket_vmnet) install instructions:
+### Install socket_vmnet via [brew](https://brew.sh/)
+```shell
+brew install socket_vmnet
+brew tap homebrew/services
+HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+```
+
+### Install socket_vmnet from source (requires [Go](https://go.dev/))
 ```shell
 git clone https://github.com/lima-vm/socket_vmnet.git && cd socket_vmnet
-sudo make PREFIX=/opt/socket_vmnet install
+sudo make install
 ```
 
 ### Usage
@@ -52,41 +59,48 @@ sudo make PREFIX=/opt/socket_vmnet install
 minikube start --driver qemu --network socket_vmnet
 ```
 
-The `socket_vmnet` network is a dedicated network and supports the `minikube service` and `minikube tunnel` commands.
 {{% /tab %}}
-{{% tab "user - limited functionality" %}}
-The `user` network is not a dedicated network, it doesn't support some networking commands such as `minikube service` and `minikube tunnel`, and its IP address is not reachable from the host.
+{{% tab builtin %}}
+### Usage
+
+```shell
+minikube start --driver qemu --network builtin
+````
 {{% /tab %}}
 {{% /tabs %}}
 
 ## Known Issues
 
-### 1. Start stuck with `user` network on corp machine or custom DNS
-
-When using the `user` network (default) the guest uses **only** the first `nameserver` entry in the hosts `/etc/resolv.conf` for DNS lookup. If your first `nameserver` entry is a corporate/internal DNS it's likely it will cause an issue. If you see the warning `❗ This VM is having trouble accessing https://registry.k8s.io` on `minikube start` you are likely being affected by this. This may prevent your cluster from starting entirely and you won't be able to pull remote images. More details can be found at: [#15021](https://github.com/kubernetes/minikube/issues/15021)
-
-#### Workarounds:
-
-1. If possible, reorder your `/etc/resolv.conf` to have a general `nameserver` entry first (eg. `8.8.8.8`) and reboot your machine.
-2. Use `--network=socket_vmnet`
-
-### 2. `/var/db/dhcpd_leases` errors
+{{% tabs %}}
+{{% tab socket_vmnet %}}
+##  `/var/db/dhcpd_leases` errors
 
 If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the following:
 
 1. Uninstall `socket_vmnet`:
 
 ```shell
-cd socket_vmnet
-sudo make uninstall
+# if installed via brew
+HOMEBREW=$(which brew) && sudo ${HOMEBREW_PREFIX}/bin/brew services stop socket_vmnet
+brew uninstall socket_vmnet
+
+# if installed from source
+cd socket_vmnet && sudo make uninstall
 ```
 2. Reboot
-3. Reinstall `socket_vmnet`:
+3. [Reinstall `socket_vmnet`](#requirements)
+{{% /tab %}}
+{{% tab builtin %}}
+## Start stuck on corp machine or with custom DNS
 
-```shell
-cd socket_vmnet
-sudo make install
-```
+When using the `builtin` network (default) the guest uses **only** the first `nameserver` entry in the hosts `/etc/resolv.conf` for DNS lookup. If your first `nameserver` entry is a corporate/internal DNS it's likely it will cause an issue. If you see the warning `❗ This VM is having trouble accessing https://registry.k8s.io` on `minikube start` you are likely being affected by this. This may prevent your cluster from starting entirely and you won't be able to pull remote images. More details can be found at: [#15021](https://github.com/kubernetes/minikube/issues/15021)
+
+#### Workarounds:
+
+1. If possible, reorder your `/etc/resolv.conf` to have a general `nameserver` entry first (eg. `8.8.8.8`) and reboot your machine.
+2. Use `--network=socket_vmnet`
+{{% /tab %}}
+{{% /tabs %}}
 
 [Full list of open 'qemu' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fqemu-driver)
 

@@ -46,7 +46,7 @@ func ControlPlaneEndpoint(cc *config.ClusterConfig, cp *config.Node, driverName 
 			hostname = cc.KubernetesConfig.APIServerName
 		}
 		return hostname, ips[0], port, err
-	} else if IsQEMU(driverName) && network.IsUser(cc.Network) {
+	} else if IsQEMU(driverName) && network.IsBuiltinQEMU(cc.Network) {
 		return "localhost", net.IPv4(127, 0, 0, 1), cc.APIServerPort, nil
 	}
 

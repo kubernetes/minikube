@@ -477,17 +477,19 @@ func getNetwork(driverName string) string {
 		if detect.SocketVMNetInstalled() {
 			n = "socket_vmnet"
 		} else {
-			n = "user"
+			n = "builtin"
 		}
 		out.Styled(style.Internet, "Automatically selected the {{.network}} network", out.V{"network": n})
 	case "user":
+		n = "builtin"
+	case "builtin":
 	default:
-		exit.Message(reason.Usage, "--network with QEMU must be 'user' or 'socket_vmnet'")
+		exit.Message(reason.Usage, "--network with QEMU must be 'builtin' or 'socket_vmnet'")
 	}
-	if n == "user" {
+	if n == "builtin" {
 		msg := "You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands."
 		if runtime.GOOS == "darwin" {
-			msg += "\nTo try the experimental dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking"
+			msg += "\nTo try the dedicated network see: https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking"
 		}
 		out.WarningT(msg)
 	}
