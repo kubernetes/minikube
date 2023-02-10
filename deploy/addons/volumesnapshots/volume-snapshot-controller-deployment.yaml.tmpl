@@ -18,6 +18,15 @@ spec:
   selector:
     matchLabels:
       app: snapshot-controller
+  # the snapshot controller won't be marked as ready if the v1 CRDs are unavailable
+  # in #504 the snapshot-controller will exit after around 7.5 seconds if it
+  # can't find the v1 CRDs so this value should be greater than that
+  minReadySeconds: 15
+  strategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
       labels:
@@ -30,4 +39,5 @@ spec:
           args:
             - "--v=5"
             - "--leader-election=true"
+            - "--enable-distributed-snapshotting"
           imagePullPolicy: IfNotPresent
