@@ -46,6 +46,7 @@ import (
 
 var cleanup bool
 var bindAddress string
+var lockHandle *fslock.Lock
 
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
@@ -56,6 +57,7 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		defer cleanupLock()
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
@@ -74,24 +76,8 @@ var tunnelCmd = &cobra.Command{
 				klog.Errorf("error cleaning up: %s", err)
 			}
 		}
-		tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
 
-		_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
-		if err != nil {
-			if os.IsNotExist(err) {
-				_, err = os.Create(tunnelLockPath)
-				if err != nil {
-					exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
-				}
-			} else {
-				exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
-			}
-		}
-		lockHandle := fslock.New(tunnelLockPath)
-		err = lockHandle.TryLock()
-		if err == fslock.ErrLocked {
-			exit.Error(reason.SvcTunnelStart, "another tunnel process already running", fmt.Errorf("another tunnel process already running"))
-		}
+		checkNoOtherTunnelProcess()
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
 		// We define the tunnel and minikube error free if the API server responds within a second.
@@ -134,6 +120,33 @@ var tunnelCmd = &cobra.Command{
 		}
 		<-done
 	},
+}
+
+func cleanupLock() {
+	if lockHandle != nil {
+		lockHandle.Unlock()
+	}
+}
+
+func checkNoOtherTunnelProcess() {
+	tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
+
+	_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
+	if err != nil {
+		if os.IsNotExist(err) {
+			_, err = os.Create(tunnelLockPath)
+			if err != nil {
+				exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
+			}
+		} else {
+			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
+		}
+	}
+	lockHandle = fslock.New(tunnelLockPath)
+	err = lockHandle.TryLock()
+	if err == fslock.ErrLocked {
+		exit.Error(reason.SvcTunnelStart, "another tunnel process already running", fmt.Errorf("another tunnel process already running"))
+	}
 }
 
 func outputTunnelStarted() {
