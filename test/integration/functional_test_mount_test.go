@@ -33,7 +33,6 @@ import (
 	"testing"
 	"time"
 
-	psutil "github.com/shirou/gopsutil/v3/process"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -343,22 +342,26 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 			t.Fatalf("mount was not ready in time: %v", err)
 		}
 
-		checkProcs := func() {
-			procs, err := psutil.Processes()
-			if err != nil {
-				t.Fatalf("failed gathering processes: %v", err)
-			}
-
-			for _, p := range procs {
-				cmdline, err := p.Cmdline()
-				if err != nil {
-					t.Fatalf("failed reading process cmdline: %v", err)
-				}
-
-				for _, mnt := range inNodeMounts {
-					if strings.Contains(cmdline, fmt.Sprintf("-p\x20%s\x20%s:%s", profile, tempDir, mnt)) {
-						t.Fatalf("Found active mount processes")
+		checkProcsAlive := func(end chan bool) {
+			for _, mntp := range mntProcs {
+				// Trying to wait for process end
+				// if the wait fail with ExitError we know that the process
+				// doesnt' exist anymore..
+				go func(end chan bool) {
+					err := mntp.cmd.Wait()
+					if _, ok := err.(*exec.ExitError); ok {
+						end <- true
 					}
+				}(end)
+
+				// Either we know that the mount process has ended
+				// or we fail after 1 second
+				// TODO: is there a better way? rather than waiting..
+				select {
+				case <-time.After(1 * time.Second):
+					t.Fatalf("1s TIMEOUT: Process %d is still running\n", mntp.cmd.Process.Pid)
+				case <-end:
+					continue
 				}
 			}
 		}
@@ -369,6 +372,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 			t.Fatalf("failed while trying to kill mounts")
 		}
 
-		checkProcs()
+		end := make(chan bool, 1)
+		checkProcsAlive(end)
 	})
 }
