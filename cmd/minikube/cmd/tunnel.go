@@ -18,12 +18,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 
+	"github.com/juju/fslock"
 	"github.com/spf13/cobra"
 
 	"k8s.io/klog/v2"
@@ -71,6 +73,24 @@ var tunnelCmd = &cobra.Command{
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
 				klog.Errorf("error cleaning up: %s", err)
 			}
+		}
+		tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
+
+		_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
+		if err != nil {
+			if os.IsNotExist(err) {
+				_, err = os.Create(tunnelLockPath)
+				if err != nil {
+					exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
+				}
+			} else {
+				exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
+			}
+		}
+		lockHandle := fslock.New(tunnelLockPath)
+		err = lockHandle.TryLock()
+		if err == fslock.ErrLocked {
+			exit.Error(reason.SvcTunnelStart, "another tunnel process already running", fmt.Errorf("another tunnel process already running"))
 		}
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
