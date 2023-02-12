@@ -228,7 +228,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 // if after tryKillOne the process still exists, we consider it a failure
 func TestTryKillOne(t *testing.T) {
 
-	var pleasedontkillmeSource = []byte(`
+	var waitForSig = []byte(`
 package main
 
 import (
@@ -237,8 +237,8 @@ import (
 	"syscall"
 )
 
-// This is used to unittest functions that kill processes,
-// in a cross-platform way.
+// This is used to unittest functions that send termination
+// signals to processes, in a cross-platform way.
 func main() {
 	ch := make(chan os.Signal, 1)
 	done := make(chan struct{})
@@ -256,9 +256,9 @@ func main() {
 }
 `)
 	td := t.TempDir()
-	tmpfile := filepath.Join(td, "pleasedontkillme.go")
+	tmpfile := filepath.Join(td, "waitForSig.go")
 
-	if err := os.WriteFile(tmpfile, pleasedontkillmeSource, 0o700); err != nil {
+	if err := os.WriteFile(tmpfile, waitForSig, 0o700); err != nil {
 		t.Fatalf("copying source to %s", tmpfile)
 	}
 
