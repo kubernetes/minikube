@@ -420,6 +420,8 @@ var (
 	SvcTunnelStart = Kind{ID: "SVC_TUNNEL_START", ExitCode: ExSvcError}
 	// minikube could not stop an active tunnel
 	SvcTunnelStop = Kind{ID: "SVC_TUNNEL_STOP", ExitCode: ExSvcError}
+	// another instance of tunnel already running
+	SvcTunnelAlreadyRunning = Kind{ID: "TUNNEL_ALREADY_RUNNING", ExitCode: ExSvcConflict, Style: style.Usage}
 	// minikube was unable to access the service url
 	SvcURLTimeout = Kind{ID: "SVC_URL_TIMEOUT", ExitCode: ExSvcTimeout}
 	// minikube couldn't find the specified service in the specified namespace

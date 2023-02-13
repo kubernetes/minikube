@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -61,6 +62,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 			name      string
 			validator validateFunc
 		}{
+			{"RunSecondTunnel", validateNoSecondTunnel},            // Ensure no two tunnels run simultaneously
 			{"StartTunnel", validateTunnelStart},                   // Start tunnel
 			{"WaitService", validateServiceStable},                 // Wait for service is stable
 			{"AccessDirect", validateAccessDirect},                 // Access test for loadbalancer IP
@@ -129,6 +131,49 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
 	}
 	tunnelSession = *ss
+}
+
+// validateNoSecondTunnel ensures more than 1 tunnel can NOT run simultaneously
+func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
+	checkRoutePassword(t)
+
+	exitCodeCh := make(chan int)
+	sessions := make([]*StartSession, 2)
+
+	var runTunnel = func(idx int) {
+		args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
+
+		ctx2, cancel := context.WithTimeout(ctx, Seconds(5))
+		session, err := Start(t, exec.CommandContext(ctx2, Target(), args...))
+		if err != nil {
+			t.Errorf("Failed to start tunnel for the first time")
+		}
+		sessions[idx] = session
+		defer cancel()
+
+		err = session.cmd.Wait()
+		if exErr, ok := err.(*exec.ExitError); ok {
+			exitCodeCh <- exErr.ExitCode()
+		} else {
+			exitCodeCh <- -1
+			t.Errorf("Second tunnel command failed due to a different reason: %s", err)
+		}
+	}
+
+	// One of the two processes must fail to acquire lock and die. This should be the first process to die.
+	go runTunnel(0)
+	go runTunnel(1)
+
+	exitCode := <-exitCodeCh
+
+	if exitCode != reason.SvcTunnelAlreadyRunning.ExitCode {
+		t.Errorf("Failed to due to some other reason: %d", exitCode)
+	}
+
+	for _, sess := range sessions {
+		sess.Stop(t)
+	}
+	<-exitCodeCh
 }
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP

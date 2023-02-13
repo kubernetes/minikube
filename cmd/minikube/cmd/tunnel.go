@@ -57,7 +57,6 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		defer cleanupLock()
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
@@ -78,6 +77,7 @@ var tunnelCmd = &cobra.Command{
 		}
 
 		checkNoOtherTunnelProcess()
+		defer cleanupLock()
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
 		// We define the tunnel and minikube error free if the API server responds within a second.
@@ -124,7 +124,10 @@ var tunnelCmd = &cobra.Command{
 
 func cleanupLock() {
 	if lockHandle != nil {
-		lockHandle.Unlock()
+		err := lockHandle.Unlock()
+		if err != nil {
+			out.Styled(style.Warning, fmt.Sprintf("failed to release lock during cleanup: %s", err.Error()))
+		}
 	}
 }
 
@@ -145,7 +148,7 @@ func checkNoOtherTunnelProcess() {
 	lockHandle = fslock.New(tunnelLockPath)
 	err = lockHandle.TryLock()
 	if err == fslock.ErrLocked {
-		exit.Error(reason.SvcTunnelStart, "another tunnel process already running", fmt.Errorf("another tunnel process already running"))
+		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process already running, terminate the older to start a new one")
 	}
 }
 
