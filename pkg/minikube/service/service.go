@@ -261,11 +261,6 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 		interval = 1
 	}
 
-	err := CheckService(cname, namespace, service)
-	if err != nil {
-		return nil, &SVCNotFoundError{err}
-	}
-
 	chkSVC := func() error { return CheckService(cname, namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
