@@ -31,6 +31,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware Fusion]({{<ref "vmware.md">}}) - VM
 * [QEMU]({{<ref "qemu.md">}}) - VM
+* [Podman]({{<ref "podman.md">}}) - container (experimental)
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
 ## Windows
