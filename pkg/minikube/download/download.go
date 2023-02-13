@@ -41,11 +41,17 @@ var (
 
 	aliyunMirror = "kubernetes.oss-cn-hangzhou.aliyuncs.com"
 	downloadHost = "storage.googleapis.com"
+
+	releaseHost = "dl.k8s.io"
+	releasePath = ""
 )
 
 // SetAliyunMirror set the download host for Aliyun mirror
 func SetAliyunMirror() {
 	downloadHost = aliyunMirror
+
+	releaseHost = downloadHost
+	releasePath = "/kubernetes-release"
 }
 
 // CreateDstDownloadMock is the default mock implementation of download.

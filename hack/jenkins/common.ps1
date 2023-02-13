@@ -33,7 +33,7 @@ $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
 $GoVersion = "1.20"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
-$KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
+$KubeVersion = (Invoke-WebRequest -Uri 'https://dl.k8s.io/release/stable.txt' -UseBasicParsing).Content
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/$KubeVersion/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
 # Setup the cleanup and reboot cron

@@ -76,7 +76,7 @@ RUN echo "Installing Packages ..." \
         && update-alternatives --set iptables /usr/sbin/iptables-legacy \
         && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy \
     && echo "Installing Kubectl ..." \
-        && curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" \
+        && curl -LO "https://dl.k8s.io/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
         && chmod +x ./kubectl \
         && cp kubectl /usr/local/bin        
 # copy in image utility scripts
