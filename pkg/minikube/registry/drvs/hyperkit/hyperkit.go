@@ -121,8 +121,9 @@ func isNewerVersion(currentVersion string, specificVersion string) (bool, error)
 	// Convert hyperkit version to time.Date to compare whether hyperkit version is not old.
 	layout := "20060102"
 	currentVersionDate, err := time.Parse(layout, currentVersion)
+	// newer versions of hyperkit no longer have a data embedded in their version
 	if err != nil {
-		return false, errors.Wrap(err, "parse date")
+		return true, nul
 	}
 	specificVersionDate, err := time.Parse(layout, specificVersion)
 	if err != nil {
