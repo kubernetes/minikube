@@ -51,3 +51,5 @@ In addition, minikube implements a very simple, canonical implementation of dyna
 The default [Storage Provisioner Controller](https://github.com/kubernetes/minikube/blob/master/pkg/storage/storage_provisioner.go) is managed internally, in the minikube codebase, demonstrating how easy it is to plug a custom storage controller into kubernetes as a storage component of the system, and provides pods with dynamically, to test your pod's behaviour when persistent storage is mapped to it.
 
 Note that this is not a CSI based storage provider, rather, it simply declares a PersistentVolume object of type hostpath dynamically when the controller see's that there is an outstanding storage request.
+
+There is also [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon that enables dynamic provisioning and supports multi-node clusters as well as snapshots.
