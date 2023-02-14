@@ -130,7 +130,7 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 			os.Exit(1)
 		}
 
-		if len(args) > 1 && args[0] != "--help" {
+		if len(args) > 1 && args[0] != "--help" && args[0] != cobra.ShellCompRequestCmd {
 			cluster := []string{"--cluster", cname}
 			args = append(cluster, args...)
 		}
