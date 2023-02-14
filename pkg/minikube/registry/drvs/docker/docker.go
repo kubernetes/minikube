@@ -136,6 +136,9 @@ func status() (retState registry.State) {
 	}()
 
 	versions := strings.Split(string(o), ":")
+	if len(versions) < 2 {
+		versions = append(versions, "")
+	}
 	dockerEngineVersion := versions[0]
 	dockerPlatformVersion := versions[1]
 	klog.Infof("docker version: %s", o)
