@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,7 +52,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/util/pidfile"
 )
 
 var (
@@ -613,7 +613,7 @@ func killProcess(path string) error {
 	}
 	klog.Infof("Found %s ...", pidPath)
 
-	ppp, err := pidfile.GetPids(pidPath)
+	ppp, err := GetPids(pidPath)
 	if err != nil {
 		return err
 	}
@@ -674,4 +674,27 @@ func tryKillOne(pid int) error {
 	}
 
 	return nil
+}
+
+// GetPids opens the file at PATH and tries to read
+// one or more space separated pids
+func GetPids(path string) ([]int, error) {
+	out, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "ReadFile")
+	}
+	klog.Infof("pidfile contents: %s", out)
+
+	pids := []int{}
+	strPids := strings.Fields(string(out))
+	for _, p := range strPids {
+		intPid, err := strconv.Atoi(p)
+		if err != nil {
+			return nil, err
+		}
+
+		pids = append(pids, intPid)
+	}
+
+	return pids, nil
 }

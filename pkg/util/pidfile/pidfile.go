@@ -15,33 +15,3 @@ limitations under the License.
 */
 
 package pidfile
-
-import (
-	"os"
-	"strconv"
-	"strings"
-
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-)
-
-func GetPids(path string) ([]int, error) {
-	out, err := os.ReadFile(path)
-	if err != nil {
-		return nil, errors.Wrap(err, "ReadFile")
-	}
-	klog.Infof("pidfile contents: %s", out)
-
-	pids := []int{}
-	strPids := strings.Fields(string(out))
-	for _, p := range strPids {
-		intPid, err := strconv.Atoi(p)
-		if err != nil {
-			return nil, err
-		}
-
-		pids = append(pids, intPid)
-	}
-
-	return pids, nil
-}
