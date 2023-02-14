@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -170,21 +171,23 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
-		return state.Stopped, nil
-	}
-	p, err := os.ReadFile(d.pidfilePath())
-	if err != nil {
-		return state.Error, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
-		return state.Error, err
-	}
-	if err := checkPid(pid); err != nil {
-		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
-		return state.Stopped, nil
+	if runtime.GOOS != "windows" {
+		if _, err := os.Stat(d.pidfilePath()); err != nil {
+			return state.Stopped, nil
+		}
+		p, err := os.ReadFile(d.pidfilePath())
+		if err != nil {
+			return state.Error, err
+		}
+		pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
+		if err != nil {
+			return state.Error, err
+		}
+		if err := checkPid(pid); err != nil {
+			// No pid, remove pidfile
+			os.Remove(d.pidfilePath())
+			return state.Stopped, nil
+		}
 	}
 	ret, err := d.RunQMPCommand("query-status")
 	if err != nil {
@@ -425,8 +428,10 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("unknown network: %s", d.Network)
 	}
 
-	startCmd = append(startCmd,
-		"-daemonize")
+	if runtime.GOOS != "windows" {
+		startCmd = append(startCmd,
+			"-daemonize")
+	}
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
@@ -453,7 +458,11 @@ func (d *Driver) Start() error {
 		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
 	}
 
-	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
+	startFunc := cmdOutErr
+	if runtime.GOOS == "windows" {
+		startFunc = cmdStart
+	}
+	if stdout, stderr, err := startFunc(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
@@ -520,6 +529,12 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 		}
 	}
 	return stdoutStr, stderrStr, err
+}
+
+func cmdStart(cmdStr string, args ...string) (string, string, error) {
+	cmd := exec.Command(cmdStr, args...)
+	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+	return "", "", cmd.Start()
 }
 
 func (d *Driver) Stop() error {
@@ -794,7 +809,7 @@ func WaitForTCPWithDelay(addr string, duration time.Duration) error {
 			continue
 		}
 		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil {
+		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
 			time.Sleep(duration)
 			continue
 		}
