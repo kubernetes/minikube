@@ -46,6 +46,10 @@ Once both addons are enabled, you can create persistent volumes and snapshots us
 volume snapshots, you can find some example yaml files along with a step-by-step [here](https://kubernetes-csi.github.io/docs/snapshot-restore-feature.html)).
 The driver stores all persistent volumes in the `/var/lib/csi-hostpath-data/` directory of minikube's host.
 
+## Multi-Node Clusters
+
+`csi-hostpath-driver` addon supports [Multi-Node Clusters]({{< ref "/docs/tutorials/multi_node" >}}) volume provisioning. It deploys `DaemonSet` that runs `hostpath` on each node to provision and claim volumes (See [#12360](https://github.com/kubernetes/minikube/issues/12360) for more details).
+
 ## Tutorial
 
 In this tutorial, you use `volumesnapshots` addon(1) and `csi-hostpath-driver` addon(2a).
@@ -63,6 +67,13 @@ Enable `volumesnapshots` and `csi-hostpath-driver` addons:
 ```shell
 minikube addons enable volumesnapshots
 minikube addons enable csi-hostpath-driver
+```
+
+Optionally you could use it as a default storage class for the dynamic volume claims:
+```shell
+minikube addons disable storage-provisioner
+minikube addons disable default-storageclass
+kubectl patch storageclass csi-hostpath-sc -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 ```
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Check volume snapshot class</h2>

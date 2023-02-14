@@ -38,25 +38,15 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: csi-hostpath-attacher
+      app.kubernetes.io/name: csi-hostpath-attacher
   template:
     metadata:
       labels:
-        app: csi-hostpath-attacher
+        app.kubernetes.io/name: csi-hostpath-attacher
         addonmanager.kubernetes.io/mode: Reconcile
         kubernetes.io/minikube-addons: csi-hostpath-driver
     spec:
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - csi-hostpathplugin
-            topologyKey: kubernetes.io/hostname
-      serviceAccountName: csi-attacher
+      serviceAccount: csi-attacher
       containers:
         - name: csi-attacher
           image: {{.CustomRegistries.Attacher  | default .ImageRepository | default .Registries.Attacher }}{{.Images.Attacher}}
