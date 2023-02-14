@@ -78,6 +78,8 @@ func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
 	status, ok := cc.Addons[a.Name()]
 	if ok {
 		return status
+	} else if !cc.InstallAddons {
+		return false
 	}
 
 	// Return the default unconfigured state of the addon
