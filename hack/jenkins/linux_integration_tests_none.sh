@@ -36,7 +36,7 @@ export KUBECONFIG="/root/.kube/config"
 
 if ! kubeadm &>/dev/null; then
   echo "WARNING: kubeadm is not installed. will try to install."
-  curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubeadm"
+  curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm"
   sudo install kubeadm /usr/local/bin/kubeadm
 fi
 # "none" driver specific cleanup from previous runs.

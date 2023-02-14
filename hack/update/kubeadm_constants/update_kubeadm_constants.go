@@ -38,7 +38,7 @@ import (
 const (
 	// default context timeout
 	cxTimeout                 = 5 * time.Minute
-	kubeadmReleaseURL         = "https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/kubeadm"
+	kubeadmReleaseURL         = "https://dl.k8s.io/release/%s/bin/linux/amd64/kubeadm"
 	kubeadmBinaryName         = "kubeadm-linux-amd64-%s"
 	minikubeConstantsFilePath = "pkg/minikube/constants/constants_kubeadm_images.go"
 	kubeadmImagesTemplate     = `
