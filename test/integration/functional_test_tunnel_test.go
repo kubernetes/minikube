@@ -133,7 +133,7 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 	tunnelSession = *ss
 }
 
-// validateNoSecondTunnel ensures more than 1 tunnel can NOT run simultaneously
+// validateNoSecondTunnel ensures only 1 tunnel can run simultaneously
 func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 

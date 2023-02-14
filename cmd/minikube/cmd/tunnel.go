@@ -76,7 +76,7 @@ var tunnelCmd = &cobra.Command{
 			}
 		}
 
-		checkNoOtherTunnelProcess()
+		mustLockOrExit()
 		defer cleanupLock()
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
@@ -131,7 +131,7 @@ func cleanupLock() {
 	}
 }
 
-func checkNoOtherTunnelProcess() {
+func mustLockOrExit() {
 	tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
 
 	_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
@@ -148,7 +148,7 @@ func checkNoOtherTunnelProcess() {
 	lockHandle = fslock.New(tunnelLockPath)
 	err = lockHandle.TryLock()
 	if err == fslock.ErrLocked {
-		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process already running, terminate the older to start a new one")
+		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
 	}
 }
 
