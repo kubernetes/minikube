@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -25,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -56,6 +58,8 @@ var serviceListCmd = &cobra.Command{
 			printServicesTable(serviceURLs, co)
 		case "json":
 			printServicesJSON(serviceURLs)
+		default:
+			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
 	},
 }
