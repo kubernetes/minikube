@@ -88,7 +88,7 @@ var RootCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if err := audit.LogCommandEnd(auditID); err != nil {
-			klog.Errorf("failed to log command end to audit: %v", err)
+			klog.Warningf("failed to log command end to audit: %v", err)
 		}
 	},
 }
