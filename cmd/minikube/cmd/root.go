@@ -77,7 +77,7 @@ var RootCmd = &cobra.Command{
 		var err error
 		auditID, err = audit.LogCommandStart()
 		if err != nil {
-			klog.Errorf("failed to log command start to audit: %v", err)
+			klog.Warningf("failed to log command start to audit: %v", err)
 		}
 		// viper maps $MINIKUBE_ROOTLESS to "rootless" property automatically, but it does not do vice versa,
 		// so we map "rootless" property to $MINIKUBE_ROOTLESS expliclity here.
@@ -88,7 +88,7 @@ var RootCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if err := audit.LogCommandEnd(auditID); err != nil {
-			klog.Errorf("failed to log command end to audit: %v", err)
+			klog.Warningf("failed to log command end to audit: %v", err)
 		}
 	},
 }
