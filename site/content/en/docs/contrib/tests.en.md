@@ -47,6 +47,9 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 
 #### validateHeadlampAddon
 
+#### validateInspektorGadgetAddon
+tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
+
 #### validateCloudSpannerAddon
 tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
