@@ -222,6 +222,7 @@ func init() {
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 	RootCmd.PersistentFlags().String(config.UserFlag, "", "Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.")
+	RootCmd.PersistentFlags().Bool(config.SkipAuditFlag, false, "Skip recording the current command in the audit logs.")
 	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
 
 	groups := templates.CommandGroups{
@@ -327,6 +328,7 @@ func setupViper() {
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.WantVirtualBoxDriverWarning, true)
 	viper.SetDefault(config.MaxAuditEntries, 1000)
+	viper.SetDefault(config.SkipAuditFlag, false)
 }
 
 func addToPath(dir string) {
