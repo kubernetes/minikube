@@ -1455,7 +1455,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
-	validateServiceCmdJSON(ctx, t)
+	validateServiceCmdJSON(ctx, t, profile)
 
 	// docs: Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
@@ -1523,7 +1523,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-func validateServiceCmdJSON(ctx context.Context, t *testing.T) {
+func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
 	t.Run("service_json_output", func(t *testing.T) {
 		targetSvcName := "hello-node"
@@ -1545,7 +1545,7 @@ func validateServiceCmdJSON(ctx context.Context, t *testing.T) {
 		}
 
 		start := time.Now()
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "service", "list", "-o", "json"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list", "-o", "json"))
 		elapsed := time.Since(start)
 		if err != nil {
 			t.Errorf("failed to list services with json format. args %q: %v", rr.Command(), err)
