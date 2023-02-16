@@ -149,6 +149,9 @@ func mustLockOrExit() {
 	if err == fslock.ErrLocked {
 		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
 	}
+	if err != nil {
+		exit.Error(reason.SvcTunnelStart, "failed to acquire lock due to unexpected error", err)
+	}
 }
 
 func outputTunnelStarted() {
