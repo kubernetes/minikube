@@ -284,6 +284,9 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 
 	crName := cc.KubernetesConfig.ContainerRuntime
 	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "container runtime")
+	}
 	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
 	if err != nil {
 		return errors.Wrap(err, "check paused")
