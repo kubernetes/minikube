@@ -166,13 +166,19 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 
 		addonBundle := assets.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
-
+	        maintainer := addonBundle.Maintainer
+		docs := addonBundle.Docs
 		addonsMap[addonName] = map[string]interface{}{
 			"Status":  stringFromStatus(enabled),
 			"Profile": cc.Name,
+			"maintainer": maintainer,
+			"docs":       docs,
 		}
 	}
-	jsonString, _ := json.Marshal(addonsMap)
-
-	out.String(string(jsonString))
+	jsonOut, err := json.MarshalIndent(addonsMap, "", "    ")
+	if err != nil {
+		exit.Error(reason.InternalJSONMarshal, "Failed to marshal addons to JSON", err)
+	} 
+	fmt.Println(string(jsonOut))
+	
 }
