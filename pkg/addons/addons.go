@@ -292,8 +292,13 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		return errors.Wrap(err, "check paused")
 	}
 	if runtimePaused {
-		out.Styled(style.Shrug, `Can't enable addon on a paused cluster, please unpause the cluster firstly.`)
-		return errors.New("Can't enable addon on a paused cluster, please unpause the cluster firstly.")
+		action := "disable"
+		if enable {
+			action = "enable"
+		}
+		msg := fmt.Sprintf("can't %s addon on a paused cluster, please unpause the cluster firstly.", action)
+		out.Styled(style.Shrug, msg)
+		return errors.New(msg)
 	}
 	bail, err := addonSpecificChecks(cc, name, enable, runner)
 	if err != nil {
