@@ -36,9 +36,11 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -280,6 +282,16 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		return errors.Wrap(err, "command runner")
 	}
 
+	crName := cc.KubernetesConfig.ContainerRuntime
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
+	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		return errors.Wrap(err, "check paused")
+	}
+	if runtimePaused {
+		out.Styled(style.Shrug, `Can't enable addon on a paused cluster, please unpause the cluster firstly.`)
+		return errors.New("Can't enable addon on a paused cluster, please unpause the cluster firstly.")
+	}
 	bail, err := addonSpecificChecks(cc, name, enable, runner)
 	if err != nil {
 		return err
