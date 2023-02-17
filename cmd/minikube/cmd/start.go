@@ -344,8 +344,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	var existingAddons map[string]bool
-	cc.InstallAddons = viper.GetBool(installAddons)
-	if cc.InstallAddons {
+	if viper.GetBool(installAddons) {
 		existingAddons = map[string]bool{}
 		if existing != nil && existing.Addons != nil {
 			existingAddons = existing.Addons

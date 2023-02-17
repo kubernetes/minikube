@@ -75,7 +75,6 @@ type ClusterConfig struct {
 	SSHPort                 int    // Only used by ssh driver
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
-	InstallAddons           bool // used by install-addon flag
 	Addons                  map[string]bool
 	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> k8s.gcr.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
 	CustomAddonRegistries   map[string]string // Maps image names to the registry to use for addons. See CustomAddonImages for example.
