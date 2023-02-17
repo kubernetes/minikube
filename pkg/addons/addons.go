@@ -538,7 +538,7 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 	// Get the default values of any addons not saved to our config
 	for name, a := range assets.Addons {
 		if _, exists := existing[name]; !exists {
-			enable[name] = a.IsEnabled(cc)
+			enable[name] = a.IsEnabledOrDefault(cc)
 		}
 	}
 
