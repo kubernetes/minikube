@@ -538,7 +538,7 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 	// Get the default values of any addons not saved to our config
 	for name, a := range assets.Addons {
 		if _, exists := existing[name]; !exists {
-			enable[name] = a.IsEnabled(cc)
+			enable[name] = a.IsEnabledOrDefault(cc)
 		}
 	}
 
@@ -563,9 +563,17 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 
 // UpdateConfig tries to update config with all enabled addons (not thread-safe).
 // Any error will be logged and it will continue.
-func UpdateConfig(cc *config.ClusterConfig, enabled []string) {
+func UpdateConfigToEnable(cc *config.ClusterConfig, enabled []string) {
 	for _, a := range enabled {
 		if err := Set(cc, a, "true"); err != nil {
+			klog.Errorf("store failed: %v", err)
+		}
+	}
+}
+
+func UpdateConfigToDisable(cc *config.ClusterConfig) {
+	for name := range assets.Addons {
+		if err := Set(cc, name, "false"); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
 	}

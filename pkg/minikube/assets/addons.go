@@ -80,6 +80,16 @@ func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
 		return status
 	}
 
+	return false
+}
+
+// IsEnabledOrDefault checks if an Addon is enabled for the given profile. If not found in profile it returns the default state
+func (a *Addon) IsEnabledOrDefault(cc *config.ClusterConfig) bool {
+	status, ok := cc.Addons[a.Name()]
+	if ok {
+		return status
+	}
+
 	// Return the default unconfigured state of the addon
 	return a.enabled
 }
