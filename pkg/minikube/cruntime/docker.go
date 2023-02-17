@@ -688,6 +688,14 @@ const (
 	CNICacheDir = "/var/lib/cni/cache"
 )
 
+func getCriDockerdPath(cr CommandRunner) string {
+	rr, err := cr.RunCmd(exec.Command("which", "cri-dockerd"))
+	if err != nil {
+		return "/usr/bin/cri-dockerd"
+	}
+	return strings.TrimSuffix(rr.Stdout.String(), "\n")
+}
+
 func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error {
 	// $ cri-dockerd --version
 	// cri-dockerd 0.2.6 (d8accf7)
@@ -702,9 +710,11 @@ func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error 
 		networkPlugin = "cni"
 	}
 	opts := struct {
+		ExecPath       string
 		NetworkPlugin  string
 		ExtraArguments string
 	}{
+		ExecPath:       getCriDockerdPath(cr),
 		NetworkPlugin:  networkPlugin,
 		ExtraArguments: args,
 	}
@@ -712,7 +722,7 @@ func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error 
 	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
 	var CRIDockerServiceConfTemplate = template.Must(template.New("criDockerServiceConfTemplate").Parse(`[Service]
 ExecStart=
-ExecStart=/usr/bin/cri-dockerd --container-runtime-endpoint fd:// --network-plugin={{.NetworkPlugin}}{{.ExtraArguments}}`))
+ExecStart={{.ExecPath}} --container-runtime-endpoint fd:// --network-plugin={{.NetworkPlugin}}{{.ExtraArguments}}`))
 
 	b := bytes.Buffer{}
 	if err := CRIDockerServiceConfTemplate.Execute(&b, opts); err != nil {
