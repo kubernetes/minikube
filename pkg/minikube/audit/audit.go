@@ -131,6 +131,10 @@ func getStartIndex(entryCount int) int {
 
 // shouldLog returns if the command should be logged.
 func shouldLog() bool {
+	if viper.GetBool(config.SkipAuditFlag) {
+		return false
+	}
+
 	// in rare chance we get here without a command, don't log
 	if pflag.NArg() == 0 {
 		return false
@@ -141,7 +145,7 @@ func shouldLog() bool {
 	}
 
 	// commands that should not be logged.
-	no := []string{"status", "version", "logs", "generate-docs"}
+	no := []string{"status", "version", "logs", "generate-docs", "profile"}
 	a := pflag.Arg(0)
 	for _, c := range no {
 		if a == c {
