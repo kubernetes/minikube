@@ -632,8 +632,7 @@ func killProcess(path string) error {
 		// if we've encountered only one error, we're returning it:
 		return errs[0]
 	} else if len(errs) != 0 {
-		// if multiple errors were encountered, we're outputting them
-		// and returning a new multiple-errors error:
+		// if multiple errors were encountered, combine them into a single error
 		out.Styled(style.Failure, "Multiple errors encountered:")
 		for _, e := range errs {
 			out.Err("%v\n", e)
