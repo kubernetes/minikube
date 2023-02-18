@@ -585,7 +585,7 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 }
 
 // killMountProcess looks for the legacy path and for profile path for a pidfile,
-// it then tries to kill all the pids listed in the pidfile(one or more)
+// it then tries to kill all the pids listed in the pidfile (one or more)
 func killMountProcess() error {
 	profile := viper.GetString("profile")
 	paths := []string{
@@ -602,7 +602,7 @@ func killMountProcess() error {
 	return nil
 }
 
-// killProcess takes a path to look for a pidfile(space-separated),
+// killProcess takes a path to look for a pidfile (space-separated),
 // it reads the file and converts it to a bunch of pid ints,
 // then it tries to kill each one of them.
 // If no errors were ecnountered, it cleans the pidfile
@@ -634,14 +634,14 @@ func killProcess(path string) error {
 	} else if len(errs) != 0 {
 		// if multiple errors were encountered, we're outputting them
 		// and returning a new multiple-errors error:
-		out.Step(style.Failure, "Ecountered multiple errors:")
+		out.Styled(style.Failure, "Multiple errors encountered:")
 		for _, e := range errs {
 			out.Err("%v\n", e)
 		}
 		return errors.New("multiple errors encountered while closing mount processes")
 	}
 
-	// if no errors were encoutered, it is safe to clean out the pidFile
+	// if no errors were encoutered, it's safe to delete pidFile
 	if err := os.Remove(pidPath); err != nil {
 		return errors.Wrap(err, "While closing mount-pids file")
 	}

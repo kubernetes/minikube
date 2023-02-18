@@ -327,7 +327,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 					// if something weird has happened from previous tests..
 					// this could at least spare us some waiting
 					if strings.Contains(rr.Stdout.String(), fmt.Sprintf("Profile \"%s\" not found.", profile)) {
-						t.Fatalf("somehow the profile got cancelled; failing....")
+						t.Fatalf("profile was deleted, cancelling the test")
 					}
 					return err
 				}
@@ -346,7 +346,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 			for _, mntp := range mntProcs {
 				// Trying to wait for process end
 				// if the wait fail with ExitError we know that the process
-				// doesnt' exist anymore..
+				// doesn't exist anymore..
 				go func(end chan bool) {
 					err := mntp.cmd.Wait()
 					if _, ok := err.(*exec.ExitError); ok {
