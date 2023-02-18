@@ -632,7 +632,7 @@ func CheckPaused(profile string, enable bool) error {
 		if enable {
 			action = "enable"
 		}
-		msg := fmt.Sprintf("can't %s addon on a paused cluster, please unpause the cluster firstly.", action)
+		msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
 		out.Styled(style.Shrug, msg)
 		return errors.New(msg)
 	}
