@@ -476,7 +476,7 @@
 	"None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.": "",
 	"Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:": "",
 	"Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:": "",
-	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)": "",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "",
 	"Number of lines back to go within the log": "",
 	"OS release is {{.pretty_name}}": "",
 	"One of 'text', 'yaml' or 'json'.": "",

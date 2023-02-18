@@ -431,6 +431,7 @@
 	"Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:": "通知: このターミナルでは、{{.driver_name}} ドライバーの docker-env が有効になっています:",
 	"Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:": "通知: このターミナルでは、{{.driver_name}} ドライバーの podman-env が有効になっています:",
 	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)": "作成して minikube VM に接続する追加ディスク数 (現在、hyperkit と kvm2 ドライバーでのみ実装されています)",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "",
 	"Number of lines back to go within the log": "ログ中で遡る行数",
 	"OS release is {{.pretty_name}}": "OS リリースは {{.pretty_name}} です",
 	"One of 'text', 'yaml' or 'json'.": "'text'、'yaml'、'json' のいずれか。",

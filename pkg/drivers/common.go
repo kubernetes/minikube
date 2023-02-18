@@ -56,6 +56,35 @@ func ExtraDiskPath(d *drivers.BaseDriver, diskID int) string {
 	return filepath.Join(d.ResolveStorePath("."), file)
 }
 
+// CreateRawDisk creates a new raw disk image.
+//
+// Example usage:
+//
+//	path := ExtraDiskPath(baseDriver, diskID)
+//	err := CreateRawDisk(path, baseDriver.DiskSize)
+func CreateRawDisk(diskPath string, sizeMB int) error {
+	log.Infof("Creating raw disk image: %s of size %vMB", diskPath, sizeMB)
+
+	_, err := os.Stat(diskPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			// un-handle-able error stat-ing the disk file
+			return errors.Wrap(err, "stat")
+		}
+		// disk file does not exist; create it
+		file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+		if err != nil {
+			return errors.Wrap(err, "open")
+		}
+		defer file.Close()
+
+		if err := file.Truncate(util.ConvertMBToBytes(sizeMB)); err != nil {
+			return errors.Wrap(err, "truncate")
+		}
+	}
+	return nil
+}
+
 // CommonDriver is the common driver base class
 type CommonDriver struct{}
 

@@ -468,7 +468,7 @@
 	"Number of CPUs allocated to Kubernetes.": "Liczba procesorów przypisana do Kubernetesa",
 	"Number of CPUs allocated to the minikube VM": "Liczba procesorów przypisana do maszyny wirtualnej minikube",
 	"Number of CPUs allocated to the minikube VM.": "Liczba procesorów przypisana do maszyny wirtualnej minikube",
-	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)": "",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "",
 	"Number of lines back to go within the log": "",
 	"OS release is {{.pretty_name}}": "Wersja systemu operacyjnego to {{.pretty_name}}",
 	"One of 'text', 'yaml' or 'json'.": "",

@@ -365,8 +365,8 @@ func (d *Driver) Create() (err error) {
 		return errors.Wrap(err, "cannot create more than 20 extra disks")
 	}
 	for i := 0; i < d.ExtraDisks; i++ {
-		diskpath, err := createExtraDisk(d, i)
-		if err != nil {
+		diskpath := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
+		if err := pkgdrivers.CreateRawDisk(diskpath, d.DiskSize); err != nil {
 			return errors.Wrap(err, "creating extra disks")
 		}
 		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.
