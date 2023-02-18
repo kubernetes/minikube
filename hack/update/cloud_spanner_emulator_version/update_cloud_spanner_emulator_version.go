@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -53,7 +52,7 @@ func main() {
 	defer cancel()
 
 	// get cloud-spanner-emulator stable version
-	stable, err := cloudSpannerEmulatorVersion(ctx, "GoogleCloudPlatform", "cloud-spanner-emulator")
+	stable, err := update.StableVersion(ctx, "GoogleCloudPlatform", "cloud-spanner-emulator")
 	if err != nil {
 		klog.Fatalf("Unable to get cloud-spanner-emulator stable version: %v", err)
 	}
@@ -67,14 +66,4 @@ func main() {
 	klog.Infof("cloud-spanner-emulator stable version: %s", data.Version)
 
 	update.Apply(schema, data)
-}
-
-// cloudSpannerEmulatorVersion returns stable version in semver format.
-func cloudSpannerEmulatorVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get Golint version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -58,7 +57,7 @@ func main() {
 	defer cancel()
 
 	// get gotestsum stable version from https://github.com/gotestyourself/gotestsum
-	stable, err := gotestsumVersion(ctx, "gotestyourself", "gotestsum")
+	stable, err := update.StableVersion(ctx, "gotestyourself", "gotestsum")
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gotestsum stable version: %v", err)
 	}
@@ -66,14 +65,4 @@ func main() {
 	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
-}
-
-// gotestsumVersion returns gotestsum stable version in semver format.
-func gotestsumVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get gotestsum version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

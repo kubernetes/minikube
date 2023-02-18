@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -52,7 +51,7 @@ func main() {
 	defer cancel()
 
 	// get Hugo stable version
-	stable, err := hugoVersion(ctx, "gohugoio", "hugo")
+	stable, err := update.StableVersion(ctx, "gohugoio", "hugo")
 	if err != nil {
 		klog.Fatalf("Unable to get Hugo stable version: %v", err)
 	}
@@ -60,14 +59,4 @@ func main() {
 	klog.Infof("Hugo stable version: %s", stable)
 
 	update.Apply(schema, data)
-}
-
-// hugoVersion returns stable version in semver format.
-func hugoVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get Hugo version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

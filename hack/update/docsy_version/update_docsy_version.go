@@ -21,7 +21,6 @@ import (
 	"os/exec"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -38,7 +37,7 @@ func main() {
 	defer cancel()
 
 	// get Docsy stable version
-	stable, err := docsyVersion(ctx, "google", "docsy")
+	stable, err := update.StableVersion(ctx, "google", "docsy")
 	if err != nil {
 		klog.Fatalf("Unable to get Doscy stable version: %v", err)
 	}
@@ -47,14 +46,4 @@ func main() {
 	if err := exec.CommandContext(ctx, "./update_docsy_version.sh", stable).Run(); err != nil {
 		klog.Fatalf("failed to update docsy commit: %v", err)
 	}
-}
-
-// docsyVersion returns stable version in semver format.
-func docsyVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get Docsy version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

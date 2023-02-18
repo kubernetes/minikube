@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -72,7 +71,7 @@ func main() {
 	defer cancel()
 
 	// get gopogh stable version from https://github.com/medyagh/gopogh
-	stable, err := gopoghVersion(ctx, "medyagh", "gopogh")
+	stable, err := update.StableVersion(ctx, "medyagh", "gopogh")
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gopogh stable version: %v", err)
 	}
@@ -80,14 +79,4 @@ func main() {
 	klog.Infof("gopogh stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
-}
-
-// gopoghVersion returns gopogh stable version in semver format.
-func gopoghVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get gopogh version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }
