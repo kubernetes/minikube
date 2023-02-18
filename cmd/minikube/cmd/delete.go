@@ -618,7 +618,8 @@ func killProcess(path string) error {
 		return err
 	}
 
-	// we're giving a change to each pid, to be killed
+	// we're trying to kill each process, without stopping at first error encountered
+	// error handling is done below
 	var errs []error
 	for _, pp := range ppp {
 		err := trySignalProcess(pp)
