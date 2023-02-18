@@ -290,10 +290,10 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
-		inNodeMounts := []string{"/mount1", "/mount2", "/mount3"}
+		guestMountPaths := []string{"/mount1", "/mount2", "/mount3"}
 
 		var mntProcs []*StartSession
-		for _, guestMount := range inNodeMounts {
+		for _, guestMount := range guestMountPaths {
 			args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 			mntProc, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 			if err != nil {
@@ -321,7 +321,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 
 		// are the mounts alive yet..?
 		checkMount := func() error {
-			for _, mnt := range inNodeMounts {
+			for _, mnt := range guestMountPaths {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T", mnt))
 				if err != nil {
 					// if something weird has happened from previous tests..
