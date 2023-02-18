@@ -262,12 +262,12 @@ func main() {
 		t.Fatalf("copying source to %s", tmpfile)
 	}
 
-	dontkillmeProc := exec.Command("go", "run", tmpfile)
-	err := dontkillmeProc.Start()
+	processToKill := exec.Command("go", "run", tmpfile)
+	err := processToKill.Start()
 	if err != nil {
 		t.Fatalf("while execing child process")
 	}
-	pid := dontkillmeProc.Process.Pid
+	pid := processToKill.Process.Pid
 
 	err = tryKillOne(pid)
 	if err != nil {
@@ -275,7 +275,7 @@ func main() {
 	}
 
 	// waiting for process to exit
-	if err := dontkillmeProc.Wait(); !strings.Contains(err.Error(), "killed") {
+	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
 		t.Fatalf("unable to kill process")
 	}
 }
