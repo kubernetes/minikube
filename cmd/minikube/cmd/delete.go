@@ -621,7 +621,7 @@ func killProcess(path string) error {
 	// we're giving a change to each pid, to be killed
 	var errs []error
 	for _, pp := range ppp {
-		err := tryKillOne(pp)
+		err := trySignalProcess(pp)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -649,8 +649,8 @@ func killProcess(path string) error {
 	return err
 }
 
-// tryKillOne takes a PID as argument and tries to SIGKILL it
-func tryKillOne(pid int) error {
+// trySignalProcess takes a PID as argument and tries to SIGKILL it
+func trySignalProcess(pid int) error {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
