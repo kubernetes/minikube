@@ -1525,15 +1525,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 	// docs: Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
-	t.Run("service_json_output", func(t *testing.T) {
+	t.Run("ServiceJSONOutput", func(t *testing.T) {
 		targetSvcName := "hello-node"
 		// helper function to run command then, return target service object from json output.
 		extractServiceObjFunc := func(rr *RunResult) *service.SvcURL {
 			var jsonObjects service.URLs
 			err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObjects)
 			if err != nil {
-				t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
-				return nil
+				t.Fatalf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
 			}
 
 			for _, svc := range jsonObjects {
@@ -1548,7 +1547,7 @@ func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list", "-o", "json"))
 		elapsed := time.Since(start)
 		if err != nil {
-			t.Errorf("failed to list services with json format. args %q: %v", rr.Command(), err)
+			t.Fatalf("failed to list services with json format. args %q: %v", rr.Command(), err)
 		}
 		t.Logf("Took %q to run %q", elapsed, rr.Command())
 

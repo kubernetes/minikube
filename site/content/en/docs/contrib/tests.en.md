@@ -300,6 +300,11 @@ Steps:
 - Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 
+#### validateServiceCmdJSON
+
+Steps:
+- Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
+
 #### validateServiceCmdConnect
 
 Steps:
