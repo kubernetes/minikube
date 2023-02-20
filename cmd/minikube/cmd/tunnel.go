@@ -126,7 +126,7 @@ func cleanupLock() {
 	if lockHandle != nil {
 		err := lockHandle.Unlock()
 		if err != nil {
-			out.Styled(style.Warning, fmt.Sprintf("failed to release lock during cleanup: %s", err.Error()))
+			out.Styled(style.Warning, fmt.Sprintf("failed to release lock during cleanup: %v", err))
 		}
 	}
 }
@@ -137,11 +137,11 @@ func mustLockOrExit() {
 	_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error opening lock file for tunnel file (%s)", tunnelLockPath), err)
+			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error opening lock file for tunnel file (%v)", tunnelLockPath), err)
 		}
 		_, err = os.Create(tunnelLockPath)
 		if err != nil {
-			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
+			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%v)", tunnelLockPath), err)
 		}
 	}
 	lockHandle = fslock.New(tunnelLockPath)
