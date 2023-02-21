@@ -258,11 +258,11 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L458
-		"IngressController": "ingress-nginx/controller:v1.5.1@sha256:4ba73c697770664c1e00e9f968de14e08f606ff961c76e5d7033a4a9c593c629",
-		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L565
+		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L443
+		"IngressController": "ingress-nginx/controller:v1.6.4@sha256:15be4666c53052484dd2992efacf2f50ea77a78ae8aa21ccd91af6baaa7ea22f",
+		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L550
 		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
-		// https://github.com/kubernetes/ingress-nginx/blob/63dbbdbb3a099417f411fbd1d684fa2a287c96cd/deploy/static/provider/kind/deploy.yaml#L614
+		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L599
 		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
 	}, map[string]string{
 		"IngressController":        "registry.k8s.io",
