@@ -495,7 +495,8 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	if len(podIPs) != 2 {
 		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
 	} else if podIPs[0] == podIPs[1] {
-		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
+		t.Errorf("expected 2 different pod IPs but got %s and %s. output: %q", podIPs[0], podIPs[0], rr.Output())
+
 	}
 
 	// get Pod names
