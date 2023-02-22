@@ -57,7 +57,7 @@ var serviceListCmd = &cobra.Command{
 		case "table":
 			printServicesTable(serviceURLs, co)
 		case "json":
-			printServicesJSON(serviceURLs)
+			printServicesJSON(serviceURLs, co)
 		default:
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
@@ -85,8 +85,20 @@ func printServicesTable(serviceURLs service.URLs, co mustload.ClusterController)
 	service.PrintServiceList(os.Stdout, data)
 }
 
-func printServicesJSON(serviceURLs service.URLs) {
-	jsonString, _ := json.Marshal(serviceURLs)
+func printServicesJSON(serviceURLs service.URLs, co mustload.ClusterController) {
+	processedServiceURLs := serviceURLs
+
+	if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		// To ensure we don't modify the original serviceURLs
+		processedServiceURLs = make(service.URLs, len(serviceURLs))
+		copy(processedServiceURLs, serviceURLs)
+
+		for idx := range processedServiceURLs {
+			processedServiceURLs[idx].URLs = make([]string, 0)
+		}
+	}
+
+	jsonString, _ := json.Marshal(processedServiceURLs)
 	os.Stdout.Write(jsonString)
 }
 
