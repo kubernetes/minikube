@@ -233,11 +233,11 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7PamTW8vY5MyCA=
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.1 h1:O7dTg9ukLjzIOOLpC8RBaD1EqWD3jqicwhpju6C8meg=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.1/go.mod h1:EbS3BDOG4ESDJWUB2jE3On/u00ayOUSFeUzd4759bfU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.35.1 h1:s503Jzh+SCMN557CUTsenBo8vNxmGZK7zWdNlePQ9TU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.1 h1:IB4aQsSppxP/PVmnCstDm9v00hsPowqrohoW4FZ+amc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.1/go.mod h1:H785fvlgotVZqht+1rHhXSs8EJ8uPVmpBYkTYO3ccpc=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.2 h1:Z5/bjyZhqXd7dNI76Z/KnyxtqavKF1UgGhInFSAIa8s=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.11.2/go.mod h1:mHbBqn8wTt1/+bTA55xe2mLX5b+RKz2dVcGz8sH2HsY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.35.2 h1:xXo67CnDmiDMhgD3zAiuejKKMQ9nNkAQZZ4RS5U5jJY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.2 h1:uH5W8NML+jD8iFiBbNUh5X7Nt0FVDK44Hel+Ux0ZEqU=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.35.2/go.mod h1:H785fvlgotVZqht+1rHhXSs8EJ8uPVmpBYkTYO3ccpc=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
