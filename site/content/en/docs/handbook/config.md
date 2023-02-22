@@ -98,7 +98,7 @@ minikube start --container-runtime=docker
 Options available are:
 
 * [containerd]({{<ref "/docs/runtimes/containerd">}})
-* [cri-o]({{<ref "/docs/runtimes/cri-o">}})
+* [crio]({{<ref "/docs/runtimes/cri-o">}})
 * [docker]({{<ref "/docs/runtimes/docker">}})
 
 See <https://kubernetes.io/docs/setup/production-environment/container-runtimes/>
