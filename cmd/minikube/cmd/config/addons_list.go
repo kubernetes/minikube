@@ -166,13 +166,17 @@ var printAddonsJSON = func(cc *config.ClusterConfig) {
 
 		addonBundle := assets.Addons[addonName]
 		enabled := addonBundle.IsEnabled(cc)
-
 		addonsMap[addonName] = map[string]interface{}{
 			"Status":  stringFromStatus(enabled),
 			"Profile": cc.Name,
 		}
+		if addonPrintDocs {
+			addonsMap[addonName]["Maintainer"] = addonBundle.Maintainer
+			addonsMap[addonName]["Docs"] = addonBundle.Docs
+		}
 	}
-	jsonString, _ := json.Marshal(addonsMap)
 
+	jsonString, _ := json.Marshal(addonsMap)
 	out.String(string(jsonString))
+
 }
