@@ -107,6 +107,7 @@ minikube service list [flags]
 
 ```
   -n, --namespace string   The services namespace
+  -o, --output string      The output format. One of 'json', 'table' (default "table")
 ```
 
 ### Options inherited from parent commands

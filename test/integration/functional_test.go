@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/blang/semver/v4"
@@ -1454,6 +1455,8 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
+	validateServiceCmdJSON(ctx, t, profile)
+
 	// docs: Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
 	if NeedsPortForward() {
@@ -1518,6 +1521,41 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if u.Scheme != "http" {
 		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
+}
+
+func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
+	// docs: Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
+	t.Run("ServiceJSONOutput", func(t *testing.T) {
+		targetSvcName := "hello-node"
+		// helper function to run command then, return target service object from json output.
+		extractServiceObjFunc := func(rr *RunResult) *service.SvcURL {
+			var jsonObjects service.URLs
+			err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObjects)
+			if err != nil {
+				t.Fatalf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
+			}
+
+			for _, svc := range jsonObjects {
+				if svc.Name == targetSvcName {
+					return &svc
+				}
+			}
+			return nil
+		}
+
+		start := time.Now()
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list", "-o", "json"))
+		elapsed := time.Since(start)
+		if err != nil {
+			t.Fatalf("failed to list services with json format. args %q: %v", rr.Command(), err)
+		}
+		t.Logf("Took %q to run %q", elapsed, rr.Command())
+
+		pr := extractServiceObjFunc(rr)
+		if pr == nil {
+			t.Errorf("expected the json of 'service list' to include %q but got *%q*. args: %q", targetSvcName, rr.Stdout.String(), rr.Command())
+		}
+	})
 }
 
 func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string) {
