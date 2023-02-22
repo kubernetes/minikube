@@ -65,12 +65,13 @@ var serviceListCmd = &cobra.Command{
 }
 
 // updatePortsAndURLs sets the port name to "No node port" if a service has no URLs and removes the URLs
-// if the driver needs port forwarding as the user won't be able to hit the listed URLs which could confuse users
+// if the driver needs port forwarding as the user won't be able to hit the listed URLs which could confuse them
 func updatePortsAndURLs(serviceURLs service.URLs, co mustload.ClusterController) service.URLs {
+	needsPortForward := driver.NeedsPortForward(co.Config.Driver)
 	for i := range serviceURLs {
 		if len(serviceURLs[i].URLs) == 0 {
 			serviceURLs[i].PortNames = []string{"No node port"}
-		} else if driver.NeedsPortForward(co.Config.Driver) {
+		} else if needsPortForward {
 			serviceURLs[i].URLs = []string{}
 		}
 	}
