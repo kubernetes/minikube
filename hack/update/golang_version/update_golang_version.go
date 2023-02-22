@@ -145,7 +145,8 @@ var (
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
 				`GO_VERSION \?= 1.*`:             `GO_VERSION ?= {{.StableVersion}}`,
 				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
-				`GO_VERSION=[0-9.]+`:             `GO_VERSION={{.StableVersion}}`,
+				// Below line commented out due to https://github.com/kubernetes/minikube/issues/15841
+				// `GO_VERSION=[0-9.]+`:             `GO_VERSION={{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/installers/check_install_golang.sh": {
