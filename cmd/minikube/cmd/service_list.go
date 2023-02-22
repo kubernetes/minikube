@@ -20,12 +20,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -52,53 +51,45 @@ var serviceListCmd = &cobra.Command{
 			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
 			os.Exit(reason.ExSvcUnavailable)
 		}
+		serviceURLs = updatePortsAndURLs(serviceURLs, co)
 
 		switch output {
 		case "table":
-			printServicesTable(serviceURLs, co)
+			printServicesTable(serviceURLs)
 		case "json":
-			printServicesJSON(serviceURLs, co)
+			printServicesJSON(serviceURLs)
 		default:
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
 	},
 }
 
-func printServicesTable(serviceURLs service.URLs, co mustload.ClusterController) {
+// updatePortsAndURLs sets the port name to "No node port" if a service has no URLs and removes the URLs
+// if the driver needs port forwarding as the user won't be able to hit the listed URLs which could confuse users
+func updatePortsAndURLs(serviceURLs service.URLs, co mustload.ClusterController) service.URLs {
+	for i := range serviceURLs {
+		if len(serviceURLs[i].URLs) == 0 {
+			serviceURLs[i].PortNames = []string{"No node port"}
+		} else if driver.NeedsPortForward(co.Config.Driver) {
+			serviceURLs[i].URLs = []string{}
+		}
+	}
+	return serviceURLs
+}
+
+func printServicesTable(serviceURLs service.URLs) {
 	var data [][]string
 	for _, serviceURL := range serviceURLs {
-		if len(serviceURL.URLs) == 0 {
-			data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "No node port"})
-		} else {
-			servicePortNames := strings.Join(serviceURL.PortNames, "\n")
-			serviceURLs := strings.Join(serviceURL.URLs, "\n")
-
-			// if we are running Docker on OSX we empty the internal service URLs
-			if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
-				serviceURLs = ""
-			}
-
-			data = append(data, []string{serviceURL.Namespace, serviceURL.Name, servicePortNames, serviceURLs})
-		}
+		portNames := strings.Join(serviceURL.PortNames, "\n")
+		urls := strings.Join(serviceURL.URLs, "\n")
+		data = append(data, []string{serviceURL.Namespace, serviceURL.Name, portNames, urls})
 	}
 
 	service.PrintServiceList(os.Stdout, data)
 }
 
-func printServicesJSON(serviceURLs service.URLs, co mustload.ClusterController) {
-	processedServiceURLs := serviceURLs
-
-	if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
-		// To ensure we don't modify the original serviceURLs
-		processedServiceURLs = make(service.URLs, len(serviceURLs))
-		copy(processedServiceURLs, serviceURLs)
-
-		for idx := range processedServiceURLs {
-			processedServiceURLs[idx].URLs = make([]string, 0)
-		}
-	}
-
-	jsonString, _ := json.Marshal(processedServiceURLs)
+func printServicesJSON(serviceURLs service.URLs) {
+	jsonString, _ := json.Marshal(serviceURLs)
 	os.Stdout.Write(jsonString)
 }
 
