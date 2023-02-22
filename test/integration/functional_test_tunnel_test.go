@@ -154,9 +154,9 @@ func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 		err = session.cmd.Wait()
 		if exErr, ok := err.(*exec.ExitError); ok {
 			exitCodeCh <- exErr.ExitCode()
-		} else {
+		} else if err != nil {
 			exitCodeCh <- -1
-			t.Errorf("Second tunnel command failed due to a different reason: %s", err)
+			t.Errorf("tunnel command failed due to a different reason: %s", err)
 		}
 	}
 
