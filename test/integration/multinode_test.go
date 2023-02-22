@@ -550,6 +550,9 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 			continue
 		}
 		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+		if hostIP == nil {
+			t.Errorf("minikbue host ip is nil: %s", out.Output())
+		}
 		// try pinging host from pod
 		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
 		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
