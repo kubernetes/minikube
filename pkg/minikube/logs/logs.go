@@ -82,7 +82,6 @@ var importantPods = []string{
 	"kube-proxy",
 	"kube-controller-manager",
 	"kindnet",
-	"storage-provisioner",
 }
 
 // logRunner is the subset of CommandRunner used for logging
