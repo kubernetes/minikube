@@ -493,9 +493,10 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	}
 	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 	if len(podIPs) != 2 {
-		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
+		t.Errorf("expected 2 Pod IPs but got %d, output: %q", len(podIPs), rr.Output())
 	} else if podIPs[0] == podIPs[1] {
-		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
+		t.Errorf("expected 2 different pod IPs but got %s and %s. output: %q", podIPs[0], podIPs[1], rr.Output())
+
 	}
 
 	// get Pod names
@@ -549,6 +550,9 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 			continue
 		}
 		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+		if hostIP == nil {
+			t.Fatalf("minikube host ip is nil: %s", out.Output())
+		}
 		// try pinging host from pod
 		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
 		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
