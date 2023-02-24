@@ -1077,6 +1077,11 @@ update-cloud-spanner-emulator-version:
 	(cd hack/update/cloud_spanner_emulator_version && \
 	 go run update_cloud_spanner_emulator_version.go)
 
+.PHONY: update-containerd-version
+update-containerd-version:
+	(cd hack/update/containerd_version && \
+	 go run update_containerd_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
