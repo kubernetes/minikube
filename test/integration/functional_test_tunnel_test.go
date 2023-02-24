@@ -156,7 +156,7 @@ func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 			exitCodeCh <- exErr.ExitCode()
 		} else if err != nil {
 			exitCodeCh <- -1
-			t.Errorf("tunnel command failed due to a different reason: %s", err)
+			t.Errorf("tunnel command failed with unexpected error: %v", err)
 		}
 	}
 
