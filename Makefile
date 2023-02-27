@@ -1082,6 +1082,11 @@ update-containerd-version:
 	(cd hack/update/containerd_version && \
 	 go run update_containerd_version.go)
 
+.PHONY: update-buildkit-version
+update-buildkit-version:
+	(cd hack/update/buildkit_version && \
+	 go run update_buildkit_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
