@@ -1087,6 +1087,11 @@ update-buildkit-version:
 	(cd hack/update/buildkit_version && \
 	 go run update_buildkit_version.go)
 
+.PHONY: update-cri-o-version
+update-cri-o-version:
+	(cd hack/update/cri-o_version $$ \
+	 go run update_cri-o_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
