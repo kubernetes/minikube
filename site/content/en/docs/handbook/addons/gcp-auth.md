@@ -102,6 +102,10 @@ To resolve this problem, run:
 
 ## Adding new namespaces
 
+### minikube v1.29.0+
+Newly created namespaces automatically have the image pull secret configured, no action is required.
+
+### minikube v1.28.0 and before
 Namespaces that are added after enabling gcp-auth addon will not be configured with the image pull secret. 
 To resolve this problem, run:
 
