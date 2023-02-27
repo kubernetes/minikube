@@ -45,7 +45,7 @@ var (
 				`BUILDKIT_BIN_AARCH64_COMMIT = .*`:  `BUILDKIT_BIN_AARCH64_COMMIT = {{.Commit}}`,
 			},
 		},
-		"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk": {
+		"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk": {
 			Replace: map[string]string{
 				`BUILDKIT_BIN_VERSION = .*`: `BUILDKIT_BIN_VERSION = {{.Version}}`,
 				`BUILDKIT_BIN_COMMIT = .*`:  `BUILDKIT_BIN_COMMIT = {{.Commit}}`,
@@ -113,7 +113,7 @@ func updateHashFile(version, arch, filePath string) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x buildkit-%s.linux-%s.tar.gz\n", sum, version, arch)); err != nil {
+	if _, err := f.WriteString(fmt.Sprintf("sha256 %x  buildkit-%s.linux-%s.tar.gz\n", sum, version, arch)); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
