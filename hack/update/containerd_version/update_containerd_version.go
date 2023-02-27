@@ -21,7 +21,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -69,7 +68,7 @@ func main() {
 	update.Apply(schema, data)
 
 	if err := updateHashFiles(data.Version); err != nil {
-		log.Fatalf("failed to update hash files: %v", err)
+		klog.Fatalf("failed to update hash files: %v", err)
 	}
 }
 
