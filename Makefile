@@ -1089,7 +1089,7 @@ update-buildkit-version:
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
-	(cd hack/update/cri-o_version $$ \
+	(cd hack/update/cri-o_version && \
 	 go run update_cri-o_version.go)
 
 .PHONY: generate-licenses
