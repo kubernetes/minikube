@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.2
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
-	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
+	github.com/hooklift/iso9660 v1.0.0
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51

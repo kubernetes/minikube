@@ -842,8 +842,8 @@ github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 h1:S4qyfL2sEm5Budr4
 github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95/go.mod h1:QiyDdbZLaJ/mZP4Zwc9g2QsfaEA4o7XvvgZegSci5/E=
 github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 h1:WgfvpuKg42WVLkxNwzfFraXkTXPK36bMqXvMFN67clI=
 github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214/go.mod h1:kj6hFWqfwSjFjLnYW5PK1DoxZ4O0uapwHRmd9jhln4E=
-github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8 h1:ARl0RuGZTqBOMXQIfXen0twVSJ8kMojd7ThJf4EBcrc=
-github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8/go.mod h1:sOC47ru8lB0DlU0EZ7BJ0KCP5rDqOvx0c/5K5ADm8H0=
+github.com/hooklift/iso9660 v1.0.0 h1:GYN0ejrqTl1qtB+g+ics7xxWHp7J2B1zmr25O9EyG3c=
+github.com/hooklift/iso9660 v1.0.0/go.mod h1:sOC47ru8lB0DlU0EZ7BJ0KCP5rDqOvx0c/5K5ADm8H0=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/huandu/xstrings v1.3.2 h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=
 github.com/huandu/xstrings v1.3.2/go.mod h1:y5/lhBue+AyNmUVz9RLU9xbLR0o4KIIExikq4ovT0aE=
