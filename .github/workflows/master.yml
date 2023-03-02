@@ -128,7 +128,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -226,7 +226,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -328,7 +328,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+        go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
     - name: Download Binaries
       uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
       with:
@@ -413,7 +413,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
       - name: Install docker
         shell: bash
         run: |
@@ -529,7 +529,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
       - name: Set fs.protected_regular
         shell: bash
         run: |

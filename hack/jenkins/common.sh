@@ -428,7 +428,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
 
 
 echo ">> Running gopogh"

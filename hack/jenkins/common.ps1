@@ -71,7 +71,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check
 ./out/check_install_golang.ps1
 
 # Download gopogh and gotestsum
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.14.0
 go install gotest.tools/gotestsum@v1.9.0
 
 # Grab all the scripts we'll need for integration tests
