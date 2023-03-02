@@ -94,7 +94,7 @@ else
   ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout || true
 fi
 
-# installing golang so we could do go get for gopogh
+# installing golang so we can go install gopogh
 ./installers/check_install_golang.sh "/usr/local" || true
 
 # install docker and kubectl if not present
@@ -428,8 +428,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-curl -LO "https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-${OS_ARCH}"
-sudo install "gopogh-${OS_ARCH}" /usr/local/bin/gopogh
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
 
 
 echo ">> Running gopogh"

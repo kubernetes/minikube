@@ -63,6 +63,9 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        with:
+          go-version: ${{env.GO_VERSION}}
       - name: Install tools
         shell: bash
         run: |
@@ -95,8 +98,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-arm64
-          sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
 
       - name: Docker Info
         shell: bash
@@ -116,9 +118,6 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
-        with:
-          go-version: ${{env.GO_VERSION}}
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
