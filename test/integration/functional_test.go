@@ -1424,114 +1424,61 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
-	var rr *RunResult
-	var err error
-	// docs: Create a new `k8s.gcr.io/echoserver` deployment
-	// k8s.gcr.io/echoserver is not multi-arch
-	if arm64Platform() {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
-	}
-
-	if err != nil {
-		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
-	if err != nil {
-		t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
-	}
-
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
-		t.Fatalf("failed waiting for hello-node pod: %v", err)
-	}
-
-	// docs: Run `minikube service list` to make sure the newly created service is correctly listed in the output
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
-	if err != nil {
-		t.Errorf("failed to do service list. args %q : %v", rr.Command(), err)
-	}
-	if !strings.Contains(rr.Stdout.String(), "hello-node") {
-		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
-	}
-
+	validateServiceCmdDeployApp(ctx, t, profile)
+	validateServiceCmdList(ctx, t, profile)
 	validateServiceCmdJSON(ctx, t, profile)
-
-	// docs: Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
-	cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
-	if NeedsPortForward() {
-		go killContext(cmdContext, 2*time.Second, t)
-	}
-
-	rr, err = Run(t, cmdContext)
-	if err != nil && !strings.Contains(err.Error(), "interrupt") {
-		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
-	}
-
-	splits := strings.Split(rr.Stdout.String(), "|")
-	var endpoint string
-	// get the last endpoint in the output to test http to https
-	for _, v := range splits {
-		if strings.Contains(v, "http") {
-			endpoint = strings.TrimSpace(v)
-		}
-	}
-	t.Logf("found endpoint: %s", endpoint)
-
-	u, err := url.Parse(endpoint)
-	if err != nil {
-		t.Fatalf("failed to parse service url endpoint %q: %v", endpoint, err)
-	}
-	if u.Scheme != "https" {
-		t.Errorf("expected scheme for %s to be 'https' but got %q", endpoint, u.Scheme)
-	}
-
-	cmdContext = exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
-	if NeedsPortForward() {
-		go killContext(cmdContext, 2*time.Second, t)
-	}
-	// docs: Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
-	rr, err = Run(t, cmdContext)
-	if err != nil && !strings.Contains(err.Error(), "interrupt") {
-		t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
-	}
-
-	if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
-		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
-	}
-
-	cmdContext = exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url")
-	if NeedsPortForward() {
-		go killContext(cmdContext, 2*time.Second, t)
-	}
-	// docs: Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
-	rr, err = Run(t, cmdContext)
-	if err != nil {
-		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
-	}
-
-	endpoint = strings.TrimSpace(rr.Stdout.String())
-	t.Logf("found endpoint for hello-node: %s", endpoint)
-
-	u, err = url.Parse(endpoint)
-	if err != nil {
-		t.Fatalf("failed to parse %q: %v", endpoint, err)
-	}
-
-	if u.Scheme != "http" {
-		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
-	}
+	validateServiceCmdHTTPS(ctx, t, profile)
+	validateServiceCmdFormat(ctx, t, profile)
+	validateServiceCmdURL(ctx, t, profile)
 }
 
+// validateServiceCmdDeployApp Create a new `k8s.gcr.io/echoserver` deployment
+func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile string) {
+	t.Run("DeployApp", func(t *testing.T) {
+		var rr *RunResult
+		var err error
+		// k8s.gcr.io/echoserver is not multi-arch
+		if arm64Platform() {
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver-arm:1.8"))
+		} else {
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=k8s.gcr.io/echoserver:1.8"))
+		}
+
+		if err != nil {
+			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
+		if err != nil {
+			t.Fatalf("failed to expose hello-node deployment: %q : %v", rr.Command(), err)
+		}
+
+		if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
+			t.Fatalf("failed waiting for hello-node pod: %v", err)
+		}
+	})
+}
+
+// validateServiceCmdList Run `minikube service list` to make sure the newly created service is correctly listed in the output
+func validateServiceCmdList(ctx context.Context, t *testing.T, profile string) {
+	t.Run("List", func(t *testing.T) {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
+		if err != nil {
+			t.Errorf("failed to do service list. args %q : %v", rr.Command(), err)
+		}
+		if !strings.Contains(rr.Stdout.String(), "hello-node") {
+			t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
+		}
+	})
+}
+
+// validateServiceCmdJSON Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
 func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
-	// docs: Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
-	t.Run("ServiceJSONOutput", func(t *testing.T) {
+	t.Run("JSONOutput", func(t *testing.T) {
 		targetSvcName := "hello-node"
 		// helper function to run command then, return target service object from json output.
 		extractServiceObjFunc := func(rr *RunResult) *service.SvcURL {
 			var jsonObjects service.URLs
-			err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObjects)
-			if err != nil {
+			if err := json.Unmarshal(rr.Stdout.Bytes(), &jsonObjects); err != nil {
 				t.Fatalf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
 			}
 
@@ -1545,15 +1492,100 @@ func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 
 		start := time.Now()
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list", "-o", "json"))
-		elapsed := time.Since(start)
 		if err != nil {
 			t.Fatalf("failed to list services with json format. args %q: %v", rr.Command(), err)
 		}
+		elapsed := time.Since(start)
 		t.Logf("Took %q to run %q", elapsed, rr.Command())
 
 		pr := extractServiceObjFunc(rr)
 		if pr == nil {
 			t.Errorf("expected the json of 'service list' to include %q but got *%q*. args: %q", targetSvcName, rr.Stdout.String(), rr.Command())
+		}
+	})
+}
+
+// validateServiceCmdHTTPS Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
+func validateServiceCmdHTTPS(ctx context.Context, t *testing.T, profile string) {
+	t.Run("HTTPS", func(t *testing.T) {
+		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
+		if NeedsPortForward() {
+			go killContext(cmdContext, 2*time.Second, t)
+		}
+
+		rr, err := Run(t, cmdContext)
+		if err != nil && !strings.Contains(err.Error(), "interrupt") {
+			t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
+		}
+
+		splits := strings.Split(rr.Stdout.String(), "|")
+		var endpoint string
+		// get the last endpoint in the output to test http to https
+		for _, v := range splits {
+			if strings.Contains(v, "http") {
+				endpoint = strings.TrimSpace(v)
+			}
+		}
+		t.Logf("found endpoint: %s", endpoint)
+
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			t.Fatalf("failed to parse service url endpoint %q: %v", endpoint, err)
+		}
+		if u.Scheme != "https" {
+			t.Errorf("expected scheme for %s to be 'https' but got %q", endpoint, u.Scheme)
+		}
+	})
+}
+
+// validateServiceCmdFormat Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
+func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string) {
+	t.Run("Format", func(t *testing.T) {
+		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
+		if NeedsPortForward() {
+			go killContext(cmdContext, 2*time.Second, t)
+		}
+		rr, err := Run(t, cmdContext)
+		if err != nil && !strings.Contains(err.Error(), "interrupt") {
+			t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
+		}
+
+		endpoint := strings.TrimSpace(rr.Stdout.String())
+		t.Logf("found endpoint for hello-node: %s", endpoint)
+
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			t.Fatalf("failed to parse %q: %v", endpoint, err)
+		}
+
+		if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
+			t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
+		}
+	})
+}
+
+// validateServiceCmdURL Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
+func validateServiceCmdURL(ctx context.Context, t *testing.T, profile string) {
+	t.Run("URL", func(t *testing.T) {
+		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url")
+		if NeedsPortForward() {
+			go killContext(cmdContext, 2*time.Second, t)
+		}
+		rr, err := Run(t, cmdContext)
+		if err != nil {
+			t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
+		}
+
+		endpoint := strings.TrimSpace(rr.Stdout.String())
+		t.Logf("found endpoint for hello-node: %s", endpoint)
+
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			t.Fatalf("failed to parse %q: %v", endpoint, err)
+		}
+
+		if u.Scheme != "http" {
+			t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 		}
 	})
 }
