@@ -126,8 +126,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -226,8 +225,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -342,11 +340,9 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
-
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Download Binaries
         uses: actions/download-artifact@9782bd6a9848b53b110e712e20e42d89988822b7
         with:
@@ -449,8 +445,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -534,11 +529,9 @@ jobs:
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
-
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-darwin-amd64
-          sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Install docker
         shell: bash
         run: |
@@ -653,11 +646,9 @@ jobs:
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
       - name: Install gopogh
-
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
       - name: Set fs.protected_regular
         shell: bash
         run: |
