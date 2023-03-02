@@ -27,10 +27,13 @@ function Write-GithubStatus {
 	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $JsonBody -ContentType "application/json" -Method Post -usebasicparsing
 }
 
+# cleanup possible leftovers from previous run
+rm -r -Force test_reports
+rm -Force testout*
+
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
-$GoVersion = "1.20.1"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 $KubeVersion = (Invoke-WebRequest -Uri 'https://dl.k8s.io/release/stable.txt' -UseBasicParsing).Content
@@ -63,22 +66,13 @@ if ($driver -eq "docker") {
 	docker system prune -a --volumes -f
 }
 
-# Download Go
-$CurrentGo = go version
-if ($CurrentGo -NotLike "*$GoVersion*") {
-  (New-Object Net.WebClient).DownloadFile("https://go.dev/dl/go$GoVersion.windows-amd64.zip", "$env:TEMP\golang.zip")
-  Remove-Item "c:\Program Files\Go\*" -Recurse
-  Add-Type -Assembly "System.IO.Compression.Filesystem"
-  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:TEMP\golang.zip", "$env:TEMP\golang")
-  Copy-Item -Path "$env:TEMP\golang\go\*" -Destination "c:\Program Files\Go\" -Recurse
-  Remove-Item "$env:TEMP\golang" -Recurse
-  Remove-Item "$env:TEMP\golang.zip"
-}
+# install/update Go if required
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check_install_golang.ps1 out/
+./out/check_install_golang.ps1
 
 # Download gopogh and gotestsum
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
-(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.9.0/gotestsum_1.9.0_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
-tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+go install gotest.tools/gotestsum@v1.9.0
 
 # Grab all the scripts we'll need for integration tests
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/

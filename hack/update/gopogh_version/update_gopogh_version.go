@@ -49,7 +49,7 @@ var (
 		},
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/common.sh": {
