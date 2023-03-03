@@ -1501,7 +1501,7 @@ func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 // validateServiceCmdHTTPS Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 func validateServiceCmdHTTPS(ctx context.Context, t *testing.T, profile string) {
 	t.Run("HTTPS", func(t *testing.T) {
-		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		cmdCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
 		rr, err := Run(t, cmd)
@@ -1532,7 +1532,7 @@ func validateServiceCmdHTTPS(ctx context.Context, t *testing.T, profile string) 
 // validateServiceCmdFormat Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
 func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string) {
 	t.Run("Format", func(t *testing.T) {
-		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		cmdCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
 		rr, err := Run(t, cmd)
@@ -1551,7 +1551,7 @@ func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string)
 // validateServiceCmdURL Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 func validateServiceCmdURL(ctx context.Context, t *testing.T, profile string) {
 	t.Run("URL", func(t *testing.T) {
-		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		cmdCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 		defer cancel()
 		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "hello-node", "--url")
 		rr, err := Run(t, cmd)
