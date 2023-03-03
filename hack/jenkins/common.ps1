@@ -73,6 +73,10 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check
 # Download gopogh and gotestsum
 go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
 go install gotest.tools/gotestsum@v1.9.0
+# temporary: remove the old install of gopogh & gotestsum as it's taking priority over our current install, preventing updating
+if (Test-Path "C:\Go") {
+    Remove-Item "C:\Go" -Recurse -Force
+}
 
 # Grab all the scripts we'll need for integration tests
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
