@@ -1386,14 +1386,6 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	})
 }
 
-func killContext(cmdContext *exec.Cmd, killDelay time.Duration, t *testing.T) {
-	time.Sleep(killDelay)
-	err := cmdContext.Process.Signal(os.Interrupt)
-	if err != nil {
-		t.Error("Failed to sent interrupt to proc", err)
-	}
-}
-
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -1508,13 +1500,11 @@ func validateServiceCmdJSON(ctx context.Context, t *testing.T, profile string) {
 // validateServiceCmdHTTPS Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
 func validateServiceCmdHTTPS(ctx context.Context, t *testing.T, profile string) {
 	t.Run("HTTPS", func(t *testing.T) {
-		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
-		if NeedsPortForward() {
-			go killContext(cmdContext, 2*time.Second, t)
-		}
-
-		rr, err := Run(t, cmdContext)
-		if err != nil && !strings.Contains(err.Error(), "interrupt") {
+		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node")
+		rr, err := Run(t, cmd)
+		if isUnexpectedServiceError(cmdCtx, err) {
 			t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
 		}
 
@@ -1541,12 +1531,11 @@ func validateServiceCmdHTTPS(ctx context.Context, t *testing.T, profile string) 
 // validateServiceCmdFormat Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
 func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string) {
 	t.Run("Format", func(t *testing.T) {
-		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
-		if NeedsPortForward() {
-			go killContext(cmdContext, 2*time.Second, t)
-		}
-		rr, err := Run(t, cmdContext)
-		if err != nil && !strings.Contains(err.Error(), "interrupt") {
+		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}")
+		rr, err := Run(t, cmd)
+		if isUnexpectedServiceError(cmdCtx, err) {
 			t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
 		}
 
@@ -1567,12 +1556,11 @@ func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string)
 // validateServiceCmdURL Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 func validateServiceCmdURL(ctx context.Context, t *testing.T, profile string) {
 	t.Run("URL", func(t *testing.T) {
-		cmdContext := exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url")
-		if NeedsPortForward() {
-			go killContext(cmdContext, 2*time.Second, t)
-		}
-		rr, err := Run(t, cmdContext)
-		if err != nil {
+		cmdCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(cmdCtx, Target(), "-p", profile, "service", "hello-node", "--url")
+		rr, err := Run(t, cmd)
+		if isUnexpectedServiceError(cmdCtx, err) {
 			t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
 		}
 
@@ -1588,6 +1576,21 @@ func validateServiceCmdURL(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 		}
 	})
+}
+
+// isUnexpectedServiceError is used to prevent failing ServiceCmd tests on Docker Desktop due to DeadlineExceeded errors.
+// Due to networking contraints Docker Desktop requires creating an SSH tunnel to connect to a service. This command has
+// to be left running to keep the SSH tunnel connected, so for the ServiceCmd tests we set a timeout context so we can
+// check the output and then the command is terminated, otherwise it would keep runnning forever. So if using Docker
+// Desktop and the DeadlineExceeded, consider it an expected error.
+func isUnexpectedServiceError(ctx context.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	if !NeedsPortForward() {
+		return true
+	}
+	return ctx.Err() != context.DeadlineExceeded
 }
 
 func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string) {
