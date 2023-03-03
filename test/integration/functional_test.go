@@ -1579,7 +1579,7 @@ func validateServiceCmdURL(ctx context.Context, t *testing.T, profile string) {
 }
 
 // isUnexpectedServiceError is used to prevent failing ServiceCmd tests on Docker Desktop due to DeadlineExceeded errors.
-// Due to networking contraints Docker Desktop requires creating an SSH tunnel to connect to a service. This command has
+// Due to networking constraints Docker Desktop requires creating an SSH tunnel to connect to a service. This command has
 // to be left running to keep the SSH tunnel connected, so for the ServiceCmd tests we set a timeout context so we can
 // check the output and then the command is terminated, otherwise it would keep runnning forever. So if using Docker
 // Desktop and the DeadlineExceeded, consider it an expected error.
