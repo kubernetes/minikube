@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -1539,16 +1540,10 @@ func validateServiceCmdFormat(ctx context.Context, t *testing.T, profile string)
 			t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
 		}
 
-		endpoint := strings.TrimSpace(rr.Stdout.String())
-		t.Logf("found endpoint for hello-node: %s", endpoint)
+		stringIP := strings.TrimSpace(rr.Stdout.String())
 
-		u, err := url.Parse(endpoint)
-		if err != nil {
-			t.Fatalf("failed to parse %q: %v", endpoint, err)
-		}
-
-		if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
-			t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
+		if ip := net.ParseIP(stringIP); ip == nil {
+			t.Fatalf("%q is not a valid IP", stringIP)
 		}
 	})
 }
