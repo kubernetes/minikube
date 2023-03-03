@@ -429,6 +429,8 @@ fi
 
 echo ">> Installing gopogh"
 go install github.com/medyagh/gopogh/cmd/gopogh@v0.13.0
+# temporary: remove the old install of gopogh as it's taking priority over our current install, preventing updating
+sudo rm -f /usr/local/bin/gopogh
 
 
 echo ">> Running gopogh"
