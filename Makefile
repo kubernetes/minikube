@@ -220,6 +220,14 @@ else
 	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
 endif
 
+out/sudominikube$(IS_EXE): $(SOURCE_FILES) $(ASSET_FILES) go.mod
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) GOARM=$(GOARM) /usr/bin/make $@)
+else
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/sudominikube
+endif
+
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
@@ -248,6 +256,30 @@ out/minikube-linux-ppc64el: out/minikube-linux-ppc64le
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
+out/sudominikube-linux-i686: out/sudominikube-linux-386
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/sudominikube-linux-x86_64: out/sudominikube-linux-amd64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/sudominikube-linux-armhf: out/sudominikube-linux-arm
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/sudominikube-linux-armv7hl: out/sudominikube-linux-arm
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/sudominikube-linux-aarch64: out/sudominikube-linux-arm64
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
+out/sudominikube-linux-ppc64el: out/sudominikube-linux-ppc64le
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
+
 .PHONY: minikube-linux-amd64 minikube-linux-arm64
 minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux x86 64bit
 minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for Linux ARM 64bit
@@ -255,6 +287,14 @@ minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for Linux ARM 6
 .PHONY: minikube-darwin-amd64 minikube-darwin-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
 minikube-darwin-arm64: out/minikube-darwin-arm64 ## Build Minikube for Darwin ARM 64bit
+
+.PHONY: sudominikube-linux-amd64 sudominikube-linux-arm64
+sudominikube-linux-amd64: out/sudominikube-linux-amd64 ## Build Minikube for Linux x86 64bit
+sudominikube-linux-arm64: out/sudominikube-linux-arm64 ## Build Minikube for Linux ARM 64bit
+
+.PHONY: sudominikube-darwin-amd64 sudominikube-darwin-arm64
+sudominikube-darwin-amd64: out/sudominikube-darwin-amd64 ## Build Minikube for Darwin x86 64bit
+sudominikube-darwin-arm64: out/sudominikube-darwin-arm64 ## Build Minikube for Darwin ARM 64bit
 
 .PHONY: minikube-windows-amd64.exe
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
@@ -268,6 +308,15 @@ else
 	$(if $(quiet),@echo "  GO       $@")
 	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+endif
+
+out/sudominikube-%: $(SOURCE_FILES) $(ASSET_FILES)
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
+	$(if $(quiet),@echo "  GO       $@")
+	$(Q)GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" $(if $(call eq,$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*))),arm),GOARM=$(GOARM)) \
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/sudominikube
 endif
 
 out/minikube-linux-armv6: $(SOURCE_FILES) $(ASSET_FILES)
@@ -927,7 +976,7 @@ endif
 	chmod +X $@
 
 
-site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule
 	git submodule update -f --init
 
 out/hugo/hugo:
@@ -995,7 +1044,7 @@ compare: out/mkcmp out/minikube
 	mv out/minikube out/master.minikube
 	git checkout $(CURRENT_GIT_BRANCH)
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
-	
+
 
 .PHONY: help
 help:

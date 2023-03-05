@@ -499,4 +499,5 @@ var (
 		  minikube start{{.profile}} --driver qemu --network user`),
 		Style: style.SeeNoEvil,
 	}
+	SudoMinkubeInstall = Kind{ID: "SUDO_MINIKUBE_INSTALL", ExitCode: ExProgramError}
 )

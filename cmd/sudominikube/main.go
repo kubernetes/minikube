@@ -18,10 +18,11 @@ package main
 
 import (
 	"os"
-	"path/filepath"
-	"strings"
 
 	"k8s.io/klog/v2"
+
+	"k8s.io/minikube/cmd/minikube/util"
+	"k8s.io/minikube/cmd/sudominikube/cmd"
 
 	// Register drivers
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
@@ -32,8 +33,6 @@ import (
 	"github.com/google/slowjam/pkg/stacklog"
 	"github.com/pkg/profile"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
-	"k8s.io/minikube/cmd/minikube/util"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -46,11 +45,7 @@ func main() {
 
 	util.PropagateDockerContextToEnv()
 
-	// Don't parse flags when running as kubectl
-	_, callingCmd := filepath.Split(os.Args[0])
-	callingCmd = strings.TrimSuffix(callingCmd, ".exe")
-	parse := callingCmd != "kubectl"
-	util.SetFlags(parse)
+	util.SetFlags(true)
 
 	s := stacklog.MustStartFromEnv("STACKLOG_PATH")
 	defer s.Stop()

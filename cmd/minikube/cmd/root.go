@@ -45,7 +45,7 @@ import (
 )
 
 var (
-	dirs = [...]string{
+	Dirs = [...]string{
 		localpath.MiniPath(),
 		localpath.MakeMiniPath("certs"),
 		localpath.MakeMiniPath("machines"),
@@ -64,7 +64,7 @@ var RootCmd = &cobra.Command{
 	Short: "minikube quickly sets up a local Kubernetes cluster",
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		for _, path := range dirs {
+		for _, path := range Dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
 			}
@@ -147,7 +147,7 @@ func Execute() {
 			f.Usage = translate.T(f.Usage)
 		})
 
-		c.SetUsageTemplate(usageTemplate())
+		c.SetUsageTemplate(UsageTemplate())
 	}
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
@@ -176,10 +176,10 @@ func Execute() {
 	}
 }
 
-// usageTemplate just calls translate.T on the default usage template
+// UsageTemplate just calls translate.T on the default usage template
 // explicitly using the raw string instead of calling c.UsageTemplate()
 // so the extractor can find this monstrosity of a string
-func usageTemplate() string {
+func UsageTemplate() string {
 	return fmt.Sprintf(`%s:{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
@@ -260,7 +260,7 @@ func init() {
 			Message: translate.T("Networking and Connectivity Commands:"),
 			Commands: []*cobra.Command{
 				serviceCmd,
-				tunnelCmd,
+				TunnelCmd,
 			},
 		},
 		{
@@ -291,6 +291,7 @@ func init() {
 	// Ungrouped commands will show up in the "Other Commands" section
 	RootCmd.AddCommand(completionCmd)
 	RootCmd.AddCommand(licenseCmd)
+	RootCmd.AddCommand(sudominikubeCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
@@ -298,11 +299,11 @@ func init() {
 	}
 
 	translate.DetermineLocale()
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(InitConfig)
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
+// InitConfig reads in config file and ENV variables if set.
+func InitConfig() {
 	configPath := localpath.ConfigFile()
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")

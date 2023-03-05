@@ -18,7 +18,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
@@ -37,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/sudominikube"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 	pkgnetwork "k8s.io/minikube/pkg/network"
@@ -45,8 +48,8 @@ import (
 var cleanup bool
 var bindAddress string
 
-// tunnelCmd represents the tunnel command
-var tunnelCmd = &cobra.Command{
+// TunnelCmd represents the tunnel command
+var TunnelCmd = &cobra.Command{
 	Use:   "tunnel",
 	Short: "Connect to LoadBalancer services",
 	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer`,
@@ -54,6 +57,32 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		// If this program is minikube instead of sudominikube, then check sudominikube, and try to execute it first
+		if !sudominikube.IsSudoMinikube() {
+			klog.Info("trying with sudominikube")
+			sudominikubePath := filepath.Join(sudominikube.SudominikubeLocation, "sudominikube")
+			err := sudominikube.VerifySudoMinikube(sudominikubePath)
+			if err != nil {
+				klog.Info("no valid sudominikube binary")
+			} else {
+				// try with sudominikube
+				// tell sudominikube the full path minikube's home dir and current user's kubeconfig directory
+				// because otherwise, since we will use "sudo sudominikube", sudominikube 's home director will be /home/root
+				arguments := append(os.Args[1:], "--minikube-config", localpath.MiniPath(), "--kube-config", filepath.Join(os.Getenv("HOME"), ".kube/config"))
+				fmt.Println("Trying with sudominikube: sudominikube ", arguments)
+				commandLine := append([]string{sudominikubePath}, arguments...)
+				cmd := exec.Command("sudo", commandLine...)
+				cmd.Stderr = os.Stderr
+				cmd.Stdout = os.Stdout
+				err := cmd.Run()
+				if err != nil {
+					fmt.Println(err)
+				}
+				return
+			}
+		}
+		fmt.Println(os.Getenv("MINIKUBE_HOME"))
+		fmt.Println(os.Getenv("KUBECONFIG"))
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
@@ -124,6 +153,6 @@ func outputTunnelStarted() {
 }
 
 func init() {
-	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
-	tunnelCmd.Flags().StringVar(&bindAddress, "bind-address", "", "set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces")
+	TunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", true, "call with cleanup=true to remove old tunnels")
+	TunnelCmd.Flags().StringVar(&bindAddress, "bind-address", "", "set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces")
 }

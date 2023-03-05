@@ -38,7 +38,7 @@ func TestPreRunDirectories(t *testing.T) {
 
 	runCommand(RootCmd.PersistentPreRun)
 
-	for _, dir := range dirs {
+	for _, dir := range Dirs {
 		_, err := os.Stat(dir)
 		if os.IsNotExist(err) {
 			t.Fatalf("Directory %s does not exist.", dir)
