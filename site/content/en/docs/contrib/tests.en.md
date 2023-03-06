@@ -293,17 +293,23 @@ Steps:
 #### validateServiceCmd
 asserts basic "service" command functionality
 
-Steps:
-- Create a new `k8s.gcr.io/echoserver` deployment
-- Run `minikube service list` to make sure the newly created service is correctly listed in the output
-- Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
-- Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
-- Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
+#### validateServiceCmdDeployApp
+Create a new `k8s.gcr.io/echoserver` deployment
+
+#### validateServiceCmdList
+Run `minikube service list` to make sure the newly created service is correctly listed in the output
 
 #### validateServiceCmdJSON
+Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
 
-Steps:
-- Run `minikube service list -o JSON` and make sure the services are correctly listed as JSON output
+#### validateServiceCmdHTTPS
+Run `minikube service` with `--https --url` to make sure the HTTPS endpoint URL of the service is printed
+
+#### validateServiceCmdFormat
+Run `minikube service` with `--url --format={{.IP}}` to make sure the IP address of the service is printed
+
+#### validateServiceCmdURL
+Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 
 #### validateServiceCmdConnect
 
