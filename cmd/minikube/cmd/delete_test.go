@@ -269,7 +269,7 @@ func main() {
 	}
 	pid := processToKill.Process.Pid
 
-	err = trySignalProcess(pid)
+	err = trySigKillProcess(pid)
 	if err != nil {
 		t.Fatalf("while trying to kill child proc: %d", pid)
 	}

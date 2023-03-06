@@ -622,7 +622,7 @@ func killProcess(path string) error {
 	// error handling is done below
 	var errs []error
 	for _, pp := range ppp {
-		err := trySignalProcess(pp)
+		err := trySigKillProcess(pp)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -649,8 +649,8 @@ func killProcess(path string) error {
 	return err
 }
 
-// trySignalProcess takes a PID as argument and tries to SIGKILL it
-func trySignalProcess(pid int) error {
+// trySigKillProcess takes a PID as argument and tries to SIGKILL it
+func trySigKillProcess(pid int) error {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
