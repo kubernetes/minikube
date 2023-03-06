@@ -434,7 +434,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
-	// on the first attempt try without force, but on subsuquent attempts use force
+	// on the first attempt try without force, but on subsequent attempts use force
 	force := false
 
 	// Retry, because sometimes we race against an apiserver restart
