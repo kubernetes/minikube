@@ -35,7 +35,7 @@ var addonsDisableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons disable ADDON_NAME")
 		}
-		err := addons.CheckPaused(ClusterFlagValue(), false)
+		err := addons.VerifyNotPaused(ClusterFlagValue(), false)
 		if err != nil {
 			exit.Error(reason.InternalAddonDisablePaused, "disable failed", err)
 		}

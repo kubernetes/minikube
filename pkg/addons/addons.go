@@ -588,8 +588,8 @@ func UpdateConfigToDisable(cc *config.ClusterConfig) {
 	}
 }
 
-// CheckPaused checks whether the cluster is paused before enable/disable an addon.
-func CheckPaused(profile string, enable bool) error {
+// VerifyNotPaused verifies the cluster is not paused before enable/disable an addon.
+func VerifyNotPaused(profile string, enable bool) error {
 	klog.Info("checking whether the cluster is paused")
 
 	cc, err := config.Load(profile)

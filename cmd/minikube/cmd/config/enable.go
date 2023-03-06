@@ -48,7 +48,7 @@ var addonsEnableCmd = &cobra.Command{
 			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
 		}
 
-		err = addons.CheckPaused(ClusterFlagValue(), true)
+		err = addons.VerifyNotPaused(ClusterFlagValue(), true)
 		if err != nil {
 			exit.Error(reason.InternalAddonEnablePaused, "enabled failed", err)
 		}
