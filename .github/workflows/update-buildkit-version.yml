@@ -2,8 +2,8 @@ name: "update-buildkit-version"
 on:
   workflow_dispatch:
   schedule:
-    # every Monday at around 3 am pacific/10 am UTC
-    - cron: "0 10 * * 1"
+    # every Wednesday at around 3 am pacific/10 am UTC
+    - cron: "0 10 * * 3"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.20.1'
@@ -41,7 +41,9 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump buildkit version'
-          labels: ok-to-test
+          labels: |
+            ok-to-build-iso
+            ok-to-build-image
           body: |
             buildkit Project released a [new version](https://github.com/moby/buildkit/releases),
 
