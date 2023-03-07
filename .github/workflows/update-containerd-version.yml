@@ -41,7 +41,9 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump containerd version'
-          labels: ok-to-test
+          labels: |
+            ok-to-build-iso
+            ok-to-build-image
           body: |
             containerd Project released a [new version](https://github.com/containerd/containerd/releases),
 
