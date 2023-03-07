@@ -651,17 +651,15 @@ func killProcess(path string) error {
 
 // trySigKillProcess takes a PID as argument and tries to SIGKILL it
 func trySigKillProcess(pid int) error {
-	entry, err := ps.FindProcess(pid)
+	itDoes, err := doesPIDBelongToMinikube(pid)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
-	}
-	if entry == nil {
-		klog.Infof("Stale pid: %d", pid)
-		return errors.Wrap(err, fmt.Sprintf("removing stale pid: %d", pid))
+		return err
 	}
 
-	// We found a process, but it still may not be ours.
-	klog.Infof("Found process %d: %s", pid, entry.Executable())
+	if !itDoes {
+		return fmt.Errorf("Stale pid: %d", pid)
+	}
+
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("os.FindProcess: %d", pid))
@@ -674,6 +672,26 @@ func trySigKillProcess(pid int) error {
 	}
 
 	return nil
+}
+
+// doesPIDBelongToMinikube tries to find the process with that PID
+// and checks if the executable name is "minikube"
+func doesPIDBelongToMinikube(pid int) (bool, error) {
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return false, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
+	}
+	if entry == nil {
+		klog.Infof("Process not found. pid %d", pid)
+		return false, nil
+	}
+
+	klog.Infof("Found process %d", pid)
+	if entry.Executable() != "minikube" {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // GetPids opens the file at PATH and tries to read
