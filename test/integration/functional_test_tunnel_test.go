@@ -137,26 +137,22 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 
-	exitCodeCh := make(chan int)
+	errCh := make(chan error)
 	sessions := make([]*StartSession, 2)
 
 	var runTunnel = func(idx int) {
 		args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
 
-		ctx2, cancel := context.WithTimeout(ctx, Seconds(5))
+		ctx2, cancel := context.WithTimeout(ctx, Seconds(15))
+		defer cancel()
 		session, err := Start(t, exec.CommandContext(ctx2, Target(), args...))
 		if err != nil {
-			t.Errorf("Failed to start tunnel for the first time")
+			t.Errorf("failed to start tunnel: %v", err)
 		}
 		sessions[idx] = session
-		defer cancel()
 
-		err = session.cmd.Wait()
-		if exErr, ok := err.(*exec.ExitError); ok {
-			exitCodeCh <- exErr.ExitCode()
-		} else if err != nil {
-			exitCodeCh <- -1
-			t.Errorf("tunnel command failed with unexpected error: %v", err)
+		if err := session.cmd.Wait(); err != nil {
+			errCh <- err
 		}
 	}
 
@@ -164,16 +160,16 @@ func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 	go runTunnel(0)
 	go runTunnel(1)
 
-	exitCode := <-exitCodeCh
+	err := <-errCh
 
-	if exitCode != reason.SvcTunnelAlreadyRunning.ExitCode {
-		t.Errorf("Failed to due to some other reason: %d", exitCode)
+	if exErr, ok := err.(*exec.ExitError); !ok || exErr.ExitCode() != reason.SvcTunnelAlreadyRunning.ExitCode {
+		t.Errorf("tunnel command failed with unexpected error: %v", err)
 	}
 
 	for _, sess := range sessions {
 		sess.Stop(t)
 	}
-	<-exitCodeCh
+	<-errCh
 }
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
