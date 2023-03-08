@@ -24,11 +24,11 @@ date: 2022-02-25
 
 2. Open the dmg and copy minikube-gui to your Applications folder
 
-3. **Important!** On first time use only, right click minikube-gui and select `Open`, you will see the following, select `Open`
+3. **Important!** On first time use only, control + click minikube-gui and select `Open`, you will see the following, select `Open`
 
 ![Mac unverified developer](/images/gui/mac.png)
 
-If you don't see the `Open` option you likely left clicked minikube-gui, make sure to right click and select `Open` (first time only)
+If you don't see the `Open` option you likely didn't control + click minikube-gui, this is required for the first time only
 {{% /mactab %}}
 {{% windowstab %}}
 1. [Download minikube-gui](https://github.com/kubernetes-sigs/minikube-gui/releases/latest/download/minikube-gui-windows.zip)
