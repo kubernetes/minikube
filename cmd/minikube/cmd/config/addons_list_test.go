@@ -77,7 +77,6 @@ func TestAddonsList(t *testing.T) {
 			Ambassador *interface{} `json:"ambassador"`
 		}
 
-		b := make([]byte, 590)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)
@@ -93,6 +92,11 @@ func TestAddonsList(t *testing.T) {
 		if err := w.Close(); err != nil {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
+		info, err := r.Stat()
+		if err != nil {
+			t.Fatalf("failed to stat file: %v", err)
+		}
+		b := make([]byte, info.Size())
 		if _, err := r.Read(b); err != nil {
 			t.Fatalf("failed to read bytes: %v", err)
 		}
