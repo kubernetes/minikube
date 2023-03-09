@@ -92,17 +92,10 @@ func TestAddonsList(t *testing.T) {
 		if err := w.Close(); err != nil {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
-		info, err := r.Stat()
-		if err != nil {
-			t.Fatalf("failed to stat file: %v", err)
-		}
-		b := make([]byte, info.Size())
-		if _, err := r.Read(b); err != nil {
-			t.Fatalf("failed to read bytes: %v", err)
-		}
 		got := addons{}
-		if err := json.Unmarshal(b, &got); err != nil {
-			t.Fatalf("failed to unmarshal output; output: %q; err: %v", string(b), err)
+		dec := json.NewDecoder(r)
+		if err := dec.Decode(&got); err != nil {
+			t.Fatalf("failed to decode: %v", err)
 		}
 		if got.Ambassador == nil {
 			t.Errorf("expected `ambassador` field to not be nil, but was")
