@@ -41,7 +41,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump hugo version'
-          labels: ok-to-test
           body: |
             Hugo project released a [new version](https://github.com/gohugoio/hugo/releases),
 

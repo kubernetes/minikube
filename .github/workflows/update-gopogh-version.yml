@@ -41,7 +41,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump gopogh version'
-          labels: ok-to-test
           body: |
             Gopogh Project released a [new version](https://github.com/medyagh/gopogh/releases),
 
