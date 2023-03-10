@@ -815,10 +815,11 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 			}
 			if _, ok := addonDefaultImages[name]; !ok {
 				out.WarningT("Ignoring unknown custom image {{.name}}", out.V{"name": name})
+				delete(newImages, name)
 			}
 		}
 		// Use newly configured custom images.
-		images = overrideDefaults(addonDefaultImages, newImages)
+		images = overrideDefaults(images, newImages)
 		// Store custom addon images to be written.
 		cc.CustomAddonImages = mergeMaps(cc.CustomAddonImages, newImages)
 	}
@@ -827,19 +828,17 @@ func SelectAndPersistImages(addon *Addon, cc *config.ClusterConfig) (images, cus
 	customRegistries = filterKeySpace(addonDefaultImages, cc.CustomAddonRegistries) // filter by images map because registry map may omit default registry.
 	if viper.IsSet(config.AddonRegistries) {
 		// Parse the AddonRegistries flag if present.
-		customRegistries = parseMapString(viper.GetString(config.AddonRegistries))
-		for name := range customRegistries {
+		newRegistries := parseMapString(viper.GetString(config.AddonRegistries))
+		for name := range newRegistries {
 			if _, ok := addonDefaultImages[name]; !ok { // check images map because registry map may omitted default registry
 				out.WarningT("Ignoring unknown custom registry {{.name}}", out.V{"name": name})
-				delete(customRegistries, name)
+				delete(newRegistries, name)
 			}
 		}
-		// Since registry map may omit default registry, any previously set custom registries for these images must be cleared.
-		for name := range addonDefaultImages {
-			delete(cc.CustomAddonRegistries, name)
-		}
+		// Use newly configured custom registries.
+		customRegistries = mergeMaps(customRegistries, newRegistries)
 		// Merge newly set registries into custom addon registries to be written.
-		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, customRegistries)
+		cc.CustomAddonRegistries = mergeMaps(cc.CustomAddonRegistries, newRegistries)
 	}
 
 	// If images or registries were specified, save the config afterward.

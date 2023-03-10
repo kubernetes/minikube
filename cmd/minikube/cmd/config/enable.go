@@ -66,8 +66,12 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 				}
 			}
 		}
-		viper.Set(config.AddonImages, images)
-		viper.Set(config.AddonRegistries, registries)
+		if images != "" {
+			viper.Set(config.AddonImages, images)
+		}
+		if registries != "" {
+			viper.Set(config.AddonRegistries, registries)
+		}
 		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
 			exit.Error(reason.InternalAddonEnable, "enable failed", err)
