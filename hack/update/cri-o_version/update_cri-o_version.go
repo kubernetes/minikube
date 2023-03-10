@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
@@ -40,12 +41,18 @@ var (
 				`CRIO_BIN_COMMIT = .*`:  `CRIO_BIN_COMMIT = {{.Commit}}`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`ARG CRIO_VERSION=.*`: `ARG CRIO_VERSION="{{.MMVersion}}"`,
+			},
+		},
 	}
 )
 
 type Data struct {
-	Version string
-	Commit  string
+	Version   string
+	MMVersion string
+	Commit    string
 }
 
 func main() {
@@ -56,8 +63,9 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Unable to get cri-o stable version: %v", err)
 	}
+	mmVersion := strings.TrimPrefix(semver.MajorMinor(stable.Tag), "v")
 
-	data := Data{Version: stable.Tag, Commit: stable.Commit}
+	data := Data{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}
 
 	update.Apply(schema, data)
 
