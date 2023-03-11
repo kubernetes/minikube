@@ -41,7 +41,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump docsy version'
-          labels: ok-to-test
           body: |
             Docsy project released a [new version](https://github.com/google/docsy/releases),
 

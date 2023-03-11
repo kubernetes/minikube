@@ -41,7 +41,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump gotestsum version'
-          labels: ok-to-test
           body: |
             Gotestsum Project released a [new version](https://github.com/gotestyourself/gotestsum/releases),
 
