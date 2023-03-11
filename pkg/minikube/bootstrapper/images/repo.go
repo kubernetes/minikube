@@ -36,10 +36,7 @@ func kubernetesRepo(mirror string, v semver.Version) string {
 
 func NeedsImageRepository(kv semver.Version) bool {
 	// make sure to override any old image repository
-	if kv.LT(semver.MustParse("1.25.0-alpha.1")) {
-		return true
-	}
-	return false
+	return kv.LT(semver.MustParse("1.25.0-alpha.1"))
 }
 
 func DefaultKubernetesRepo(kv semver.Version) string {
