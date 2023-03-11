@@ -18,23 +18,26 @@ package images
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/version"
 )
 
 func TestKubeadmImages(t *testing.T) {
 	tests := []struct {
-		version string
-		mirror  string
-		invalid bool
-		want    []string
+		version  string
+		mirror   string
+		invalid  bool
+		override bool
+		want     []string
 	}{
-		{"invalid", "", true, nil},
-		{"v0.0.1", "", true, nil}, // too old
-		{"v2.0.0", "", true, nil}, // too new
-		{"v1.26.0-rc.0", "", false, []string{
+		{"invalid", "", true, false, nil},
+		{"v0.0.1", "", true, true, nil},  // too old
+		{"v2.0.0", "", true, false, nil}, // too new
+		{"v1.26.0-rc.0", "", false, false, []string{
 			"registry.k8s.io/kube-apiserver:v1.26.0-rc.0",
 			"registry.k8s.io/kube-controller-manager:v1.26.0-rc.0",
 			"registry.k8s.io/kube-scheduler:v1.26.0-rc.0",
@@ -44,7 +47,7 @@ func TestKubeadmImages(t *testing.T) {
 			"registry.k8s.io/pause:3.9",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.25.4", "", false, []string{
+		{"v1.25.4", "", false, false, []string{
 			"registry.k8s.io/kube-apiserver:v1.25.4",
 			"registry.k8s.io/kube-controller-manager:v1.25.4",
 			"registry.k8s.io/kube-scheduler:v1.25.4",
@@ -54,7 +57,7 @@ func TestKubeadmImages(t *testing.T) {
 			"registry.k8s.io/pause:3.8",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.25.0", "", false, []string{
+		{"v1.25.0", "", false, false, []string{
 			"registry.k8s.io/kube-proxy:v1.25.0",
 			"registry.k8s.io/kube-scheduler:v1.25.0",
 			"registry.k8s.io/kube-controller-manager:v1.25.0",
@@ -64,7 +67,7 @@ func TestKubeadmImages(t *testing.T) {
 			"registry.k8s.io/pause:3.8",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.25.0", "mirror.k8s.io", false, []string{
+		{"v1.25.0", "mirror.k8s.io", false, false, []string{
 			"mirror.k8s.io/kube-proxy:v1.25.0",
 			"mirror.k8s.io/kube-scheduler:v1.25.0",
 			"mirror.k8s.io/kube-controller-manager:v1.25.0",
@@ -74,48 +77,48 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/pause:3.8",
 			"mirror.k8s.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.24.0", "", false, []string{
-			"k8s.gcr.io/kube-proxy:v1.24.0",
-			"k8s.gcr.io/kube-scheduler:v1.24.0",
-			"k8s.gcr.io/kube-controller-manager:v1.24.0",
-			"k8s.gcr.io/kube-apiserver:v1.24.0",
-			"k8s.gcr.io/coredns/coredns:v1.8.6",
-			"k8s.gcr.io/etcd:3.5.3-0",
-			"k8s.gcr.io/pause:3.7",
+		{"v1.24.0", "", false, true, []string{
+			"registry.k8s.io/kube-proxy:v1.24.0",
+			"registry.k8s.io/kube-scheduler:v1.24.0",
+			"registry.k8s.io/kube-controller-manager:v1.24.0",
+			"registry.k8s.io/kube-apiserver:v1.24.0",
+			"registry.k8s.io/coredns/coredns:v1.8.6",
+			"registry.k8s.io/etcd:3.5.3-0",
+			"registry.k8s.io/pause:3.7",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.23.0", "", false, []string{
-			"k8s.gcr.io/kube-proxy:v1.23.0",
-			"k8s.gcr.io/kube-scheduler:v1.23.0",
-			"k8s.gcr.io/kube-controller-manager:v1.23.0",
-			"k8s.gcr.io/kube-apiserver:v1.23.0",
-			"k8s.gcr.io/coredns/coredns:v1.8.6",
-			"k8s.gcr.io/etcd:3.5.1-0",
-			"k8s.gcr.io/pause:3.6",
+		{"v1.23.0", "", false, true, []string{
+			"registry.k8s.io/kube-proxy:v1.23.0",
+			"registry.k8s.io/kube-scheduler:v1.23.0",
+			"registry.k8s.io/kube-controller-manager:v1.23.0",
+			"registry.k8s.io/kube-apiserver:v1.23.0",
+			"registry.k8s.io/coredns/coredns:v1.8.6",
+			"registry.k8s.io/etcd:3.5.1-0",
+			"registry.k8s.io/pause:3.6",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.22.0", "", false, []string{
-			"k8s.gcr.io/kube-proxy:v1.22.0",
-			"k8s.gcr.io/kube-scheduler:v1.22.0",
-			"k8s.gcr.io/kube-controller-manager:v1.22.0",
-			"k8s.gcr.io/kube-apiserver:v1.22.0",
-			"k8s.gcr.io/coredns/coredns:v1.8.4",
-			"k8s.gcr.io/etcd:3.5.0-0",
-			"k8s.gcr.io/pause:3.5",
+		{"v1.22.0", "", false, true, []string{
+			"registry.k8s.io/kube-proxy:v1.22.0",
+			"registry.k8s.io/kube-scheduler:v1.22.0",
+			"registry.k8s.io/kube-controller-manager:v1.22.0",
+			"registry.k8s.io/kube-apiserver:v1.22.0",
+			"registry.k8s.io/coredns/coredns:v1.8.4",
+			"registry.k8s.io/etcd:3.5.0-0",
+			"registry.k8s.io/pause:3.5",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.16.0", "", false, []string{
-			"k8s.gcr.io/kube-proxy:v1.16.0",
-			"k8s.gcr.io/kube-scheduler:v1.16.0",
-			"k8s.gcr.io/kube-controller-manager:v1.16.0",
-			"k8s.gcr.io/kube-apiserver:v1.16.0",
-			"k8s.gcr.io/coredns:1.6.2",
-			"k8s.gcr.io/etcd:3.3.15-0",
-			"k8s.gcr.io/pause:3.1",
+		{"v1.16.0", "", false, true, []string{
+			"registry.k8s.io/kube-proxy:v1.16.0",
+			"registry.k8s.io/kube-scheduler:v1.16.0",
+			"registry.k8s.io/kube-controller-manager:v1.16.0",
+			"registry.k8s.io/kube-apiserver:v1.16.0",
+			"registry.k8s.io/coredns:1.6.2",
+			"registry.k8s.io/etcd:3.3.15-0",
+			"registry.k8s.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:" + version.GetStorageProvisionerVersion(),
 		}},
-		{"v1.11.0", "", true, nil},
-		{"v1.10.0", "", true, nil},
+		{"v1.11.0", "", true, true, nil},
+		{"v1.10.0", "", true, true, nil},
 	}
 	for _, tc := range tests {
 		got, err := Kubeadm(tc.mirror, tc.version)
@@ -124,6 +127,11 @@ func TestKubeadmImages(t *testing.T) {
 		}
 		if err != nil && !tc.invalid {
 			t.Fatalf("unexpected err (%s): %v", tc.version, err)
+		}
+		v, err := semver.Make(strings.TrimPrefix(tc.version, "v"))
+		needs := NeedsImageRepository(v)
+		if err == nil && !cmp.Equal(needs, tc.override) {
+			t.Errorf("needs mismatch, want: %v, got: %v", tc.override, needs)
 		}
 		sort.Strings(got)
 		sort.Strings(tc.want)

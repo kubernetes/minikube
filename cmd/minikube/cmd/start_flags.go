@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -441,6 +442,12 @@ func getRepository(cmd *cobra.Command, k8sVersion string) string {
 
 	if repository == constants.AliyunMirror {
 		download.SetAliyunMirror()
+	}
+
+	// Need to override the default of old kubeadm versions
+	v := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
+	if repository == "" && images.NeedsImageRepository(v) {
+		repository = images.DefaultKubernetesRepo(v)
 	}
 
 	if cmd.Flags().Changed(imageRepository) || cmd.Flags().Changed(imageMirrorCountry) {

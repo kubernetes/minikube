@@ -34,10 +34,14 @@ func kubernetesRepo(mirror string, v semver.Version) string {
 	return DefaultKubernetesRepo(v)
 }
 
-func DefaultKubernetesRepo(kv semver.Version) string {
-	// these (-1.24) should probably be moved too
+func NeedsImageRepository(kv semver.Version) bool {
+	// make sure to override any old image repository
 	if kv.LT(semver.MustParse("1.25.0-alpha.1")) {
-		return OldDefaultKubernetesRepo
+		return true
 	}
+	return false
+}
+
+func DefaultKubernetesRepo(kv semver.Version) string {
 	return NewDefaultKubernetesRepo
 }

@@ -43,7 +43,7 @@ func Test_kubernetesRepo(t *testing.T) {
 		{
 			"",
 			semver.MustParse("1.24.0"),
-			OldDefaultKubernetesRepo,
+			NewDefaultKubernetesRepo,
 		},
 		{
 			"",
@@ -54,7 +54,7 @@ func Test_kubernetesRepo(t *testing.T) {
 	for _, tc := range tests {
 		got := kubernetesRepo(tc.mirror, tc.version)
 		if !cmp.Equal(got, tc.want) {
-			t.Errorf("mirror miss match, want: %s, got: %s", tc.want, got)
+			t.Errorf("mirror mismatch, want: %s, got: %s", tc.want, got)
 		}
 	}
 
