@@ -19,6 +19,7 @@ package addons
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -186,14 +187,15 @@ func patchServiceAccounts(cc *config.ClusterConfig) error {
 }
 
 func refreshExistingPods(cc *config.ClusterConfig) error {
+	klog.Info("refreshing existing pods")
 	client, err := service.K8s.GetCoreClient(cc.Name)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get k8s client: %v", err)
 	}
 
 	namespaces, err := client.Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get namespaces: %v", err)
 	}
 	for _, n := range namespaces.Items {
 		// Ignore kube-system and gcp-auth namespaces
@@ -204,7 +206,7 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 		pods := client.Pods(n.Name)
 		podList, err := pods.List(context.TODO(), metav1.ListOptions{})
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to list pods: %v", err)
 		}
 
 		for _, p := range podList.Items {
@@ -213,23 +215,29 @@ func refreshExistingPods(cc *config.ClusterConfig) error {
 				continue
 			}
 
+			klog.Infof("refreshing pod %q", p.Name)
+
 			// Recreating the pod should pickup the necessary changes
 			err := pods.Delete(context.TODO(), p.Name, metav1.DeleteOptions{})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to delete pod %q: %v", p.Name, err)
 			}
 
 			p.ResourceVersion = ""
 
-			_, err = pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
 
 			for err == nil {
-				time.Sleep(time.Second)
+				if ctx.Err() == context.DeadlineExceeded {
+					return fmt.Errorf("pod %q failed to restart", p.Name)
+				}
 				_, err = pods.Get(context.TODO(), p.Name, metav1.GetOptions{})
+				time.Sleep(time.Second)
 			}
 
 			if _, err := pods.Create(context.TODO(), &p, metav1.CreateOptions{}); err != nil {
-				return err
+				return fmt.Errorf("failed to create pod %q: %v", p.Name, err)
 			}
 		}
 	}

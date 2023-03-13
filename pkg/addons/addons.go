@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path"
@@ -433,11 +434,17 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
+	// on the first attempt try without force, but on subsequent attempts use force
+	force := false
+
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		_, err := runner.RunCmd(kubectlCommand(cc, deployFiles, enable))
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, err := runner.RunCmd(kubectlCommand(ctx, cc, deployFiles, enable, force))
 		if err != nil {
 			klog.Warningf("apply failed, will retry: %v", err)
+			force = true
 		}
 		return err
 	}
