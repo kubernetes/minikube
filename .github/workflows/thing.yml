@@ -1,0 +1,12 @@
+name: build
+on:
+  issue_comment
+
+jobs:
+  minimize:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: spowelljr/hide-minikube-bot-comments@db249592e76afe7c635f2ce48abfd6bdf25ed26e
+        with:
+          contains: |
+            minimize this
