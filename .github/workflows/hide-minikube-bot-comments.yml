@@ -1,0 +1,8 @@
+name: minimize
+on: issue_comment
+jobs:
+  minimize:
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: spowelljr/hide-minikube-bot-comments@3e2cbc9fcd07d17eeea7dab7ac90a27cb29f8bce
