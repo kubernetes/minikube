@@ -687,7 +687,8 @@ func doesPIDBelongToMinikube(pid int) (bool, error) {
 	}
 
 	klog.Infof("Found process %d", pid)
-	if entry.Executable() != "minikube" {
+	if !strings.Contains(entry.Executable(), "minikube") {
+		klog.Infof("process %d was not started by minikube", pid)
 		return false, nil
 	}
 
