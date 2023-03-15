@@ -1,0 +1,9 @@
+config BR2_PACKAGE_CRICTL_BIN
+	bool "criu"
+	default y
+	depends on BR2_x86_64
+    depends on BR2_PACKAGE_LIBCAP
+    depends on BR2_PACKAGE_PROTOBUF
+    depends on BR2_PACKAGE_PROTOBUF_C
+    depends on BR2_PACKAGE_LIBNL
+    depends on BR2_PACKAGE_LIBNET
