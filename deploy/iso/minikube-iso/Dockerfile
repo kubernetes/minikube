@@ -37,6 +37,17 @@ RUN apt-get update \
 		golang-go \
 		libpcre3-dev \
 		mkisofs \
+		libprotobuf-dev \
+		libprotobuf-c-dev \
+		protobuf-c-compiler \
+		protobuf-compiler \
+		pkg-config \
+		libbsd-dev \
+		libnftables-dev \
+		libcap-dev \
+		libnl-3-dev \
+		libnet-dev \
+		libgnutls28-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /app
