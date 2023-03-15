@@ -1,7 +1,7 @@
-name: minimize
+name: hide-minikube-bot-comments
 on: issue_comment
 jobs:
-  minimize:
+  hide-comments:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-20.04
     steps:
