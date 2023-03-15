@@ -6,3 +6,5 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: spowelljr/hide-minikube-bot-comments@3e2cbc9fcd07d17eeea7dab7ac90a27cb29f8bce
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
