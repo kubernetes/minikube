@@ -543,11 +543,11 @@ var Addons = map[string]*Addon{
 			"metallb-config.yaml",
 			"0640"),
 	}, false, "metallb", "3rd party (MetalLB)", "", "", map[string]string{
-		"Speaker":    "metallb/speaker:v0.9.6@sha256:c66585a805bed1a3b829d8fb4a4aab9d87233497244ebff96f1b88f1e7f8f991",
-		"Controller": "metallb/controller:v0.9.6@sha256:fbfdb9d3f55976b0ee38f3309d83a4ca703efcf15d6ca7889cd8189142286502",
+		"Speaker":    "metallb/speaker:v0.9.6@sha256:7a400205b4986acd3d2ff32c29929682b8ff8d830837aff74f787c757176fa9f",
+		"Controller": "metallb/controller:v0.9.6@sha256:6932cf255dd7f06f550c7f106b9a206be95f847ab8cb77aafac7acd27def0b00",
 	}, map[string]string{
-		"Speaker":    "docker.io",
-		"Controller": "docker.io",
+		"Speaker":    "quay.io",
+		"Controller": "quay.io",
 	}),
 	"ambassador": NewAddon([]*BinAsset{
 		MustBinAsset(addons.AmbassadorAssets,
