@@ -34,6 +34,7 @@ jobs:
         committer: minikube-bot <minikube-bot@google.com>
         author: minikube-bot <minikube-bot@google.com>
         branch: addTimeToK8s${{ steps.timeToK8sBenchmark.outputs.version }}
+        branch-suffix: short-commit-hash
         push-to-fork: minikube-bot/minikube
         base: master
         delete-branch: true
