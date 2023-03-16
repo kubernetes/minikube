@@ -17,26 +17,26 @@ jobs:
       run:
         working-directory: ./image-syncer
     steps:
-    - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      with:
-        repository: denverdino/image-syncer
-        path: ./image-syncer
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          repository: denverdino/image-syncer
+          path: ./image-syncer
 
-    - name: Set up Go
-      uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
-      with:
-        go-version: ${{env.GO_VERSION}}
-        cache: true
-        cache-dependency-path: ./go.sum
+      - name: Set up Go
+        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        with:
+          go-version: ${{env.GO_VERSION}}
+          cache: true
+          cache-dependency-path: ./go.sum
 
-    - name: Build
-      run: make
+      - name: Build
+        run: make
 
-    - name: Synchronize images to Alibaba Cloud Container Registry Service
-      env: 
-        ACR_USER: ${{ secrets.ALIBABA_CLOUD_ACR_USER }}
-        ACR_PASSWORD: ${{ secrets.ALIBABA_CLOUD_ACR_PASSWORD }}
-        DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
-        DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
+      - name: Synchronize images to Alibaba Cloud Container Registry Service
+        env:
+          ACR_USER: ${{ secrets.ALIBABA_CLOUD_ACR_USER }}
+          ACR_PASSWORD: ${{ secrets.ALIBABA_CLOUD_ACR_PASSWORD }}
+          DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
+          DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
 
-      run: ./image-syncer --auth=auth.json --images=images.json --days=2 --proc=2
+        run: ./image-syncer --auth=auth.json --images=images.json --days=2 --proc=2

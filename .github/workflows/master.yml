@@ -299,96 +299,96 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-20.04
     steps:
-    - name: Install kubectl
-      shell: bash
-      run: |
-        curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        sudo install kubectl /usr/local/bin/kubectl
-        kubectl version --client=true
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
 
-    - name: Install Podman
-      shell: bash
-      run: |
-        sudo apt update
-        sudo apt install -y podman
-        echo "--------------------------"
-        podman version || true
-        echo "--------------------------"
-        podman info || true
-        echo "--------------------------"
-        podman system df || true
-        echo "--------------------------"
-        podman system info --format='{{json .}}'|| true
-        echo "--------------------------"
-        podman ps || true
-        echo "--------------------------"
-    - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
-      with:
+      - name: Install Podman
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y podman
+          echo "--------------------------"
+          podman version || true
+          echo "--------------------------"
+          podman info || true
+          echo "--------------------------"
+          podman system df || true
+          echo "--------------------------"
+          podman system info --format='{{json .}}'|| true
+          echo "--------------------------"
+          podman ps || true
+          echo "--------------------------"
+      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        with:
           go-version: ${{env.GO_VERSION}}
-    - name: Install gopogh
-      shell: bash
-      run: |
-        go install github.com/medyagh/gopogh/cmd/gopogh@v0.15.0
-    - name: Download Binaries
-      uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
-      with:
-        name: minikube_binaries
-        path: minikube_binaries
-    - name: Run Integration Test
-      continue-on-error: false
-      # bash {0} to allow test to continue to next step. in case of
-      shell: bash {0}
-      run: |
-        cd minikube_binaries
-        mkdir -p report
-        mkdir -p testhome
-        chmod a+x e2e-*
-        chmod a+x minikube-*
-        sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
-        sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
-        START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
-        END_TIME=$(date -u +%s)
-        TIME_ELAPSED=$(($END_TIME-$START_TIME))
-        min=$((${TIME_ELAPSED}/60))
-        sec=$((${TIME_ELAPSED}%60))
-        TIME_ELAPSED="${min} min $sec seconds "
-        echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
-    - name: Generate HTML Report
-      shell: bash
-      run: |
-        cd minikube_binaries
-        export PATH=${PATH}:`go env GOPATH`/bin
-        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-        echo status: ${STAT}
-        FailNum=$(echo $STAT | jq '.NumberOfFail')
-        TestsNum=$(echo $STAT | jq '.NumberOfTests')
-        GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-        echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
-        echo 'STAT<<EOF' >> $GITHUB_ENV
-        echo "${STAT}" >> $GITHUB_ENV
-        echo 'EOF' >> $GITHUB_ENV
-    - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
-      with:
-        name: functional_podman_ubuntu
-        path: minikube_binaries/report
-    - name: The End Result functional_podman_ubuntu
-      shell: bash
-      run: |
-        echo ${GOPOGH_RESULT}
-        numFail=$(echo $STAT | jq '.NumberOfFail')
-        numPass=$(echo $STAT | jq '.NumberOfPass')
-        echo "*******************${numPass} Passes :) *******************"
-        echo $STAT | jq '.PassedTests' || true
-        echo "*******************************************************"
-        echo "---------------- ${numFail} Failures :( ----------------------------"
-        echo $STAT | jq '.FailedTests' || true
-        echo "-------------------------------------------------------"
-        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-        if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-        if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
-        if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+      - name: Install gopogh
+        shell: bash
+        run: |
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.15.0
+      - name: Download Binaries
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: minikube_binaries
+          path: minikube_binaries
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        with:
+          name: functional_podman_ubuntu
+          path: minikube_binaries/report
+      - name: The End Result functional_podman_ubuntu
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
 
   functional_virtualbox_macos:
     permissions:
@@ -424,7 +424,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off

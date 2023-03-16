@@ -542,7 +542,7 @@ jobs:
         run: |
           hostname
           VBoxManage --version
-          sysctl hw.physicalcpu hw.logicalcpu 
+          sysctl hw.physicalcpu hw.logicalcpu
       - name: Disable firewall
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
