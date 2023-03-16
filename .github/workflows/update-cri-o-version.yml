@@ -41,9 +41,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'bump cri-o version'
-          labels: |
-            ok-to-build-iso
-            ok-to-build-image
           body: |
             cri-o Project released a [new version](https://github.com/cri-o/cri-o/releases),
 
