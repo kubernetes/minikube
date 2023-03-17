@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - master  
+      - master
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.20.2'
