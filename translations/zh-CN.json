@@ -57,7 +57,7 @@
 	"Add SSH identity key to SSH authentication agent": "将SSH身份密钥添加到SSH身份验证代理",
 	"Add an image into minikube as a local cache, or delete, reload the cached images": "将 image 作为本地缓存添加到 minikube 中，或删除、重新加载缓中的 images",
 	"Add an image to local cache.": "将 image 添加到本地缓存。",
-	"Add host key to SSH known_hosts file": "在SSH known_hosts文件中添加主机密钥。",
+	"Add host key to SSH known_hosts file": "在SSH known_hosts文件中添加主机密钥",
 	"Add image to cache for all running minikube clusters": "",
 	"Add machine IP to NO_PROXY environment variable": "将机器IP添加到环境变量 NO_PROXY 中",
 	"Add or delete an image from the local cache.": "在本地缓存中添加或删除 image。",
