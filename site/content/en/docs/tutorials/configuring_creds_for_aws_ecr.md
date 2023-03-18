@@ -61,9 +61,9 @@ Enable the minikube registry-creds addon with the following command:
 minikube addons enable registry-creds
 ```
 
-The add-on will create secrets in each namespace that can be used for `imagePullSecrets` on a pod.  It also updates the `default`
-service account in each namespace to use these `imagePullSecrets`, which means any pod created without an explicit service account
-other than `default` will use the image pull secrets automatically.
+The add-on will create secrets in each namespace other than kube-system that can be used for `imagePullSecrets` on a pod.  It also
+updates the `default` service account in each namespace to use these `imagePullSecrets`, which means any pod created outside
+the kube-system namespace without an explicit service account other than `default` will use the image pull secrets automatically.
 
 ### Create a deployment that uses an image in AWS ECR
 
