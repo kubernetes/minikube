@@ -222,6 +222,22 @@ var hostIssues = []match{
 		Kind:   HostHomePermission,
 		Regexp: re(`/.minikube/.*: permission denied`),
 	},
+	{
+		Kind: Kind{
+			ID:       "HOST_CPU_DELEGATION",
+			ExitCode: ExHostUnsupported,
+			Advice: `Run the following:
+$ sudo mkdir -p /etc/systemd/system/user@.service.d
+$ cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+[Service]
+Delegate=cpu cpuset io memory pids
+EOF
+$ sudo systemctl daemon-reload`,
+			Issues: []int{14871},
+		},
+		Regexp: re(`UserNS: cpu controller needs to be delegated`),
+		GOOS:   []string{"linux"},
+	},
 }
 
 // providerIssues are failures relating to a driver provider
