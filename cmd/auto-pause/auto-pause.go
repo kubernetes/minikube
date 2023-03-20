@@ -93,7 +93,7 @@ func main() {
 }
 
 // handler echoes the Path component of the requested URL.
-func handler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, _ *http.Request) {
 	unpauseRequests <- struct{}{}
 	<-done
 	fmt.Fprintf(w, "allow")

@@ -203,7 +203,7 @@ func printDeleteImageInfo(dockerImageNames, podmanImageNames []string) {
 }
 
 // runDelete handles the executes the flow of "minikube delete"
-func runDelete(cmd *cobra.Command, args []string) {
+func runDelete(_ *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Message(reason.Usage, "Usage: minikube delete")
 	}

@@ -35,7 +35,7 @@ type stubCoreClient struct {
 	restClient   *rest.RESTClient
 }
 
-func (c *stubCoreClient) Services(namespace string) typed_core.ServiceInterface {
+func (c *stubCoreClient) Services(_ string) typed_core.ServiceInterface {
 	return &stubServices{
 		fake.FakeServices{Fake: &c.FakeCoreV1},
 		c.servicesList,
@@ -51,7 +51,7 @@ type stubServices struct {
 	servicesList *core.ServiceList
 }
 
-func (s *stubServices) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
+func (s *stubServices) List(_ context.Context, _ meta.ListOptions) (*core.ServiceList, error) {
 	return s.servicesList, nil
 }
 
@@ -70,7 +70,7 @@ type countingRequestSender struct {
 	requests int
 }
 
-func (s *countingRequestSender) send(request *rest.Request) (result []byte, err error) {
+func (s *countingRequestSender) send(_ *rest.Request) (result []byte, err error) {
 	s.requests++
 	return nil, nil
 }
@@ -79,7 +79,7 @@ type recordingPatchConverter struct {
 	patches []*Patch
 }
 
-func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patch) *rest.Request {
+func (r *recordingPatchConverter) convert(_ rest.Interface, patch *Patch) *rest.Request {
 	r.patches = append(r.patches, patch)
 	return nil
 }

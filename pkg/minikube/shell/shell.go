@@ -196,7 +196,7 @@ type EnvConfig struct {
 }
 
 // SetScript writes out a shell-compatible set script
-func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) error {
+func SetScript(w io.Writer, envTmpl string, data interface{}) error {
 	tmpl := template.Must(template.New("envConfig").Parse(envTmpl))
 	return tmpl.Execute(w, data)
 }

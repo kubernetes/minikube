@@ -144,15 +144,11 @@ func TestDetectUnset(t *testing.T) {
 }
 
 func TestSetScript(t *testing.T) {
-	ec := EnvConfig{"bash"}
 	var w bytes.Buffer
-	if err := SetScript(ec, &w, "foo", nil); err != nil {
+	if err := SetScript(&w, "foo", nil); err != nil {
 		t.Fatalf("Unexpected error: '%v' during Setting script", err)
 	}
 	if w.String() != "foo" {
 		t.Fatalf("Expected foo writed by SetScript, but got '%v'", w.String())
-	}
-	if ec.Shell == "" {
-		t.Fatalf("Expected no empty shell")
 	}
 }

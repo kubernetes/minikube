@@ -81,22 +81,22 @@ func LastStartLog() string {
 
 // ClientCert returns client certificate path, used by kubeconfig
 func ClientCert(name string) string {
-	new := filepath.Join(Profile(name), "client.crt")
-	if _, err := os.Stat(new); err == nil {
-		return new
+	newCert := filepath.Join(Profile(name), "client.crt")
+	if _, err := os.Stat(newCert); err == nil {
+		return newCert
 	}
 
 	// minikube v1.5.x
 	legacy := filepath.Join(MiniPath(), "client.crt")
 	if _, err := os.Stat(legacy); err == nil {
-		klog.Infof("copying %s -> %s", legacy, new)
-		if err := copy.Copy(legacy, new); err != nil {
-			klog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+		klog.Infof("copying %s -> %s", legacy, newCert)
+		if err := copy.Copy(legacy, newCert); err != nil {
+			klog.Errorf("failed copy %s -> %s: %v", legacy, newCert, err)
 			return legacy
 		}
 	}
 
-	return new
+	return newCert
 }
 
 // PID returns the path to the pid file used by profile for scheduled stop
@@ -106,22 +106,22 @@ func PID(profile string) string {
 
 // ClientKey returns client certificate path, used by kubeconfig
 func ClientKey(name string) string {
-	new := filepath.Join(Profile(name), "client.key")
-	if _, err := os.Stat(new); err == nil {
-		return new
+	newKey := filepath.Join(Profile(name), "client.key")
+	if _, err := os.Stat(newKey); err == nil {
+		return newKey
 	}
 
 	// minikube v1.5.x
 	legacy := filepath.Join(MiniPath(), "client.key")
 	if _, err := os.Stat(legacy); err == nil {
-		klog.Infof("copying %s -> %s", legacy, new)
-		if err := copy.Copy(legacy, new); err != nil {
-			klog.Errorf("failed copy %s -> %s: %v", legacy, new, err)
+		klog.Infof("copying %s -> %s", legacy, newKey)
+		if err := copy.Copy(legacy, newKey); err != nil {
+			klog.Errorf("failed copy %s -> %s: %v", legacy, newKey, err)
 			return legacy
 		}
 	}
 
-	return new
+	return newKey
 }
 
 // CACert returns the minikube CA certificate shared between profiles

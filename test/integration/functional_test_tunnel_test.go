@@ -274,7 +274,7 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 
 // validateDNSDscacheutil validates if the DNS forwarding works by dscacheutil command DNS lookup
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
-func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
+func validateDNSDscacheutil(ctx context.Context, t *testing.T, _ string) {
 	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
@@ -299,7 +299,7 @@ func validateDNSDscacheutil(ctx context.Context, t *testing.T, profile string) {
 
 // validateAccessDNS validates if the test service can be accessed with DNS forwarding from host
 // NOTE: DNS forwarding is experimental: https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental
-func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
+func validateAccessDNS(_ context.Context, t *testing.T, profile string) {
 	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
 		t.Skip("skipping: access direct test is broken on github actions on macos https://github.com/kubernetes/minikube/issues/8434")
 	}
@@ -363,7 +363,7 @@ func validateAccessDNS(ctx context.Context, t *testing.T, profile string) {
 }
 
 // validateTunnelDelete stops `minikube tunnel`
-func validateTunnelDelete(ctx context.Context, t *testing.T, profile string) {
+func validateTunnelDelete(_ context.Context, t *testing.T, _ string) {
 	checkRoutePassword(t)
 	// Stop tunnel
 	tunnelSession.Stop(t)

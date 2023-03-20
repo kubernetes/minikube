@@ -256,7 +256,7 @@ func (d *Driver) deleteNetwork() error {
 	// when we reach this point, it means it is safe to delete the network
 
 	log.Debugf("Trying to delete network %s...", d.PrivateNetwork)
-	delete := func() error {
+	deleteFunc := func() error {
 		active, err := network.IsActive()
 		if err != nil {
 			return err
@@ -270,7 +270,7 @@ func (d *Driver) deleteNetwork() error {
 		log.Debugf("Undefining inactive network %s", d.PrivateNetwork)
 		return network.Undefine()
 	}
-	if err := retry.Local(delete, 10*time.Second); err != nil {
+	if err := retry.Local(deleteFunc, 10*time.Second); err != nil {
 		return errors.Wrap(err, "deleting network")
 	}
 	log.Debugf("Network %s deleted", d.PrivateNetwork)

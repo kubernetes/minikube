@@ -65,7 +65,7 @@ func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {
 }
 
 // SetConfigFromFlags is not implemented yet
-func (d *CommonDriver) SetConfigFromFlags(flags drivers.DriverOptions) error {
+func (d *CommonDriver) SetConfigFromFlags(_ drivers.DriverOptions) error {
 	return nil
 }
 

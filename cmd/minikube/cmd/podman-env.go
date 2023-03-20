@@ -245,7 +245,7 @@ func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
 		podmanEnvTmpl = podmanEnv2Tmpl
 	}
 	envVars := podmanEnvVars(ec)
-	return shell.SetScript(ec.EnvConfig, w, podmanEnvTmpl, podmanShellCfgSet(ec, envVars))
+	return shell.SetScript(w, podmanEnvTmpl, podmanShellCfgSet(ec, envVars))
 }
 
 // podmanUnsetScript writes out a shell-compatible 'podman-env unset' script

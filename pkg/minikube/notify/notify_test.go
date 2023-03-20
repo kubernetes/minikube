@@ -98,7 +98,7 @@ type URLHandlerCorrect struct {
 	releases []Release
 }
 
-func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	b, err := json.Marshal(h.releases)
 	if err != nil {
 		fmt.Println(err)
@@ -132,7 +132,7 @@ func TestLatestVersionFromURLCorrect(t *testing.T) {
 
 type URLHandlerNone struct{}
 
-func (h *URLHandlerNone) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandlerNone) ServeHTTP(_ http.ResponseWriter, _ *http.Request) {
 }
 
 func TestLatestVersionFromURLNone(t *testing.T) {
@@ -148,7 +148,7 @@ func TestLatestVersionFromURLNone(t *testing.T) {
 
 type URLHandlerMalformed struct{}
 
-func (h *URLHandlerMalformed) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *URLHandlerMalformed) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	fmt.Fprintf(w, "Malformed JSON")
 }

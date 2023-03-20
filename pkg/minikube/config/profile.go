@@ -257,15 +257,15 @@ func removeDupes(profiles []string) []string {
 	seen := map[string]bool{}
 	result := []string{}
 
-	for n := range profiles {
-		if seen[profiles[n]] {
-			// Do not add duplicate.
-		} else {
-			// Record this element as an encountered element.
-			seen[profiles[n]] = true
-			// Append to result slice.
-			result = append(result, profiles[n])
+	for _, profile := range profiles {
+		if seen[profile] {
+			// Do not add duplicates.
+			continue
 		}
+		// Record this element as an encountered element.
+		seen[profile] = true
+		// Append to result slice.
+		result = append(result, profile)
 	}
 	// Return the new slice.
 	return result
