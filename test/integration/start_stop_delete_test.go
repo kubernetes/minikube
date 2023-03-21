@@ -181,7 +181,7 @@ func TestStartStop(t *testing.T) {
 }
 
 // validateFirstStart runs the initial minikube start
-func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateFirstStart(ctx context.Context, t *testing.T, profile, _, _ string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -190,7 +190,7 @@ func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcNam
 }
 
 // validateDeploying deploys an app the minikube cluster
-func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateDeploying(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if !strings.Contains(tcName, "cni") {
 		testPodScheduling(ctx, t, profile)
@@ -198,7 +198,7 @@ func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName
 }
 
 // validateEnableAddonWhileActive makes sure addons can be enabled while cluster is active.
-func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 
 	// Enable an addon to assert it requests the correct image.
@@ -223,7 +223,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 }
 
 // validateStop tests minikube stop
-func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateStop(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 	if err != nil {
@@ -232,7 +232,7 @@ func validateStop(ctx context.Context, t *testing.T, profile string, tcName stri
 }
 
 // validateEnableAddonAfterStop makes sure addons can be enabled on a stopped cluster
-func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	// The none driver never really stops
 	if !NoneDriver() {
@@ -251,7 +251,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 }
 
 // validateSecondStart verifies that starting a stopped cluster works
-func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateSecondStart(ctx context.Context, t *testing.T, profile, _, _ string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -267,7 +267,7 @@ func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcNa
 }
 
 // validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
-func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
@@ -278,7 +278,7 @@ func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile strin
 }
 
 // validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
-func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateAddonAfterStop(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
@@ -299,14 +299,14 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 }
 
 // validateKubernetesImages verifies that a restarted cluster contains all the necessary images
-func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateKubernetesImages(ctx context.Context, t *testing.T, profile, _, tcVersion string, _ []string) {
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
 }
 
 // validatePauseAfterStart verifies that minikube pause works
-func validatePauseAfterStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validatePauseAfterStart(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	testPause(ctx, t, profile)
 }
@@ -348,7 +348,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 }
 
 // testPulledImages asserts that this configuration pulls only expected images
-func testPulledImages(ctx context.Context, t *testing.T, profile string, version string) {
+func testPulledImages(ctx context.Context, t *testing.T, profile, version string) {
 	t.Helper()
 	defer PostMortemLogs(t, profile)
 

@@ -49,7 +49,7 @@ var pauseCmd = &cobra.Command{
 	Run:   runPause,
 }
 
-func runPause(cmd *cobra.Command, args []string) {
+func runPause(_ *cobra.Command, _ []string) {
 	out.SetJSON(outputFormat == "json")
 	co := mustload.Running(ClusterFlagValue())
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))

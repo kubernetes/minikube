@@ -623,7 +623,7 @@ func validateStartWithCustomCerts(ctx context.Context, t *testing.T, profile str
 }
 
 // validateAuditAfterStart makes sure the audit log contains the correct logging after minikube start
-func validateAuditAfterStart(ctx context.Context, t *testing.T, profile string) {
+func validateAuditAfterStart(_ context.Context, t *testing.T, profile string) {
 	// docs: Read the audit log file and make sure it contains the current minikube profile name
 	got, err := auditContains(profile)
 	if err != nil {
@@ -1845,7 +1845,7 @@ func localEmptyCertPath() string {
 }
 
 // Copy extra file into minikube home folder for file sync test
-func setupFileSync(ctx context.Context, t *testing.T, profile string) {
+func setupFileSync(_ context.Context, t *testing.T, _ string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
 	syncFile := filepath.Join(*testdataDir, "sync.test")

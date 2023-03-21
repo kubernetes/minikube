@@ -436,7 +436,7 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 			exit.Message(reason.InternalOutputUsage, "error: --output must be 'text', 'yaml' or 'json'")
 		}
 	}
-	return shell.SetScript(ec.EnvConfig, w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
+	return shell.SetScript(w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env unset' script

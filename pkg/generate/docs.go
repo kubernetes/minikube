@@ -74,11 +74,11 @@ func DocForCommand(command *cobra.Command) (string, error) {
 
 // GenMarkdown creates markdown output.
 func GenMarkdown(cmd *cobra.Command, w io.Writer) error {
-	return GenMarkdownCustom(cmd, w, func(s string) string { return s })
+	return GenMarkdownCustom(cmd, w)
 }
 
 // GenMarkdownCustom creates custom markdown output.
-func GenMarkdownCustom(cmd *cobra.Command, w io.Writer, linkHandler func(string) string) error {
+func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	cmd.InitDefaultHelpCmd()
 	cmd.InitDefaultHelpFlag()
 

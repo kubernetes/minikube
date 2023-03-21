@@ -102,7 +102,7 @@ func TagImage(ctx context.Context, image, current, stable string) error {
 }
 
 // PullImage checks if current image exists locally, tries to pull it if not, and returns reference image url and any error occurred.
-func PullImage(ctx context.Context, current, release string) (image string, err error) {
+func PullImage(ctx context.Context, current string) (image string, err error) {
 	// check if image exists locally
 	for _, reg := range registries {
 		inspect := exec.CommandContext(ctx, "docker", "inspect", reg.image+":"+current, "--format", "{{.Id}}")

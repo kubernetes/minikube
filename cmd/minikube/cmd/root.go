@@ -332,9 +332,9 @@ func setupViper() {
 }
 
 func addToPath(dir string) {
-	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	path := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
 	klog.Infof("Updating PATH: %s", dir)
-	os.Setenv("PATH", new)
+	os.Setenv("PATH", path)
 }
 
 func validateUsername(name string) bool {

@@ -147,7 +147,7 @@ func platform() string {
 }
 
 // runStart handles the executes the flow of "minikube start"
-func runStart(cmd *cobra.Command, args []string) {
+func runStart(cmd *cobra.Command, _ []string) {
 	register.SetEventLogPath(localpath.EventLog(ClusterFlagValue()))
 	ctx := context.Background()
 	out.SetJSON(outputFormat == "json")
@@ -250,11 +250,10 @@ func runStart(cmd *cobra.Command, args []string) {
 				starter, err = provisionWithDriver(cmd, ds, existing)
 				if err != nil {
 					continue
-				} else {
-					// Success!
-					success = true
-					break
 				}
+				// Success!
+				success = true
+				break
 			}
 			if !success {
 				exitGuestProvision(err)
@@ -1398,15 +1397,14 @@ func getContainerRuntime(old *config.ClusterConfig) string {
 	}
 
 	if paramRuntime == constants.DefaultContainerRuntime {
-		k8sVersion := getKubernetesVersion(old)
-		paramRuntime = defaultRuntime(k8sVersion)
+		paramRuntime = defaultRuntime()
 	}
 
 	return paramRuntime
 }
 
 // defaultRuntime returns the default container runtime
-func defaultRuntime(k8sVersion string) string {
+func defaultRuntime() string {
 	// minikube default
 	return constants.Docker
 }
@@ -1832,7 +1830,7 @@ func validateBareMetal(drvName string) {
 
 	// default container runtime varies, starting with Kubernetes 1.24 - assume that only the default container runtime has been tested
 	rtime := viper.GetString(containerRuntime)
-	if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime(getKubernetesVersion(nil)) {
+	if rtime != constants.DefaultContainerRuntime && rtime != defaultRuntime() {
 		out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": rtime})
 	}
 

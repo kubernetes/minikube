@@ -36,12 +36,12 @@ func (provisioner *MockProvisioner) String() string {
 }
 
 // Service performs an action for a service
-func (provisioner *MockProvisioner) Service(name string, action serviceaction.ServiceAction) error {
+func (provisioner *MockProvisioner) Service(_ string, _ serviceaction.ServiceAction) error {
 	return nil
 }
 
 // Package performs an action for a package
-func (provisioner *MockProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (provisioner *MockProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ func (provisioner *MockProvisioner) Hostname() (string, error) {
 }
 
 // SetHostname sets the hostname
-func (provisioner *MockProvisioner) SetHostname(hostname string) error {
+func (provisioner *MockProvisioner) SetHostname(_ string) error {
 	return nil
 }
 
@@ -66,7 +66,7 @@ func (provisioner *MockProvisioner) GetAuthOptions() auth.Options {
 }
 
 // GenerateDockerOptions generates Docker options
-func (provisioner *MockProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
+func (provisioner *MockProvisioner) GenerateDockerOptions(_ int) (*provision.DockerOptions, error) {
 	return &provision.DockerOptions{}, nil
 }
 
@@ -76,7 +76,7 @@ func (provisioner *MockProvisioner) CompatibleWithHost() bool {
 }
 
 // SetOsReleaseInfo sets the os-release info
-func (provisioner *MockProvisioner) SetOsReleaseInfo(info *provision.OsRelease) {
+func (provisioner *MockProvisioner) SetOsReleaseInfo(_ *provision.OsRelease) {
 }
 
 // GetOsReleaseInfo gets the os-release info
@@ -85,17 +85,17 @@ func (provisioner *MockProvisioner) GetOsReleaseInfo() (*provision.OsRelease, er
 }
 
 // AttemptIPContact attempts to contact an IP and port
-func (provisioner *MockProvisioner) AttemptIPContact(dockerPort int) {
+func (provisioner *MockProvisioner) AttemptIPContact(_ int) {
 }
 
 // Provision provisions the machine
-func (provisioner *MockProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+func (provisioner *MockProvisioner) Provision(_ swarm.Options, _ auth.Options, _ engine.Options) error {
 	provisioner.Provisioned = true
 	return nil
 }
 
 // SSHCommand runs a SSH command
-func (provisioner *MockProvisioner) SSHCommand(args string) (string, error) {
+func (provisioner *MockProvisioner) SSHCommand(_ string) (string, error) {
 	return "", nil
 }
 
@@ -115,6 +115,6 @@ type MockDetector struct {
 }
 
 // DetectProvisioner detects a provisioner
-func (m *MockDetector) DetectProvisioner(d drivers.Driver) (provision.Provisioner, error) {
+func (m *MockDetector) DetectProvisioner(_ drivers.Driver) (provision.Provisioner, error) {
 	return m.Provisioner, nil
 }

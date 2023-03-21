@@ -76,7 +76,7 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
+func NewBootstrapper(_ libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
 	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
 }
 

@@ -153,7 +153,7 @@ WantedBy=multi-user.target
 }
 
 // Package installs a package
-func (p *BuildrootProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (p *BuildrootProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
 	return nil
 }
 

@@ -143,7 +143,7 @@ func (s *Systemd) ForceStop(svc string) error {
 }
 
 // GenerateInitShim does nothing for systemd
-func (s *Systemd) GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error) {
+func (s *Systemd) GenerateInitShim(_, _, _ string) ([]assets.CopyableFile, error) {
 	return nil, nil
 }
 

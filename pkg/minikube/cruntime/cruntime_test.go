@@ -252,11 +252,11 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	}
 }
 
-func (f *FakeRunner) StartCmd(cmd *exec.Cmd) (*command.StartedCmd, error) {
+func (f *FakeRunner) StartCmd(_ *exec.Cmd) (*command.StartedCmd, error) {
 	return &command.StartedCmd{}, nil
 }
 
-func (f *FakeRunner) WaitCmd(sc *command.StartedCmd) (*command.RunResult, error) {
+func (f *FakeRunner) WaitCmd(_ *command.StartedCmd) (*command.RunResult, error) {
 	return &command.RunResult{}, nil
 }
 
@@ -272,7 +272,7 @@ func (f *FakeRunner) Remove(assets.CopyableFile) error {
 	return nil
 }
 
-func (f *FakeRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+func (f *FakeRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, nil
 }
 

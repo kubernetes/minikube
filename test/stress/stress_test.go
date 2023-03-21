@@ -66,15 +66,15 @@ func TestStress(t *testing.T) {
 
 	for i := 1; i <= *loops; i++ {
 		t.Logf("Loop %d of %d: %s to HEAD", i, *loops, *upgradeFrom)
-		runStress(t, oldPath, profile, i)
+		runStress(t, oldPath, profile)
 		t.Logf("Loop %d of %d done.", i, *loops)
 	}
 }
 
-type stressFunc func(*testing.T, string, string, int)
+type stressFunc func(*testing.T, string, string)
 
 // This run the guts of the actual test
-func runStress(t *testing.T, oldPath string, profile string, loop int) {
+func runStress(t *testing.T, oldPath string, profile string) {
 	// Cleanup old runs
 	runCommand(t, false, newPath, "delete", "-p", profile)
 
@@ -91,32 +91,32 @@ func runStress(t *testing.T, oldPath string, profile string, loop int) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				tc.validator(t, oldPath, profile, loop)
+				tc.validator(t, oldPath, profile)
 			})
 		}
 	})
 }
 
-func validateHotOldToNewUpgrade(t *testing.T, oldPath string, profile string, i int) {
+func validateHotOldToNewUpgrade(t *testing.T, oldPath string, profile string) {
 	t.Logf("Hot upgrade from %s to HEAD", *upgradeFrom)
 	runCommand(t, true, oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 	runCommand(t, false, newPath, "delete", "-p", profile)
 }
 
-func validateColdOldToNewUpgrade(t *testing.T, oldPath string, profile string, i int) {
+func validateColdOldToNewUpgrade(t *testing.T, oldPath string, profile string) {
 	t.Logf("Cold upgrade from %s to HEAD", *upgradeFrom)
 	runCommand(t, false, oldPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 	runCommand(t, false, oldPath, "stop", "-p", profile)
 	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 }
 
-func validateHotHeadRestart(t *testing.T, oldPath string, profile string, i int) {
+func validateHotHeadRestart(t *testing.T, _ string, profile string) {
 	t.Logf("Restart HEAD test")
 	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")
 }
 
-func validateColdHeadRestart(t *testing.T, oldPath string, profile string, i int) {
+func validateColdHeadRestart(t *testing.T, _ string, profile string) {
 	t.Logf("Cold HEAD restart")
 	runCommand(t, false, newPath, "stop", "-p", profile)
 	runCommand(t, true, newPath, "start", "-p", profile, *startArgs, "--alsologtostderr")

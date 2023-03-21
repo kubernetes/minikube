@@ -105,7 +105,7 @@ host. Please be aware that when using --ssh all paths will apply to the remote m
 			kc := []string{"sudo"}
 			kc = append(kc, kubectlPath(*co.Config))
 			kc = append(kc, "--kubeconfig")
-			kc = append(kc, kubeconfigPath(*co.Config))
+			kc = append(kc, kubeconfigPath())
 			args = append(kc, args...)
 
 			klog.Infof("Running SSH %v", args)
@@ -165,7 +165,7 @@ func kubectlPath(cfg config.ClusterConfig) string {
 }
 
 // kubeconfigPath returns the path to kubeconfig
-func kubeconfigPath(cfg config.ClusterConfig) string {
+func kubeconfigPath() string {
 	return "/etc/kubernetes/admin.conf"
 }
 
