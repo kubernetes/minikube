@@ -137,7 +137,13 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 
-	errCh := make(chan error)
+	type SessInfo struct {
+		Stdout   string
+		Stderr   string
+		ExitCode int
+	}
+
+	sessCh := make(chan SessInfo)
 	sessions := make([]*StartSession, 2)
 
 	var runTunnel = func(idx int) {
@@ -151,25 +157,43 @@ func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
 		}
 		sessions[idx] = session
 
-		if err := session.cmd.Wait(); err != nil {
-			errCh <- err
+		stderr, err := io.ReadAll(session.Stderr)
+		if err != nil {
+			t.Logf("Failed to read stderr: %v", err)
 		}
+		stdout, err := io.ReadAll(session.Stdout)
+		if err != nil {
+			t.Logf("Failed to read stdout: %v", err)
+		}
+
+		exitCode := 0
+		err = session.cmd.Wait()
+		if err != nil {
+			if exErr, ok := err.(*exec.ExitError); !ok {
+				t.Logf("failed to coerce exit error: %v", err)
+				exitCode = -1
+			} else {
+				exitCode = exErr.ExitCode()
+			}
+		}
+
+		sessCh <- SessInfo{Stdout: string(stdout), Stderr: string(stderr), ExitCode: exitCode}
 	}
 
 	// One of the two processes must fail to acquire lock and die. This should be the first process to die.
 	go runTunnel(0)
 	go runTunnel(1)
 
-	err := <-errCh
+	sessInfo := <-sessCh
 
-	if exErr, ok := err.(*exec.ExitError); !ok || exErr.ExitCode() != reason.SvcTunnelAlreadyRunning.ExitCode {
-		t.Errorf("tunnel command failed with unexpected error: %v", err)
+	if sessInfo.ExitCode != reason.SvcTunnelAlreadyRunning.ExitCode {
+		t.Errorf("tunnel command failed with unexpected error: exit code %d. stderr: %s\n stdout: %s", sessInfo.ExitCode, sessInfo.Stderr, sessInfo.Stdout)
 	}
 
 	for _, sess := range sessions {
 		sess.Stop(t)
 	}
-	<-errCh
+	<-sessCh
 }
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
