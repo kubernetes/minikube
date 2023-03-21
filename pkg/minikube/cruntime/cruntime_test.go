@@ -154,20 +154,16 @@ func TestKubeletOptions(t *testing.T) {
 		{"docker", "1.23.0", map[string]string{"container-runtime": "docker"}},
 		{"docker", "1.24.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
-			"image-service-endpoint":     "unix:///var/run/cri-dockerd.sock",
 		}},
 		{"crio", "1.25.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/crio/crio.sock",
-			"image-service-endpoint":     "unix:///var/run/crio/crio.sock",
 		}},
 		{"containerd", "1.23.0", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
-			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
 		}},
 		{"containerd", "1.24.0", map[string]string{
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
-			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
 		}},
 	}
 	for _, tc := range tests {

@@ -360,7 +360,6 @@ func (r *CRIO) CGroupDriver() (string, error) {
 func (r *CRIO) KubeletOptions() map[string]string {
 	opts := map[string]string{
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
-		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
 	}
 	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
 		opts["container-runtime"] = "remote"
