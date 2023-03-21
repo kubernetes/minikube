@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -185,6 +186,7 @@ func TestStatus(t *testing.T) {
 	}
 	for _, tt := range tests {
 		dockerVersionOrState = func() (string, registry.State) { return tt.input, registry.State{} }
+		oci.CachedDaemonInfo = func(string) (oci.SysInfo, error) { return oci.SysInfo{}, nil }
 		state := status()
 		err := state.Error
 		if (err == nil && tt.shouldReturnError) || (err != nil && !tt.shouldReturnError) {
