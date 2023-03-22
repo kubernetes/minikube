@@ -815,7 +815,7 @@
 	"Unable to parse \"{{.kubernetes_version}}\": {{.error}}": "\"{{.kubernetes_version}}\" kann nicht geparst werden: {{.error}}",
 	"Unable to parse memory '{{.memory}}': {{.error}}": "Kann Speicher nicht parsen: '{{.memory}}': {{.error}}",
 	"Unable to parse version.json: {{.error}}, json: {{.json}}": "",
-	"Unable to pick a default driver. Here is what was considered, in preference order:": "Kann keinen Default-Treiber auswählen. Hier eine List der Treiber, die in Erwähgung gezogen wurden, in der Reihe ihrer Präferenz",
+	"Unable to pick a default driver. Here is what was considered, in preference order:": "Kann keinen Default-Treiber auswählen. Hier eine List der Treiber, die in Erwägung gezogen wurden, in der Reihe ihrer Präferenz",
 	"Unable to pull images, which may be OK: {{.error}}": "Bilder können nicht abgerufen werden, was möglicherweise kein Problem darstellt: {{.error}}",
 	"Unable to push cached images: {{.error}}": "Kann gecachete Image nicht veröffentlichen (push): {{.error}}",
 	"Unable to remove machine directory": "Kann Maschinen Verzeichnis nicht entfernen",
