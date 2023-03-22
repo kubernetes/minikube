@@ -145,6 +145,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-metrics-server-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/sync-minikube.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,

@@ -1092,6 +1092,11 @@ update-cri-o-version:
 	(cd hack/update/cri-o_version && \
 	 go run update_cri-o_version.go)
 
+.PHONY: update-metrics-server-version
+update-metrics-server-version:
+	(cd hack/update/metrics_server_version && \
+	 go run update_metrics_server_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
