@@ -269,11 +269,11 @@ func main() {
 	}
 	pid := processToKill.Process.Pid
 
-	mockOwnershipCheck := func(int) (bool, error) {
+	doesPIDBelongToMinikube = func(int) (bool, error) {
 		return true, nil
 	}
 
-	err = trySigKillProcess(pid, mockOwnershipCheck)
+	err = trySigKillProcess(pid)
 	if err != nil {
 		t.Fatalf("while trying to kill child proc %d: %s\n", pid, err)
 	}

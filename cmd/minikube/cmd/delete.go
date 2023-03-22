@@ -622,7 +622,7 @@ func killProcess(path string) error {
 	// error handling is done below
 	var errs []error
 	for _, pp := range ppp {
-		err := trySigKillProcess(pp, doesPIDBelongToMinikube)
+		err := trySigKillProcess(pp)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -650,10 +650,10 @@ func killProcess(path string) error {
 }
 
 // trySigKillProcess takes a PID as argument and tries to SIGKILL it.
-// It performs the OCHECK ownership check of the pid,
+// It performs an ownership check of the pid,
 // before trying to send a sigkill signal to it
-func trySigKillProcess(pid int, ocheck func(int) (bool, error)) error {
-	itDoes, err := ocheck(pid)
+func trySigKillProcess(pid int) error {
+	itDoes, err := doesPIDBelongToMinikube(pid)
 	if err != nil {
 		return err
 	}
@@ -678,7 +678,7 @@ func trySigKillProcess(pid int, ocheck func(int) (bool, error)) error {
 
 // doesPIDBelongToMinikube tries to find the process with that PID
 // and checks if the executable name contains the string "minikube"
-func doesPIDBelongToMinikube(pid int) (bool, error) {
+var doesPIDBelongToMinikube = func(pid int) (bool, error) {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
 		return false, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
