@@ -17,19 +17,14 @@ limitations under the License.
 package cmd
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
-	kcmd "k8s.io/kubectl/pkg/cmd"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -57,35 +52,6 @@ but optionally you can also run it directly on the control plane over the ssh co
 This can be useful if you cannot run kubectl locally for some reason, like unsupported
 host. Please be aware that when using --ssh all paths will apply to the remote machine.`,
 	Example: "minikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system",
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		// Run kubectl __complete $@ to get completions
-		var out bytes.Buffer
-		completeCmd := kcmd.NewDefaultKubectlCommand()
-		completeCmd.SetArgs(append([]string{cobra.ShellCompRequestCmd}, append(args, toComplete)...))
-		completeCmd.SetOut(&out)
-		if err := completeCmd.Execute(); err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		// Scan completions
-		var completions []string
-		scanner := bufio.NewScanner(&out)
-		for scanner.Scan() {
-			// Strip completion description after tab
-			completions = append(completions, strings.Split(scanner.Text(), "\t")[0])
-		}
-		if scanner.Err() != nil || len(completions) == 0 {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		// The final line of completions will be a directive (colon + int)
-		directive, err := strconv.Atoi(strings.TrimPrefix(completions[len(completions)-1], ":"))
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-
-		return completions[:len(completions)-1], cobra.ShellCompDirective(directive)
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cc, err := config.Load(ClusterFlagValue())
 
