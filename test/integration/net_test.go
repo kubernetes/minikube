@@ -82,13 +82,13 @@ func TestNetworkPlugins(t *testing.T) {
 				// collect debug logs
 				defer debugLogs(t, profile)
 
-				if usingCNI() && tc.name == "false" {
+				if ContainerRuntime() != "docker" && tc.name == "false" {
 					// CNI is required for current container runtime
 					validateFalseCNI(ctx, t, profile)
 					return
 				}
 
-				if usingCNI() && tc.name == "kubenet" {
+				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
 					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
 					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
