@@ -239,7 +239,6 @@
 	"Failed to change permissions for {{.minikube_dir_path}}: {{.error}}": "",
 	"Failed to check main repository and mirrors for images": "",
 	"Failed to configure metallb IP {{.profile}}": "",
-	"Failed to configure network plugin": "",
 	"Failed to configure registry-aliases {{.profile}}": "",
 	"Failed to create file": "",
 	"Failed to create runtime": "",
