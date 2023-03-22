@@ -358,11 +358,13 @@ func (r *CRIO) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
-	return map[string]string{
-		"container-runtime":          "remote",
-		"container-runtime-endpoint": r.SocketPath(),
-		"image-service-endpoint":     r.SocketPath(),
+	opts := map[string]string{
+		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
 	}
+	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
+		opts["container-runtime"] = "remote"
+	}
+	return opts
 }
 
 // ListContainers returns a list of managed by this container runtime

@@ -148,30 +148,35 @@ func TestCGroupDriver(t *testing.T) {
 func TestKubeletOptions(t *testing.T) {
 	var tests = []struct {
 		runtime string
+		version string
 		want    map[string]string
 	}{
-		{"docker", map[string]string{"container-runtime": "docker"}},
-		{"crio", map[string]string{
-			"container-runtime":          "remote",
-			"container-runtime-endpoint": "/var/run/crio/crio.sock",
-			"image-service-endpoint":     "/var/run/crio/crio.sock",
+		{"docker", "1.23.0", map[string]string{"container-runtime": "docker"}},
+		{"docker", "1.24.0", map[string]string{
+			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
 		}},
-		{"containerd", map[string]string{
+		{"crio", "1.25.0", map[string]string{
+			"container-runtime-endpoint": "unix:///var/run/crio/crio.sock",
+		}},
+		{"containerd", "1.23.0", map[string]string{
 			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
-			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
+		}},
+		{"containerd", "1.24.0", map[string]string{
+			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
 		}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
-			r, err := New(Config{Type: tc.runtime})
+			kv := semver.MustParse(tc.version)
+			r, err := New(Config{Type: tc.runtime, KubernetesVersion: kv})
 			if err != nil {
-				t.Fatalf("New(%s): %v", tc.runtime, err)
+				t.Fatalf("New(%s, %s): %v", tc.runtime, tc.version, err)
 			}
 
 			got := r.KubeletOptions()
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("KubeletOptions(%s) returned diff (-want +got):\n%s", tc.runtime, diff)
+				t.Errorf("KubeletOptions(%s, %s) returned diff (-want +got):\n%s", tc.runtime, tc.version, diff)
 			}
 		})
 	}

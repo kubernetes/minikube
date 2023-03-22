@@ -247,9 +247,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 // populateCRIConfig sets up /etc/crictl.yaml
 func populateCRIConfig(cr CommandRunner, socket string) error {
 	cPath := "/etc/crictl.yaml"
-	tmpl := `runtime-endpoint: unix://{{.Socket}}
-image-endpoint: unix://{{.Socket}}
-`
+	tmpl := "runtime-endpoint: unix://{{.Socket}}\n"
 	t, err := template.New("crictl").Parse(tmpl)
 	if err != nil {
 		return err
