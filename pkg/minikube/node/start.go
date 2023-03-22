@@ -385,6 +385,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		Type:              cc.KubernetesConfig.ContainerRuntime,
 		Socket:            cc.KubernetesConfig.CRISocket,
 		Runner:            runner,
+		NetworkPlugin:     cc.KubernetesConfig.NetworkPlugin,
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
@@ -404,12 +405,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	// make sure container runtime is restarted afterwards for these changes to take effect
 	disableLoopback := co.Type == constants.CRIO
 	if err := cni.ConfigureLoopbackCNI(runner, disableLoopback); err != nil {
-		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
-	}
-	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
-			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
-		}
+		klog.Warningf("unable to name loopback interface in configureRuntimes: %v", err)
 	}
 	// ensure all default CNI(s) are properly configured on each and every node (re)start
 	// make sure container runtime is restarted afterwards for these changes to take effect
