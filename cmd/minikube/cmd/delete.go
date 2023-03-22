@@ -677,7 +677,7 @@ func trySigKillProcess(pid int, ocheck func(int) (bool, error)) error {
 }
 
 // doesPIDBelongToMinikube tries to find the process with that PID
-// and checks if the executable name is "minikube"
+// and checks if the executable name contains the string "minikube"
 func doesPIDBelongToMinikube(pid int) (bool, error) {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
