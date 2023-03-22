@@ -276,7 +276,6 @@
 	"Failed to check if machine exists": "머신이 존재하는지 확인하는 데 실패하였습니다",
 	"Failed to check main repository and mirrors for images": "",
 	"Failed to configure metallb IP {{.profile}}": "",
-	"Failed to configure network plugin": "",
 	"Failed to configure registry-aliases {{.profile}}": "",
 	"Failed to create file": "",
 	"Failed to create runtime": "",
