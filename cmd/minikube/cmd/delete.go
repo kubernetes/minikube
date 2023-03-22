@@ -659,7 +659,7 @@ func trySigKillProcess(pid int, ocheck func(int) (bool, error)) error {
 	}
 
 	if !itDoes {
-		return fmt.Errorf("Stale pid: %d", pid)
+		return fmt.Errorf("stale pid: %d", pid)
 	}
 
 	proc, err := os.FindProcess(pid)
