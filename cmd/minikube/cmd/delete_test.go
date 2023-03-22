@@ -259,13 +259,13 @@ func main() {
 	tmpfile := filepath.Join(td, "waitForSig.go")
 
 	if err := os.WriteFile(tmpfile, waitForSig, 0o700); err != nil {
-		t.Fatalf("copying source to %s", tmpfile)
+		t.Fatalf("copying source to %s: %s\n", tmpfile, err)
 	}
 
 	processToKill := exec.Command("go", "run", tmpfile)
 	err := processToKill.Start()
 	if err != nil {
-		t.Fatalf("while execing child process")
+		t.Fatalf("while execing child process: %s\n", err)
 	}
 	pid := processToKill.Process.Pid
 
@@ -275,11 +275,11 @@ func main() {
 
 	err = trySigKillProcess(pid, mockOwnershipCheck)
 	if err != nil {
-		t.Fatalf("while trying to kill child proc: %d", pid)
+		t.Fatalf("while trying to kill child proc %d: %s\n", pid, err)
 	}
 
 	// waiting for process to exit
 	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process")
+		t.Fatalf("unable to kill process: %s\n", err)
 	}
 }
