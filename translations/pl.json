@@ -443,6 +443,7 @@
 	"Mounts the specified directory into minikube": "Montuje podany katalog wewnątrz minikube",
 	"Mounts the specified directory into minikube.": "Montuje podany katalog wewnątrz minikube",
 	"Multiple errors deleting profiles": "Wystąpiło wiele błędów podczas usuwania profili",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found - ": "Znaleziono wiele profili minikube - ",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",

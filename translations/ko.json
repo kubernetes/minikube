@@ -454,6 +454,7 @@
 	"Mounts the specified directory into minikube": "특정 디렉토리를 minikube 에 마운트합니다",
 	"Mounts the specified directory into minikube.": "",
 	"Multiple errors deleting profiles": "",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found - ": "",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "",

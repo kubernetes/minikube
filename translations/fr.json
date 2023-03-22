@@ -422,6 +422,7 @@
 	"Mounts the specified directory into minikube": "Monte le répertoire spécifié dans minikube",
 	"Mounts the specified directory into minikube.": "Monte le répertoire spécifié dans minikube.",
 	"Multiple errors deleting profiles": "Plusieurs erreurs lors de la suppression des profils",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found - ": "Plusieurs profils minikube ont été trouvés -",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "Type de carte réseau utilisé pour le réseau hôte uniquement. Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM ou virtio (pilote virtualbox uniquement)",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "Type de carte réseau utilisé pour le réseau nat. Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM ou virtio (pilote virtualbox uniquement)",

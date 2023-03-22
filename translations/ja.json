@@ -408,6 +408,7 @@
 	"Mounts the specified directory into minikube": "minikube に指定されたディレクトリーをマウントします",
 	"Mounts the specified directory into minikube.": "minikube に指定されたディレクトリーをマウントします。",
 	"Multiple errors deleting profiles": "プロファイル削除中に複数のエラーが発生しました",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found - ": "複数の minikube プロファイルが見つかりました - ",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "ホストオンリーネットワークに使用する NIC タイプ。Am79C970A、Am79C973、82540EM、82543GC、82545EM、virtio のいずれか (virtualbox ドライバーのみ)",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "NAT ネットワークに使用する NIC タイプ。Am79C970A、Am79C973、82540EM、82543GC、82545EM、virtio のいずれか (virtualbox ドライバーのみ)",

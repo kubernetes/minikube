@@ -431,6 +431,7 @@
 	"Mounts the specified directory into minikube": "Mounted das angegebene Verzeichnis in Minikube",
 	"Mounts the specified directory into minikube.": "Mounted das angegebene Verzeichnis in Minikube.",
 	"Multiple errors deleting profiles": "Es sind mehrere Fehler beim Löschen der Profile aufgetreten",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found - ": "Es wurden mehrere Minikube Profile gefunden - ",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "NIC Type der fürs Host only Netzwerk verwendet wird. Einer aus Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, oder virtio (nur virtualbox Treiber)",
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "NIC Type der fürs NAT Network verwendet wird. Einer aus Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (Nur virtualbox Treiber)",

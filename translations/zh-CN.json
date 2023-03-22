@@ -518,6 +518,7 @@
 	"Mounts the specified directory into minikube": "将指定的目录挂载到 minikube",
 	"Mounts the specified directory into minikube.": "将指定的目录挂载到 minikube。",
 	"Multiple errors deleting profiles": "删除配置文件时出现多个错误",
+	"Multiple errors encountered:": "",
 	"Multiple minikube profiles were found -": "发现了多个 minikube 配置文件 -",
 	"Multiple minikube profiles were found - ": "",
 	"NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "网卡类型仅用于主机网络。Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM 之一，或 virtio(仅限 VirtualBox 驱动程序)",
