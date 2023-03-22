@@ -134,18 +134,8 @@ func cleanupLock() {
 func mustLockOrExit() {
 	tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
 
-	_, err := os.OpenFile(tunnelLockPath, os.O_RDWR|os.O_TRUNC, 0600)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error opening lock file for tunnel file (%s)", tunnelLockPath), err)
-		}
-		_, err = os.Create(tunnelLockPath)
-		if err != nil {
-			exit.Error(reason.SvcTunnelStart, fmt.Sprintf("error creating lock for tunnel file (%s)", tunnelLockPath), err)
-		}
-	}
 	lockHandle = fslock.New(tunnelLockPath)
-	err = lockHandle.TryLock()
+	err := lockHandle.TryLock()
 	if err == fslock.ErrLocked {
 		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
 	}
