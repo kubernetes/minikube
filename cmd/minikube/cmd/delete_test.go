@@ -269,7 +269,11 @@ func main() {
 	}
 	pid := processToKill.Process.Pid
 
-	err = trySigKillProcess(pid)
+	mockOwnershipCheck := func(int) (bool, error) {
+		return true, nil
+	}
+
+	err = trySigKillProcess(pid, mockOwnershipCheck)
 	if err != nil {
 		t.Fatalf("while trying to kill child proc: %d", pid)
 	}
