@@ -26,8 +26,6 @@ import (
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -42,14 +40,18 @@ type hostPathProvisioner struct {
 
 	// Identity of this hostPathProvisioner, generated. Used to identify "this"
 	// provisioner's PVs.
-	identity types.UID
+	identity string
 }
 
 // NewHostPathProvisioner creates a new Provisioner using host paths
 func NewHostPathProvisioner(pvDir string) controller.Provisioner {
+	nodeName := os.Getenv("NODE_NAME")
+	if nodeName == "" {
+		klog.Fatal("env variable NODE_NAME must be set so that this provisioner can identify itself")
+	}
 	return &hostPathProvisioner{
 		pvDir:    pvDir,
-		identity: uuid.NewUUID(),
+		identity: nodeName,
 	}
 }
 

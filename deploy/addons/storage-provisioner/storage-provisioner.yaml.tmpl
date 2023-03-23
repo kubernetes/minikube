@@ -103,6 +103,11 @@ spec:
     image: {{.CustomRegistries.StorageProvisioner  | default .ImageRepository | default .Registries.StorageProvisioner }}{{.Images.StorageProvisioner}}
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
+    env:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
     volumeMounts:
     - mountPath: /tmp
       name: tmp
