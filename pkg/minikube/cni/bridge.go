@@ -30,12 +30,13 @@ import (
 // bridge is what minikube defaulted to when `--enable-default-cni=true`
 // ref: https://www.cni.dev/plugins/current/main/bridge/
 // ref: https://www.cni.dev/plugins/current/meta/portmap/
+// ref: https://www.cni.dev/plugins/current/meta/firewall/
 
 // note: "cannot set hairpin mode and promiscuous mode at the same time"
 // ref: https://github.com/containernetworking/plugins/blob/7e9ada51e751740541969e1ea5a803cbf45adcf3/plugins/main/bridge/bridge.go#L424
 var bridgeConf = template.Must(template.New("bridge").Parse(`
 {
-  "cniVersion": "0.3.1",
+  "cniVersion": "0.4.0",
   "name": "bridge",
   "plugins": [
     {
@@ -56,6 +57,9 @@ var bridgeConf = template.Must(template.New("bridge").Parse(`
       "capabilities": {
           "portMappings": true
       }
+    },
+    {
+       "type": "firewall"
     }
   ]
 }
