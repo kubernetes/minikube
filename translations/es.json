@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "El complemento \"{{.minikube_addon}}\" está desactivado",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "El contexto \"{{.context}}\" ha sido actualizado para apuntar a {{.hostname}}:{{.port}}",

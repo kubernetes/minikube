@@ -156,6 +156,11 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 		}
+		// Disable a non-enabled addon
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "gvisor", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to disable non-enabled addon: args %q : %v", rr.Command(), err)
+		}
 	})
 }
 

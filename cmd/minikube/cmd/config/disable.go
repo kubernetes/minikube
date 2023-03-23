@@ -42,22 +42,20 @@ var addonsDisableCmd = &cobra.Command{
 		}
 		cc, err := config.Load(ClusterFlagValue())
 		if err != nil {
-			exit.Error(reason.InternalAddonDisable, "loading profile", err)
+			exit.Error(reason.InternalConfigView, "loading profile", err)
 		}
 		validAddon, ok := assets.Addons[addon]
-		if ok {
-			if validAddon.IsEnabled(cc) {
-				err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
-				if err != nil {
-					exit.Error(reason.InternalAddonDisable, "disable failed", err)
-				}
-			} else {
-				out.Step(style.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
-			}
 
-		} else {
-			out.Step(style.AddonDisable, `"The '{{.minikube_addon}}' seems not to be a valid minikube addon`, out.V{"minikube_addon": addon})
+		if !ok {
+			exit.Message(reason.InternalAddonDisable, `"'{{.minikube_addon}}' is not a valid minikube addon`, out.V{"minikube_addon": addon})
 		}
+		if validAddon.IsEnabled(cc) {
+			err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
+			if err != nil {
+				exit.Error(reason.InternalAddonDisable, "disable failed", err)
+			}
+		}
+		out.Styled(style.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
 	},
 }
 
