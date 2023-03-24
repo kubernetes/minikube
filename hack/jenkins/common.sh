@@ -80,7 +80,8 @@ if [ "$(uname)" = "Darwin" ]; then
   if [ "$ARCH" = "arm64" ]; then
     export PATH=$PATH:/opt/homebrew/bin
   fi
-  if ! bash setup_docker_desktop_macos.sh; then
+
+  if [ "$DRIVER" = "docker" ] && ! bash setup_docker_desktop_macos.sh; then
     retry_github_status "${COMMIT}" "${JOB_NAME}" "failure" "${access_token}" "${public_log_url}" "Jenkins: docker failed to start"
     exit 1
   fi
