@@ -409,6 +409,9 @@ makes sure the minikube tunnel command works as expected
 #### validateTunnelStart
 starts `minikube tunnel`
 
+#### validateNoSecondTunnel
+ensures only 1 tunnel can run simultaneously
+
 #### validateServiceStable
 starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP
 
