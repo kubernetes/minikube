@@ -22,6 +22,7 @@ if docker system info > /dev/null 2>&1; then
 fi
 
 # kill docker first
+osascript -e 'quit app "Docker Desktop"'
 osascript -e 'quit app "Docker"'
 
 # wait 2 minutes for it to start back up
