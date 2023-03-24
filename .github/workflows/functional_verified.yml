@@ -69,6 +69,7 @@ jobs:
         shell: bash
         run: |
           sudo apt update
+          sudo apt upgrade -y
           sudo apt install -y jq docker git cron
           sudo usermod -aG docker $USER
 
@@ -81,9 +82,8 @@ jobs:
           fi
           sudo touch /var/run/job.in.progress
           rm -rf cleanup.sh install_cleanup.sh
-          # after this PR is merged, update URLs to get the scripts from github master
-          wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
-          wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
+          wget https://raw.githubusercontent.com/kubernetes/minikube/master/hack/gh_actions/cleanup.sh
+          wget https://raw.githubusercontent.com/kubernetes/minikube/master/hack/gh_actions/install_cleanup.sh
           chmod +x cleanup.sh install_cleanup.sh
           ./install_cleanup.sh
 
