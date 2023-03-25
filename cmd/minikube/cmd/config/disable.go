@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -40,14 +40,10 @@ var addonsDisableCmd = &cobra.Command{
 		if addon == "heapster" {
 			exit.Message(reason.AddonUnsupported, "The heapster addon is depreciated. please try to disable metrics-server instead")
 		}
-		cc, err := config.Load(ClusterFlagValue())
-		if err != nil {
-			exit.Error(reason.InternalConfigView, "loading profile", err)
-		}
+		_, cc := mustload.Partial(ClusterFlagValue())
 		validAddon, ok := assets.Addons[addon]
-
 		if !ok {
-			exit.Message(reason.InternalAddonDisable, `"'{{.minikube_addon}}' is not a valid minikube addon`, out.V{"minikube_addon": addon})
+			exit.Message(reason.AddonUnsupported, `"'{{.minikube_addon}}' is not a valid minikube addon`, out.V{"minikube_addon": addon})
 		}
 		if validAddon.IsEnabled(cc) {
 			err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
