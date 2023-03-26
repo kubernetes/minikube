@@ -183,12 +183,17 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	ingressYaml := "nginx-ingress-v1.yaml"
 	ingressDNSYaml := "ingress-dns-example-v1.yaml"
 	v, err := client.ServerVersion()
-	if err != nil {
+	if err == nil {
+		// for pre-release k8s version, remove any "+" suffix in minor version to be semver-compliant and not panic
+		// ref: https://github.com/kubernetes/minikube/pull/16145#issuecomment-1483283260
+		minor := strings.TrimSuffix(v.Minor, "+")
+		if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, minor))) {
+			// legacy: k8s < v1.19 & ingress api v1beta1
+			ingressYaml = "nginx-ingress-v1beta1.yaml"
+			ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
+		}
+	} else {
 		t.Log("failed to get k8s version, assuming v1.19+ => ingress api v1")
-	} else if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, v.Minor))) {
-		// legacy: k8s < v1.19 & ingress api v1beta1
-		ingressYaml = "nginx-ingress-v1beta1.yaml"
-		ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
 	}
 
 	// create networking.k8s.io/v1 ingress
