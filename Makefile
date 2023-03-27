@@ -287,10 +287,10 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-minikube-iso-amd64: minikube-iso-x86_64
-minikube-iso-arm64: minikube-iso-aarch64
+minikube-iso-amd64: minikube-iso-board-x86_64
+minikube-iso-arm64: minikube-iso-board-aarch64
 
-minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
+minikube-iso-board-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
 	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
@@ -802,7 +802,7 @@ push-gvisor-addon-image: gvisor-addon-image
 	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
-release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files
+release-iso: minikube-iso-board-aarch64 minikube-iso-board-x86_64 checksum  ## Build and release .iso files
 	gsutil cp out/minikube-amd64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso
 	gsutil cp out/minikube-amd64.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-amd64.iso.sha256
 	gsutil cp out/minikube-arm64.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
