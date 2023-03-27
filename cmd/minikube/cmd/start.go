@@ -261,7 +261,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 		}
 	}
 
-	validateBuiltImageVersion(starter.Runner)
+	validateBuiltImageVersion(starter.Runner, ds.Name)
 
 	if existing != nil && driver.IsKIC(existing.Driver) {
 		if viper.GetBool(createMount) {
@@ -389,7 +389,10 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 `, out.V{"driver": driver})
 }
 
-func validateBuiltImageVersion(r command.Runner) {
+func validateBuiltImageVersion(r command.Runner, driverName string) {
+	if driverName == driver.None {
+		return
+	}
 	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
 	if err != nil {
 		klog.Warningf("Unable to open version.json: %s", err)
