@@ -493,6 +493,7 @@ ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 ${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
 ${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
 ${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+${SUDO_PREFIX} rm -f "${SUMMARY_OUT}" || true
 
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
