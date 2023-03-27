@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' アドオンが無効です",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "「minikube cache」は今後のバージョンで廃止予定になりますので、「minikube image load」に切り替えてください",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "「{{.context}}」コンテキストが更新されて、{{.hostname}}:{{.port}} を指すようになりました",
