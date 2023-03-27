@@ -82,12 +82,12 @@ func Advice(r reason.Kind, msg string, advice string, a ...out.V) {
 }
 
 // Error takes a fatal error, matches it against known issues, and outputs the best message for it
-func Error(r reason.Kind, _ string, err error) {
+func Error(r reason.Kind, msg string, err error) {
 	ki := reason.MatchKnownIssue(r, err, runtime.GOOS)
 	if ki != nil {
 		Message(*ki, err.Error())
 	}
 	// By default, unmatched errors should show a link
 	r.NewIssueLink = true
-	Message(r, err.Error())
+	Message(r, fmt.Sprintf("%s: %v", msg, err))
 }
