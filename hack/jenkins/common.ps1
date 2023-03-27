@@ -44,12 +44,20 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_cron.ps1 out/
 ./out/windows_cleanup_cron.ps1
 
+# Grab all the scripts we'll need for integration tests
+gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
+gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
+
 # check for Docker CLI
 docker --help
 if ($lastexitcode -gt 0) {
         echo "Docker CLI not found, exiting."
         $json = "{`"state`": `"failure`", `"description`": `"Jenkins: Docker CLI not found`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
         Write-GithubStatus -JsonBody $json
+	./out/windows_integration_teardown.ps1
         Exit $lastexitcode
 }
 
@@ -61,6 +69,7 @@ if ($driver -eq "docker") {
 		echo "Docker failed to start, exiting."
 		$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
 		Write-GithubStatus -JsonBody $json
+		./out/windows_integration_teardown.ps1
 		Exit $lastexitcode
 	}
 	docker system prune -a --volumes -f
@@ -77,13 +86,6 @@ go install gotest.tools/gotestsum@v1.9.0
 if (Test-Path "C:\Go") {
     Remove-Item "C:\Go" -Recurse -Force
 }
-
-# Grab all the scripts we'll need for integration tests
-gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
-gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
 ./out/windows_integration_setup.ps1
 
