@@ -51,29 +51,17 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
 
-# check for Docker CLI
-docker --help
-if ($lastexitcode -gt 0) {
-        echo "Docker CLI not found, exiting."
-        $json = "{`"state`": `"failure`", `"description`": `"Jenkins: Docker CLI not found`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
-        Write-GithubStatus -JsonBody $json
+# Make sure Docker is up and running
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+./out/setup_docker_desktop_windows.ps1
+If ($lastexitcode -gt 0) {
+	echo "Docker failed to start, exiting."
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
+	Write-GithubStatus -JsonBody $json
 	./out/windows_integration_teardown.ps1
-        Exit $lastexitcode
+	Exit $lastexitcode
 }
-
-if ($driver -eq "docker") {
-	# Make sure Docker is up and running
-	gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
-	./out/setup_docker_desktop_windows.ps1
-	If ($lastexitcode -gt 0) {
-		echo "Docker failed to start, exiting."
-		$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
-		Write-GithubStatus -JsonBody $json
-		./out/windows_integration_teardown.ps1
-		Exit $lastexitcode
-	}
-	docker system prune -a --volumes -f
-}
+docker system prune -a --volumes -f
 
 # install/update Go if required
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check_install_golang.ps1 out/
