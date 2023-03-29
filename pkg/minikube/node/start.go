@@ -822,7 +822,7 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	}
 
 	if imageRepository == "" {
-		imageRepository = images.DefaultKubernetesRepo()
+		imageRepository = images.DefaultKubernetesRepo
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))

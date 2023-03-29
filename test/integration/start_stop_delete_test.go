@@ -354,7 +354,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
-		t.Errorf("failed tp get images inside minikube. args %q: %v", rr.Command(), err)
+		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
 	}
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
@@ -377,7 +377,13 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 			}
 		}
 	}
-	wantRaw, err := images.Kubeadm("", version)
+
+	mirror := ""
+	// Kubernetes versions prior to v1.25 will contain the old registry due to the preload
+	if v, _ := util.ParseKubernetesVersion(kubernetesVersion); v.LT(semver.MustParse("1.25.0-alpha.1")) {
+		mirror = "k8s.gcr.io"
+	}
+	wantRaw, err := images.Kubeadm(mirror, version)
 	if err != nil {
 		t.Errorf("failed to get kubeadm images for %s : %v", version, err)
 	}

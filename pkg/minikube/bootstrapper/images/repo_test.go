@@ -29,7 +29,7 @@ func Test_kubernetesRepo(t *testing.T) {
 	}{
 		{
 			"",
-			DefaultKubernetesRepo(),
+			DefaultKubernetesRepo,
 		},
 		{
 			"mirror.k8s.io",
@@ -37,11 +37,11 @@ func Test_kubernetesRepo(t *testing.T) {
 		},
 		{
 			"",
-			NewDefaultKubernetesRepo,
+			DefaultKubernetesRepo,
 		},
 		{
 			"",
-			NewDefaultKubernetesRepo,
+			DefaultKubernetesRepo,
 		},
 	}
 	for _, tc := range tests {

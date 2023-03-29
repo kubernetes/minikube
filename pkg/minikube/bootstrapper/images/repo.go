@@ -16,20 +16,13 @@ limitations under the License.
 
 package images
 
-// OldDefaultKubernetesRepo is the old default Kubernetes repository
-const OldDefaultKubernetesRepo = "k8s.gcr.io"
-
-// NewDefaultKubernetesRepo is the new default Kubernetes repository
-const NewDefaultKubernetesRepo = "registry.k8s.io"
+// DefaultKubernetesRepo is the default Kubernetes repository
+const DefaultKubernetesRepo = "registry.k8s.io"
 
 // kubernetesRepo returns the official Kubernetes repository, or an alternate
 func kubernetesRepo(mirror string) string {
 	if mirror != "" {
 		return mirror
 	}
-	return DefaultKubernetesRepo()
-}
-
-func DefaultKubernetesRepo() string {
-	return NewDefaultKubernetesRepo
+	return DefaultKubernetesRepo
 }
