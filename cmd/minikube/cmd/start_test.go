@@ -167,50 +167,6 @@ func TestMirrorCountry(t *testing.T) {
 	}
 }
 
-func TestImageRepository(t *testing.T) {
-	// Set default disk size value in lieu of flag init
-	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
-	checkRepository = checkRepoMock
-	rtime := constants.DefaultContainerRuntime
-	var tests = []struct {
-		description     string
-		k8sVersion      string
-		imageRepository string
-		needsOverride   bool
-		cfg             *cfg.ClusterConfig
-	}{
-		{
-			description:     "repository-registry_old",
-			imageRepository: "",
-			k8sVersion:      "v1.21.0",
-			needsOverride:   true,
-		},
-		{
-			description:     "repository-registry_new",
-			imageRepository: "",
-			k8sVersion:      "v1.25.0",
-			needsOverride:   false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			cmd := &cobra.Command{}
-			viper.SetDefault(imageRepository, test.imageRepository)
-			viper.SetDefault(imageMirrorCountry, "")
-			viper.SetDefault(kvmNUMACount, 1)
-			config, _, err := generateClusterConfig(cmd, nil, test.k8sVersion, rtime, driver.Mock)
-			if err != nil {
-				t.Fatalf("Got unexpected error %v during config generation", err)
-			}
-			repo := config.KubernetesConfig.ImageRepository
-			if repo == "" && test.needsOverride {
-				t.Fatalf("Version %v needs image repository to be defined: %s", test.k8sVersion, repo)
-			}
-		})
-	}
-}
-
 func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	// Set default disk size value in lieu of flag init
 	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)

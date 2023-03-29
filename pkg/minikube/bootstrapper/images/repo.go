@@ -16,10 +16,6 @@ limitations under the License.
 
 package images
 
-import (
-	"github.com/blang/semver/v4"
-)
-
 // OldDefaultKubernetesRepo is the old default Kubernetes repository
 const OldDefaultKubernetesRepo = "k8s.gcr.io"
 
@@ -27,18 +23,13 @@ const OldDefaultKubernetesRepo = "k8s.gcr.io"
 const NewDefaultKubernetesRepo = "registry.k8s.io"
 
 // kubernetesRepo returns the official Kubernetes repository, or an alternate
-func kubernetesRepo(mirror string, v semver.Version) string {
+func kubernetesRepo(mirror string) string {
 	if mirror != "" {
 		return mirror
 	}
-	return DefaultKubernetesRepo(v)
+	return DefaultKubernetesRepo()
 }
 
-func NeedsImageRepository(kv semver.Version) bool {
-	// make sure to override any old image repository
-	return kv.LT(semver.MustParse("1.25.0-alpha.1"))
-}
-
-func DefaultKubernetesRepo(kv semver.Version) string {
+func DefaultKubernetesRepo() string {
 	return NewDefaultKubernetesRepo
 }
