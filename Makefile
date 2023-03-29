@@ -1097,6 +1097,11 @@ update-metrics-server-version:
 	(cd hack/update/metrics_server_version && \
 	 go run update_metrics_server_version.go)
 
+.PHONY: update-runc-version
+update-runc-version:
+	(cd hack/update/runc_version && \
+	 go run update_runc_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
