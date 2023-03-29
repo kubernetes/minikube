@@ -258,12 +258,12 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L443
-		"IngressController": "ingress-nginx/controller:v1.6.4@sha256:15be4666c53052484dd2992efacf2f50ea77a78ae8aa21ccd91af6baaa7ea22f",
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L550
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L599
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L445
+		"IngressController": "ingress-nginx/controller:v1.7.0@sha256:7612338342a1e7b8090bef78f2a04fffcadd548ccaabe8a47bf7758ff549a5f7",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L552
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20230312-helm-chart-4.5.2-28-g66a760794@sha256:01d181618f270f2a96c04006f33b2699ad3ccb02da48d0f89b22abce084b292f",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L601
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20230312-helm-chart-4.5.2-28-g66a760794@sha256:01d181618f270f2a96c04006f33b2699ad3ccb02da48d0f89b22abce084b292f",
 	}, map[string]string{
 		"IngressController":        "registry.k8s.io",
 		"KubeWebhookCertgenCreate": "registry.k8s.io",
