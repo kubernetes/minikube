@@ -35,14 +35,6 @@ func Test_kubernetesRepo(t *testing.T) {
 			"mirror.k8s.io",
 			"mirror.k8s.io",
 		},
-		{
-			"",
-			DefaultKubernetesRepo,
-		},
-		{
-			"",
-			DefaultKubernetesRepo,
-		},
 	}
 	for _, tc := range tests {
 		got := kubernetesRepo(tc.mirror)

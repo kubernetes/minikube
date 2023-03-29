@@ -380,7 +380,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 
 	mirror := ""
 	// Kubernetes versions prior to v1.25 will contain the old registry due to the preload
-	if v, _ := util.ParseKubernetesVersion(kubernetesVersion); v.LT(semver.MustParse("1.25.0-alpha.1")) {
+	if v, _ := util.ParseKubernetesVersion(version); v.LT(semver.MustParse("1.25.0-alpha.1")) {
 		mirror = "k8s.gcr.io"
 	}
 	wantRaw, err := images.Kubeadm(mirror, version)
