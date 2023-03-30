@@ -278,7 +278,7 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format, 
 
 func expectedImageFormat(format string) []string {
 	return []string{
-		fmt.Sprintf(format, "k8s.gcr.io/pause"),
+		fmt.Sprintf(format, "registry.k8s.io/pause"),
 		fmt.Sprintf(format, "registry.k8s.io/kube-apiserver"),
 	}
 }
