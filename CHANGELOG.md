@@ -51,7 +51,7 @@ Version Upgrades:
 * Kicbase/ISO: Update buildkit from v0.10.3 to v0.11.4 [#15728](https://github.com/kubernetes/minikube/pull/15728) [#16079](https://github.com/kubernetes/minikube/pull/16079)
 * Kicbase/ISO: Update cri-dockerd from 0.3.0 to 0.3.1 [#15752](https://github.com/kubernetes/minikube/pull/15752)
 * Kicbase: Update base image from ubuntu:focal-20221019 to ubuntu:focal-20230308 [#15768](https://github.com/kubernetes/minikube/pull/15768) [#15991](https://github.com/kubernetes/minikube/pull/15991) [#16068](https://github.com/kubernetes/minikube/pull/16068)
-* ISO: Update runc from v1.1.4 to v1.1.5
+* ISO: Update runc from v1.1.4 to v1.1.5 [#16191](https://github.com/kubernetes/minikube/pull/16191)
 * ISO: Update podman from v3.4.2 to v3.4.7 [#15565](https://github.com/kubernetes/minikube/pull/15565)
 * CNI: Update kindnetd from v20221004-44d545d1 to v20230227-15197099 [#15940](https://github.com/kubernetes/minikube/pull/15940)
 
