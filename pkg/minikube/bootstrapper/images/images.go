@@ -47,7 +47,7 @@ func Pause(v semver.Version, mirror string) string {
 	imageName := "pause"
 	pv := imageVersion(v, mirror, imageName, "3.6")
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), pv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), pv)
 }
 
 // essentials returns images needed too bootstrap a Kubernetes
@@ -67,7 +67,7 @@ func essentials(mirror string, v semver.Version) []string {
 
 // componentImage returns a Kubernetes component image to pull
 func componentImage(name string, v semver.Version, mirror string) string {
-	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror, v), name), v)
+	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
 }
 
 // fixes 13136 by getting the latest image version from the k8s.gcr.io repository instead of hardcoded
@@ -120,7 +120,7 @@ func coreDNS(v semver.Version, mirror string) string {
 		imageName = "coredns"
 	}
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), cv)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), cv)
 }
 
 // etcd returns the image used for etcd
@@ -131,7 +131,7 @@ func etcd(v semver.Version, mirror string) string {
 	imageName := "etcd"
 	ev := imageVersion(v, mirror, imageName, "3.5.0-0")
 
-	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror, v), imageName), ev)
+	return fmt.Sprintf("%s:%s", path.Join(kubernetesRepo(mirror), imageName), ev)
 }
 
 func imageVersion(v semver.Version, mirror, imageName, defaultVersion string) string {
@@ -139,7 +139,7 @@ func imageVersion(v semver.Version, mirror, imageName, defaultVersion string) st
 	if ver, ok := constants.KubeadmImages[versionString][imageName]; ok {
 		return ver
 	}
-	return findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror, v), imageName), defaultVersion)
+	return findLatestTagFromRepository(fmt.Sprintf(tagURLTemplate, kubernetesRepo(mirror), imageName), defaultVersion)
 }
 
 // auxiliary returns images that are helpful for running minikube
