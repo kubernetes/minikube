@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.30.0 - 2023-03-30
+## Version 1.30.0 - 2023-03-31
 
 Features:
 * Implement experimental QEMU on Windows [#15781](https://github.com/kubernetes/minikube/pull/15781)
