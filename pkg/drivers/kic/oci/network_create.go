@@ -326,7 +326,7 @@ func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 		lines = append(lines, strings.TrimSpace(scanner.Text()))
 	}
 
-	return lines, nil
+	return lines, scanner.Err()
 }
 
 // DeleteAllKICKNetworksByLabel deletes all networks that have a specific label

@@ -60,6 +60,9 @@ func TestAddonsList(t *testing.T) {
 				pipeCount += strings.Count(buf.Text(), "|")
 				got += buf.Text()
 			}
+			if err := buf.Err(); err != nil {
+				t.Errorf("failed to read stdout: %v", err)
+			}
 			// The lines we pull should look something like
 			// |------------|------------|(------|)
 			// | ADDON NAME | MAINTAINER |( DOCS |)

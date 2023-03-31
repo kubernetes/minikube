@@ -87,12 +87,12 @@ func main() {
 		validDate = true
 		write(dw, line)
 	}
+	if err := s.Err(); err != nil {
+		log.Fatalf("failed to read file: %v", err)
+	}
 
 	if err := dw.Flush(); err != nil {
 		log.Fatalf("failed to flush data writer: %v", err)
-	}
-	if err := s.Err(); err != nil {
-		log.Fatalf("scanner had an error: %v", err)
 	}
 	if err := data.Close(); err != nil {
 		log.Fatalf("failed to close source file: %v", err)

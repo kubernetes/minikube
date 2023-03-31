@@ -341,6 +341,9 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 		nextStepIndex++
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read logs: %v", err)
+	}
 	wg.Done()
 }
 
