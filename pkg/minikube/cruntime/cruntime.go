@@ -339,3 +339,14 @@ func CheckKernelCompatibility(cr CommandRunner, major, minor int) error {
 	}
 	return nil
 }
+
+// defaultKubeletOptions returns the default kubelet options
+func defaultKubeletOptions(cr Manager, kubernetesVersion semver.Version) map[string]string {
+	opts := map[string]string{
+		"container-runtime-endpoint": fmt.Sprintf("unix://%s", cr.SocketPath()),
+	}
+	if kubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
+		opts["container-runtime"] = "remote"
+	}
+	return opts
+}
