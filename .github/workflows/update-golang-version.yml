@@ -22,7 +22,9 @@ jobs:
       - name: Bump Golang Versions
         id: bumpGolang
         run: |
+          echo "OLD_VERSION=$(DEP=go make get-dependency-version)" >> $GITHUB_OUTPUT
           make update-golang-version
+          echo "NEW_VERSION=$(DEP=go make get-dependency-version)" >> $GITHUB_OUTPUT
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> $GITHUB_OUTPUT
           echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
@@ -32,7 +34,7 @@ jobs:
         uses: peter-evans/create-pull-request@38e0b6e68b4c852a5500a94740f0e535e0d7ba54
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: bump golang versions
+          commit-message: 'Update go from ${{ steps.bumpGolang.outputs.OLD_VERSION }} to ${{ steps.bumpGolang.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_golang_version
@@ -40,7 +42,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'bump golang version'
+          title: 'Update go from ${{ steps.bumpGolang.outputs.OLD_VERSION }} to ${{ steps.bumpGolang.outputs.NEW_VERSION }}'
           labels: ok-to-test
           body: |
             Kubernetes Project just updated the [golang version](https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION), updating minikube golang to match Kubernetes.

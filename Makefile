@@ -1102,6 +1102,11 @@ update-runc-version:
 	(cd hack/update/runc_version && \
 	 go run update_runc_version.go)
 
+.PHONY: get-dependency-verison
+get-dependency-version:
+	@(cd hack/update/get_version && \
+	 go run get_version.go)
+
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
