@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' アドオンが無効です",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "「minikube cache」は今後のバージョンで廃止予定になりますので、「minikube image load」に切り替えてください",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "「{{.context}}」コンテキストが更新されて、{{.hostname}}:{{.port}} を指すようになりました",
@@ -67,6 +68,7 @@
 	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "VirtualBox などの別のハイパーバイザーが、KVM と競合しています。他のハイパーバイザーを停止するか、--driver を使用して切り替えてください。",
 	"Another minikube instance is downloading dependencies... ": "別の minikube のインスタンスが、依存関係をダウンロードしています... ",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "別のプログラムが、minikube に必要なファイルを使用しています。Hyper-V を使用している場合は、Hyper-V マネージャー内から minikube VM を停止してみてください",
+	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "アドオンを有効にするには、少なくともコントロールプレーンノードが必要です",
 	"Auto-pause is already enabled.": "自動一時停止は既に有効になっています。",
 	"Automatically selected the {{.driver}} driver": "{{.driver}} ドライバーが自動的に選択されました",
@@ -895,6 +897,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "エラー: --output は 'text'、'yaml'、'json' のいずれかでなければなりません",
 	"error: --output must be 'yaml' or 'json'": "エラー: --output は 'yaml'、'json' のいずれかでなければなりません",
 	"experimental": "実験的",
+	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "ノード追加に失敗しました",
 	"failed to open browser: {{.error}}": "ブラウザー起動に失敗しました: {{.error}}",
 	"failed to save config": "設定保存に失敗しました",

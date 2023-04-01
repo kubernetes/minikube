@@ -202,7 +202,7 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile, 
 	defer PostMortemLogs(t, profile)
 
 	// Enable an addon to assert it requests the correct image.
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=registry.k8s.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -217,8 +217,8 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile, 
 		t.Errorf("failed to get info on auto-pause deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " fake.domain/k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " fake.domain/registry.k8s.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/registry.k8s.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
@@ -243,7 +243,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile, _,
 	}
 
 	// Enable an addon to assert it comes up afterwards
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=k8s.gcr.io/echoserver:1.4"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=registry.k8s.io/echoserver:1.4"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -293,8 +293,8 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile, tcName, 
 		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " registry.k8s.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" registry.k8s.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
@@ -354,7 +354,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
-		t.Errorf("failed tp get images inside minikube. args %q: %v", rr.Command(), err)
+		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
 	}
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
@@ -377,7 +377,13 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 			}
 		}
 	}
-	wantRaw, err := images.Kubeadm("", version)
+
+	mirror := ""
+	// Kubernetes versions prior to v1.25 will contain the old registry due to the preload
+	if v, _ := util.ParseKubernetesVersion(version); v.LT(semver.MustParse("1.25.0-alpha.1")) {
+		mirror = "k8s.gcr.io"
+	}
+	wantRaw, err := images.Kubeadm(mirror, version)
 	if err != nil {
 		t.Errorf("failed to get kubeadm images for %s : %v", version, err)
 	}

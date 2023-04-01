@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "'{{.minikube_addon}}' 插件已被禁用",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "\"minikube cache\" 将在即将发布的版本中弃用，请切换至 \"minikube image load\"",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "",
@@ -84,6 +85,7 @@
 	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --vm-driver to switch to it.": "另外一个管理程序与 KVM 产生了冲突，如 VirtualBox。请停止其他的管理程序",
 	"Another minikube instance is downloading dependencies... ": "",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "",
+	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "",
 	"Auto-pause is already enabled.": "",
 	"Automatically selected the '{{.driver}}' driver": "自动选择 '{{.driver}}' 驱动",
@@ -1074,6 +1076,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "",
 	"error: --output must be 'yaml' or 'json'": "",
 	"experimental": "",
+	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "",
 	"failed to open browser: {{.error}}": "",
 	"failed to save config": "",

@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "Das {{.minikube_addon}} Addon ist deaktiviert",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "\"minikube cache\" wird in der nächsten Version veraltet (deprecated) sein, bitte wechsle zu \"minikube image load\"",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "Der Kontext \"{{.context}}\" wurde aktualisiert, um auf {{.hostname}}:{{.port}} zu zeigen",
@@ -71,6 +72,7 @@
 	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "Ein anderer Hypervisor (wie z.B. VirtualBox) steht im Konflikt mit KVM. Bitte stoppen Sie den anderen Hypervisor oder verwenden Sie --driver um den Hypervisor zu wechseln.",
 	"Another minikube instance is downloading dependencies... ": "Eine andere Minikube-Instanz lädt Abhängigkeiten herunter... ",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "Ein anderes Programm benutzt eine Datei, die Minikube benötigt. Wenn Sie Hyper-V verwenden, versuchen Sie die minikube VM aus dem Hyper-V Manager heraus zu stoppen",
+	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "Benötige mindestens Control Plane Nodes um das Addon zu aktivieren",
 	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "Treiber {{.driver}} wurde automatisch ausgewählt",
@@ -957,6 +959,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "Fehler: --output muss entweder 'text', 'yaml' oder 'json' sein",
 	"error: --output must be 'yaml' or 'json'": "Fehler: --output muss entweder 'yaml' oder 'json' sein",
 	"experimental": "experimentell",
+	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "Hinzufügen des Nodes fehlgeschlagen",
 	"failed to open browser: {{.error}}": "Öffnen des Browsers fehlgeschlagen: {{.error}}",
 	"failed to save config": "Speichern der Konfiguration fehlgeschlagen",

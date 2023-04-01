@@ -41,6 +41,10 @@ import (
 const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
 
 func init() {
+	priority := registry.Default
+	if runtime.GOOS == "windows" {
+		priority = registry.Experimental
+	}
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.QEMU2,
 		Alias:    []string{driver.AliasQEMU},
@@ -48,7 +52,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Default,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

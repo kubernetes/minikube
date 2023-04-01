@@ -406,6 +406,9 @@ minikube failed to start a tunnel
 "SVC_TUNNEL_STOP" (Exit code ExSvcError)  
 minikube could not stop an active tunnel  
 
+"TUNNEL_ALREADY_RUNNING" (Exit code ExSvcConflict)  
+another instance of tunnel already running  
+
 "SVC_URL_TIMEOUT" (Exit code ExSvcTimeout)  
 minikube was unable to access the service url  
 

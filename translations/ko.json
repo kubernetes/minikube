@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "\"The '{{.minikube_addon}}' 이 비활성화되었습니다",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "\"minikube cache\"는 추후 버전에서 사용 중단됩니다. \"minikube image load\"로 전환하십시오",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "\"{{.context}}\" 컨텍스트가 {{.hostname}}:{{.port}}로 갱신되었습니다.",
@@ -75,6 +76,7 @@
 	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "VirtualBox 와 같은 또 다른 하이퍼바이저가 KVM 과 충돌이 발생합니다. 다른 하이퍼바이저를 중단하거나 --driver 로 변경하세요",
 	"Another minikube instance is downloading dependencies... ": "",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "",
+	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "",
 	"Auto-pause is already enabled.": "자동 일시 정지 설정이 이미 활성화되어있습니다",
 	"Automatically selected the {{.driver}} driver": "자동적으로 {{.driver}} 드라이버가 선택되었습니다",
@@ -957,6 +959,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "",
 	"error: --output must be 'yaml' or 'json'": "",
 	"experimental": "",
+	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "",
 	"failed to open browser: {{.error}}": "",
 	"failed to save config": "",

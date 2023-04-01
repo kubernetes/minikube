@@ -1,5 +1,6 @@
 {
 	"\n\n": "",
+	"\"'{{.minikube_addon}}' is not a valid minikube addon": "",
 	"\"The '{{.minikube_addon}}' addon is disabled": "",
 	"\"minikube cache\" will be deprecated in upcoming versions, please switch to \"minikube image load\"": "",
 	"\"{{.context}}\" context has been updated to point to {{.hostname}}:{{.port}}": "",
@@ -73,6 +74,7 @@
 	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "Inny hiperwizor, taki jak Virtualbox, powoduje konflikty z KVM. Zatrzymaj innego hiperwizora lub użyj flagi --driver żeby go zmienić.",
 	"Another minikube instance is downloading dependencies... ": "Inny program minikube już pobiera zależności...",
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "Inny program używa pliku wymaganego przez minikube. Jeśli używasz Hyper-V, spróbuj zatrzymać maszynę wirtualną minikube z poziomu managera Hyper-V",
+	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "Wymaga węzłów z płaszczyzny kontrolnej do włączenia addona",
 	"Auto-pause is already enabled.": "",
 	"Automatically selected the {{.driver}} driver": "Automatycznie wybrano sterownik {{.driver}}",
@@ -966,6 +968,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "",
 	"error: --output must be 'yaml' or 'json'": "",
 	"experimental": "",
+	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "",
 	"failed to open browser: {{.error}}": "Nie udało się otworzyć przeglądarki: {{.error}}",
 	"failed to save config": "",

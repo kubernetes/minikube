@@ -246,8 +246,8 @@ var Addons = map[string]*Addon{
 		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
 		"Kibana":               "kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f",
 	}, map[string]string{
-		"Elasticsearch":        "k8s.gcr.io",
-		"FluentdElasticsearch": "k8s.gcr.io",
+		"Elasticsearch":        "registry.k8s.io",
+		"FluentdElasticsearch": "registry.k8s.io",
 		"Kibana":               "docker.elastic.co",
 		"Alpine":               "docker.io",
 	}),
@@ -258,12 +258,12 @@ var Addons = map[string]*Addon{
 			"ingress-deploy.yaml",
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L443
-		"IngressController": "ingress-nginx/controller:v1.6.4@sha256:15be4666c53052484dd2992efacf2f50ea77a78ae8aa21ccd91af6baaa7ea22f",
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L550
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
-		// https://github.com/kubernetes/ingress-nginx/blob/47d902df0dfbb38f1ab61260b4038b09f9a8e2e2/deploy/static/provider/kind/deploy.yaml#L599
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20220916-gd32f8c343@sha256:39c5b2e3310dc4264d638ad28d9d1d96c4cbb2b2dcfb52368fe4e3c63f61e10f",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L445
+		"IngressController": "ingress-nginx/controller:v1.7.0@sha256:7612338342a1e7b8090bef78f2a04fffcadd548ccaabe8a47bf7758ff549a5f7",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L552
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20230312-helm-chart-4.5.2-28-g66a760794@sha256:01d181618f270f2a96c04006f33b2699ad3ccb02da48d0f89b22abce084b292f",
+		// https://github.com/kubernetes/ingress-nginx/blob/e94304d3f6b34a60123e951e2f9d88ad218a7bc1/deploy/static/provider/kind/deploy.yaml#L601
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v20230312-helm-chart-4.5.2-28-g66a760794@sha256:01d181618f270f2a96c04006f33b2699ad3ccb02da48d0f89b22abce084b292f",
 	}, map[string]string{
 		"IngressController":        "registry.k8s.io",
 		"KubeWebhookCertgenCreate": "registry.k8s.io",
@@ -333,7 +333,7 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.6.2@sha256:f977ad859fb500c1302d9c3428c6271db031bb7431e7076213b676b345a88dc2",
+		"MetricsServer": "metrics-server/metrics-server:v0.6.3@sha256:c60778fa1c44d0c5a0c4530ebe83f9243ee6fc02f4c3dc59226c201931350b10",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
 	}),
@@ -446,8 +446,8 @@ var Addons = map[string]*Addon{
 		"NvidiaDriverInstaller": "minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01",
 		"Pause":                 "pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e",
 	}, map[string]string{
-		"NvidiaDriverInstaller": "k8s.gcr.io",
-		"Pause":                 "k8s.gcr.io",
+		"NvidiaDriverInstaller": "registry.k8s.io",
+		"Pause":                 "registry.k8s.io",
 	}),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(addons.NvidiaGpuDevicePluginAssets,
@@ -458,7 +458,7 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-gpu-device-plugin", "3rd party (Nvidia)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
 		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
 	}, map[string]string{
-		"NvidiaDevicePlugin": "k8s.gcr.io",
+		"NvidiaDevicePlugin": "registry.k8s.io",
 	}),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.LogviewerAssets,
@@ -587,11 +587,11 @@ var Addons = map[string]*Addon{
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
-		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.0@sha256:f3b6b39a6062328c095337b4cadcefd1612348fdd5190b1dcbcb9b9e90bd8068",
+		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v20230312-helm-chart-4.5.2-28-g66a760794@sha256:01d181618f270f2a96c04006f33b2699ad3ccb02da48d0f89b22abce084b292f",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.0.14@sha256:60fc3f336083dcd0a472caa51edfbf497d4df37115bb65e2d12739ed461db925",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
-		"KubeWebhookCertgen": "k8s.gcr.io",
+		"KubeWebhookCertgen": "registry.k8s.io",
 	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
@@ -744,7 +744,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "6040"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.1@sha256:29f74a1b02db686ba4870cd6c4f0b0ae99cb72fe73a2cfc9fb674111465bdf48",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.2@sha256:a8dfda058bf21ed7eb50ff89bc333b99a739283942df892a15df58d089f0a3c9",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),
@@ -948,8 +948,8 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		// tl;dr If the user specified a custom image remove the default registry
 		// Without the line below, if you try to overwrite an image the default registry is still used in the templating
 		// Example - image name: MetricsScraper, default registry: docker.io, default image: kubernetesui/metrics-scraper
-		// Passed on addon enable: --images=MetricsScraper=k8s.gcr.io/echoserver:1.4
-		// Without this line the resulting image would be docker.io/k8s.gcr.io/echoserver:1.4
+		// Passed on addon enable: --images=MetricsScraper=registry.k8s.io/echoserver:1.4
+		// Without this line the resulting image would be docker.io/registry.k8s.io/echoserver:1.4
 		if _, ok := cc.CustomAddonImages[name]; ok {
 			opts.Registries[name] = ""
 		}

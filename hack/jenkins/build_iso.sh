@@ -27,6 +27,9 @@ set -x -o pipefail
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
+# install cron jobs
+source ./hack/jenkins/installers/check_install_linux_crons.sh
+
 # Generate changelog for latest github PRs merged
 ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/CHANGELOG
 ./hack/jenkins/build_changelog.sh deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/CHANGELOG

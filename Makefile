@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.29.0-1679074930-16079
+ISO_VERSION ?= v1.30.0
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -78,7 +78,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.52.0
+GOLINT_VERSION ?= v1.52.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -1096,6 +1096,16 @@ update-cri-o-version:
 update-metrics-server-version:
 	(cd hack/update/metrics_server_version && \
 	 go run update_metrics_server_version.go)
+
+.PHONY: update-runc-version
+update-runc-version:
+	(cd hack/update/runc_version && \
+	 go run update_runc_version.go)
+
+.PHONY: get-dependency-verison
+get-dependency-version:
+	@(cd hack/update/get_version && \
+	 go run get_version.go)
 
 .PHONY: generate-licenses
 generate-licenses:

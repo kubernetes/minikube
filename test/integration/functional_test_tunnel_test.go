@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -61,6 +62,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 			name      string
 			validator validateFunc
 		}{
+			{"RunSecondTunnel", validateNoSecondTunnel},            // Ensure no two tunnels run simultaneously
 			{"StartTunnel", validateTunnelStart},                   // Start tunnel
 			{"WaitService", validateServiceStable},                 // Wait for service is stable
 			{"AccessDirect", validateAccessDirect},                 // Access test for loadbalancer IP
@@ -129,6 +131,69 @@ func validateTunnelStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
 	}
 	tunnelSession = *ss
+}
+
+// validateNoSecondTunnel ensures only 1 tunnel can run simultaneously
+func validateNoSecondTunnel(ctx context.Context, t *testing.T, profile string) {
+	checkRoutePassword(t)
+
+	type SessInfo struct {
+		Stdout   string
+		Stderr   string
+		ExitCode int
+	}
+
+	sessCh := make(chan SessInfo)
+	sessions := make([]*StartSession, 2)
+
+	var runTunnel = func(idx int) {
+		args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
+
+		ctx2, cancel := context.WithTimeout(ctx, Seconds(15))
+		defer cancel()
+		session, err := Start(t, exec.CommandContext(ctx2, Target(), args...))
+		if err != nil {
+			t.Errorf("failed to start tunnel: %v", err)
+		}
+		sessions[idx] = session
+
+		stderr, err := io.ReadAll(session.Stderr)
+		if err != nil {
+			t.Logf("Failed to read stderr: %v", err)
+		}
+		stdout, err := io.ReadAll(session.Stdout)
+		if err != nil {
+			t.Logf("Failed to read stdout: %v", err)
+		}
+
+		exitCode := 0
+		err = session.cmd.Wait()
+		if err != nil {
+			if exErr, ok := err.(*exec.ExitError); !ok {
+				t.Logf("failed to coerce exit error: %v", err)
+				exitCode = -1
+			} else {
+				exitCode = exErr.ExitCode()
+			}
+		}
+
+		sessCh <- SessInfo{Stdout: string(stdout), Stderr: string(stderr), ExitCode: exitCode}
+	}
+
+	// One of the two processes must fail to acquire lock and die. This should be the first process to die.
+	go runTunnel(0)
+	go runTunnel(1)
+
+	sessInfo := <-sessCh
+
+	if sessInfo.ExitCode != reason.SvcTunnelAlreadyRunning.ExitCode {
+		t.Errorf("tunnel command failed with unexpected error: exit code %d. stderr: %s\n stdout: %s", sessInfo.ExitCode, sessInfo.Stderr, sessInfo.Stdout)
+	}
+
+	for _, sess := range sessions {
+		sess.Stop(t)
+	}
+	<-sessCh
 }
 
 // validateServiceStable starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP

@@ -525,7 +525,7 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Docker) SystemLogCmd(len int) string {
-	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", len)
 }
 
 // setCGroup configures the docker daemon to use driver as cgroup manager
