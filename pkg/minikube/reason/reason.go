@@ -474,7 +474,7 @@ var (
 		
 		Please install cri-dockerd using these instructions:
 
-		https://github.com/Mirantis/cri-dockerd#build-and-install`),
+		https://github.com/Mirantis/cri-dockerd`),
 		Style: style.Docker,
 	}
 	NotFoundDockerd = Kind{
