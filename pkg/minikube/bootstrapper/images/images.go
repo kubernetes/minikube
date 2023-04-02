@@ -170,7 +170,7 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "kindest"
 	}
-	return path.Join(repo, "kindnetd:v20230227-15197099")
+	return path.Join(repo, "kindnetd:v20230330-48f316cd")
 }
 
 // all calico images are from https://docs.projectcalico.org/manifests/calico.yaml
