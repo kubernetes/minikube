@@ -579,6 +579,7 @@
 	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "--keep-context が設定されたので、{{.profile_name}} 用 kubectl コンテキストの切替をスキップしました。",
 	"Some dashboard features require the metrics-server addon. To enable all features please run:\n\n\tminikube{{.profileArg}} addons enable metrics-server\t\n\n": "いくつかのダッシュボード機能は metrics-server アドオンを必要とします。全機能を有効にするためには、次のコマンドを実行します:\n\n\tminikube{{.profileArg}} addons enable metrics-server\t\n\n",
 	"Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path": "申し訳ありませんが、Kubernetes {{.k8sVersion}} は root アカウントのパス中にインストールされた conntrack が必要です",
+	"Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path": "",
 	"Sorry, completion support is not yet implemented for {{.name}}": "申し訳ありませんが、{{.name}} 用のコマンド補完は未実装です",
 	"Sorry, please set the --output flag to one of the following valid options: [text,json]": "申し訳ありませんが、--output フラグで次の有効な選択肢の 1 つを設定してください: [text,json]",
 	"Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.": "申し訳ありませんが、--listen-address フラグで指定された IP アドレスは無効です: {{.listenAddr}}",
