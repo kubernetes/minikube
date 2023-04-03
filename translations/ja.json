@@ -687,7 +687,7 @@
 	"The node {{.name}} has ran out of memory.": "{{.name}} ノードはメモリーを使い果たしました。",
 	"The node {{.name}} network is not available. Please verify network settings.": "{{.name}} ノードはネットワークが使用不能です。ネットワーク設定を検証してください。",
 	"The none driver is not compatible with multi-node clusters.": "none ドライバーはマルチノードクラスターと互換性がありません。",
-	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.\n\t\t\n\t\tPlease install cri-dockerd using these instructions:\n\n\t\thttps://github.com/Mirantis/cri-dockerd#build-and-install": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は cri-dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して cri-dockerd をインストールしてください:\n\n\t\thttps://github.com/Mirantis/cri-dockerd#build-and-install",
+	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.\n\t\t\n\t\tPlease install cri-dockerd using these instructions:\n\n\t\thttps://github.com/Mirantis/cri-dockerd": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は cri-dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して cri-dockerd をインストールしてください:\n\n\t\thttps://github.com/Mirantis/cri-dockerd",
 	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.\n\t\t\n\t\tPlease install dockerd using these instructions:\n\n\t\thttps://docs.docker.com/engine/install/": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して dockerd をインストールしてください:\n\n\t\thttps://docs.docker.com/engine/install/",
 	"The number of nodes to spin up. Defaults to 1.": "起動するノード数。デフォルトは 1。",
 	"The output format. One of 'json', 'table'": "出力形式。'json', 'table' のいずれか",
