@@ -16,6 +16,7 @@ Minor Improvements:
 * Replace instances of `k8s.gcr.io` with `registry.k8s.io` [#16200](https://github.com/kubernetes/minikube/pull/16200)
 * Handle CRI config of NetworkPlugin and PauseImage [#14703](https://github.com/kubernetes/minikube/pull/14703)
 * Remove deprecated `container-runtime` flag from Kubernetes v1.24+ [#16124](https://github.com/kubernetes/minikube/pull/16124)
+* none driver: Require crictl to be installed for Kubernetes v1.24+ [#16215](https://github.com/kubernetes/minikube/pull/16215)
 * Add cri-dockerd logs to `minikube logs` output [#16149](https://github.com/kubernetes/minikube/pull/16149)
 * Add ingress logs to `minikube logs` output [#15775](https://github.com/kubernetes/minikube/pull/15775)
 * Add default cni logs to `minikbue logs` output [#15909](https://github.com/kubernetes/minikube/pull/15909)
@@ -54,7 +55,7 @@ Version Upgrades:
 * Kicbase: Update base image from ubuntu:focal-20221019 to ubuntu:focal-20230308 [#15768](https://github.com/kubernetes/minikube/pull/15768) [#15991](https://github.com/kubernetes/minikube/pull/15991) [#16068](https://github.com/kubernetes/minikube/pull/16068)
 * ISO: Update runc from v1.1.4 to v1.1.5 [#16191](https://github.com/kubernetes/minikube/pull/16191)
 * ISO: Update podman from v3.4.2 to v3.4.7 [#15565](https://github.com/kubernetes/minikube/pull/15565)
-* CNI: Update kindnetd from v20221004-44d545d1 to v20230227-15197099 [#15940](https://github.com/kubernetes/minikube/pull/15940)
+* CNI: Update kindnetd from v20221004-44d545d1 to v20230330-48f316cd [#15940](https://github.com/kubernetes/minikube/pull/15940) [#16207](https://github.com/kubernetes/minikube/pull/16207)
 
 For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
