@@ -446,12 +446,23 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 		if err != nil {
 			klog.Warningf("cannot ensure containerd is configured properly and reloaded for docker - cluster might be unstable: %v", err)
+			// exit with error and recommend to check the installation doc for docker/cri-docker ?
 		}
 	}
 
 	disableOthers := !driver.BareMetal(cc.Driver)
 	if err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace); err != nil {
-		exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
+		// if this makes sense, should we extend this logic to the other exit.Error(RUNTIME_ENABLE) ?
+		switch strings.ToLower(cr.Name()) {
+		case "docker":
+			exit.Error(reason.RuntimeDockerEnable, "Failed to enable docker/cri-docker", err)
+		case "cri-o":
+			exit.Error(reason.RuntimeCrioEnable, "Failed to enable cri-o", err)
+		case "containerd":
+			exit.Error(reason.RuntimeContainerdEnable, "Failed to enable containerd", err)
+		default:
+			exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
+		}
 	}
 
 	// Wait for the CRI to be "live", before returning it
