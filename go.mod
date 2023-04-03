@@ -50,7 +50,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.2
+	github.com/shirou/gopsutil/v3 v3.23.3
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
@@ -192,6 +192,7 @@ require (
 	github.com/prometheus/prometheus v0.35.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/shoenig/go-m1cpu v0.1.4 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
