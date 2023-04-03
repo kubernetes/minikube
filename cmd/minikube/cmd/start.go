@@ -1844,6 +1844,12 @@ func validateBareMetal(drvName string) {
 			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 		}
 	}
+	// crictl is required starting with Kubernetes 1.24, for all runtimes since the removal of dockershim
+	if version.GTE(semver.MustParse("1.24.0-alpha.0")) {
+		if _, err := exec.LookPath("crictl"); err != nil {
+			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path", out.V{"k8sVersion": version.String()})
+		}
+	}
 }
 
 func exitIfNotForced(r reason.Kind, message string, v ...out.V) {

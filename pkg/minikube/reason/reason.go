@@ -376,6 +376,8 @@ var (
 	GuestDrvMismatch = Kind{ID: "GUEST_DRIVER_MISMATCH", ExitCode: ExGuestConflict, Style: style.Conflict}
 	// minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards
 	GuestMissingConntrack = Kind{ID: "GUEST_MISSING_CONNTRACK", ExitCode: ExGuestUnsupported}
+	// minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards
+	GuestMissingCrictl = Kind{ID: "GUEST_MISSING_CRICTL", ExitCode: ExGuestUnsupported}
 
 	// minikube failed to get the host IP to use from within the VM
 	IfHostIP = Kind{ID: "IF_HOST_IP", ExitCode: ExLocalNetworkError}
