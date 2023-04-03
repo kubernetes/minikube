@@ -597,6 +597,7 @@
 	"Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.": "Changement de contexte kubectl ignoré pour {{.profile_name}} car --keep-context a été défini.",
 	"Some dashboard features require the metrics-server addon. To enable all features please run:\n\n\tminikube{{.profileArg}} addons enable metrics-server\t\n\n": "Certaines fonctionnalités du tableau de bord nécessitent le module metrics-server. Pour activer toutes les fonctionnalités, veuillez exécuter :\n\n\tminikube{{.profileArg}} addons enable metrics-server\t\n\n",
 	"Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path": "Désolé, Kubernetes {{.k8sVersion}} nécessite que conntrack soit installé dans le chemin de la racine",
+	"Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path": "",
 	"Sorry, completion support is not yet implemented for {{.name}}": "Désolé, la prise en charge de la complétion n'est pas encore implémentée pour {{.name}}",
 	"Sorry, please set the --output flag to one of the following valid options: [text,json]": "Désolé, veuillez définir l'indicateur --output sur l'une des options valides suivantes : [text,json]",
 	"Sorry, the IP provided with the --listen-address flag is invalid: {{.listenAddr}}.": "Désolé, l'adresse IP fournie avec l'indicateur --listen-address n'est pas valide : {{.listenAddr}}.",

@@ -346,6 +346,9 @@ minikube cluster was created used a driver that is incompatible with the driver 
 "GUEST_MISSING_CONNTRACK" (Exit code ExGuestUnsupported)  
 minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards  
 
+"GUEST_MISSING_CRICTL" (Exit code ExGuestUnsupported)  
+minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards  
+
 "IF_HOST_IP" (Exit code ExLocalNetworkError)  
 minikube failed to get the host IP to use from within the VM  
 
