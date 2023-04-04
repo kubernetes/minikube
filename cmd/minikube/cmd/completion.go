@@ -28,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 )
 
-const longDescription = `Outputs minikube shell completion for the given shell (bash, zsh or fish)
+const longDescription = `Outputs minikube shell completion for the given shell (bash, zsh, fish or powershell)
 
 	This depends on the bash-completion binary.  Example installation instructions:
 	OS X:
@@ -46,6 +46,16 @@ const longDescription = `Outputs minikube shell completion for the given shell (
 		$ minikube completion fish > ~/.config/fish/completions/minikube.fish # for fish users
 
 	Additionally, you may want to output the completion to a file and source in your .bashrc
+
+	Windows:
+		## Save completion code to a script and execute in the profile
+		PS> minikube completion powershell > $HOME\.minikube-completion.ps1
+		PS> Add-Content $PROFILE '. $HOME\.minikube-completion.ps1'
+
+		## Execute completion code in the profile
+		PS> Add-Content $PROFILE 'if (Get-Command minikube -ErrorAction SilentlyContinue) {
+		        minikube completion powershell | Out-String | Invoke-Expression
+		    }'
 
 	Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
 	Note for fish users: [2] please refer to this docs for more details https://fishshell.com/docs/current/#tab-completion
@@ -75,7 +85,7 @@ var completionCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "Usage: minikube completion SHELL")
 		}
-		if args[0] != "bash" && args[0] != "zsh" && args[0] != "fish" {
+		if args[0] != "bash" && args[0] != "zsh" && args[0] != "fish" && args[0] != "powershell" {
 			exit.Message(reason.Usage, "Sorry, completion support is not yet implemented for {{.name}}", out.V{"name": args[0]})
 		}
 	},
@@ -117,10 +127,23 @@ var fishCmd = &cobra.Command{
 	},
 }
 
+var powershellCmd = &cobra.Command{
+	Use:   "powershell",
+	Short: "powershell completion.",
+	Long:  "Generate command completion for PowerShell.",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := GeneratePowerShellCompletion(os.Stdout, cmd.Root())
+		if err != nil {
+			exit.Error(reason.InternalCompletion, "powershell completion failed", err)
+		}
+	},
+}
+
 func init() {
 	completionCmd.AddCommand(bashCmd)
 	completionCmd.AddCommand(zshCmd)
 	completionCmd.AddCommand(fishCmd)
+	completionCmd.AddCommand(powershellCmd)
 }
 
 // GenerateBashCompletion generates the completion for the bash shell
@@ -325,6 +348,21 @@ func GenerateFishCompletion(w io.Writer, cmd *cobra.Command) error {
 	err = cmd.GenFishCompletion(w, true)
 	if err != nil {
 		return errors.Wrap(err, "Error generating fish completion")
+	}
+
+	return nil
+}
+
+// GeneratePowerShellCompletion generates the completion for the PowerShell
+func GeneratePowerShellCompletion(w io.Writer, cmd *cobra.Command) error {
+	_, err := w.Write([]byte(boilerPlate))
+	if err != nil {
+		return err
+	}
+
+	err = cmd.GenPowerShellCompletionWithDesc(w)
+	if err != nil {
+		return errors.Wrap(err, "Error generating powershell completion")
 	}
 
 	return nil
