@@ -223,6 +223,9 @@ minikube failed to access the driver control plane or API endpoint
 "DRV_PORT_FORWARD" (Exit code ExDriverError)  
 minikube failed to bind container ports to host ports  
 
+"DRV_UNSUPPORTED" (Exit code ExDriverUnsupported)  
+the driver is currently not supported by minikube  
+
 "DRV_UNSUPPORTED_MULTINODE" (Exit code ExDriverConflict)  
 the driver in use does not support multi-node clusters  
 
