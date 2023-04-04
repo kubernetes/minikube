@@ -190,6 +190,16 @@ func IsSSH(name string) bool {
 	return name == SSH
 }
 
+// IsVirtualBox checks if the driver is VirtualBox
+func IsVirtualBox(name string) bool {
+	return name == VirtualBox
+}
+
+// IsVMware checks if the driver is VMware
+func IsVMware(name string) bool {
+	return name == VMware
+}
+
 // AllowsPreload returns if preload is allowed for the driver
 func AllowsPreload(driverName string) bool {
 	return !BareMetal(driverName) && !IsSSH(driverName)

@@ -286,6 +286,8 @@ var (
 	}
 	// minikube failed to bind container ports to host ports
 	DrvPortForward = Kind{ID: "DRV_PORT_FORWARD", ExitCode: ExDriverError}
+	// the driver is currently not supported by minikube
+	DrvUnsupported = Kind{ID: "DRV_UNSUPPORTED", ExitCode: ExDriverUnsupported}
 	// the driver in use does not support multi-node clusters
 	DrvUnsupportedMulti = Kind{ID: "DRV_UNSUPPORTED_MULTINODE", ExitCode: ExDriverConflict}
 	// the specified driver is not supported on the host OS
