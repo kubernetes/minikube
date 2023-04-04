@@ -67,10 +67,10 @@ $ minikube start --nodes 2 --driver=docker --network br0
 Make sure that multi-node cluster with a particular network has been successfully created and attached
 
 ```
-$ k get nodes                                                                                                                                     ─╯
-NAME           STATUS     ROLES           AGE   VERSION
-minikube       Ready      control-plane   45s   v1.24.3
-minikube-m02   NotReady   <none>          8s    v1.24.3
+$ k get nodes
+NAME           STATUS   ROLES           AGE    VERSION
+minikube       Ready    control-plane   123m   v1.24.3
+minikube-m02   Ready    <none>          123m   v1.24.3
 
 $ docker inspect $(docker ps --format="{{.ID}}" --filter="name=minikube") --format "{{json .NetworkSettings.Networks }}" | jq .
 {
