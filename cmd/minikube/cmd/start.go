@@ -396,7 +396,7 @@ func vmwareUnsupported(driverName string) {
 	}
 	exit.Message(reason.DrvUnsupported, `Due to security improvements to minikube the VMware driver is currently not supported. Available workarounds are to use a different driver or downgrade minikube to v1.29.0.
 
-    For more details see: https://github.com/kubernetes/minikube/issues/16221
+    We are accepting community contributions to fix this, for more details on the issue see: https://github.com/kubernetes/minikube/issues/16221
 `)
 }
 
