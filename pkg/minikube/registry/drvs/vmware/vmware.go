@@ -32,8 +32,8 @@ func init() {
 	err := registry.Register(registry.DriverDef{
 		Name:     driver.VMware,
 		Config:   configure,
-		Default:  true,
-		Priority: registry.Default,
+		Default:  false,
+		Priority: registry.Deprecated,
 		Status:   status,
 	})
 	if err != nil {
