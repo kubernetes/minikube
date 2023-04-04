@@ -1,6 +1,33 @@
 # Release Notes
 
-## Version 1.30.0 - 2023-03-31
+## Version 1.30.1 - 2023-04-04
+
+* Docker driver: Fix incorrectly stating `Image was not built for the current minikube` [#16226](https://github.com/kubernetes/minikube/pull/16226)
+* Mark VMware driver as unsupported  [#16233](https://github.com/kubernetes/minikube/pull/16233)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Juan Martin Loyola
+- Medya Ghazizadeh
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (8 comments)
+- spowelljr (6 comments)
+- kundan2707 (2 comments)
+- medyagh (1 comments)
+- rafariossaa (1 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.30.1/) for this release!
+
+## Version 1.30.0 - 2023-04-03
 
 Features:
 * Implement experimental QEMU on Windows [#15781](https://github.com/kubernetes/minikube/pull/15781)
