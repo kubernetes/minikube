@@ -20,7 +20,7 @@ The `minikube start` command supports additional hyperv specific flags:
 
 ## Issues
 
-Also see [co/hyperv open issues](https://github.com/kubernetes/minikube/labels/co%2Fhyperv)
+Also see [co/hyperv open issues](https://github.com/kubernetes/minikube/labels/co%2Fhyperv).
 
 ## Troubleshooting
 
