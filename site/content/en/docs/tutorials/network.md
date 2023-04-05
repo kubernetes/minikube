@@ -11,7 +11,7 @@ This tutorial will show you how to create a minikube cluster with a specific net
 
 ## Prerequisites
 
-- minikube v1.29.0 or higher
+- minikube v1.26.0 or higher
 - Docker driver
 
 ## Createing a custom network
