@@ -35,7 +35,7 @@ const cxTimeout = 5 * time.Minute
 var schema = map[string]update.Item{
 	"deploy/iso/minikube-iso/arch/aarch64/package/docker-bin-aarch64/docker-bin.mk": {
 		Replace: map[string]string{
-			`DOCKER_BIN_AARCH64_VERSION = .*`: `DOCKER_BIN_AARCH64_VERSION {{.Version}}`,
+			`DOCKER_BIN_AARCH64_VERSION = .*`: `DOCKER_BIN_AARCH64_VERSION = {{.Version}}`,
 		},
 	},
 	"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk": {
