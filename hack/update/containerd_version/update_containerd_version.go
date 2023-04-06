@@ -83,17 +83,17 @@ func updateHashFiles(version string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePathBase := "../../../deploy/iso/minikube-iso/arch/"
-	if err := updateHashFile(filePathBase+"aarch64/package/containerd-bin-aarch64/containerd-bin.hash", version, sum); err != nil {
+	if err := updateHashFile(version, "aarch64", "-aarch64", sum); err != nil {
 		return fmt.Errorf("aarch64: %v", err)
 	}
-	if err := updateHashFile(filePathBase+"x86_64/package/containerd-bin/containerd-bin.hash", version, sum); err != nil {
+	if err := updateHashFile(version, "x86_64", "", sum); err != nil {
 		return fmt.Errorf("x86_64: %v", err)
 	}
 	return nil
 }
 
-func updateHashFile(filePath, version string, shaSum [sha256.Size]byte) error {
+func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte) error {
+	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/package/containerd-bin%s/containerd-bin.hash", arch, folderSuffix)
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
