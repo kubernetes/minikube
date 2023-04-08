@@ -18,6 +18,8 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
+# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:focal-*
+ARG UBUNTU_FOCAL_IMAGE="ubuntu:focal-20230308"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.20.3 as auto-pause
 WORKDIR /src
@@ -37,7 +39,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 
 # start from ubuntu 20.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20230308 as kicbase
+FROM ${UBUNTU_FOCAL_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.11.4"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
