@@ -72,6 +72,8 @@ The `--container-runtime` flag must be set to "containerd" or "cri-o". "containe
 
    `sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd`.
 
+Also see [co/docker-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fdocker-driver).
+
 ## Troubleshooting
 
 [comment]: <> (this title is used in the docs links, don't change)
