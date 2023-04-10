@@ -140,6 +140,10 @@ func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) err
 	if err := installCertSymlinks(cmd, caCerts); err != nil {
 		return errors.Wrapf(err, "certificate symlinks")
 	}
+
+	if err := generateKubeadmCerts(cmd, k8s); err != nil {
+		return fmt.Errorf("failed to renew kubeadm certs: %v", err)
+	}
 	return nil
 }
 
@@ -344,6 +348,33 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, 
 	return xfer, nil
 }
 
+func generateKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
+	needsRefresh := false
+	certs := []string{"apiserver-etcd-client", "apiserver-kubelet-client", "etcd-server", "etcd-healthcheck-client", "etcd-peer", "front-proxy-client"}
+	for _, cert := range certs {
+		certPath := []string{vmpath.GuestPersistentDir, "certs"}
+		// certs starting with "etcd-" are in the "etcd" dir
+		// ex: etcd-server => etcd/server
+		if strings.HasPrefix(cert, "etcd-") {
+			certPath = append(certPath, "etcd")
+		}
+		certPath = append(certPath, strings.TrimPrefix(cert, "etcd-")+".crt")
+		if !isKubeadmCertValid(cmd, path.Join(certPath...)) {
+			needsRefresh = true
+		}
+	}
+	if !needsRefresh {
+		return nil
+	}
+	out.WarningT("kubeadm certificates have expired. Generating new ones...")
+	kubeadmPath := path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion)
+	bashCmd := fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm certs renew all --config %s", kubeadmPath, constants.KubeadmYamlPath)
+	if _, err := cmd.RunCmd(exec.Command("/bin/bash", "-c", bashCmd)); err != nil {
+		return fmt.Errorf("failed to renew kubeadm certs: %v", err)
+	}
+	return nil
+}
+
 // isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
 func isValidPEMCertificate(filePath string) (bool, error) {
 	fileBytes, err := os.ReadFile(filePath)
@@ -540,6 +571,34 @@ func isValid(certPath, keyPath string) bool {
 		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		os.Remove(certPath)
 		os.Remove(keyPath)
+		return false
+	}
+
+	return true
+}
+
+func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
+	rr, err := cmd.RunCmd(exec.Command("cat", certPath))
+	if err != nil {
+		klog.Infof("failed to read cert file %s: %v", certPath, err)
+		// if reading the cert failed it's likely first start and it doesn't exist yet so mark as valid
+		return true
+	}
+
+	certData, _ := pem.Decode(rr.Stdout.Bytes())
+	if certData == nil {
+		klog.Infof("failed to decode cert file %s", certPath)
+		return false
+	}
+
+	cert, err := x509.ParseCertificate(certData.Bytes)
+	if err != nil {
+		klog.Infof("failed to parse cert file %s: %v\n", certPath, err)
+		return false
+	}
+
+	if cert.NotAfter.Before(time.Now()) {
+		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		return false
 	}
 

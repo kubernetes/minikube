@@ -918,6 +918,7 @@
 	"invalid kubernetes version": "無効な Kubernetes バージョン",
 	"json encoding failure": "json エンコード失敗",
 	"keep the kube-context active after cluster is stopped. Defaults to false.": "クラスター停止後に kube-context をアクティブのままにします。デフォルトは false です。",
+	"kubeadm certificates have expired. Generating new ones...": "",
 	"kubeadm detected a TCP port conflict with another process: probably another local Kubernetes installation. Run lsof -p\u003cport\u003e to find the process and kill it": "kubeadm が他のプロセス (おそらくローカルにインストールされた他の Kubernetes) との TCP ポート衝突を検出しました。 lsof -p\u003cport\u003e を実行してそのプロセスを特定し、停止してください",
 	"kubectl and minikube configuration will be stored in {{.home_folder}}": "kubectl と minikube の構成は {{.home_folder}} に保存されます",
 	"kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'": "kubectl が見つかりません。kubectl が必要な場合、'minikube kubectl -- get pods -A' を試してください",

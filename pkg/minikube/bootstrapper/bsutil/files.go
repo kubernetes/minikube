@@ -19,16 +19,11 @@ package bsutil
 
 import (
 	"os/exec"
-	"path"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 )
-
-// KubeadmYamlPath is the path to the kubeadm configuration
-var KubeadmYamlPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 const (
 	// KubeletServiceFile is the file for the systemd kubelet.service

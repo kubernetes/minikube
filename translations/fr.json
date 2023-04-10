@@ -961,6 +961,7 @@
 	"invalid kubernetes version": "version kubernetes invalide",
 	"json encoding failure": "échec de l'encodage json",
 	"keep the kube-context active after cluster is stopped. Defaults to false.": "garder le kube-context actif après l'arrêt du cluster. La valeur par défaut est false.",
+	"kubeadm certificates have expired. Generating new ones...": "",
 	"kubeadm detected a TCP port conflict with another process: probably another local Kubernetes installation. Run lsof -p\u003cport\u003e to find the process and kill it": "kubeadm a détecté un conflit de port TCP avec un autre processus : probablement une autre installation locale de Kubernetes. Exécutez lsof -p\u003cport\u003e pour trouver le processus et le tuer",
 	"kubectl and minikube configuration will be stored in {{.home_folder}}": "Les configurations kubectl et minikube seront stockées dans le dossier {{.home_folder}}.",
 	"kubectl not found. If you need it, try: 'minikube kubectl -- get pods -A'": "kubectl introuvable. Si vous en avez besoin, essayez : 'minikube kubectl -- get pods -A'",
