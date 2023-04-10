@@ -95,7 +95,11 @@ func validateImageBuildWithBuildArg(ctx context.Context, t *testing.T, profile s
 	if err != nil {
 		t.Fatalf("failed to build image with args: %q : %v", rr.Command(), err)
 	}
-	output := rr.Stderr.String()
+	output := rr.Stdout.String()
+	// kicbase Docker uses buildx plugin which outputs build logs to stderr
+	if KicDriver() {
+		output = rr.Stderr.String()
+	}
 	if !strings.Contains(output, "test_env_str") {
 		t.Fatalf("failed to pass build-args with args: %q : %s", rr.Command(), output)
 	}
