@@ -1102,10 +1102,15 @@ update-runc-version:
 	(cd hack/update/runc_version && \
 	 go run update_runc_version.go)
 
+.PHONY: update-docker-version
+update-docker-version:
+	(cd hack/update/docker_version && \
+	 go run update_docker_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
-	 go run get_version.go)
+	  go run get_version.go)
 
 .PHONY: generate-licenses
 generate-licenses:
