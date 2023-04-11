@@ -389,7 +389,7 @@ func (r *Docker) CGroupDriver() (string, error) {
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
 	if r.UseCRI {
-		return defaultKubeletOptions(r, r.KubernetesVersion)
+		return kubeletCRIOptions(r, r.KubernetesVersion)
 	}
 	return map[string]string{
 		"container-runtime": "docker",

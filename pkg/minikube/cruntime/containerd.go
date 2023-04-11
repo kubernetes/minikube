@@ -462,7 +462,7 @@ func (r *Containerd) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a containerd
 func (r *Containerd) KubeletOptions() map[string]string {
-	return defaultKubeletOptions(r, r.KubernetesVersion)
+	return kubeletCRIOptions(r, r.KubernetesVersion)
 }
 
 // ListContainers returns a list of managed by this container runtime
