@@ -148,7 +148,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
     sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
-    clean-install docker-ce docker-ce-cli containerd.io
+    clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
