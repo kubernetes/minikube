@@ -407,6 +407,12 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+	if scanErr := scanner.Err(); scanErr != nil {
+		klog.Warningf("failed to read output: %v", scanErr)
+		if err == nil {
+			err = scanErr
+		}
+	}
 	return lines, err
 }
 
@@ -473,6 +479,9 @@ func isUsernsRemapEnabled(ociBin string) bool {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read output: %v", err)
+	}
 
 	if len(lines) > 0 {
 		if strings.Contains(lines[0], "name=userns") {
@@ -533,7 +542,7 @@ func ListContainersByLabel(ctx context.Context, ociBin string, label string, war
 			names = append(names, n)
 		}
 	}
-	return names, err
+	return names, s.Err()
 }
 
 // ListImagesRepository returns all the images names
@@ -554,10 +563,7 @@ func ListImagesRepository(ctx context.Context, ociBin string) ([]string, error) 
 			names = append(names, n)
 		}
 	}
-	if err := s.Err(); err != nil {
-		return nil, err
-	}
-	return names, nil
+	return names, s.Err()
 }
 
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube

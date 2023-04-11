@@ -120,6 +120,9 @@ func KnownHost(host string, knownHosts string) bool {
 			}
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read file: %v", err)
+	}
 
 	return false
 }

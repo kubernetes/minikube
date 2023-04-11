@@ -138,7 +138,7 @@ func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format strin
 	if line.Len() > 0 {
 		logger("%s%s", prefix, line.String())
 	}
-	return nil
+	return scanner.Err()
 }
 
 // fileExists checks that the same file exists on the other end
