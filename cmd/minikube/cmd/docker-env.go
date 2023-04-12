@@ -20,6 +20,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -215,7 +216,7 @@ func mustRestartDockerd(name string, runner command.Runner) {
 
 func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
-	err := apiWait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
+	err := apiWait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
