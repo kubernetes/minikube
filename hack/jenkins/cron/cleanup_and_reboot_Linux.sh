@@ -124,4 +124,7 @@ systemctl list-unit-files --state=enabled \
         | xargs systemctl disable
 
 # update and reboot
-apt update -y && apt upgrade -y && apt-get autoclean && reboot
+check_jenkins
+apt update -y && apt upgrade -y && apt-get autoclean
+check_jenkins
+reboot
