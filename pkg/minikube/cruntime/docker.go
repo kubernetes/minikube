@@ -535,8 +535,7 @@ func (r *Docker) setCGroup(driver string) error {
 "log-driver": "json-file",
 "log-opts": {
 	"max-size": "100m"
-},
-"storage-driver": "overlay2"
+}
 }
 `, driver)
 	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
