@@ -349,6 +349,13 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, 
 }
 
 func generateKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
+	gt, err := guestTime(cmd)
+	if err != nil {
+		return err
+	}
+	// add one day to the time so if the certs expire in less than a day we regenerate
+	gt = gt.Add(24 * time.Hour)
+
 	needsRefresh := false
 	certs := []string{"apiserver-etcd-client", "apiserver-kubelet-client", "etcd-server", "etcd-healthcheck-client", "etcd-peer", "front-proxy-client"}
 	for _, cert := range certs {
@@ -359,7 +366,7 @@ func generateKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
 			certPath = append(certPath, "etcd")
 		}
 		certPath = append(certPath, strings.TrimPrefix(cert, "etcd-")+".crt")
-		if !isKubeadmCertValid(cmd, path.Join(certPath...)) {
+		if !isKubeadmCertValid(cmd, path.Join(certPath...), gt) {
 			needsRefresh = true
 		}
 	}
@@ -373,6 +380,19 @@ func generateKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
 		return fmt.Errorf("failed to renew kubeadm certs: %v", err)
 	}
 	return nil
+}
+
+func guestTime(cmd command.Runner) (time.Time, error) {
+	var t time.Time
+	rr, err := cmd.RunCmd(exec.Command("date", "-u", "+%d-%m-%y-%T"))
+	if err != nil {
+		return t, fmt.Errorf("failed to get time on guest: %v", err)
+	}
+	t, err = time.Parse("02-01-06-15:04:05", strings.TrimSpace(rr.Stdout.String()))
+	if err != nil {
+		return t, fmt.Errorf("failed to parse time: %v", err)
+	}
+	return t, nil
 }
 
 // isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
@@ -577,7 +597,7 @@ func isValid(certPath, keyPath string) bool {
 	return true
 }
 
-func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
+func isKubeadmCertValid(cmd command.Runner, certPath string, gt time.Time) bool {
 	rr, err := cmd.RunCmd(exec.Command("cat", certPath))
 	if err != nil {
 		klog.Infof("failed to read cert file %s: %v", certPath, err)
@@ -597,7 +617,7 @@ func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
 		return false
 	}
 
-	if cert.NotAfter.Before(time.Now()) {
+	if cert.NotAfter.Before(gt) {
 		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		return false
 	}
