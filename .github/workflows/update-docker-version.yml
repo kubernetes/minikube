@@ -35,7 +35,7 @@ jobs:
         uses: peter-evans/create-pull-request@5b4a9f6a9e2af26e5f02351490b90d01eb8ec1e5
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Kicbase/ISO: Update docker from ${{ steps.bumpContainerd.outputs.OLD_VERSION }} to ${{ steps.bumpContainerd.outputs.NEW_VERSION }}'
+          commit-message: 'Kicbase/ISO: Update docker from ${{ steps.bumpDocker.outputs.OLD_VERSION }} to ${{ steps.bumpDocker.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_docker_version
@@ -43,7 +43,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Kicbase/ISO: Update docker from ${{ steps.bumpContainerd.outputs.OLD_VERSION }} to ${{ steps.bumpContainerd.outputs.NEW_VERSION }}'
+          title: 'Kicbase/ISO: Update docker from ${{ steps.bumpDocker.outputs.OLD_VERSION }} to ${{ steps.bumpDocker.outputs.NEW_VERSION }}'
           body: |
             The docker project released a [new version](https://github.com/moby/moby/releases)
 
