@@ -39,7 +39,7 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 	}()
 
 	lap := time.Now()
-	checkCondition := func() (bool, error) {
+	checkCondition := func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("timed out waiting %v for node %q to be %q (will not retry!)", timeout, name, condition)
 		}
@@ -60,7 +60,7 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 		}
 		return false, nil
 	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkCondition); err != nil {
+	if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, true, checkCondition); err != nil {
 		return fmt.Errorf("waitNodeCondition: %w", err)
 	}
 

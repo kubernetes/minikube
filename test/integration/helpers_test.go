@@ -323,7 +323,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 
 	start := time.Now()
 	t.Logf("(dbg) %s: waiting %s for pods matching %q in namespace %q ...", t.Name(), timeout, selector, ns)
-	f := func() (bool, error) {
+	f := func(ctx context.Context) (bool, error) {
 		pods, err := client.CoreV1().Pods(ns).List(ctx, listOpts)
 		if err != nil {
 			t.Logf("%s: WARNING: pod list for %q %q returned: %v", t.Name(), ns, selector, err)
@@ -368,7 +368,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		return false, nil
 	}
 
-	err = wait.PollImmediate(1*time.Second, timeout, f)
+	err = wait.PollUntilContextTimeout(ctx, 1*time.Second, timeout, true, f)
 	names := []string{}
 	for n := range foundNames {
 		names = append(names, n)
@@ -390,7 +390,7 @@ func PVCWait(ctx context.Context, t *testing.T, profile string, ns string, name 
 
 	t.Logf("(dbg) %s: waiting %s for pvc %q in namespace %q ...", t.Name(), timeout, name, ns)
 
-	f := func() (bool, error) {
+	f := func(ctx context.Context) (bool, error) {
 		ret, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", name, "-o", "jsonpath={.status.phase}", "-n", ns))
 		if err != nil {
 			t.Logf("%s: WARNING: PVC get for %q %q returned: %v", t.Name(), ns, name, err)
@@ -406,7 +406,7 @@ func PVCWait(ctx context.Context, t *testing.T, profile string, ns string, name 
 		return false, nil
 	}
 
-	return wait.PollImmediate(1*time.Second, timeout, f)
+	return wait.PollUntilContextTimeout(ctx, 1*time.Second, timeout, true, f)
 }
 
 // VolumeSnapshotWait waits for volume snapshot to be ready to use
@@ -415,7 +415,7 @@ func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns st
 
 	t.Logf("(dbg) %s: waiting %s for volume snapshot %q in namespace %q ...", t.Name(), timeout, name, ns)
 
-	f := func() (bool, error) {
+	f := func(ctx context.Context) (bool, error) {
 		res, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "volumesnapshot", name, "-o", "jsonpath={.status.readyToUse}", "-n", ns))
 		if err != nil {
 			t.Logf("%s: WARNING: volume snapshot get for %q %q returned: %v", t.Name(), ns, name, err)
@@ -431,7 +431,7 @@ func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns st
 		return isReady, nil
 	}
 
-	return wait.PollImmediate(1*time.Second, timeout, f)
+	return wait.PollUntilContextTimeout(ctx, 1*time.Second, timeout, true, f)
 }
 
 // Status returns a minikube component status as a string
