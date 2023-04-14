@@ -21,6 +21,16 @@ minikube start supports some VirtualBox specific flags:
 
 ## Issues
 
+### System policy prevents management of local virtualized systems
+
+If you are facing this problem you need to add your user to libvirt group:
+
+```shell
+sudo usermod -a -G libvirt $USER
+```
+
+### Other
+
 * [Full list of open 'virtualbox' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fvirtualbox)
 
 ## Troubleshooting
