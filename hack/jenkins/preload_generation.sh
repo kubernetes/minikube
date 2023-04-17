@@ -25,5 +25,6 @@ source ./hack/jenkins/installers/check_install_linux_crons.sh
 # Make sure the right golang version is installed based on Makefile
 ./hack/jenkins/installers/check_install_golang.sh /usr/local
 
+make update-kubeadm-constants
 make upload-preloaded-images-tar
 make clean
