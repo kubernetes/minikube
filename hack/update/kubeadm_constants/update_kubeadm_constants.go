@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -38,8 +39,8 @@ import (
 const (
 	// default context timeout
 	cxTimeout                 = 5 * time.Minute
-	kubeadmReleaseURL         = "https://dl.k8s.io/release/%s/bin/linux/amd64/kubeadm"
-	kubeadmBinaryName         = "kubeadm-linux-amd64-%s"
+	kubeadmReleaseURL         = "https://dl.k8s.io/release/%s/bin/linux/%s/kubeadm"
+	kubeadmBinaryName         = "kubeadm-linux-%s-%s"
 	minikubeConstantsFilePath = "pkg/minikube/constants/constants_kubeadm_images.go"
 	kubeadmImagesTemplate     = `
 		{{- range $version, $element := .}}
@@ -109,8 +110,9 @@ func main() {
 }
 
 func getKubeadmImagesMapString(version string) (string, error) {
-	url := fmt.Sprintf(kubeadmReleaseURL, version)
-	fileName := fmt.Sprintf(kubeadmBinaryName, version)
+	arch := runtime.GOARCH
+	url := fmt.Sprintf(kubeadmReleaseURL, version, arch)
+	fileName := fmt.Sprintf(kubeadmBinaryName, arch, version)
 	if err := downloadFile(url, fileName); err != nil {
 		klog.Errorf("failed to download kubeadm binary %s", err.Error())
 		return "", err
