@@ -389,13 +389,7 @@ func (r *Docker) CGroupDriver() (string, error) {
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
 	if r.UseCRI {
-		opts := map[string]string{
-			"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
-		}
-		if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
-			opts["container-runtime"] = "remote"
-		}
-		return opts
+		return kubeletCRIOptions(r, r.KubernetesVersion)
 	}
 	return map[string]string{
 		"container-runtime": "docker",
