@@ -155,8 +155,6 @@ func Deprecations(name string) (bool, string, string) {
 	switch name {
 	case "heapster":
 		return true, "metrics-server", "using metrics-server addon, heapster is deprecated"
-	case "efk":
-		return true, "", "The current images used in the efk addon contain Log4j vulnerabilities, the addon will be disabled until images are updated, see: https://github.com/kubernetes/minikube/issues/15280"
 	}
 	return false, "", ""
 }

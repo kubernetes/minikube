@@ -241,12 +241,12 @@ var Addons = map[string]*Addon{
 			"kibana-svc.yaml",
 			"0640"),
 	}, false, "efk", "3rd party (Elastic)", "", "", map[string]string{
-		"Elasticsearch":        "elasticsearch:v5.6.2@sha256:7e95b32a7a2aad0c0db5c881e4a1ce8b7e53236144ae9d9cfb5fbe5608af4ab2",
+		"Elasticsearch":        "elasticsearch/elasticsearch:8.7.0@sha256:9fe38a4dc00ce101630e70a966aad1a195b56bceb779748e6c399ceeb45cffab",
 		"FluentdElasticsearch": "fluentd-elasticsearch:v2.0.2@sha256:d0480bbf2d0de2344036fa3f7034cf7b4b98025a89c71d7f1f1845ac0e7d5a97",
-		"Alpine":               "alpine:3.6@sha256:66790a2b79e1ea3e1dabac43990c54aca5d1ddf268d9a5a0285e4167c8b24475",
-		"Kibana":               "kibana/kibana:5.6.2@sha256:cd948a9bda4622f1437afc4a3e78be6c8c25fc62f40aa0376f3d690f2436568f",
+		"Alpine":               "alpine:3.17.3@sha256:124c7d2707904eea7431fffe91522a01e5a861a624ee31d03372cc1d138a3126",
+		"Kibana":               "kibana/kibana:8.7.0@sha256:14e0574d043eab9078e2ca64487334ad1dca2215d710b7321027e9f63c34449b",
 	}, map[string]string{
-		"Elasticsearch":        "registry.k8s.io",
+		"Elasticsearch":        "docker.elastic.co",
 		"FluentdElasticsearch": "registry.k8s.io",
 		"Kibana":               "docker.elastic.co",
 		"Alpine":               "docker.io",
