@@ -178,7 +178,7 @@ func checkPid(pid int) error {
 		return err
 	}
 	// when user sends a signal to an existing privileged process, "operation not permitted" error is returned, but the process exists, which is all we care about here
-	if err = process.Signal(syscall.Signal(0)); strings.Contains(err.Error(), "operation not permitted") {
+	if err = process.Signal(syscall.Signal(0)); err == nil || strings.Contains(err.Error(), "operation not permitted") {
 		return nil
 	}
 	return err
