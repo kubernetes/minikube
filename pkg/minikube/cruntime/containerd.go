@@ -462,13 +462,7 @@ func (r *Containerd) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a containerd
 func (r *Containerd) KubeletOptions() map[string]string {
-	opts := map[string]string{
-		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
-	}
-	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
-		opts["container-runtime"] = "remote"
-	}
-	return opts
+	return kubeletCRIOptions(r, r.KubernetesVersion)
 }
 
 // ListContainers returns a list of managed by this container runtime

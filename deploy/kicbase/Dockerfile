@@ -19,7 +19,7 @@
 
 
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.20.2 as auto-pause
+FROM golang:1.20.3 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -148,7 +148,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
     sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
-    clean-install docker-ce docker-ce-cli containerd.io
+    clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \

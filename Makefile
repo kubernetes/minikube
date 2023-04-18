@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 29
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 30
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.30.0
+ISO_VERSION ?= v1.30.1
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -34,7 +34,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.20.2
+GO_VERSION ?= 1.20.3
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.27.0
 
@@ -1102,10 +1102,15 @@ update-runc-version:
 	(cd hack/update/runc_version && \
 	 go run update_runc_version.go)
 
+.PHONY: update-docker-version
+update-docker-version:
+	(cd hack/update/docker_version && \
+	 go run update_docker_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
-	 go run get_version.go)
+	  go run get_version.go)
 
 .PHONY: generate-licenses
 generate-licenses:

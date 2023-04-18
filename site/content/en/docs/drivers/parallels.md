@@ -13,7 +13,7 @@ The Parallels driver is particularly useful for users who own Parallels Desktop 
 
 ## Issues
 
-* [Full list of open 'parallels' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fparallels)
+* [Full list of open 'parallels' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fparallels-driver)
 
 ## Troubleshooting
 

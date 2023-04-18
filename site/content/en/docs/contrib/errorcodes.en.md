@@ -223,6 +223,9 @@ minikube failed to access the driver control plane or API endpoint
 "DRV_PORT_FORWARD" (Exit code ExDriverError)  
 minikube failed to bind container ports to host ports  
 
+"DRV_UNSUPPORTED" (Exit code ExDriverUnsupported)  
+the driver is currently not supported by minikube  
+
 "DRV_UNSUPPORTED_MULTINODE" (Exit code ExDriverConflict)  
 the driver in use does not support multi-node clusters  
 
@@ -345,6 +348,9 @@ minikube cluster was created used a driver that is incompatible with the driver 
 
 "GUEST_MISSING_CONNTRACK" (Exit code ExGuestUnsupported)  
 minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards  
+
+"GUEST_MISSING_CRICTL" (Exit code ExGuestUnsupported)  
+minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards  
 
 "IF_HOST_IP" (Exit code ExLocalNetworkError)  
 minikube failed to get the host IP to use from within the VM  

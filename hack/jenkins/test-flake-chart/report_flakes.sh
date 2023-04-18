@@ -78,7 +78,7 @@ awk -F, 'NR>1 {
 # 4) Sort failed test flake rates based on the flakiness of that test - stable tests should be first on the list.
 # 5) Append to file $TMP_FAILED_RATES.
 awk -F, 'NR>1 {
-  printf "%s:%s,%s\n", $1, $2, $3
+  if ($3 < 50) printf "%s:%s,%s\n", $1, $2, $3
 }' "$TMP_FLAKE_RATES" \
   | sort -t, -k1,1 \
   | join -t , -j 1 "$TMP_DATA" - \

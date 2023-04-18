@@ -43,6 +43,8 @@ podman system connection default podman-machine-default-root
 podman info
 ```
 
+Also see [co/podman-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fpodman-driver).
+
 ## Troubleshooting
 
 - Run `minikube start --alsologtostderr -v=7` to debug errors and crashes

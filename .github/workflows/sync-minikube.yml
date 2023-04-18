@@ -6,7 +6,7 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.20.2'
+  GO_VERSION: '1.20.3'
 permissions:
   contents: read
 
@@ -17,7 +17,7 @@ jobs:
       run:
         working-directory: ./image-syncer
     steps:
-      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
         with:
           repository: denverdino/image-syncer
           path: ./image-syncer

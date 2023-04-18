@@ -300,6 +300,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
+	vmwareUnsupported(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -374,23 +375,33 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 }
 
 func virtualBoxMacOS13PlusWarning(driverName string) {
-	if driverName != "virtualbox" || !detect.MacOS13Plus() {
+	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
-	driver := "hyperkit"
+	suggestedDriver := driver.HyperKit
 	if runtime.GOARCH == "arm64" {
-		driver = "qemu"
+		suggestedDriver = driver.QEMU
 	}
 	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as docker or {{.driver}}.
     https://minikube.sigs.k8s.io/docs/drivers/docker/
     https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}/
 
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
-`, out.V{"driver": driver})
+`, out.V{"driver": suggestedDriver})
+}
+
+func vmwareUnsupported(driverName string) {
+	if !driver.IsVMware(driverName) {
+		return
+	}
+	exit.Message(reason.DrvUnsupported, `Due to security improvements to minikube the VMware driver is currently not supported. Available workarounds are to use a different driver or downgrade minikube to v1.29.0.
+
+    We are accepting community contributions to fix this, for more details on the issue see: https://github.com/kubernetes/minikube/issues/16221
+`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
-	if driverName == driver.None {
+	if driver.IsNone(driverName) {
 		return
 	}
 	res, err := r.RunCmd(exec.Command("cat", "/version.json"))
@@ -1459,7 +1470,7 @@ func noLimitMemory(sysLimit, containerLimit int, drvName string) int {
 	}
 	// Recommend 1GB to handle OS/VM overhead
 	sysOverhead := 1024
-	if drvName == "virtualbox" {
+	if driver.IsVirtualBox(drvName) {
 		// VirtualBox fully allocates all requested memory on start, it doesn't dynamically allocate when needed like other drivers
 		// Because of this allow more system overhead to prevent out of memory issues
 		sysOverhead = 1536
@@ -1842,6 +1853,12 @@ func validateBareMetal(drvName string) {
 	if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 		if _, err := exec.LookPath("conntrack"); err != nil {
 			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+		}
+	}
+	// crictl is required starting with Kubernetes 1.24, for all runtimes since the removal of dockershim
+	if version.GTE(semver.MustParse("1.24.0-alpha.0")) {
+		if _, err := exec.LookPath("crictl"); err != nil {
+			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path", out.V{"k8sVersion": version.String()})
 		}
 	}
 }

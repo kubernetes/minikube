@@ -230,7 +230,7 @@ func validateServiceStable(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("The test WaitService/IngressIP is broken on hyperv https://github.com/kubernetes/minikube/issues/8381")
 		}
 		// Wait until the nginx-svc has a loadbalancer ingress IP
-		err := wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
+		err := wait.PollUntilContextTimeout(ctx, 5*time.Second, Minutes(3), true, func(ctx context.Context) (bool, error) {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 			if err != nil {
 				return false, err

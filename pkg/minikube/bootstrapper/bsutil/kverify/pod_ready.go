@@ -82,7 +82,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 	}()
 
 	lap := time.Now()
-	checkCondition := func() (bool, error) {
+	checkCondition := func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("timed out waiting %v for pod %q in %q namespace to be %q (will not retry!)", timeout, name, namespace, condition)
 		}
@@ -105,7 +105,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 		// return immediately: status == core.ConditionFalse
 		return false, nil
 	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkCondition); err != nil {
+	if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, true, checkCondition); err != nil {
 		return fmt.Errorf("waitPodCondition: %w", err)
 	}
 

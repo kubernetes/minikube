@@ -25,6 +25,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -336,4 +337,15 @@ func addRepoTagToImageName(imgName string) string {
 		return "docker.io/" + imgName
 	} // else it already has repo name dont add anything
 	return imgName
+}
+
+// kubeletCRIOptions returns the container runtime options for the kubelet
+func kubeletCRIOptions(cr Manager, kubernetesVersion semver.Version) map[string]string {
+	opts := map[string]string{
+		"container-runtime-endpoint": fmt.Sprintf("unix://%s", cr.SocketPath()),
+	}
+	if kubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
+		opts["container-runtime"] = "remote"
+	}
+	return opts
 }

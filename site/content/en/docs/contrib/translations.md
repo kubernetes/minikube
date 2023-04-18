@@ -92,15 +92,23 @@ All translations are stored in the top-level `translations` directory.
 
 * You now have a fresh minikube binary in the `out` directory. If your system locale is that of the language you added translations for, a simple `out/minikube start` will work as a test, assuming you translated phrases from `minikube start`. You can use whatever command you'd like in that way.
 
-* If you have a different system locale, you can override the printed language using the LC_ALL environment variable:
+* If you have a different system locale, you can override the printed language using the LANGUAGE environment variable:
 
  ```
- ~/minikube$ LC_ALL=fr out/minikube start
- 😄  minikube v1.9.2 sur Darwin 10.14.5
- ✨  Choix automatique du driver hyperkit. Autres choix: docker
+ ~/minikube$ LANGUAGE=fr out/minikube start
+ 😄  minikube v1.29.0 sur Ubuntu 18.04
+ ✨  Choix automatique du pilote docker. Autres choix: kvm2, ssh
+ 📌  Utilisation du pilote Docker avec le privilège root
  👍  Démarrage du noeud de plan de contrôle minikube dans le cluster minikube
- 🔥  Création de VM hyperkit (CPUs=2, Mémoire=4000MB, Disque=20000MB)...
- 🐳  Préparation de Kubernetes v1.18.0 sur Docker 19.03.8...
- 🌟  Installation des addons: default-storageclass, storage-provisioner
- 🏄  Terminé ! kubectl est maintenant configuré pour utiliser "minikube".
+ 🚜  Extraction de l'image de base...
+ 🔥  Création de docker container (CPUs=2, Memory=7900Mo) ...
+ 🐳  Préparation de Kubernetes v1.26.1 sur Docker 20.10.23...
+     ▪ Génération des certificats et des clés
+     ▪ Démarrage du plan de contrôle ...
+     ▪ Configuration des règles RBAC ...
+ 🔗  Configuration de bridge CNI (Container Networking Interface)...
+     ▪ Utilisation de l'image gcr.io/k8s-minikube/storage-provisioner:v5
+ 🔎  Vérification des composants Kubernetes...
+ 🌟  Modules activés: storage-provisioner, default-storageclass
+ 🏄  Terminé ! kubectl est maintenant configuré pour utiliser "minikube" cluster et espace de noms "default" par défaut.
  ```

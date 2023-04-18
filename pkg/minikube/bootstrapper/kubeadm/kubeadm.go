@@ -341,6 +341,9 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 		nextStepIndex++
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read logs: %v", err)
+	}
 	wg.Done()
 }
 
@@ -1097,7 +1100,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
-		checkSA := func() (bool, error) {
+		checkSA := func(_ context.Context) (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
 				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 			rr, err = k.c.RunCmd(cmd)
@@ -1108,7 +1111,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 
 		// retry up to make sure SA is created
-		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
+		if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, time.Minute, true, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
 		}
 	}

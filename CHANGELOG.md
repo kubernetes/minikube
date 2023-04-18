@@ -1,5 +1,144 @@
 # Release Notes
 
+## Version 1.30.1 - 2023-04-04
+
+* Docker driver: Fix incorrectly stating `Image was not built for the current minikube` [#16226](https://github.com/kubernetes/minikube/pull/16226)
+* Mark VMware driver as unsupported  [#16233](https://github.com/kubernetes/minikube/pull/16233)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Juan Martin Loyola
+- Medya Ghazizadeh
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (8 comments)
+- spowelljr (6 comments)
+- kundan2707 (2 comments)
+- medyagh (1 comments)
+- rafariossaa (1 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.30.1/) for this release!
+
+## Version 1.30.0 - 2023-04-03
+
+Features:
+* Implement experimental QEMU on Windows [#15781](https://github.com/kubernetes/minikube/pull/15781)
+
+Major Improvements:
+* Ensure only one `minikube tunnel` instance runs at a time [#15834](https://github.com/kubernetes/minikube/pull/15834)
+* Infer HyperKit HostIP as Gateway rather than hardcode to 192.168.64.1  [#15720](https://github.com/kubernetes/minikube/pull/15720)
+* multi-node: Add support for volumes using CSI addon [#15829](https://github.com/kubernetes/minikube/pull/15829)
+
+Minor Improvements:
+* QEMU: Rename `user` network to `builtin` and update documentation [#15793](https://github.com/kubernetes/minikube/pull/15793)
+* none driver: Look for cri-dockerd instead of hardcoding [#15784](https://github.com/kubernetes/minikube/pull/15784)
+* Replace instances of `k8s.gcr.io` with `registry.k8s.io` [#16200](https://github.com/kubernetes/minikube/pull/16200)
+* Handle CRI config of NetworkPlugin and PauseImage [#14703](https://github.com/kubernetes/minikube/pull/14703)
+* Remove deprecated `container-runtime` flag from Kubernetes v1.24+ [#16124](https://github.com/kubernetes/minikube/pull/16124)
+* none driver: Require crictl to be installed for Kubernetes v1.24+ [#16215](https://github.com/kubernetes/minikube/pull/16215)
+* Add cri-dockerd logs to `minikube logs` output [#16149](https://github.com/kubernetes/minikube/pull/16149)
+* Add ingress logs to `minikube logs` output [#15775](https://github.com/kubernetes/minikube/pull/15775)
+* Add default cni logs to `minikbue logs` output [#15909](https://github.com/kubernetes/minikube/pull/15909)
+* Add JSON output option to `miniikube service list` [#15831](https://github.com/kubernetes/minikube/pull/15831)
+* Add kicbase download process to JSON output [#15685](https://github.com/kubernetes/minikube/pull/15685)
+* Implement `--docs` for `minikube addons list -o json` [#15866](https://github.com/kubernetes/minikube/pull/15866)
+* Implement `--skip-audit` flag and skip adding `profile` commands to audit log [#15872](https://github.com/kubernetes/minikube/pull/15872)
+* Implement `--last-start-only` flag to `minikube logs` to only show last start logs  [#15770](https://github.com/kubernetes/minikube/pull/15770)
+
+Bugs:
+* Addon metallb: Fix failing to enable addon [#16056](https://github.com/kubernetes/minikube/pull/16056)
+* Addon cloud-spanner: Fix failing to enable addon [#15743](https://github.com/kubernetes/minikube/pull/15743)
+* Addon gcp-auth: Fix --refresh failing when existing cluster and minikube binary have differing image version [#15985](https://github.com/kubernetes/minikube/pull/15985)
+* Fix numerous image related bugs when enabling addons [#15984](https://github.com/kubernetes/minikube/pull/15984)
+* Fix some addons from erroring when trying to disable an already disabled addon [#16139](https://github.com/kubernetes/minikube/pull/16139)
+* Fix panic if `docker version` returns exit code 0 with unexpected output [#15851](https://github.com/kubernetes/minikube/pull/15851)
+* Fix `minikube service` not honoring `--wait` arg [#15735](https://github.com/kubernetes/minikube/pull/15735)
+* Fix `minikube service` table format & hide unreachable URLs on Docker/Windows [#15911](https://github.com/kubernetes/minikube/pull/15911)
+* Fix `minikube addons list` output showing incorrect status of default addons [#15762](https://github.com/kubernetes/minikube/pull/15762)
+* Fix `minikube mount` printing an empty mount type [#15731](https://github.com/kubernetes/minikube/pull/15731)
+* Fix bash completion for kubectl symlinked to minikube by not adding `--cluster` flag for the `kubectl __complete` subcommand [#15850](https://github.com/kubernetes/minikube/pull/15850)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.26.3 and latest: v1.27.0-rc.0 [#16181](https://github.com/kubernetes/minikube/pull/16181)
+* Addon gcp-auth: Update ingress-nginx/kube-webhook-certgen image from v1.0 to v20230312-helm-chart-4.5.2-28-g66a760794 [#16199](https://github.com/kubernetes/minikube/pull/16199)
+* Addon ingress: Update ingress-nginx/kube-webhook-certgen image from v20220916-gd32f8c343 to v20230312-helm-chart-4.5.2-28-g66a760794 [#16179](https://github.com/kubernetes/minikube/pull/16179)
+* Addon ingress: Update ingress-nginx/controller image from v1.5.1 to v1.7.0 [#15882](https://github.com/kubernetes/minikube/pull/15882) [#16179](https://github.com/kubernetes/minikube/pull/16179)
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from v1.5.0 to 1.5.2 [#15974](https://github.com/kubernetes/minikube/pull/15974) [#16142](https://github.com/kubernetes/minikube/pull/16142)
+* Addon metrics-server: Update metrics-server/metrics-server image from v0.6.2 to v0.6.3 [#16136](https://github.com/kubernetes/minikube/pull/16136)
+* Addon headlamp: Update headlamp-k8s/headlamp image from v0.14.1 to v0.16.0 [#15995](https://github.com/kubernetes/minikube/pull/15995) [#16065](https://github.com/kubernetes/minikube/pull/16065)
+* Addon auto-pause: Update k8s-minikube/auto-pause-hook image from v0.0.3 to v0.0.4 [#16025](https://github.com/kubernetes/minikube/pull/16025)
+* Addon gcp-auth: Update k8s-minikube/gcp-auth-webhook image from v0.0.13 to v0.0.14 [#16012](https://github.com/kubernetes/minikube/pull/16012)
+* Kicbase/ISO: Update containerd from v1.6.15 to v1.7.0 [#15923](https://github.com/kubernetes/minikube/pull/15923) [#15973](https://github.com/kubernetes/minikube/pull/15973) [#16168](https://github.com/kubernetes/minikube/pull/16168)
+* Kicbase/ISO: Update buildkit from v0.10.3 to v0.11.4 [#15728](https://github.com/kubernetes/minikube/pull/15728) [#16079](https://github.com/kubernetes/minikube/pull/16079)
+* Kicbase/ISO: Update cri-dockerd from 0.3.0 to 0.3.1 [#15752](https://github.com/kubernetes/minikube/pull/15752)
+* Kicbase: Update base image from ubuntu:focal-20221019 to ubuntu:focal-20230308 [#15768](https://github.com/kubernetes/minikube/pull/15768) [#15991](https://github.com/kubernetes/minikube/pull/15991) [#16068](https://github.com/kubernetes/minikube/pull/16068)
+* ISO: Update runc from v1.1.4 to v1.1.5 [#16191](https://github.com/kubernetes/minikube/pull/16191)
+* ISO: Update podman from v3.4.2 to v3.4.7 [#15565](https://github.com/kubernetes/minikube/pull/15565)
+* CNI: Update kindnetd from v20221004-44d545d1 to v20230330-48f316cd [#15940](https://github.com/kubernetes/minikube/pull/15940) [#16207](https://github.com/kubernetes/minikube/pull/16207)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Bart Van Bos
+- Ben Krieger
+- Denys Kondratenko
+- Elizabeth Martin Campos
+- Jeff MAURY
+- Kundan Kumar
+- Max Xu
+- Maxime Brunet
+- Medya Ghazizadeh
+- Nick Mancari
+- Om Saran
+- Pablo Caderno
+- Predrag Rogic
+- Qasim Sarfraz
+- S Santhosh Nagaraj
+- Shubh Bapna
+- Steven Powell
+- Sudharsan Rangarajan
+- Swastik Gour
+- chncaption
+- coffemakingtoaster
+- joaquimrocha
+- nickmancari
+- shixiuguo
+- sunyuxuan
+- swastik959
+- syxunion
+- yolossn
+- Товарищ программист
+
+Thank you to our PR reviewers for this release!
+
+- spowelljr (57 comments)
+- medyagh (43 comments)
+- neersighted (6 comments)
+- shu-mutou (4 comments)
+- afbjorklund (2 comments)
+- akdean (1 comments)
+- tstromberg (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (90 comments)
+- spowelljr (25 comments)
+- kundan2707 (20 comments)
+- medyagh (9 comments)
+- ComradeProgrammer (6 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.30.0/) for this release!
+
 ## Version 1.29.0 - 2023-01-26
 
 Features:

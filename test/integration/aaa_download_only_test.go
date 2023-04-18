@@ -43,8 +43,6 @@ import (
 
 // TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
 func TestDownloadOnly(t *testing.T) {
-	// Stores the startup run result for later error messages
-	var rrr *RunResult
 	profile := UniqueProfileName("download-only")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer Cleanup(t, profile, cancel)
@@ -69,10 +67,6 @@ func TestDownloadOnly(t *testing.T) {
 				// --force to avoid uid check
 				args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", containerRuntime)}, StartArgs()...)
 				rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-				if rrr == nil {
-					// Preserve the initial run-result for debugging
-					rrr = rt
-				}
 				if err != nil {
 					t.Errorf("failed to download only. args: %q %v", args, err)
 				}
@@ -91,6 +85,9 @@ func TestDownloadOnly(t *testing.T) {
 						}
 					}
 				}
+				if err := s.Err(); err != nil {
+					t.Errorf("failed to read output: %v", err)
+				}
 			})
 
 			preloadExists := false
@@ -101,15 +98,14 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				// Driver does not matter here, since the only exception is none driver,
 				// which cannot occur here.
-				if download.PreloadExists(v, containerRuntime, "docker", true) {
-					// Just make sure the tarball path exists
-					if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
-						t.Errorf("failed to verify preloaded tarball file exists: %v", err)
-					}
-					preloadExists = true
-				} else {
+				if !download.PreloadExists(v, containerRuntime, "docker", true) {
 					t.Skip("No preload image")
 				}
+				// Just make sure the tarball path exists
+				if _, err := os.Stat(download.TarballPath(v, containerRuntime)); err != nil {
+					t.Errorf("failed to verify preloaded tarball file exists: %v", err)
+				}
+				preloadExists = true
 			})
 
 			t.Run("cached-images", func(t *testing.T) {
