@@ -18,6 +18,7 @@ package qemu
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -491,18 +492,18 @@ func (d *Driver) Start() error { //nolint to suppress cyclomatic complexity 31 i
 			d.diskPath())
 	}
 
-	// for "socket_vmnet" network, start with socket_vmnet
+	// for socket_vmnet network, start with socket_vmnet
 	startProgram := d.Program
 	if d.Network == "socket_vmnet" {
 		startProgram = d.SocketVMNetClientPath
 		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
 	}
 
-	// "vmnet-*" network requires elevated privileges
+	// vmnet network requires elevated privileges
 	if strings.HasPrefix(d.Network, "vmnet-") {
 		//TODO: handle windows
 		startProgram = "sudo"
-		startCmd = append([]string{d.Program}, startCmd...)
+		startCmd = append([]string{"-S", d.Program}, startCmd...)
 	}
 
 	startFunc := cmdOutErr
@@ -519,11 +520,11 @@ func (d *Driver) Start() error { //nolint to suppress cyclomatic complexity 31 i
 	case "builtin", "user":
 		d.IPAddress = "127.0.0.1"
 	case "socket_vmnet", "vmnet-host", "vmnet-shared", "vmnet-bridged":
-		// for "vmnet-*" network, we need to restore user's access to qemu.pid and monitor in minikube's home dir
+		// for vmnet network, we need to restore user's access to qemu.pid and monitor in minikube's home dir
 		if strings.HasPrefix(d.Network, "vmnet-") {
 			if user, err := user.Current(); err != nil {
 				log.Errorf("cannot get current user and thus cannot take ownership of %s and %s (continuing anyway, but will likely fail): %v", d.pidfilePath(), d.monitorPath(), err)
-			} else if stdout, stderr, err := startFunc("sudo", "chown", user.Username, d.pidfilePath(), d.monitorPath()); err != nil {
+			} else if stdout, stderr, err := startFunc("sudo", "-S", "chown", user.Username, d.pidfilePath(), d.monitorPath()); err != nil {
 				fmt.Printf("OUTPUT: %s\n", stdout)
 				fmt.Printf("ERROR: %s\n", stderr)
 			}
@@ -592,11 +593,61 @@ func isBootpdError(err error) bool {
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
 	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+
+	var err error
+
+	// allow using ROOT_PASSWORD env var for ci/cd automation, if present
+	// otherwise, prompt user to enter root password without echoing it using os.Stdin
+	var stdin io.WriteCloser
+	cmd.Stdin = os.Stdin
+	secret, found := os.LookupEnv("ROOT_PASSWORD")
+	if found {
+		cmd.Stdin = nil // unset to avoid "Stdin already set" error
+		if stdin, err = cmd.StdinPipe(); err != nil {
+			return "", "", fmt.Errorf("cannont create StdinPipe: %v", err)
+		}
+	}
+
 	var stdout bytes.Buffer
-	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+
+	// try detecting password prompt for sudo in StdErr (sudo has to be run with '-S' flag for this to work),
+	// while preserving original StdErr content by using tee reader
+	var stderr bytes.Buffer
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", "", fmt.Errorf("cannont create StderrPipe: %v", err)
+	}
+	errTee := io.TeeReader(errPipe, &stderr)
+
+	go func() {
+		var buf []byte
+		r := bufio.NewReader(errTee)
+		for {
+			b, err := r.ReadByte()
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, os.ErrClosed) {
+				log.Errorf("reading from stderr failed: %v", err)
+				break
+			}
+			buf = append(buf, b)
+
+			// macOS has "Password:" and Linux has "[sudo] password for root:" prompt
+			if strings.Contains(string(buf), "assword") && strings.HasSuffix(string(buf), ":") {
+				// try ROOT_PASSWORD first, if one exists
+				if stdin != nil {
+					if _, err := io.WriteString(stdin, fmt.Sprintf("%s\n", secret)); err != nil {
+						log.Errorf("writing to stdin failed: %v", err)
+						break
+					}
+					continue
+				}
+				// alternatively, use os.Stdin for prompt
+				fmt.Printf("\n[sudo] password for root:  ")
+			}
+		}
+	}()
+
+	err = cmd.Run()
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
 	log.Debugf("STDOUT: %s", stdoutStr)

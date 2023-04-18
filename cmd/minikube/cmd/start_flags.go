@@ -475,6 +475,9 @@ func getNetwork(driverName string) string {
 	switch n {
 	case "vmnet-host", "vmnet-shared", "vmnet-bridged":
 		//TODO: check if QEMU v7.1+ version is installed
+		if runtime.GOOS == "windows" {
+			exit.Message(reason.Usage, "The vmnet network is not yet supported on windows")
+		}
 	case "socket_vmnet":
 		if runtime.GOOS != "darwin" {
 			exit.Message(reason.Usage, "The socket_vmnet network is only supported on macOS")

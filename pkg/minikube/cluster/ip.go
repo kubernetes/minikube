@@ -67,7 +67,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 			// user network case
 			return net.ParseIP("10.0.2.2"), nil
 		}
-		// "socket_vmnet" and "vmnet-*" network case: host ip should be start address of subnet
+		// socket_vmnet and vmnet network case: host ip should be start address of subnet
 		vmIP := net.ParseIP(ipString).To4()
 		if vmIP == nil {
 			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
