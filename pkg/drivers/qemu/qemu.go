@@ -596,11 +596,11 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 
 	var err error
 
-	// allow using ROOT_PASSWORD env var for ci/cd automation, if present
-	// otherwise, prompt user to enter root password without echoing it using os.Stdin
+	// allow using SUDO_PASSWORD env var for ci/cd automation, if present
+	// otherwise, prompt user to enter sudo password without echoing it using os.Stdin
 	var stdin io.WriteCloser
 	cmd.Stdin = os.Stdin
-	secret, found := os.LookupEnv("ROOT_PASSWORD")
+	secret, found := os.LookupEnv("SUDO_PASSWORD")
 	if found {
 		cmd.Stdin = nil // unset to avoid "Stdin already set" error
 		if stdin, err = cmd.StdinPipe(); err != nil {
@@ -633,7 +633,7 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 
 			// macOS has "Password:" and Linux has "[sudo] password for root:" prompt
 			if strings.Contains(string(buf), "assword") && strings.HasSuffix(string(buf), ":") {
-				// try ROOT_PASSWORD first, if one exists
+				// try SUDO_PASSWORD first, if one exists
 				if stdin != nil {
 					if _, err := io.WriteString(stdin, fmt.Sprintf("%s\n", secret)); err != nil {
 						log.Errorf("writing to stdin failed: %v", err)
@@ -642,7 +642,7 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 					continue
 				}
 				// alternatively, use os.Stdin for prompt
-				fmt.Printf("\n[sudo] password for root:  ")
+				fmt.Printf("\nsudo password:  ")
 			}
 		}
 	}()
