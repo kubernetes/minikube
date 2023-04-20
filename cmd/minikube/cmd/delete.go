@@ -605,7 +605,7 @@ func killMountProcess() error {
 // killProcess takes a path to look for a pidfile (space-separated),
 // it reads the file and converts it to a bunch of pid ints,
 // then it tries to kill each one of them.
-// If no errors were ecnountered, it cleans the pidfile
+// If no errors were encountered, it cleans the pidfile
 func killProcess(path string) error {
 	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
@@ -646,7 +646,7 @@ func killProcess(path string) error {
 		return errors.Wrap(err, "While closing mount-pids file")
 	}
 
-	return err
+	return nil
 }
 
 // trySigKillProcess takes a PID as argument and tries to SIGKILL it.
@@ -678,7 +678,7 @@ func trySigKillProcess(pid int) error {
 
 // doesPIDBelongToMinikube tries to find the process with that PID
 // and checks if the executable name contains the string "minikube"
-var doesPIDBelongToMinikube = func(pid int) (bool, error) {
+var isMinikubeProcess = func(pid int) (bool, error) {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
 		return false, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
@@ -697,9 +697,9 @@ var doesPIDBelongToMinikube = func(pid int) (bool, error) {
 	return true, nil
 }
 
-// GetPids opens the file at PATH and tries to read
+// getPids opens the file at PATH and tries to read
 // one or more space separated pids
-func GetPids(path string) ([]int, error) {
+func getPids(path string) ([]int, error) {
 	out, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "ReadFile")

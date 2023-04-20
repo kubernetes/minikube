@@ -237,7 +237,7 @@ import (
 	"syscall"
 )
 
-// This is used to unittest functions that send termination
+// This is used to unit test functions that send termination
 // signals to processes, in a cross-platform way.
 func main() {
 	ch := make(chan os.Signal, 1)
@@ -258,14 +258,14 @@ func main() {
 	td := t.TempDir()
 	tmpfile := filepath.Join(td, "waitForSig.go")
 
-	if err := os.WriteFile(tmpfile, waitForSig, 0o700); err != nil {
-		t.Fatalf("copying source to %s: %s\n", tmpfile, err)
+	if err := os.WriteFile(tmpfile, waitForSig, 0o600); err != nil {
+		t.Fatalf("copying source to %s: %v\n", tmpfile, err)
 	}
 
 	processToKill := exec.Command("go", "run", tmpfile)
 	err := processToKill.Start()
 	if err != nil {
-		t.Fatalf("while execing child process: %s\n", err)
+		t.Fatalf("while execing child process: %v\n", err)
 	}
 	pid := processToKill.Process.Pid
 
@@ -275,11 +275,11 @@ func main() {
 
 	err = trySigKillProcess(pid)
 	if err != nil {
-		t.Fatalf("while trying to kill child proc %d: %s\n", pid, err)
+		t.Fatalf("while trying to kill child proc %d: %v\n", pid, err)
 	}
 
 	// waiting for process to exit
 	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process: %s\n", err)
+		t.Fatalf("unable to kill process: %v\n", err)
 	}
 }
