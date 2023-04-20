@@ -1,4 +1,4 @@
-# minikube
+# minikübe
 
 [![Actions Status](https://github.com/kubernetes/minikube/workflows/build/badge.svg)](https://github.com/kubernetes/minikube/actions)
 [![GoReport Widget]][GoReport Status]
