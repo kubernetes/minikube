@@ -613,7 +613,7 @@ func killProcess(path string) error {
 	}
 	klog.Infof("Found %s ...", pidPath)
 
-	ppp, err := GetPids(pidPath)
+	ppp, err := getPids(pidPath)
 	if err != nil {
 		return err
 	}
@@ -653,7 +653,7 @@ func killProcess(path string) error {
 // It performs an ownership check of the pid,
 // before trying to send a sigkill signal to it
 func trySigKillProcess(pid int) error {
-	itDoes, err := doesPIDBelongToMinikube(pid)
+	itDoes, err := isMinikubeProcess(pid)
 	if err != nil {
 		return err
 	}

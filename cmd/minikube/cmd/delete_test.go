@@ -269,7 +269,7 @@ func main() {
 	}
 	pid := processToKill.Process.Pid
 
-	doesPIDBelongToMinikube = func(int) (bool, error) {
+	isMinikubeProcess = func(int) (bool, error) {
 		return true, nil
 	}
 
