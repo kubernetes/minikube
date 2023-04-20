@@ -313,6 +313,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" or "containerd"(amd64/arm64) runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
 				out.V{"runtime": cr})
 		}
+		
 		// for the sake of docker-env command, download and start nerdctl and nerdctld
 		if cr == constants.Containerd {
 			out.WarningT("Using docker-env command with containerd-runtime  is a highly experimental feature, and please provide feedback or contribute to make it better")

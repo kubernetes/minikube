@@ -49,6 +49,9 @@ minkube failed to cache and load cached images
 "MK_COMMAND_RUNNER" (Exit code ExProgramError)  
 minikube failed to load a Docker Machine CommandRunner  
 
+"MK_START_NERDCTLD" (Exit code ExProgramError)  
+minikube failed to start nerdctld  
+
 "MK_COMPLETION" (Exit code ExProgramError)  
 minikube failed to generate shell command completion for a supported shell  
 

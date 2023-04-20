@@ -2006,6 +2006,8 @@ func getLatestPatch(majorMinorVer string) string {
 func isTwoDigitSemver(ver string) bool {
 	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
 	return majorMinorOnly.MatchString(ver)
+}
+
 func startNerdctld() {
 	// for containerd runtime using ssh, we have installed nerdctld and nerdctl into kicbase (linux amd-64 only)
 	// These things will be included in the ISO/Base image in the future versions
