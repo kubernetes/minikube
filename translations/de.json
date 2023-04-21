@@ -249,6 +249,7 @@
 	"Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.": "Port, der für das über den Proxy erreichbare Dashboard freigegeben wird. Wenn man 0 angibt, wird ein zufälliger Port ausgewählt.",
 	"External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)": "Externer Adapter, auf dem der externe Switch erzeugt wird, wenn kein externer Switch gefunden wurde. (nur hyperv Treiber)",
 	"Fail check if container paused": "Schlägt fehl, wenn der Container pausiert ist",
+	"Failed removing pid from pidfile: {{.error}}": "",
 	"Failed runtime": "Runtime fehlgeschlagen",
 	"Failed to build image": "Bau des Images fehlgeschlagen",
 	"Failed to cache and load images": "Cachen und laden der Images fehlgeschlagen",

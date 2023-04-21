@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -29,17 +30,20 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	pkgnetwork "k8s.io/minikube/pkg/network"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -202,7 +206,7 @@ var mountCmd = &cobra.Command{
 		out.Infof("Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
 		var wg sync.WaitGroup
-		pid := make(chan int)
+		pidchan := make(chan int)
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func(pid chan int) {
@@ -211,8 +215,9 @@ var mountCmd = &cobra.Command{
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.Step(style.Stopped, "Userspace file server is shutdown")
 				wg.Done()
-			}(pid)
+			}(pidchan)
 		}
+		pid := <-pidchan
 
 		// Unmount if Ctrl-C or kill request is received.
 		c := make(chan os.Signal, 1)
@@ -224,11 +229,17 @@ var mountCmd = &cobra.Command{
 				if err != nil {
 					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
+
+				err = removePidFromFile(pid)
+				if err != nil {
+					out.FailureT("Failed removing pid from pidfile: {{.error}}", out.V{"error": err})
+				}
+
 				exit.Message(reason.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}
 		}()
 
-		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, <-pid)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, pid)
 		if err != nil {
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
@@ -267,4 +278,59 @@ func getPort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+// removePidFromFile looks at the default locations for the mount-pids file,
+// for the profile in use. If a file is found and its content shows PID, PID gets removed.
+func removePidFromFile(pid int) error {
+	profile := viper.GetString("profile")
+	paths := []string{
+		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
+		localpath.Profile(profile),
+	}
+
+	for _, path := range paths {
+		err := removePid(path, pid)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// removePid reads the file at PATH and tries to remove PID from it if found
+func removePid(path string, pid int) error {
+	// is it the file we're looking for?
+	pidPath := filepath.Join(path, constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	// we found the correct file
+	// we're reading the pids...
+	out, err := os.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+
+	pids := []int{}
+	strPids := strings.Fields(string(out))
+	for _, p := range strPids {
+		intPid, err := strconv.Atoi(p)
+		if err != nil {
+			return errors.Wrap(err, "while converting pids")
+		}
+
+		// we skip the pid we're looking for
+		if intPid == pid {
+			continue
+		}
+
+		pids = append(pids, intPid)
+	}
+
+	// we convert the pids list back to string and write it back to file
+	newPids := fmt.Sprintf("%s ", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(pids)), " "), "[]"))
+	return lock.WriteFile(pidPath, []byte(newPids), 0o644)
 }

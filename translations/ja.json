@@ -235,6 +235,7 @@
 	"Exposed port of the proxyfied dashboard. Set to 0 to pick a random port.": "プロキシー化されたダッシュボードの公開ポート。0 に設定すると、ランダムなポートが選ばれます。",
 	"External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)": "外部スイッチが見つからない場合に、外部スイッチが作成される外部アダプター (hyperv ドライバーのみ)。",
 	"Fail check if container paused": "コンテナーが一時停止しているかどうかのチェックに失敗しました",
+	"Failed removing pid from pidfile: {{.error}}": "",
 	"Failed runtime": "ランタイムが失敗しました",
 	"Failed to build image": "イメージのビルドに失敗しました",
 	"Failed to cache and load images": "イメージのキャッシュとロードに失敗しました",

@@ -318,6 +318,7 @@
 	"Fail check if container paused": "如果容器已挂起，则检查失败",
 	"Failed runtime": "运行时失败",
 	"Failed to build image": "构建镜像失败",
+	"Failed removing pid from pidfile: {{.error}}": "",
 	"Failed to cache ISO": "缓存ISO 时失败",
 	"Failed to cache and load images": "缓存以及导入镜像失败",
 	"Failed to cache binaries": "缓存二进制文件失败",
