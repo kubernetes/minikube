@@ -28,13 +28,13 @@ cd minikube
 To build for x86
 ```shell
 $ make buildroot-image
-$ make out/minikube-amd64.iso
+$ make out/minikube-x86_64.iso
 ```
 
 To build for ARM
 ```shell
 $ make buildroot-image
-$ make out/minikube-arm64.iso
+$ make out/minikube-aarch64.iso
 ```
 
 The build will occur inside a docker container. 
@@ -84,7 +84,7 @@ The changes will be reflected in the `minikube-iso/configs/minikube_defconfig` f
 To make kernel configuration changes and save them, execute:
 
 ```shell
-$ make linux-menuconfig
+$ make linux-menuconfig-<arch>
 ```
 
 This will open the kernel configuration menu, and then save your changes to our
