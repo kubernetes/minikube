@@ -290,7 +290,7 @@ func removePidFromFile(pid int) error {
 	}
 
 	for _, path := range paths {
-		err := removePid(path, pid)
+		err := removePid(path, strconv.Itoa(pid))
 		if err != nil {
 			return err
 		}
@@ -300,7 +300,7 @@ func removePidFromFile(pid int) error {
 }
 
 // removePid reads the file at PATH and tries to remove PID from it if found
-func removePid(path string, pid int) error {
+func removePid(path string, pid string) error {
 	// is it the file we're looking for?
 	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
@@ -314,23 +314,21 @@ func removePid(path string, pid int) error {
 		return errors.Wrap(err, "ReadFile")
 	}
 
-	pids := []int{}
+	pids := []string{}
+	// we're splitting the mount-pids file content into a slice of strings
+	// so that we can compare each to the PID we're looking for
 	strPids := strings.Fields(string(out))
 	for _, p := range strPids {
-		intPid, err := strconv.Atoi(p)
-		if err != nil {
-			return errors.Wrap(err, "while converting pids")
-		}
-
-		// we skip the pid we're looking for
-		if intPid == pid {
+		// If we find the PID, we don't add it to the slice
+		if p == pid {
 			continue
 		}
 
-		pids = append(pids, intPid)
+		// if p doesn't correspond to PID, we add to a list
+		pids = append(pids, p)
 	}
 
-	// we convert the pids list back to string and write it back to file
-	newPids := fmt.Sprintf("%s ", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(pids)), " "), "[]"))
+	// we write the slice that we obtained back to the mount-pids file
+	newPids := strings.Join(pids, " ")
 	return lock.WriteFile(pidPath, []byte(newPids), 0o644)
 }

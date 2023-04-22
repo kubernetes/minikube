@@ -98,7 +98,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig, pid int)
 	}
 
 	profile := viper.GetString("profile")
-	if err := lock.AppendToFile(filepath.Join(localpath.Profile(profile), constants.MountProcessFileName), []byte(fmt.Sprintf("%s ", strconv.Itoa(pid))), 0o644); err != nil {
+	if err := lock.AppendToFile(filepath.Join(localpath.Profile(profile), constants.MountProcessFileName), []byte(fmt.Sprintf(" %s", strconv.Itoa(pid))), 0o644); err != nil {
 		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
 
