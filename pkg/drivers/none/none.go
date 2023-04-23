@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog/v2"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -46,7 +46,6 @@ var cleanupPaths = []string{
 // https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
 	URL     string
 	runtime cruntime.Manager
 	exec    command.Runner
@@ -77,9 +76,19 @@ func NewDriver(c Config) *Driver {
 	}
 }
 
+func (d *Driver) RunCommand(args string) (string, error) { return "", nil }
+
 // PreCreateCheck checks for correct privileges and dependencies
+// NOTE: Il none driver non deve precreare nulla...
+// la macchina gia' esiste ed e' funzionante se possiamo lanciare minikube
+// precreatecheck non serve per il none driver.
 func (d *Driver) PreCreateCheck() error {
-	return d.runtime.Available()
+	return nil
+	// TODO:
+	// this seems like a design issue...
+	// does the driver need to know details or even have
+	// references to an instantiated cruntime object?
+	// return d.runtime.Available()
 }
 
 // Create a host using the driver's config
@@ -100,16 +109,6 @@ func (d *Driver) GetIP() (string, error) {
 		return "", err
 	}
 	return ip.String(), nil
-}
-
-// GetSSHHostname returns hostname for use with ssh
-func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not support ssh commands")
-}
-
-// GetSSHPort returns port for use with ssh
-func (d *Driver) GetSSHPort() (int, error) {
-	return 0, fmt.Errorf("driver does not support ssh commands")
 }
 
 // GetURL returns a Docker URL inside this host
@@ -228,9 +227,4 @@ func (d *Driver) Stop() error {
 	}
 	klog.Infof("none driver is stopped!")
 	return nil
-}
-
-// RunSSHCommandFromDriver implements direct ssh control to the driver
-func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("driver does not support ssh commands")
 }

@@ -1,0 +1,298 @@
+package provision
+
+import (
+	"fmt"
+	"io/ioutil"
+	"net/url"
+	"path"
+	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/docker/machine/libmachine/cert"
+	"github.com/docker/machine/libmachine/log"
+	"github.com/docker/machine/libmachine/mcnutils"
+
+	"k8s.io/minikube/pkg/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
+)
+
+type ContainerRuntimeOptions struct {
+	EngineOptions     string
+	EngineOptionsPath string
+}
+
+func installDockerGeneric(p Provisioner, baseURL string) error {
+	// install docker - until cloudinit we use ubuntu everywhere so we
+	// just install it using the docker repos
+	if output, err := p.RunCommand(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
+		return fmt.Errorf("error installing docker: %s", output)
+	}
+
+	return nil
+}
+
+func makeDockerOptionsDir(p Provisioner) error {
+	dockerDir := p.GetContainerRuntimeOptionsDir()
+	if _, err := p.RunCommand(fmt.Sprintf("sudo mkdir -p %s", dockerDir)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func setRemoteAuthOptions(p Provisioner) auth.Options {
+	dockerDir := p.GetContainerRuntimeOptionsDir()
+	authOptions := p.GetAuthOptions()
+
+	// due to windows clients, we cannot use filepath.Join as the paths
+	// will be mucked on the linux hosts
+	authOptions.CaCertRemotePath = path.Join(dockerDir, "ca.pem")
+	authOptions.ServerCertRemotePath = path.Join(dockerDir, "server.pem")
+	authOptions.ServerKeyRemotePath = path.Join(dockerDir, "server-key.pem")
+
+	return authOptions
+}
+
+func ConfigureAuth(p Provisioner) error {
+	var (
+		err error
+	)
+
+	driver := p.GetDriver()
+	machineName := driver.GetMachineName()
+	authOptions := p.GetAuthOptions()
+	org := mcnutils.GetUsername() + "." + machineName
+	bits := 2048
+
+	ip, err := driver.GetIP()
+	if err != nil {
+		return err
+	}
+
+	log.Info("Copying certs to the local machine directory...")
+
+	if err := mcnutils.CopyFile(authOptions.CaCertPath, filepath.Join(authOptions.StorePath, "ca.pem")); err != nil {
+		return fmt.Errorf("Copying ca.pem to machine dir failed: %s", err)
+	}
+
+	if err := mcnutils.CopyFile(authOptions.ClientCertPath, filepath.Join(authOptions.StorePath, "cert.pem")); err != nil {
+		return fmt.Errorf("Copying cert.pem to machine dir failed: %s", err)
+	}
+
+	if err := mcnutils.CopyFile(authOptions.ClientKeyPath, filepath.Join(authOptions.StorePath, "key.pem")); err != nil {
+		return fmt.Errorf("Copying key.pem to machine dir failed: %s", err)
+	}
+
+	// The Host IP is always added to the certificate's SANs list
+	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1")
+	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
+		authOptions.ServerCertPath,
+		authOptions.CaCertPath,
+		authOptions.CaPrivateKeyPath,
+		org,
+		hosts,
+	)
+
+	// TODO: Switch to passing just authOptions to this func
+	// instead of all these individual fields
+	err = cert.GenerateCert(&cert.Options{
+		Hosts:     hosts,
+		CertFile:  authOptions.ServerCertPath,
+		KeyFile:   authOptions.ServerKeyPath,
+		CAFile:    authOptions.CaCertPath,
+		CAKeyFile: authOptions.CaPrivateKeyPath,
+		Org:       org,
+		Bits:      bits,
+	})
+
+	if err != nil {
+		return fmt.Errorf("error generating server cert: %s", err)
+	}
+
+	if err := p.ServiceAction("docker", serviceaction.Stop); err != nil {
+		return err
+	}
+
+	if _, err := p.RunCommand(`if [ ! -z "$(ip link show docker0)" ]; then sudo ip link delete docker0; fi`); err != nil {
+		return err
+	}
+
+	// upload certs and configure TLS auth
+	caCert, err := ioutil.ReadFile(authOptions.CaCertPath)
+	if err != nil {
+		return err
+	}
+
+	serverCert, err := ioutil.ReadFile(authOptions.ServerCertPath)
+	if err != nil {
+		return err
+	}
+	serverKey, err := ioutil.ReadFile(authOptions.ServerKeyPath)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Copying certs to the remote machine...")
+
+	// printf will choke if we don't pass a format string because of the
+	// dashes, so that's the reason for the '%%s'
+	certTransferCmdFmt := "printf '%%s' '%s' | sudo tee %s"
+
+	// These ones are for Jessie and Mike <3 <3 <3
+	if _, err := p.RunCommand(fmt.Sprintf(certTransferCmdFmt, string(caCert), authOptions.CaCertRemotePath)); err != nil {
+		return err
+	}
+
+	if _, err := p.RunCommand(fmt.Sprintf(certTransferCmdFmt, string(serverCert), authOptions.ServerCertRemotePath)); err != nil {
+		return err
+	}
+
+	if _, err := p.RunCommand(fmt.Sprintf(certTransferCmdFmt, string(serverKey), authOptions.ServerKeyRemotePath)); err != nil {
+		return err
+	}
+
+	dockerURL, err := driver.GetURL()
+	if err != nil {
+		return err
+	}
+	u, err := url.Parse(dockerURL)
+	if err != nil {
+		return err
+	}
+	dockerPort := cruntime.DefaultPort
+	parts := strings.Split(u.Host, ":")
+	if len(parts) == 2 {
+		dPort, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return err
+		}
+		dockerPort = dPort
+	}
+
+	dkrcfg, err := p.GenerateContainerRuntimeOptions(dockerPort)
+	if err != nil {
+		return err
+	}
+
+	log.Info("Setting Docker configuration on the remote daemon...")
+
+	if _, err = p.RunCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dkrcfg.EngineOptionsPath), dkrcfg.EngineOptions, dkrcfg.EngineOptionsPath)); err != nil {
+		return err
+	}
+
+	if err := p.ServiceAction("docker", serviceaction.Start); err != nil {
+		return err
+	}
+
+	return WaitForDocker(p, dockerPort)
+}
+
+func matchNetstatOut(reDaemonListening, netstatOut string) bool {
+	// TODO: I would really prefer this be a Scanner directly on
+	// the STDOUT of the executed command than to do all the string
+	// manipulation hokey-pokey.
+	//
+	// TODO: Unit test this matching.
+	for _, line := range strings.Split(netstatOut, "\n") {
+		match, err := regexp.MatchString(reDaemonListening, line)
+		if err != nil {
+			log.Warnf("Regex warning: %s", err)
+		}
+		if match && line != "" {
+			return true
+		}
+	}
+
+	return false
+}
+
+func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (string, error) {
+	if suppliedDriver != "" {
+		return suppliedDriver, nil
+	}
+	bestSuitedDriver := ""
+
+	defer func() {
+		if bestSuitedDriver != "" {
+			log.Debugf("No storagedriver specified, using %s\n", bestSuitedDriver)
+		}
+	}()
+
+	if defaultDriver != "aufs" {
+		bestSuitedDriver = defaultDriver
+	} else {
+		remoteFilesystemType, err := getFilesystemType(p, "/var/lib")
+		if err != nil {
+			return "", err
+		}
+		if remoteFilesystemType == "btrfs" {
+			bestSuitedDriver = "btrfs"
+		} else {
+			bestSuitedDriver = defaultDriver
+		}
+	}
+	return bestSuitedDriver, nil
+
+}
+
+func getFilesystemType(p Provisioner, directory string) (string, error) {
+	statCommandOutput, err := p.RunCommand("stat -f -c %T " + directory)
+	if err != nil {
+		err = fmt.Errorf("Error looking up filesystem type: %s", err)
+		return "", err
+	}
+
+	fstype := strings.TrimSpace(statCommandOutput)
+	return fstype, nil
+}
+
+func checkDaemonUp(p Provisioner, dockerPort int) func() bool {
+	reDaemonListening := fmt.Sprintf(":%d\\s+.*:.*", dockerPort)
+	return func() bool {
+		// HACK: Check netstat's output to see if anyone's listening on the Docker API port.
+		netstatOut, err := p.RunCommand("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
+		if err != nil {
+			log.Warnf("Error running SSH command: %s", err)
+			return false
+		}
+
+		return matchNetstatOut(reDaemonListening, netstatOut)
+	}
+}
+
+func WaitForDocker(p Provisioner, dockerPort int) error {
+	if err := mcnutils.WaitForSpecific(checkDaemonUp(p, dockerPort), 10, 3*time.Second); err != nil {
+		return NewErrDaemonAvailable(err)
+	}
+
+	return nil
+}
+
+func ServiceAction(prov Provisioner, name string, action serviceaction.ServiceAction) error {
+	reloadDaemon := false
+	switch action {
+	case serviceaction.Start, serviceaction.Restart:
+		reloadDaemon = true
+	}
+
+	// systemd needs reloaded when config changes on disk; we cannot
+	// be sure exactly when it changes from the provisioner so
+	// we call a reload on every restart to be safe
+	if reloadDaemon {
+		if _, err := prov.RunCommand("sudo systemctl daemon-reload"); err != nil {
+			return err
+		}
+	}
+
+	command := fmt.Sprintf("sudo systemctl -f %s %s", action.String(), name)
+
+	if _, err := prov.RunCommand(command); err != nil {
+		return err
+	}
+
+	return nil
+}

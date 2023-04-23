@@ -17,11 +17,13 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/docker/machine/libmachine/persist"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -41,6 +43,9 @@ func StopHost(api libmachine.API, machineName string) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+
+	fmt.Printf("\n\n[!] StopHost()\n")
+	persist.DumpHost(h)
 
 	out.Step(style.Stopping, `Stopping node "{{.name}}"  ...`, out.V{"name": machineName})
 	return stop(h)

@@ -70,6 +70,7 @@ var requiredDirectories = []string{
 }
 
 // StartHost starts a host VM.
+// x7: toplevel..
 func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, bool, error) {
 	machineName := config.MachineName(*cfg, *n)
 
@@ -121,6 +122,9 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
+// x7DRAFT:
+// createHost generates a machine configuration based on clusterconfig and nodeconfig and
+// uses a libmachine api client to create the machine
 func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	klog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
@@ -179,6 +183,9 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	return h, nil
 }
 
+// x7
+// DRAFT:
+// timedCreateHost based on a machine configuration, it uses a libmachine client to create a machine
 func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 	timeout := make(chan bool, 1)
 	go func() {
