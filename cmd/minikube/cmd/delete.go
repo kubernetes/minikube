@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/process"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
@@ -618,20 +618,24 @@ func killProcess(path string) error {
 		return errors.Wrap(err, "error parsing pid")
 	}
 	// os.FindProcess does not check if pid is running :(
-	entry, err := ps.FindProcess(pid)
+	process, err := process.NewProcess(int32(pid))
 	if err != nil {
 		return errors.Wrap(err, "ps.FindProcess")
 	}
-	if entry == nil {
+	if process == nil {
 		klog.Infof("Stale pid: %d", pid)
 		if err := os.Remove(pidPath); err != nil {
 			return errors.Wrap(err, "Removing stale pid")
 		}
 		return nil
 	}
+	processName, err := process.Name()
+	if err != nil {
+		return errors.Wrap(err, "error getting process name")
+	}
 
 	// We found a process, but it still may not be ours.
-	klog.Infof("Found process %d: %s", pid, entry.Executable())
+	klog.Infof("Found process %d: %s", pid, processName)
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		return errors.Wrap(err, "os.FindProcess")
@@ -643,7 +647,7 @@ func killProcess(path string) error {
 		if err := os.Remove(pidPath); err != nil {
 			return errors.Wrap(err, "Removing likely stale unkillable pid")
 		}
-		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, processName))
 	}
 	return nil
 }
