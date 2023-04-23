@@ -3,7 +3,6 @@ package provision
 import (
 	"k8s.io/minikube/pkg/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/cruntime"
-	"k8s.io/minikube/pkg/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
 )
@@ -17,8 +16,6 @@ import (
 type Provisioner interface {
 	// GetProvisionerName gets the name of the provisioner
 	GetProvisionerName() string
-	// GetDriver gets a reference to the driver in use
-	GetDriver() drivers.Driver
 	// CompatibleWithMachine returns true if this provisioner can be used
 	// for the machine we're creating, otherwise returns false
 	CompatibleWithMachine() bool
