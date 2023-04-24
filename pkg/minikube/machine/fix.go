@@ -49,8 +49,6 @@ const (
 	maxClockDesyncSeconds = 2.1
 )
 
-// x7DRAFT:
-// fixHots takes an existing machine, loads its configuration, and fixes if needed....
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
 func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*host.Host, error) {
 	start := time.Now()
@@ -59,7 +57,6 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 		klog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	fmt.Printf("\n\n[!] Loading from FileStore")
 	h, err := api.Load(config.MachineName(*cc, *n))
 	if err != nil {
 		return h, errors.Wrap(err, "error loading existing host. Please try running [minikube delete], then run [minikube start] again")

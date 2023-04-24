@@ -86,8 +86,6 @@ type LocalClient struct {
 	flock        *fslock.Lock
 }
 
-// x7DRAFT:
-// NewHost generates a configuration for a machine, strating out from a raw driver configuration.
 // NewHost creates a new Host
 func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
 	def := registry.Driver(drvName)
@@ -128,21 +126,12 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 }
 
 // Load a new client, creating driver
-// x7DRAFT:
-// loads the machine config from a config.json in the minikube directory,
-// it then performs a migration if needed (if found config.json has a version lower
-// than that inside the sources).. to do so it uses a libmachine/none driver...
-// after this migration attempt, it replaces the libmachine/none driver, with
-// the actual driver the machine was configured to use.
 func (api *LocalClient) Load(name string) (*host.Host, error) {
-	// here the machine gets exhumed, and migration is performed if needed
-	// at this point the driver in use is libmachine/none
 	h, err := api.Filestore.Load(name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "filestore %q", name)
 	}
 
-	// At this point we're initializing the right driver inside the machine struct
 	def := registry.Driver(h.DriverName)
 	if def.Empty() {
 		return nil, fmt.Errorf("driver %q does not exist", h.DriverName)
@@ -162,10 +151,6 @@ func (api *LocalClient) Close() error {
 	return nil
 }
 
-// x7Note:
-// questa logica la potremmo includere direttamente nell'interfaccia della machine...
-// avrebbe senso che sia la machine ad occuparsene
-// ...
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (command.Runner, error) {
 	if h.DriverName == driver.Mock {
@@ -245,7 +230,6 @@ func (api *LocalClient) Create(h *host.Host) error {
 			"provisioning",
 			func() error {
 				// Skippable because we don't reconfigure Docker?
-				// TODO:
 				if driver.BareMetal(h.Driver.DriverName()) {
 					return nil
 				}
