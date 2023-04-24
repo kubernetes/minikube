@@ -5,14 +5,17 @@ import (
 	"k8s.io/minikube/pkg/libmachine/cruntime"
 	"k8s.io/minikube/pkg/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/runner"
 )
 
-// Provisioner is the interface that we use in order to "provision" a machine.
-// Once the Driver has provisioned a linux machine to run kubernetes on,
-// the provisioner prepares it for kubernetes:
-// it configures machine's hostname,
-// it installs packages, configures services,
-// sets the authentication for the container runtime...
+// Provisioner is the interface that we use in order to transform a
+// freshly created linux machine into a machine ready to host kubernetes.
+// In order to do that, the provisioner needs to be able to install packages,
+// to start/stop services, to manage configuration files, ...
+// we could've used `type Ansible interface` instead...
+// The Provisioner is an interface, because the implementation has to vary
+// depending on the kind of machine we're provisioning:
+// many things can vary: init system, package manager, file location, ...
 type Provisioner interface {
 	// GetProvisionerName gets the name of the provisioner
 	GetProvisionerName() string
@@ -23,32 +26,28 @@ type Provisioner interface {
 	// RunCommand escapes to the machine's shell and runs a command
 	// Provides the primitive. Everything else (pkg/service mgmt..)
 	// should be built on top of this, by utils functions.
-	RunCommand(string) (string, error)
+	// ...
+	// we'll see.. having an embedded runner.Runner interface seems right here...
+	// RunCommand(string) (string, error)
+	// ..
+	runner.Runner
 	// ServiceAction tries to set a system service inside the machine, in a given state.
 	ServiceAction(string, serviceaction.ServiceAction) error
 	// PackageAction tries to perform an action on a package inside the machine (e.g. install/remove/...)
 	PackageAction(string, pkgaction.PackageAction) error
 
-	// GetContainerRuntime gets the container runtime that has been chosen to run
-	// the kubernetes cluster
-	// NOTE: WHO?
-	GetContainerRuntime() string
-	// GetContainerRuntimeOptionsDir gets the path for the runtime config directory
-	// NOTE: WHERE?
-	GetContainerRuntimeOptionsDir() string
-	// SetContainerRuntimeOptions sets the configuration for the chosen container runtime
-	// NOTE: WHAT?
-	GenerateContainerRuntimeOptions(interface{}) (*ContainerRuntimeOptions, error)
-
-	// GetAuthOptions returns the authentication options used to configure the remote
-	// connection for the container runtime daemon
-	GetAuthOptions() auth.Options
+	// GetCRuntime gets back a reference to the container runtime
+	// that will run kubernetes inside the linux machine
+	GetCRuntime() cruntime.CRuntimeEngine
 
 	// GetOsReleaseInfo gets os related info from the linux machine
 	GetOsReleaseInfo() (*OsRelease, error)
 	// SetOsReleaseInfo sets os related info values in the provisioner struct
 	SetOsReleaseInfo(*OsRelease)
 
+	// ConfigureAuth configures the ssl/tls authentication for the container runtime daemon
+	// inside the machine
+	ConfigureAuth() error
 	// Provision does the actual provisioning piece:
 	//     1. Set the hostname on the machine.
 	//     2. Install the chosen container runtime if not already present.

@@ -4,25 +4,27 @@ import (
 	"errors"
 
 	"k8s.io/minikube/pkg/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // Driver defines how a host is created and controlled.
 // Different types of driver represent different ways hosts
-// can be created (e.g. different hypervisors, cloud providers, ..)
-// The Driver is responsible of maintaining the machine state between minikube calls..
-// The Driver should not rely on initialized objects as struct fields,
+// can be created (e.g. different hypervisors, cloud providers, ..).
+// As the Driver is responsible of maintaining the machine state between minikube commands,
+// it should not rely on initialized objects as struct fields,
 // as at each run, the Driver gets initialized at its base value, and its
 // fileds populated with the machine's RawDriver field.
 type Driver interface {
-	// RunCommand runs a command inside the linux machine
-	RunCommand(string) (string, error)
-	GetRunner() (command.Runner, error)
-
+	// GetRunner is responsible for instantiating the ssh session if that is the case,
+	// or more generically provide a way to run commands inside the machine
+	GetRunner() runner.Runner
 	// DriverName returns the name of the driver
 	DriverName() string
 
+	// NOTE:
+	// those are used in order to configure the daemon authentication
+	// ...
 	// GetIP returns an IP or hostname that this machine is available at
 	// e.g. 1.2.3.4 or docker-host-d60b70a14d3a.cloudapp.net
 	GetIP() (string, error)
@@ -32,41 +34,23 @@ type Driver interface {
 	// e.g. tcp://1.2.3.4:2376
 	GetURL() (string, error)
 
-	// GetSSHHostname returns hostname for use with ssh
-	// GetSSHHostname() (string, error)
-
-	// GetSSHKeyPath returns key path for use with ssh
-	// GetSSHKeyPath() string
-
-	// GetSSHPort returns port for use with ssh
-	// GetSSHPort() (int, error)
-
-	// GetSSHUsername returns username for use with ssh
-	// TODO:
-	// ho visto che questa la usano anche per prendere il nome
-	// dello user a cui associare i permessi dei file nella machine..
-	// mi sembra... Insomma viene usata..
-	// veidamo di trovare un rimpiazzo.
-	// Tipo GetUsername() e basta.. e gli diamo in ritorno lo user 1000
-	// GetSSHUsername() string
-
 	// GetState returns the state that the host is in (running, stopped, etc)
-	GetState() (state.State, error)
+	GetMachineState() (state.State, error)
 	// Kill stops a host forcefully
-	Kill() error
+	KillMachine() error
 	// PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
 	PreCreateCheck() error
 	// Create a linux machine using the driver's config
-	Create() error
-	// Remove a host
-	Remove() error
+	CreateMachine() error
+	// Remove a machine
+	RemoveMachine() error
 	// Restart a host. This may just call Stop(); Start() if the provider does not
 	// have any special restart behaviour.
-	Restart() error
+	RestartMachine() error
 	// Start a machine
-	Start() error
+	StartMachine() error
 	// Stop a machine gracefully
-	Stop() error
+	StopMachine() error
 }
 
 var ErrHostIsNotRunning = errors.New("Host is not running")
@@ -80,7 +64,7 @@ type DriverOptions interface {
 
 func MachineInState(d Driver, desiredState state.State) func() bool {
 	return func() bool {
-		currentState, err := d.GetState()
+		currentState, err := d.GetMachineState()
 		if err != nil {
 			log.Debugf("Error getting machine state: %s", err)
 		}
@@ -93,7 +77,7 @@ func MachineInState(d Driver, desiredState state.State) func() bool {
 
 // MustBeRunning will return an error if the machine is not in a running state.
 func MustBeRunning(d Driver) error {
-	s, err := d.GetState()
+	s, err := d.GetMachineState()
 	if err != nil {
 		return err
 	}

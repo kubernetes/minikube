@@ -5,9 +5,9 @@ import (
 	"k8s.io/minikube/pkg/libmachine/cruntime"
 )
 
-type EngineConfigContext struct {
-	DockerPort       int
-	AuthOptions      auth.Options
-	EngineOptions    cruntime.Options
-	DockerOptionsDir string
+type CRuntimeConfigContext struct {
+	Port          int
+	AuthOptions   auth.Options
+	EngineOptions cruntime.Options
+	OptionsDir    string
 }

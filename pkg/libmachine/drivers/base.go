@@ -3,8 +3,6 @@ package drivers
 import (
 	"errors"
 	"path/filepath"
-
-	"k8s.io/minikube/pkg/libmachine/runner"
 )
 
 const (
@@ -22,11 +20,6 @@ type BaseDriver struct {
 	SSHPort     int
 	SSHKeyPath  string
 	StorePath   string
-	Runner      runner.Runner
-}
-
-func (d *BaseDriver) RunCommand(args string) (string, error) {
-	return d.Runner.RunCommand(args)
 }
 
 // DriverName returns the name of the driver

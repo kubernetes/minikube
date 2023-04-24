@@ -2,9 +2,10 @@ package provision
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
-	"github.com/docker/machine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/mcnutils"
 )
 
 // DockerClientVersion returns the version of the Docker client inside the machine
@@ -15,12 +16,12 @@ func DockerClientVersion(prov Provisioner) (string, error) {
 	// output is expected to be something like
 	//
 	//     Docker version 1.12.1, build 7a86f89
-	output, err := prov.RunCommand("docker --version")
+	output, err := prov.RunCmd(exec.Command("docker --version"))
 	if err != nil {
 		return "", err
 	}
 
-	words := strings.Fields(output)
+	words := strings.Fields(output.Stdout.String())
 	if len(words) < 3 || words[0] != "Docker" || words[1] != "version" {
 		return "", fmt.Errorf("DockerClientVersion: cannot parse version string from %q", output)
 	}
@@ -33,7 +34,7 @@ func waitForLock(prov Provisioner) error {
 	return func(prov Provisioner, cmd string) error {
 		var cmdErr error
 		err := mcnutils.WaitFor(func() bool {
-			_, cmdErr = prov.RunCommand(cmd)
+			_, cmdErr = prov.RunCmd(exec.Command(cmd))
 			if cmdErr != nil {
 				if strings.Contains(cmdErr.Error(), "Could not get lock") {
 					cmdErr = nil

@@ -2,6 +2,7 @@ package detector
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/docker/machine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/drivers"
@@ -40,12 +41,17 @@ func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (provision.
 
 	log.Info("Detecting the provisioner...")
 
-	osReleaseOut, err := d.RunCommand("cat /etc/os-release")
+	rnr, err := d.GetRunner()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting cmdRunner: %s", err)
+	}
+
+	osReleaseOut, err := rnr.RunCmd(exec.Command("cat /etc/os-release"))
 	if err != nil {
 		return nil, fmt.Errorf("Error getting SSH command: %s", err)
 	}
 
-	osReleaseInfo, err := provision.NewOsRelease([]byte(osReleaseOut))
+	osReleaseInfo, err := provision.NewOsRelease(osReleaseOut.Stdout.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing /etc/os-release file: %s", err)
 	}
