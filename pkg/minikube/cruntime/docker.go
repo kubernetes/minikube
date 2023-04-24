@@ -162,7 +162,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 	}
 
 	if r.CRIService != "" {
-		if err := r.Init.Enable("cri-docker.socket"); err != nil {
+		if err := r.Init.Enable(r.CRIService); err != nil {
 			return err
 		}
 		if err := r.Init.Unmask(r.CRIService); err != nil {
@@ -174,7 +174,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		if err := r.Init.Restart(r.CRIService); err != nil {
 			return err
 		}
-		if err := r.Init.Restart("cri-docker"); err != nil {
+		if err := r.Init.Restart(r.CRIService); err != nil {
 			return err
 		}
 	}
