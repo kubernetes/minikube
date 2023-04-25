@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-RUNC_MASTER_VERSION = v1.1.5
-RUNC_MASTER_COMMIT = f19387a6bec4944c770f7668ab51c4348d9c2f38
+RUNC_MASTER_VERSION = v1.1.6
+RUNC_MASTER_COMMIT = 0f48801a0e21e3f0bc4e74643ead2a502df4818d
 RUNC_MASTER_SITE = https://github.com/opencontainers/runc/archive
 RUNC_MASTER_SOURCE = $(RUNC_MASTER_VERSION).tar.gz
 RUNC_MASTER_LICENSE = Apache-2.0
