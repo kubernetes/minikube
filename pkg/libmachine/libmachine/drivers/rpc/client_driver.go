@@ -324,7 +324,7 @@ func (c *RPCClientDriver) GetSSHUsername() string {
 	return username
 }
 
-func (c *RPCClientDriver) GetState() (state.State, error) {
+func (c *RPCClientDriver) GetMachineState() (state.State, error) {
 	var s state.State
 
 	if err := c.Client.Call(GetStateMethod, struct{}{}, &s); err != nil {
@@ -338,30 +338,26 @@ func (c *RPCClientDriver) PreCreateCheck() error {
 	return c.Client.Call(PreCreateCheckMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Create() error {
+func (c *RPCClientDriver) CreateMachine() error {
 	return c.Client.Call(CreateMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Remove() error {
+func (c *RPCClientDriver) RemoveMachine() error {
 	return c.Client.Call(RemoveMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Start() error {
+func (c *RPCClientDriver) StartMachine() error {
 	return c.Client.Call(StartMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Stop() error {
+func (c *RPCClientDriver) StopMachine() error {
 	return c.Client.Call(StopMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Restart() error {
+func (c *RPCClientDriver) RestartMachine() error {
 	return c.Client.Call(RestartMethod, struct{}{}, nil)
 }
 
-func (c *RPCClientDriver) Kill() error {
+func (c *RPCClientDriver) KillMachine() error {
 	return c.Client.Call(KillMethod, struct{}{}, nil)
-}
-
-func (c *RPCClientDriver) Upgrade() error {
-	return c.Client.Call(UpgradeMethod, struct{}{}, nil)
 }

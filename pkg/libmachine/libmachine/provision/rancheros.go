@@ -179,7 +179,7 @@ func (provisioner *RancherProvisioner) upgradeIso() error {
 	// Largely copied from Boot2Docker provisioner, we should find a way to share this code
 	log.Info("Stopping machine to do the upgrade...")
 
-	if err := provisioner.Driver.Stop(); err != nil {
+	if err := provisioner.Driver.StopMachine(); err != nil {
 		return err
 	}
 
@@ -212,7 +212,7 @@ func (provisioner *RancherProvisioner) upgradeIso() error {
 
 	log.Infof("Starting machine back up...")
 
-	if err := provisioner.Driver.Start(); err != nil {
+	if err := provisioner.Driver.StartMachine(); err != nil {
 		return err
 	}
 

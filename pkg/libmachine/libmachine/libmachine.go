@@ -12,7 +12,7 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/check"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/plugin/localbinary"
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/rpc"
+	rpcdriver "k8s.io/minikube/pkg/libmachine/libmachine/drivers/rpc"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -144,7 +144,7 @@ func (api *Client) Create(h *host.Host) error {
 }
 
 func (api *Client) performCreate(h *host.Host) error {
-	if err := h.Driver.Create(); err != nil {
+	if err := h.Driver.CreateMachine(); err != nil {
 		return fmt.Errorf("Error in driver during machine creation: %s", err)
 	}
 

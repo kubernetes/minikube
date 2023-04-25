@@ -68,7 +68,7 @@ func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
 
 	log.Info("Stopping machine to do the upgrade...")
 
-	if err := provisioner.Driver.Stop(); err != nil {
+	if err := provisioner.Driver.StopMachine(); err != nil {
 		return err
 	}
 
@@ -88,7 +88,7 @@ func (provisioner *Boot2DockerProvisioner) upgradeIso() error {
 
 	log.Infof("Starting machine back up...")
 
-	if err := provisioner.Driver.Start(); err != nil {
+	if err := provisioner.Driver.StartMachine(); err != nil {
 		return err
 	}
 

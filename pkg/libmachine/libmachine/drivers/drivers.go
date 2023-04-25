@@ -12,8 +12,11 @@ import (
 // driver represent different ways hosts can be created (e.g. different
 // hypervisors, different cloud providers)
 type Driver interface {
+	// Runner is the way we have to run commands inside the machine
+	// runner.Runner
+
 	// Create a host using the driver's config
-	Create() error
+	CreateMachine() error
 
 	// DriverName returns the name of the driver
 	DriverName() string
@@ -45,31 +48,31 @@ type Driver interface {
 	// e.g. tcp://1.2.3.4:2376
 	GetURL() (string, error)
 
-	// GetState returns the state that the host is in (running, stopped, etc)
-	GetState() (state.State, error)
+	// GetMachineState returns the state that the linux machine is in (running, stopped, etc)
+	GetMachineState() (state.State, error)
 
-	// Kill stops a host forcefully
-	Kill() error
+	// KillMachine stops the linux machine forcefully
+	KillMachine() error
 
 	// PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
 	PreCreateCheck() error
 
-	// Remove a host
-	Remove() error
+	// RemoveMachine removes the linux machine
+	RemoveMachine() error
 
-	// Restart a host. This may just call Stop(); Start() if the provider does not
+	// RestartMachine may just call Stop(); Start() if the provider does not
 	// have any special restart behaviour.
-	Restart() error
+	RestartMachine() error
 
 	// SetConfigFromFlags configures the driver with the object that was returned
 	// by RegisterCreateFlags
 	SetConfigFromFlags(opts DriverOptions) error
 
-	// Start a host
-	Start() error
+	// StartMachine starts the linux machine we're running kubernetes into
+	StartMachine() error
 
-	// Stop a host gracefully
-	Stop() error
+	// StopMachine gracefully stops the linux machine
+	StopMachine() error
 }
 
 var ErrHostIsNotRunning = errors.New("Host is not running")
@@ -83,7 +86,7 @@ type DriverOptions interface {
 
 func MachineInState(d Driver, desiredState state.State) func() bool {
 	return func() bool {
-		currentState, err := d.GetState()
+		currentState, err := d.GetMachineState()
 		if err != nil {
 			log.Debugf("Error getting machine state: %s", err)
 		}
@@ -96,7 +99,7 @@ func MachineInState(d Driver, desiredState state.State) func() bool {
 
 // MustBeRunning will return an error if the machine is not in a running state.
 func MustBeRunning(d Driver) error {
-	s, err := d.GetState()
+	s, err := d.GetMachineState()
 	if err != nil {
 		return err
 	}

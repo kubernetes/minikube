@@ -26,12 +26,12 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
-	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/util"
@@ -104,11 +104,11 @@ func publicSSHKeyPath(d *drivers.BaseDriver) string {
 // Restart a host. This may just call Stop(); Start() if the provider does not
 // have any special restart behaviour.
 func Restart(d drivers.Driver) error {
-	if err := d.Stop(); err != nil {
+	if err := d.StopMachine(); err != nil {
 		return err
 	}
 
-	return d.Start()
+	return d.StartMachine()
 }
 
 // MakeDiskImage makes a boot2docker VM disk image.

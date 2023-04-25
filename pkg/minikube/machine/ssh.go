@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -36,7 +36,7 @@ func GetHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return nil, errors.Wrap(err, "host exists and load")
 	}
 
-	currentState, err := host.Driver.GetState()
+	currentState, err := host.Driver.GetMachineState()
 	if err != nil {
 		return nil, errors.Wrap(err, "state")
 	}

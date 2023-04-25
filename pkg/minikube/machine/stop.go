@@ -19,13 +19,13 @@ package machine
 import (
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -70,7 +70,7 @@ func stop(h *host.Host) error {
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
 func trySSHPowerOff(h *host.Host) error {
-	s, err := h.Driver.GetState()
+	s, err := h.Driver.GetMachineState()
 	if err != nil {
 		klog.Warningf("unable to get state: %v", err)
 		return err

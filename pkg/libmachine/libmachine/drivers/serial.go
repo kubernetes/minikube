@@ -40,7 +40,7 @@ func newSerialDriverWithLock(innerDriver Driver, lock sync.Locker) Driver {
 func (d *SerialDriver) Create() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Create()
+	return d.Driver.CreateMachine()
 }
 
 // DriverName returns the name of the driver as it is registered
@@ -110,17 +110,17 @@ func (d *SerialDriver) GetURL() (string, error) {
 }
 
 // GetState returns the state that the host is in (running, stopped, etc)
-func (d *SerialDriver) GetState() (state.State, error) {
+func (d *SerialDriver) GetMachineState() (state.State, error) {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.GetState()
+	return d.Driver.GetMachineState()
 }
 
 // Kill stops a host forcefully
-func (d *SerialDriver) Kill() error {
+func (d *SerialDriver) KillMachine() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Kill()
+	return d.Driver.KillMachine()
 }
 
 // PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
@@ -131,18 +131,18 @@ func (d *SerialDriver) PreCreateCheck() error {
 }
 
 // Remove a host
-func (d *SerialDriver) Remove() error {
+func (d *SerialDriver) RemoveMachine() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Remove()
+	return d.Driver.RemoveMachine()
 }
 
 // Restart a host. This may just call Stop(); Start() if the provider does not
 // have any special restart behaviour.
-func (d *SerialDriver) Restart() error {
+func (d *SerialDriver) RestartMachine() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Restart()
+	return d.Driver.RestartMachine()
 }
 
 // SetConfigFromFlags configures the driver with the object that was returned
@@ -154,17 +154,17 @@ func (d *SerialDriver) SetConfigFromFlags(opts DriverOptions) error {
 }
 
 // Start a host
-func (d *SerialDriver) Start() error {
+func (d *SerialDriver) StartMachine() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Start()
+	return d.Driver.StartMachine()
 }
 
 // Stop a host gracefully
-func (d *SerialDriver) Stop() error {
+func (d *SerialDriver) StopMachine() error {
 	d.Lock()
 	defer d.Unlock()
-	return d.Driver.Stop()
+	return d.Driver.StopMachine()
 }
 
 func (d *SerialDriver) MarshalJSON() ([]byte, error) {

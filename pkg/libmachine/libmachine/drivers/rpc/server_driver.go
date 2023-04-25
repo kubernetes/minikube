@@ -137,7 +137,7 @@ func (r *RPCServerDriver) Create(_, _ *struct{}) (err error) {
 	// during create.
 	defer trapPanic(&err)
 
-	err = r.ActualDriver.Create()
+	err = r.ActualDriver.CreateMachine()
 
 	return err
 }
@@ -187,38 +187,38 @@ func (r *RPCServerDriver) GetURL(_ *struct{}, reply *string) error {
 	return err
 }
 
-func (r *RPCServerDriver) GetState(_ *struct{}, reply *state.State) error {
-	s, err := r.ActualDriver.GetState()
+func (r *RPCServerDriver) GetMachineState(_ *struct{}, reply *state.State) error {
+	s, err := r.ActualDriver.GetMachineState()
 	*reply = s
 	return err
 }
 
-func (r *RPCServerDriver) Kill(_ *struct{}, _ *struct{}) error {
-	return r.ActualDriver.Kill()
+func (r *RPCServerDriver) KillMachine(_ *struct{}, _ *struct{}) error {
+	return r.ActualDriver.KillMachine()
 }
 
 func (r *RPCServerDriver) PreCreateCheck(_ *struct{}, _ *struct{}) error {
 	return r.ActualDriver.PreCreateCheck()
 }
 
-func (r *RPCServerDriver) Remove(_ *struct{}, _ *struct{}) error {
-	return r.ActualDriver.Remove()
+func (r *RPCServerDriver) RemoveMachine(_ *struct{}, _ *struct{}) error {
+	return r.ActualDriver.RemoveMachine()
 }
 
-func (r *RPCServerDriver) Restart(_ *struct{}, _ *struct{}) error {
-	return r.ActualDriver.Restart()
+func (r *RPCServerDriver) RestartMachine(_ *struct{}, _ *struct{}) error {
+	return r.ActualDriver.RestartMachine()
 }
 
 func (r *RPCServerDriver) SetConfigFromFlags(flags *drivers.DriverOptions, _ *struct{}) error {
 	return r.ActualDriver.SetConfigFromFlags(*flags)
 }
 
-func (r *RPCServerDriver) Start(_ *struct{}, _ *struct{}) error {
-	return r.ActualDriver.Start()
+func (r *RPCServerDriver) StartMachine(_ *struct{}, _ *struct{}) error {
+	return r.ActualDriver.StartMachine()
 }
 
-func (r *RPCServerDriver) Stop(_ *struct{}, _ *struct{}) error {
-	return r.ActualDriver.Stop()
+func (r *RPCServerDriver) StopMachine(_ *struct{}, _ *struct{}) error {
+	return r.ActualDriver.StopMachine()
 }
 
 func (r *RPCServerDriver) Heartbeat(_ *struct{}, _ *struct{}) error {

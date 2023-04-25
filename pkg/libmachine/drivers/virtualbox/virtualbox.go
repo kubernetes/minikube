@@ -299,13 +299,13 @@ func (d *Driver) PreCreateCheck() error {
 	return nil
 }
 
-func (d *Driver) Create() error {
+func (d *Driver) CreateMachine() error {
 	if err := d.CreateVM(); err != nil {
 		return err
 	}
 
 	log.Info("Starting the VM...")
-	return d.Start()
+	return d.StartMachine()
 }
 
 func (d *Driver) CreateVM() error {
@@ -526,8 +526,8 @@ func (d *Driver) hostOnlyIPAvailable() bool {
 	return true
 }
 
-func (d *Driver) Start() error {
-	s, err := d.GetState()
+func (d *Driver) StartMachine() error {
+	s, err := d.GetMachineState()
 	if err != nil {
 		return err
 	}
@@ -609,7 +609,7 @@ func (d *Driver) Start() error {
 
 	// This happens a lot on windows. The adapter has an invalid IP and the VM has the same IP
 	log.Warn("The host-only adapter is corrupted. Let's stop the VM, fix the host-only adapter and restart the VM")
-	if err := d.Stop(); err != nil {
+	if err := d.StopMachine(); err != nil {
 		return err
 	}
 
@@ -632,8 +632,8 @@ func (d *Driver) Start() error {
 	return d.ipWaiter.Wait(d)
 }
 
-func (d *Driver) Stop() error {
-	currentState, err := d.GetState()
+func (d *Driver) StopMachine() error {
+	currentState, err := d.GetMachineState()
 	if err != nil {
 		return err
 	}
@@ -649,7 +649,7 @@ func (d *Driver) Stop() error {
 		return err
 	}
 	for {
-		s, err := d.GetState()
+		s, err := d.GetMachineState()
 		if err != nil {
 			return err
 		}
@@ -666,12 +666,12 @@ func (d *Driver) Stop() error {
 }
 
 // Restart restarts a machine which is known to be running.
-func (d *Driver) Restart() error {
-	if err := d.Stop(); err != nil {
+func (d *Driver) RestartMachine() error {
+	if err := d.StopMachine(); err != nil {
 		return fmt.Errorf("Problem stopping the VM: %s", err)
 	}
 
-	if err := d.Start(); err != nil {
+	if err := d.StartMachine(); err != nil {
 		return fmt.Errorf("Problem starting the VM: %s", err)
 	}
 
@@ -680,12 +680,12 @@ func (d *Driver) Restart() error {
 	return d.ipWaiter.Wait(d)
 }
 
-func (d *Driver) Kill() error {
+func (d *Driver) KillMachine() error {
 	return d.vbm("controlvm", d.MachineName, "poweroff")
 }
 
-func (d *Driver) Remove() error {
-	s, err := d.GetState()
+func (d *Driver) RemoveMachine() error {
+	s, err := d.GetMachineState()
 	if err == ErrMachineNotExist {
 		return nil
 	}
@@ -694,7 +694,7 @@ func (d *Driver) Remove() error {
 	}
 
 	if s != state.Stopped && s != state.Saved {
-		if err := d.Kill(); err != nil {
+		if err := d.KillMachine(); err != nil {
 			return err
 		}
 	}
@@ -702,7 +702,7 @@ func (d *Driver) Remove() error {
 	return d.vbm("unregistervm", "--delete", d.MachineName)
 }
 
-func (d *Driver) GetState() (state.State, error) {
+func (d *Driver) GetMachineState() (state.State, error) {
 	stdout, stderr, err := d.vbmOutErr("showvminfo", d.MachineName, "--machinereadable")
 	if err != nil {
 		if reMachineNotFound.FindString(stderr) != "" {
@@ -792,7 +792,7 @@ func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string)
 func (d *Driver) GetIP() (string, error) {
 	// DHCP is used to get the IP, so virtualbox hosts don't have IPs unless
 	// they are running
-	s, err := d.GetState()
+	s, err := d.GetMachineState()
 	if err != nil {
 		return "", err
 	}

@@ -33,12 +33,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/network"
@@ -170,7 +170,7 @@ func checkPid(pid int) error {
 	return process.Signal(syscall.Signal(0))
 }
 
-func (d *Driver) GetState() (state.State, error) {
+func (d *Driver) GetMachineState() (state.State, error) {
 	if runtime.GOOS != "windows" {
 		if _, err := os.Stat(d.pidfilePath()); err != nil {
 			return state.Stopped, nil
@@ -214,7 +214,7 @@ func (d *Driver) PreCreateCheck() error {
 	return nil
 }
 
-func (d *Driver) Create() error {
+func (d *Driver) CreateMachine() error {
 	var err error
 	switch d.Network {
 	case "builtin", "user":
@@ -268,7 +268,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Starting QEMU VM...")
-	return d.Start()
+	return d.StartMachine()
 }
 
 func parsePortRange(rawPortRange string) (int, int, error) {
@@ -341,7 +341,7 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 	return 0, fmt.Errorf("unable to allocate tcp port")
 }
 
-func (d *Driver) Start() error {
+func (d *Driver) StartMachine() error {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
@@ -537,20 +537,20 @@ func cmdStart(cmdStr string, args ...string) (string, string, error) {
 	return "", "", cmd.Start()
 }
 
-func (d *Driver) Stop() error {
+func (d *Driver) StopMachine() error {
 	if _, err := d.RunQMPCommand("system_powerdown"); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *Driver) Remove() error {
-	s, err := d.GetState()
+func (d *Driver) RemoveMachine() error {
+	s, err := d.GetMachineState()
 	if err != nil {
 		return errors.Wrap(err, "get state")
 	}
 	if s == state.Running {
-		if err := d.Kill(); err != nil {
+		if err := d.KillMachine(); err != nil {
 			return errors.Wrap(err, "kill")
 		}
 	}
@@ -562,21 +562,21 @@ func (d *Driver) Remove() error {
 	return nil
 }
 
-func (d *Driver) Restart() error {
-	s, err := d.GetState()
+func (d *Driver) RestartMachine() error {
+	s, err := d.GetMachineState()
 	if err != nil {
 		return err
 	}
 
 	if s == state.Running {
-		if err := d.Stop(); err != nil {
+		if err := d.StopMachine(); err != nil {
 			return err
 		}
 	}
-	return d.Start()
+	return d.StartMachine()
 }
 
-func (d *Driver) Kill() error {
+func (d *Driver) KillMachine() error {
 	if _, err := d.RunQMPCommand("system_powerdown"); err != nil {
 		return err
 	}

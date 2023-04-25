@@ -38,7 +38,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	}
 }
 
-func (d *Driver) Create() error {
+func (d *Driver) CreateMachine() error {
 	return nil
 }
 
@@ -71,19 +71,19 @@ func (d *Driver) GetURL() (string, error) {
 	return d.URL, nil
 }
 
-func (d *Driver) GetState() (state.State, error) {
+func (d *Driver) GetMachineState() (state.State, error) {
 	return state.Running, nil
 }
 
-func (d *Driver) Kill() error {
+func (d *Driver) KillMachine() error {
 	return fmt.Errorf("hosts without a driver cannot be killed")
 }
 
-func (d *Driver) Remove() error {
+func (d *Driver) RemoveMachine() error {
 	return nil
 }
 
-func (d *Driver) Restart() error {
+func (d *Driver) RestartMachine() error {
 	return fmt.Errorf("hosts without a driver cannot be restarted")
 }
 
@@ -104,10 +104,10 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
 
-func (d *Driver) Start() error {
+func (d *Driver) StartMachine() error {
 	return fmt.Errorf("hosts without a driver cannot be started")
 }
 
-func (d *Driver) Stop() error {
+func (d *Driver) StopMachine() error {
 	return fmt.Errorf("hosts without a driver cannot be stopped")
 }

@@ -118,7 +118,7 @@ func (h *Host) WaitForDocker() error {
 
 func (h *Host) Start() error {
 	log.Infof("Starting %q...", h.Name)
-	if err := h.runActionForState(h.Driver.Start, state.Running); err != nil {
+	if err := h.runActionForState(h.Driver.StartMachine, state.Running); err != nil {
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (h *Host) Start() error {
 
 func (h *Host) Stop() error {
 	log.Infof("Stopping %q...", h.Name)
-	if err := h.runActionForState(h.Driver.Stop, state.Stopped); err != nil {
+	if err := h.runActionForState(h.Driver.StopMachine, state.Stopped); err != nil {
 		return err
 	}
 
@@ -139,7 +139,7 @@ func (h *Host) Stop() error {
 
 func (h *Host) Kill() error {
 	log.Infof("Killing %q...", h.Name)
-	if err := h.runActionForState(h.Driver.Kill, state.Stopped); err != nil {
+	if err := h.runActionForState(h.Driver.KillMachine, state.Stopped); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (h *Host) Restart() error {
 			return err
 		}
 	} else if drivers.MachineInState(h.Driver, state.Running)() {
-		if err := h.Driver.Restart(); err != nil {
+		if err := h.Driver.RestartMachine(); err != nil {
 			return err
 		}
 		if err := mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running)); err != nil {
@@ -184,7 +184,7 @@ func (h *Host) DockerVersion() (string, error) {
 }
 
 func (h *Host) Upgrade() error {
-	machineState, err := h.Driver.GetState()
+	machineState, err := h.Driver.GetMachineState()
 	if err != nil {
 		return err
 	}

@@ -21,13 +21,13 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnerror"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -102,11 +102,11 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 
 // delete removes a host and its local data files
 func deleteHost(api libmachine.API, h *host.Host, machineName string) error {
-	if err := h.Driver.Remove(); err != nil {
+	if err := h.Driver.RemoveMachine(); err != nil {
 		klog.Warningf("remove failed, will retry: %v", err)
 		time.Sleep(1 * time.Second)
 
-		nerr := h.Driver.Remove()
+		nerr := h.Driver.RemoveMachine()
 		if nerr != nil {
 			return errors.Wrap(nerr, "host remove retry")
 		}

@@ -34,10 +34,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 
 	"k8s.io/klog/v2"
 )
@@ -123,7 +123,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 	}
 
 	// The machine isn't running, no need to check inside
-	s, err := host.Driver.GetState()
+	s, err := host.Driver.GetMachineState()
 	if err != nil {
 		klog.Warningf("error getting host state: %v", err)
 		return "Unknown"

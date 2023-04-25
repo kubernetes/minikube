@@ -71,34 +71,30 @@ func (d *Driver) GetSSHUsername() string {
 	return ""
 }
 
-func (d *Driver) GetState() (state.State, error) {
+func (d *Driver) GetMachineState() (state.State, error) {
 	return state.Error, NotLoadable{d.Name}
 }
 
-func (d *Driver) Create() error {
+func (d *Driver) CreateMachine() error {
 	return NotLoadable{d.Name}
 }
 
-func (d *Driver) Remove() error {
+func (d *Driver) RemoveMachine() error {
 	return NotLoadable{d.Name}
 }
 
-func (d *Driver) Start() error {
+func (d *Driver) StartMachine() error {
 	return NotLoadable{d.Name}
 }
 
-func (d *Driver) Stop() error {
+func (d *Driver) StopMachine() error {
 	return NotLoadable{d.Name}
 }
 
-func (d *Driver) Restart() error {
+func (d *Driver) RestartMachine() error {
 	return NotLoadable{d.Name}
 }
 
-func (d *Driver) Kill() error {
-	return NotLoadable{d.Name}
-}
-
-func (d *Driver) Upgrade() error {
+func (d *Driver) KillMachine() error {
 	return NotLoadable{d.Name}
 }

@@ -28,14 +28,14 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -125,7 +125,7 @@ func (d *Driver) PreCreateCheck() error {
 }
 
 // Create a host using the driver's config
-func (d *Driver) Create() error {
+func (d *Driver) CreateMachine() error {
 	if d.SSHKey == "" {
 		log.Info("No SSH key specified. Assuming an existing key at the default location.")
 	} else {
@@ -172,8 +172,8 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(d.EnginePort))), nil
 }
 
-// GetState returns the state that the host is in (running, stopped, etc)
-func (d *Driver) GetState() (state.State, error) {
+// GetMachineState returns the state that the host is in (running, stopped, etc)
+func (d *Driver) GetMachineState() (state.State, error) {
 	address := net.JoinHostPort(d.IPAddress, strconv.Itoa(d.SSHPort))
 
 	_, err := net.DialTimeout("tcp", address, defaultTimeout)
@@ -184,13 +184,13 @@ func (d *Driver) GetState() (state.State, error) {
 	return state.Running, nil
 }
 
-// Start a host
-func (d *Driver) Start() error {
+// StartMachine a host
+func (d *Driver) StartMachine() error {
 	return nil
 }
 
-// Stop a host gracefully, including any containers that we are managing.
-func (d *Driver) Stop() error {
+// StopMachine a host gracefully, including any containers that we are managing.
+func (d *Driver) StopMachine() error {
 	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
@@ -210,13 +210,13 @@ func (d *Driver) Stop() error {
 	return nil
 }
 
-// Restart a host
-func (d *Driver) Restart() error {
+// RestartMachine a host
+func (d *Driver) RestartMachine() error {
 	return sysinit.New(d.exec).Restart("kubelet")
 }
 
-// Kill stops a host forcefully, including any containers that we are managing.
-func (d *Driver) Kill() error {
+// KillMachine stops a host forcefully, including any containers that we are managing.
+func (d *Driver) KillMachine() error {
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
@@ -247,8 +247,8 @@ func (d *Driver) Kill() error {
 	return nil
 }
 
-// Remove a host, including any data which may have been written by it.
-func (d *Driver) Remove() error {
+// RemoveMachine a host, including any data which may have been written by it.
+func (d *Driver) RemoveMachine() error {
 	return nil
 }
 

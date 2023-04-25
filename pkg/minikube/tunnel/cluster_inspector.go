@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
@@ -45,7 +45,7 @@ func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 	}
 
 	var s state.State
-	s, err = h.Driver.GetState()
+	s, err = h.Driver.GetMachineState()
 	if err != nil {
 		err = errors.Wrapf(err, "error getting host status for %s", m.machineName)
 		return Unknown, nil, err

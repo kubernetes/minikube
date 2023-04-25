@@ -27,11 +27,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -73,8 +73,8 @@ func NewDriver(c Config) *Driver {
 	return d
 }
 
-// Create a host using the driver's config
-func (d *Driver) Create() error {
+// CreateMachine a host using the driver's config
+func (d *Driver) CreateMachine() error {
 	ctx := context.Background()
 	params := oci.CreateParams{
 		Mounts:        d.NodeConfig.Mounts,
@@ -337,13 +337,13 @@ func (d *Driver) GetURL() (string, error) {
 	return url, nil
 }
 
-// GetState returns the state that the host is in (running, stopped, etc)
-func (d *Driver) GetState() (state.State, error) {
+// GetMachineState returns the state that the host is in (running, stopped, etc)
+func (d *Driver) GetMachineState() (state.State, error) {
 	return oci.ContainerStatus(d.OCIBinary, d.MachineName, true)
 }
 
-// Kill stops a host forcefully, including any containers that we are managing.
-func (d *Driver) Kill() error {
+// KillMachine stops a host forcefully, including any containers that we are managing.
+func (d *Driver) KillMachine() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
@@ -361,8 +361,8 @@ func (d *Driver) Kill() error {
 	return nil
 }
 
-// Remove will delete the Kic Node Container
-func (d *Driver) Remove() error {
+// RemoveMachine will delete the Kic Node Container
+func (d *Driver) RemoveMachine() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
 		klog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
@@ -388,26 +388,26 @@ func (d *Driver) Remove() error {
 	return nil
 }
 
-// Restart a host
-func (d *Driver) Restart() error {
-	s, err := d.GetState()
+// RestartMachine a host
+func (d *Driver) RestartMachine() error {
+	s, err := d.GetMachineState()
 	if err != nil {
 		klog.Warningf("get state during restart: %v", err)
 	}
 	if s == state.Stopped { // don't stop if already stopped
-		return d.Start()
+		return d.StartMachine()
 	}
-	if err = d.Stop(); err != nil {
+	if err = d.StopMachine(); err != nil {
 		return fmt.Errorf("stop during restart %v", err)
 	}
-	if err = d.Start(); err != nil {
+	if err = d.StartMachine(); err != nil {
 		return fmt.Errorf("start during restart %v", err)
 	}
 	return nil
 }
 
-// Start an already created kic container
-func (d *Driver) Start() error {
+// StartMachine an already created kic container
+func (d *Driver) StartMachine() error {
 	if err := oci.StartContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		oci.LogContainerDebug(d.OCIBinary, d.MachineName)
 		if _, err := oci.DaemonInfo(d.OCIBinary); err != nil {
@@ -439,8 +439,8 @@ func (d *Driver) Start() error {
 	return nil
 }
 
-// Stop a host gracefully, including any containers that we are managing.
-func (d *Driver) Stop() error {
+// StopMachine a host gracefully, including any containers that we are managing.
+func (d *Driver) StopMachine() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.

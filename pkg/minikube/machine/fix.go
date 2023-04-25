@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/drivers/virtualbox"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -98,7 +98,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	machineName := config.MachineName(*cc, *n)
 	machineType := driver.MachineType(cc.Driver)
 	recreated := false
-	s, serr := h.Driver.GetState()
+	s, serr := h.Driver.GetMachineState()
 
 	klog.Infof("recreateIfNeeded on %s: state=%s err=%v", machineName, s, serr)
 	if serr != nil || s == state.Stopped || s == state.None {
@@ -121,7 +121,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 			}
 
 			recreated = true
-			s, serr = h.Driver.GetState()
+			s, serr = h.Driver.GetMachineState()
 		}
 	}
 
@@ -140,7 +140,7 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 	if !recreated {
 		out.Step(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
 	}
-	if err := h.Driver.Start(); err != nil {
+	if err := h.Driver.StartMachine(); err != nil {
 		MaybeDisplayAdvice(err, h.DriverName)
 		return h, errors.Wrap(err, "driver start")
 	}

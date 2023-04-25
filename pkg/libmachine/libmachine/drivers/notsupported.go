@@ -56,34 +56,30 @@ func (d *DriverNotSupported) GetSSHHostname() (string, error) {
 	return "", NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) GetState() (state.State, error) {
+func (d *DriverNotSupported) GetMachineState() (state.State, error) {
 	return state.Error, NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Create() error {
+func (d *DriverNotSupported) CreateMachine() error {
 	return NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Remove() error {
+func (d *DriverNotSupported) RemoveMachine() error {
 	return NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Start() error {
+func (d *DriverNotSupported) StartMachine() error {
 	return NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Stop() error {
+func (d *DriverNotSupported) StopMachine() error {
 	return NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Restart() error {
+func (d *DriverNotSupported) RestartMachine() error {
 	return NotSupported{d.DriverName()}
 }
 
-func (d *DriverNotSupported) Kill() error {
-	return NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) Upgrade() error {
+func (d *DriverNotSupported) KillMachine() error {
 	return NotSupported{d.DriverName()}
 }

@@ -25,6 +25,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/juju/fslock"
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cert"
@@ -40,9 +43,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 	"k8s.io/minikube/pkg/libmachine/libmachine/version"
-	"github.com/juju/fslock"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -215,7 +215,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		},
 		{
 			"creating",
-			h.Driver.Create,
+			h.Driver.CreateMachine,
 		},
 		{
 			"waiting",
