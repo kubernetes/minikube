@@ -17,7 +17,6 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.14.0
 	github.com/docker/docker v23.0.6+incompatible
 	github.com/docker/go-units v0.5.0
-	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.5.9
@@ -228,7 +227,6 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
-	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20230328203412-ddb74f7e6e56
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )

@@ -24,7 +24,7 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util"

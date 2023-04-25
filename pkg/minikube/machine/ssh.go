@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 )

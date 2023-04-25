@@ -28,7 +28,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"

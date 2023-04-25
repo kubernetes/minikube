@@ -29,8 +29,8 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"

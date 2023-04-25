@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
 )

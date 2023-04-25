@@ -17,9 +17,9 @@ limitations under the License.
 package machine
 
 import (
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"

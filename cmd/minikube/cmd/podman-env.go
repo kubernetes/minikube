@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
+// k8s.io/minikube/pkg/libmachine/commands/env.go
 
 package cmd
 
@@ -26,8 +26,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"

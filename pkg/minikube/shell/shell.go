@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
+// k8s.io/minikube/pkg/libmachine/commands/env.go
 
 package shell
 
@@ -26,7 +26,7 @@ import (
 	"runtime"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/shell"
+	"k8s.io/minikube/pkg/libmachine/libmachine/shell"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )

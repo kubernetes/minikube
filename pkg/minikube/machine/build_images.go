@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"

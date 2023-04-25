@@ -1,0 +1,16 @@
+version: '{build}'
+
+clone_folder: C:\gopath\src\github.com\hectane\go-acl
+
+environment:
+  GOPATH: C:\gopath
+
+install:
+  - go version
+  - go env
+  - go get -t -v ./...
+
+build: off
+
+test_script:
+  - go test -v ./...

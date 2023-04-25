@@ -31,7 +31,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"

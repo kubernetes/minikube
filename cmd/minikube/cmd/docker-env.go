@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 // Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
+// k8s.io/minikube/pkg/libmachine/commands/env.go
 
 package cmd
 

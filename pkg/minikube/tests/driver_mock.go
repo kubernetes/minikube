@@ -20,9 +20,9 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 

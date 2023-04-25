@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/machine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"github.com/google/go-cmp/cmp"
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"

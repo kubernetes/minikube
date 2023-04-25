@@ -25,9 +25,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util/retry"
@@ -136,7 +136,7 @@ func (d *Driver) PreCommandCheck() error {
 
 // GetURL returns a Docker URL inside this host
 // e.g. tcp://1.2.3.4:2376
-// more info https://github.com/docker/machine/blob/b170508bf44c3405e079e26d5fdffe35a64c6972/libmachine/provision/utils.go#L159_L175
+// more info https://k8s.io/minikube/pkg/libmachine/blob/b170508bf44c3405e079e26d5fdffe35a64c6972/libmachine/provision/utils.go#L159_L175
 func (d *Driver) GetURL() (string, error) {
 	if err := d.PreCommandCheck(); err != nil {
 		return "", errors.Wrap(err, "getting URL, precheck failed")

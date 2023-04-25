@@ -17,13 +17,13 @@ limitations under the License.
 package tests
 
 import (
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/provision"
-	"github.com/docker/machine/libmachine/provision/pkgaction"
-	"github.com/docker/machine/libmachine/provision/serviceaction"
-	"github.com/docker/machine/libmachine/swarm"
+	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
 // MockProvisioner defines distribution specific actions

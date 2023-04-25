@@ -33,8 +33,8 @@ import (
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver/v4"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -33,11 +33,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
