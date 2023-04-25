@@ -45,14 +45,14 @@ type Runner interface {
 	// WaitCmd will prevent further execution until the started command has completed.
 	WaitCmd(startedCmd *StartedCmd) (*RunResult, error)
 
-	// Copy is a convenience method that runs a command to copy a file
-	Copy(assets.CopyableFile) error
+	// CopyFile is a convenience method that runs a command to copy a file
+	CopyFile(assets.CopyableFile) error
 
-	// CopyFrom is a convenience method that runs a command to copy a file back
-	CopyFrom(assets.CopyableFile) error
+	// CopyFileFrom is a convenience method that runs a command to copy a file back
+	CopyFileFrom(assets.CopyableFile) error
 
-	// Remove is a convenience method that runs a command to remove a file
-	Remove(assets.CopyableFile) error
+	// RemoveFile is a convenience method that runs a command to remove a file
+	RemoveFile(assets.CopyableFile) error
 
 	// ReadableFile open a remote file for reading
 	ReadableFile(sourcePath string) (assets.ReadableFile, error)
