@@ -69,7 +69,7 @@ if ! which socat &>/dev/null; then
   sudo apt-get -qq -y install socat
 fi
 
-# cri-dockerd is required for Kubernetes 1.24 and higher for none driver
+# cri-dockerd is required for Kubernetes v1.24+ with none driver
 if ! cri-dockerd --version &>/dev/null; then
   echo "WARNING: cri-dockerd is not installed. will try to install."
   CRI_DOCKERD_VERSION="v0.3.1"
@@ -81,13 +81,16 @@ if ! cri-dockerd --version &>/dev/null; then
   sudo chmod +x /usr/bin/cri-dockerd
 fi
 
-# crictl is required for Kubernetes 1.24 and higher for none driver
+# crictl is required for Kubernetes v1.24+ with none driver
 if ! crictl &>/dev/null; then
   echo "WARNING: crictl is not installed. will try to install."
   CRICTL_VERSION="v1.17.0"
   curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
   sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
 fi
+
+# cni-plugins is required for Kubernetes v1.24+ with none driver
+./installers/check_install_cni_plugins.sh
 
 # We need this for reasons now
 sudo sysctl fs.protected_regular=0
