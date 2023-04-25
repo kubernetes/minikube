@@ -30,7 +30,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -283,7 +282,7 @@ func getPort() (int, error) {
 // removePidFromFile looks at the default locations for the mount-pids file,
 // for the profile in use. If a file is found and its content shows PID, PID gets removed.
 func removePidFromFile(pid int) error {
-	profile := viper.GetString("profile")
+	profile := ClusterFlagValue()
 	paths := []string{
 		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
 		localpath.Profile(profile),
@@ -311,7 +310,7 @@ func removePid(path string, pid string) error {
 	// we're reading the pids...
 	out, err := os.ReadFile(pidPath)
 	if err != nil {
-		return errors.Wrap(err, "ReadFile")
+		return errors.Wrap(err, "readFile")
 	}
 
 	pids := []string{}

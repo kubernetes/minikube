@@ -587,7 +587,7 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 // killMountProcess looks for the legacy path and for profile path for a pidfile,
 // it then tries to kill all the pids listed in the pidfile (one or more)
 func killMountProcess() error {
-	profile := viper.GetString("profile")
+	profile := ClusterFlagValue()
 	paths := []string{
 		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
 		localpath.Profile(profile),
@@ -643,7 +643,7 @@ func killProcess(path string) error {
 
 	// if no errors were encoutered, it's safe to delete pidFile
 	if err := os.Remove(pidPath); err != nil {
-		return errors.Wrap(err, "While closing mount-pids file")
+		return errors.Wrap(err, "while closing mount-pids file")
 	}
 
 	return nil
@@ -664,13 +664,13 @@ func trySigKillProcess(pid int) error {
 
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("os.FindProcess: %d", pid))
+		return errors.Wrapf(err, "os.FindProcess: %d", pid)
 	}
 
 	klog.Infof("Killing pid %d ...", pid)
 	if err := proc.Kill(); err != nil {
 		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		return errors.Wrap(err, fmt.Sprintf("Removing likely stale unkillable pid: %d", pid))
+		return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
 	}
 
 	return nil
@@ -681,7 +681,7 @@ func trySigKillProcess(pid int) error {
 var isMinikubeProcess = func(pid int) (bool, error) {
 	entry, err := ps.FindProcess(pid)
 	if err != nil {
-		return false, errors.Wrap(err, fmt.Sprintf("ps.FindProcess for %d", pid))
+		return false, errors.Wrapf(err, "ps.FindProcess for %d", pid)
 	}
 	if entry == nil {
 		klog.Infof("Process not found. pid %d", pid)

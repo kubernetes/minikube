@@ -120,7 +120,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 			if runtime.GOOS == "darwin" {
-				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
 			}
 			t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 		}
@@ -248,7 +248,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 			if runtime.GOOS == "darwin" {
-				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
 			}
 			t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 		}
@@ -337,7 +337,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 			if runtime.GOOS == "darwin" {
-				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
 			}
 			t.Fatalf("mount was not ready in time: %v", err)
 		}
