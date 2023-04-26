@@ -43,6 +43,27 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
+// AppendToFile appends DATA bytes to the specified FILENAME in a mutually exclusive way.
+// The file is created if it does not exist, using the specified PERM (before umask)
+func AppendToFile(filename string, data []byte, perm os.FileMode) error {
+	spec := PathMutexSpec(filename)
+	klog.Infof("WriteFile acquiring %s: %+v", filename, spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)
+	}
+
+	defer releaser.Release()
+
+	fd, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open %s: %+v", filename, spec)
+	}
+
+	_, err = fd.Write(data)
+	return err
+}
+
 // PathMutexSpec returns a mutex spec for a path
 func PathMutexSpec(path string) mutex.Spec {
 	s := mutex.Spec{

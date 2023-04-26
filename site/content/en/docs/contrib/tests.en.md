@@ -399,6 +399,10 @@ Note: This test will fail on release PRs as the licenses file for the new versio
 
 #### validateMountCmd
 verifies the minikube mount command works properly
+for the platforms that support it, we're testing:
+- a generic 9p mount
+- a 9p mount on a specific port
+- cleaning-mechanism for profile-specific mounts
 
 #### validatePersistentVolumeClaim
 makes sure PVCs work properly
