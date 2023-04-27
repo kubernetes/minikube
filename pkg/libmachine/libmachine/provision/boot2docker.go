@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os/exec"
 	"path"
 	"text/template"
 	"time"
@@ -260,7 +261,8 @@ func (provisioner *Boot2DockerProvisioner) Provision(swarmOptions swarm.Options,
 }
 
 func (provisioner *Boot2DockerProvisioner) SSHCommand(args string) (string, error) {
-	return drivers.RunSSHCommandFromDriver(provisioner.Driver, args)
+	rr, err := provisioner.Driver.RunCmd(exec.Command(args))
+	return rr.Stdout.String(), err
 }
 
 func (provisioner *Boot2DockerProvisioner) GetDriver() drivers.Driver {

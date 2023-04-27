@@ -20,7 +20,7 @@ type sshIPWaiter struct{}
 
 func (w *sshIPWaiter) Wait(d *Driver) error {
 	// Wait for SSH over NAT to be available before returning to user
-	if err := drivers.WaitForSSH(d); err != nil {
+	if err := drivers.WaitForPrompt(d); err != nil {
 		return err
 	}
 

@@ -809,14 +809,14 @@ func (d *Driver) GetIP() (string, error) {
 
 	log.Debugf("Host-only MAC: %s\n", macAddress)
 
-	output, err := drivers.RunSSHCommandFromDriver(d, "ip addr show")
+	output, err := d.RunCmd(exec.Command("ip addr show"))
 	if err != nil {
 		return "", err
 	}
 
 	log.Debugf("SSH returned: %s\nEND SSH\n", output)
 
-	ipAddress, err := d.parseIPForMACFromIPAddr(output, macAddress)
+	ipAddress, err := d.parseIPForMACFromIPAddr(output.Stdout.String(), macAddress)
 	if err != nil {
 		return "", err
 	}

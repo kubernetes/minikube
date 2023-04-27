@@ -3,6 +3,7 @@ package provision
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"text/template"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
@@ -29,7 +30,8 @@ type GenericSSHCommander struct {
 }
 
 func (sshCmder GenericSSHCommander) SSHCommand(args string) (string, error) {
-	return drivers.RunSSHCommandFromDriver(sshCmder.Driver, args)
+	rr, err := sshCmder.Driver.RunCmd(exec.Command(args))
+	return rr.Stdout.String(), err
 }
 
 func (provisioner *GenericProvisioner) Hostname() (string, error) {

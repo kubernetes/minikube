@@ -2,72 +2,30 @@ package drivers
 
 import (
 	"fmt"
+	"os/exec"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
-	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 )
 
-func GetSSHClientFromDriver(d Driver) (ssh.Client, error) {
-	address, err := d.GetSSHHostname()
-	if err != nil {
-		return nil, err
+// x7TODO:
+// this is some slow logic... at least make it non-blocking..
+// WaitForPrompt tries to run a command to the machine shell
+// for 30 seconds before timing out
+func WaitForPrompt(d Driver) error {
+	if err := mcnutils.WaitFor(promptAvailFunc(d)); err != nil {
+		return fmt.Errorf("Too many retries waiting for prompt to be available.  Last error: %s", err)
 	}
-
-	port, err := d.GetSSHPort()
-	if err != nil {
-		return nil, err
-	}
-
-	var auth *ssh.Auth
-	if d.GetSSHKeyPath() == "" {
-		auth = &ssh.Auth{}
-	} else {
-		auth = &ssh.Auth{
-			Keys: []string{d.GetSSHKeyPath()},
-		}
-	}
-
-	client, err := ssh.NewClient(d.GetSSHUsername(), address, port, auth)
-	return client, err
-
+	return nil
 }
 
-func RunSSHCommandFromDriver(d Driver, command string) (string, error) {
-	client, err := GetSSHClientFromDriver(d)
-	if err != nil {
-		return "", err
-	}
-
-	log.Debugf("About to run SSH command:\n%s", command)
-
-	output, err := client.Output(command)
-	log.Debugf("SSH cmd err, output: %v: %s", err, output)
-	if err != nil {
-		return "", fmt.Errorf(`ssh command error:
-command : %s
-err     : %v
-output  : %s`, command, err, output)
-	}
-
-	return output, nil
-}
-
-func sshAvailableFunc(d Driver) func() bool {
+func promptAvailFunc(d Driver) func() bool {
 	return func() bool {
-		log.Debug("Getting to WaitForSSH function...")
-		if _, err := RunSSHCommandFromDriver(d, "exit 0"); err != nil {
-			log.Debugf("Error getting ssh command 'exit 0' : %s", err)
+		log.Debug("Getting to WaitForPrompt function...")
+		if _, err := d.RunCmd(exec.Command("exit 0")); err != nil {
+			log.Debugf("Error running 'exit 0' command : %s", err)
 			return false
 		}
 		return true
 	}
-}
-
-func WaitForSSH(d Driver) error {
-	// Try to dial SSH for 30 seconds before timing out.
-	if err := mcnutils.WaitFor(sshAvailableFunc(d)); err != nil {
-		return fmt.Errorf("Too many retries waiting for SSH to be available.  Last error: %s", err)
-	}
-	return nil
 }

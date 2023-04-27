@@ -1,6 +1,7 @@
 package host
 
 import (
+	"os/exec"
 	"regexp"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
@@ -66,7 +67,8 @@ func ValidateHostName(name string) bool {
 }
 
 func (h *Host) RunSSHCommand(command string) (string, error) {
-	return drivers.RunSSHCommandFromDriver(h.Driver, command)
+	rr, err := h.Driver.RunCmd(exec.Command(command))
+	return rr.Stdout.String(), err
 }
 
 func (h *Host) CreateSSHClient() (ssh.Client, error) {

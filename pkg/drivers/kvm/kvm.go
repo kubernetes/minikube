@@ -25,11 +25,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/pkg/errors"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"
 )
@@ -286,7 +286,7 @@ func (d *Driver) Start() (err error) {
 	}
 
 	log.Info("Waiting for SSH to be available...")
-	if err := drivers.WaitForSSH(d); err != nil {
+	if err := drivers.WaitForPrompt(d); err != nil {
 		return errors.Wrap(err, "SSH not available after waiting")
 	}
 
