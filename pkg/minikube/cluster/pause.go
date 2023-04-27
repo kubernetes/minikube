@@ -22,7 +22,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	pkgpause "k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
