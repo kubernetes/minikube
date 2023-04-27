@@ -25,7 +25,9 @@ import (
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -233,4 +235,34 @@ func (d *Driver) StopMachine() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
+}
+
+// x7TODO:
+// implement those
+func (d *Driver) CopyFile(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) CopyFileFrom(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	return nil, nil
+}
+
+func (d *Driver) StartCmd(cmd *exec.Cmd) (*runner.StartedCmd, error) {
+	return nil, nil
+}
+
+func (d *Driver) WaitCmd(startedCmd *runner.StartedCmd) (*runner.RunResult, error) {
+	return nil, nil
+}
+
+func (d *Driver) RemoveFile(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
 }

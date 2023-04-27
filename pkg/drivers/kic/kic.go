@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 
@@ -504,4 +505,34 @@ func killAPIServerProc(runner command.Runner) error {
 		}
 	}
 	return nil
+}
+
+// x7TODO:
+// implement those
+func (d *Driver) CopyFile(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) CopyFileFrom(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	return nil, nil
+}
+
+func (d *Driver) StartCmd(cmd *exec.Cmd) (*runner.StartedCmd, error) {
+	return nil, nil
+}
+
+func (d *Driver) WaitCmd(startedCmd *runner.StartedCmd) (*runner.RunResult, error) {
+	return nil, nil
+}
+
+func (d *Driver) RemoveFile(file assets.CopyableFile) error {
+	return nil
+}
+
+func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
 }

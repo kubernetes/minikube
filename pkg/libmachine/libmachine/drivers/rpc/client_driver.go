@@ -3,6 +3,7 @@ package rpcdriver
 import (
 	"fmt"
 	"net/rpc"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -12,8 +13,10 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/libmachine/version"
+	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 var (
@@ -83,6 +86,14 @@ const (
 	RestartMethod            = `.Restart`
 	KillMethod               = `.Kill`
 	UpgradeMethod            = `.Upgrade`
+	CopyFileMethod           = `.CopyFile`
+	RemoveFileMethod         = `.RemoveFileMethod`
+	ReadableFileMethod       = `.ReadableFileMethod`
+	WaitCmdMethod            = `.WaitCmdMethod`
+	StartCmd                 = `.StartCmdMethod`
+	RunCmdMethod             = `.RunCmdMethod`
+	CopyFileFromMethod       = `.CopyFileFromMethod`
+	StartCmdMethod           = `.StartCmdMethod`
 )
 
 func (ic *InternalClient) Call(serviceMethod string, args interface{}, reply interface{}) error {
@@ -296,6 +307,7 @@ func (c *RPCClientDriver) GetSSHHostname() (string, error) {
 
 // GetSSHKeyPath returns the key path
 // TODO:  This method doesn't even make sense to have with RPC.
+// x7NOTE: don't you worry pal. We're taking care of that.
 func (c *RPCClientDriver) GetSSHKeyPath() string {
 	path, err := c.rpcStringCall(GetSSHKeyPathMethod)
 	if err != nil {
@@ -360,4 +372,35 @@ func (c *RPCClientDriver) RestartMachine() error {
 
 func (c *RPCClientDriver) KillMachine() error {
 	return c.Client.Call(KillMethod, struct{}{}, nil)
+}
+
+// x7NOTE:
+// have no idea how the following will work...
+
+func (c *RPCClientDriver) CopyFile(file assets.CopyableFile) error {
+	return c.Client.Call(CopyFileMethod, &file, nil)
+}
+
+func (c *RPCClientDriver) CopyFileFrom(file assets.CopyableFile) error {
+	return c.Client.Call(CopyFileFromMethod, &file, nil)
+}
+
+func (c *RPCClientDriver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	return nil, c.Client.Call(RunCmdMethod, &cmd, nil)
+}
+
+func (c *RPCClientDriver) StartCmd(cmd *exec.Cmd) (*runner.StartedCmd, error) {
+	return nil, c.Client.Call(StartCmdMethod, &cmd, nil)
+}
+
+func (c *RPCClientDriver) WaitCmd(startedCmd *runner.StartedCmd) (*runner.RunResult, error) {
+	return nil, c.Client.Call(WaitCmdMethod, &startedCmd, nil)
+}
+
+func (c *RPCClientDriver) RemoveFile(file assets.CopyableFile) error {
+	return c.Client.Call(RemoveFileMethod, &file, nil)
+}
+
+func (c *RPCClientDriver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, c.Client.Call(ReadableFileMethod, &sourcePath, nil)
 }

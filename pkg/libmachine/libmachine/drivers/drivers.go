@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 )
 
@@ -13,7 +14,7 @@ import (
 // hypervisors, different cloud providers)
 type Driver interface {
 	// Runner is the way we have to run commands inside the machine
-	// runner.Runner
+	runner.Runner
 
 	// Create a host using the driver's config
 	CreateMachine() error

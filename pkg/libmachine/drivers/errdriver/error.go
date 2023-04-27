@@ -2,10 +2,13 @@ package errdriver
 
 import (
 	"fmt"
+	"os/exec"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 type Driver struct {
@@ -97,4 +100,32 @@ func (d *Driver) RestartMachine() error {
 
 func (d *Driver) KillMachine() error {
 	return NotLoadable{d.Name}
+}
+
+func (d *Driver) RunCmd(*exec.Cmd) (*runner.RunResult, error) {
+	return nil, NotLoadable{d.Name}
+}
+
+func (d *Driver) StartCmd(*exec.Cmd) (*runner.StartedCmd, error) {
+	return nil, NotLoadable{d.Name}
+}
+
+func (d *Driver) WaitCmd(*runner.StartedCmd) (*runner.RunResult, error) {
+	return nil, NotLoadable{d.Name}
+}
+
+func (d *Driver) CopyFile(assets.CopyableFile) error {
+	return NotLoadable{d.Name}
+}
+
+func (d *Driver) CopyFileFrom(assets.CopyableFile) error {
+	return NotLoadable{d.Name}
+}
+
+func (d *Driver) RemoveFile(assets.CopyableFile) error {
+	return NotLoadable{d.Name}
+}
+
+func (d *Driver) ReadableFile(string) (assets.ReadableFile, error) {
+	return nil, NotLoadable{d.Name}
 }
