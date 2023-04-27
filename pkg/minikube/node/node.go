@@ -28,7 +28,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -156,10 +155,6 @@ func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
 
 // Retrieve finds the node by name in the given cluster
 func Retrieve(cc config.ClusterConfig, name string) (*config.Node, int, error) {
-	if driver.BareMetal(cc.Driver) {
-		name = "m01"
-	}
-
 	for i, n := range cc.Nodes {
 		if n.Name == name {
 			return &n, i, nil
