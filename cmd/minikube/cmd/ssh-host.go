@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/util/homedir"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/utils"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -32,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 var (
@@ -86,7 +86,7 @@ var sshHostCmd = &cobra.Command{
 			knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
 
 			fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
-			if sshutil.KnownHost(host, knownHosts) {
+			if utils.KnownHost(host, knownHosts) {
 				return
 			}
 

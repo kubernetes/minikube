@@ -31,8 +31,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -48,10 +48,10 @@ const (
 	DefaultConfDir = "/etc/cni/net.d"
 )
 
-// Runner is the subset of command.Runner this package consumes
+// Runner is the subset of runner.Runner this package consumes
 type Runner interface {
-	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
-	Copy(assets.CopyableFile) error
+	RunCmd(cmd *exec.Cmd) (*runner.RunResult, error)
+	CopyFile(assets.CopyableFile) error
 }
 
 // Manager is a common interface for CNI
@@ -180,7 +180,7 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	klog.Infof("applying CNI manifest using %s ...", kubectl)
 
-	if err := r.Copy(f); err != nil {
+	if err := r.CopyFile(f); err != nil {
 		return errors.Wrapf(err, "copy")
 	}
 
@@ -200,7 +200,7 @@ func applyManifest(cc config.ClusterConfig, r Runner, f assets.CopyableFile) err
 // - Failed to create pod sandbox: rpc error: code = Unknown desc = [failed to set up sandbox container "..." network for pod "...": networkPlugin cni failed to set up pod "..." network: missing network name:,
 // - failed to clean up sandbox container "..." network for pod "...": networkPlugin cni failed to teardown pod "..." network: missing network name]
 // It is caller's responsibility to restart container runtime for these changes to take effect.
-func ConfigureLoopbackCNI(r Runner, disable bool) error {
+func ConfigureLoopbackCNI(r runner.Runner, disable bool) error {
 	loopback := "/etc/cni/net.d/*loopback.conf*" // usually: 200-loopback.conf
 	// turn { "cniVersion": "0.3.1", "type": "loopback" }
 	// into { "cniVersion": "0.3.1", "name": "loopback", "type": "loopback" }

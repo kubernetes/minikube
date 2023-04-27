@@ -13,6 +13,9 @@ import (
 // driver represent different ways hosts can be created (e.g. different
 // hypervisors, different cloud providers)
 type Driver interface {
+	// GetRunner gets the adequate implementation of the command runner, based
+	// on the driver (e.g. ssh runner, docker exec, ...)
+	GetRunner() (runner.Runner, error)
 	// Runner is the way we have to run commands inside the machine
 	runner.Runner
 

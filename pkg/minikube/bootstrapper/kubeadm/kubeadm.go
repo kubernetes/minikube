@@ -33,8 +33,6 @@ import (
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
 	"github.com/blang/semver/v4"
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,16 +41,18 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cni"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -70,13 +70,13 @@ import (
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c           command.Runner
+	c           runner.Runner
 	k8sClient   *kubernetes.Clientset // Kubernetes client used to verify pods inside cluster
 	contextName string
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(_ libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
+func NewBootstrapper(_ libmachine.API, cc config.ClusterConfig, r runner.Runner) (*Bootstrapper, error) {
 	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
 }
 
@@ -844,7 +844,7 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 }
 
 // StopKubernetes attempts to stop existing kubernetes.
-func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
+func StopKubernetes(runner runner.Runner, cr cruntime.Manager) {
 	// Verify that Kubernetes is still running.
 	stk := kverify.ServiceStatus(runner, "kubelet")
 	if stk.String() != "Running" {

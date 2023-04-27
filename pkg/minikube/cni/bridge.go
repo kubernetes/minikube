@@ -97,7 +97,7 @@ func (c Bridge) Apply(r Runner) error {
 		return errors.Wrap(err, "netconf")
 	}
 
-	if err := r.Copy(f); err != nil {
+	if err := r.CopyFile(f); err != nil {
 		return errors.Wrapf(err, "copy")
 	}
 

@@ -24,14 +24,13 @@ import (
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -51,7 +50,7 @@ type Driver struct {
 	*pkgdrivers.CommonDriver
 	URL     string
 	runtime cruntime.Manager
-	exec    command.Runner
+	exec    runner.Runner
 }
 
 // Config is configuration for the None driver
@@ -63,7 +62,7 @@ type Config struct {
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := command.NewExecRunner(true)
+	runner := runner.NewExecRunner(true)
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
@@ -264,5 +263,9 @@ func (d *Driver) RemoveFile(file assets.CopyableFile) error {
 }
 
 func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
+}
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
 	return nil, nil
 }

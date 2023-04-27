@@ -39,11 +39,11 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/persist"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	lmssh "k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 	"k8s.io/minikube/pkg/libmachine/libmachine/version"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -152,15 +152,9 @@ func (api *LocalClient) Close() error {
 }
 
 // CommandRunner returns best available command runner for this host
-func CommandRunner(h *host.Host) (command.Runner, error) {
-	if h.DriverName == driver.Mock {
-		return &command.FakeCommandRunner{}, nil
-	}
-	if driver.BareMetal(h.Driver.DriverName()) {
-		return command.NewExecRunner(true), nil
-	}
-
-	return command.NewSSHRunner(h.Driver), nil
+func CommandRunner(h *host.Host) (runner.Runner, error) {
+	// x7NOTE: we're leaving this responsibility to the driver itself
+	return h.Driver.GetRunner()
 }
 
 // Create creates the host

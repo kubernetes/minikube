@@ -106,7 +106,7 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	// Actually copy the creds over
 	f := assets.NewMemoryAssetTarget(creds.JSON, credentialsPath, readPermission)
 
-	if err := r.Copy(f); err != nil {
+	if err := r.CopyFile(f); err != nil {
 		return err
 	}
 
@@ -114,14 +114,14 @@ func enableAddonGCPAuth(cfg *config.ClusterConfig) error {
 	projectEnv := os.Getenv("GOOGLE_CLOUD_PROJECT")
 	if projectEnv != "" {
 		f := assets.NewMemoryAssetTarget([]byte(projectEnv), projectPath, readPermission)
-		return r.Copy(f)
+		return r.CopyFile(f)
 	}
 
 	// We're currently assuming gcloud is installed and in the user's path
 	proj, err := exec.Command("gcloud", "config", "get-value", "project").Output()
 	if err == nil && len(proj) > 0 {
 		f := assets.NewMemoryAssetTarget(bytes.TrimSpace(proj), projectPath, readPermission)
-		return r.Copy(f)
+		return r.CopyFile(f)
 	}
 
 	out.WarningT("Could not determine a Google Cloud project, which might be ok.")
@@ -133,7 +133,7 @@ or set the GOOGLE_CLOUD_PROJECT environment variable.`)
 
 	// Copy an empty file in to avoid errors about missing files
 	emptyFile := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
-	return r.Copy(emptyFile)
+	return r.CopyFile(emptyFile)
 
 }
 
@@ -251,13 +251,13 @@ func disableAddonGCPAuth(cfg *config.ClusterConfig) error {
 
 	// Clean up the files generated when enabling the addon
 	creds := assets.NewMemoryAssetTarget([]byte{}, credentialsPath, readPermission)
-	err := r.Remove(creds)
+	err := r.RemoveFile(creds)
 	if err != nil {
 		return err
 	}
 
 	project := assets.NewMemoryAssetTarget([]byte{}, projectPath, readPermission)
-	if err := r.Remove(project); err != nil {
+	if err := r.RemoveFile(project); err != nil {
 		return err
 	}
 

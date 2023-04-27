@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -38,8 +39,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
@@ -51,7 +50,7 @@ type Driver struct {
 	EnginePort int
 	SSHKey     string
 	runtime    cruntime.Manager
-	exec       command.Runner
+	runner     runner.Runner
 }
 
 // Config is configuration for the SSH driver
@@ -74,14 +73,17 @@ func NewDriver(c Config) *Driver {
 			StorePath:   c.StorePath,
 		},
 	}
-	runner := command.NewSSHRunner(d)
+	runner, err := d.GetRunner()
+	if err != nil {
+		klog.Fatalf("unable to create container runtime: %v", err)
+	}
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
 		klog.Fatalf("unable to create container runtime: %v", err)
 	}
 	d.runtime = runtime
-	d.exec = runner
+	d.runner = runner
 	return d
 }
 
@@ -144,12 +146,12 @@ func (d *Driver) CreateMachine() error {
 	}
 
 	if d.runtime.Name() == "Docker" {
-		groups, err := d.exec.RunCmd(exec.Command("groups", d.GetSSHUsername()))
+		groups, err := d.runner.RunCmd(exec.Command("groups", d.GetSSHUsername()))
 		if err != nil {
 			return errors.Wrap(err, "groups")
 		}
 		if !strings.Contains(groups.Stdout.String(), "docker") {
-			if _, err := d.exec.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
+			if _, err := d.runner.RunCmd(exec.Command("sudo", "usermod", "-aG", "docker", d.GetSSHUsername())); err != nil {
 				return errors.Wrap(err, "usermod")
 			}
 		}
@@ -193,9 +195,9 @@ func (d *Driver) StartMachine() error {
 
 // StopMachine a host gracefully, including any containers that we are managing.
 func (d *Driver) StopMachine() error {
-	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
+	if err := sysinit.New(d.runner).Stop("kubelet"); err != nil {
 		klog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
+		if err := sysinit.New(d.runner).ForceStop("kubelet"); err != nil {
 			klog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
@@ -214,12 +216,12 @@ func (d *Driver) StopMachine() error {
 
 // RestartMachine a host
 func (d *Driver) RestartMachine() error {
-	return sysinit.New(d.exec).Restart("kubelet")
+	return sysinit.New(d.runner).Restart("kubelet")
 }
 
 // KillMachine stops a host forcefully, including any containers that we are managing.
 func (d *Driver) KillMachine() error {
-	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
+	if err := sysinit.New(d.runner).ForceStop("kubelet"); err != nil {
 		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
@@ -293,5 +295,9 @@ func (d *Driver) RemoveFile(file assets.CopyableFile) error {
 }
 
 func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
+}
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
 	return nil, nil
 }

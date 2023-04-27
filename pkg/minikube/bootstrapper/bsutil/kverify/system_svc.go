@@ -21,15 +21,15 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // ServiceStatus checks the status of a systemd or init.d service
-func ServiceStatus(cr command.Runner, svc string) state.State {
+func ServiceStatus(cr runner.Runner, svc string) state.State {
 	active := sysinit.New(cr).Active(svc)
 	if active {
 		return state.Running
@@ -39,7 +39,7 @@ func ServiceStatus(cr command.Runner, svc string) state.State {
 
 // WaitForService will wait for a "systemd" or "init.d" service to be running on the node...
 // not to be confused with Kubernetes Services
-func WaitForService(cr command.Runner, svc string, timeout time.Duration) error {
+func WaitForService(cr runner.Runner, svc string, timeout time.Duration) error {
 	pStart := time.Now()
 	klog.Infof("waiting for %s service to be running ....", svc)
 	kr := func() error {

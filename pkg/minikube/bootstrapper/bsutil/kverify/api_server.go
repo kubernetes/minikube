@@ -38,9 +38,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
@@ -48,7 +48,7 @@ import (
 )
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
-func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
+func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
@@ -74,7 +74,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 }
 
 // APIServerPID returns our best guess to the apiserver pid
-func APIServerPID(cr command.Runner) (int, error) {
+func APIServerPID(cr runner.Runner) (int, error) {
 	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
 	if err != nil {
 		return 0, err
@@ -84,7 +84,7 @@ func APIServerPID(cr command.Runner) (int, error) {
 }
 
 // WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 
@@ -148,7 +148,7 @@ func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error 
 // WaitForAPIServerStatus waits for 'to' duration to get apiserver pod running or stopped
 // this functions is intended to use in situations where apiserver process can be recreated
 // by container runtime restart for example and there is a gap before it comes back
-func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string, port int) (state.State, error) {
+func WaitForAPIServerStatus(cr runner.Runner, to time.Duration, hostname string, port int) (state.State, error) {
 	var st state.State
 	err := wait.PollUntilContextTimeout(context.Background(), 500*time.Millisecond, to, true, func(_ context.Context) (bool, error) {
 		var err error
@@ -162,7 +162,7 @@ func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string
 }
 
 // APIServerStatus returns apiserver status in libmachine style state.State
-func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
+func APIServerStatus(cr runner.Runner, hostname string, port int) (state.State, error) {
 	klog.Infof("Checking apiserver status ...")
 
 	pid, err := APIServerPID(cr)
@@ -209,7 +209,7 @@ func APIServerStatus(cr command.Runner, hostname string, port int) (state.State,
 }
 
 // nonFreezerServerStatus is the alternative flow if the guest does not have the freezer cgroup so different methods to detect the apiserver status are used
-func nonFreezerServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
+func nonFreezerServerStatus(cr runner.Runner, hostname string, port int) (state.State, error) {
 	rr, err := cr.RunCmd(exec.Command("ls"))
 	if err != nil {
 		return state.None, err

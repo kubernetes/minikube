@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -55,7 +55,7 @@ type MountConfig struct {
 
 // mountRunner is the subset of CommandRunner used for mounting
 type mountRunner interface {
-	RunCmd(*exec.Cmd) (*command.RunResult, error)
+	RunCmd(*exec.Cmd) (*runner.RunResult, error)
 }
 
 const (

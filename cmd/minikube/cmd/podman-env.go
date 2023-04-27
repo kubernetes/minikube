@@ -26,11 +26,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -95,7 +95,7 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 }
 
 // isVarlinkAvailable checks if varlink command is available
-func isVarlinkAvailable(r command.Runner) bool {
+func isVarlinkAvailable(r runner.Runner) bool {
 	if _, err := r.RunCmd(exec.Command("which", "varlink")); err != nil {
 		return false
 	}
@@ -104,7 +104,7 @@ func isVarlinkAvailable(r command.Runner) bool {
 }
 
 // isPodmanAvailable checks if podman command is available
-func isPodmanAvailable(r command.Runner) bool {
+func isPodmanAvailable(r runner.Runner) bool {
 	if _, err := r.RunCmd(exec.Command("which", "podman")); err != nil {
 		return false
 	}

@@ -129,3 +129,7 @@ func (d *Driver) RemoveFile(assets.CopyableFile) error {
 func (d *Driver) ReadableFile(string) (assets.ReadableFile, error) {
 	return nil, NotLoadable{d.Name}
 }
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
+	return nil, NotLoadable{d.Name}
+}

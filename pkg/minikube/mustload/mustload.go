@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -51,7 +51,7 @@ type ControlPlane struct {
 	// Node is our internal control object
 	Node *config.Node
 	// Runner provides command execution
-	Runner command.Runner
+	Runner runner.Runner
 	// Hostname is the host-accesible target for the apiserver
 	Hostname string
 	// Port is the host-accessible port for the apiserver

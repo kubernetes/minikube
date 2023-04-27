@@ -20,20 +20,20 @@ import (
 	"os/exec"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 )
 
 const pausedFile = "paused"
 
 // CreatePausedFile creates a file in the minikube cluster to indicate that the apiserver is paused
-func CreatePausedFile(r command.Runner) {
+func CreatePausedFile(r runner.Runner) {
 	if _, err := r.RunCmd(exec.Command("touch", pausedFile)); err != nil {
 		klog.Errorf("failed to create paused file, apiserver may display incorrect status")
 	}
 }
 
 // RemovePausedFile removes a file in minikube cluster to indicate that the apiserver is unpaused
-func RemovePausedFile(r command.Runner) {
+func RemovePausedFile(r runner.Runner) {
 	if _, err := r.RunCmd(exec.Command("rm", "-f", pausedFile)); err != nil {
 		klog.Errorf("failed to remove paused file, apiserver may display incorrect status")
 	}

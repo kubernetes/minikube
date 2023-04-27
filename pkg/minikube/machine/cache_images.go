@@ -37,10 +37,10 @@ import (
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
@@ -73,7 +73,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 }
 
 // LoadCachedImages loads previously cached images into the container runtime
-func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string, overwrite bool) error {
+func LoadCachedImages(cc *config.ClusterConfig, runner runner.Runner, images []string, cacheDir string, overwrite bool) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -170,7 +170,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 }
 
 // LoadLocalImages loads images into the container runtime
-func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
+func LoadLocalImages(cc *config.ClusterConfig, runner runner.Runner, images []string) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
@@ -266,14 +266,14 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 }
 
 // transferAndLoadCachedImage transfers and loads a single image from the cache
-func transferAndLoadCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+func transferAndLoadCachedImage(cr runner.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
 	src := filepath.Join(cacheDir, imgName)
 	src = localpath.SanitizeCacheDir(src)
 	return transferAndLoadImage(cr, k8s, src, imgName)
 }
 
 // transferAndLoadImage transfers and loads a single image
-func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string, imgName string) error {
+func transferAndLoadImage(cr runner.Runner, k8s config.KubernetesConfig, src string, imgName string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -300,7 +300,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		}
 	}()
 
-	if err := cr.Copy(f); err != nil {
+	if err := cr.CopyFile(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
@@ -337,7 +337,7 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 }
 
 // SaveCachedImages saves from the container runtime to the cache
-func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
+func SaveCachedImages(cc *config.ClusterConfig, runner runner.Runner, images []string, cacheDir string) error {
 	klog.Infof("SaveImages start: %s", images)
 	start := time.Now()
 
@@ -361,7 +361,7 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 }
 
 // SaveLocalImages saves images from the container runtime
-func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string, output string) error {
+func SaveLocalImages(cc *config.ClusterConfig, runner runner.Runner, images []string, output string) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
@@ -454,14 +454,14 @@ func DoSaveImages(images []string, output string, profiles []*config.Profile, ca
 }
 
 // transferAndSaveCachedImage transfers and loads a single image from the cache
-func transferAndSaveCachedImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+func transferAndSaveCachedImage(cr runner.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
 	dst := filepath.Join(cacheDir, imgName)
 	dst = localpath.SanitizeCacheDir(dst)
 	return transferAndSaveImage(cr, k8s, dst, imgName)
 }
 
 // transferAndSaveImage transfers and loads a single image
-func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst string, imgName string) error {
+func transferAndSaveImage(cr runner.Runner, k8s config.KubernetesConfig, dst string, imgName string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -499,7 +499,7 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 		return errors.Wrapf(err, "%s save %s", r.Name(), src)
 	}
 
-	if err := cr.CopyFrom(f); err != nil {
+	if err := cr.CopyFileFrom(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 

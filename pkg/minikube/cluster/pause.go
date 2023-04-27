@@ -21,15 +21,15 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	pkgpause "k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Pause pauses a Kubernetes cluster, retrying if necessary
-func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
+func Pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
 	var ids []string
 	tryPause := func() (err error) {
 		ids, err = pause(cr, r, namespaces)
@@ -43,7 +43,7 @@ func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 }
 
 // pause pauses a Kubernetes cluster
-func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
+func pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
 	ids := []string{}
 
 	// Disable the kubelet so it does not attempt to restart paused pods
@@ -76,7 +76,7 @@ func pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string
 }
 
 // Unpause unpauses a Kubernetes cluster, retrying if necessary
-func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
+func Unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
 	var ids []string
 	tryUnpause := func() (err error) {
 		ids, err = unpause(cr, r, namespaces)
@@ -90,7 +90,7 @@ func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 }
 
 // unpause unpauses a Kubernetes cluster
-func unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
+func unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return ids, errors.Wrap(err, "list paused")

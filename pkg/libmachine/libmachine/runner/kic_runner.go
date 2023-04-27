@@ -1,20 +1,4 @@
-/*
-Copyright 2019 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package command
+package runner
 
 import (
 	"bytes"
@@ -143,8 +127,8 @@ func (k *kicRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, fmt.Errorf("kicRunner does not support ReadableFile - you could be the first to add it")
 }
 
-// Copy copies a file and its permissions
-func (k *kicRunner) Copy(f assets.CopyableFile) error {
+// CopyFile copies a file and its permissions
+func (k *kicRunner) CopyFile(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
 	// For tiny files, it's cheaper to overwrite than check
@@ -207,8 +191,8 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	return k.copy(tf.Name(), dst)
 }
 
-// CopyFrom copies a file
-func (k *kicRunner) CopyFrom(f assets.CopyableFile) error {
+// CopyFileFrom copies a file
+func (k *kicRunner) CopyFileFrom(f assets.CopyableFile) error {
 	src := f.GetTargetPath()
 	dst := f.GetSourcePath()
 
@@ -288,8 +272,8 @@ func copyToDocker(src string, dest string) error {
 	return nil
 }
 
-// Remove removes a file
-func (k *kicRunner) Remove(f assets.CopyableFile) error {
+// RemoveFile removes a file
+func (k *kicRunner) RemoveFile(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
 

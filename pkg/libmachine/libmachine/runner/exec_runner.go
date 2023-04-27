@@ -1,20 +1,4 @@
-/*
-Copyright 2016 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package command
+package runner
 
 import (
 	"bytes"
@@ -137,12 +121,12 @@ func (*execRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
-// Copy copies a file and its permissions
-func (e *execRunner) Copy(f assets.CopyableFile) error {
+// CopyFile copies a file and its permissions
+func (e *execRunner) CopyFile(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(dst); err == nil {
 		klog.Infof("found %s, removing ...", dst)
-		if err := e.Remove(f); err != nil {
+		if err := e.RemoveFile(f); err != nil {
 			return errors.Wrapf(err, "error removing file %s", dst)
 		}
 	}
@@ -179,8 +163,8 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 	return writeFile(dst, f, os.FileMode(perms))
 }
 
-// CopyFrom copies a file
-func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
+// CopyFileFrom copies a file
+func (e *execRunner) CopyFileFrom(f assets.CopyableFile) error {
 	src := path.Join(f.GetTargetDir(), f.GetTargetName())
 
 	dst := f.GetSourcePath()
@@ -197,8 +181,8 @@ func (e *execRunner) CopyFrom(f assets.CopyableFile) error {
 	return writeFile(dst, f, os.FileMode(perms))
 }
 
-// Remove removes a file
-func (e *execRunner) Remove(f assets.CopyableFile) error {
+// RemoveFile removes a file
+func (e *execRunner) RemoveFile(f assets.CopyableFile) error {
 	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
 	if e.sudo {

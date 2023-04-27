@@ -35,7 +35,6 @@ import (
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
 	"github.com/docker/go-connections/nat"
-	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -46,17 +45,18 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
 	netutil "k8s.io/minikube/pkg/network"
 
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -400,7 +400,7 @@ func vmwareUnsupported(driverName string) {
 `)
 }
 
-func validateBuiltImageVersion(r command.Runner, driverName string) {
+func validateBuiltImageVersion(r runner.Runner, driverName string) {
 	if driver.IsNone(driverName) {
 		return
 	}

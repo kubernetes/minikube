@@ -23,12 +23,12 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -67,7 +67,7 @@ func LocalHostInfo() (*HostInfo, error, error, error) {
 }
 
 // RemoteHostInfo returns system information such as memory,CPU, DiskSize
-func RemoteHostInfo(r command.Runner) (*HostInfo, error, error, error) {
+func RemoteHostInfo(r runner.Runner) (*HostInfo, error, error, error) {
 	rr, cpuErr := r.RunCmd(exec.Command("nproc"))
 	if cpuErr != nil {
 		klog.Warningf("Unable to get CPU info: %v", cpuErr)
@@ -122,7 +122,7 @@ func showLocalOsRelease() {
 }
 
 // logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
-func logRemoteOsRelease(r command.Runner) {
+func logRemoteOsRelease(r runner.Runner) {
 	rr, err := r.RunCmd(exec.Command("cat", "/etc/os-release"))
 	if err != nil {
 		klog.Infof("remote release failed: %v", err)

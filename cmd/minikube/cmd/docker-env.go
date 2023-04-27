@@ -40,8 +40,8 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/drivers/qemu"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -180,7 +180,7 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 }
 
 // ensureDockerd ensures dockerd inside minikube is running before a docker-env  command
-func ensureDockerd(name string, r command.Runner) {
+func ensureDockerd(name string, r runner.Runner) {
 	if ok := isDockerActive(r); ok {
 		return
 	}
@@ -188,12 +188,12 @@ func ensureDockerd(name string, r command.Runner) {
 }
 
 // isDockerActive checks if Docker is active
-func isDockerActive(r command.Runner) bool {
+func isDockerActive(r runner.Runner) bool {
 	return sysinit.New(r).Active("docker")
 }
 
 // mustRestartDockerd will attempt to reload dockerd if fails, will try restart and exit if fails again
-func mustRestartDockerd(name string, runner command.Runner) {
+func mustRestartDockerd(name string, runner runner.Runner) {
 	// Docker Docs: https://docs.docker.com/config/containers/live-restore
 	// On Linux, you can avoid a restart (and avoid any downtime for your containers) by reloading the Docker daemon.
 	klog.Warningf("dockerd is not active will try to reload it...")
@@ -214,7 +214,7 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	}
 }
 
-func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
+func waitForAPIServerProcess(cr runner.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := apiWait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {

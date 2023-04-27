@@ -1072,3 +1072,7 @@ func (d *Driver) RemoveFile(file assets.CopyableFile) error {
 func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
 	return nil, nil
 }
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
+	return nil, nil
+}

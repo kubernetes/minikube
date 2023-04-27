@@ -94,6 +94,7 @@ const (
 	RunCmdMethod             = `.RunCmdMethod`
 	CopyFileFromMethod       = `.CopyFileFromMethod`
 	StartCmdMethod           = `.StartCmdMethod`
+	GetRunnerMethod          = `.GetRunnerMethod`
 )
 
 func (ic *InternalClient) Call(serviceMethod string, args interface{}, reply interface{}) error {
@@ -403,4 +404,8 @@ func (c *RPCClientDriver) RemoveFile(file assets.CopyableFile) error {
 
 func (c *RPCClientDriver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
 	return nil, c.Client.Call(ReadableFileMethod, &sourcePath, nil)
+}
+
+func (c *RPCClientDriver) GetRunner() (runner.Runner, error) {
+	return nil, c.Client.Call(GetRunnerMethod, &struct{}{}, nil)
 }

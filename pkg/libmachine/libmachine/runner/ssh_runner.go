@@ -1,20 +1,4 @@
-/*
-Copyright 2016 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package command
+package runner
 
 import (
 	"bufio"
@@ -28,26 +12,25 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/utils"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util/retry"
-)
-
-var (
-	layout = "2006-01-02 15:04:05.999999999 -0700"
 )
 
 // SSHRunner runs commands through SSH.
 //
 // It implements the CommandRunner interface.
 type SSHRunner struct {
-	d drivers.Driver
+	ip      string
+	keyPath string
+	usrName string
+	port    int
+
 	c *ssh.Client
 	s *ssh.Session
 }
@@ -97,8 +80,14 @@ func (s *sshReadableFile) Close() error {
 
 // NewSSHRunner returns a new SSHRunner that will run commands
 // through the ssh.Client provided.
-func NewSSHRunner(d drivers.Driver) *SSHRunner {
-	return &SSHRunner{d: d, c: nil}
+func NewSSHRunner(ip, keyPath, usrName string, port int) *SSHRunner {
+	return &SSHRunner{
+		c:       nil,
+		ip:      ip,
+		keyPath: keyPath,
+		usrName: usrName,
+		port:    port,
+	}
 }
 
 // client returns an ssh client (uses retry underneath)
@@ -107,7 +96,7 @@ func (s *SSHRunner) client() (*ssh.Client, error) {
 		return s.c, nil
 	}
 
-	c, err := sshutil.NewSSHClient(s.d)
+	c, err := utils.NewSSHClient(s.ip, s.keyPath, s.usrName, s.port)
 	if err != nil {
 		return nil, errors.Wrap(err, "new client")
 	}
@@ -140,8 +129,8 @@ func (s *SSHRunner) session() (*ssh.Session, error) {
 	return sess, nil
 }
 
-// Remove runs a command to delete a file on the remote.
-func (s *SSHRunner) Remove(f assets.CopyableFile) error {
+// RemoveFile runs a command to delete a file on the remote.
+func (s *SSHRunner) RemoveFile(f assets.CopyableFile) error {
 	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
 	klog.Infof("rm: %s", dst)
 
@@ -342,7 +331,7 @@ func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 }
 
 // Copy copies a file to the remote over SSH.
-func (s *SSHRunner) Copy(f assets.CopyableFile) error {
+func (s *SSHRunner) CopyFile(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
 	// For small files, don't bother risking being wrong for no performance benefit
@@ -420,8 +409,8 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	return g.Wait()
 }
 
-// CopyFrom copies a file from the remote over SSH.
-func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
+// CopyFileFrom copies a file from the remote over SSH.
+func (s *SSHRunner) CopyFileFrom(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
 	sess, err := s.session()

@@ -22,9 +22,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 )
@@ -63,7 +63,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, ex
 }
 
 // CopyBinary copies a locally cached binary to the guest VM
-func CopyBinary(cr command.Runner, src string, dest string) error {
+func CopyBinary(cr runner.Runner, src string, dest string) error {
 	f, err := assets.NewFileAsset(src, path.Dir(dest), path.Base(dest), "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")
@@ -74,7 +74,7 @@ func CopyBinary(cr command.Runner, src string, dest string) error {
 		}
 	}()
 
-	if err := cr.Copy(f); err != nil {
+	if err := cr.CopyFile(f); err != nil {
 		return errors.Wrapf(err, "copy")
 	}
 	return nil

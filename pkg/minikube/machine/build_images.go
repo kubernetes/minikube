@@ -28,9 +28,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -126,7 +126,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 }
 
 // buildImage builds a single image
-func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
+func buildImage(cr runner.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -143,7 +143,7 @@ func buildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file
 }
 
 // transferAndBuildImage transfers and builds a single image
-func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
+func transferAndBuildImage(cr runner.Runner, k8s config.KubernetesConfig, src string, file string, tag string, push bool, env []string, opt []string) error {
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -173,7 +173,7 @@ func transferAndBuildImage(cr command.Runner, k8s config.KubernetesConfig, src s
 		}
 	}()
 
-	if err := cr.Copy(f); err != nil {
+	if err := cr.CopyFile(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 

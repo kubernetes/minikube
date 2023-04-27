@@ -35,8 +35,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -300,7 +300,7 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	return enableOrDisableAddonInternal(cc, addon, runner, data, enable)
 }
 
-func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, runner command.Runner) (bool, error) {
+func addonSpecificChecks(cc *config.ClusterConfig, name string, enable bool, runner runner.Runner) (bool, error) {
 	// to match both ingress and ingress-dns addons
 	if strings.HasPrefix(name, "ingress") && enable {
 		if driver.IsKIC(cc.Driver) {
@@ -399,7 +399,7 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 	return nil
 }
 
-func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner command.Runner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, runner runner.Runner, data interface{}, enable bool) error {
 	deployFiles := []string{}
 
 	for _, addon := range addon.Assets {
@@ -418,13 +418,13 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 		if enable {
 			klog.Infof("installing %s", fPath)
-			if err := runner.Copy(f); err != nil {
+			if err := runner.CopyFile(f); err != nil {
 				return err
 			}
 		} else {
 			klog.Infof("Removing %+v", fPath)
 			defer func() {
-				if err := runner.Remove(f); err != nil {
+				if err := runner.RemoveFile(f); err != nil {
 					klog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
 				}
 			}()

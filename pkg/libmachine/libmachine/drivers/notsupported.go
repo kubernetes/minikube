@@ -114,3 +114,7 @@ func (d *DriverNotSupported) RemoveFile(assets.CopyableFile) error {
 func (d *DriverNotSupported) ReadableFile(string) (assets.ReadableFile, error) {
 	return nil, NotSupported{d.DriverName()}
 }
+
+func (d *DriverNotSupported) GetRunner() (runner.Runner, error) {
+	return nil, NotSupported{d.DriverName()}
+}

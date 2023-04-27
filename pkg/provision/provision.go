@@ -27,6 +27,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cert"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
@@ -34,11 +36,9 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
-	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -148,7 +148,7 @@ func copyHostCerts(authOptions auth.Options) error {
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
-	execRunner := command.NewExecRunner(false)
+	execRunner := runner.NewExecRunner(false)
 	for src, dst := range hostCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
@@ -160,7 +160,7 @@ func copyHostCerts(authOptions auth.Options) error {
 			}
 		}()
 
-		if err := execRunner.Copy(f); err != nil {
+		if err := execRunner.CopyFile(f); err != nil {
 			return errors.Wrapf(err, "transferring file: %+v", f)
 		}
 	}
@@ -177,7 +177,10 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
 	}
 
-	sshRunner := command.NewSSHRunner(driver)
+	runner, err := driver.GetRunner()
+	if err != nil {
+		return errors.Wrapf(err, "while getting runner")
+	}
 
 	dirs := []string{}
 	for _, dst := range remoteCerts {
@@ -185,7 +188,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	}
 
 	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err := sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
+	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return err
 	}
 
@@ -200,7 +203,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 			}
 		}()
 
-		if err := sshRunner.Copy(f); err != nil {
+		if err := runner.CopyFile(f); err != nil {
 			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
 	}

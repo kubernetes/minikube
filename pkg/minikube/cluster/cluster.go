@@ -19,13 +19,13 @@ package cluster
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/ssh"
-	"github.com/pkg/errors"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -39,7 +39,7 @@ func init() {
 }
 
 // Bootstrapper returns a new bootstrapper for the cluster
-func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, r command.Runner) (bootstrapper.Bootstrapper, error) {
+func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, r runner.Runner) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
@@ -55,7 +55,7 @@ func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.Cluster
 }
 
 // ControlPlaneBootstrapper returns the bootstrapper for the cluster's control plane
-func ControlPlaneBootstrapper(mAPI libmachine.API, cc *config.ClusterConfig, bootstrapperName string) (bootstrapper.Bootstrapper, command.Runner, error) {
+func ControlPlaneBootstrapper(mAPI libmachine.API, cc *config.ClusterConfig, bootstrapperName string) (bootstrapper.Bootstrapper, runner.Runner, error) {
 	cp, err := config.PrimaryControlPlane(cc)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting primary control plane")

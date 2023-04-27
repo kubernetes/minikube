@@ -29,16 +29,16 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
-	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -266,7 +266,7 @@ func postStartValidations(h *host.Host, drvName string) {
 }
 
 // DiskUsed returns the capacity of dir in the VM/container as a percentage
-func DiskUsed(cr command.Runner, dir string) (int, error) {
+func DiskUsed(cr runner.Runner, dir string) (int, error) {
 	if s := os.Getenv(constants.TestDiskUsedEnv); s != "" {
 		return strconv.Atoi(s)
 	}
@@ -281,7 +281,7 @@ func DiskUsed(cr command.Runner, dir string) (int, error) {
 }
 
 // DiskAvailable returns the available capacity of dir in the VM/container in GiB
-func DiskAvailable(cr command.Runner, dir string) (int, error) {
+func DiskAvailable(cr runner.Runner, dir string) (int, error) {
 	if s := os.Getenv(constants.TestDiskAvailableEnv); s != "" {
 		return strconv.Atoi(s)
 	}
@@ -404,7 +404,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 }
 
 // AddHostAlias makes fine adjustments to pod resources that aren't possible via kubeadm config.
-func AddHostAlias(c command.Runner, name string, ip net.IP) error {
+func AddHostAlias(c runner.Runner, name string, ip net.IP) error {
 	record := fmt.Sprintf("%s\t%s", ip, name)
 	if _, err := c.RunCmd(exec.Command("grep", record+"$", "/etc/hosts")); err == nil {
 		return nil

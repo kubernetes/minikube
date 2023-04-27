@@ -142,3 +142,7 @@ func (d *Driver) RemoveFile(assets.CopyableFile) error {
 func (d *Driver) ReadableFile(string) (assets.ReadableFile, error) {
 	return nil, fmt.Errorf("cannot read from file inside a machine without a driver")
 }
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
+	return nil, fmt.Errorf("cannot get a runner inside the machine without a driver")
+}

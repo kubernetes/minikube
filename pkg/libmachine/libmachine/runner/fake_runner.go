@@ -1,20 +1,4 @@
-/*
-Copyright 2016 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package command
+package runner
 
 import (
 	"bytes"
@@ -131,8 +115,8 @@ func (f *FakeCommandRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
 	return sc.rr, nil
 }
 
-// Copy adds the filename, file contents key value pair to the stored map.
-func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
+// CopyFile adds the filename, file contents key value pair to the stored map.
+func (f *FakeCommandRunner) CopyFile(file assets.CopyableFile) error {
 	var b bytes.Buffer
 	_, err := io.Copy(&b, file)
 	if err != nil {
@@ -142,8 +126,8 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	return nil
 }
 
-// CopyFrom copy content from file to the stored map.
-func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
+// CopyFileFrom copy content from file to the stored map.
+func (f *FakeCommandRunner) CopyFileFrom(file assets.CopyableFile) error {
 	v, ok := f.fileMap.Load(file.GetSourcePath())
 	if !ok {
 		return fmt.Errorf("not found in map")
@@ -156,8 +140,8 @@ func (f *FakeCommandRunner) CopyFrom(file assets.CopyableFile) error {
 	return nil
 }
 
-// Remove removes the filename, file contents key value pair from the stored map
-func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
+// RemoveFile removes the filename, file contents key value pair from the stored map
+func (f *FakeCommandRunner) RemoveFile(file assets.CopyableFile) error {
 	f.fileMap.Delete(file.GetSourcePath())
 	return nil
 }

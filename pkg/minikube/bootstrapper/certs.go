@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -51,7 +51,7 @@ import (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) error {
+func SetupCerts(cmd runner.Runner, k8s config.ClusterConfig, n config.Node) error {
 	localPath := localpath.Profile(k8s.KubernetesConfig.ClusterName)
 	klog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
@@ -132,7 +132,7 @@ func SetupCerts(cmd command.Runner, k8s config.ClusterConfig, n config.Node) err
 	}
 
 	for _, f := range copyableFiles {
-		if err := cmd.Copy(f); err != nil {
+		if err := cmd.CopyFile(f); err != nil {
 			return errors.Wrapf(err, "Copy %s", f.GetSourcePath())
 		}
 	}
@@ -472,7 +472,7 @@ func collectCACerts() (map[string]string, error) {
 }
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
-func getSubjectHash(cr command.Runner, filePath string) (string, error) {
+func getSubjectHash(cr runner.Runner, filePath string) (string, error) {
 	lrr, err := cr.RunCmd(exec.Command("ls", "-la", filePath))
 	if err != nil {
 		return "", err
@@ -490,7 +490,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 
 // installCertSymlinks installs certs in /usr/share/ca-certificates into system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
-func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
+func installCertSymlinks(cr runner.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
 	_, err := cr.RunCmd(exec.Command("openssl", "version"))
 	if err != nil {

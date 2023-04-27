@@ -21,8 +21,8 @@ import (
 	"os/exec"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 const (
@@ -37,7 +37,7 @@ const (
 )
 
 // CopyFiles combines mkdir requests into a single call to reduce load
-func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
+func CopyFiles(runner runner.Runner, files []assets.CopyableFile) error {
 	dirs := []string{}
 	for _, f := range files {
 		dirs = append(dirs, f.GetTargetDir())
@@ -48,7 +48,7 @@ func CopyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	}
 
 	for _, f := range files {
-		if err := runner.Copy(f); err != nil {
+		if err := runner.CopyFile(f); err != nil {
 			return errors.Wrapf(err, "copy")
 		}
 	}

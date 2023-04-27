@@ -28,7 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -38,7 +38,7 @@ import (
 )
 
 // TransferBinaries transfers all required Kubernetes binaries
-func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager, binariesURL string) error {
+func TransferBinaries(cfg config.KubernetesConfig, c runner.Runner, sm sysinit.Manager, binariesURL string) error {
 	ok, err := binariesExist(cfg, c)
 	if err == nil && ok {
 		klog.Info("Found k8s binaries, skipping transfer")
@@ -78,7 +78,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 }
 
 // binariesExist returns true if the binaries already exist
-func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) {
+func binariesExist(cfg config.KubernetesConfig, c runner.Runner) (bool, error) {
 	dir := binRoot(cfg.KubernetesVersion)
 	rr, err := c.RunCmd(exec.Command("sudo", "ls", dir))
 	if err != nil {

@@ -23,8 +23,8 @@ import (
 
 	"github.com/opencontainers/go-digest"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 // Storage keeps track of reference stores
 type Storage struct {
 	refStores []ReferenceStore
-	runner    command.Runner
+	runner    runner.Runner
 }
 
 // ReferenceStore stores references to images in repositories.json
@@ -47,7 +47,7 @@ type ReferenceStore struct {
 type repository map[string]digest.Digest
 
 // NewStorage returns a new storage type
-func NewStorage(runner command.Runner) *Storage {
+func NewStorage(runner runner.Runner) *Storage {
 	return &Storage{
 		runner: runner,
 	}
@@ -87,7 +87,7 @@ func (s *Storage) Update() error {
 	}
 
 	asset := assets.NewMemoryAsset(contents, path.Dir(referenceStorePath), path.Base(referenceStorePath), "0644")
-	return s.runner.Copy(asset)
+	return s.runner.CopyFile(asset)
 }
 
 func (s *Storage) mergeReferenceStores() ReferenceStore {

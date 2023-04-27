@@ -31,10 +31,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/audit"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -86,7 +86,7 @@ var importantPods = []string{
 
 // logRunner is the subset of CommandRunner used for logging
 type logRunner interface {
-	RunCmd(*exec.Cmd) (*command.RunResult, error)
+	RunCmd(*exec.Cmd) (*runner.RunResult, error)
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -166,7 +166,7 @@ func OutputProblems(problems map[string][]string, maxLines int, logOutput *os.Fi
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner runner.Runner, lines int, logOutput *os.File) error {
 	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 

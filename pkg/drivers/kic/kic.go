@@ -36,10 +36,9 @@ import (
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -55,7 +54,7 @@ type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
 	URL        string
-	exec       command.Runner
+	exec       runner.Runner
 	NodeConfig Config
 	OCIBinary  string // docker,podman
 }
@@ -67,7 +66,7 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		exec:       command.NewKICRunner(c.MachineName, c.OCIBinary),
+		exec:       runner.NewKICRunner(c.MachineName, c.OCIBinary),
 		NodeConfig: c,
 		OCIBinary:  c.OCIBinary,
 	}
@@ -224,7 +223,7 @@ func (d *Driver) prepareSSH() error {
 		return errors.Wrap(err, "generate ssh key")
 	}
 
-	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
+	cmder := runner.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
 	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
 	if err != nil {
 		return errors.Wrap(err, "create pubkey assetfile ")
@@ -235,7 +234,7 @@ func (d *Driver) prepareSSH() error {
 		}
 	}()
 
-	if err := cmder.Copy(f); err != nil {
+	if err := cmder.CopyFile(f); err != nil {
 		return errors.Wrap(err, "copying pub key")
 	}
 
@@ -346,7 +345,7 @@ func (d *Driver) GetMachineState() (state.State, error) {
 // KillMachine stops a host forcefully, including any containers that we are managing.
 func (d *Driver) KillMachine() error {
 	// on init this doesn't get filled when called from cmd
-	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
+	d.exec = runner.NewKICRunner(d.MachineName, d.OCIBinary)
 	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		klog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
@@ -355,7 +354,7 @@ func (d *Driver) KillMachine() error {
 		klog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
-	cr := command.NewExecRunner(false) // using exec runner for interacting with daemon.
+	cr := runner.NewExecRunner(false) // using exec runner for interacting with daemon.
 	if _, err := cr.RunCmd(oci.PrefixCmd(exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName))); err != nil {
 		return errors.Wrapf(err, "killing %q", d.MachineName)
 	}
@@ -443,7 +442,7 @@ func (d *Driver) StartMachine() error {
 // StopMachine a host gracefully, including any containers that we are managing.
 func (d *Driver) StopMachine() error {
 	// on init this doesn't get filled when called from cmd
-	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
+	d.exec = runner.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
@@ -492,7 +491,7 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 
 // killAPIServerProc will kill an api server proc if it exists
 // to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
-func killAPIServerProc(runner command.Runner) error {
+func killAPIServerProc(runner runner.Runner) error {
 	// first check if it exists
 	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
 	if err == nil { // this means we might have a running kube-apiserver
@@ -534,5 +533,9 @@ func (d *Driver) RemoveFile(file assets.CopyableFile) error {
 }
 
 func (d *Driver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+	return nil, nil
+}
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
 	return nil, nil
 }

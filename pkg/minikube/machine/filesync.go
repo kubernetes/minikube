@@ -25,8 +25,8 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -41,7 +41,7 @@ var guaranteed = map[string]bool{
 }
 
 // syncLocalAssets syncs files from MINIKUBE_HOME into the cluster
-func syncLocalAssets(cr command.Runner) error {
+func syncLocalAssets(cr runner.Runner) error {
 	fs, err := localAssets()
 	defer func() {
 		for _, f := range fs {
@@ -80,7 +80,7 @@ func syncLocalAssets(cr command.Runner) error {
 
 	// Copy the files into place
 	for _, f := range fs {
-		err := cr.Copy(f)
+		err := cr.CopyFile(f)
 		if err != nil {
 			return err
 		}

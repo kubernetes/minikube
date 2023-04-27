@@ -22,11 +22,11 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 )
 
 // AdjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
-func AdjustResourceLimits(c command.Runner) error {
+func AdjustResourceLimits(c runner.Runner) error {
 	rr, err := c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
 	if err != nil {
 		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
@@ -47,7 +47,7 @@ func AdjustResourceLimits(c command.Runner) error {
 }
 
 // ExistingConfig checks if there are config files from possible previous Kubernetes cluster
-func ExistingConfig(c command.Runner) error {
+func ExistingConfig(c runner.Runner) error {
 	args := append([]string{"ls"}, expectedRemoteArtifacts...)
 	_, err := c.RunCmd(exec.Command("sudo", args...))
 	return err

@@ -19,15 +19,15 @@ package sysinit
 import (
 	"os/exec"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 var cachedSystemdCheck *bool
 
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
-	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
+	RunCmd(cmd *exec.Cmd) (*runner.RunResult, error)
 }
 
 // Manager is a common interface for init systems

@@ -29,8 +29,6 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -40,16 +38,18 @@ import (
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -80,7 +80,7 @@ var (
 
 // Starter is a struct with all the necessary information to start a node
 type Starter struct {
-	Runner         command.Runner
+	Runner         runner.Runner
 	PreExists      bool
 	StopK8s        bool
 	MachineAPI     libmachine.API
@@ -343,7 +343,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (runner.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
@@ -380,7 +380,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
+func configureRuntimes(runner runner.Runner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
 		Type:              cc.KubernetesConfig.ContainerRuntime,
 		Socket:            cc.KubernetesConfig.CRISocket,
@@ -508,7 +508,7 @@ func cgroupDriver(cc config.ClusterConfig) string {
 	return detect.CgroupDriver()
 }
 
-func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
+func pathExists(runner runner.Runner, path string) (bool, error) {
 	_, err := runner.RunCmd(exec.Command("stat", path))
 	if err == nil {
 		return true, nil
@@ -519,7 +519,7 @@ func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
 	return false, err
 }
 
-func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
+func waitForCRISocket(runner runner.Runner, socket string, wait int, interval int) error {
 
 	if socket == "" || socket == "/var/run/dockershim.sock" {
 		return nil
@@ -540,7 +540,7 @@ func waitForCRISocket(runner cruntime.CommandRunner, socket string, wait int, in
 	return retry.Expo(chkPath, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
-func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, interval int) error {
+func waitForCRIVersion(runner runner.Runner, socket string, wait int, interval int) error {
 
 	if socket == "" || socket == "/var/run/dockershim.sock" {
 		return nil
@@ -569,7 +569,7 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r runner.Runner) bootstrapper.Bootstrapper {
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
 		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
@@ -627,7 +627,7 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner runner.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
@@ -724,7 +724,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
+func validateNetwork(h *host.Host, r runner.Runner, imageRepository string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -812,7 +812,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
+func tryRegistry(r runner.Runner, driverName, imageRepository, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -870,7 +870,7 @@ func prepareNone() {
 // addCoreDNSEntry adds host name and IP record to the DNS by updating CoreDNS's ConfigMap.
 // ref: https://coredns.io/plugins/hosts/
 // note: there can be only one 'hosts' block in CoreDNS's ConfigMap (avoid "plugin/hosts: this plugin can only be used once per Server Block" error)
-func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterConfig) error {
+func addCoreDNSEntry(runner runner.Runner, name, ip string, cc config.ClusterConfig) error {
 	kubectl := kapi.KubectlBinaryPath(cc.KubernetesConfig.KubernetesVersion)
 	kubecfg := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
 

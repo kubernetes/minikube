@@ -25,8 +25,8 @@ import (
 	pt "path"
 	"strings"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -61,20 +61,20 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
 		validateArgs(src, dst)
 
 		co := mustload.Running(ClusterFlagValue())
-		var runner command.Runner
+		var rnr runner.Runner
 
 		if dst.node != "" {
-			runner = remoteCommandRunner(&co, dst.node)
+			rnr = remoteCommandRunner(&co, dst.node)
 		} else if src.node == "" {
 			// if node name not explicitly specified in both of source and target,
 			// consider target is controlpanel node for backward compatibility.
-			runner = co.CP.Runner
+			rnr = co.CP.Runner
 		} else {
-			runner = command.NewExecRunner(false)
+			rnr = runner.NewExecRunner(false)
 		}
 
 		fa := copyableFile(&co, src, dst)
-		if err := runner.Copy(fa); err != nil {
+		if err := rnr.CopyFile(fa); err != nil {
 			exit.Error(reason.InternalCommandRunner, fmt.Sprintf("Fail to copy file %s", fa.GetSourcePath()), err)
 		}
 	},
@@ -94,7 +94,7 @@ func newRemotePath(path string) *remotePath {
 	return &remotePath{node: "", path: path}
 }
 
-func remoteCommandRunner(co *mustload.ClusterController, nodeName string) command.Runner {
+func remoteCommandRunner(co *mustload.ClusterController, nodeName string) runner.Runner {
 	n, _, err := node.Retrieve(*co.Config, nodeName)
 	if err != nil {
 		exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
