@@ -31,9 +31,6 @@ DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
 
-SUDO_PREFIX="sudo -E "
-export KUBECONFIG="/root/.kube/config"
-
 if ! kubeadm &>/dev/null; then
   echo "WARNING: kubeadm is not installed. will try to install."
   curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubeadm"
