@@ -261,7 +261,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 }
 
 // handleAPIServer handles starting the API server.
-func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
+func handleAPIServer(starter Starter, cr cruntime.CRuntime, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
 	var err error
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP.
@@ -380,7 +380,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner runner.Runner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
+func configureRuntimes(runner runner.Runner, cc config.ClusterConfig, kv semver.Version) cruntime.CRuntime {
 	co := cruntime.Config{
 		Type:              cc.KubernetesConfig.ContainerRuntime,
 		Socket:            cc.KubernetesConfig.CRISocket,

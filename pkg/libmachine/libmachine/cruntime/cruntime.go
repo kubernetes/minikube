@@ -52,8 +52,8 @@ func ValidRuntimes() []string {
 	return []string{"docker", "cri-o", "containerd"}
 }
 
-// Manager is a common interface for container runtimes
-type Manager interface {
+// CRuntime is a common interface for container runtimes
+type CRuntime interface {
 	// Name is a human readable name for a runtime
 	Name() string
 	// Version retrieves the current version of this runtime
@@ -184,7 +184,7 @@ func (e ErrServiceVersion) Error() string {
 }
 
 // New returns an appropriately configured runtime
-func New(c Config) (Manager, error) {
+func New(c Config) (CRuntime, error) {
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
@@ -235,7 +235,7 @@ func ContainerStatusCommand() string {
 }
 
 // disableOthers disables all other runtimes except for me.
-func disableOthers(me Manager, cr runner.Runner) error {
+func disableOthers(me CRuntime, cr runner.Runner) error {
 	// valid values returned by manager.Name()
 	runtimes := []string{"containerd", "crio", "docker"}
 	for _, name := range runtimes {
@@ -291,7 +291,7 @@ func compatibleWithVersion(runtime, v string) error {
 
 // CheckCompatibility checks if the container runtime managed by "cr" is compatible with current minikube code
 // returns: NewErrServiceVersion if not
-func CheckCompatibility(cr Manager) error {
+func CheckCompatibility(cr CRuntime) error {
 	v, err := cr.Version()
 	if err != nil {
 		return errors.Wrap(err, "Failed to check container runtime version")

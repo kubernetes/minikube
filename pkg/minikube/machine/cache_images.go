@@ -124,7 +124,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner runner.Runner, images []s
 	return nil
 }
 
-func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager, t time.Duration) error {
+func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.CRuntime, t time.Duration) error {
 	timeout := make(chan bool, 1)
 	go func() {
 		time.Sleep(t)
@@ -147,7 +147,7 @@ func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Ma
 }
 
 // needsTransfer returns an error if an image needs to be retransferred
-func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager) error {
+func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.CRuntime) error {
 	imgDgst := ""         // for instance sha256:7c92a2c6bbcb6b6beff92d0a940779769c2477b807c202954c537e2e0deb9bed
 	if imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.
 		imgDgst = image.DigestByDockerLib(imgClient, imgName)
@@ -316,7 +316,7 @@ func transferAndLoadImage(cr runner.Runner, k8s config.KubernetesConfig, src str
 	return nil
 }
 
-func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
+func removeExistingImage(r cruntime.CRuntime, src string, imgName string) error {
 	// if loading an image from tar, skip deleting as we don't have the actual image name
 	// ie. imgName = "C:\this_is_a_dir\image.tar.gz"
 	if src == imgName {
@@ -508,7 +508,7 @@ func transferAndSaveImage(cr runner.Runner, k8s config.KubernetesConfig, dst str
 }
 
 // pullImages pulls images to the container run time
-func pullImages(cruntime cruntime.Manager, images []string) error {
+func pullImages(cruntime cruntime.CRuntime, images []string) error {
 	klog.Infof("PullImages start: %s", images)
 	start := time.Now()
 
@@ -589,7 +589,7 @@ func PullImages(images []string, profile *config.Profile) error {
 }
 
 // removeImages removes images from the container run time
-func removeImages(cruntime cruntime.Manager, images []string) error {
+func removeImages(cruntime cruntime.CRuntime, images []string) error {
 	klog.Infof("RemovingImages start: %s", images)
 	start := time.Now()
 
@@ -867,7 +867,7 @@ func TagImage(profile *config.Profile, source string, target string) error {
 }
 
 // pushImages pushes images from the container run time
-func pushImages(cruntime cruntime.Manager, images []string) error {
+func pushImages(cruntime cruntime.CRuntime, images []string) error {
 	klog.Infof("PushImages start: %s", images)
 	start := time.Now()
 

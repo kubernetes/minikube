@@ -48,7 +48,7 @@ import (
 )
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
-func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, start time.Time, timeout time.Duration) error {
+func WaitForAPIServerProcess(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
@@ -84,7 +84,7 @@ func APIServerPID(cr runner.Runner) (int, error) {
 }
 
 // WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
+func WaitForHealthyAPIServer(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 

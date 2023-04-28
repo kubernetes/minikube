@@ -49,7 +49,7 @@ type Driver struct {
 	*pkgdrivers.CommonDriver
 	EnginePort int
 	SSHKey     string
-	runtime    cruntime.Manager
+	runtime    cruntime.CRuntime
 	runner     runner.Runner
 }
 

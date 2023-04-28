@@ -26,12 +26,12 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/util"
 )
@@ -46,7 +46,7 @@ var kubeletConfigParams = []string{
 	"hairpin-mode",
 }
 
-func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
+func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.CRuntime) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -118,7 +118,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
+func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.CRuntime) ([]byte, error) {
 	b := bytes.Buffer{}
 	extraOpts, err := extraKubeletOpts(mc, nc, r)
 	if err != nil {

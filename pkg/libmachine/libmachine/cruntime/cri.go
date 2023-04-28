@@ -340,7 +340,7 @@ func addRepoTagToImageName(imgName string) string {
 }
 
 // kubeletCRIOptions returns the container runtime options for the kubelet
-func kubeletCRIOptions(cr Manager, kubernetesVersion semver.Version) map[string]string {
+func kubeletCRIOptions(cr CRuntime, kubernetesVersion semver.Version) map[string]string {
 	opts := map[string]string{
 		"container-runtime-endpoint": fmt.Sprintf("unix://%s", cr.SocketPath()),
 	}

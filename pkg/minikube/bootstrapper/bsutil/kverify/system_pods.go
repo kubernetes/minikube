@@ -39,7 +39,7 @@ import (
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
-func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+func WaitForSystemPods(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	klog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 
@@ -148,7 +148,7 @@ func podStatusMsg(pod core.Pod) string {
 }
 
 // announceProblems checks for problems, and slows polling down if any are found
-func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner) {
+func announceProblems(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr runner.Runner) {
 	problems := logs.FindProblems(r, bs, cfg, cr)
 	if len(problems) > 0 {
 		logs.OutputProblems(problems, 5, os.Stderr)

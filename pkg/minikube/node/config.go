@@ -26,9 +26,9 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -39,7 +39,7 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
+func showVersionInfo(k8sVersion string, cr cruntime.CRuntime) {
 	version, _ := cr.Version()
 	register.Reg.SetStep(register.PreparingKubernetes)
 	out.Step(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
@@ -51,7 +51,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showNoK8sVersionInfo(cr cruntime.Manager) {
+func showNoK8sVersionInfo(cr cruntime.CRuntime) {
 	err := cruntime.CheckCompatibility(cr)
 	if err != nil {
 		klog.Warningf("%s check compatibility failed: %v", cr.Name(), err)

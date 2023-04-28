@@ -29,7 +29,7 @@ import (
 )
 
 // Pause pauses a Kubernetes cluster, retrying if necessary
-func Pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
+func Pause(cr cruntime.CRuntime, r runner.Runner, namespaces []string) ([]string, error) {
 	var ids []string
 	tryPause := func() (err error) {
 		ids, err = pause(cr, r, namespaces)
@@ -43,7 +43,7 @@ func Pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string,
 }
 
 // pause pauses a Kubernetes cluster
-func pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
+func pause(cr cruntime.CRuntime, r runner.Runner, namespaces []string) ([]string, error) {
 	ids := []string{}
 
 	// Disable the kubelet so it does not attempt to restart paused pods
@@ -76,7 +76,7 @@ func pause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string,
 }
 
 // Unpause unpauses a Kubernetes cluster, retrying if necessary
-func Unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
+func Unpause(cr cruntime.CRuntime, r runner.Runner, namespaces []string) ([]string, error) {
 	var ids []string
 	tryUnpause := func() (err error) {
 		ids, err = unpause(cr, r, namespaces)
@@ -90,7 +90,7 @@ func Unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]strin
 }
 
 // unpause unpauses a Kubernetes cluster
-func unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]string, error) {
+func unpause(cr cruntime.CRuntime, r runner.Runner, namespaces []string) ([]string, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return ids, errors.Wrap(err, "list paused")
@@ -116,7 +116,7 @@ func unpause(cr cruntime.Manager, r runner.Runner, namespaces []string) ([]strin
 }
 
 // CheckIfPaused checks if the Kubernetes cluster is paused
-func CheckIfPaused(cr cruntime.Manager, namespaces []string) (bool, error) {
+func CheckIfPaused(cr cruntime.CRuntime, namespaces []string) (bool, error) {
 	ids, err := cr.ListContainers(cruntime.ListContainersOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return true, errors.Wrap(err, "list paused")

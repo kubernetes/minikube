@@ -844,7 +844,7 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 }
 
 // StopKubernetes attempts to stop existing kubernetes.
-func StopKubernetes(runner runner.Runner, cr cruntime.Manager) {
+func StopKubernetes(runner runner.Runner, cr cruntime.CRuntime) {
 	// Verify that Kubernetes is still running.
 	stk := kverify.ServiceStatus(runner, "kubelet")
 	if stk.String() != "Running" {
@@ -952,7 +952,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 }
 
 // UpdateNode updates a node.
-func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.CRuntime) error {
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")

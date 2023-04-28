@@ -94,7 +94,7 @@ type logRunner interface {
 const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner, logOutput io.Writer) error {
+func Follow(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner, logOutput io.Writer) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, cfg, 0, true) {
 		cs = append(cs, v+" &")
@@ -116,7 +116,7 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) map[string][]string {
+func FindProblems(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) map[string][]string {
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, cfg, lookBackwardsCount, false)
 	for name := range cmds {
@@ -166,7 +166,7 @@ func OutputProblems(problems map[string][]string, maxLines int, logOutput *os.Fi
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner runner.Runner, lines int, logOutput *os.File) error {
+func Output(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner runner.Runner, lines int, logOutput *os.File) error {
 	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
@@ -270,7 +270,7 @@ func OutputOffline(lines int, logOutput *os.File) {
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
-func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
+func logCommands(r cruntime.CRuntime, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	pods := importantPods
 	addonPods := enabledAddonPods(cfg)

@@ -49,7 +49,7 @@ type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
 	URL     string
-	runtime cruntime.Manager
+	runtime cruntime.CRuntime
 	exec    runner.Runner
 }
 
