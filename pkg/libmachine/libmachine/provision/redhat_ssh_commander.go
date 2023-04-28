@@ -6,11 +6,14 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 )
 
-type RedHatSSHCommander struct {
+// x7NOTE:
+// see below why this has a different implementation than the genericCOmmander
+
+type RedHatCommander struct {
 	Driver drivers.Driver
 }
 
-func (sshCmder RedHatSSHCommander) SSHCommand(args string) (string, error) {
+func (sshCmder RedHatCommander) RunCmd(args string) (string, error) {
 	rr, err := sshCmder.Driver.RunCmd(exec.Command(args))
 	return rr.Stdout.String(), err
 }

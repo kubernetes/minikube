@@ -46,11 +46,11 @@ func (provisioner *CoreOSProvisioner) String() string {
 func (provisioner *CoreOSProvisioner) SetHostname(hostname string) error {
 	log.Debugf("SetHostname: %s", hostname)
 
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(hostTmpl, hostname)); err != nil {
+	if _, err := provisioner.RunCmd(fmt.Sprintf(hostTmpl, hostname)); err != nil {
 		return err
 	}
 
-	if _, err := provisioner.SSHCommand("sudo systemctl start system-cloudinit@var-tmp-hostname.yml.service"); err != nil {
+	if _, err := provisioner.RunCmd("sudo systemctl start system-cloudinit@var-tmp-hostname.yml.service"); err != nil {
 		return err
 	}
 

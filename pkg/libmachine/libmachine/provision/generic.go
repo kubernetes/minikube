@@ -13,7 +13,7 @@ import (
 )
 
 type GenericProvisioner struct {
-	SSHCommander
+	Commander
 	OsReleaseID       string
 	DockerOptionsDir  string
 	DaemonOptionsFile string
@@ -25,21 +25,21 @@ type GenericProvisioner struct {
 	SwarmOptions      swarm.Options
 }
 
-type GenericSSHCommander struct {
+type GenericCommander struct {
 	Driver drivers.Driver
 }
 
-func (sshCmder GenericSSHCommander) SSHCommand(args string) (string, error) {
+func (sshCmder GenericCommander) RunCmd(args string) (string, error) {
 	rr, err := sshCmder.Driver.RunCmd(exec.Command(args))
 	return rr.Stdout.String(), err
 }
 
 func (provisioner *GenericProvisioner) Hostname() (string, error) {
-	return provisioner.SSHCommand("hostname")
+	return provisioner.RunCmd("hostname")
 }
 
 func (provisioner *GenericProvisioner) SetHostname(hostname string) error {
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(
+	if _, err := provisioner.RunCmd(fmt.Sprintf(
 		"sudo hostname %s && echo %q | sudo tee /etc/hostname",
 		hostname,
 		hostname,
@@ -48,7 +48,7 @@ func (provisioner *GenericProvisioner) SetHostname(hostname string) error {
 	}
 
 	// ubuntu/debian use 127.0.1.1 for non "localhost" loopback hostnames: https://www.debian.org/doc/manuals/debian-reference/ch05.en.html#_the_hostname_resolution
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(`
+	if _, err := provisioner.RunCmd(fmt.Sprintf(`
 		if ! grep -xq '.*\s%s' /etc/hosts; then
 			if grep -xq '127.0.1.1\s.*' /etc/hosts; then
 				sudo sed -i 's/^127.0.1.1\s.*/127.0.1.1 %s/g' /etc/hosts;

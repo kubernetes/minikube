@@ -23,7 +23,7 @@ func init() {
 func NewUbuntuProvisioner(d drivers.Driver) Provisioner {
 	return &UbuntuProvisioner{
 		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
+			Commander:         GenericCommander{Driver: d},
 			DockerOptionsDir:  "/etc/docker",
 			DaemonOptionsFile: "/etc/default/docker",
 			OsReleaseID:       "ubuntu",
@@ -61,7 +61,7 @@ func (provisioner *UbuntuProvisioner) CompatibleWithHost() bool {
 func (provisioner *UbuntuProvisioner) Service(name string, action serviceaction.ServiceAction) error {
 	command := fmt.Sprintf("sudo service %s %s", name, action.String())
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -102,7 +102,7 @@ func (provisioner *UbuntuProvisioner) Package(name string, action pkgaction.Pack
 func (provisioner *UbuntuProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false

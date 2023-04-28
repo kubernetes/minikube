@@ -27,7 +27,7 @@ type DockerOptions struct {
 func installDockerGeneric(p Provisioner, baseURL string) error {
 	// install docker - until cloudinit we use ubuntu everywhere so we
 	// just install it using the docker repos
-	if output, err := p.SSHCommand(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
+	if output, err := p.RunCmd(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
 		return fmt.Errorf("error installing docker: %s", output)
 	}
 
@@ -36,7 +36,7 @@ func installDockerGeneric(p Provisioner, baseURL string) error {
 
 func makeDockerOptionsDir(p Provisioner) error {
 	dockerDir := p.GetDockerOptionsDir()
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s", dockerDir)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf("sudo mkdir -p %s", dockerDir)); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func ConfigureAuth(p Provisioner) error {
 		return err
 	}
 
-	if _, err := p.SSHCommand(`if [ ! -z "$(ip link show docker0)" ]; then sudo ip link delete docker0; fi`); err != nil {
+	if _, err := p.RunCmd(`if [ ! -z "$(ip link show docker0)" ]; then sudo ip link delete docker0; fi`); err != nil {
 		return err
 	}
 
@@ -144,15 +144,15 @@ func ConfigureAuth(p Provisioner) error {
 	certTransferCmdFmt := "printf '%%s' '%s' | sudo tee %s"
 
 	// These ones are for Jessie and Mike <3 <3 <3
-	if _, err := p.SSHCommand(fmt.Sprintf(certTransferCmdFmt, string(caCert), authOptions.CaCertRemotePath)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(caCert), authOptions.CaCertRemotePath)); err != nil {
 		return err
 	}
 
-	if _, err := p.SSHCommand(fmt.Sprintf(certTransferCmdFmt, string(serverCert), authOptions.ServerCertRemotePath)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(serverCert), authOptions.ServerCertRemotePath)); err != nil {
 		return err
 	}
 
-	if _, err := p.SSHCommand(fmt.Sprintf(certTransferCmdFmt, string(serverKey), authOptions.ServerKeyRemotePath)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(serverKey), authOptions.ServerKeyRemotePath)); err != nil {
 		return err
 	}
 
@@ -181,7 +181,7 @@ func ConfigureAuth(p Provisioner) error {
 
 	log.Info("Setting Docker configuration on the remote daemon...")
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dkrcfg.EngineOptionsPath), dkrcfg.EngineOptions, dkrcfg.EngineOptionsPath)); err != nil {
+	if _, err = p.RunCmd(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dkrcfg.EngineOptionsPath), dkrcfg.EngineOptions, dkrcfg.EngineOptionsPath)); err != nil {
 		return err
 	}
 
@@ -241,7 +241,7 @@ func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (s
 }
 
 func getFilesystemType(p Provisioner, directory string) (string, error) {
-	statCommandOutput, err := p.SSHCommand("stat -f -c %T " + directory)
+	statCommandOutput, err := p.RunCmd("stat -f -c %T " + directory)
 	if err != nil {
 		err = fmt.Errorf("Error looking up filesystem type: %s", err)
 		return "", err
@@ -255,7 +255,7 @@ func checkDaemonUp(p Provisioner, dockerPort int) func() bool {
 	reDaemonListening := fmt.Sprintf(":%d\\s+.*:.*", dockerPort)
 	return func() bool {
 		// HACK: Check netstat's output to see if anyone's listening on the Docker API port.
-		netstatOut, err := p.SSHCommand("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
+		netstatOut, err := p.RunCmd("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
 		if err != nil {
 			log.Warnf("Error running SSH command: %s", err)
 			return false
@@ -275,14 +275,14 @@ func WaitForDocker(p Provisioner, dockerPort int) error {
 
 // DockerClientVersion returns the version of the Docker client on the host
 // that ssh is connected to, e.g. "1.12.1".
-func DockerClientVersion(ssh SSHCommander) (string, error) {
+func DockerClientVersion(ssh Commander) (string, error) {
 	// `docker version --format {{.Client.Version}}` would be preferable, but
 	// that fails if the server isn't running yet.
 	//
 	// output is expected to be something like
 	//
 	//     Docker version 1.12.1, build 7a86f89
-	output, err := ssh.SSHCommand("docker --version")
+	output, err := ssh.RunCmd("docker --version")
 	if err != nil {
 		return "", err
 	}
@@ -295,14 +295,14 @@ func DockerClientVersion(ssh SSHCommander) (string, error) {
 	return strings.TrimRight(words[2], ","), nil
 }
 
-func waitForLockAptGetUpdate(ssh SSHCommander) error {
+func waitForLockAptGetUpdate(ssh Commander) error {
 	return waitForLock(ssh, "sudo apt-get update")
 }
 
-func waitForLock(ssh SSHCommander, cmd string) error {
+func waitForLock(ssh Commander, cmd string) error {
 	var sshErr error
 	err := mcnutils.WaitFor(func() bool {
-		_, sshErr = ssh.SSHCommand(cmd)
+		_, sshErr = ssh.RunCmd(cmd)
 		if sshErr != nil {
 			if strings.Contains(sshErr.Error(), "Could not get lock") {
 				sshErr = nil

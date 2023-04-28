@@ -70,7 +70,7 @@ func (provisioner *DebianProvisioner) Package(name string, action pkgaction.Pack
 func (provisioner *DebianProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false
@@ -94,7 +94,7 @@ func (provisioner *DebianProvisioner) Provision(swarmOptions swarm.Options, auth
 
 	// HACK: since debian does not come with sudo by default we install
 	log.Debug("installing sudo")
-	if _, err := provisioner.SSHCommand("if ! type sudo; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo; fi"); err != nil {
+	if _, err := provisioner.RunCmd("if ! type sudo; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo; fi"); err != nil {
 		return err
 	}
 

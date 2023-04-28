@@ -42,7 +42,7 @@ func init() {
 
 func NewRedHatProvisioner(osReleaseID string, d drivers.Driver) *RedHatProvisioner {
 	systemdProvisioner := NewSystemdProvisioner(osReleaseID, d)
-	systemdProvisioner.SSHCommander = RedHatSSHCommander{Driver: d}
+	systemdProvisioner.Commander = RedHatCommander{Driver: d}
 	return &RedHatProvisioner{
 		systemdProvisioner,
 	}
@@ -58,8 +58,8 @@ func (provisioner *RedHatProvisioner) String() string {
 
 func (provisioner *RedHatProvisioner) SetHostname(hostname string) error {
 	// we have to have SetHostname here as well to use the RedHat provisioner
-	// SSHCommand to add the tty allocation
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(
+	// RunCmd to add the tty allocation
+	if _, err := provisioner.RunCmd(fmt.Sprintf(
 		"sudo hostname %s && echo %q | sudo tee /etc/hostname",
 		hostname,
 		hostname,
@@ -67,7 +67,7 @@ func (provisioner *RedHatProvisioner) SetHostname(hostname string) error {
 		return err
 	}
 
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(
+	if _, err := provisioner.RunCmd(fmt.Sprintf(
 		"if grep -xq 127.0.1.1.* /etc/hosts; then sudo sed -i 's/^127.0.1.1.*/127.0.1.1 %s/g' /etc/hosts; else echo '127.0.1.1 %s' | sudo tee -a /etc/hosts; fi",
 		hostname,
 		hostname,
@@ -94,7 +94,7 @@ func (provisioner *RedHatProvisioner) Package(name string, action pkgaction.Pack
 
 	command := fmt.Sprintf("sudo -E yum %s -y %s", packageAction, name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func installDocker(provisioner *RedHatProvisioner) error {
 func (provisioner *RedHatProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false
@@ -152,7 +152,7 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 	}
 
 	// update OS -- this is needed for libdevicemapper and the docker install
-	if _, err := provisioner.SSHCommand("sudo -E yum -y update -x docker-*"); err != nil {
+	if _, err := provisioner.RunCmd("sudo -E yum -y update -x docker-*"); err != nil {
 		return err
 	}
 

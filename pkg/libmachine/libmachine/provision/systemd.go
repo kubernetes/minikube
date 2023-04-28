@@ -21,7 +21,7 @@ func (p *SystemdProvisioner) String() string {
 func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) SystemdProvisioner {
 	return SystemdProvisioner{
 		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
+			Commander:         GenericCommander{Driver: d},
 			DockerOptionsDir:  "/etc/docker",
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
 			OsReleaseID:       osReleaseID,
@@ -86,14 +86,14 @@ func (p *SystemdProvisioner) Service(name string, action serviceaction.ServiceAc
 	// be sure exactly when it changes from the provisioner so
 	// we call a reload on every restart to be safe
 	if reloadDaemon {
-		if _, err := p.SSHCommand("sudo systemctl daemon-reload"); err != nil {
+		if _, err := p.RunCmd("sudo systemctl daemon-reload"); err != nil {
 			return err
 		}
 	}
 
 	command := fmt.Sprintf("sudo systemctl -f %s %s", action.String(), name)
 
-	if _, err := p.SSHCommand(command); err != nil {
+	if _, err := p.RunCmd(command); err != nil {
 		return err
 	}
 

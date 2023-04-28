@@ -68,7 +68,7 @@ func (provisioner *ArchProvisioner) Package(name string, action pkgaction.Packag
 
 	log.Debugf("package: action=%s name=%s", action.String(), name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -78,7 +78,7 @@ func (provisioner *ArchProvisioner) Package(name string, action pkgaction.Packag
 func (provisioner *ArchProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false
@@ -102,7 +102,7 @@ func (provisioner *ArchProvisioner) Provision(swarmOptions swarm.Options, authOp
 
 	// HACK: since Arch does not come with sudo by default we install
 	log.Debug("Installing sudo")
-	if _, err := provisioner.SSHCommand("if ! type sudo; then pacman -Sy --noconfirm --noprogressbar sudo; fi"); err != nil {
+	if _, err := provisioner.RunCmd("if ! type sudo; then pacman -Sy --noconfirm --noprogressbar sudo; fi"); err != nil {
 		return err
 	}
 

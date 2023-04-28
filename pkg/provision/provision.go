@@ -50,7 +50,7 @@ type miniProvisioner interface {
 	Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error
 	GetDriver() drivers.Driver
 	GetAuthOptions() auth.Options
-	SSHCommand(string) (string, error)
+	RunCmd(string) (string, error)
 }
 
 // for escaping systemd template specifiers (e.g. '%i'), which are not supported by minikube
@@ -70,7 +70,7 @@ func init() {
 func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.SystemdProvisioner {
 	return provision.SystemdProvisioner{
 		GenericProvisioner: provision.GenericProvisioner{
-			SSHCommander:      provision.GenericSSHCommander{Driver: d},
+			Commander:         provision.GenericCommander{Driver: d},
 			DockerOptionsDir:  "/etc/docker",
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
 			OsReleaseID:       osReleaseID,
@@ -241,7 +241,7 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	}
 }
 
-func setCrioOptions(p provision.SSHCommander) error {
+func setCrioOptions(p provision.Commander) error {
 	// pass through --insecure-registry
 	var (
 		crioOptsTmpl = `
@@ -258,15 +258,15 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 		return err
 	}
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+	if _, err = p.RunCmd(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func rootFileSystemType(p provision.SSHCommander) (string, error) {
-	fs, err := p.SSHCommand("df --output=fstype / | tail -n 1")
+func rootFileSystemType(p provision.Commander) (string, error) {
+	fs, err := p.RunCmd("df --output=fstype / | tail -n 1")
 	if err != nil {
 		return "", err
 	}
@@ -308,13 +308,13 @@ func concatStrings(src []string, prefix string, postfix string) []string {
 }
 
 // updateUnit efficiently updates a systemd unit file
-func updateUnit(p provision.SSHCommander, name string, content string, dst string) error {
+func updateUnit(p provision.Commander, name string, content string, dst string) error {
 	klog.Infof("Updating %s unit: %s ...", name, dst)
 
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
 		return err
 	}
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo systemctl -f enable %s && sudo systemctl -f restart %s; }", dst, dst, dst, dst, name, name)); err != nil {
+	if _, err := p.RunCmd(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo systemctl -f enable %s && sudo systemctl -f restart %s; }", dst, dst, dst, dst, name, name)); err != nil {
 		return err
 	}
 	return nil

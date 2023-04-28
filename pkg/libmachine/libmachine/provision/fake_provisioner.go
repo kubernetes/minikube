@@ -23,7 +23,7 @@ func NewFakeProvisioner(d drivers.Driver) Provisioner {
 	return &FakeProvisioner{}
 }
 
-func (fp *FakeProvisioner) SSHCommand(args string) (string, error) {
+func (fp *FakeProvisioner) RunCmd(args string) (string, error) {
 	return "", nil
 }
 
@@ -85,7 +85,7 @@ type NetstatProvisioner struct {
 	*FakeProvisioner
 }
 
-func (p *NetstatProvisioner) SSHCommand(args string) (string, error) {
+func (p *NetstatProvisioner) RunCmd(args string) (string, error) {
 	return `Active Internet connections (servers and established)
 Proto Recv-Q Send-Q Local Address           Foreign Address         State
 tcp        0      0 0.0.0.0:ssh             0.0.0.0:*               LISTEN

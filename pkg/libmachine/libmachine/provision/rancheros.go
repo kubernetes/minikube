@@ -39,7 +39,7 @@ func init() {
 func NewRancherProvisioner(d drivers.Driver) Provisioner {
 	return &RancherProvisioner{
 		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
+			Commander:         GenericCommander{Driver: d},
 			DockerOptionsDir:  "/var/lib/rancher/conf",
 			DaemonOptionsFile: "/var/lib/rancher/conf/docker",
 			OsReleaseID:       "rancheros",
@@ -59,7 +59,7 @@ func (provisioner *RancherProvisioner) String() string {
 func (provisioner *RancherProvisioner) Service(name string, action serviceaction.ServiceAction) error {
 	command := fmt.Sprintf("sudo system-docker %s %s", action.String(), name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -85,7 +85,7 @@ func (provisioner *RancherProvisioner) Package(name string, action pkgaction.Pac
 
 	command := fmt.Sprintf("sudo rancherctl service %s %s", packageAction, name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -142,7 +142,7 @@ func (provisioner *RancherProvisioner) Provision(swarmOptions swarm.Options, aut
 
 func (provisioner *RancherProvisioner) SetHostname(hostname string) error {
 	// /etc/hosts is bind mounted from Docker, this is hack to that the generic provisioner doesn't try to mv /etc/hosts
-	if _, err := provisioner.SSHCommand("sed /127.0.1.1/d /etc/hosts > /tmp/hosts && cat /tmp/hosts | sudo tee /etc/hosts"); err != nil {
+	if _, err := provisioner.RunCmd("sed /127.0.1.1/d /etc/hosts > /tmp/hosts && cat /tmp/hosts | sudo tee /etc/hosts"); err != nil {
 		return err
 	}
 
@@ -150,7 +150,7 @@ func (provisioner *RancherProvisioner) SetHostname(hostname string) error {
 		return err
 	}
 
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(hostnameTmpl, hostname)); err != nil {
+	if _, err := provisioner.RunCmd(fmt.Sprintf(hostnameTmpl, hostname)); err != nil {
 		return err
 	}
 
@@ -163,13 +163,13 @@ func (provisioner *RancherProvisioner) upgrade() error {
 		return provisioner.upgradeIso()
 	default:
 		log.Infof("Running upgrade")
-		if _, err := provisioner.SSHCommand("sudo rancherctl os upgrade -f --no-reboot"); err != nil {
+		if _, err := provisioner.RunCmd("sudo rancherctl os upgrade -f --no-reboot"); err != nil {
 			return err
 		}
 
 		log.Infof("Upgrade succeeded, rebooting")
 		// ignore errors here because the SSH connection will close
-		provisioner.SSHCommand("sudo reboot")
+		provisioner.RunCmd("sudo reboot")
 
 		return nil
 	}
@@ -242,7 +242,7 @@ func (provisioner *RancherProvisioner) getLatestISOURL() (string, error) {
 
 func selectDocker(p Provisioner, baseURL string) error {
 	// TODO: detect if its a cloud-init, or a ros setting - and use that..
-	if output, err := p.SSHCommand(fmt.Sprintf("wget -O- %s | sh -", baseURL)); err != nil {
+	if output, err := p.RunCmd(fmt.Sprintf("wget -O- %s | sh -", baseURL)); err != nil {
 		return fmt.Errorf("error selecting docker: (%s) %s", err, output)
 	}
 

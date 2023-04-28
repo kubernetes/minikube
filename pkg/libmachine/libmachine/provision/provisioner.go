@@ -22,9 +22,9 @@ const (
 	LastReleaseBeforeCEVersioning = "1.13.1"
 )
 
-type SSHCommander interface {
-	// Short-hand for accessing an SSH command from the driver.
-	SSHCommand(args string) (string, error)
+type Commander interface {
+	// RunCmd is just a short-hand for accessing the Runner from the driver.
+	RunCmd(args string) (string, error)
 }
 
 type Detector interface {
@@ -40,7 +40,7 @@ func SetDetector(newDetector Detector) {
 // Provisioner defines distribution specific actions
 type Provisioner interface {
 	fmt.Stringer
-	SSHCommander
+	Commander
 
 	// Create the files for the daemon to consume configuration settings (return struct of content and path)
 	GenerateDockerOptions(dockerPort int) (*DockerOptions, error)

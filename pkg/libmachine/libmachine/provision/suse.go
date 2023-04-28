@@ -58,7 +58,7 @@ func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.Packag
 		// Refreshing the repository metadata can take quite some time and can cause
 		// longer provisioning times for machines that have been pre-optimized for
 		// docker by including all the needed packages.
-		if _, err := provisioner.SSHCommand(fmt.Sprintf("rpm -q %s", name)); err == nil {
+		if _, err := provisioner.RunCmd(fmt.Sprintf("rpm -q %s", name)); err == nil {
 			log.Debugf("%s is already installed, skipping operation", name)
 			return nil
 		}
@@ -72,7 +72,7 @@ func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.Packag
 
 	log.Debugf("zypper: action=%s name=%s", action.String(), name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
+	if _, err := provisioner.RunCmd(command); err != nil {
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.Packag
 func (provisioner *SUSEProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.SSHCommand("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false
@@ -99,10 +99,10 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 	swarmOptions.Env = engineOptions.Env
 
 	// figure out the filesystem used by /var/lib/docker
-	fs, err := provisioner.SSHCommand("stat -f -c %T /var/lib/docker")
+	fs, err := provisioner.RunCmd("stat -f -c %T /var/lib/docker")
 	if err != nil {
 		// figure out the filesystem used by /var/lib
-		fs, err = provisioner.SSHCommand("stat -f -c %T /var/lib/")
+		fs, err = provisioner.RunCmd("stat -f -c %T /var/lib/")
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 	if !strings.HasPrefix(strings.ToLower(provisioner.OsReleaseInfo.ID), "opensuse") {
 		// This is a SLE machine, enable the containers module to have access
 		// to the docker packages
-		if _, err := provisioner.SSHCommand("sudo -E SUSEConnect -p sle-module-containers/12/$(uname -m) -r ''"); err != nil {
+		if _, err := provisioner.RunCmd("sudo -E SUSEConnect -p sle-module-containers/12/$(uname -m) -r ''"); err != nil {
 			return fmt.Errorf(
 				"Error while adding the 'containers' module, make sure this machine is registered either against SUSE Customer Center (SCC) or to a local Subscription Management Tool (SMT): %v",
 				err)
@@ -148,20 +148,20 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 	// create symlinks for containerd, containerd-shim and optional runc.
 	// We have to do that because machine overrides the openSUSE systemd
 	// unit of docker
-	if _, err := provisioner.SSHCommand("yes no | sudo -E ln -si /usr/sbin/runc /usr/sbin/docker-runc"); err != nil {
+	if _, err := provisioner.RunCmd("yes no | sudo -E ln -si /usr/sbin/runc /usr/sbin/docker-runc"); err != nil {
 		return err
 	}
-	if _, err := provisioner.SSHCommand("sudo -E ln -sf /usr/sbin/containerd /usr/sbin/docker-containerd"); err != nil {
+	if _, err := provisioner.RunCmd("sudo -E ln -sf /usr/sbin/containerd /usr/sbin/docker-containerd"); err != nil {
 		return err
 	}
-	if _, err := provisioner.SSHCommand("sudo -E ln -sf /usr/sbin/containerd-shim /usr/sbin/docker-containerd-shim"); err != nil {
+	if _, err := provisioner.RunCmd("sudo -E ln -sf /usr/sbin/containerd-shim /usr/sbin/docker-containerd-shim"); err != nil {
 		return err
 	}
 
 	// Is yast2 firewall installed?
-	if _, installed := provisioner.SSHCommand("rpm -q yast2-firewall"); installed == nil {
+	if _, installed := provisioner.RunCmd("rpm -q yast2-firewall"); installed == nil {
 		// Open the firewall port required by docker
-		if _, err := provisioner.SSHCommand("sudo -E /sbin/yast2 firewall services add ipprotocol=tcp tcpport=2376 zone=EXT"); err != nil {
+		if _, err := provisioner.RunCmd("sudo -E /sbin/yast2 firewall services add ipprotocol=tcp tcpport=2376 zone=EXT"); err != nil {
 			return err
 		}
 	}

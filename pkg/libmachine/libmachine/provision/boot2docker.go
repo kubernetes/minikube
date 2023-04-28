@@ -47,7 +47,7 @@ func (provisioner *Boot2DockerProvisioner) String() string {
 }
 
 func (provisioner *Boot2DockerProvisioner) Service(name string, action serviceaction.ServiceAction) error {
-	_, err := provisioner.SSHCommand(fmt.Sprintf("sudo /etc/init.d/%s %s", name, action.String()))
+	_, err := provisioner.RunCmd(fmt.Sprintf("sudo /etc/init.d/%s %s", name, action.String()))
 	return err
 }
 
@@ -106,11 +106,11 @@ func (provisioner *Boot2DockerProvisioner) Package(name string, action pkgaction
 }
 
 func (provisioner *Boot2DockerProvisioner) Hostname() (string, error) {
-	return provisioner.SSHCommand("hostname")
+	return provisioner.RunCmd("hostname")
 }
 
 func (provisioner *Boot2DockerProvisioner) SetHostname(hostname string) error {
-	if _, err := provisioner.SSHCommand(fmt.Sprintf(
+	if _, err := provisioner.RunCmd(fmt.Sprintf(
 		"sudo /usr/bin/sethostname %s && echo %q | sudo tee /var/lib/boot2docker/etc/hostname",
 		hostname,
 		hostname,
@@ -260,7 +260,7 @@ func (provisioner *Boot2DockerProvisioner) Provision(swarmOptions swarm.Options,
 	return err
 }
 
-func (provisioner *Boot2DockerProvisioner) SSHCommand(args string) (string, error) {
+func (provisioner *Boot2DockerProvisioner) RunCmd(args string) (string, error) {
 	rr, err := provisioner.Driver.RunCmd(exec.Command(args))
 	return rr.Stdout.String(), err
 }
