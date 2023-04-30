@@ -7,7 +7,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 type DriverNotSupported struct {
@@ -88,30 +87,6 @@ func (d *DriverNotSupported) KillMachine() error {
 }
 
 func (d *DriverNotSupported) RunCmd(*exec.Cmd) (*runner.RunResult, error) {
-	return nil, NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) StartCmd(*exec.Cmd) (*runner.StartedCmd, error) {
-	return nil, NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) WaitCmd(*runner.StartedCmd) (*runner.RunResult, error) {
-	return nil, NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) CopyFile(assets.CopyableFile) error {
-	return NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) CopyFileFrom(assets.CopyableFile) error {
-	return NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) RemoveFile(assets.CopyableFile) error {
-	return NotSupported{d.DriverName()}
-}
-
-func (d *DriverNotSupported) ReadableFile(string) (assets.ReadableFile, error) {
 	return nil, NotSupported{d.DriverName()}
 }
 

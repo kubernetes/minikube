@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"errors"
+	"os/exec"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
@@ -16,8 +17,9 @@ type Driver interface {
 	// GetRunner gets the adequate implementation of the command runner, based
 	// on the driver (e.g. ssh runner, docker exec, ...)
 	GetRunner() (runner.Runner, error)
-	// Runner is the way we have to run commands inside the machine
-	runner.Runner
+
+	// RunCmd is a shortcut to run a command inside the linux machine
+	RunCmd(*exec.Cmd) (*runner.RunResult, error)
 
 	// Create a host using the driver's config
 	CreateMachine() error

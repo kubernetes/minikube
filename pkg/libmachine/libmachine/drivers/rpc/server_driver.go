@@ -13,7 +13,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/libmachine/version"
-	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 type Stacker interface {
@@ -229,30 +228,6 @@ func (r *RPCServerDriver) Heartbeat(_ *struct{}, _ *struct{}) error {
 	return nil
 }
 
-func (r *RPCServerDriver) CopyFile(file assets.CopyableFile) error {
-	return r.ActualDriver.CopyFile(file)
-}
-
-func (r *RPCServerDriver) CopyFileFrom(file assets.CopyableFile) error {
-	return r.ActualDriver.CopyFileFrom(file)
-}
-
 func (r *RPCServerDriver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
 	return r.ActualDriver.RunCmd(cmd)
-}
-
-func (r *RPCServerDriver) StartCmd(cmd *exec.Cmd) (*runner.StartedCmd, error) {
-	return r.ActualDriver.StartCmd(cmd)
-}
-
-func (r *RPCServerDriver) WaitCmd(startedCmd *runner.StartedCmd) (*runner.RunResult, error) {
-	return r.ActualDriver.WaitCmd(startedCmd)
-}
-
-func (r *RPCServerDriver) RemoveFile(file assets.CopyableFile) error {
-	return r.ActualDriver.RemoveFile(file)
-}
-
-func (r *RPCServerDriver) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
-	return r.ActualDriver.ReadableFile(sourcePath)
 }

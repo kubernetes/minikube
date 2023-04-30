@@ -9,7 +9,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 const driverName = "none"
@@ -117,30 +116,6 @@ func (d *Driver) StopMachine() error {
 
 func (d *Driver) RunCmd(*exec.Cmd) (*runner.RunResult, error) {
 	return nil, fmt.Errorf("cannot run a commnd without a driver")
-}
-
-func (d *Driver) StartCmd(*exec.Cmd) (*runner.StartedCmd, error) {
-	return nil, fmt.Errorf("cannot start a command without a driver")
-}
-
-func (d *Driver) WaitCmd(*runner.StartedCmd) (*runner.RunResult, error) {
-	return nil, fmt.Errorf("cannot wait for command without a driver")
-}
-
-func (d *Driver) CopyFile(assets.CopyableFile) error {
-	return fmt.Errorf("cannot copy a file inside a machine without a driver")
-}
-
-func (d *Driver) CopyFileFrom(assets.CopyableFile) error {
-	return fmt.Errorf("cannot copy a file inside a machine without a driver")
-}
-
-func (d *Driver) RemoveFile(assets.CopyableFile) error {
-	return fmt.Errorf("cannot remove a file inside a machine without a driver")
-}
-
-func (d *Driver) ReadableFile(string) (assets.ReadableFile, error) {
-	return nil, fmt.Errorf("cannot read from file inside a machine without a driver")
 }
 
 func (d *Driver) GetRunner() (runner.Runner, error) {
