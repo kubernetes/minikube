@@ -292,7 +292,7 @@ function cleanup_procs() {
   if [[ "${kprocs}" != "" ]]; then
     echo "error: killing hung kubectl processes ..."
     ps -f -p ${kprocs} || true
-    sudo kill ${kprocs} || true
+    kill ${kprocs} || true
   fi
 
 
@@ -302,10 +302,10 @@ function cleanup_procs() {
     echo "Found stale api servers listening on 8443 processes to kill: "
     for p in $none_procs
     do
-      echo "Kiling stale none driver:  $p"
-      sudo ps -f -p $p || true
-      sudo kill $p || true
-      sudo kill -9 $p || true
+      echo "Killing stale none driver: $p"
+      ps -f -p $p || true
+      kill $p || true
+      kill -9 $p || true
     done
   fi
 }
