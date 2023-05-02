@@ -166,11 +166,6 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 		}
 		defer os.Remove(tmpfile.Name())
 
-		// ... set the file permission ...
-		if err := tmpfile.Chmod(os.FileMode(perms)); err != nil {
-			return errors.Wrap(err, "error setting file permissions")
-		}
-
 		if err := writeFile(tmpfile.Name(), f, os.FileMode(perms)); err != nil {
 			return errors.Wrapf(err, "error writing to tempfile %s", tmpfile.Name())
 		}
