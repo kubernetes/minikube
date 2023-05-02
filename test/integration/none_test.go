@@ -31,11 +31,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// TestChangeNoneUser tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected
+// TestChangeNoneUser tests to make sure the CHANGE_MINIKUBE_NONE_USER environment variable is respected
 // and changes the minikube file permissions from root to the correct user.
 func TestChangeNoneUser(t *testing.T) {
-	if !NoneDriver() {
-		t.Skip("Only test none driver.")
+	if !NoneDriver() || os.Getenv("SUDO_USER") == "" {
+		t.Skip("Test requires none driver and SUDO_USER env to not be empty")
 	}
 	MaybeParallel(t)
 
@@ -64,11 +64,7 @@ func TestChangeNoneUser(t *testing.T) {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
-	username := os.Getenv("SUDO_USER")
-	if username == "" {
-		t.Fatal("Expected $SUDO_USER env to not be empty")
-	}
-	u, err := user.Lookup(username)
+	u, err := user.Lookup(os.Getenv("SUDO_USER"))
 	if err != nil {
 		t.Fatalf("Getting user failed: %v", err)
 	}
