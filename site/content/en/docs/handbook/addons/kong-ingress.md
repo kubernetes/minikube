@@ -145,4 +145,4 @@ foo
 ## Next
 
 **Note:** Read more about KIC and different use cases in official
-[documentation](https://docs.konghq.com/kubernetes-ingress-controller/2.1.x/guides/overview/).
+[documentation](https://docs.konghq.com/kubernetes-ingress-controller/latest/guides/overview/).
