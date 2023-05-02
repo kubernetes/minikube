@@ -31,7 +31,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Create PR
         if: ${{ steps.bumpGh.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@5b4a9f6a9e2af26e5f02351490b90d01eb8ec1e5
+        uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'CI: Update gh from ${{ steps.bumpGh.outputs.OLD_VERSION }} to ${{ steps.bumpGh.outputs.NEW_VERSION }}'
