@@ -988,6 +988,7 @@
 	"invalid kubernetes version": "Nieprawidłowa wersja Kubernetesa",
 	"json encoding failure": "",
 	"keep the kube-context active after cluster is stopped. Defaults to false.": "",
+	"kubeadm certificates have expired. Generating new ones...": "",
 	"kubeadm detected a TCP port conflict with another process: probably another local Kubernetes installation. Run lsof -p\u003cport\u003e to find the process and kill it": "",
 	"kubectl and minikube configuration will be stored in {{.home_folder}}": "konfiguracja minikube i kubectl będzie przechowywana w katalogu {{.home_folder}}",
 	"kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/": "kubectl nie zostało odnalezione w zmiennej środowiskowej ${PATH}. Instrukcja instalacji:  https://kubernetes.io/docs/tasks/tools/install-kubectl/",

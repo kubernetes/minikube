@@ -238,7 +238,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
@@ -429,7 +429,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		// Fall-through to init
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
 	}
@@ -678,7 +678,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// If the cluster is running, check if we have any work to do.
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 
 	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		klog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
@@ -982,7 +982,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	if n.ControlPlane {
-		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
+		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, constants.KubeadmYamlPath+".new", "0640"))
 	}
 
 	// Installs compatibility shims for non-systemd environments

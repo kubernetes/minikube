@@ -18,11 +18,13 @@ package constants
 
 import (
 	"errors"
+	"path"
 	"path/filepath"
 	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -203,4 +205,7 @@ var (
 
 	// ErrMachineMissing is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
 	ErrMachineMissing = errors.New("machine does not exist")
+
+	// KubeadmYamlPath is the path to the kubeadm configuration
+	KubeadmYamlPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 )

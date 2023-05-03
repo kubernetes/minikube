@@ -980,6 +980,7 @@
 	"invalid kubernetes version": "",
 	"json encoding failure": "",
 	"keep the kube-context active after cluster is stopped. Defaults to false.": "",
+	"kubeadm certificates have expired. Generating new ones...": "",
 	"kubeadm detected a TCP port conflict with another process: probably another local Kubernetes installation. Run lsof -p\u003cport\u003e to find the process and kill it": "",
 	"kubectl and minikube configuration will be stored in {{.home_folder}}": "kubectl 과 minikube 환경 정보는 {{.home_folder}} 에 저장될 것입니다",
 	"kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/": "kubectl 이 PATH 에 없습니다, 하지만 이는 대시보드에서 필요로 합니다. 설치 가이드:https://kubernetes.io/docs/tasks/tools/install-kubectl/",
