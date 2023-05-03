@@ -82,7 +82,7 @@ func getLatestVersion() (string, error) {
 	var content Response
 	err = json.Unmarshal(body, &content)
 	if err != nil {
-		return "", fmt.Errorf("unable to unmarshall response from Docker Hub: %v", err)
+		return "", fmt.Errorf("unable to unmarshal response from Docker Hub: %v", err)
 	}
 
 	for _, i := range content.Results {
