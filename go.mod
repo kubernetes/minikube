@@ -67,7 +67,7 @@ require (
 	golang.org/x/term v0.7.0
 	golang.org/x/text v0.9.0
 	gonum.org/v1/plot v0.12.0
-	google.golang.org/api v0.119.0
+	google.golang.org/api v0.120.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.1
 	k8s.io/apimachinery v0.27.1
