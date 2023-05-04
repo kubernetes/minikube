@@ -877,6 +877,8 @@ kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to b
 
 .PHONY: kvm-image-arm64
 kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64  ## Convenient alias to build the docker container
+	# below line is required to build from amd64 machine: https://github.com/docker/buildx/issues/495#issuecomment-754688157
+	docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 	docker build --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
