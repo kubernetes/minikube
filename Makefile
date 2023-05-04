@@ -871,13 +871,13 @@ out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver
 
 .PHONY: kvm-image-amd64
 kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
+	docker build --platform linux/amd64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
 .PHONY: kvm-image-arm64
 kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
+	docker build --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
