@@ -1107,6 +1107,11 @@ update-docker-version:
 	(cd hack/update/docker_version && \
 	 go run update_docker_version.go)
 
+.PHONY: update-ubuntu-version
+update-ubuntu-version:
+	(cd hack/update/ubuntu_version && \
+	 go run update_ubuntu_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \

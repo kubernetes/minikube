@@ -110,6 +110,11 @@ var (
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
 			},
 		},
+		".github/workflows/update-ubuntu-version.yml": {
+			Replace: map[string]string{
+				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+			},
+		},
 		".github/workflows/update-cloud-spanner-emulator-version.yml": {
 			Replace: map[string]string{
 				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
