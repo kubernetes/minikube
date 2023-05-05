@@ -137,7 +137,7 @@ spec:
           - --health-port=9898
 
         - name: csi-provisioner
-          image: registry.k8s.io/sig-storage/csi-provisioner:v3.3.0
+          image: {{.CustomRegistries.Provisioner  | default .ImageRepository | default .Registries.Provisioner }}{{.Images.Provisioner}}
           args:
             - -v=5
             - --csi-address=/csi/csi.sock
