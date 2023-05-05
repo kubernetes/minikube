@@ -4,6 +4,8 @@ description: >
   Manage cache for images
 ---
 
+> "minikube cache" will be deprecated in upcoming versions, please switch to [`minikube image load`](https://minikube.sigs.k8s.io/docs/commands/image/#minikube-image-load) instead. 
+
 
 ## minikube cache
 
