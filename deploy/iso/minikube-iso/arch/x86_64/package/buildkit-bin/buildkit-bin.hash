@@ -6,3 +6,4 @@ sha256 1b307268735c8f8e68b55781a6f4c03af38acc1bc29ba39ebaec6d422bccfb25  buildki
 sha256 fbc9c433cf77c5c00db6f797155edc60b44463524ae59a4961699dca15bcee00  buildkit-v0.10.3.linux-amd64.tar.gz
 sha256 6d0fe3f1ec2dce4ed2a5c9baf05fb279225b3b0e3bbee4092304fe284ca7fc47  buildkit-v0.11.2.linux-amd64.tar.gz
 sha256 6de87c88b1da0b1e899371dd4c0b883581401e2ddfb21a065510eeb3a8ac8743  buildkit-v0.11.4.linux-amd64.tar.gz
+sha256 3f66f5bfbe509aadf1c21a26acfa472fe4c19046aa00a2d59b99733da867cd76  buildkit-v0.11.6.linux-amd64.tar.gz
