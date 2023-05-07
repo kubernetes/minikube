@@ -1,19 +1,35 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package provision
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
+	"os/exec"
 	"regexp"
-	"text/template"
 
+	"github.com/pkg/errors"
+
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeInstaller"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
-	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
@@ -59,19 +75,21 @@ func (provisioner *RedHatProvisioner) String() string {
 func (provisioner *RedHatProvisioner) SetHostname(hostname string) error {
 	// we have to have SetHostname here as well to use the RedHat provisioner
 	// RunCmd to add the tty allocation
-	if _, err := provisioner.RunCmd(fmt.Sprintf(
+	cmd := fmt.Sprintf(
 		"sudo hostname %s && echo %q | sudo tee /etc/hostname",
 		hostname,
 		hostname,
-	)); err != nil {
+	)
+	if _, err := provisioner.RunCmd(exec.Command("bash", "-c", cmd)); err != nil {
 		return err
 	}
 
-	if _, err := provisioner.RunCmd(fmt.Sprintf(
+	cmd = fmt.Sprintf(
 		"if grep -xq 127.0.1.1.* /etc/hosts; then sudo sed -i 's/^127.0.1.1.*/127.0.1.1 %s/g' /etc/hosts; else echo '127.0.1.1 %s' | sudo tee -a /etc/hosts; fi",
 		hostname,
 		hostname,
-	)); err != nil {
+	)
+	if _, err := provisioner.RunCmd(exec.Command("bash", "-c", cmd)); err != nil {
 		return err
 	}
 
@@ -92,32 +110,17 @@ func (provisioner *RedHatProvisioner) Package(name string, action pkgaction.Pack
 		packageAction = "upgrade"
 	}
 
-	command := fmt.Sprintf("sudo -E yum %s -y %s", packageAction, name)
-
-	if _, err := provisioner.RunCmd(command); err != nil {
+	if _, err := provisioner.RunCmd(exec.Command("sudo", "-E", "yum", packageAction, "-y", name)); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func installDocker(provisioner *RedHatProvisioner) error {
-	if err := installDockerGeneric(provisioner, provisioner.EngineOptions.InstallURL); err != nil {
-		return err
-	}
-
-	if err := provisioner.Service("docker", serviceaction.Restart); err != nil {
-		return err
-	}
-
-	err := provisioner.Service("docker", serviceaction.Enable)
-	return err
-}
-
 func (provisioner *RedHatProvisioner) dockerDaemonResponding() bool {
 	log.Debug("checking docker daemon")
 
-	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
+	if out, err := provisioner.RunCmd(exec.Command("sudo", "docker", "version")); err != nil {
 		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
 		log.Debugf("'sudo docker version' output:\n%s", out)
 		return false
@@ -128,9 +131,13 @@ func (provisioner *RedHatProvisioner) dockerDaemonResponding() bool {
 }
 
 func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+	if !provisioner.Driver.IsManaged() {
+		return nil
+	}
+
 	provisioner.SwarmOptions = swarmOptions
-	provisioner.AuthOptions = authOptions
-	provisioner.EngineOptions = engineOptions
+	provisioner.AuthOptions = &authOptions
+	provisioner.EngineOptions = &engineOptions
 	swarmOptions.Env = engineOptions.Env
 
 	// set default storage driver for redhat
@@ -152,20 +159,8 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 	}
 
 	// update OS -- this is needed for libdevicemapper and the docker install
-	if _, err := provisioner.RunCmd("sudo -E yum -y update -x docker-*"); err != nil {
-		return err
-	}
-
-	// install docker
-	if err := installDocker(provisioner); err != nil {
-		return err
-	}
-
-	if err := mcnutils.WaitFor(provisioner.dockerDaemonResponding); err != nil {
-		return err
-	}
-
-	if err := makeDockerOptionsDir(provisioner); err != nil {
+	cmd := "sudo -E yum -y update -x docker-*"
+	if _, err := provisioner.RunCmd(exec.Command("bash", "-c", cmd)); err != nil {
 		return err
 	}
 
@@ -175,38 +170,13 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 		return err
 	}
 
-	err = configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions)
-	return err
-}
+	klog.Infof("installing container runtime into the machine")
 
-func (provisioner *RedHatProvisioner) GenerateDockerOptions(dockerPort int) (*DockerOptions, error) {
-	var (
-		engineCfg  bytes.Buffer
-		configPath = provisioner.DaemonOptionsFile
-	)
-
-	driverNameLabel := fmt.Sprintf("provider=%s", provisioner.Driver.DriverName())
-	provisioner.EngineOptions.Labels = append(provisioner.EngineOptions.Labels, driverNameLabel)
-
-	// systemd / redhat will not load options if they are on newlines
-	// instead, it just continues with a different set of options; yeah...
-	t, err := template.New("engineConfig").Parse(engineConfigTemplate)
+	rnr, err := provisioner.Driver.GetRunner()
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "while getting runner for cruntime installer")
 	}
 
-	engineConfigContext := EngineConfigContext{
-		DockerPort:       dockerPort,
-		AuthOptions:      provisioner.AuthOptions,
-		EngineOptions:    provisioner.EngineOptions,
-		DockerOptionsDir: provisioner.DockerOptionsDir,
-	}
-
-	t.Execute(&engineCfg, engineConfigContext)
-
-	daemonOptsDir := configPath
-	return &DockerOptions{
-		EngineOptions:     engineCfg.String(),
-		EngineOptionsPath: daemonOptsDir,
-	}, nil
+	instllr := cruntimeInstaller.DetectCRuntimeInstaller(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
+	return instllr.InstallCRuntime()
 }

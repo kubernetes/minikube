@@ -1,16 +1,30 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package rpcdriver
 
 import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"os/exec"
 	"runtime/debug"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
-	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/libmachine/libmachine/version"
 )
@@ -132,7 +146,7 @@ func trapPanic(err *error) {
 	}
 }
 
-func (r *RPCServerDriver) Create(_, _ *struct{}) (err error) {
+func (r *RPCServerDriver) CreateMachine(_, _ *struct{}) (err error) {
 	// In an ideal world, plugins wouldn't ever panic.  However, panics
 	// have been known to happen and cause issues.  Therefore, we recover
 	// and do not crash the RPC server completely in the case of a panic
@@ -228,6 +242,36 @@ func (r *RPCServerDriver) Heartbeat(_ *struct{}, _ *struct{}) error {
 	return nil
 }
 
-func (r *RPCServerDriver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	return r.ActualDriver.RunCmd(cmd)
+// x7NOTE: this also doesn't make senze
+// func (r *RPCServerDriver) RunCmd(strCmd string, reply *runner.RunResult) error {
+// 	cmd := strings.Split(strCmd, " ")
+// 	rr, err := r.ActualDriver.RunCmd(exec.Command(cmd[0], cmd[1:]...))
+// 	*reply = *rr
+// 	return err
+// }
+
+func (r *RPCServerDriver) IsContainerBased(_ *struct{}, reply *bool) error {
+	*reply = r.ActualDriver.IsContainerBased()
+	return nil
 }
+
+func (r *RPCServerDriver) IsISOBased(_ *struct{}, reply *bool) error {
+	*reply = r.ActualDriver.IsISOBased()
+	return nil
+}
+
+func (r *RPCServerDriver) IsManaged(_ *struct{}, reply *bool) error {
+	*reply = r.ActualDriver.IsManaged()
+	return nil
+}
+
+// x7NOTE: this doesn't really make senze..
+// func (r *RPCServerDriver) GetRunner(_ *struct{}, reply *runner.Runner) error {
+// 	rnr, err := r.ActualDriver.GetRunner()
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	*reply = rnr
+// 	return nil
+// }

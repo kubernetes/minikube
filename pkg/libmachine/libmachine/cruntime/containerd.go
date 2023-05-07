@@ -32,6 +32,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -63,6 +64,7 @@ type Containerd struct {
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
 	InsecureRegistry  []string
+	Options           engine.Options
 }
 
 // Name is a human readable name for containerd

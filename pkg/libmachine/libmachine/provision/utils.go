@@ -1,49 +1,43 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package provision
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/url"
+	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cert"
-	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/minikube/assets"
 )
 
-type DockerOptions struct {
-	EngineOptions     string
-	EngineOptionsPath string
-}
-
-func installDockerGeneric(p Provisioner, baseURL string) error {
-	// install docker - until cloudinit we use ubuntu everywhere so we
-	// just install it using the docker repos
-	if output, err := p.RunCmd(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
-		return fmt.Errorf("error installing docker: %s", output)
-	}
-
-	return nil
-}
-
-func makeDockerOptionsDir(p Provisioner) error {
-	dockerDir := p.GetDockerOptionsDir()
-	if _, err := p.RunCmd(fmt.Sprintf("sudo mkdir -p %s", dockerDir)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func setRemoteAuthOptions(p Provisioner) auth.Options {
+func setRemoteAuthOptions(p Provisioner) *auth.Options {
 	dockerDir := p.GetDockerOptionsDir()
 	authOptions := p.GetAuthOptions()
 
@@ -53,10 +47,17 @@ func setRemoteAuthOptions(p Provisioner) auth.Options {
 	authOptions.ServerCertRemotePath = path.Join(dockerDir, "server.pem")
 	authOptions.ServerKeyRemotePath = path.Join(dockerDir, "server-key.pem")
 
-	return authOptions
+	return &authOptions
 }
 
+// x7TODO: fix this -- we're making use of getSSHHostname method from the driver
+// This logic needs to be replaces by the more generic counterpart
 func ConfigureAuth(p Provisioner) error {
+	start := time.Now()
+	defer func() {
+		klog.Infof("duration metric: configureAuth took %s", time.Since(start))
+	}()
+
 	var (
 		err error
 	)
@@ -64,31 +65,29 @@ func ConfigureAuth(p Provisioner) error {
 	driver := p.GetDriver()
 	machineName := driver.GetMachineName()
 	authOptions := p.GetAuthOptions()
+	// x7NOTE: minikube doesn't want this.. we may remove it in a later commit
 	swarmOptions := p.GetSwarmOptions()
 	org := mcnutils.GetUsername() + "." + machineName
 	bits := 2048
 
 	ip, err := driver.GetIP()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
 	log.Info("Copying certs to the local machine directory...")
 
-	if err := mcnutils.CopyFile(authOptions.CaCertPath, filepath.Join(authOptions.StorePath, "ca.pem")); err != nil {
-		return fmt.Errorf("Copying ca.pem to machine dir failed: %s", err)
+	if err := copyHostCerts(authOptions); err != nil {
+		return errors.Wrap(err, "error while copying certs into the machine")
 	}
 
-	if err := mcnutils.CopyFile(authOptions.ClientCertPath, filepath.Join(authOptions.StorePath, "cert.pem")); err != nil {
-		return fmt.Errorf("Copying cert.pem to machine dir failed: %s", err)
-	}
-
-	if err := mcnutils.CopyFile(authOptions.ClientKeyPath, filepath.Join(authOptions.StorePath, "key.pem")); err != nil {
-		return fmt.Errorf("Copying key.pem to machine dir failed: %s", err)
+	hostIP, err := driver.GetSSHHostname()
+	if err != nil {
+		return errors.Wrap(err, "while getting ssh hostname during provisioning")
 	}
 
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1")
+	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1", hostIP, machineName)
 	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
@@ -100,13 +99,14 @@ func ConfigureAuth(p Provisioner) error {
 	// TODO: Switch to passing just authOptions to this func
 	// instead of all these individual fields
 	err = cert.GenerateCert(&cert.Options{
-		Hosts:       hosts,
-		CertFile:    authOptions.ServerCertPath,
-		KeyFile:     authOptions.ServerKeyPath,
-		CAFile:      authOptions.CaCertPath,
-		CAKeyFile:   authOptions.CaPrivateKeyPath,
-		Org:         org,
-		Bits:        bits,
+		Hosts:     hosts,
+		CertFile:  authOptions.ServerCertPath,
+		KeyFile:   authOptions.ServerKeyPath,
+		CAFile:    authOptions.CaCertPath,
+		CAKeyFile: authOptions.CaPrivateKeyPath,
+		Org:       org,
+		Bits:      bits,
+		// x7NOTE: minikube wants this removed
 		SwarmMaster: swarmOptions.Master,
 	})
 
@@ -114,82 +114,86 @@ func ConfigureAuth(p Provisioner) error {
 		return fmt.Errorf("error generating server cert: %s", err)
 	}
 
-	if err := p.Service("docker", serviceaction.Stop); err != nil {
-		return err
-	}
+	return copyRemoteCerts(authOptions, driver)
+}
 
-	if _, err := p.RunCmd(`if [ ! -z "$(ip link show docker0)" ]; then sudo ip link delete docker0; fi`); err != nil {
-		return err
-	}
+// x7NOTE: added from minikube/pkg/provision/provision.go -- may remove if not getting anywhere..
+func copyHostCerts(authOptions auth.Options) error {
+	klog.Infof("copyHostCerts")
 
-	// upload certs and configure TLS auth
-	caCert, err := ioutil.ReadFile(authOptions.CaCertPath)
+	err := os.MkdirAll(authOptions.StorePath, 0700)
 	if err != nil {
-		return err
+		klog.Errorf("mkdir failed: %v", err)
 	}
 
-	serverCert, err := ioutil.ReadFile(authOptions.ServerCertPath)
-	if err != nil {
-		return err
-	}
-	serverKey, err := ioutil.ReadFile(authOptions.ServerKeyPath)
-	if err != nil {
-		return err
+	hostCerts := map[string]string{
+		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
+		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
+		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
-	log.Info("Copying certs to the remote machine...")
-
-	// printf will choke if we don't pass a format string because of the
-	// dashes, so that's the reason for the '%%s'
-	certTransferCmdFmt := "printf '%%s' '%s' | sudo tee %s"
-
-	// These ones are for Jessie and Mike <3 <3 <3
-	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(caCert), authOptions.CaCertRemotePath)); err != nil {
-		return err
-	}
-
-	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(serverCert), authOptions.ServerCertRemotePath)); err != nil {
-		return err
-	}
-
-	if _, err := p.RunCmd(fmt.Sprintf(certTransferCmdFmt, string(serverKey), authOptions.ServerKeyRemotePath)); err != nil {
-		return err
-	}
-
-	dockerURL, err := driver.GetURL()
-	if err != nil {
-		return err
-	}
-	u, err := url.Parse(dockerURL)
-	if err != nil {
-		return err
-	}
-	dockerPort := engine.DefaultPort
-	parts := strings.Split(u.Host, ":")
-	if len(parts) == 2 {
-		dPort, err := strconv.Atoi(parts[1])
+	execRunner := runner.NewExecRunner(false)
+	for src, dst := range hostCerts {
+		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "open cert file: %s", src)
 		}
-		dockerPort = dPort
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
+
+		if err := execRunner.CopyFile(f); err != nil {
+			return errors.Wrapf(err, "transferring file: %+v", f)
+		}
 	}
 
-	dkrcfg, err := p.GenerateDockerOptions(dockerPort)
+	return nil
+}
+
+// x7NOTE: same as above...
+func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
+	klog.Infof("copyRemoteCerts")
+
+	remoteCerts := map[string]string{
+		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
+		authOptions.ServerCertPath: authOptions.ServerCertRemotePath,
+		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
+	}
+
+	runner, err := driver.GetRunner()
 	if err != nil {
+		return errors.Wrapf(err, "while getting runner")
+	}
+
+	dirs := []string{}
+	for _, dst := range remoteCerts {
+		dirs = append(dirs, path.Dir(dst))
+	}
+
+	args := append([]string{"mkdir", "-p"}, dirs...)
+	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return err
 	}
 
-	log.Info("Setting Docker configuration on the remote daemon...")
+	for src, dst := range remoteCerts {
+		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
+		if err != nil {
+			return errors.Wrapf(err, "error copying %s to %s", src, dst)
+		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				klog.Warningf("error closing the file %s: %v", f.GetSourcePath(), err)
+			}
+		}()
 
-	if _, err = p.RunCmd(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dkrcfg.EngineOptionsPath), dkrcfg.EngineOptions, dkrcfg.EngineOptionsPath)); err != nil {
-		return err
+		if err := runner.CopyFile(f); err != nil {
+			return errors.Wrapf(err, "transferring file to machine %v", f)
+		}
 	}
 
-	if err := p.Service("docker", serviceaction.Start); err != nil {
-		return err
-	}
-
-	return WaitForDocker(p, dockerPort)
+	return nil
 }
 
 func matchNetstatOut(reDaemonListening, netstatOut string) bool {
@@ -241,13 +245,13 @@ func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (s
 }
 
 func getFilesystemType(p Provisioner, directory string) (string, error) {
-	statCommandOutput, err := p.RunCmd("stat -f -c %T " + directory)
+	statCommandOutput, err := p.RunCmd(exec.Command("stat", "-f", "-c", "%T", directory))
 	if err != nil {
 		err = fmt.Errorf("Error looking up filesystem type: %s", err)
 		return "", err
 	}
 
-	fstype := strings.TrimSpace(statCommandOutput)
+	fstype := strings.TrimSpace(statCommandOutput.Stdout.String())
 	return fstype, nil
 }
 
@@ -255,13 +259,14 @@ func checkDaemonUp(p Provisioner, dockerPort int) func() bool {
 	reDaemonListening := fmt.Sprintf(":%d\\s+.*:.*", dockerPort)
 	return func() bool {
 		// HACK: Check netstat's output to see if anyone's listening on the Docker API port.
-		netstatOut, err := p.RunCmd("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
+		cmd := "if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi"
+		netstatOut, err := p.RunCmd(exec.Command("bash", "-c", cmd))
 		if err != nil {
 			log.Warnf("Error running SSH command: %s", err)
 			return false
 		}
 
-		return matchNetstatOut(reDaemonListening, netstatOut)
+		return matchNetstatOut(reDaemonListening, netstatOut.Stdout.String())
 	}
 }
 
@@ -282,12 +287,12 @@ func DockerClientVersion(ssh Commander) (string, error) {
 	// output is expected to be something like
 	//
 	//     Docker version 1.12.1, build 7a86f89
-	output, err := ssh.RunCmd("docker --version")
+	output, err := ssh.RunCmd(exec.Command("docker", "--version"))
 	if err != nil {
 		return "", err
 	}
 
-	words := strings.Fields(output)
+	words := strings.Fields(output.Stdout.String())
 	if len(words) < 3 || words[0] != "Docker" || words[1] != "version" {
 		return "", fmt.Errorf("DockerClientVersion: cannot parse version string from %q", output)
 	}
@@ -296,10 +301,10 @@ func DockerClientVersion(ssh Commander) (string, error) {
 }
 
 func waitForLockAptGetUpdate(ssh Commander) error {
-	return waitForLock(ssh, "sudo apt-get update")
+	return waitForLock(ssh, exec.Command("sudo", "apt-get", "update"))
 }
 
-func waitForLock(ssh Commander, cmd string) error {
+func waitForLock(ssh Commander, cmd *exec.Cmd) error {
 	var sshErr error
 	err := mcnutils.WaitFor(func() bool {
 		_, sshErr = ssh.RunCmd(cmd)

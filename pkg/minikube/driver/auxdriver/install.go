@@ -112,6 +112,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 	return nil
 }
 
+// x7NOTE: DON'T ADD THIS TO COMMIT
 // validateDriver validates if a driver appears to be up-to-date and installed properly
 func validateDriver(executable string, v semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
@@ -119,6 +120,10 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	if err != nil {
 		return path, err
 	}
+
+	// x7NOTE: cut HERE -----------------------------------------
+	return path, nil
+	// --------------------------------------------------
 
 	output, err := exec.Command(path, "version").Output()
 	if err != nil {

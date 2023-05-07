@@ -63,7 +63,6 @@ func IsRunning(api libmachine.API, name string) bool {
 
 // LoadHost returns a libmachine host by name
 func LoadHost(api libmachine.API, machineName string) (*host.Host, error) {
-	klog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)

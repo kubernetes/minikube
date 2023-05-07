@@ -31,6 +31,7 @@ import (
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -75,6 +76,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
+	Options           engine.Options
 }
 
 // Name is a human readable name for Docker
@@ -549,6 +551,7 @@ func (r *Docker) setCGroup(driver string) error {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(cc config.ClusterConfig) error {
 	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
+		klog.Info("x7DBG = preload does not exist!! return nil")
 		return nil
 	}
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
@@ -557,6 +560,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	// If images already exist, return
 	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
+		klog.Info("x7DBG = error getting kubeadm images ")
 		return errors.Wrap(err, "getting images")
 	}
 	if dockerImagesPreloaded(r.Runner, images) {
@@ -569,6 +573,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 		klog.Infof("error saving reference store: %v", err)
 	}
 
+	klog.Info("x7DBG = downloading tarball")
 	tarballPath := download.TarballPath(k8sVersion, cRuntime)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
@@ -592,6 +597,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 
 	t := time.Now()
 	if err := r.Runner.CopyFile(fa); err != nil {
+		klog.Infof("x7DBG = error copying %#v", fa)
 		return errors.Wrap(err, "copying file")
 	}
 	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
@@ -606,10 +612,13 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 		klog.Infof("error removing tarball: %v", err)
 	}
 
+	klog.Infof("x7DBG = save new reference store")
 	// save new reference store again
 	if err := refStore.Save(); err != nil {
 		klog.Infof("error saving reference store: %v", err)
 	}
+
+	klog.Infof("x7DBG = update reference store")
 	// update reference store
 	if err := refStore.Update(); err != nil {
 		klog.Infof("error updating reference store: %v", err)

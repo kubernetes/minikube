@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2023 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,68 +14,82 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provision
+package cruntimeInstaller
 
 import (
 	"bytes"
 	"fmt"
-	"text/template"
-	"time"
+	"html/template"
+	"os/exec"
 
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
-	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
-	"github.com/spf13/viper"
-	"k8s.io/klog/v2"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 )
 
-// BuildrootProvisioner provisions the custom system based on Buildroot
-type BuildrootProvisioner struct {
-	provision.SystemdProvisioner
-	clusterName string
+type dockerInstaller struct {
+	CRuntimeName       string
+	Options            *engine.Options
+	AuthOptions        *auth.Options
+	Commander          runner.Runner
+	CRuntimeOptionsDir string
+	Provider           string
 }
 
-// NewBuildrootProvisioner creates a new BuildrootProvisioner
-func NewBuildrootProvisioner(d drivers.Driver) provision.Provisioner {
-	return &BuildrootProvisioner{
-		NewSystemdProvisioner("buildroot", d),
-		viper.GetString(config.ProfileName),
+func NewDockerInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOptions *auth.Options) *dockerInstaller {
+	return &dockerInstaller{
+		Options:      opts,
+		CRuntimeName: "Docker",
+		Commander:    cmd,
+		Provider:     provider,
+		AuthOptions:  authOptions,
 	}
 }
 
-func (p *BuildrootProvisioner) String() string {
-	return "buildroot"
+type DockerOptions struct {
+	EngineOptions     string
+	EngineOptionsPath string
 }
 
-// CompatibleWithHost checks if provisioner is compatible with host
-func (p *BuildrootProvisioner) CompatibleWithHost() bool {
-	return p.OsReleaseInfo.ID == "buildroot"
+// x7NOTE: Complete this
+// InstallCRuntime checks if docker is installed in the machine;
+// if not, it installs it from get.docker.com.
+// It also configures the daemon.
+func (di *dockerInstaller) InstallCRuntime() error {
+	di.installDockerGeneric(di.Options.InstallURL)
+
+	if err := di.SetCRuntimeOptions(); err != nil {
+		klog.Infof("Error setting container-runtime (%s) options during provisioning: %v",
+			di.CRuntimeName, err)
+	}
+
+	return nil
 }
 
-// GenerateDockerOptions generates the *provision.DockerOptions for this provisioner
-func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
+// x7NOTE: incompatible with non-systemd systems
+// SetCRuntimeOptions generates and updates the existing docker configuration
+func (di *dockerInstaller) SetCRuntimeOptions() error {
 	var engineCfg bytes.Buffer
 
-	drvLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
-	p.EngineOptions.Labels = append(p.EngineOptions.Labels, drvLabel)
+	drvLabel := fmt.Sprintf("provider=%s", di.Provider)
+	di.Options.Labels = append(di.Options.Labels, drvLabel)
 
 	noPivot := true
 	// Using pivot_root is not supported on fstype rootfs
-	if fstype, err := rootFileSystemType(p); err == nil {
-		klog.Infof("root file system type: %s", fstype)
+	if fstype, err := rootFileSystemType(di.Commander); err == nil {
+		log.Infof("root file system type: %s", fstype)
 		noPivot = fstype == "rootfs"
 	}
 
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target  minikube-automount.service docker.socket
-Requires= minikube-automount.service docker.socket 
+BindsTo=containerd.service
+After=network-online.target firewalld.service containerd.service
+Wants=network-online.target
+Requires=docker.socket
 StartLimitBurst=3
 StartLimitIntervalSec=60
 
@@ -84,7 +98,7 @@ Type=notify
 Restart=on-failure
 `
 	if noPivot {
-		klog.Warning("Using fundamentally insecure --no-pivot option")
+		log.Info("Using fundamentally insecure --no-pivot option")
 		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
@@ -130,65 +144,41 @@ WantedBy=multi-user.target
 `
 	t, err := template.New("engineConfig").Parse(engineConfigTmpl)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	engineConfigContext := provision.EngineConfigContext{
-		DockerPort:    dockerPort,
-		AuthOptions:   p.AuthOptions,
-		EngineOptions: p.EngineOptions,
+	engineConfigContext := engine.EngineConfigContext{
+		DockerPort:    engine.DefaultPort,
+		AuthOptions:   *di.AuthOptions,
+		EngineOptions: *di.Options,
 	}
 
 	escapeSystemdDirectives(&engineConfigContext)
 
 	if err := t.Execute(&engineCfg, engineConfigContext); err != nil {
-		return nil, err
+		return err
 	}
 
-	do := &provision.DockerOptions{
+	do := &DockerOptions{
 		EngineOptions:     engineCfg.String(),
 		EngineOptionsPath: "/lib/systemd/system/docker.service",
 	}
-	return do, updateUnit(p, "docker", do.EngineOptions, do.EngineOptionsPath)
+
+	return updateUnit(di.Commander, "docker", do.EngineOptions, do.EngineOptionsPath)
 }
 
-// Package installs a package
-func (p *BuildrootProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
+func (di *dockerInstaller) installDockerGeneric(baseURL string) error {
+	// install docker - until cloudinit we use ubuntu everywhere so we
+	// just install it using the docker repos
+	if output, err := di.Commander.RunCmd(exec.Command("bash", "-c", fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL))); err != nil {
+		return fmt.Errorf("error installing docker: %s", output.Stdout.String())
+	}
+
 	return nil
 }
 
-// Provision does the provisioning
-func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
-	p.SwarmOptions = swarmOptions
-	p.AuthOptions = authOptions
-	p.EngineOptions = engineOptions
-
-	klog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
-	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
-		return err
-	}
-
-	p.AuthOptions = setRemoteAuthOptions(p)
-	klog.Infof("set auth options %+v", p.AuthOptions)
-
-	klog.Infof("setting up certificates")
-	configAuth := func() error {
-		if err := configureAuth(p); err != nil {
-			klog.Warningf("configureAuth failed: %v", err)
-			return &retry.RetriableError{Err: err}
-		}
-		return nil
-	}
-
-	err := retry.Expo(configAuth, 100*time.Microsecond, 2*time.Minute)
-	if err != nil {
-		klog.Infof("Error configuring auth during provisioning %v", err)
-		return err
-	}
-
-	klog.Infof("setting minikube options for container-runtime")
-	if err := setContainerRuntimeOptions(p.clusterName, p); err != nil {
-		klog.Infof("Error setting container-runtime options during provisioning %v", err)
+func (di *dockerInstaller) makeDockerOptionsDir() error {
+	if _, err := di.Commander.RunCmd(exec.Command("bash", "-c", fmt.Sprintf("sudo mkdir -p %s", di.CRuntimeOptionsDir))); err != nil {
 		return err
 	}
 

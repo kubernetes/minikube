@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package runner
 
 import (
@@ -115,12 +131,83 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 }
 
-func (k *kicRunner) StartCmd(_ *exec.Cmd) (*StartedCmd, error) {
-	return nil, fmt.Errorf("kicRunner does not support StartCmd - you could be the first to add it")
+func (k *kicRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	args := []string{
+		"exec",
+		// run with privileges so we can remount etc..
+		"--privileged",
+	}
+	if cmd.Stdin != nil {
+		args = append(args,
+			"-i", // interactive so we can supply input
+		)
+	}
+	// if the command is hooked to another processes's output we want a tty
+	if isTerminal(cmd.Stderr) || isTerminal(cmd.Stdout) {
+		args = append(args,
+			"-t",
+		)
+	}
+
+	for _, env := range cmd.Env {
+		args = append(args, "-e", env)
+	}
+	// append container name to docker arguments. all subsequent args
+	// appended will be passed to the container instead of docker
+	args = append(
+		args,
+		k.nameOrID, // ... against the container
+	)
+
+	args = append(
+		args,
+		cmd.Args...,
+	)
+
+	newCmd := exec.Command(k.ociBin, args...)
+	rr := &RunResult{Args: newCmd.Args}
+	sc := &StartedCmd{cmd: newCmd, rr: rr}
+
+	klog.Infof("Start: %v", rr.Command())
+
+	var outb, errb io.Writer
+	if newCmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(newCmd.Stdout, &rr.Stdout)
+	}
+
+	if newCmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(newCmd.Stderr, &rr.Stderr)
+	}
+
+	newCmd.Stdout = outb
+	newCmd.Stderr = errb
+
+	if err := newCmd.Start(); err != nil {
+		return sc, errors.Wrap(err, "start")
+	}
+
+	return sc, nil
 }
 
-func (k *kicRunner) WaitCmd(_ *StartedCmd) (*RunResult, error) {
-	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
+func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	rr := sc.rr
+
+	err := sc.cmd.Wait()
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
+	}
+
+	if err == nil {
+		return rr, nil
+	}
+
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
 func (k *kicRunner) ReadableFile(_ string) (assets.ReadableFile, error) {

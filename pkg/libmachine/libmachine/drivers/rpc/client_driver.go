@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package rpcdriver
 
 import (
@@ -43,6 +59,7 @@ type RPCClientDriver struct {
 	plugin          localbinary.DriverPlugin
 	heartbeatDoneCh chan bool
 	Client          *InternalClient
+	exec            runner.Runner
 }
 
 type RPCCall struct {
@@ -76,17 +93,18 @@ const (
 	GetSSHKeyPathMethod      = `.GetSSHKeyPath`
 	GetSSHPortMethod         = `.GetSSHPort`
 	GetSSHUsernameMethod     = `.GetSSHUsername`
-	GetStateMethod           = `.GetState`
+	GetMachineStateMethod    = `.GetMachineState`
 	PreCreateCheckMethod     = `.PreCreateCheck`
-	CreateMethod             = `.Create`
-	RemoveMethod             = `.Remove`
-	StartMethod              = `.Start`
-	StopMethod               = `.Stop`
-	RestartMethod            = `.Restart`
-	KillMethod               = `.Kill`
+	CreateMachineMethod      = `.CreateMachine`
+	RemoveMachineMethod      = `.RemoveMachine`
+	StartMachineMethod       = `.StartMachine`
+	StopMachineMethod        = `.StopMachine`
+	RestartMachineMethod     = `.RestartMachine`
+	KillMachineMethod        = `.KillMachine`
 	UpgradeMethod            = `.Upgrade`
-	RunCmdMethod             = `.RunCmdMethod`
-	GetRunnerMethod          = `.GetRunnerMethod`
+	IsManagedMethod          = `.IsManaged`
+	IsISOBasedMethod         = `.IsISOBased`
+	IsContainerBasedMethod   = `.IsContainerBased`
 )
 
 func (ic *InternalClient) Call(serviceMethod string, args interface{}, reply interface{}) error {
@@ -332,7 +350,7 @@ func (c *RPCClientDriver) GetSSHUsername() string {
 func (c *RPCClientDriver) GetMachineState() (state.State, error) {
 	var s state.State
 
-	if err := c.Client.Call(GetStateMethod, struct{}{}, &s); err != nil {
+	if err := c.Client.Call(GetMachineStateMethod, struct{}{}, &s); err != nil {
 		return state.Error, err
 	}
 
@@ -344,35 +362,82 @@ func (c *RPCClientDriver) PreCreateCheck() error {
 }
 
 func (c *RPCClientDriver) CreateMachine() error {
-	return c.Client.Call(CreateMethod, struct{}{}, nil)
+	return c.Client.Call(CreateMachineMethod, struct{}{}, nil)
 }
 
 func (c *RPCClientDriver) RemoveMachine() error {
-	return c.Client.Call(RemoveMethod, struct{}{}, nil)
+	return c.Client.Call(RemoveMachineMethod, struct{}{}, nil)
 }
 
 func (c *RPCClientDriver) StartMachine() error {
-	return c.Client.Call(StartMethod, struct{}{}, nil)
+	return c.Client.Call(StartMachineMethod, struct{}{}, nil)
 }
 
 func (c *RPCClientDriver) StopMachine() error {
-	return c.Client.Call(StopMethod, struct{}{}, nil)
+	return c.Client.Call(StopMachineMethod, struct{}{}, nil)
 }
 
 func (c *RPCClientDriver) RestartMachine() error {
-	return c.Client.Call(RestartMethod, struct{}{}, nil)
+	return c.Client.Call(RestartMachineMethod, struct{}{}, nil)
 }
 
 func (c *RPCClientDriver) KillMachine() error {
-	return c.Client.Call(KillMethod, struct{}{}, nil)
+	return c.Client.Call(KillMachineMethod, struct{}{}, nil)
 }
 
-// x7NOTE:
-// have no idea how the following will work...
 func (c *RPCClientDriver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	return nil, c.Client.Call(RunCmdMethod, &cmd, nil)
+	if c.exec == nil {
+		rnr, err := c.GetRunner()
+		if err != nil {
+			return nil, err
+		}
+
+		c.exec = rnr
+	}
+
+	return c.exec.RunCmd(cmd)
 }
 
 func (c *RPCClientDriver) GetRunner() (runner.Runner, error) {
-	return nil, c.Client.Call(GetRunnerMethod, &struct{}{}, nil)
+	ip, err := c.GetIP()
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := c.GetSSHPort()
+	if err != nil {
+		return nil, err
+	}
+
+	sshKPath := c.GetSSHKeyPath()
+	sshUsrName := c.GetSSHUsername()
+
+	return runner.NewSSHRunner(ip, sshKPath, sshUsrName, port), nil
+}
+
+func (c *RPCClientDriver) IsContainerBased() bool {
+	var resp bool
+	err := c.Client.Call(IsContainerBasedMethod, &struct{}{}, &resp)
+	if err != nil {
+		// That's too bad..
+	}
+	return resp
+}
+
+func (c *RPCClientDriver) IsISOBased() bool {
+	var resp bool
+	err := c.Client.Call(IsISOBasedMethod, &struct{}{}, &resp)
+	if err != nil {
+		// That's too bad..
+	}
+	return resp
+}
+
+func (c *RPCClientDriver) IsManaged() bool {
+	var resp bool
+	err := c.Client.Call(IsManagedMethod, &struct{}{}, &resp)
+	if err != nil {
+		// That's too bad..
+	}
+	return resp
 }

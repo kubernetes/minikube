@@ -349,10 +349,8 @@ all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build a
 
 .PHONY: drivers
 drivers: ## Build Hyperkit and KVM2 drivers
-drivers: docker-machine-driver-hyperkit \
-	 docker-machine-driver-kvm2 \
+drivers: docker-machine-driver-kvm2 \
 	 out/docker-machine-driver-kvm2-amd64 \
-	 out/docker-machine-driver-kvm2-arm64
 
 
 .PHONY: docker-machine-driver-hyperkit

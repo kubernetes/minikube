@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package libmachine
 
 import (
@@ -28,7 +44,7 @@ import (
 
 type API interface {
 	io.Closer
-	NewHost(driverName string, rawDriver []byte) (*host.Host, error)
+	NewHost(driverName, cruntimeName string, rawDriver []byte) (*host.Host, error)
 	Create(h *host.Host) error
 	persist.Store
 	GetMachinesDir() string
@@ -53,7 +69,7 @@ func NewClient(storePath, certsDir string) *Client {
 	}
 }
 
-func (api *Client) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+func (api *Client) NewHost(driverName, cRuntime string, rawDriver []byte) (*host.Host, error) {
 	driver, err := api.clientDriverFactory.NewRPCClientDriver(driverName, rawDriver)
 	if err != nil {
 		return nil, err
@@ -78,6 +94,7 @@ func (api *Client) NewHost(driverName string, rawDriver []byte) (*host.Host, err
 				InstallURL:    drivers.DefaultEngineInstallURL,
 				StorageDriver: "overlay2",
 				TLSVerify:     true,
+				EngineName:    cRuntime,
 			},
 			SwarmOptions: &swarm.Options{
 				Host:     "tcp://0.0.0.0:3376",

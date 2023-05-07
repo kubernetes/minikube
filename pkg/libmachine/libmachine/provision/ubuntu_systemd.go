@@ -1,16 +1,33 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package provision
 
 import (
 	"fmt"
+	"os/exec"
 	"strconv"
 
+	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeInstaller"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/log"
-	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
@@ -78,17 +95,17 @@ func (provisioner *UbuntuSystemdProvisioner) Package(name string, action pkgacti
 
 	command := fmt.Sprintf("DEBIAN_FRONTEND=noninteractive sudo -E apt-get %s -y  %s", packageAction, name)
 
-	log.Debugf("package: action=%s name=%s", action.String(), name)
+	klog.Infof("package: action=%s name=%s", action.String(), name)
 
-	return waitForLock(provisioner, command)
+	return waitForLock(provisioner, exec.Command("bash", "-c", command))
 }
 
 func (provisioner *UbuntuSystemdProvisioner) dockerDaemonResponding() bool {
-	log.Debug("checking docker daemon")
+	klog.Infof("checking docker daemon")
 
-	if out, err := provisioner.RunCmd("sudo docker version"); err != nil {
-		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
-		log.Debugf("'sudo docker version' output:\n%s", out)
+	if out, err := provisioner.RunCmd(exec.Command("sudo", "docker", "version")); err != nil {
+		klog.Infof("Error running command to check if the daemon is up: %s", err)
+		klog.Infof("'sudo docker version' output:\n%s", out)
 		return false
 	}
 
@@ -97,9 +114,13 @@ func (provisioner *UbuntuSystemdProvisioner) dockerDaemonResponding() bool {
 }
 
 func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+	if !provisioner.Driver.IsManaged() {
+		return nil
+	}
+
 	provisioner.SwarmOptions = swarmOptions
-	provisioner.AuthOptions = authOptions
-	provisioner.EngineOptions = engineOptions
+	provisioner.AuthOptions = &authOptions
+	provisioner.EngineOptions = &engineOptions
 	swarmOptions.Env = engineOptions.Env
 
 	storageDriver, err := decideStorageDriver(provisioner, "overlay2", engineOptions.StorageDriver)
@@ -108,42 +129,38 @@ func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Option
 	}
 	provisioner.EngineOptions.StorageDriver = storageDriver
 
-	log.Debug("setting hostname")
+	klog.Infof("setting hostname")
 	if err := provisioner.SetHostname(provisioner.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
-	log.Debug("installing base packages")
+	// x7NOTE: installation of packages is not mandatory. The provisioner explicitly
+	// takes care of that inside the Provision method for all implementations.
+	// Thus we can safe have the container/iso provisioners embed the libmachine's
+	// systemdProvisioner (that has packages within.. as opposed to minikube's codebase
+	// systemdProvisioner wich is the same except for the packages), and forget those
+	// inside the actual Provision() call.
+	klog.Infof("installing base packages")
 	for _, pkg := range provisioner.Packages {
 		if err := provisioner.Package(pkg, pkgaction.Install); err != nil {
 			return err
 		}
 	}
 
-	log.Info("Installing Docker...")
-	if err := installDockerGeneric(provisioner, engineOptions.InstallURL); err != nil {
-		return err
-	}
-
-	log.Debug("waiting for docker daemon")
-	if err := mcnutils.WaitFor(provisioner.dockerDaemonResponding); err != nil {
-		return err
-	}
-
+	klog.Infof("configuring auth")
 	provisioner.AuthOptions = setRemoteAuthOptions(provisioner)
 
-	log.Debug("configuring auth")
 	if err := ConfigureAuth(provisioner); err != nil {
 		return err
 	}
 
-	log.Debug("configuring swarm")
-	if err := configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions); err != nil {
-		return err
+	klog.Infof("installing container runtime into the machine")
+
+	rnr, err := provisioner.Driver.GetRunner()
+	if err != nil {
+		return errors.Wrap(err, "while getting runner for cruntime installer")
 	}
 
-	// enable in systemd
-	log.Debug("enabling docker in systemd")
-	err = provisioner.Service("docker", serviceaction.Enable)
-	return err
+	instllr := cruntimeInstaller.DetectCRuntimeInstaller(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
+	return instllr.InstallCRuntime()
 }

@@ -506,12 +506,33 @@ func killAPIServerProc(runner runner.Runner) error {
 	return nil
 }
 
-// x7TODO:
-// implement those
 func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	return nil, nil
+	if d.exec == nil {
+		rnr, err := d.GetRunner()
+		if err != nil {
+			return nil, err
+		}
+
+		d.exec = rnr
+	}
+
+	return d.exec.RunCmd(cmd)
 }
 
 func (d *Driver) GetRunner() (runner.Runner, error) {
-	return nil, nil
+	return runner.NewKICRunner(d.MachineName, d.OCIBinary), nil
+}
+
+func (d *Driver) IsContainerBased() bool {
+	return true
+}
+
+func (d *Driver) IsISOBased() bool {
+	return false
+}
+
+// IsManaged retuns false. we're not managing the machine for the kic driver:
+// we're expecting to find everything we need already inside the container
+func (d *Driver) IsManaged() bool {
+	return false
 }

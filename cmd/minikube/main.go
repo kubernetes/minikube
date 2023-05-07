@@ -51,7 +51,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	_ "k8s.io/minikube/pkg/provision"
 
 	dconfig "github.com/docker/cli/cli/config"
 	ddocker "github.com/docker/cli/cli/context/docker"

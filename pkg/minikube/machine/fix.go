@@ -77,7 +77,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	if !driver.BareMetal(driverName) {
 		e := engineOptions(*cc)
 		h.HostOptions.EngineOptions.Env = e.Env
-		err = provisionDockerMachine(h)
+		err = provisionMachine(h)
 		if err != nil {
 			return h, errors.Wrap(err, "provision")
 		}

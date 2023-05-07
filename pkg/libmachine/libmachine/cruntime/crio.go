@@ -29,6 +29,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -51,6 +52,7 @@ type CRIO struct {
 	ImageRepository   string
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
+	Options           engine.Options
 }
 
 // generateCRIOConfig sets up pause image and cgroup manager for cri-o in crioConfigFile

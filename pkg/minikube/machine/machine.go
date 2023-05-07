@@ -19,14 +19,13 @@ package machine
 import (
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/host"
-	libprovision "k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/provision"
 )
 
 // Machine contains information about a machine
@@ -84,31 +83,19 @@ func LoadMachine(name string) (*Machine, error) {
 }
 
 // provisionDockerMachine provides fast provisioning of a docker machine
-func provisionDockerMachine(h *host.Host) error {
-	klog.Infof("provisioning docker machine ...")
+func provisionMachine(h *host.Host) error {
+	klog.Infof("provisioning machine ...")
 	start := time.Now()
 	defer func() {
-		klog.Infof("provisioned docker machine in %s", time.Since(start))
+		klog.Infof("provisioned machine in %s", time.Since(start))
 	}()
 
-	p, err := fastDetectProvisioner(h)
+	p, err := provision.DetectProvisioner(h.Driver)
 	if err != nil {
-		return errors.Wrap(err, "fast detect")
+		return errors.Wrap(err, "while detecting provisioner")
 	}
-	return p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
-}
 
-// fastDetectProvisioner provides a shortcut for provisioner detection
-func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
-	d := h.Driver.DriverName()
-	switch {
-	case driver.IsKIC(d):
-		return provision.NewUbuntuProvisioner(h.Driver), nil
-	case driver.BareMetal(d), driver.IsSSH(d):
-		return libprovision.DetectProvisioner(h.Driver)
-	default:
-		return provision.NewBuildrootProvisioner(h.Driver), nil
-	}
+	return p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
 }
 
 // saveHost is a wrapper around libmachine's Save function to proactively update the node's IP whenever a host is saved

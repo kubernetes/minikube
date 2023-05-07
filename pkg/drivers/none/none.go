@@ -77,6 +77,15 @@ func NewDriver(c Config) *Driver {
 	}
 }
 
+// IsManaged stays for: "are we responsible for provisioning the machine?"
+func (d *Driver) IsManaged() bool {
+	// the None Driver idea is that the user provides a vm with all the
+	// nedded components to run kubernetes installed,
+	// then minikube only does its minikube magic..
+	// basically we're skipping the provisioning phase
+	return false
+}
+
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
 	return d.runtime.Available()
@@ -104,7 +113,7 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not support ssh commands")
+	return "127.0.0.1", nil
 }
 
 // GetSSHPort returns port for use with ssh
@@ -232,15 +241,36 @@ func (d *Driver) StopMachine() error {
 
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("driver does not support ssh commands")
+	return fmt.Errorf("driverrrrrr does not support ssh commands")
 }
 
-// x7TODO:
-// implement those
+// RunCmd uses the driver's struct embedded runner;
+// if it's nil, it initializes one
 func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	return nil, nil
+	if d.exec == nil {
+		rnr, err := d.GetRunner()
+		if err != nil {
+			return nil, err
+		}
+
+		d.exec = rnr
+	}
+
+	return d.exec.RunCmd(cmd)
 }
 
+// GetRunner initializes an exec runner.
+// We're basically escaping to the shell inside the linux machine
 func (d *Driver) GetRunner() (runner.Runner, error) {
-	return nil, nil
+	return runner.NewExecRunner(true), nil
+}
+
+// IsContainerBased returns false as we're supposed to run inside a user-provided vm
+func (d *Driver) IsContainerBased() bool {
+	return false
+}
+
+// IsISOBased returns false as we're supposed to run inside a user-provided vm
+func (d *Driver) IsISOBased() bool {
+	return false
 }

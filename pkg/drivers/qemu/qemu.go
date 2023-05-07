@@ -147,6 +147,18 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 	}
 }
 
+func (d *Driver) IsContainerBased() bool {
+	return false
+}
+
+func (d *Driver) IsISOBased() bool {
+	return true
+}
+
+func (d *Driver) IsManaged() bool {
+	return false
+}
+
 func (d *Driver) GetIP() (string, error) {
 	if network.IsBuiltinQEMU(d.Network) {
 		return "127.0.0.1", nil

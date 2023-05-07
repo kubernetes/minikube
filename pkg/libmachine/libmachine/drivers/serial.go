@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package drivers
 
 import (
@@ -109,14 +125,14 @@ func (d *SerialDriver) GetURL() (string, error) {
 	return d.Driver.GetURL()
 }
 
-// GetState returns the state that the host is in (running, stopped, etc)
+// GetMachineState returns the state that the host is in (running, stopped, etc)
 func (d *SerialDriver) GetMachineState() (state.State, error) {
 	d.Lock()
 	defer d.Unlock()
 	return d.Driver.GetMachineState()
 }
 
-// Kill stops a host forcefully
+// KillMachine stops a host forcefully
 func (d *SerialDriver) KillMachine() error {
 	d.Lock()
 	defer d.Unlock()
@@ -130,7 +146,7 @@ func (d *SerialDriver) PreCreateCheck() error {
 	return d.Driver.PreCreateCheck()
 }
 
-// Remove a host
+// RemoveMachine a host
 func (d *SerialDriver) RemoveMachine() error {
 	d.Lock()
 	defer d.Unlock()
@@ -153,14 +169,14 @@ func (d *SerialDriver) SetConfigFromFlags(opts DriverOptions) error {
 	return d.Driver.SetConfigFromFlags(opts)
 }
 
-// Start a host
+// StartMachine a host
 func (d *SerialDriver) StartMachine() error {
 	d.Lock()
 	defer d.Unlock()
 	return d.Driver.StartMachine()
 }
 
-// Stop a host gracefully
+// StopMachine a host gracefully
 func (d *SerialDriver) StopMachine() error {
 	d.Lock()
 	defer d.Unlock()

@@ -25,6 +25,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -123,6 +124,7 @@ type Config struct {
 	Type string
 	// Custom path to a socket file
 	Socket string
+	// x7NOTE: this is used to init a sysinit interface
 	// Runner is the CommandRunner object to execute commands with
 	Runner runner.Runner
 	// NetworkPlugin name of networking plugin ("cni")
@@ -133,6 +135,9 @@ type Config struct {
 	KubernetesVersion semver.Version
 	// InsecureRegistry list of insecure registries
 	InsecureRegistry []string
+	// Options is a generic struct that carries details about
+	// the generic container runtime
+	Options engine.Options
 }
 
 // ListContainersOptions are the options to use for listing containers
@@ -205,6 +210,7 @@ func New(c Config) (CRuntime, error) {
 			Init:              sm,
 			UseCRI:            (sp != ""), // !dockershim
 			CRIService:        cs,
+			Options:           c.Options,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{
@@ -213,6 +219,7 @@ func New(c Config) (CRuntime, error) {
 			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
+			Options:           c.Options,
 		}, nil
 	case "containerd":
 		return &Containerd{
@@ -222,6 +229,7 @@ func New(c Config) (CRuntime, error) {
 			KubernetesVersion: c.KubernetesVersion,
 			Init:              sm,
 			InsecureRegistry:  c.InsecureRegistry,
+			Options:           c.Options,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)

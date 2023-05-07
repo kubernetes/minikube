@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package runner
 
 import (
@@ -26,13 +42,13 @@ import (
 //
 // It implements the CommandRunner interface.
 type SSHRunner struct {
-	ip      string
-	keyPath string
-	usrName string
-	port    int
+	Ip      string
+	KeyPath string
+	UsrName string
+	Port    int
 
-	c *ssh.Client
-	s *ssh.Session
+	C *ssh.Client
+	S *ssh.Session
 }
 
 type sshReadableFile struct {
@@ -82,26 +98,26 @@ func (s *sshReadableFile) Close() error {
 // through the ssh.Client provided.
 func NewSSHRunner(ip, keyPath, usrName string, port int) *SSHRunner {
 	return &SSHRunner{
-		c:       nil,
-		ip:      ip,
-		keyPath: keyPath,
-		usrName: usrName,
-		port:    port,
+		C:       nil,
+		Ip:      ip,
+		KeyPath: keyPath,
+		UsrName: usrName,
+		Port:    port,
 	}
 }
 
 // client returns an ssh client (uses retry underneath)
 func (s *SSHRunner) client() (*ssh.Client, error) {
-	if s.c != nil {
-		return s.c, nil
+	if s.C != nil {
+		return s.C, nil
 	}
 
-	c, err := utils.NewSSHClient(s.ip, s.keyPath, s.usrName, s.port)
+	c, err := utils.NewSSHClient(s.Ip, s.KeyPath, s.UsrName, s.Port)
 	if err != nil {
 		return nil, errors.Wrap(err, "new client")
 	}
-	s.c = c
-	return s.c, nil
+	s.C = c
+	return s.C, nil
 }
 
 // session returns an ssh session, retrying if necessary
@@ -116,7 +132,7 @@ func (s *SSHRunner) session() (*ssh.Session, error) {
 		sess, err = client.NewSession()
 		if err != nil {
 			klog.Warningf("session error, resetting client: %v", err)
-			s.c = nil
+			s.C = nil
 			return err
 		}
 		return nil
@@ -176,12 +192,18 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	var err error // x7NOTE: cut this out
+
 	if cmd.Stdin != nil {
 		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
 	}
 
 	rr := &RunResult{Args: cmd.Args}
 	klog.Infof("Run: %v", rr.Command())
+
+	defer func() {
+		klog.Infof("x7DBG = returning err: %v", err)
+	}()
 
 	var outb, errb io.Writer
 	start := time.Now()
@@ -264,7 +286,7 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
 	}
 
-	if s.s != nil {
+	if s.S != nil {
 		return nil, fmt.Errorf("another SSH command has been started and is currently running")
 	}
 
@@ -295,33 +317,33 @@ func (s *SSHRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
 		return sc, errors.Wrap(err, "NewSession")
 	}
 
-	s.s = sess
+	s.S = sess
 
-	err = teeSSHStart(s.s, shellquote.Join(cmd.Args...), outb, errb, &wg)
+	err = teeSSHStart(s.S, shellquote.Join(cmd.Args...), outb, errb, &wg)
 
 	return sc, err
 }
 
 // WaitCmd implements the Command Runner interface to wait until a started exec.Cmd object finishes
 func (s *SSHRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
-	if s.s == nil {
+	if s.S == nil {
 		return nil, fmt.Errorf("there is no SSH command started")
 	}
 
 	rr := sc.rr
 
-	err := s.s.Wait()
+	err := s.S.Wait()
 	if exitError, ok := err.(*exec.ExitError); ok {
 		rr.ExitCode = exitError.ExitCode()
 	}
 
 	sc.wg.Wait()
 
-	if err := s.s.Close(); err != io.EOF {
+	if err := s.S.Close(); err != io.EOF {
 		klog.Errorf("session close: %v", err)
 	}
 
-	s.s = nil
+	s.S = nil
 
 	if err == nil {
 		return rr, nil

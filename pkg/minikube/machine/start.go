@@ -145,7 +145,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	h, err := api.NewHost(cfg.Driver, data)
+	h, err := api.NewHost(cfg.Driver, cfg.KubernetesConfig.ContainerRuntime, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}

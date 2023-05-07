@@ -87,13 +87,13 @@ type LocalClient struct {
 }
 
 // NewHost creates a new Host
-func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
+func (api *LocalClient) NewHost(drvName, cruntimeName string, rawDriver []byte) (*host.Host, error) {
 	def := registry.Driver(drvName)
 	if def.Empty() {
 		return nil, fmt.Errorf("driver %q does not exist", drvName)
 	}
 	if def.Init == nil {
-		return api.legacyClient.NewHost(drvName, rawDriver)
+		return api.legacyClient.NewHost(drvName, cruntimeName, rawDriver)
 	}
 	d := def.Init()
 	err := json.Unmarshal(rawDriver, d)
@@ -223,11 +223,11 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"provisioning",
 			func() error {
-				// Skippable because we don't reconfigure Docker?
-				if driver.BareMetal(h.Driver.DriverName()) {
-					return nil
-				}
-				return provisionDockerMachine(h)
+				// we're calling the provisioning method no matter what.
+				// it is the provisioner's responsibility to check for
+				// all the driver/machine special cases:
+				// e.g. iso/container/unmanaged_machine
+				return provisionMachine(h)
 			},
 		},
 	}

@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package localbinary
 
 import (
@@ -93,9 +109,11 @@ func (e ErrPluginBinaryNotFound) Error() string {
 }
 
 // driverPath finds the path of a driver binary by its name.
-//  + If the driver is a core driver, there is no separate driver binary. We reuse current binary if it's `docker-machine`
+//   - If the driver is a core driver, there is no separate driver binary. We reuse current binary if it's `docker-machine`
+//
 // or we assume `docker-machine` is in the PATH.
-//  + If the driver is NOT a core driver, then the separate binary must be in the PATH and it's name must be
+//   - If the driver is NOT a core driver, then the separate binary must be in the PATH and it's name must be
+//
 // `docker-machine-driver-driverName`
 func driverPath(driverName string) string {
 	for _, coreDriver := range CoreDrivers {

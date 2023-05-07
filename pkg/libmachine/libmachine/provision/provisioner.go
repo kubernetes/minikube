@@ -1,21 +1,39 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package provision
 
 import (
 	"fmt"
 	"os/exec"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
 var (
-	provisioners          = make(map[string]*RegisteredProvisioner)
-	detector     Detector = &StandardDetector{}
+	provisioners                     = make(map[string]*RegisteredProvisioner)
+	specialCaseProvisioners          = make(map[string]*RegisteredProvisioner)
+	detector                Detector = &StandardDetector{}
 )
 
 const (
@@ -24,15 +42,18 @@ const (
 
 type Commander interface {
 	// RunCmd is just a short-hand for accessing the Runner from the driver.
-	RunCmd(args string) (string, error)
+	RunCmd(cmd *exec.Cmd) (*runner.RunResult, error)
 }
 
 type Detector interface {
 	DetectProvisioner(d drivers.Driver) (Provisioner, error)
 }
 
+// StandardDetector is used by default (for non-testing purposes)
 type StandardDetector struct{}
 
+// SetDetector is used to set the detector for anything non-standard..
+// like for testing purposes
 func SetDetector(newDetector Detector) {
 	detector = newDetector
 }
@@ -41,9 +62,6 @@ func SetDetector(newDetector Detector) {
 type Provisioner interface {
 	fmt.Stringer
 	Commander
-
-	// Create the files for the daemon to consume configuration settings (return struct of content and path)
-	GenerateDockerOptions(dockerPort int) (*DockerOptions, error)
 
 	// Get the directory where the settings files for docker are to be found
 	GetDockerOptionsDir() string
@@ -88,30 +106,59 @@ type Provisioner interface {
 	GetOsReleaseInfo() (*OsRelease, error)
 }
 
-// RegisteredProvisioner creates a new provisioner
+// RegisteredProvisioner's purpose is to give a representation of an initialized provisioner.
+// we pair this struct to a provisioner name into a global var that keeps track
+// of the usable provisioners
 type RegisteredProvisioner struct {
 	New func(d drivers.Driver) Provisioner
 }
 
+// Register is used to mark provisioners as "usable" within the codebase,
+// as when detecting provisioners we're iterating over this global var
 func Register(name string, p *RegisteredProvisioner) {
 	provisioners[name] = p
 }
 
+// RegisterSpecial is just like Register, only it does register container/iso provisioners
+func RegisterSpecial(name string, p *RegisteredProvisioner) {
+	specialCaseProvisioners[name] = p
+}
+
+// DetectProvisioner is the entrypoint for the provision package.
 func DetectProvisioner(d drivers.Driver) (Provisioner, error) {
 	return detector.DetectProvisioner(d)
 }
 
+// DetectProvisioner is used if detector global var is not overridden for testing ecc...
+// Its purpose is to return a compatible provisioner for the machine, given a driver.
+// It takes care of the "special-case" machines (container/iso)
 func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (Provisioner, error) {
-	log.Info("Waiting for SSH to be available...")
-	if err := drivers.WaitForPrompt(d); err != nil {
-		return nil, err
+	klog.Infof("Detecting the provisioner...")
+
+	// we're using the provisioner in cache, if any
+	if provisioner := GetCachedProvisioner(); provisioner != nil {
+		klog.Infof("using cached provisioner")
+		return provisioner, nil
 	}
 
-	log.Info("Detecting the provisioner...")
+	// we're checking special-case machines
+	if d.IsISOBased() {
+		klog.Infof("detected iso-based machine driver")
+		p := specialCaseProvisioners["buildroot"].New(d)
+		SetCachedProvisioner(p)
+		return p, nil
+	} else if d.IsContainerBased() {
+		klog.Infof("detected container-based machine driver")
+		p := specialCaseProvisioners["container"].New(d)
+		SetCachedProvisioner(p)
+		return p, nil
+	}
+	// everything else is a local/remote managed/unmanaged vm
 
-	osReleaseOut, err := d.RunCmd(exec.Command("cat /etc/os-release"))
+	// we're checking the os-release to test the provisioner for compatibility
+	osReleaseOut, err := d.RunCmd(exec.Command("cat", "/etc/os-release"))
 	if err != nil {
-		return nil, fmt.Errorf("Error getting SSH command: %s", err)
+		return nil, fmt.Errorf("Error running command inside machine, while detecting provisioner: %s", err)
 	}
 
 	osReleaseInfo, err := NewOsRelease([]byte(osReleaseOut.Stdout.String()))
@@ -119,15 +166,21 @@ func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (Provisione
 		return nil, fmt.Errorf("Error parsing /etc/os-release file: %s", err)
 	}
 
+	// we initialize all registered provisioners until we found one compatible with
+	// the detected os-release inside the machine.
+	// Once found, we cache it for later use..
 	for _, p := range provisioners {
 		provisioner := p.New(d)
+		klog.Infof("we're trying provisioner: %s", provisioner.String())
 		provisioner.SetOsReleaseInfo(osReleaseInfo)
 
 		if provisioner.CompatibleWithHost() {
-			log.Debugf("found compatible host: %s", osReleaseInfo.ID)
+			klog.Infof("found compatible host for ID: %s", osReleaseInfo.ID)
+			SetCachedProvisioner(provisioner)
 			return provisioner, nil
 		}
 	}
 
+	// if nothing is found, we return an error
 	return nil, ErrDetectionFailed
 }

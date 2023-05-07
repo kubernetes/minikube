@@ -21,6 +21,7 @@ package kvm
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"syscall"
 	"time"
@@ -29,6 +30,7 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"
@@ -94,6 +96,8 @@ type Driver struct {
 
 	// Extra Disks XML
 	ExtraDisksXML []string
+
+	exec runner.Runner
 }
 
 const (
@@ -153,8 +157,8 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
-// GetState returns the state that the host is in (running, stopped, etc)
-func (d *Driver) GetState() (st state.State, err error) {
+// GetMachineState returns the state that the host is in (running, stopped, etc)
+func (d *Driver) GetMachineState() (st state.State, err error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return state.None, errors.Wrap(err, "getting connection")
@@ -209,7 +213,7 @@ func machineState(lvs libvirt.DomainState) state.State {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	s, err := d.GetState()
+	s, err := d.GetMachineState()
 	if err != nil {
 		return "", errors.Wrap(err, "machine in unknown state")
 	}
@@ -236,8 +240,8 @@ func (d *Driver) DriverName() string {
 	return "kvm2"
 }
 
-// Kill stops a host forcefully, including any containers that we are managing.
-func (d *Driver) Kill() (err error) {
+// KillMachine stops a host forcefully, including any containers that we are managing.
+func (d *Driver) KillMachine() (err error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
@@ -250,13 +254,13 @@ func (d *Driver) Kill() (err error) {
 	return dom.Destroy()
 }
 
-// Restart a host
-func (d *Driver) Restart() error {
+// RestartMachine a host
+func (d *Driver) RestartMachine() error {
 	return pkgdrivers.Restart(d)
 }
 
-// Start a host
-func (d *Driver) Start() (err error) {
+// StartMachine a host
+func (d *Driver) StartMachine() (err error) {
 	// this call ensures that all networks are active
 	log.Info("Ensuring networks are active...")
 	err = d.ensureNetwork()
@@ -323,8 +327,8 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 	return nil
 }
 
-// Create a host using the driver's config
-func (d *Driver) Create() (err error) {
+// CreateMachine a host using the driver's config
+func (d *Driver) CreateMachine() (err error) {
 	log.Info("Creating KVM machine...")
 	err = d.createNetwork()
 	if err != nil {
@@ -393,7 +397,7 @@ func (d *Driver) Create() (err error) {
 			err = ferr
 		}
 	}()
-	if err = d.Start(); err != nil {
+	if err = d.StartMachine(); err != nil {
 		log.Errorf("unable to start VM: %v", err)
 		return err
 	}
@@ -428,9 +432,9 @@ func ensureDirPermissions(store string) error {
 	return nil
 }
 
-// Stop a host gracefully
-func (d *Driver) Stop() (err error) {
-	s, err := d.GetState()
+// StopMachine a host gracefully
+func (d *Driver) StopMachine() (err error) {
+	s, err := d.GetMachineState()
 	if err != nil {
 		return errors.Wrap(err, "getting state of VM")
 	}
@@ -452,7 +456,7 @@ func (d *Driver) Stop() (err error) {
 		}
 
 		for i := 0; i < 60; i++ {
-			s, err := d.GetState()
+			s, err := d.GetMachineState()
 			if err != nil {
 				return errors.Wrap(err, "error getting state of VM")
 			}
@@ -468,8 +472,8 @@ func (d *Driver) Stop() (err error) {
 	return fmt.Errorf("unable to stop vm, current state %q", s.String())
 }
 
-// Remove a host
-func (d *Driver) Remove() error {
+// RemoveMachine a host
+func (d *Driver) RemoveMachine() error {
 	log.Debug("Removing machine...")
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
@@ -558,4 +562,43 @@ func lvErr(err error) libvirt.Error {
 		return libvirt.Error{Code: libvirt.ERR_INTERNAL_ERROR, Message: "internal error"}
 	}
 	return libvirt.Error{Code: libvirt.ERR_OK, Message: ""}
+}
+
+func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	if d.exec == nil {
+		rnr, err := d.GetRunner()
+		if err != nil {
+			return nil, err
+		}
+
+		d.exec = rnr
+	}
+
+	return d.exec.RunCmd(cmd)
+}
+
+func (d *Driver) GetRunner() (runner.Runner, error) {
+	ip, err := d.GetIP()
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := d.GetSSHPort()
+	if err != nil {
+		return nil, err
+	}
+
+	return runner.NewSSHRunner(ip, d.GetSSHKeyPath(), d.GetSSHUsername(), port), nil
+}
+
+func (d *Driver) IsContainerBased() bool {
+	return false
+}
+
+func (d *Driver) IsISOBased() bool {
+	return true
+}
+
+func (d *Driver) IsManaged() bool {
+	return true
 }

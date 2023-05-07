@@ -276,3 +276,15 @@ func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
 func (d *Driver) GetRunner() (runner.Runner, error) {
 	return nil, nil
 }
+
+func (d *Driver) IsContainerBased() bool {
+	return false
+}
+
+func (d *Driver) IsISOBased() bool {
+	return false
+}
+
+func (d *Driver) IsManaged() bool {
+	return true
+}

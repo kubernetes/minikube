@@ -1,3 +1,19 @@
+/*
+Copyright 2023 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package drivers
 
 import (
@@ -21,6 +37,17 @@ type Driver interface {
 	// RunCmd is a shortcut to run a command inside the linux machine
 	RunCmd(*exec.Cmd) (*runner.RunResult, error)
 
+	// IsManaged once the linux machine is created,
+	// is minikube responsible for the provisioning?
+	// otherwise we assume that the machine has already all the components installed.
+	IsManaged() bool
+
+	// IsContainerBased returns true if this driver creates a container based machine
+	IsContainerBased() bool
+
+	// IsISOBased returns true if this driver creates an ISO based machine
+	IsISOBased() bool
+
 	// Create a host using the driver's config
 	CreateMachine() error
 
@@ -39,6 +66,7 @@ type Driver interface {
 	GetMachineName() string
 
 	// GetSSHHostname returns hostname for use with ssh
+	// required since we're using this for ssl/tls authentication setup during provisioning
 	GetSSHHostname() (string, error)
 
 	// GetSSHKeyPath returns key path for use with ssh
