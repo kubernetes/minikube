@@ -22,7 +22,9 @@ jobs:
       - name: Bump Ubuntu version
         id: bumpUbuntu
         run: |
+          echo "OLD_VERSION=$(DEP=ubuntu make get-dependency-version)" >> $GITHUB_OUTPUT
           make update-ubuntu-version
+          echo "NEW_VERSION=$(DEP=ubuntu make get-dependency-version)" >> $GITHUB_OUTPUT
           c=$(git status --porcelain)
           c="${c//$'\n'/'%0A'}"
           c="${c//$'\r'/'%0D'}"
@@ -35,14 +37,14 @@ jobs:
         uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: update ubuntu:focal image version
+          commit-message: 'Kicbase: Bump ubuntu:focal from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outpus.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_ubuntu_version
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Kicbase: Bump ubuntu:focal image version'
+          title: 'Kicbase: Bump ubuntu:focal from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outpus.NEW_VERSION }}'
           body: |
             The ubuntu:focal image released a new version
 
