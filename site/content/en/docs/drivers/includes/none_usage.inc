@@ -4,10 +4,8 @@ A Linux VM with the following:
 
 * systemd or OpenRC
 * a Container Runtime Interface (CRI), such as Docker or CRI-O
-
-If using Kubernetes v1.24+ & Docker CRI you will also need the following:
-* [cri-dockerd](https://github.com/Mirantis/cri-dockerd)
-* [containernetworking-plugins](https://github.com/containernetworking/plugins)
+* [containernetworking-plugins]({{<ref "/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver" >}})
+* [cri-dockerd](https://github.com/Mirantis/cri-dockerd) (Only if using Docker CRI)
 
 This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/), such as:
 

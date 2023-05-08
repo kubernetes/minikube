@@ -188,5 +188,18 @@ Minikube is an open community and we are always willing to help users from any c
   
 3. Use a proxy server/VPN, if you have one. <br/> *Note: please obey the local laws. In some area, using an unauthorized proxy server/VPN is ILLEGAL* 
 
+## How do I install containernetworking-plugins for none driver?
 
+Go to [containernetworking-plugins](https://github.com/containernetworking/plugins/releases) to find the latest version.
 
+Then execute the following:
+```shell
+CNI_PLUGIN_VERSION="<version_here>"
+CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
+CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
+
+curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
+sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
+rm "$CNI_PLUGIN_TAR"
+```
