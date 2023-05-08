@@ -615,7 +615,7 @@ validates that profile list works with --no-kubernetes
 validates that minikube start with no args works.
 
 ## TestChangeNoneUser
-tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected
+tests to make sure the CHANGE_MINIKUBE_NONE_USER environment variable is respected
 and changes the minikube file permissions from root to the correct user.
 
 ## TestPause
