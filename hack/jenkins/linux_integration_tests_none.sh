@@ -31,8 +31,8 @@ DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_START_ARGS="--bootstrapper=kubeadm"
 
-SUDO_PREFIX="sudo -E "
-export KUBECONFIG="/root/.kube/config"
+# add install location of iptables and conntrack to PATH
+PATH="/usr/sbin:$PATH"
 
 if ! kubeadm &>/dev/null; then
   echo "WARNING: kubeadm is not installed. will try to install."

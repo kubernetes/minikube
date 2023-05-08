@@ -209,5 +209,10 @@ func writeFile(dst string, f assets.CopyableFile, perms os.FileMode) error {
 	if n != int64(f.GetLength()) {
 		return fmt.Errorf("%s: expected to write %d bytes, but wrote %d instead", dst, f.GetLength(), n)
 	}
+
+	if err := w.Chmod(perms); err != nil {
+		return errors.Wrap(err, "chmod")
+	}
+
 	return w.Close()
 }

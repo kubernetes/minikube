@@ -21,10 +21,8 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 
 ## Usage
 
-The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
-
 ```shell
-sudo -E minikube start --driver=none
+minikube start --driver=none
 ```
 
 To make `none` the default driver:
