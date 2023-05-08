@@ -1,3 +1,5 @@
+//go:build !386 && !amd64
+
 /*
 Copyright 2023 The Kubernetes Authors All rights reserved.
 
@@ -13,8 +15,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-// +build !386,!amd64
 
 package virtualbox
 

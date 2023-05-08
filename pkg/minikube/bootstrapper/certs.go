@@ -348,7 +348,7 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, ccs CACerts, 
 	return xfer, nil
 }
 
-func generateKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
+func generateKubeadmCerts(cmd runner.Runner, cc config.ClusterConfig) error {
 	if _, err := cmd.RunCmd(exec.Command("ls", path.Join(vmpath.GuestPersistentDir, "certs", "etcd"))); err != nil {
 		klog.Infof("certs directory doesn't exist, likely first start: %v", err)
 		return nil
@@ -582,7 +582,7 @@ func isValid(certPath, keyPath string) bool {
 	return true
 }
 
-func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
+func isKubeadmCertValid(cmd runner.Runner, certPath string) bool {
 	_, err := cmd.RunCmd(exec.Command("openssl", "x509", "-noout", "-in", certPath, "-checkend", "86400"))
 	if err != nil {
 		klog.Infof("%v", err)
