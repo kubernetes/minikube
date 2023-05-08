@@ -49,13 +49,13 @@ var (
 	schema = map[string]update.Item{
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`UBUNTU_FOCAL_IMAGE=.*`: `UBUNTU_FOCAL_IMAGE="{{.LatestVersion}}"`,
+				`UBUNTU_JAMMY_IMAGE=.*`: `UBUNTU_JAMMY_IMAGE="{{.LatestVersion}}"`,
 			},
 		},
 	}
 )
 
-// Data holds latest Ubuntu focal version in semver format.
+// Data holds latest Ubuntu jammy version in semver format.
 type Data struct {
 	LatestVersion string
 }
@@ -70,7 +70,7 @@ type Response struct {
 func getLatestVersion() (string, error) {
 	resp, err := http.Get(dockerHubUbuntuBaseURL)
 	if err != nil {
-		return "", fmt.Errorf("unable to get Ubuntu focal's latest version: %v", err)
+		return "", fmt.Errorf("unable to get Ubuntu jammy's latest version: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -86,22 +86,22 @@ func getLatestVersion() (string, error) {
 	}
 
 	for _, i := range content.Results {
-		if strings.Contains(i.Name, "focal-") {
+		if strings.Contains(i.Name, "jammy-") {
 			return i.Name, nil
 		}
 	}
 
-	return "", fmt.Errorf("response from Docker Hub does not contain a latest focal image")
+	return "", fmt.Errorf("response from Docker Hub does not contain a latest jammy image")
 }
 
 func main() {
-	// get Ubuntu Focal latest version
+	// get Ubuntu Jammy latest version
 	latest, err := getLatestVersion()
 	if err != nil {
-		klog.Fatalf("Unable to find latest ubuntu:focal version: %v\n", err)
+		klog.Fatalf("Unable to find latest ubuntu:jammy version: %v\n", err)
 	}
 	data := Data{LatestVersion: fmt.Sprintf("ubuntu:%s", latest)}
-	klog.Infof("Ubuntu focal latest version: %s", latest)
+	klog.Infof("Ubuntu jammy latest version: %s", latest)
 
 	update.Apply(schema, data)
 }
