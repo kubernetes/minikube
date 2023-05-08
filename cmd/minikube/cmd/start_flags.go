@@ -329,11 +329,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		proxy.SetDockerEnv()
 	}
 
-	var kubeNodeName string
-	if driver.BareMetal(cc.Driver) {
-		kubeNodeName = "m01"
-	}
-	return createNode(cc, kubeNodeName, existing)
+	return createNode(cc, existing)
 }
 
 func getCPUCount(drvName string) int {
