@@ -55,6 +55,7 @@ func TestMultiNode(t *testing.T) {
 			{"DeployApp2Nodes", validateDeployAppToMultiNode},
 			{"PingHostFrom2Pods", validatePodsPingHost},
 			{"AddNode", validateAddNodeToMultiNode},
+			{"MultiNodeLabels", validateMultiNodeLabels},
 			{"ProfileList", validateProfileListWithMultiNode},
 			{"CopyFile", validateCopyFileWithMultiNode},
 			{"StopNode", validateStopRunningNode},
@@ -200,6 +201,33 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 			}
 			fp := path.Join("/home/docker", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
 			testCpCmd(ctx, t, profile, n.Name, dstPath, n2.Name, fp)
+		}
+	}
+}
+
+// validateMultiNodeLabels check if all node labels were configured correctly
+func validateMultiNodeLabels(ctx context.Context, t *testing.T, profile string) {
+	// docs: Get the node labels from the cluster with `kubectl get nodes`
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "-o", "jsonpath=[{range .items[*]}{.metadata.labels},{end}]"))
+	if err != nil {
+		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
+	}
+
+	nodeLabelsList := []map[string]string{}
+	fixedString := strings.Replace(rr.Stdout.String(), ",]", "]", 1)
+	err = json.Unmarshal([]byte(fixedString), &nodeLabelsList)
+	if err != nil {
+		t.Errorf("failed to decode json from label list: args %q: %v", rr.Command(), err)
+	}
+
+	// docs: check if all node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
+	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name", "minikube.k8s.io/primary"}
+
+	for _, nodeLabels := range nodeLabelsList {
+		for _, el := range expectedLabels {
+			if _, ok := nodeLabels[el]; !ok {
+				t.Errorf("expected to have label %q in node labels but got : %s", el, rr.Output())
+			}
 		}
 	}
 }
