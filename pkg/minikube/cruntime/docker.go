@@ -117,6 +117,9 @@ func (r *Docker) Available() error {
 			return err
 		}
 	}
+	if err := checkCNIPlugins(r.KubernetesVersion); err != nil {
+		return err
+	}
 	_, err := exec.LookPath("docker")
 	return err
 }

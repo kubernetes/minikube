@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -348,4 +349,12 @@ func kubeletCRIOptions(cr Manager, kubernetesVersion semver.Version) map[string]
 		opts["container-runtime"] = "remote"
 	}
 	return opts
+}
+
+func checkCNIPlugins(kubernetesVersion semver.Version) error {
+	if kubernetesVersion.LT(semver.Version{Major: 1, Minor: 24}) {
+		return nil
+	}
+	_, err := os.Stat("/opt/cni/bin")
+	return err
 }

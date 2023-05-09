@@ -130,7 +130,7 @@ func (r *CRIO) Available() error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available")
 	}
-	return nil
+	return checkCNIPlugins(r.KubernetesVersion)
 }
 
 // Active returns if CRIO is active on the host
