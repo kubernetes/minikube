@@ -652,7 +652,7 @@ Bug Fixes:
 * Fix port validation error on specifying tcp/udp or range of ports. [#13812](https://github.com/kubernetes/minikube/pull/13812)
 * Fix not downloading kic for offline mode [#13910](https://github.com/kubernetes/minikube/pull/13910)
 * Fix trying to pause multiple containers with runc [#13783](https://github.com/kubernetes/minikube/pull/13783)
-* Fix `minikube servce` docker/port-forward issues [#13756](https://github.com/kubernetes/minikube/pull/13756)
+* Fix `minikube service` docker/port-forward issues [#13756](https://github.com/kubernetes/minikube/pull/13756)
 
 Version Upgrades:
 * Upgrade Kubernetes default: v1.23.6 and latest: v1.23.6 [#14144](https://github.com/kubernetes/minikube/pull/14144)
