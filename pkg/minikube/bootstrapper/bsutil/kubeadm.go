@@ -124,6 +124,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		KubeProxyOptions           map[string]string
 		ResolvConfSearchRegression bool
 		KubeletConfigOpts          map[string]string
+		PrependCriSocketUnix       bool
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -168,6 +169,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	// v1beta3 isn't required until v1.23.
 	if version.GTE(semver.MustParse("1.23.0")) {
 		configTmpl = ktmpl.V1Beta3
+	}
+	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		opts.PrependCriSocketUnix = true
 	}
 	klog.Infof("kubeadm options: %+v", opts)
 	b := bytes.Buffer{}
