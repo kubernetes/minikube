@@ -17,11 +17,13 @@ limitations under the License.
 package drivers
 
 import (
+	"os/exec"
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/libmachine/mcnflag"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 )
 
 type CallRecorder struct {
@@ -44,6 +46,8 @@ func (l *MockLocker) Unlock() {
 	l.calls.record("Unlock")
 }
 
+// x7TODO: another mock driver.. There's like 3 of them so far..
+// should be able to merge those into 1 driver inside libmachine/drivers
 type MockDriver struct {
 	calls       *CallRecorder
 	driverName  string
@@ -58,7 +62,32 @@ type MockDriver struct {
 	state       state.State
 }
 
-func (d *MockDriver) Create() error {
+func (d *MockDriver) GetRunner() (runner.Runner, error) {
+	d.calls.record("GetRunner")
+	return nil, nil
+}
+
+func (d *MockDriver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
+	d.calls.record("RunCmd")
+	return nil, nil
+}
+
+func (d *MockDriver) IsContainerBased() bool {
+	d.calls.record("IsContainerBased")
+	return false
+}
+
+func (d *MockDriver) IsISOBased() bool {
+	d.calls.record("IsISOBased")
+	return false
+}
+
+func (d *MockDriver) IsManaged() bool {
+	d.calls.record("IsManaged")
+	return false
+}
+
+func (d *MockDriver) CreateMachine() error {
 	d.calls.record("Create")
 	return nil
 }
@@ -108,13 +137,13 @@ func (d *MockDriver) GetURL() (string, error) {
 	return d.url, nil
 }
 
-func (d *MockDriver) GetState() (state.State, error) {
-	d.calls.record("GetState")
+func (d *MockDriver) GetMachineState() (state.State, error) {
+	d.calls.record("GetMachineState")
 	return d.state, nil
 }
 
-func (d *MockDriver) Kill() error {
-	d.calls.record("Kill")
+func (d *MockDriver) KillMachine() error {
+	d.calls.record("KillMachine")
 	return nil
 }
 
@@ -123,28 +152,28 @@ func (d *MockDriver) PreCreateCheck() error {
 	return nil
 }
 
-func (d *MockDriver) Remove() error {
-	d.calls.record("Remove")
+func (d *MockDriver) RemoveMachine() error {
+	d.calls.record("RemoveMachine")
 	return nil
 }
 
-func (d *MockDriver) Restart() error {
-	d.calls.record("Restart")
+func (d *MockDriver) RestartMachine() error {
+	d.calls.record("RestartMachine")
 	return nil
 }
 
-func (d *MockDriver) SetConfigFromFlags(opts DriverOptions) error {
+func (d *MockDriver) SetConfigFromFlags(_ DriverOptions) error {
 	d.calls.record("SetConfigFromFlags")
 	return nil
 }
 
-func (d *MockDriver) Start() error {
-	d.calls.record("Start")
+func (d *MockDriver) StartMachine() error {
+	d.calls.record("StartMachine")
 	return nil
 }
 
-func (d *MockDriver) Stop() error {
-	d.calls.record("Stop")
+func (d *MockDriver) StopMachine() error {
+	d.calls.record("StopMachine")
 	return nil
 }
 
@@ -152,7 +181,7 @@ func TestSerialDriverCreate(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	err := driver.Create()
+	err := driver.CreateMachine()
 
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"Lock", "Create", "Unlock"}, callRecorder.calls)
@@ -242,7 +271,7 @@ func TestSerialDriverGetState(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{state: state.Running, calls: callRecorder}, &MockLocker{calls: callRecorder})
-	machineState, _ := driver.GetState()
+	machineState, _ := driver.GetMachineState()
 
 	assert.Equal(t, state.Running, machineState)
 	assert.Equal(t, []string{"Lock", "GetState", "Unlock"}, callRecorder.calls)
@@ -252,7 +281,7 @@ func TestSerialDriverKill(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.Kill()
+	_ = driver.KillMachine()
 
 	assert.Equal(t, []string{"Lock", "Kill", "Unlock"}, callRecorder.calls)
 }
@@ -261,7 +290,7 @@ func TestSerialDriverPreCreateCheck(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.PreCreateCheck()
+	_ = driver.PreCreateCheck()
 
 	assert.Equal(t, []string{"Lock", "PreCreateCheck", "Unlock"}, callRecorder.calls)
 }
@@ -270,7 +299,7 @@ func TestSerialDriverRemove(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.Remove()
+	_ = driver.RemoveMachine()
 
 	assert.Equal(t, []string{"Lock", "Remove", "Unlock"}, callRecorder.calls)
 }
@@ -279,7 +308,7 @@ func TestSerialDriverRestart(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.Restart()
+	_ = driver.RestartMachine()
 
 	assert.Equal(t, []string{"Lock", "Restart", "Unlock"}, callRecorder.calls)
 }
@@ -288,7 +317,7 @@ func TestSerialDriverSetConfigFromFlags(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.SetConfigFromFlags(nil)
+	_ = driver.SetConfigFromFlags(nil)
 
 	assert.Equal(t, []string{"Lock", "SetConfigFromFlags", "Unlock"}, callRecorder.calls)
 }
@@ -297,7 +326,7 @@ func TestSerialDriverStart(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.Start()
+	_ = driver.StartMachine()
 
 	assert.Equal(t, []string{"Lock", "Start", "Unlock"}, callRecorder.calls)
 }
@@ -306,7 +335,7 @@ func TestSerialDriverStop(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
-	driver.Stop()
+	_ = driver.StopMachine()
 
 	assert.Equal(t, []string{"Lock", "Stop", "Unlock"}, callRecorder.calls)
 }

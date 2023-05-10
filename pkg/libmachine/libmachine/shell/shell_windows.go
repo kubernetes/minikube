@@ -106,9 +106,9 @@ func Detect() (string, error) {
 
 func mapShell(shell string) string {
 	mappings := map[string]string{
-		"cmd": "cmd",
+		"cmd":        "cmd",
 		"powershell": "powershell",
-		"pwsh": "powershell",
+		"pwsh":       "powershell",
 	}
 	for k, v := range mappings {
 		if strings.Contains(strings.ToLower(shell), k) {

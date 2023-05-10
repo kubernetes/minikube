@@ -28,8 +28,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -99,13 +99,13 @@ func TestImageExists(t *testing.T) {
 		{"crio", "available-image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
 	}
 	for _, tc := range tests {
-		runner := NewFakeRunner(t)
-		runner.images = map[string]string{
+		rnr := NewFakeRunner(t)
+		rnr.images = map[string]string{
 			"available-image": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
 		}
 		t.Run(tc.runtime, func(t *testing.T) {
 
-			r, err := New(Config{Type: tc.runtime, Runner: runner})
+			r, err := New(Config{Type: tc.runtime, Runner: rnr})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
@@ -210,8 +210,8 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 	}
 }
 
-func buffer(s string, err error) (*command.RunResult, error) {
-	rr := &command.RunResult{}
+func buffer(s string, err error) (*runner.RunResult, error) {
+	rr := &runner.RunResult{}
 	if err != nil {
 		return rr, err
 	}
@@ -226,7 +226,7 @@ func buffer(s string, err error) (*command.RunResult, error) {
 }
 
 // Run a fake command!
-func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
 	xargs := cmd.Args
 	f.cmds = append(f.cmds, xargs...)
 	root := false
@@ -252,28 +252,28 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	case "containerd":
 		return buffer(f.containerd(args, root))
 	default:
-		rr := &command.RunResult{}
+		rr := &runner.RunResult{}
 		return rr, nil
 	}
 }
 
-func (f *FakeRunner) StartCmd(_ *exec.Cmd) (*command.StartedCmd, error) {
-	return &command.StartedCmd{}, nil
+func (f *FakeRunner) StartCmd(_ *exec.Cmd) (*runner.StartedCmd, error) {
+	return &runner.StartedCmd{}, nil
 }
 
-func (f *FakeRunner) WaitCmd(_ *command.StartedCmd) (*command.RunResult, error) {
-	return &command.RunResult{}, nil
+func (f *FakeRunner) WaitCmd(_ *runner.StartedCmd) (*runner.RunResult, error) {
+	return &runner.RunResult{}, nil
 }
 
-func (f *FakeRunner) Copy(assets.CopyableFile) error {
+func (f *FakeRunner) CopyFile(assets.CopyableFile) error {
 	return nil
 }
 
-func (f *FakeRunner) CopyFrom(assets.CopyableFile) error {
+func (f *FakeRunner) CopyFileFrom(assets.CopyableFile) error {
 	return nil
 }
 
-func (f *FakeRunner) Remove(assets.CopyableFile) error {
+func (f *FakeRunner) RemoveFile(assets.CopyableFile) error {
 	return nil
 }
 

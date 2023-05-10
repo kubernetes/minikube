@@ -23,8 +23,8 @@ import (
 	"os/exec"
 	"os/user"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"

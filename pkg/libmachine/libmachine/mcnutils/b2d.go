@@ -123,7 +123,7 @@ func (*b2dReleaseGetter) getReleaseTag(apiURL string) (string, error) {
 		// are a non-release candidate version.  "/latest" won't return
 		// non-RCs, so that's what we use for stable releases of
 		// Machine.
-		apiURL = apiURL + "/latest"
+		apiURL += "/latest"
 	}
 
 	client := getClient()
@@ -209,7 +209,8 @@ Consider specifying another storage driver (e.g. 'overlay') using '--engine-stor
 }
 
 func (*b2dReleaseGetter) download(dir, file, isoURL string) error {
-	u, err := url.Parse(isoURL)
+	// x7TODO: check err here
+	u, _ := url.Parse(isoURL)
 
 	var src io.ReadCloser
 	if u.Scheme == "file" || u.Scheme == "" {
@@ -330,7 +331,7 @@ func (b *b2dISO) version() (string, error) {
 
 	versionIndex := strings.Index(trimmedVersion, versionPrefix)
 	if versionIndex == -1 {
-		return "", fmt.Errorf("Did not find prefix %q in version string", versionPrefix)
+		return "", fmt.Errorf("did not find prefix %q in version string", versionPrefix)
 	}
 
 	// Original magic file string looks similar to this: "Boot2Docker-v0.1.0              "
@@ -344,7 +345,7 @@ func (b *b2dISO) version() (string, error) {
 func removeFileIfExists(name string) error {
 	if _, err := os.Stat(name); err == nil {
 		if err := os.Remove(name); err != nil {
-			return fmt.Errorf("Error removing temporary download file: %s", err)
+			return fmt.Errorf("error removing temporary download file: %s", err)
 		}
 	}
 	return nil
@@ -542,7 +543,7 @@ func MakeDiskImage(publicSSHKeyPath string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	if _, err := tw.Write([]byte(pubKey)); err != nil {
+	if _, err := tw.Write(pubKey); err != nil {
 		return nil, err
 	}
 
@@ -551,7 +552,7 @@ func MakeDiskImage(publicSSHKeyPath string) (*bytes.Buffer, error) {
 		return nil, err
 	}
 
-	if _, err := tw.Write([]byte(pubKey)); err != nil {
+	if _, err := tw.Write(pubKey); err != nil {
 		return nil, err
 	}
 

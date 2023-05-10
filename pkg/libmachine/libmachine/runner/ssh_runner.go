@@ -42,7 +42,7 @@ import (
 //
 // It implements the CommandRunner interface.
 type SSHRunner struct {
-	Ip      string
+	IP      string
 	KeyPath string
 	UsrName string
 	Port    int
@@ -99,7 +99,7 @@ func (s *sshReadableFile) Close() error {
 func NewSSHRunner(ip, keyPath, usrName string, port int) *SSHRunner {
 	return &SSHRunner{
 		C:       nil,
-		Ip:      ip,
+		IP:      ip,
 		KeyPath: keyPath,
 		UsrName: usrName,
 		Port:    port,
@@ -112,7 +112,7 @@ func (s *SSHRunner) client() (*ssh.Client, error) {
 		return s.C, nil
 	}
 
-	c, err := utils.NewSSHClient(s.Ip, s.KeyPath, s.UsrName, s.Port)
+	c, err := utils.NewSSHClient(s.IP, s.KeyPath, s.UsrName, s.Port)
 	if err != nil {
 		return nil, errors.Wrap(err, "new client")
 	}

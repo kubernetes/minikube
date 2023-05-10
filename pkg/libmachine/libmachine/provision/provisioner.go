@@ -63,6 +63,18 @@ type Provisioner interface {
 	fmt.Stringer
 	Commander
 
+	// x7NOTE: GenerateDockerOptions has moved inside the cruntimeInstaller
+	// check this:
+	// git show master:pkg/provision/ubuntu.go
+	// (we're using it for container-based machines)
+	// In this provisioner and the buildroot one (for iso-based machines)
+	// the GenerateDockerOptions returns (DockerOptions, error);
+	// we're _'ing the DockerOptions,
+	// the error is given by updateUnit(...)
+	// Basicallt updating the .service file inside the machine.
+	// i.e. We're already making use of the DockerOptions without needing
+	// the DockerOptions struct
+
 	// Get the directory where the settings files for docker are to be found
 	GetDockerOptionsDir() string
 
@@ -161,7 +173,7 @@ func (detector StandardDetector) DetectProvisioner(d drivers.Driver) (Provisione
 		return nil, fmt.Errorf("Error running command inside machine, while detecting provisioner: %s", err)
 	}
 
-	osReleaseInfo, err := NewOsRelease([]byte(osReleaseOut.Stdout.String()))
+	osReleaseInfo, err := NewOsRelease(osReleaseOut.Stdout.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing /etc/os-release file: %s", err)
 	}

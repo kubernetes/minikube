@@ -833,7 +833,7 @@ func WaitForTCPWithDelay(addr string, duration time.Duration) error {
 
 // x7TODO:
 // implement those
-func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+func (d *Driver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
 	return nil, nil
 }
 

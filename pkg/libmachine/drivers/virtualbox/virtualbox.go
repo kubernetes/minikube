@@ -55,8 +55,8 @@ const (
 
 var (
 	ErrUnableToGenerateRandomIP = errors.New("unable to generate random IP")
-	ErrMustEnableVTX            = errors.New("This computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory")
-	ErrNotCompatibleWithHyperV  = errors.New("This computer is running Hyper-V. VirtualBox won't boot a 64bits VM when Hyper-V is activated. Either use Hyper-V as a driver, or disable the Hyper-V hypervisor. (To skip this check, use --virtualbox-no-vtx-check)")
+	ErrMustEnableVTX            = errors.New("this computer doesn't have VT-X/AMD-v enabled. Enabling it in the BIOS is mandatory")
+	ErrNotCompatibleWithHyperV  = errors.New("this computer is running Hyper-V. VirtualBox won't boot a 64bits VM when Hyper-V is activated. Either use Hyper-V as a driver, or disable the Hyper-V hypervisor. (To skip this check, use --virtualbox-no-vtx-check)")
 	ErrNetworkAddrCidr          = errors.New("host-only cidr must be specified with a host address, not a network address")
 	ErrNetworkAddrCollision     = errors.New("host-only cidr conflicts with the network address of a host interface")
 )
@@ -325,6 +325,7 @@ func (d *Driver) CreateMachine() error {
 	return d.StartMachine()
 }
 
+// x7TODO: break this in tinier pieces
 func (d *Driver) CreateVM() error {
 	if err := d.b2dUpdater.CopyIsoToMachineDir(d.StorePath, d.MachineName, d.Boot2DockerURL); err != nil {
 		return err
@@ -390,7 +391,7 @@ func (d *Driver) CreateVM() error {
 
 	cpus := d.CPU
 	if cpus < 1 {
-		cpus = int(runtime.NumCPU())
+		cpus = runtime.NumCPU()
 	}
 	if cpus > 32 {
 		cpus = 32
@@ -554,7 +555,7 @@ func (d *Driver) StartMachine() error {
 		log.Infof("Check network to re-create if needed...")
 
 		if hostOnlyAdapter, err = d.setupHostOnlyNetwork(d.MachineName); err != nil {
-			return fmt.Errorf("Error setting up host only network on machine start: %s", err)
+			return fmt.Errorf("error setting up host only network on machine start: %s", err)
 		}
 	}
 
@@ -567,9 +568,9 @@ func (d *Driver) StartMachine() error {
 
 		if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
 			if lines, readErr := d.readVBoxLog(); readErr == nil && len(lines) > 0 {
-				return fmt.Errorf("Unable to start the VM: %s\nDetails: %s", err, lines[len(lines)-1])
+				return fmt.Errorf("unable to start the VM: %s\nDetails: %s", err, lines[len(lines)-1])
 			}
-			return fmt.Errorf("Unable to start the VM: %s", err)
+			return fmt.Errorf("unable to start the VM: %s", err)
 		}
 	case state.Paused:
 		if err := d.vbm("controlvm", d.MachineName, "resume", "--type", d.UIType); err != nil {
@@ -584,7 +585,7 @@ func (d *Driver) StartMachine() error {
 		// Verify that VT-X is not disabled in the started VM
 		vtxIsDisabled, err := d.IsVTXDisabledInTheVM()
 		if err != nil {
-			return fmt.Errorf("Checking if hardware virtualization is enabled failed: %s", err)
+			return fmt.Errorf("checking if hardware virtualization is enabled failed: %s", err)
 		}
 
 		if vtxIsDisabled {
@@ -642,7 +643,7 @@ func (d *Driver) StartMachine() error {
 	d.sleeper.Sleep(5 * time.Second)
 
 	if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
-		return fmt.Errorf("Unable to start the VM: %s", err)
+		return fmt.Errorf("unable to start the VM: %s", err)
 	}
 
 	log.Infof("Waiting for an IP...")
@@ -685,11 +686,11 @@ func (d *Driver) StopMachine() error {
 // Restart restarts a machine which is known to be running.
 func (d *Driver) RestartMachine() error {
 	if err := d.StopMachine(); err != nil {
-		return fmt.Errorf("Problem stopping the VM: %s", err)
+		return fmt.Errorf("problem stopping the VM: %s", err)
 	}
 
 	if err := d.StartMachine(); err != nil {
-		return fmt.Errorf("Problem starting the VM: %s", err)
+		return fmt.Errorf("problem starting the VM: %s", err)
 	}
 
 	d.IPAddress = ""
@@ -762,7 +763,7 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	re := regexp.MustCompile(`(?m)^hostonlyadapter([\d]+)`)
 	groups := re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
-		return "", errors.New("Machine does not have a host-only adapter")
+		return "", errors.New("machine does not have a host-only adapter")
 	}
 
 	// Then we grab the MAC address based on that number
@@ -770,7 +771,7 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	re = regexp.MustCompile(fmt.Sprintf("(?m)^macaddress%s=\"(.*)\"", adapterNumber))
 	groups = re.FindStringSubmatch(stdout)
 	if len(groups) < 2 {
-		return "", fmt.Errorf("Could not find MAC address for adapter %v", adapterNumber)
+		return "", fmt.Errorf("could not find MAC address for adapter %v", adapterNumber)
 	}
 
 	return strings.ToLower(groups[1]), nil
@@ -790,7 +791,7 @@ func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string)
 			vals := strings.Split(line, " ")
 			if len(vals) >= 2 {
 				macBlock := vals[1]
-				macWithoutColons := strings.Replace(macBlock, ":", "", -1)
+				macWithoutColons := strings.ReplaceAll(macBlock, ":", "")
 				if macWithoutColons == macAddress { // we are in the correct device block
 					returnNextIP = true
 				}
@@ -798,12 +799,13 @@ func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string)
 		} else if strings.HasPrefix(line, "inet") && !strings.HasPrefix(line, "inet6") && returnNextIP {
 			vals := strings.Split(line, " ")
 			if len(vals) >= 2 {
+				// x7TODO: take a closer look at this.. -- linter complains
 				return vals[1][:strings.Index(vals[1], "/")], nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("Could not find matching IP for MAC address %v", macAddress)
+	return "", fmt.Errorf("could not find matching IP for MAC address %v", macAddress)
 }
 
 func (d *Driver) GetIP() (string, error) {
@@ -820,11 +822,11 @@ func (d *Driver) GetIP() (string, error) {
 	macAddress, err := d.getHostOnlyMACAddress()
 	if err != nil {
 		return "", err
-	}
 
+	}
 	log.Debugf("Host-only MAC: %s\n", macAddress)
 
-	output, err := d.RunCmd(exec.Command("ip addr show"))
+	output, err := d.RunCmd(exec.Command("ip", "addr", "show"))
 	if err != nil {
 		return "", err
 	}
@@ -954,7 +956,7 @@ func parseAndValidateCIDR(hostOnlyCIDR string) (net.IP, *net.IPNet, error) {
 // will be used for machine vm instances.
 func validateNoIPCollisions(hif HostInterfaces, hostOnlyNet *net.IPNet, currHostOnlyNets map[string]*hostOnlyNetwork) error {
 	hostOnlyByCIDR := map[string]*hostOnlyNetwork{}
-	//listHostOnlyAdapters returns a map w/ virtualbox net names as key.  Rekey to CIDRs
+	// listHostOnlyAdapters returns a map w/ virtualbox net names as key.  Rekey to CIDRs
 	for _, n := range currHostOnlyNets {
 		ipnet := net.IPNet{IP: n.IPv4.IP, Mask: n.IPv4.Mask}
 		hostOnlyByCIDR[ipnet.String()] = n
@@ -965,7 +967,7 @@ func validateNoIPCollisions(hif HostInterfaces, hostOnlyNet *net.IPNet, currHost
 		return err
 	}
 
-	collision, err := checkIPNetCollision(hostOnlyNet, m)
+	collision := checkIPNetCollision(hostOnlyNet, m)
 	if err != nil {
 		return err
 	}
@@ -976,6 +978,7 @@ func validateNoIPCollisions(hif HostInterfaces, hostOnlyNet *net.IPNet, currHost
 	return nil
 }
 
+// x7TODO: waiting fixed amount of seconds is bad behaviour...
 // Select an available port, trying the specified
 // port first, falling back on an OS selected port.
 func getAvailableTCPPort(port int) (int, error) {
@@ -996,7 +999,7 @@ func getAvailableTCPPort(port int) (int, error) {
 			return port, nil
 		}
 		port = 0 // Throw away the port hint before trying again
-		time.Sleep(1)
+		time.Sleep(1 * time.Second)
 	}
 	return 0, fmt.Errorf("unable to allocate tcp port")
 }
@@ -1012,7 +1015,12 @@ func setPortForwarding(d *Driver, interfaceNum int, mapName, protocol string, gu
 			guestPort, mapName, desiredHostPort, actualHostPort)
 	}
 	cmd := fmt.Sprintf("--natpf%d", interfaceNum)
-	d.vbm("modifyvm", d.MachineName, cmd, "delete", mapName)
+
+	err = d.vbm("modifyvm", d.MachineName, cmd, "delete", mapName)
+	if err != nil {
+		return -1, err
+	}
+
 	if err := d.vbm("modifyvm", d.MachineName,
 		cmd, fmt.Sprintf("%s,%s,127.0.0.1,%d,,%d", mapName, protocol, actualHostPort, guestPort)); err != nil {
 		return -1, err
@@ -1061,7 +1069,7 @@ func (d *Driver) readVBoxLog() ([]string, error) {
 // x7TODO:
 // implement those
 
-func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+func (d *Driver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
 	return nil, nil
 }
 

@@ -20,7 +20,7 @@ package sysinit
 import (
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 )
 
 func TestEnable(t *testing.T) {
@@ -36,7 +36,7 @@ func TestEnable(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-	cr := command.NewFakeCommandRunner()
+	cr := runner.NewFakeCommandRunner()
 	cr.SetCommandToOutput(map[string]string{
 		"sudo systemctl enable docker": "",
 	})

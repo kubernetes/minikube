@@ -295,5 +295,5 @@ func registerDriver(drvName string) {
 	if def.Empty() {
 		exit.Message(reason.Usage, "unsupported or missing driver: {{.name}}", out.V{"name": drvName})
 	}
-	plugin.RegisterDriver(def.Init())
+	os.Exit(plugin.RegisterDriver(def.Init()))
 }

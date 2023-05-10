@@ -24,6 +24,7 @@ import (
 	"os"
 	"time"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/plugin/localbinary"
 	rpcdriver "k8s.io/minikube/pkg/libmachine/libmachine/drivers/rpc"
@@ -35,45 +36,58 @@ var (
 	heartbeatTimeout = 1000 * time.Second
 )
 
-func RegisterDriver(d drivers.Driver) {
+func RegisterDriver(d drivers.Driver) int {
 	if os.Getenv(localbinary.PluginEnvKey) != localbinary.PluginEnvVal {
 		fmt.Fprintf(os.Stderr, `This is a Docker Machine plugin binary.
 Plugin binaries are not intended to be invoked directly.
 Please use this plugin through the main 'docker-machine' binary.
 (API version: %d)
 `, version.APIVersion)
-		os.Exit(1)
+		return 1
 	}
 
 	log.SetDebug(true)
 	os.Setenv("MACHINE_DEBUG", "1")
 
 	rpcd := rpcdriver.NewRPCServerDriver(d)
-	rpc.RegisterName(rpcdriver.RPCServiceNameV0, rpcd)
-	rpc.RegisterName(rpcdriver.RPCServiceNameV1, rpcd)
+	err := rpc.RegisterName(rpcdriver.RPCServiceNameV0, rpcd)
+	if err != nil {
+		klog.Fatal("failed to register rpc server name V0: %v", err)
+	}
+
+	err = rpc.RegisterName(rpcdriver.RPCServiceNameV1, rpcd)
+	if err != nil {
+		klog.Fatal("failed to register rpc server name V1: %v", err)
+	}
+
 	rpc.HandleHTTP()
 
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading RPC server: %s\n", err)
-		os.Exit(1)
+		return 1
 	}
 	defer listener.Close()
 
 	fmt.Println(listener.Addr())
 
-	go http.Serve(listener, nil)
+	go func() {
+		err := http.Serve(listener, nil)
+		if err != nil {
+			klog.Fatalf("failed to serve http server: %v", err)
+		}
+	}()
 
 	for {
 		select {
 		case <-rpcd.CloseCh:
 			log.Debug("Closing plugin on server side")
-			os.Exit(0)
+			return 0
 		case <-rpcd.HeartbeatCh:
 			continue
 		case <-time.After(heartbeatTimeout):
 			// TODO: Add heartbeat retry logic
-			os.Exit(1)
+			return 1
 		}
 	}
 }

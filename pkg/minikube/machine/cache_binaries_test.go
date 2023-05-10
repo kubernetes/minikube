@@ -21,22 +21,22 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/download"
 )
 
 type copyFailRunner struct {
-	command.Runner
+	runner.Runner
 }
 
 func (copyFailRunner) Copy(_ assets.CopyableFile) error {
 	return fmt.Errorf("test error during copy file")
 }
 
-func newFakeCommandRunnerCopyFail() command.Runner {
-	return copyFailRunner{command.NewFakeCommandRunner()}
+func newFakeCommandRunnerCopyFail() runner.Runner {
+	return copyFailRunner{runner.NewFakeCommandRunner()}
 }
 
 func TestCopyBinary(t *testing.T) {
@@ -44,21 +44,21 @@ func TestCopyBinary(t *testing.T) {
 		lastUpdateCheckFilePath string
 		src, dst, desc          string
 		err                     bool
-		runner                  command.Runner
+		runner                  runner.Runner
 	}{
 		{
 			desc:   "not existing src",
 			dst:    "/tmp/testCopyBinary1",
 			src:    "/tmp/testCopyBinary2",
 			err:    true,
-			runner: command.NewFakeCommandRunner(),
+			runner: runner.NewFakeCommandRunner(),
 		},
 		{
 			desc:   "src /etc/hosts",
 			dst:    "/tmp/testCopyBinary1",
 			src:    "/etc/hosts",
 			err:    false,
-			runner: command.NewFakeCommandRunner(),
+			runner: runner.NewFakeCommandRunner(),
 		},
 		{
 			desc:   "existing src, copy fail",

@@ -270,11 +270,29 @@ func copySSHKey(src, dst string) error {
 // x7TODO:
 // implement those
 func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	return nil, nil
+	if d.runner == nil {
+		rnr, err := d.GetRunner()
+		if err != nil {
+			return nil, err
+		}
+		d.runner = rnr
+	}
+
+	return d.runner.RunCmd(cmd)
 }
 
 func (d *Driver) GetRunner() (runner.Runner, error) {
-	return nil, nil
+	ip, err := d.GetIP()
+	if err != nil {
+		return nil, err
+	}
+
+	port, err := d.GetSSHPort()
+	if err != nil {
+		return nil, err
+	}
+
+	return runner.NewSSHRunner(ip, d.GetSSHKeyPath(), d.GetSSHUsername(), port), nil
 }
 
 func (d *Driver) IsContainerBased() bool {

@@ -65,7 +65,7 @@ func (osr *OsRelease) setIfPossible(key, val string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Couldn't set key %s, no corresponding struct field found", key)
+	return fmt.Errorf("couldn't set key %s, no corresponding struct field found", key)
 }
 
 func parseLine(osrLine string) (string, string, error) {
@@ -75,7 +75,7 @@ func parseLine(osrLine string) (string, string, error) {
 
 	vals := strings.Split(osrLine, "=")
 	if len(vals) != 2 {
-		return "", "", fmt.Errorf("Expected %s to split by '=' char into two strings, instead got %d strings", osrLine, len(vals))
+		return "", "", fmt.Errorf("expected %s to split by '=' char into two strings, instead got %d strings", osrLine, len(vals))
 	}
 	key := vals[0]
 	val := stripQuotes(vals[1])

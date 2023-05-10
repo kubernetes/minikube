@@ -33,12 +33,12 @@ type defaultDockerVersioner struct{}
 func (dv *defaultDockerVersioner) DockerVersion(host DockerHost) (string, error) {
 	client, err := DockerClient(host)
 	if err != nil {
-		return "", fmt.Errorf("Unable to query docker version: %s", err)
+		return "", fmt.Errorf("unable to query docker version: %s", err)
 	}
 
 	version, err := client.Version()
 	if err != nil {
-		return "", fmt.Errorf("Unable to query docker version: %s", err)
+		return "", fmt.Errorf("unable to query docker version: %s", err)
 	}
 
 	return version.Version, nil

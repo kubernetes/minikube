@@ -30,8 +30,8 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 
 	"k8s.io/klog/v2"
 

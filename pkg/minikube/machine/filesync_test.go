@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	testutil "k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -97,7 +96,7 @@ func TestAssetsFromDir(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			testDir := testutil.MakeTempDir(t)
+			testDir := localpath.MakeTempDir(t)
 
 			testDirs = append(testDirs, testDir)
 			testFileBaseDir := filepath.Join(testDir, test.baseDir)

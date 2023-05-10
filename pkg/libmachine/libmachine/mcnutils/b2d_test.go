@@ -27,9 +27,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/libmachine/version"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetReleaseURL(t *testing.T) {
@@ -107,8 +107,12 @@ func TestVersion(t *testing.T) {
 		got, err := b.version()
 
 		assert.NoError(t, err)
-		assert.Equal(t, vers, string(got))
-		removeFileIfExists(isopath)
+		assert.Equal(t, vers, got)
+
+		err = removeFileIfExists(isopath)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -158,7 +162,7 @@ type MockReadCloser struct {
 	currentBlock int
 }
 
-func (r *MockReadCloser) Read(p []byte) (n int, err error) {
+func (r *MockReadCloser) Read(_ []byte) (n int, err error) {
 	n = r.blockLengths[r.currentBlock]
 	r.currentBlock++
 	return
@@ -168,6 +172,7 @@ func (r *MockReadCloser) Close() error {
 	return nil
 }
 
+// x7NOTE: is this magic?
 func TestReaderWithProgress(t *testing.T) {
 	readCloser := MockReadCloser{blockLengths: []int{5, 45, 50}}
 	output := new(bytes.Buffer)
@@ -179,16 +184,16 @@ func TestReaderWithProgress(t *testing.T) {
 		expectedLength: 100,
 	}
 
-	readerWithProgress.Read(buffer)
+	_, _ = readerWithProgress.Read(buffer)
 	assert.Equal(t, "0%..", output.String())
 
-	readerWithProgress.Read(buffer)
+	_, _ = readerWithProgress.Read(buffer)
 	assert.Equal(t, "0%....10%....20%....30%....40%....50%", output.String())
 
-	readerWithProgress.Read(buffer)
+	_, _ = readerWithProgress.Read(buffer)
 	assert.Equal(t, "0%....10%....20%....30%....40%....50%....60%....70%....80%....90%....100%", output.String())
 
-	readerWithProgress.Close()
+	_ = readerWithProgress.Close()
 	assert.Equal(t, "0%....10%....20%....30%....40%....50%....60%....70%....80%....90%....100%\n", output.String())
 }
 
@@ -202,15 +207,15 @@ func (m *mockReleaseGetter) filename() string {
 	return defaultISOFilename
 }
 
-func (m *mockReleaseGetter) getReleaseTag(apiURL string) (string, error) {
+func (m *mockReleaseGetter) getReleaseTag(_ string) (string, error) {
 	return m.ver, m.apiErr
 }
 
-func (m *mockReleaseGetter) getReleaseURL(apiURL string) (string, error) {
+func (m *mockReleaseGetter) getReleaseURL(_ string) (string, error) {
 	return "http://127.0.0.1/dummy", m.apiErr
 }
 
-func (m *mockReleaseGetter) download(dir, file, isoURL string) error {
+func (m *mockReleaseGetter) download(dir, file, _ string) error {
 	path := filepath.Join(dir, file)
 	var err error
 	if _, e := os.Stat(path); os.IsNotExist(e) {
@@ -269,7 +274,8 @@ func TestCopyDefaultISOToMachine(t *testing.T) {
 	verCh := make(chan string, 1)
 	for _, tt := range testCases {
 		if tt.create {
-			isopath, _, err = newDummyISO("cache", defaultISOFilename, tt.localVer)
+			// x7TODO: check err here
+			isopath, _, _ = newDummyISO("cache", defaultISOFilename, tt.localVer)
 		} else {
 			if dir, e := ioutil.TempDir("", "machine-test"); e == nil {
 				isopath = filepath.Join(dir, "cache", defaultISOFilename)
@@ -323,7 +329,7 @@ func TestCopyDefaultISOToMachine(t *testing.T) {
 // newTestServer creates a new httptest.Server that returns respText as a response body.
 func newTestServer(respText string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(respText))
+		_, _ = w.Write([]byte(respText))
 	}))
 }
 
@@ -336,7 +342,7 @@ func newDummyISO(dir, name, version string) (string, int64, error) {
 	}
 
 	tmpDir = filepath.Join(tmpDir, dir)
-	if e := os.MkdirAll(tmpDir, 755); e != nil {
+	if e := os.MkdirAll(tmpDir, 0755); e != nil {
 		return "", 0, err
 	}
 

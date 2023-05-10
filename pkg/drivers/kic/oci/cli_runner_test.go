@@ -22,15 +22,15 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestRunCmdWarnSlowOnce(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		return
 	}
-	f1 := tests.NewFakeFile()
+	f1 := localpath.NewFakeFile()
 	out.SetErrFile(f1)
 
 	cmd := exec.Command("sleep", "3")
@@ -44,7 +44,7 @@ func TestRunCmdWarnSlowOnce(t *testing.T) {
 		t.Errorf("runCmd does not print the correct log, instead print :%v", f1.String())
 	}
 
-	f2 := tests.NewFakeFile()
+	f2 := localpath.NewFakeFile()
 	out.SetErrFile(f2)
 
 	cmd = exec.Command("sleep", "3")

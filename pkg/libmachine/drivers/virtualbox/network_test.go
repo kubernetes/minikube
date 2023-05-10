@@ -138,12 +138,12 @@ func TestGetHostOnlyNetworkHappy(t *testing.T) {
 func TestGetHostOnlyNetworkNotFound(t *testing.T) {
 	// Note that this has a different ip is different from "ip" below.
 	cidr := "192.168.99.0/24"
-	ip, ipnet, err := net.ParseCIDR(cidr)
+	_, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		t.Fatalf("Error parsing cidr: %s", err)
 	}
 
-	ip = net.ParseIP("192.168.59.0").To4()
+	ip := net.ParseIP("192.168.59.0").To4()
 
 	// Suppose a vbox net is created, but it doesn't align with our
 	// expectation.
@@ -347,7 +347,7 @@ func TestCheckIPNetCollisionIPv6(t *testing.T) {
 	assert.Nil(t, err)
 	m[hostIP.String()] = &net.IPNet{IP: hostIP, Mask: hostNet.Mask}
 
-	result, err := checkIPNetCollision(vboxHostOnly, m)
+	result := checkIPNetCollision(vboxHostOnly, m)
 	assert.Nil(t, err)
 	assert.False(t, result)
 
@@ -355,7 +355,7 @@ func TestCheckIPNetCollisionIPv6(t *testing.T) {
 	assert.Nil(t, err)
 	m[hostIP.String()] = &net.IPNet{IP: hostIP, Mask: hostNet.Mask}
 
-	result, err = checkIPNetCollision(vboxHostOnly, m)
+	result = checkIPNetCollision(vboxHostOnly, m)
 	assert.Nil(t, err)
 	assert.True(t, result)
 }
@@ -370,7 +370,7 @@ func TestCheckIPNetCollisionIPv4(t *testing.T) {
 	assert.NoError(t, err)
 	m[hostIP.String()] = &net.IPNet{IP: hostIP, Mask: hostNet.Mask}
 
-	result, err := checkIPNetCollision(vboxHostOnly, m)
+	result := checkIPNetCollision(vboxHostOnly, m)
 	assert.NoError(t, err)
 	assert.False(t, result)
 
@@ -378,7 +378,7 @@ func TestCheckIPNetCollisionIPv4(t *testing.T) {
 	assert.NoError(t, err)
 	m[hostIP.String()] = &net.IPNet{IP: hostIP, Mask: hostNet.Mask}
 
-	result, err = checkIPNetCollision(vboxHostOnly, m)
+	result = checkIPNetCollision(vboxHostOnly, m)
 	assert.NoError(t, err)
 	assert.True(t, result)
 }

@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {

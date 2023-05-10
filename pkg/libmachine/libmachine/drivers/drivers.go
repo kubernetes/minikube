@@ -109,7 +109,7 @@ type Driver interface {
 	StopMachine() error
 }
 
-var ErrHostIsNotRunning = errors.New("Host is not running")
+var ErrHostIsNotRunning = errors.New("host is not running")
 
 type DriverOptions interface {
 	String(key string) string

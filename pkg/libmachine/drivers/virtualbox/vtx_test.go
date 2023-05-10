@@ -29,7 +29,7 @@ type MockLogsReader struct {
 	err     error
 }
 
-func (r *MockLogsReader) Read(path string) ([]string, error) {
+func (r *MockLogsReader) Read(_ string) ([]string, error) {
 	return r.content, r.err
 }
 

@@ -30,14 +30,14 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
 )
 
 func TestShouldCheckURLVersion(t *testing.T) {
 	viper.Set("interactive", true)
-	tempDir := tests.MakeTempDir(t)
+	tempDir := localpath.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
@@ -76,7 +76,7 @@ func TestShouldCheckURLVersion(t *testing.T) {
 
 func TestShouldCheckURLBetaVersion(t *testing.T) {
 	viper.Set("interactive", true)
-	tempDir := tests.MakeTempDir(t)
+	tempDir := localpath.MakeTempDir(t)
 
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 	viper.Set(config.WantUpdateNotification, true)
@@ -169,7 +169,7 @@ var mockLatestVersionFromURL = semver.Make
 func TestMaybePrintUpdateText(t *testing.T) {
 	latestVersionFromURL = mockLatestVersionFromURL
 
-	tempDir := tests.MakeTempDir(t)
+	tempDir := localpath.MakeTempDir(t)
 
 	var tc = []struct {
 		wantUpdateNotification     bool
@@ -214,7 +214,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 	for _, tt := range tc {
 		t.Run(tt.description, func(t *testing.T) {
-			outputBuffer := tests.NewFakeFile()
+			outputBuffer := localpath.NewFakeFile()
 			out.SetOutFile(outputBuffer)
 
 			viper.Set(config.WantUpdateNotification, tt.wantUpdateNotification)

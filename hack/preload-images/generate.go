@@ -26,11 +26,11 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -58,7 +58,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
-	if err := driver.Create(); err != nil {
+	if err := driver.CreateMachine(); err != nil {
 		return errors.Wrap(err, "creating kic driver")
 	}
 
@@ -76,7 +76,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		imgs = append(imgs, images.KindNet(""))
 	}
 
-	runner := command.NewKICRunner(profile, driver.OCIBinary)
+	runner := runner.NewKICRunner(profile, driver.OCIBinary)
 
 	// will need to do this to enable the container run-time service
 	sv, err := util.ParseKubernetesVersion(kubernetesVersion)

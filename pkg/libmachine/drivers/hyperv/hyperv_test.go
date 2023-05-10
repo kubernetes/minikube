@@ -19,8 +19,8 @@ package hyperv
 import (
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 )
 
 func TestSetConfigFromDefaultFlags(t *testing.T) {

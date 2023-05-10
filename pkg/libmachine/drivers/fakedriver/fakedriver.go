@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package errdriver
+// x7TODO: I can easily see this inside the libmachine/drivers folder...
+package fakedriver
 
 import (
 	"fmt"
@@ -27,66 +28,55 @@ import (
 )
 
 type Driver struct {
-	Name string
+	*drivers.BaseDriver
+	MockState state.State
+	MockIP    string
+	MockName  string
 }
 
-type NotLoadable struct {
-	Name string
-}
-
-func (e NotLoadable) Error() string {
-	return fmt.Sprintf("Driver %q not found. Do you have the plugin binary accessible in your PATH?", e.Name)
-}
-
-func NewDriver(name string) drivers.Driver {
-	return &Driver{
-		Name: name,
-	}
+func (d *Driver) GetCreateFlags() []mcnflag.Flag {
+	return []mcnflag.Flag{}
 }
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "not-found"
-}
-
-func (d *Driver) PreCreateCheck() error {
-	return NotLoadable{d.Name}
-}
-
-func (d *Driver) IsContainerBased() bool {
-	return false
-}
-
-func (d *Driver) IsISOBased() bool {
-	return false
-}
-
-func (d *Driver) IsManaged() bool {
-	return true
-}
-
-func (d *Driver) GetCreateFlags() []mcnflag.Flag {
-	return nil
+	return "Driver"
 }
 
 func (d *Driver) SetConfigFromFlags(_ drivers.DriverOptions) error {
-	return NotLoadable{d.Name}
+	return nil
 }
 
 func (d *Driver) GetURL() (string, error) {
-	return "", NotLoadable{d.Name}
+	ip, err := d.GetIP()
+	if err != nil {
+		return "", err
+	}
+	if ip == "" {
+		return "", nil
+	}
+	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
 func (d *Driver) GetMachineName() string {
-	return d.Name
+	return d.MockName
 }
 
 func (d *Driver) GetIP() (string, error) {
-	return "1.2.3.4", NotLoadable{d.Name}
+	if d.MockState == state.Error {
+		return "", fmt.Errorf("unable to get ip")
+	}
+	if d.MockState == state.Timeout {
+		select {} // Loop forever
+	}
+	if d.MockState != state.Running {
+		return "", drivers.ErrHostIsNotRunning
+	}
+	return d.MockIP, nil
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", NotLoadable{d.Name}
+	return "", nil
 }
 
 func (d *Driver) GetSSHKeyPath() string {
@@ -94,7 +84,7 @@ func (d *Driver) GetSSHKeyPath() string {
 }
 
 func (d *Driver) GetSSHPort() (int, error) {
-	return 0, NotLoadable{d.Name}
+	return 0, nil
 }
 
 func (d *Driver) GetSSHUsername() string {
@@ -102,37 +92,57 @@ func (d *Driver) GetSSHUsername() string {
 }
 
 func (d *Driver) GetMachineState() (state.State, error) {
-	return state.Error, NotLoadable{d.Name}
+	return d.MockState, nil
 }
 
 func (d *Driver) CreateMachine() error {
-	return NotLoadable{d.Name}
-}
-
-func (d *Driver) RemoveMachine() error {
-	return NotLoadable{d.Name}
+	return nil
 }
 
 func (d *Driver) StartMachine() error {
-	return NotLoadable{d.Name}
+	d.MockState = state.Running
+	return nil
 }
 
 func (d *Driver) StopMachine() error {
-	return NotLoadable{d.Name}
+	d.MockState = state.Stopped
+	return nil
 }
 
 func (d *Driver) RestartMachine() error {
-	return NotLoadable{d.Name}
+	d.MockState = state.Running
+	return nil
 }
 
 func (d *Driver) KillMachine() error {
-	return NotLoadable{d.Name}
+	d.MockState = state.Stopped
+	return nil
 }
 
-func (d *Driver) RunCmd(*exec.Cmd) (*runner.RunResult, error) {
-	return nil, NotLoadable{d.Name}
+func (d *Driver) RemoveMachine() error {
+	return nil
+}
+
+func (d *Driver) Upgrade() error {
+	return nil
+}
+
+func (d *Driver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
+	return nil, nil
 }
 
 func (d *Driver) GetRunner() (runner.Runner, error) {
-	return nil, NotLoadable{d.Name}
+	return nil, nil
+}
+
+func (d *Driver) IsISOBased() bool {
+	return false
+}
+
+func (d *Driver) IsContainerBased() bool {
+	return false
+}
+
+func (d *Driver) IsManaged() bool {
+	return false
 }

@@ -25,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func createTestProfile(t *testing.T) string {
@@ -117,7 +116,7 @@ func TestSetAndSave(t *testing.T) {
 
 func TestStartWithAddonsEnabled(t *testing.T) {
 	// this test will write a config.json into MinikubeHome, create a temp dir for it
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	cc := &config.ClusterConfig{
 		Name:             "start",
@@ -143,7 +142,7 @@ func TestStartWithAddonsEnabled(t *testing.T) {
 
 func TestStartWithAllAddonsDisabled(t *testing.T) {
 	// this test will write a config.json into MinikubeHome, create a temp dir for it
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	cc := &config.ClusterConfig{
 		Name:             "start",

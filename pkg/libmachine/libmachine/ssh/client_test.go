@@ -110,8 +110,12 @@ func TestNewExternalClient(t *testing.T) {
 
 	for _, c := range cases {
 		if runtime.GOOS != c.skipOS {
-			keyFile.Chmod(c.perm)
-			_, err := NewExternalClient(c.sshBinaryPath, c.user, c.host, c.port, c.auth)
+			err := keyFile.Chmod(c.perm)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = NewExternalClient(c.sshBinaryPath, c.user, c.host, c.port, c.auth)
 			if c.expectedError != "" {
 				assert.EqualError(t, err, c.expectedError)
 			} else {

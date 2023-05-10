@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntimeInstaller
+package cruntimeinstaller
 
 import (
 	"bytes"
@@ -22,7 +22,7 @@ import (
 	"html/template"
 	"os/exec"
 
-	"k8s.io/klog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -38,7 +38,7 @@ type dockerInstaller struct {
 	Provider           string
 }
 
-func NewDockerInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOptions *auth.Options) *dockerInstaller {
+func newDockerInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOptions *auth.Options) *dockerInstaller {
 	return &dockerInstaller{
 		Options:      opts,
 		CRuntimeName: "Docker",
@@ -58,11 +58,13 @@ type DockerOptions struct {
 // if not, it installs it from get.docker.com.
 // It also configures the daemon.
 func (di *dockerInstaller) InstallCRuntime() error {
-	di.installDockerGeneric(di.Options.InstallURL)
+	err := di.installDockerGeneric(di.Options.InstallURL)
+	if err != nil {
+		return errors.Wrap(err, "error while trying to install docker into machine")
+	}
 
 	if err := di.SetCRuntimeOptions(); err != nil {
-		klog.Infof("Error setting container-runtime (%s) options during provisioning: %v",
-			di.CRuntimeName, err)
+		return errors.Wrapf(err, "error setting container-runtime (%s) options during provisioning", di.CRuntimeName)
 	}
 
 	return nil
@@ -147,7 +149,7 @@ WantedBy=multi-user.target
 		return err
 	}
 
-	engineConfigContext := engine.EngineConfigContext{
+	engineConfigContext := engine.ConfigContext{
 		DockerPort:    engine.DefaultPort,
 		AuthOptions:   *di.AuthOptions,
 		EngineOptions: *di.Options,
@@ -177,10 +179,11 @@ func (di *dockerInstaller) installDockerGeneric(baseURL string) error {
 	return nil
 }
 
-func (di *dockerInstaller) makeDockerOptionsDir() error {
-	if _, err := di.Commander.RunCmd(exec.Command("bash", "-c", fmt.Sprintf("sudo mkdir -p %s", di.CRuntimeOptionsDir))); err != nil {
-		return err
-	}
+// x7TODO: linter says it's unused.. figure out why
+// func (di *dockerInstaller) makeDockerOptionsDir() error {
+// 	if _, err := di.Commander.RunCmd(exec.Command("bash", "-c", fmt.Sprintf("sudo mkdir -p %s", di.CRuntimeOptionsDir))); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }

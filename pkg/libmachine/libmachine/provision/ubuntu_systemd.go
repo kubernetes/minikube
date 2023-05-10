@@ -24,7 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeInstaller"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeinstaller"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
@@ -82,8 +82,7 @@ func (provisioner *UbuntuSystemdProvisioner) Package(name string, action pkgacti
 		updateMetadata = false
 	}
 
-	switch name {
-	case "docker":
+	if name == "docker" {
 		name = "docker-ce"
 	}
 
@@ -98,19 +97,6 @@ func (provisioner *UbuntuSystemdProvisioner) Package(name string, action pkgacti
 	klog.Infof("package: action=%s name=%s", action.String(), name)
 
 	return waitForLock(provisioner, exec.Command("bash", "-c", command))
-}
-
-func (provisioner *UbuntuSystemdProvisioner) dockerDaemonResponding() bool {
-	klog.Infof("checking docker daemon")
-
-	if out, err := provisioner.RunCmd(exec.Command("sudo", "docker", "version")); err != nil {
-		klog.Infof("Error running command to check if the daemon is up: %s", err)
-		klog.Infof("'sudo docker version' output:\n%s", out)
-		return false
-	}
-
-	// The daemon is up if the command worked.  Carry on.
-	return true
 }
 
 func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
@@ -138,7 +124,7 @@ func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Option
 	// takes care of that inside the Provision method for all implementations.
 	// Thus we can safe have the container/iso provisioners embed the libmachine's
 	// systemdProvisioner (that has packages within.. as opposed to minikube's codebase
-	// systemdProvisioner wich is the same except for the packages), and forget those
+	// systemdProvisioner which is the same except for the packages), and forget those
 	// inside the actual Provision() call.
 	klog.Infof("installing base packages")
 	for _, pkg := range provisioner.Packages {
@@ -161,6 +147,5 @@ func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Option
 		return errors.Wrap(err, "while getting runner for cruntime installer")
 	}
 
-	instllr := cruntimeInstaller.DetectCRuntimeInstaller(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
-	return instllr.InstallCRuntime()
+	return cruntimeinstaller.InstallCRuntime(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
 }

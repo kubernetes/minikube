@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 )
 
 const initialEtcHostsContent string = `127.0.0.1	localhost
@@ -100,17 +100,17 @@ func writeContentToTempFile(content string) (string, error) {
 }
 
 func TestDiskUsed(t *testing.T) {
-	ex := command.NewFakeCommandRunner()
+	ex := runner.NewFakeCommandRunner()
 	ex.SetCommandToOutput(map[string]string{
 		"sh -c \"df -h /var | awk 'NR==2{print $5}'\"": "20%",
 	})
-	nonex := command.NewFakeCommandRunner()
+	nonex := runner.NewFakeCommandRunner()
 	nonex.SetCommandToOutput(map[string]string{
 		"sh -c \"df -h /nonexistent | awk 'NR==2{print $5}'\"": "df: /nonexistent: No such file or directory",
 	})
 
 	type args struct {
-		cr  command.Runner
+		cr  runner.Runner
 		dir string
 	}
 	tests := []struct {
@@ -149,17 +149,17 @@ func TestDiskUsed(t *testing.T) {
 }
 
 func TestDiskAvailable(t *testing.T) {
-	ex := command.NewFakeCommandRunner()
+	ex := runner.NewFakeCommandRunner()
 	ex.SetCommandToOutput(map[string]string{
 		"sh -c \"df -BG /var | awk 'NR==2{print $4}'\"": "20",
 	})
-	nonex := command.NewFakeCommandRunner()
+	nonex := runner.NewFakeCommandRunner()
 	nonex.SetCommandToOutput(map[string]string{
 		"sh -c \"df -BG /nonexistent | awk 'NR==2{print $4}'\"": "df: /nonexistent: No such file or directory",
 	})
 
 	type args struct {
-		cr  command.Runner
+		cr  runner.Runner
 		dir string
 	}
 	tests := []struct {

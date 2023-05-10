@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/stretchr/testify/assert"
 )
 
 type VBoxManagerMock struct {
@@ -55,25 +55,25 @@ func (v *VBoxManagerMock) vbmOutErr(args ...string) (string, string, error) {
 	return "", "", errors.New("Invalid args")
 }
 
-func newTestDriver(name string) *Driver {
-	return NewDriver(name, "")
+func newTestDriver() *Driver {
+	return NewDriver("default", "")
 }
 
 func TestDriverName(t *testing.T) {
-	driverName := newTestDriver("default").DriverName()
+	driverName := newTestDriver().DriverName()
 
 	assert.Equal(t, "virtualbox", driverName)
 }
 
 func TestSSHHostname(t *testing.T) {
-	hostname, err := newTestDriver("default").GetSSHHostname()
+	hostname, err := newTestDriver().GetSSHHostname()
 
 	assert.Equal(t, "127.0.0.1", hostname)
 	assert.NoError(t, err)
 }
 
 func TestDefaultSSHUsername(t *testing.T) {
-	username := newTestDriver("default").GetSSHUsername()
+	username := newTestDriver().GetSSHUsername()
 
 	assert.Equal(t, "docker", username)
 }
@@ -112,13 +112,13 @@ func TestState(t *testing.T) {
 	}
 
 	for _, expected := range tests {
-		driver := newTestDriver("default")
+		driver := newTestDriver()
 		driver.VBoxManager = &VBoxManagerMock{
 			args:   "showvminfo default --machinereadable",
 			stdOut: expected.stdOut,
 		}
 
-		machineState, err := driver.GetState()
+		machineState, err := driver.GetMachineState()
 
 		assert.NoError(t, err)
 		assert.Equal(t, expected.state, machineState)
@@ -136,14 +136,14 @@ func TestStateErrors(t *testing.T) {
 	}
 
 	for _, expected := range tests {
-		driver := newTestDriver("default")
+		driver := newTestDriver()
 		driver.VBoxManager = &VBoxManagerMock{
 			args:   "showvminfo default --machinereadable",
 			stdErr: expected.stdErr,
 			err:    expected.err,
 		}
 
-		machineState, err := driver.GetState()
+		machineState, err := driver.GetMachineState()
 
 		assert.Equal(t, err, expected.finalErr)
 		assert.Equal(t, state.Error, machineState)
@@ -151,7 +151,7 @@ func TestStateErrors(t *testing.T) {
 }
 
 func TestGetRandomIPinSubnet(t *testing.T) {
-	driver := newTestDriver("default")
+	driver := newTestDriver()
 
 	// test IP 1.2.3.4
 	testIP := net.IPv4(byte(1), byte(2), byte(3), byte(4))
@@ -178,7 +178,7 @@ func TestGetRandomIPinSubnet(t *testing.T) {
 }
 
 func TestGetHostOnlyMACAddress(t *testing.T) {
-	driver := newTestDriver("default")
+	driver := newTestDriver()
 	driver.VBoxManager = &VBoxManagerMock{
 		args:   "showvminfo default --machinereadable",
 		stdOut: "unrelatedfield=whatever\nhostonlyadapter2=\"vboxnet1\"\nmacaddress2=\"004488AABBCC\"\n",
@@ -191,7 +191,7 @@ func TestGetHostOnlyMACAddress(t *testing.T) {
 }
 
 func TestGetHostOnlyMACAddressWhenNoHostOnlyAdapter(t *testing.T) {
-	driver := newTestDriver("default")
+	driver := newTestDriver()
 	driver.VBoxManager = &VBoxManagerMock{
 		args:   "showvminfo default --machinereadable",
 		stdOut: "unrelatedfield=whatever\n",
@@ -203,7 +203,7 @@ func TestGetHostOnlyMACAddressWhenNoHostOnlyAdapter(t *testing.T) {
 }
 
 func TestParseIPForMACFromIPAddr(t *testing.T) {
-	driver := newTestDriver("default")
+	driver := newTestDriver()
 
 	ipAddrOutput := "1: eth0:\n    link/ether 00:44:88:aa:bb:cc\n    inet 1.2.3.4/24\n2: eth1:\n    link/ether 11:55:99:dd:ee:ff\n   inet 5.6.7.8/24"
 
@@ -231,7 +231,7 @@ func TestGetIPErrors(t *testing.T) {
 	}
 
 	for _, expected := range tests {
-		driver := newTestDriver("default")
+		driver := newTestDriver()
 		driver.VBoxManager = &VBoxManagerMock{
 			args:   "showvminfo default --machinereadable",
 			stdOut: expected.stdOut,
@@ -399,7 +399,7 @@ func TestGetDHCPAddressRange(t *testing.T) {
 }
 
 func TestSetConfigFromFlags(t *testing.T) {
-	driver := newTestDriver("default")
+	driver := newTestDriver()
 
 	checkFlags := &drivers.CheckDriverOptions{
 		FlagsValues: map[string]interface{}{},
@@ -464,17 +464,17 @@ func (v *MockCreateOperations) Read(path string) ([]string, error) {
 	return []string{}, err
 }
 
-func (v *MockCreateOperations) Wait(d *Driver) error {
+func (v *MockCreateOperations) Wait(_ *Driver) error {
 	_, err := v.doCall("WaitIP")
 	return err
 }
 
-func (v *MockCreateOperations) RandomInt(n int) int {
+func (v *MockCreateOperations) RandomInt(_ int) int {
 	return 5
 }
 
 func (v *MockCreateOperations) Sleep(d time.Duration) {
-	v.doCall("Sleep " + fmt.Sprintf("%v", d))
+	_, _ = v.doCall("Sleep " + fmt.Sprintf("%v", d))
 }
 
 func (v *MockCreateOperations) Interfaces() ([]net.Interface, error) {
@@ -487,13 +487,14 @@ func (v *MockCreateOperations) Addrs(iface *net.Interface) ([]net.Addr, error) {
 	return []net.Addr{}, err
 }
 
-func (v *MockCreateOperations) expectCall(callSignature, output string, err error) {
-	v.expectedCalls = append(v.expectedCalls, Call{
-		signature: callSignature,
-		output:    output,
-		err:       err,
-	})
-}
+// x7TODO: lint says it's unused... figure out why
+// func (v *MockCreateOperations) expectCall(callSignature, output string, err error) {
+// 	v.expectedCalls = append(v.expectedCalls, Call{
+// 		signature: callSignature,
+// 		output:    output,
+// 		err:       err,
+// 	})
+// }
 
 func (v *MockCreateOperations) doCall(callSignature string) (string, error) {
 	if v.call >= len(v.expectedCalls) {
@@ -634,7 +635,7 @@ VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`,
 		{"Interfaces", "", nil},
 	})
 
-	err := driver.Start()
+	err := driver.StartMachine()
 
 	assert.NoError(t, err)
 }
@@ -692,7 +693,7 @@ VBoxNetworkName: HostInterfaceNetworking-VirtualBox Host-Only Ethernet Adapter`,
 		{"WaitIP", "", nil},
 	})
 
-	err := driver.Start()
+	err := driver.StartMachine()
 
 	assert.NoError(t, err)
 }
@@ -704,7 +705,7 @@ func TestRemoveStopped(t *testing.T) {
 		{"vbm unregistervm --delete default", "", nil},
 	})
 
-	err := driver.Remove()
+	err := driver.RemoveMachine()
 
 	assert.NoError(t, err)
 }
@@ -717,7 +718,7 @@ func TestRemoveStarted(t *testing.T) {
 		{"vbm unregistervm --delete default", "", nil},
 	})
 
-	err := driver.Remove()
+	err := driver.RemoveMachine()
 
 	assert.NoError(t, err)
 }
@@ -729,7 +730,7 @@ func TestRemoveSaved(t *testing.T) {
 		{"vbm unregistervm --delete default", "", nil},
 	})
 
-	err := driver.Remove()
+	err := driver.RemoveMachine()
 
 	assert.NoError(t, err)
 }
@@ -742,7 +743,7 @@ func TestRemovePaused(t *testing.T) {
 		{"vbm unregistervm --delete default", "", nil},
 	})
 
-	err := driver.Remove()
+	err := driver.RemoveMachine()
 
 	assert.NoError(t, err)
 }

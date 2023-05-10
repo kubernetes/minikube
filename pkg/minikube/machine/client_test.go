@@ -26,8 +26,8 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/plugin/localbinary"
 
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
-	testutil "k8s.io/minikube/pkg/minikube/tests"
 )
 
 const vboxConfig = `
@@ -72,17 +72,22 @@ func TestLocalClientNewHost(t *testing.T) {
 		driver      string
 		rawDriver   []byte
 		err         bool
+		provisioner string
 	}{
+		// x7TODO: check this test
+		// as I added the provisioner: field
 		{
 			description: "host vbox correct",
 			driver:      driver.VirtualBox,
 			rawDriver:   []byte(vboxConfig),
+			provisioner: "",
 		},
 		{
 			description: "host vbox incorrect",
 			driver:      driver.VirtualBox,
 			rawDriver:   []byte("?"),
 			err:         true,
+			provisioner: "",
 		},
 	}
 
@@ -90,7 +95,7 @@ func TestLocalClientNewHost(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			host, err := c.NewHost(test.driver, test.rawDriver)
+			host, err := c.NewHost(test.driver, test.provisioner, test.rawDriver)
 			// A few sanity checks that we can do on the host
 			if host != nil {
 				if host.DriverName != test.driver {
@@ -111,7 +116,7 @@ func TestLocalClientNewHost(t *testing.T) {
 }
 
 func TestRunNotDriver(t *testing.T) {
-	testutil.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 	StartDriver()
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")
@@ -121,7 +126,7 @@ func TestRunNotDriver(t *testing.T) {
 func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
-	testutil.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	t.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
 	t.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)

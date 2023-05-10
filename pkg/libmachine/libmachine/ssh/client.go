@@ -27,11 +27,13 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/log"
-	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"github.com/moby/term"
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/terminal"
+	terminal "golang.org/x/term"
+	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/util/slice"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
+	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 )
 
 type Client interface {
@@ -72,9 +74,10 @@ type Auth struct {
 
 type ClientType string
 
-const (
-	maxDialAttempts = 10
-)
+// x7TODO: linter says it's unused.. figure out why
+// const (
+// 	maxDialAttempts = 10
+// )
 
 const (
 	External ClientType = "external"
@@ -134,7 +137,7 @@ func NewClient(user string, host string, port int, auth *Auth) (Client, error) {
 func NewNativeClient(user, host string, port int, auth *Auth) (Client, error) {
 	config, err := NewNativeConfig(user, auth)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting config for native Go SSH: %s", err)
+		return nil, fmt.Errorf("error getting config for native Go SSH: %s", err)
 	}
 
 	return &NativeClient{
@@ -184,14 +187,14 @@ func (client *NativeClient) dialSuccess() bool {
 	return true
 }
 
-func (client *NativeClient) session(command string) (*ssh.Client, *ssh.Session, error) {
+func (client *NativeClient) session(_ string) (*ssh.Client, *ssh.Session, error) {
 	if err := mcnutils.WaitFor(client.dialSuccess); err != nil {
-		return nil, nil, fmt.Errorf("Error attempting SSH client dial: %s", err)
+		return nil, nil, fmt.Errorf("error attempting SSH client dial: %s", err)
 	}
 
 	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Mysterious error dialing TCP for SSH (we already succeeded at least once) : %s", err)
+		return nil, nil, fmt.Errorf("mysterious error dialing TCP for SSH (we already succeeded at least once) : %s", err)
 	}
 	session, err := conn.NewSession()
 
@@ -317,7 +320,12 @@ func (client *NativeClient) Shell(args ...string) error {
 			return err
 		}
 
-		defer term.RestoreTerminal(fd, oldState)
+		defer func() {
+			err := term.RestoreTerminal(fd, oldState)
+			if err != nil {
+				klog.Fatalf("failed to restore terminal: %v", err)
+			}
+		}()
 
 		winsize, err := term.GetWinsize(fd)
 		if err != nil {
@@ -353,7 +361,8 @@ func NewExternalClient(sshBinaryPath, user, host string, port int, auth *Auth) (
 		BinaryPath: sshBinaryPath,
 	}
 
-	args := append(baseSSHArgs, fmt.Sprintf("%s@%s", user, host))
+	args := slice.CopyStrings(baseSSHArgs)
+	args = append(args, fmt.Sprintf("%s@%s", user, host))
 
 	// If no identities are explicitly provided, also look at the identities
 	// offered by ssh-agent
@@ -399,15 +408,17 @@ func getSSHCmd(binaryPath string, args ...string) *exec.Cmd {
 }
 
 func (client *ExternalClient) Output(command string) (string, error) {
-	args := append(client.BaseArgs, command)
+	args := slice.CopyStrings(client.BaseArgs)
+	args = append(args, command)
 	cmd := getSSHCmd(client.BinaryPath, args...)
 	output, err := cmd.CombinedOutput()
 	return string(output), err
 }
 
 func (client *ExternalClient) Shell(args ...string) error {
-	args = append(client.BaseArgs, args...)
-	cmd := getSSHCmd(client.BinaryPath, args...)
+	actualArgs := slice.CopyStrings(client.BaseArgs)
+	actualArgs = append(actualArgs, args...)
+	cmd := getSSHCmd(client.BinaryPath, actualArgs...)
 
 	log.Debug(cmd)
 
@@ -419,7 +430,8 @@ func (client *ExternalClient) Shell(args ...string) error {
 }
 
 func (client *ExternalClient) Start(command string) (io.ReadCloser, io.ReadCloser, error) {
-	args := append(client.BaseArgs, command)
+	args := slice.CopyStrings(client.BaseArgs)
+	args = append(args, command)
 	cmd := getSSHCmd(client.BinaryPath, args...)
 
 	log.Debug(cmd)
@@ -457,6 +469,15 @@ func (client *ExternalClient) Wait() error {
 
 func closeConn(c io.Closer) {
 	err := c.Close()
+	// x7TODO: are we sure about this behaviour?
+	// perhaps we should fail instead?
+	// Ok.. we're talking about an ssh connection.. we may just debugMsg instead
+	// But how do you tell which case we're in?
+	// Like for me it makes sense to Fatal
+	// for things like failing to restore terminal or closing files
+	// Otherwise things like CI-integration can suffer from it.
+	// Does the user care? Probably
+	// Does the CI care? Definitely..
 	if err != nil {
 		log.Debugf("Error closing SSH Client: %s", err)
 	}

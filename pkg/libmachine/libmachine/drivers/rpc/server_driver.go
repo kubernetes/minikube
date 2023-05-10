@@ -142,7 +142,7 @@ func (r *RPCServerDriver) SetConfigRaw(data []byte, _ *struct{}) error {
 
 func trapPanic(err *error) {
 	if r := recover(); r != nil {
-		*err = fmt.Errorf("Panic in the driver: %s\n%s", r.(error), stdStacker.Stack())
+		*err = fmt.Errorf("panic in the driver: %s\n%s", r.(error), stdStacker.Stack())
 	}
 }
 

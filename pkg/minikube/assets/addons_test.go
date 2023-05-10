@@ -24,7 +24,7 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // mapsEqual returns true if and only if `a` contains all the same pairs as `b`.
@@ -157,7 +157,7 @@ func TestSelectAndPersistImages(t *testing.T) {
 	gcpAuthImages := gcpAuth.Images
 
 	// this test will write to ~/.minikube/profiles/minikube/config.json so need to create the file
-	home := tests.MakeTempDir(t)
+	home := localpath.MakeTempDir(t)
 	profilePath := filepath.Join(home, "profiles", "minikube")
 	if err := os.MkdirAll(profilePath, 0777); err != nil {
 		t.Fatalf("failed to create profile directory: %v", err)

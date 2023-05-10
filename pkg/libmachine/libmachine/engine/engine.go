@@ -39,7 +39,7 @@ type Options struct {
 	InstallURL       string
 }
 
-type EngineConfigContext struct {
+type ConfigContext struct {
 	DockerPort       int
 	AuthOptions      auth.Options
 	EngineOptions    Options

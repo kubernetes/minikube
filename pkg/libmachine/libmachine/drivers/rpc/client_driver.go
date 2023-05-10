@@ -25,6 +25,7 @@ import (
 
 	"io"
 
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -129,12 +130,16 @@ func (f *DefaultRPCClientDriverFactory) Close() error {
 	f.openedDriversLock.Lock()
 	defer f.openedDriversLock.Unlock()
 
-	for _, openedDriver := range f.openedDrivers {
-		if err := openedDriver.close(); err != nil {
-			// No need to display an error.
-			// There's nothing we can do and it doesn't add value to the user.
-		}
-	}
+	// for _, openedDriver := range f.openedDrivers {
+	// 	if err := openedDriver.close(); err != nil {
+	// 		// No need to display an error.
+	// 		// There's nothing we can do and it doesn't add value to the user.
+	// 		// x7TODO: fix this
+	// 		// this is a leak...
+	// 		// When closing doesn't work, external driver procs will be
+	// 		// left hanging.. that causes issues to the next run
+	// 	}
+	// }
 	f.openedDrivers = []*RPCClientDriver{}
 
 	return nil
@@ -158,7 +163,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 
 	addr, err := p.Address()
 	if err != nil {
-		return nil, fmt.Errorf("Error attempting to get plugin server address for RPC: %s", err)
+		return nil, fmt.Errorf("error attempting to get plugin server address for RPC: %s", err)
 	}
 
 	rpcclient, err := rpc.DialHTTP("tcp", addr)
@@ -188,7 +193,7 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 	}
 
 	if serverVersion != version.APIVersion {
-		return nil, fmt.Errorf("Driver binary uses an incompatible API version (%d)", serverVersion)
+		return nil, fmt.Errorf("driver binary uses an incompatible API version (%d)", serverVersion)
 	}
 	log.Debug("Using API Version ", serverVersion)
 
@@ -419,7 +424,7 @@ func (c *RPCClientDriver) IsContainerBased() bool {
 	var resp bool
 	err := c.Client.Call(IsContainerBasedMethod, &struct{}{}, &resp)
 	if err != nil {
-		// That's too bad..
+		klog.Fatalf("failed to contact external driver to check machine type: %v", err)
 	}
 	return resp
 }
@@ -428,7 +433,7 @@ func (c *RPCClientDriver) IsISOBased() bool {
 	var resp bool
 	err := c.Client.Call(IsISOBasedMethod, &struct{}{}, &resp)
 	if err != nil {
-		// That's too bad..
+		klog.Fatalf("failed to contact external driver to check machine type: %v", err)
 	}
 	return resp
 }
@@ -437,7 +442,7 @@ func (c *RPCClientDriver) IsManaged() bool {
 	var resp bool
 	err := c.Client.Call(IsManagedMethod, &struct{}{}, &resp)
 	if err != nil {
-		// That's too bad..
+		klog.Fatalf("failed to contact external driver to check machine type: %v", err)
 	}
 	return resp
 }

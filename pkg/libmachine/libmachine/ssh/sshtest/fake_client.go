@@ -38,7 +38,7 @@ func (fsc *FakeClient) Shell(args ...string) error {
 	return nil
 }
 
-func (fsc *FakeClient) Start(command string) (io.ReadCloser, io.ReadCloser, error) {
+func (fsc *FakeClient) Start(_ string) (io.ReadCloser, io.ReadCloser, error) {
 	return nil, nil, nil
 }
 

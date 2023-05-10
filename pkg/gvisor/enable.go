@@ -27,8 +27,8 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/libmachine/mcnutils"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"

@@ -27,8 +27,6 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
@@ -37,9 +35,13 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
+	"k8s.io/minikube/pkg/libmachine/drivers/mockdriver"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/libmachinetest"
+	"k8s.io/minikube/pkg/libmachine/libmachine/persist/persisttest"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 // Mock Kubernetes client getter - NOT THREAD SAFE
@@ -417,12 +419,12 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 }
 
 func TestGetServiceURLs(t *testing.T) {
-	defaultAPI := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	defaultAPI := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
-					Driver: &tests.MockDriver{},
+					Driver: &mockdriver.MockDriver{},
 				},
 			},
 		},
@@ -439,9 +441,9 @@ func TestGetServiceURLs(t *testing.T) {
 	}{
 		{
 			description: "no host",
-			api: &tests.MockAPI{
-				FakeStore: tests.FakeStore{
-					Hosts: make(map[string]*host.Host),
+			api: &libmachinetest.MockAPI{
+				FakeStore: persisttest.FakeStore{
+					MiniHosts: make(map[string]*host.Host),
 				},
 			},
 			err: true,
@@ -490,12 +492,12 @@ func TestGetServiceURLs(t *testing.T) {
 }
 
 func TestGetServiceURLsForService(t *testing.T) {
-	defaultAPI := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	defaultAPI := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
-					Driver: &tests.MockDriver{},
+					Driver: &mockdriver.MockDriver{},
 				},
 			},
 		},
@@ -513,9 +515,9 @@ func TestGetServiceURLsForService(t *testing.T) {
 	}{
 		{
 			description: "no host",
-			api: &tests.MockAPI{
-				FakeStore: tests.FakeStore{
-					Hosts: make(map[string]*host.Host),
+			api: &libmachinetest.MockAPI{
+				FakeStore: persisttest.FakeStore{
+					MiniHosts: make(map[string]*host.Host),
 				},
 			},
 			err: true,
@@ -822,12 +824,12 @@ func TestCreateSecret(t *testing.T) {
 }
 
 func TestWaitAndMaybeOpenService(t *testing.T) {
-	defaultAPI := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	defaultAPI := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
-					Driver: &tests.MockDriver{},
+					Driver: &mockdriver.MockDriver{},
 				},
 			},
 		},
@@ -972,12 +974,12 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 }
 
 func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
-	defaultAPI := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	defaultAPI := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
-					Driver: &tests.MockDriver{},
+					Driver: &mockdriver.MockDriver{},
 				},
 			},
 		},

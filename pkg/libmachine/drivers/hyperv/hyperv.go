@@ -19,6 +19,7 @@ package hyperv
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
@@ -158,7 +159,7 @@ func (d *Driver) GetURL() (string, error) {
 func (d *Driver) GetState() (state.State, error) {
 	stdout, err := cmdOut("(", "Hyper-V\\Get-VM", d.MachineName, ").state")
 	if err != nil {
-		return state.None, fmt.Errorf("Failed to find the VM status")
+		return state.None, fmt.Errorf("failed to find the VM status")
 	}
 
 	resp := parseLines(stdout)
@@ -342,6 +343,9 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 	return switches[0].Name, nil
 }
 
+// x7TODO: adjust logic here...
+// This makes the linter complain.. and for a good reason
+//
 // waitForIP waits until the host has a valid IP
 func (d *Driver) waitForIP() (string, error) {
 	log.Infof("Waiting for host to start...")
@@ -462,7 +466,7 @@ func (d *Driver) GetIP() (string, error) {
 
 	resp := parseLines(stdout)
 	if len(resp) < 1 {
-		return "", fmt.Errorf("IP not found")
+		return "", fmt.Errorf("ip not found")
 	}
 
 	return resp[0], nil
@@ -504,7 +508,10 @@ func (d *Driver) generateDiskImage() (string, error) {
 	}
 	defer file.Close()
 
-	file.Seek(0, os.SEEK_SET)
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		return "", err
+	}
 	_, err = file.Write(tarBuf.Bytes())
 	if err != nil {
 		return "", err

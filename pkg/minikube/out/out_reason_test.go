@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/utils"
 )
 
 type buffFd struct {
@@ -120,7 +120,7 @@ func TestDisplayProblemJSON(t *testing.T) {
 			Error(*tc.k, "my error")
 			actual := buf.Bytes()
 
-			tests.CompareJSON(t, actual, []byte(tc.expected))
+			utils.CompareJSON(t, actual, []byte(tc.expected))
 		})
 	}
 }

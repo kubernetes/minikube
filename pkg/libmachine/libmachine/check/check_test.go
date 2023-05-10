@@ -22,9 +22,9 @@ import (
 
 	"crypto/tls"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cert"
-	"github.com/stretchr/testify/assert"
 )
 
 type FakeValidateCertificate struct {
@@ -36,19 +36,19 @@ type FakeCertGenerator struct {
 	fakeValidateCertificate *FakeValidateCertificate
 }
 
-func (fcg FakeCertGenerator) GenerateCACertificate(certFile, keyFile, org string, bits int) error {
+func (fcg FakeCertGenerator) GenerateCACertificate(_, _, _ string, _ int) error {
 	return nil
 }
 
-func (fcg FakeCertGenerator) GenerateCert(opts *cert.Options) error {
+func (fcg FakeCertGenerator) GenerateCert(_ *cert.Options) error {
 	return nil
 }
 
-func (fcg FakeCertGenerator) ValidateCertificate(addr string, authOptions *auth.Options) (bool, error) {
+func (fcg FakeCertGenerator) ValidateCertificate(_ string, _ *auth.Options) (bool, error) {
 	return fcg.fakeValidateCertificate.IsValid, fcg.fakeValidateCertificate.Err
 }
 
-func (fcg FakeCertGenerator) ReadTLSConfig(addr string, authOptions *auth.Options) (*tls.Config, error) {
+func (fcg FakeCertGenerator) ReadTLSConfig(_ string, _ *auth.Options) (*tls.Config, error) {
 	return nil, nil
 }
 

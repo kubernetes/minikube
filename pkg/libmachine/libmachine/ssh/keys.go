@@ -29,15 +29,15 @@ import (
 	"os"
 	"runtime"
 
-	gossh "golang.org/x/crypto/ssh"
 	"github.com/hectane/go-acl"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
-	ErrKeyGeneration     = errors.New("Unable to generate key")
-	ErrValidation        = errors.New("Unable to validate key")
-	ErrPublicKey         = errors.New("Unable to convert public key")
-	ErrUnableToWriteFile = errors.New("Unable to write file")
+	ErrKeyGeneration     = errors.New("unable to generate key")
+	ErrValidation        = errors.New("unable to validate key")
+	ErrPublicKey         = errors.New("unable to convert public key")
+	ErrUnableToWriteFile = errors.New("unable to write file")
 )
 
 type KeyPair struct {
@@ -118,7 +118,7 @@ func (kp *KeyPair) Fingerprint() string {
 	b, _ := base64.StdEncoding.DecodeString(string(kp.PublicKey))
 	h := md5.New()
 
-	io.WriteString(h, string(b))
+	_, _ = io.WriteString(h, string(b))
 
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
@@ -128,16 +128,16 @@ func (kp *KeyPair) Fingerprint() string {
 func GenerateSSHKey(path string) error {
 	if _, err := os.Stat(path); err != nil {
 		if !os.IsNotExist(err) {
-			return fmt.Errorf("Desired directory for SSH keys does not exist: %s", err)
+			return fmt.Errorf("desired directory for SSH keys does not exist: %s", err)
 		}
 
 		kp, err := NewKeyPair()
 		if err != nil {
-			return fmt.Errorf("Error generating key pair: %s", err)
+			return fmt.Errorf("error generating key pair: %s", err)
 		}
 
 		if err := kp.WriteToFile(path, fmt.Sprintf("%s.pub", path)); err != nil {
-			return fmt.Errorf("Error writing keys to file(s): %s", err)
+			return fmt.Errorf("error writing keys to file(s): %s", err)
 		}
 	}
 
@@ -146,8 +146,5 @@ func GenerateSSHKey(path string) error {
 
 // change windows acl based permissions on file
 func windowsChmod(filePath string, fileMode os.FileMode) error {
-	if err := acl.Chmod(filePath, fileMode); err != nil {
-		return err
-	}
-	return nil
+	return acl.Chmod(filePath, fileMode)
 }

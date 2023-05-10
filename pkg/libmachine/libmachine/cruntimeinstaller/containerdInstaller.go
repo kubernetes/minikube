@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntimeInstaller
+package cruntimeinstaller
 
 import (
 	"k8s.io/klog"
@@ -31,7 +31,7 @@ type containerdInstaller struct {
 	AuthOptions          *auth.Options
 }
 
-func NewContainerdInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOpts *auth.Options) *containerdInstaller {
+func newContainerdInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOpts *auth.Options) *containerdInstaller {
 	return &containerdInstaller{
 		Options:              opts,
 		ContainerRuntimeName: "CRI-O",

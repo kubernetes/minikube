@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeInstaller"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeinstaller"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
@@ -114,8 +114,5 @@ func (p *ContainerProvisioner) Provision(swarmOptions swarm.Options, authOptions
 		return errors.Wrap(err, "while getting runner for cruntime installer")
 	}
 
-	instllr := cruntimeInstaller.DetectCRuntimeInstaller(p.EngineOptions, rnr, p.Driver.DriverName(), p.AuthOptions)
-	instllr.InstallCRuntime()
-
-	return nil
+	return cruntimeinstaller.InstallCRuntime(p.EngineOptions, rnr, p.Driver.DriverName(), p.AuthOptions)
 }

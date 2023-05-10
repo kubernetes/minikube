@@ -19,10 +19,12 @@ package tunnel
 import (
 	"errors"
 
+	"k8s.io/minikube/pkg/libmachine/drivers/mockdriver"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/libmachinetest"
+	"k8s.io/minikube/pkg/libmachine/libmachine/persist/persisttest"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tests"
 
 	"fmt"
 	"os"
@@ -409,11 +411,11 @@ func TestTunnel(t *testing.T) {
 				defer func() { getPid = origPidGetter }()
 			}
 			machineName := "testmachine"
-			machineAPI := &tests.MockAPI{
-				FakeStore: tests.FakeStore{
-					Hosts: map[string]*host.Host{
+			machineAPI := &libmachinetest.MockAPI{
+				FakeStore: persisttest.FakeStore{
+					MiniHosts: map[string]*host.Host{
 						machineName: {
-							Driver: &tests.MockDriver{
+							Driver: &mockdriver.MockDriver{
 								CurrentState: tc.machineState,
 								IP:           tc.machineIP,
 							},
@@ -463,11 +465,11 @@ func TestTunnel(t *testing.T) {
 
 func TestErrorCreatingTunnel(t *testing.T) {
 	machineName := "testmachine"
-	store := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	store := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				machineName: {
-					Driver: &tests.MockDriver{
+					Driver: &mockdriver.MockDriver{
 						CurrentState: state.Stopped,
 						IP:           "1.2.3.5",
 					},

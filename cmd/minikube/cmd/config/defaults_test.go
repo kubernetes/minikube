@@ -19,8 +19,8 @@ package config
 import (
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestGetDefaults(t *testing.T) {
@@ -78,7 +78,7 @@ func TestPrintDefaults(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.description, func(t *testing.T) {
 			defaultsOutput = tc.format
-			f := tests.NewFakeFile()
+			f := localpath.NewFakeFile()
 			out.SetOutFile(f)
 			printDefaults(defaults)
 			if f.String() != tc.expected {

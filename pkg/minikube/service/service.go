@@ -28,7 +28,6 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
@@ -37,6 +36,7 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"

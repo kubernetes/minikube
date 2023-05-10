@@ -22,15 +22,15 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util"
 )
 
 func TestSetupCerts(t *testing.T) {
-	tempDir := tests.MakeTempDir(t)
+	tempDir := localpath.MakeTempDir(t)
 
 	k8s := config.ClusterConfig{
 		CertExpiration: constants.DefaultCertExpiration,
@@ -58,7 +58,7 @@ func TestSetupCerts(t *testing.T) {
 		`sudo /bin/bash -c "test -s /usr/share/ca-certificates/minikubeCA.pem && ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem"`: "-",
 		`date -u +%d-%m-%y-%T`: time.Now().Format("02-01-06-15:04:05"),
 	}
-	f := command.NewFakeCommandRunner()
+	f := runner.NewFakeCommandRunner()
 	f.SetCommandToOutput(expected)
 
 	if err := SetupCerts(f, k8s, config.Node{}); err != nil {

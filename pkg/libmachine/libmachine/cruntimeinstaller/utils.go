@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntimeInstaller
+package cruntimeinstaller
 
 import (
 	"bytes"
@@ -63,7 +63,7 @@ func updateUnit(rnr runner.Runner, name string, content string, dst string) erro
 // systemd unit file, which would otherwise be interpreted as systemd directives. An example
 // are template specifiers (e.g. '%i') which are predefined variables that get evaluated dynamically
 // (see systemd man pages for more info). This is not supported by minikube, thus needs to be escaped.
-func escapeSystemdDirectives(engineConfigContext *engine.EngineConfigContext) {
+func escapeSystemdDirectives(engineConfigContext *engine.ConfigContext) {
 	// escape '%' in Environment option so that it does not evaluate into a template specifier
 	engineConfigContext.EngineOptions.Env = replaceChars(engineConfigContext.EngineOptions.Env, systemdSpecifierEscaper)
 	// input might contain whitespaces, wrap it in quotes

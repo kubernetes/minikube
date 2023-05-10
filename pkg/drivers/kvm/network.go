@@ -25,8 +25,8 @@ import (
 	"text/template"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"

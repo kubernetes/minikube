@@ -17,11 +17,9 @@ limitations under the License.
 package provision
 
 import (
-	"fmt"
-	"regexp"
-	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
@@ -29,7 +27,6 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/provisiontest"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -79,150 +76,19 @@ LISTEN     0      128         :::2376                    :::*                  `
 	}
 }
 
-func TestGenerateDockerOptionsBoot2Docker(t *testing.T) {
-	p := &Boot2DockerProvisioner{
-		Driver: &fakedriver.Driver{},
-	}
-	dockerPort := 1234
-	p.AuthOptions = auth.Options{
-		CaCertRemotePath:     "/test/ca-cert",
-		ServerKeyRemotePath:  "/test/server-key",
-		ServerCertRemotePath: "/test/server-cert",
-	}
-	engineConfigPath := "/var/lib/boot2docker/profile"
-
-	dockerCfg, err := p.GenerateDockerOptions(dockerPort)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if dockerCfg.EngineOptionsPath != engineConfigPath {
-		t.Fatalf("expected engine path %s; received %s", engineConfigPath, dockerCfg.EngineOptionsPath)
-	}
-
-	if strings.Index(dockerCfg.EngineOptions, fmt.Sprintf("-H tcp://0.0.0.0:%d", dockerPort)) == -1 {
-		t.Fatalf("-H docker port invalid; expected %d", dockerPort)
-	}
-
-	if strings.Index(dockerCfg.EngineOptions, fmt.Sprintf("CACERT=%s", p.AuthOptions.CaCertRemotePath)) == -1 {
-		t.Fatalf("CACERT option invalid; expected %s", p.AuthOptions.CaCertRemotePath)
-	}
-
-	if strings.Index(dockerCfg.EngineOptions, fmt.Sprintf("SERVERKEY=%s", p.AuthOptions.ServerKeyRemotePath)) == -1 {
-		t.Fatalf("SERVERKEY option invalid; expected %s", p.AuthOptions.ServerKeyRemotePath)
-	}
-
-	if strings.Index(dockerCfg.EngineOptions, fmt.Sprintf("SERVERCERT=%s", p.AuthOptions.ServerCertRemotePath)) == -1 {
-		t.Fatalf("SERVERCERT option invalid; expected %s", p.AuthOptions.ServerCertRemotePath)
-	}
-}
-
-func TestMachinePortBoot2Docker(t *testing.T) {
-	p := &Boot2DockerProvisioner{
-		Driver: &fakedriver.Driver{},
-	}
-	dockerPort := engine.DefaultPort
-	bindURL := fmt.Sprintf("tcp://0.0.0.0:%d", dockerPort)
-	p.AuthOptions = auth.Options{
-		CaCertRemotePath:     "/test/ca-cert",
-		ServerKeyRemotePath:  "/test/server-key",
-		ServerCertRemotePath: "/test/server-cert",
-	}
-
-	cfg, err := p.GenerateDockerOptions(dockerPort)
-	if err != nil {
-		t.Fatal(err)
-	}
-	re := regexp.MustCompile("-H tcp://.*:(.+)")
-	m := re.FindStringSubmatch(cfg.EngineOptions)
-	if len(m) == 0 {
-		t.Errorf("could not find port %d in engine config", dockerPort)
-	}
-
-	b := m[0]
-	u := strings.Split(b, " ")
-	url := u[1]
-	url = strings.Replace(url, "'", "", -1)
-	url = strings.Replace(url, "\\\"", "", -1)
-	if url != bindURL {
-		t.Errorf("expected url %s; received %s", bindURL, url)
-	}
-}
-
-func TestMachineCustomPortBoot2Docker(t *testing.T) {
-	p := &Boot2DockerProvisioner{
-		Driver: &fakedriver.Driver{},
-	}
-	dockerPort := 3376
-	bindURL := fmt.Sprintf("tcp://0.0.0.0:%d", dockerPort)
-	p.AuthOptions = auth.Options{
-		CaCertRemotePath:     "/test/ca-cert",
-		ServerKeyRemotePath:  "/test/server-key",
-		ServerCertRemotePath: "/test/server-cert",
-	}
-
-	cfg, err := p.GenerateDockerOptions(dockerPort)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	re := regexp.MustCompile("-H tcp://.*:(.+)")
-	m := re.FindStringSubmatch(cfg.EngineOptions)
-	if len(m) == 0 {
-		t.Errorf("could not find port %d in engine config", dockerPort)
-	}
-
-	b := m[0]
-	u := strings.Split(b, " ")
-	url := u[1]
-	url = strings.Replace(url, "'", "", -1)
-	url = strings.Replace(url, "\\\"", "", -1)
-	if url != bindURL {
-		t.Errorf("expected url %s; received %s", bindURL, url)
-	}
-}
-
-func TestUbuntuSystemdDaemonBinary(t *testing.T) {
-	p := NewUbuntuSystemdProvisioner(&fakedriver.Driver{}).(*UbuntuSystemdProvisioner)
-	cases := []struct {
-		output, want string
-	}{
-		{"Docker version 1.9.1\n", "docker daemon"},
-		{"Docker version 1.11.2\n", "docker daemon"},
-		{"Docker version 1.12.0\n", "dockerd"},
-		{"Docker version 1.13.0\n", "dockerd"},
-	}
-
-	sshCmder := &provisiontest.FakeSSHCommander{
-		Responses: make(map[string]string),
-	}
-	p.SSHCommander = sshCmder
-
-	for _, tc := range cases {
-		sshCmder.Responses["docker --version"] = tc.output
-		opts, err := p.GenerateDockerOptions(1234)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.Contains(opts.EngineOptions, tc.want) {
-			t.Fatal("incorrect docker daemon binary in engine options")
-		}
-	}
-}
-
 type fakeProvisioner struct {
 	GenericProvisioner
 }
 
-func (provisioner *fakeProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (provisioner *fakeProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
 	return nil
 }
 
-func (provisioner *fakeProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+func (provisioner *fakeProvisioner) Provision(_ swarm.Options, _ auth.Options, _ engine.Options) error {
 	return nil
 }
 
-func (provisioner *fakeProvisioner) Service(name string, action serviceaction.ServiceAction) error {
+func (provisioner *fakeProvisioner) Service(_ string, _ serviceaction.ServiceAction) error {
 	return nil
 }
 
@@ -248,7 +114,7 @@ func TestDecideStorageDriver(t *testing.T) {
 		Driver: &fakedriver.Driver{},
 	}}
 	for _, test := range tests {
-		p.SSHCommander = provisiontest.NewFakeSSHCommander(
+		p.Commander = provisiontest.NewFakeSSHCommander(
 			provisiontest.FakeSSHCommanderOptions{
 				FilesystemType: test.remoteFilesystemType,
 			},
@@ -263,7 +129,7 @@ func TestGetFilesystemType(t *testing.T) {
 	p := &fakeProvisioner{GenericProvisioner{
 		Driver: &fakedriver.Driver{},
 	}}
-	p.SSHCommander = &provisiontest.FakeSSHCommander{
+	p.Commander = &provisiontest.FakeSSHCommander{
 		Responses: map[string]string{
 			"stat -f -c %T /var/lib": "btrfs\n",
 		},

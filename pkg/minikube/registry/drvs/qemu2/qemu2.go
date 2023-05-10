@@ -27,9 +27,9 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
+	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"

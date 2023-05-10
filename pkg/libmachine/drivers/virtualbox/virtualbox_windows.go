@@ -24,8 +24,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 	"golang.org/x/sys/windows/registry"
+	"k8s.io/minikube/pkg/libmachine/libmachine/log"
 )
 
 // cmdOutput runs a shell command and returns its output.

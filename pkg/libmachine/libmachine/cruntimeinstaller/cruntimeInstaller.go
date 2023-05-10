@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntimeInstaller
+package cruntimeinstaller
 
 import (
 	"strings"
@@ -27,7 +27,7 @@ import (
 // Intaller is the abstraction that we use in order to install and configure
 // a generic Container Runtime inside the linux machine.
 // Configuring authentication is still provision.Provisioner's responsibility.
-type Installer interface {
+type installer interface {
 	// InstallCRuntime downloads and installs the container runtime into the machine
 	InstallCRuntime() error
 
@@ -35,16 +35,25 @@ type Installer interface {
 	SetCRuntimeOptions() error
 }
 
-// DetectCRuntimeInstaller should be the entrypoint to this package.
-// By passing the ngineConf we should be able to tell which container runtime we want to install.
-// Also we're passing all the requirements for the installation/configuration.
-func DetectCRuntimeInstaller(ngineConf *engine.Options, commander runner.Runner, provider string, authOpts *auth.Options) Installer {
+// InstalLCRuntime is the entrypoint to this package.
+// we're detecting the installer from the engine.Options.EngineName field, and passing
+// all the requirements to the installer.
+// we're then calling the install method, which installs and configures
+// the container runtime into the machine.
+func InstallCRuntime(ngineConf *engine.Options, commander runner.Runner, provider string, authOpts *auth.Options) error {
+	instllr := detectInstaller(ngineConf, commander, provider, authOpts)
+	return instllr.InstallCRuntime()
+}
+
+// detectInstaller takes all the requirements as parameters and returns
+// an initialized struct for the correct container runtime installer
+func detectInstaller(ngineConf *engine.Options, commander runner.Runner, provider string, authOpts *auth.Options) installer {
 	switch strings.ToLower(ngineConf.EngineName) {
 	case "crio", "cri-o":
-		return NewCRIOInstaller(ngineConf, commander, provider, authOpts)
+		return newCRIOInstaller(ngineConf, commander, provider, authOpts)
 	case "containerd":
-		return NewContainerdInstaller(ngineConf, commander, provider, authOpts)
+		return newContainerdInstaller(ngineConf, commander, provider, authOpts)
 	default:
-		return NewDockerInstaller(ngineConf, commander, provider, authOpts)
+		return newDockerInstaller(ngineConf, commander, provider, authOpts)
 	}
 }

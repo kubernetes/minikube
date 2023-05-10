@@ -38,8 +38,8 @@ const (
 func compare(v1, v2 string) int {
 	// Replace RC string with "." to make the RC number appear as simply
 	// another sub-version.
-	v1 = strings.Replace(v1, rcString, ".", -1)
-	v2 = strings.Replace(v2, rcString, ".", -1)
+	v1 = strings.ReplaceAll(v1, rcString, ".")
+	v2 = strings.ReplaceAll(v2, rcString, ".")
 
 	// All releases before the community edition (differentiated by
 	// presence of the "ce" string in the version string) are "less than"
@@ -66,8 +66,8 @@ func compare(v1, v2 string) int {
 // This will be every release after 1.13.1.
 func compareCE(v1, v2 string) int {
 	return compareNumeric(
-		strings.Replace(v1, ceEdition, "", -1),
-		strings.Replace(v2, ceEdition, "", -1),
+		strings.ReplaceAll(v1, ceEdition, ""),
+		strings.ReplaceAll(v2, ceEdition, ""),
 	)
 }
 

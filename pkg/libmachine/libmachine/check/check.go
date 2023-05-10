@@ -29,7 +29,7 @@ import (
 
 var (
 	DefaultConnChecker ConnChecker
-	ErrSwarmNotStarted = errors.New("Connection to Swarm cannot be checked but the certs are valid. Maybe swarm is not started")
+	ErrSwarmNotStarted = errors.New("connection to Swarm cannot be checked but the certs are valid. Maybe swarm is not started")
 )
 
 func init() {
@@ -71,7 +71,7 @@ func (mcc *MachineConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Op
 
 	u, err := url.Parse(dockerURL)
 	if err != nil {
-		return "", &auth.Options{}, fmt.Errorf("Error parsing URL: %s", err)
+		return "", &auth.Options{}, fmt.Errorf("error parsing URL: %s", err)
 	}
 
 	authOptions := h.AuthOptions()
@@ -86,7 +86,7 @@ func (mcc *MachineConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Op
 			}
 		}
 
-		return "", &auth.Options{}, fmt.Errorf("Error checking and/or regenerating the certs: %s", err)
+		return "", &auth.Options{}, fmt.Errorf("error checking and/or regenerating the certs: %s", err)
 	}
 
 	return dockerURL, authOptions, nil
@@ -114,7 +114,7 @@ func parseSwarm(hostURL string, h *host.Host) (string, error) {
 
 	u, err := url.Parse(swarmOptions.Host)
 	if err != nil {
-		return "", fmt.Errorf("There was an error parsing the url: %s", err)
+		return "", fmt.Errorf("there was an error parsing the url: %s", err)
 	}
 	parts := strings.Split(u.Host, ":")
 	swarmPort := parts[1]
@@ -122,7 +122,7 @@ func parseSwarm(hostURL string, h *host.Host) (string, error) {
 	// get IP of machine to replace in case swarm host is 0.0.0.0
 	mURL, err := url.Parse(hostURL)
 	if err != nil {
-		return "", fmt.Errorf("There was an error parsing the url: %s", err)
+		return "", fmt.Errorf("there was an error parsing the url: %s", err)
 	}
 
 	mParts := strings.Split(mURL.Host, ":")

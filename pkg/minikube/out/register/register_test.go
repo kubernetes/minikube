@@ -22,7 +22,7 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/utils"
 )
 
 func TestSetCurrentStep(t *testing.T) {
@@ -46,5 +46,5 @@ func TestSetCurrentStep(t *testing.T) {
 	PrintStep("message")
 	actual := buf.Bytes()
 
-	tests.CompareJSON(t, actual, []byte(expected))
+	utils.CompareJSON(t, actual, []byte(expected))
 }

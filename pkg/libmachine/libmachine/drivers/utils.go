@@ -30,7 +30,7 @@ import (
 // for 30 seconds before timing out
 func WaitForPrompt(d Driver) error {
 	if err := mcnutils.WaitFor(promptAvailFunc(d)); err != nil {
-		return fmt.Errorf("Too many retries waiting for prompt to be available.  Last error: %s", err)
+		return fmt.Errorf("too many retries waiting for prompt to be available.  Last error: %s", err)
 	}
 	return nil
 }
@@ -39,7 +39,7 @@ func promptAvailFunc(d Driver) func() bool {
 	return func() bool {
 		log.Debug("Getting to WaitForPrompt function...")
 		if _, err := d.RunCmd(exec.Command("bash", "-c", "exit 0")); err != nil {
-			log.Debugf("Error running 'exit 0' command : %s", err)
+			log.Debugf("error running 'exit 0' command : %s", err)
 			return false
 		}
 		return true

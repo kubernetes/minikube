@@ -214,7 +214,7 @@ func TestParseLine(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Got error on parseLine without quotes: %s", err)
 	}
-	key, val, err = parseLine(wtf)
+	_, _, err = parseLine(wtf)
 	if err == nil {
 		t.Fatal("Expected to get an error on parseLine, got nil")
 	}

@@ -506,6 +506,7 @@ func killAPIServerProc(runner runner.Runner) error {
 	return nil
 }
 
+// RunCmd runs the command from the inner KicRunner; it initializes one if not present
 func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
 	if d.exec == nil {
 		rnr, err := d.GetRunner()
@@ -519,19 +520,22 @@ func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
 	return d.exec.RunCmd(cmd)
 }
 
+// GetRunner returns a new KicRunner
 func (d *Driver) GetRunner() (runner.Runner, error) {
 	return runner.NewKICRunner(d.MachineName, d.OCIBinary), nil
 }
 
+// IsContainerBased returns true as we're running a container based machine
 func (d *Driver) IsContainerBased() bool {
 	return true
 }
 
+// IsISOBased returns false as we're supposed to run a container based machine
 func (d *Driver) IsISOBased() bool {
 	return false
 }
 
-// IsManaged retuns false. we're not managing the machine for the kic driver:
+// IsManaged returns false. we're not managing the machine for the kic driver:
 // we're expecting to find everything we need already inside the container
 func (d *Driver) IsManaged() bool {
 	return false

@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	ErrInvalidHostname = errors.New("Invalid hostname specified. Allowed hostname chars are: 0-9a-zA-Z . -")
+	ErrInvalidHostname = errors.New("invalid hostname specified. Allowed hostname chars are: 0-9a-zA-Z . -")
 )
 
 type ErrHostDoesNotExist struct {
@@ -33,7 +33,7 @@ type ErrHostDoesNotExist struct {
 }
 
 func (e ErrHostDoesNotExist) Error() string {
-	return fmt.Sprintf("Docker machine %q does not exist. Use \"docker-machine ls\" to list machines. Use \"docker-machine create\" to add a new one.", e.Name)
+	return fmt.Sprintf("docker machine %q does not exist. Use \"docker-machine ls\" to list machines. Use \"docker-machine create\" to add a new one.", e.Name)
 }
 
 type ErrHostAlreadyExists struct {
@@ -41,7 +41,7 @@ type ErrHostAlreadyExists struct {
 }
 
 func (e ErrHostAlreadyExists) Error() string {
-	return fmt.Sprintf("Docker machine %q already exists", e.Name)
+	return fmt.Sprintf("docker machine %q already exists", e.Name)
 }
 
 type ErrDuringPreCreate struct {
@@ -49,7 +49,7 @@ type ErrDuringPreCreate struct {
 }
 
 func (e ErrDuringPreCreate) Error() string {
-	return fmt.Sprintf("Error with pre-create check: %q", e.Cause)
+	return fmt.Sprintf("error with pre-create check: %q", e.Cause)
 }
 
 type ErrHostAlreadyInState struct {
@@ -58,5 +58,5 @@ type ErrHostAlreadyInState struct {
 }
 
 func (e ErrHostAlreadyInState) Error() string {
-	return fmt.Sprintf("Machine %q is already %s.", e.Name, strings.ToLower(e.State.String()))
+	return fmt.Sprintf("machine %q is already %s.", e.Name, strings.ToLower(e.State.String()))
 }

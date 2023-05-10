@@ -29,11 +29,11 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/libmachine/libmachine"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"

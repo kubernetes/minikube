@@ -37,13 +37,13 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
 	"github.com/shirou/gopsutil/v3/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 )
 
 // RunResult stores the result of an cmd.Run call

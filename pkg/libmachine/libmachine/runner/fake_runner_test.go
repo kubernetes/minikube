@@ -53,7 +53,7 @@ func TestFakeRunnerFile(t *testing.T) {
 		fileName := "memory"
 		file := assets.NewMemoryAssetTarget([]byte(expectedFileContents), "", "")
 
-		if err := fakeCommandRunner.Copy(file); err != nil {
+		if err := fakeCommandRunner.CopyFile(file); err != nil {
 			t.Fatal(err)
 		}
 
@@ -66,7 +66,7 @@ func TestFakeRunnerFile(t *testing.T) {
 			t.Errorf("expected %q, retrieved %q", expectedFileContents, retrievedFileContents)
 		}
 
-		if err := fakeCommandRunner.Remove(file); err != nil {
+		if err := fakeCommandRunner.RemoveFile(file); err != nil {
 			t.Fatal(err)
 		}
 

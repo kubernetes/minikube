@@ -23,7 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func runCommand(f func(*cobra.Command, []string)) {
@@ -34,7 +34,7 @@ func runCommand(f func(*cobra.Command, []string)) {
 
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	runCommand(RootCmd.PersistentPreRun)
 

@@ -26,10 +26,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/pmezard/go-difflib/difflib"
 	"golang.org/x/mod/semver"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
 )
 
 func getExtraOpts() []config.ExtraOption {
@@ -132,7 +132,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
-	fcr := command.NewFakeCommandRunner()
+	fcr := runner.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
 	})
@@ -208,7 +208,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	if err != nil {
 		t.Errorf("versions: %v", err)
 	}
-	fcr := command.NewFakeCommandRunner()
+	fcr := runner.NewFakeCommandRunner()
 	fcr.SetCommandToOutput(map[string]string{
 		"docker info --format {{.CgroupDriver}}": "systemd\n",
 		"crio config":                            "cgroup_manager = \"systemd\"\n",

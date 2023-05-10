@@ -25,16 +25,18 @@ import (
 	"reflect"
 	"strings"
 
+	"k8s.io/minikube/pkg/libmachine/drivers/mockdriver"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/libmachinetest"
+	"k8s.io/minikube/pkg/libmachine/libmachine/persist/persisttest"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestAPIError(t *testing.T) {
 	machineName := "nonexistentmachine"
 
-	machineAPI := tests.NewMockAPI(t)
+	machineAPI := libmachinetest.NewMockAPI(t)
 	configLoader := &stubConfigLoader{}
 	inspector := &clusterInspector{
 		machineAPI, configLoader, machineName,
@@ -52,11 +54,11 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
-	machineAPI := &tests.MockAPI{
-		FakeStore: tests.FakeStore{
-			Hosts: map[string]*host.Host{
+	machineAPI := &libmachinetest.MockAPI{
+		FakeStore: persisttest.FakeStore{
+			MiniHosts: map[string]*host.Host{
 				"testmachine": {
-					Driver: &tests.MockDriver{
+					Driver: &mockdriver.MockDriver{
 						CurrentState: state.Running,
 						IP:           "1.2.3.4",
 					},
@@ -109,7 +111,7 @@ func TestUnparseableCIDR(t *testing.T) {
 			ServiceCIDR: "bad.cidr.0.0/12",
 		}}
 	h := &host.Host{
-		Driver: &tests.MockDriver{
+		Driver: &mockdriver.MockDriver{
 			IP: "192.168.1.1",
 		},
 	}
@@ -132,7 +134,7 @@ func TestRouteIPDetection(t *testing.T) {
 
 	expectedGatewayIP := "192.168.1.1"
 	h := &host.Host{
-		Driver: &tests.MockDriver{
+		Driver: &mockdriver.MockDriver{
 			IP: expectedGatewayIP,
 		},
 	}

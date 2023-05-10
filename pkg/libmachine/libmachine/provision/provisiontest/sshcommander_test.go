@@ -17,6 +17,7 @@ limitations under the License.
 package provisiontest
 
 import (
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,8 +25,8 @@ import (
 
 func TestCreateFakeSSHCommander(t *testing.T) {
 	sshCmder := NewFakeSSHCommander(FakeSSHCommanderOptions{FilesystemType: "btrfs"})
-	output, err := sshCmder.SSHCommand("stat -f -c %T /var/lib")
-	if err != nil || output != "btrfs\n" {
+	output, err := sshCmder.RunCmd(exec.Command("stat", "-f", "-c", "%T", "/var/lib"))
+	if err != nil || output.Stdout.String() != "btrfs\n" {
 		t.Fatal("FakeSSHCommander should have returned btrfs and no error but returned '", output, "' and error", err)
 	}
 }
@@ -35,10 +36,10 @@ func TestStatSSHCommand(t *testing.T) {
 		Responses: map[string]string{"sshcommand": "sshcommandresponse"},
 	}
 
-	output, err := sshCmder.SSHCommand("sshcommand")
+	output, err := sshCmder.RunCmd(exec.Command("sshcommand"))
 	assert.NoError(t, err)
 	assert.Equal(t, "sshcommandresponse", output)
 
-	output, err = sshCmder.SSHCommand("errorcommand")
+	_, err = sshCmder.RunCmd(exec.Command("errorcommand"))
 	assert.Error(t, err)
 }

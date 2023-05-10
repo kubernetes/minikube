@@ -16,11 +16,17 @@ limitations under the License.
 
 package persisttest
 
-import "k8s.io/minikube/pkg/libmachine/libmachine/host"
+import (
+	"testing"
+
+	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+)
 
 type FakeStore struct {
 	Hosts                                           []*host.Host
+	MiniHosts                                       map[string]*host.Host
 	ExistsErr, ListErr, LoadErr, RemoveErr, SaveErr error
+	T                                               *testing.T
 }
 
 func (fs *FakeStore) Exists(name string) (bool, error) {

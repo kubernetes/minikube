@@ -1,28 +1,15 @@
-/*
-Copyright 2016 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package tests
+package provision
 
 import (
+	"os/exec"
+
+	"k8s.io/minikube/pkg/libmachine/drivers/mockdriver"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
@@ -65,23 +52,18 @@ func (provisioner *MockProvisioner) GetAuthOptions() auth.Options {
 	return auth.Options{}
 }
 
-// GenerateDockerOptions generates Docker options
-func (provisioner *MockProvisioner) GenerateDockerOptions(_ int) (*provision.DockerOptions, error) {
-	return &provision.DockerOptions{}, nil
-}
-
 // CompatibleWithHost checks if provisioner is compatible with host
 func (provisioner *MockProvisioner) CompatibleWithHost() bool {
 	return true
 }
 
 // SetOsReleaseInfo sets the os-release info
-func (provisioner *MockProvisioner) SetOsReleaseInfo(_ *provision.OsRelease) {
+func (provisioner *MockProvisioner) SetOsReleaseInfo(_ *OsRelease) {
 }
 
 // GetOsReleaseInfo gets the os-release info
-func (provisioner *MockProvisioner) GetOsReleaseInfo() (*provision.OsRelease, error) {
-	return &provision.OsRelease{}, nil
+func (provisioner *MockProvisioner) GetOsReleaseInfo() (*OsRelease, error) {
+	return &OsRelease{}, nil
 }
 
 // AttemptIPContact attempts to contact an IP and port
@@ -101,7 +83,12 @@ func (provisioner *MockProvisioner) SSHCommand(_ string) (string, error) {
 
 // GetDriver gets the driver
 func (provisioner *MockProvisioner) GetDriver() drivers.Driver {
-	return &MockDriver{}
+	return &mockdriver.MockDriver{}
+}
+
+// RunCmd mocks a command inside the linux machine
+func (provisioner *MockProvisioner) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
+	return nil, nil
 }
 
 // GetSwarmOptions gets the swarm.Options
@@ -115,6 +102,6 @@ type MockDetector struct {
 }
 
 // DetectProvisioner detects a provisioner
-func (m *MockDetector) DetectProvisioner(_ drivers.Driver) (provision.Provisioner, error) {
+func (m *MockDetector) DetectProvisioner(_ drivers.Driver) (Provisioner, error) {
 	return m.Provisioner, nil
 }

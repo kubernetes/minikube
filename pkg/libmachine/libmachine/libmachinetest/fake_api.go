@@ -28,7 +28,7 @@ type FakeAPI struct {
 	Hosts []*host.Host
 }
 
-func (api *FakeAPI) NewPluginDriver(string, []byte) (drivers.Driver, error) {
+func (api *FakeAPI) NewPluginDriver(_ string, _ []byte) (drivers.Driver, error) {
 	return nil, nil
 }
 
@@ -36,11 +36,11 @@ func (api *FakeAPI) Close() error {
 	return nil
 }
 
-func (api *FakeAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+func (api *FakeAPI) NewHost(_ string, _ []byte) (*host.Host, error) {
 	return nil, nil
 }
 
-func (api *FakeAPI) Create(h *host.Host) error {
+func (api *FakeAPI) Create(_ *host.Host) error {
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (api *FakeAPI) Remove(name string) error {
 	return nil
 }
 
-func (api *FakeAPI) Save(host *host.Host) error {
+func (api *FakeAPI) Save(_ *host.Host) error {
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (api FakeAPI) GetMachinesDir() string {
 
 func State(api libmachine.API, name string) state.State {
 	host, _ := api.Load(name)
-	machineState, _ := host.Driver.GetState()
+	machineState, _ := host.Driver.GetMachineState()
 	return machineState
 }
 

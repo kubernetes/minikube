@@ -20,8 +20,8 @@ import (
 	"errors"
 	"testing"
 
-	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 	"github.com/stretchr/testify/assert"
+	"k8s.io/minikube/pkg/libmachine/drivers/fakedriver"
 )
 
 type panicDriver struct {
@@ -86,6 +86,6 @@ func TestRPCServerDriverCreate(t *testing.T) {
 
 	for _, tc := range testCases {
 		stdStacker = tc.stacker
-		assert.Equal(t, tc.expectedErr, tc.serverDriver.Create(nil, nil))
+		assert.Equal(t, tc.expectedErr, tc.serverDriver.CreateMachine(nil, nil))
 	}
 }

@@ -45,7 +45,7 @@ var (
 	reMachineNotFound = regexp.MustCompile(`Could not find a registered machine named '(.+)'`)
 
 	ErrMachineNotExist = errors.New("machine does not exist")
-	ErrVBMNotFound     = errors.New("VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path")
+	ErrVBMNotFound     = errors.New("vboxmanage not found. Make sure VirtualBox is installed and VBoxManage is in the path")
 
 	vboxManageCmd = detectVBoxManageCmd()
 )
@@ -127,7 +127,7 @@ func (v *VBoxCmdManager) vbmOutErrRetry(retry int, args ...string) (string, stri
 func checkVBoxManageVersion(version string) error {
 	major, minor, err := parseVersion(version)
 	if (err != nil) || (major < 4) || (major == 4 && minor <= 2) {
-		return fmt.Errorf("We support Virtualbox starting with version 5. Your VirtualBox install is %q. Please upgrade at https://www.virtualbox.org", version)
+		return fmt.Errorf("we support Virtualbox starting with version 5. Your VirtualBox install is %q. Please upgrade at https://www.virtualbox.org", version)
 	}
 
 	if major < 5 {
@@ -140,17 +140,17 @@ func checkVBoxManageVersion(version string) error {
 func parseVersion(version string) (int, int, error) {
 	parts := strings.Split(version, ".")
 	if len(parts) < 2 {
-		return 0, 0, fmt.Errorf("Invalid version: %q", version)
+		return 0, 0, fmt.Errorf("invalid version: %q", version)
 	}
 
 	major, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return 0, 0, fmt.Errorf("Invalid version: %q", version)
+		return 0, 0, fmt.Errorf("invalid version: %q", version)
 	}
 
 	minor, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return 0, 0, fmt.Errorf("Invalid version: %q", version)
+		return 0, 0, fmt.Errorf("invalid version: %q", version)
 	}
 
 	return major, minor, err

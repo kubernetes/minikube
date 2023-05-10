@@ -1,3 +1,5 @@
+//go:build !windows
+
 /*
 Copyright 2023 The Kubernetes Authors All rights reserved.
 
@@ -14,8 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +build !windows
-
 package shell
 
 import (
@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	ErrUnknownShell = errors.New("Error: Unknown shell")
+	ErrUnknownShell = errors.New("error: Unknown shell")
 )
 
 // Detect detects user's current shell.

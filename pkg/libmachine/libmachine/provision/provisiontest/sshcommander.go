@@ -14,24 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//Package provisiontest provides utilities for testing provisioners
+// Package provisiontest provides utilities for testing provisioners
 package provisiontest
 
-import "errors"
+import (
+	"bytes"
+	"errors"
+	"os/exec"
 
-//FakeSSHCommanderOptions is intended to create a FakeSSHCommander without actually knowing the underlying sshcommands by passing it to NewSSHCommander
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+)
+
+// x7TODO: take this out of here.. put it inside the libmachine/runner code
+
+// FakeSSHCommanderOptions is intended to create a FakeSSHCommander without actually knowing the underlying sshcommands by passing it to NewSSHCommander
 type FakeSSHCommanderOptions struct {
-	//Result of the ssh command to look up the FilesystemType
+	// Result of the ssh command to look up the FilesystemType
 	FilesystemType string
 }
 
-//FakeSSHCommander is an implementation of provision.SSHCommander to provide predictable responses set by testing code
-//Extend it when needed
+// FakeSSHCommander is an implementation of provision.SSHCommander to provide predictable responses set by testing code
+// Extend it when needed
 type FakeSSHCommander struct {
 	Responses map[string]string
 }
 
-//NewFakeSSHCommander creates a FakeSSHCommander without actually knowing the underlying sshcommands
+// NewFakeSSHCommander creates a FakeSSHCommander without actually knowing the underlying sshcommands
 func NewFakeSSHCommander(options FakeSSHCommanderOptions) *FakeSSHCommander {
 	if options.FilesystemType == "" {
 		options.FilesystemType = "ext4"
@@ -45,11 +53,11 @@ func NewFakeSSHCommander(options FakeSSHCommanderOptions) *FakeSSHCommander {
 	return sshCmder
 }
 
-//SSHCommand is an implementation of provision.SSHCommander.SSHCommand to provide predictable responses set by testing code
-func (sshCmder *FakeSSHCommander) SSHCommand(args string) (string, error) {
-	response, commandRegistered := sshCmder.Responses[args]
+// SSHCommand is an implementation of provision.SSHCommander.SSHCommand to provide predictable responses set by testing code
+func (sshCmder *FakeSSHCommander) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	response, commandRegistered := sshCmder.Responses[cmd.String()]
 	if !commandRegistered {
-		return "", errors.New("Command not registered in FakeSSHCommander")
+		return nil, errors.New("command not registered in FakeSSHCommander")
 	}
-	return response, nil
+	return &runner.RunResult{Stdout: *bytes.NewBuffer([]byte(response))}, nil
 }

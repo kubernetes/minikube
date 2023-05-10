@@ -36,11 +36,7 @@ import (
 
 // NewSSHClient returns an SSH client object for running commands.
 func NewSSHClient(ip, keyPath, usrName string, port int) (*ssh.Client, error) {
-	h, err := newSSHHost(ip, keyPath, usrName, port)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
-
-	}
+	h := newSSHHost(ip, keyPath, usrName, port)
 	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_rsa")
 	auth := &machinessh.Auth{}
 	if h.SSHKeyPath != "" {
@@ -79,13 +75,13 @@ type sshHost struct {
 	Username   string
 }
 
-func newSSHHost(ip, keyPath, usrName string, port int) (*sshHost, error) {
+func newSSHHost(ip, keyPath, usrName string, port int) *sshHost {
 	return &sshHost{
 		IP:         ip,
 		Port:       port,
 		SSHKeyPath: keyPath,
 		Username:   usrName,
-	}, nil
+	}
 }
 
 // KnownHost checks if this host is in the knownHosts file

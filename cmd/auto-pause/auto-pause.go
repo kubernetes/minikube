@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cruntime"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -107,7 +107,7 @@ func runPause() {
 		return
 	}
 
-	r := command.NewExecRunner(true)
+	r := runner.NewExecRunner(true)
 
 	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
@@ -129,7 +129,7 @@ func runUnpause() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	r := command.NewExecRunner(true)
+	r := runner.NewExecRunner(true)
 
 	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
@@ -149,7 +149,7 @@ func alreadyPaused() {
 	mu.Lock()
 	defer mu.Unlock()
 
-	r := command.NewExecRunner(true)
+	r := runner.NewExecRunner(true)
 	cr, err := cruntime.New(cruntime.Config{Type: *runtime, Runner: r})
 	if err != nil {
 		exit.Error(reason.InternalNewRuntime, "Failed runtime", err)

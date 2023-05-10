@@ -19,13 +19,12 @@ package provision
 import (
 	"fmt"
 	"os/exec"
-	"regexp"
 
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
-	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeInstaller"
+	"k8s.io/minikube/pkg/libmachine/libmachine/cruntimeinstaller"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -35,12 +34,6 @@ import (
 
 var (
 	ErrUnknownYumOsRelease = errors.New("unknown OS for Yum repository")
-	engineConfigTemplate   = `[Service]
-ExecStart=
-ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:{{.DockerPort}} -H unix:///var/run/docker.sock --storage-driver {{.EngineOptions.StorageDriver}} --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
-Environment={{range .EngineOptions.Env}}{{ printf "%q" . }} {{end}}
-`
-	majorVersionRE = regexp.MustCompile(`^(\d+)(\..*)?`)
 )
 
 type PackageListInfo struct {
@@ -117,19 +110,6 @@ func (provisioner *RedHatProvisioner) Package(name string, action pkgaction.Pack
 	return nil
 }
 
-func (provisioner *RedHatProvisioner) dockerDaemonResponding() bool {
-	log.Debug("checking docker daemon")
-
-	if out, err := provisioner.RunCmd(exec.Command("sudo", "docker", "version")); err != nil {
-		log.Warnf("Error getting SSH command to check if the daemon is up: %s", err)
-		log.Debugf("'sudo docker version' output:\n%s", out)
-		return false
-	}
-
-	// The daemon is up if the command worked.  Carry on.
-	return true
-}
-
 func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
 	if !provisioner.Driver.IsManaged() {
 		return nil
@@ -177,6 +157,5 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 		return errors.Wrap(err, "while getting runner for cruntime installer")
 	}
 
-	instllr := cruntimeInstaller.DetectCRuntimeInstaller(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
-	return instllr.InstallCRuntime()
+	return cruntimeinstaller.InstallCRuntime(provisioner.EngineOptions, rnr, provisioner.Driver.DriverName(), provisioner.AuthOptions)
 }

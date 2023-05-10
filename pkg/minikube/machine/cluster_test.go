@@ -25,17 +25,20 @@ import (
 	// Driver used by testdata
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/libmachine/drivers/mockdriver"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine/libmachine/hosttest"
+	"k8s.io/minikube/pkg/libmachine/libmachine/libmachinetest"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision"
 	"k8s.io/minikube/pkg/libmachine/libmachine/state"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func createMockDriverHost(_ config.ClusterConfig, _ config.Node) (interface{}, error) {
@@ -57,7 +60,7 @@ func RegisterMockDriver(t *testing.T) {
 	err := registry.Register(registry.DriverDef{
 		Name:   driver.Mock,
 		Config: createMockDriverHost,
-		Init:   func() drivers.Driver { return &tests.MockDriver{T: t} },
+		Init:   func() drivers.Driver { return &mockdriver.MockDriver{T: t} },
 	})
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
@@ -72,12 +75,12 @@ var defaultClusterConfig = config.ClusterConfig{
 }
 
 func TestCreateHost(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 
 	exists, _ := api.Exists(viper.GetString("profile"))
 	if exists {
@@ -101,7 +104,7 @@ func TestCreateHost(t *testing.T) {
 		t.Fatalf("Error loading machine: %v", err)
 	}
 
-	if s, _ := h.Driver.GetState(); s != state.Running {
+	if s, _ := h.Driver.GetMachineState(); s != state.Running {
 		t.Fatalf("Machine is not running. State is: %s", s)
 	}
 
@@ -119,12 +122,12 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 
 	// Create an initial host.
 	ih, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -138,7 +141,7 @@ func TestStartHostExists(t *testing.T) {
 		t.Fatal("api.Create did not fail, but should have.")
 	}
 
-	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	md := &provision.MockDetector{Provisioner: &provision.MockProvisioner{}}
 	provision.SetDetector(md)
 
 	mc := defaultClusterConfig
@@ -152,18 +155,18 @@ func TestStartHostExists(t *testing.T) {
 	if h.Name != viper.GetString("profile") {
 		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
-	if s, _ := h.Driver.GetState(); s != state.Running {
+	if s, _ := h.Driver.GetMachineState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -171,7 +174,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 		t.Fatalf("Error creating host: %v", err)
 	}
 
-	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	md := &provision.MockDetector{Provisioner: &provision.MockProvisioner{}}
 	provision.SetDetector(md)
 
 	mc := defaultClusterConfig
@@ -201,28 +204,28 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	if h.Name != viper.GetString("profile") {
 		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
-	if s, _ := h.Driver.GetState(); s != state.Running {
+	if s, _ := h.Driver.GetMachineState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
 }
 
 func TestStartStoppedHost(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	// Create an initial host.
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	d := tests.MockDriver{T: t}
+	d := mockdriver.MockDriver{T: t}
 	h.Driver = &d
 	d.CurrentState = state.Stopped
 
-	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	md := &provision.MockDetector{Provisioner: &provision.MockProvisioner{}}
 	provision.SetDetector(md)
 	mc := defaultClusterConfig
 	mc.Name = h.Name
@@ -235,7 +238,7 @@ func TestStartStoppedHost(t *testing.T) {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
-	if s, _ := h.Driver.GetState(); s != state.Running {
+	if s, _ := h.Driver.GetMachineState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
 
@@ -246,14 +249,14 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 
-	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	md := &provision.MockDetector{Provisioner: &provision.MockProvisioner{}}
 	provision.SetDetector(md)
 
 	h, _, err := StartHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -266,7 +269,7 @@ func TestStartHost(t *testing.T) {
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
 	}
-	if s, _ := h.Driver.GetState(); s != state.Running {
+	if s, _ := h.Driver.GetMachineState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
 
@@ -278,14 +281,14 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	download.DownloadMock = download.CreateDstDownloadMock
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 
-	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	md := &provision.MockDetector{Provisioner: &provision.MockProvisioner{}}
 	provision.SetDetector(md)
 
 	cfg := config.ClusterConfig{
@@ -315,17 +318,17 @@ func TestStartHostConfig(t *testing.T) {
 
 func TestStopHostError(t *testing.T) {
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	if err := StopHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
 
 func TestStopHost(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
@@ -337,16 +340,16 @@ func TestStopHost(t *testing.T) {
 	if err := StopHost(api, m); err != nil {
 		t.Fatalf("Unexpected error stopping machine: %v", err)
 	}
-	if s, _ := h.Driver.GetState(); s != state.Stopped {
+	if s, _ := h.Driver.GetMachineState(); s != state.Stopped {
 		t.Fatalf("Machine not stopped. Currently in state: %s", s)
 	}
 }
 
 func TestDeleteHost(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -360,16 +363,16 @@ func TestDeleteHost(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	h, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	d := &tests.MockDriver{RemoveError: true, T: t}
+	d := &mockdriver.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
 	if err := DeleteHost(api, config.MachineName(defaultClusterConfig, config.Node{Name: "minikube"}), false); err == nil {
@@ -378,10 +381,10 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	api.RemoveError = true
 	if _, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"}); err != nil {
 		t.Errorf("createHost failed: %v", err)
@@ -393,10 +396,10 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 }
 
 func TestDeleteHostErrMachineNotExist(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
 	_, err := createHost(api, &defaultClusterConfig, &config.Node{Name: "minikube"})
@@ -410,10 +413,10 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 }
 
 func TestStatus(t *testing.T) {
-	tests.MakeTempDir(t)
+	localpath.MakeTempDir(t)
 
 	RegisterMockDriver(t)
-	api := tests.NewMockAPI(t)
+	api := libmachinetest.NewMockAPI(t)
 
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
@@ -450,7 +453,7 @@ func TestStatus(t *testing.T) {
 
 func TestGuestClockDelta(t *testing.T) {
 	local := time.Now()
-	h := tests.NewMockHost()
+	h := hosttest.NewMockHost()
 	// Truncate remote clock so that it is between 0 and 1 second behind
 	h.CommandOutput["date +%s.%N"] = fmt.Sprintf("%d.0000", local.Unix())
 	got, err := guestClockDelta(h, local)

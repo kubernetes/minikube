@@ -74,7 +74,7 @@ func (d *DriverNotSupported) GetCreateFlags() []mcnflag.Flag {
 	return nil
 }
 
-func (d *DriverNotSupported) SetConfigFromFlags(flags DriverOptions) error {
+func (d *DriverNotSupported) SetConfigFromFlags(_ DriverOptions) error {
 	return NotSupported{d.DriverName()}
 }
 

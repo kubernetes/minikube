@@ -112,41 +112,6 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 	return nil
 }
 
-// x7NOTE: DON'T ADD THIS TO COMMIT
-// validateDriver validates if a driver appears to be up-to-date and installed properly
-func validateDriver(executable string, v semver.Version) (string, error) {
-	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
-	path, err := exec.LookPath(executable)
-	if err != nil {
-		return path, err
-	}
-
-	// x7NOTE: cut HERE -----------------------------------------
-	return path, nil
-	// --------------------------------------------------
-
-	output, err := exec.Command(path, "version").Output()
-	if err != nil {
-		return path, err
-	}
-
-	ev := extractDriverVersion(string(output))
-	if len(ev) == 0 {
-		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
-	}
-
-	driverVersion, err := semver.Make(ev)
-	if err != nil {
-		return path, errors.Wrap(err, "can't parse driver version")
-	}
-	klog.Infof("%s version is %s", path, driverVersion)
-
-	if driverVersion.LT(v) {
-		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
-	}
-	return path, nil
-}
-
 // extractDriverVersion extracts the driver version.
 // KVM and Hyperkit drivers support the 'version' command, that display the information as:
 // version: vX.X.X
@@ -168,3 +133,50 @@ func driverExists(driver string) bool {
 	_, err := exec.LookPath(driver)
 	return err == nil
 }
+
+// x7NOTE: DON'T ADD THIS TO COMMIT -- 'till EOF
+// validateDriver validates if a driver appears to be up-to-date and installed properly
+func validateDriver(executable string, _ semver.Version) (string, error) {
+	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
+	path, err := exec.LookPath(executable)
+	if err != nil {
+		return path, err
+	}
+
+	// x7NOTE: cut along the lines ------------------------------
+	return path, nil
+	// ----------------------------------------------------------
+}
+
+// x7TODO: bake the docker-machine-kvm2 into the minikube bin
+// once that is done.. we won't need this logic for that
+// we will still need it to other externals tho
+//
+// func validateDriver(executable string, v semver.Version) (string, error) {
+// 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
+// 	path, err := exec.LookPath(executable)
+// 	if err != nil {
+// 		return path, err
+// 	}
+//
+// output, err := exec.Command(path, "version").Output()
+// if err != nil {
+// 	return path, err
+// }
+//
+// ev := extractDriverVersion(string(output))
+// if len(ev) == 0 {
+// 	return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
+// }
+//
+// driverVersion, err := semver.Make(ev)
+// if err != nil {
+// 	return path, errors.Wrap(err, "can't parse driver version")
+// }
+// klog.Infof("%s version is %s", path, driverVersion)
+//
+// if driverVersion.LT(v) {
+// 	return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
+// }
+// return path, nil
+//}

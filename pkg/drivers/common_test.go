@@ -21,11 +21,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func Test_createDiskImage(t *testing.T) {
-	tmpdir := tests.MakeTempDir(t)
+	tmpdir := localpath.MakeTempDir(t)
 
 	sshPath := filepath.Join(tmpdir, "ssh")
 	if err := os.WriteFile(sshPath, []byte("mysshkey"), 0644); err != nil {
@@ -70,7 +70,7 @@ var validLeases = []byte(`{
 }`)
 
 func Test_getIpAddressFromFile(t *testing.T) {
-	tmpdir := tests.MakeTempDir(t)
+	tmpdir := localpath.MakeTempDir(t)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
 	if err := os.WriteFile(dhcpFile, validLeases, 0644); err != nil {

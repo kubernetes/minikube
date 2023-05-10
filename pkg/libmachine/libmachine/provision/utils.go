@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/util/slice"
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/cert"
 	"k8s.io/minikube/pkg/libmachine/libmachine/drivers"
@@ -87,7 +88,8 @@ func ConfigureAuth(p Provisioner) error {
 	}
 
 	// The Host IP is always added to the certificate's SANs list
-	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1", hostIP, machineName)
+	hosts := slice.CopyStrings(authOptions.ServerCertSANs)
+	hosts = append(hosts, ip, "localhost", "127.0.0.1", hostIP, machineName)
 	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
@@ -247,7 +249,7 @@ func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (s
 func getFilesystemType(p Provisioner, directory string) (string, error) {
 	statCommandOutput, err := p.RunCmd(exec.Command("stat", "-f", "-c", "%T", directory))
 	if err != nil {
-		err = fmt.Errorf("Error looking up filesystem type: %s", err)
+		err = fmt.Errorf("error looking up filesystem type: %s", err)
 		return "", err
 	}
 
@@ -294,7 +296,7 @@ func DockerClientVersion(ssh Commander) (string, error) {
 
 	words := strings.Fields(output.Stdout.String())
 	if len(words) < 3 || words[0] != "Docker" || words[1] != "version" {
-		return "", fmt.Errorf("DockerClientVersion: cannot parse version string from %q", output)
+		return "", fmt.Errorf("dockerclientversion: cannot parse version string from %q", output)
 	}
 
 	return strings.TrimRight(words[2], ","), nil
@@ -318,10 +320,10 @@ func waitForLock(ssh Commander, cmd *exec.Cmd) error {
 		return true
 	})
 	if sshErr != nil {
-		return fmt.Errorf("Error running %q: %s", cmd, sshErr)
+		return fmt.Errorf("error running %q: %s", cmd, sshErr)
 	}
 	if err != nil {
-		return fmt.Errorf("Failed to obtain lock: %s", err)
+		return fmt.Errorf("failed to obtain lock: %s", err)
 	}
 	return nil
 }

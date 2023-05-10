@@ -45,7 +45,7 @@ type RemoteDocker struct {
 // URL returns the Docker host URL
 func (rd *RemoteDocker) URL() (string, error) {
 	if rd.HostURL == "" {
-		return "", fmt.Errorf("Docker Host URL not set")
+		return "", fmt.Errorf("docker Host URL not set")
 	}
 
 	return rd.HostURL, nil

@@ -96,8 +96,6 @@ type Driver struct {
 
 	// Extra Disks XML
 	ExtraDisksXML []string
-
-	exec runner.Runner
 }
 
 const (
@@ -564,32 +562,10 @@ func lvErr(err error) libvirt.Error {
 	return libvirt.Error{Code: libvirt.ERR_OK, Message: ""}
 }
 
-func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
-	if d.exec == nil {
-		rnr, err := d.GetRunner()
-		if err != nil {
-			return nil, err
-		}
-
-		d.exec = rnr
-	}
-
-	return d.exec.RunCmd(cmd)
-}
-
-func (d *Driver) GetRunner() (runner.Runner, error) {
-	ip, err := d.GetIP()
-	if err != nil {
-		return nil, err
-	}
-
-	port, err := d.GetSSHPort()
-	if err != nil {
-		return nil, err
-	}
-
-	return runner.NewSSHRunner(ip, d.GetSSHKeyPath(), d.GetSSHUsername(), port), nil
-}
+// x7NOTE: Those are used through the RPCClientDriver; no need for those here..
+// until we're deciding to bake this into the minikube binary
+func (d *Driver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) { return nil, nil }
+func (d *Driver) GetRunner() (runner.Runner, error)             { return nil, nil }
 
 func (d *Driver) IsContainerBased() bool {
 	return false

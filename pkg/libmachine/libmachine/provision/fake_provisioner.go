@@ -33,13 +33,13 @@ type FakeDetector struct {
 	Provisioner
 }
 
-func (fd *FakeDetector) DetectProvisioner(d drivers.Driver) (Provisioner, error) {
+func (fd *FakeDetector) DetectProvisioner(_ drivers.Driver) (Provisioner, error) {
 	return fd.Provisioner, nil
 }
 
 type FakeProvisioner struct{}
 
-func NewFakeProvisioner(d drivers.Driver) Provisioner {
+func NewFakeProvisioner(_ drivers.Driver) Provisioner {
 	return &FakeProvisioner{}
 }
 
@@ -63,7 +63,7 @@ func (fp *FakeProvisioner) GetSwarmOptions() swarm.Options {
 	return swarm.Options{}
 }
 
-func (fp *FakeProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (fp *FakeProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
 	return nil
 }
 
@@ -71,7 +71,7 @@ func (fp *FakeProvisioner) Hostname() (string, error) {
 	return "", nil
 }
 
-func (fp *FakeProvisioner) SetHostname(hostname string) error {
+func (fp *FakeProvisioner) SetHostname(_ string) error {
 	return nil
 }
 
@@ -79,11 +79,11 @@ func (fp *FakeProvisioner) CompatibleWithHost() bool {
 	return true
 }
 
-func (fp *FakeProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+func (fp *FakeProvisioner) Provision(_ swarm.Options, _ auth.Options, _ engine.Options) error {
 	return nil
 }
 
-func (fp *FakeProvisioner) Service(name string, action serviceaction.ServiceAction) error {
+func (fp *FakeProvisioner) Service(_ string, _ serviceaction.ServiceAction) error {
 	return nil
 }
 
@@ -91,7 +91,7 @@ func (fp *FakeProvisioner) GetDriver() drivers.Driver {
 	return nil
 }
 
-func (fp *FakeProvisioner) SetOsReleaseInfo(info *OsRelease) {}
+func (fp *FakeProvisioner) SetOsReleaseInfo(_ *OsRelease) {}
 
 func (fp *FakeProvisioner) GetOsReleaseInfo() (*OsRelease, error) {
 	return nil, nil

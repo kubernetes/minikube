@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cruntimeInstaller
+package cruntimeinstaller
 
 import (
 	"bytes"
@@ -47,7 +47,7 @@ func (ci *crioInstaller) InstallCRuntime() error {
 	return nil
 }
 
-func NewCRIOInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOpts *auth.Options) *crioInstaller {
+func newCRIOInstaller(opts *engine.Options, cmd runner.Runner, provider string, authOpts *auth.Options) *crioInstaller {
 	return &crioInstaller{
 		Options:              opts,
 		ContainerRuntimeName: "CRI-O",

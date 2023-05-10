@@ -33,5 +33,5 @@ func main() {
 		return
 	}
 
-	plugin.RegisterDriver(kvm.NewDriver("", ""))
+	os.Exit(plugin.RegisterDriver(kvm.NewDriver("", "")))
 }

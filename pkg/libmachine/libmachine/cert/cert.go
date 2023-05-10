@@ -29,7 +29,7 @@ import (
 	"os"
 	"time"
 
-	"errors"
+	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/log"
@@ -154,7 +154,11 @@ func (xcg *X509CertGenerator) GenerateCACertificate(certFile, keyFile, org strin
 		return err
 	}
 
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return errors.Wrap(err, "while pem-encoding certificate")
+	}
+
 	certOut.Close()
 
 	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -163,7 +167,10 @@ func (xcg *X509CertGenerator) GenerateCACertificate(certFile, keyFile, org strin
 
 	}
 
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	if err != nil {
+		return errors.Wrap(err, "while pem-encoding rsa private key")
+	}
 	keyOut.Close()
 
 	return nil
@@ -224,7 +231,11 @@ func (xcg *X509CertGenerator) GenerateCert(opts *Options) error {
 		return err
 	}
 
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	if err != nil {
+		return errors.Wrap(err, "while pem-encoding certificate")
+	}
+
 	certOut.Close()
 
 	keyOut, err := os.OpenFile(opts.KeyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -232,14 +243,17 @@ func (xcg *X509CertGenerator) GenerateCert(opts *Options) error {
 		return err
 	}
 
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(priv)})
+	if err != nil {
+		return errors.Wrap(err, "while pem-encoding rsa private key")
+	}
 	keyOut.Close()
 
 	return nil
 }
 
 // ReadTLSConfig reads the tls config for a machine.
-func (xcg *X509CertGenerator) ReadTLSConfig(addr string, authOptions *auth.Options) (*tls.Config, error) {
+func (xcg *X509CertGenerator) ReadTLSConfig(_ string, authOptions *auth.Options) (*tls.Config, error) {
 	caCertPath := authOptions.CaCertPath
 	clientCertPath := authOptions.ClientCertPath
 	clientKeyPath := authOptions.ClientKeyPath

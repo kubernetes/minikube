@@ -28,8 +28,8 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/text/language"
 
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -61,7 +61,7 @@ func TestOutT(t *testing.T) {
 			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
 				// Set MINIKUBE_IN_STYLE=<override>
 				t.Setenv(OverrideEnv, strconv.FormatBool(override))
-				f := tests.NewFakeFile()
+				f := localpath.NewFakeFile()
 				SetOutFile(f)
 				Step(tc.style, tc.message, tc.params)
 				got := f.String()
@@ -91,7 +91,7 @@ func TestOut(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.format, func(t *testing.T) {
-			f := tests.NewFakeFile()
+			f := localpath.NewFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
 			if tc.arg == nil {
@@ -109,7 +109,7 @@ func TestOut(t *testing.T) {
 
 func TestErr(t *testing.T) {
 	t.Setenv(OverrideEnv, "0")
-	f := tests.NewFakeFile()
+	f := localpath.NewFakeFile()
 	SetErrFile(f)
 	Err("xyz123 %s\n", "%s%%%d")
 	Ln("unrelated message")
@@ -213,7 +213,7 @@ func TestDisplayGitHubIssueMessage(t *testing.T) {
 		defer func() { os.Args = oldArgs }()
 		os.Args = tt.args
 		pflag.Parse()
-		f := tests.NewFakeFile()
+		f := localpath.NewFakeFile()
 		SetErrFile(f)
 		displayGitHubIssueMessage()
 		output := f.String()
@@ -227,7 +227,7 @@ func TestDisplayGitHubIssueMessage(t *testing.T) {
 }
 
 func TestBoxed(t *testing.T) {
-	f := tests.NewFakeFile()
+	f := localpath.NewFakeFile()
 	SetOutFile(f)
 	Boxed(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
 	got := f.String()
@@ -244,7 +244,7 @@ func TestBoxed(t *testing.T) {
 }
 
 func TestBoxedErr(t *testing.T) {
-	f := tests.NewFakeFile()
+	f := localpath.NewFakeFile()
 	SetErrFile(f)
 	BoxedErr(`Running with {{.driver}} driver and port {{.port}}`, V{"driver": "docker", "port": 8000})
 	got := f.String()
@@ -355,7 +355,7 @@ func TestBoxedWithConfig(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		f := tests.NewFakeFile()
+		f := localpath.NewFakeFile()
 		SetOutFile(f)
 		BoxedWithConfig(tc.config, tc.st, tc.title, tc.format, tc.args...)
 		got := f.String()

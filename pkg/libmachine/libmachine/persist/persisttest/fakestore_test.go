@@ -43,7 +43,7 @@ func TestExists(t *testing.T) {
 		t.Fatal("Expected host 'not-found' to no exist")
 	}
 	store.ExistsErr = fmt.Errorf("error checking host")
-	exist, err = store.Exists("my-host")
+	_, err = store.Exists("my-host")
 	if err != store.ExistsErr {
 		t.Fatalf("Expected err %s.", store.ExistsErr)
 	}
@@ -62,7 +62,7 @@ func TestList(t *testing.T) {
 		t.Fatalf("Expected hosts to be %s. Got %s.", expected, list)
 	}
 	store.ListErr = fmt.Errorf("error listing")
-	list, err = store.List()
+	_, err = store.List()
 	if err != store.ListErr {
 		t.Fatal(err)
 	}

@@ -21,7 +21,7 @@ type FakeDockerVersioner struct {
 	Err     error
 }
 
-func (dv *FakeDockerVersioner) DockerVersion(host DockerHost) (string, error) {
+func (dv *FakeDockerVersioner) DockerVersion(_ DockerHost) (string, error) {
 	if dv.Err != nil {
 		return "", dv.Err
 	}
