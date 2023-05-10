@@ -61,7 +61,7 @@ HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.19.5
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
 
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
+BUILD_IMAGE 	?= registry.k8s.io/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
