@@ -51,7 +51,6 @@ func init() {
 
 func NewRedHatProvisioner(osReleaseID string, d drivers.Driver) *RedHatProvisioner {
 	systemdProvisioner := NewSystemdProvisioner(osReleaseID, d)
-	systemdProvisioner.Commander = RedHatCommander{Driver: d}
 	return &RedHatProvisioner{
 		systemdProvisioner,
 	}

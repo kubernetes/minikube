@@ -217,6 +217,8 @@ func matchNetstatOut(reDaemonListening, netstatOut string) bool {
 	return false
 }
 
+// decideStorageDriver returns the best suited storage driver to configure the container
+// runtime with, by checking user preference and by detecting the fs type inside the machine
 func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (string, error) {
 	if suppliedDriver != "" {
 		return suppliedDriver, nil

@@ -28,7 +28,6 @@ import (
 )
 
 type GenericProvisioner struct {
-	Commander
 	OsReleaseID       string
 	DockerOptionsDir  string
 	DaemonOptionsFile string

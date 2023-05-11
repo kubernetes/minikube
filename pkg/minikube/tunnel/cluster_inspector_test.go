@@ -56,7 +56,7 @@ func TestAPIError(t *testing.T) {
 func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	machineAPI := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				"testmachine": {
 					Driver: &mockdriver.MockDriver{
 						CurrentState: state.Running,

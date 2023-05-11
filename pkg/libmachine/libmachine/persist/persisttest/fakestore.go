@@ -17,29 +17,27 @@ limitations under the License.
 package persisttest
 
 import (
+	"errors"
 	"testing"
 
 	"k8s.io/minikube/pkg/libmachine/libmachine/host"
 )
 
 type FakeStore struct {
-	Hosts                                           []*host.Host
-	MiniHosts                                       map[string]*host.Host
+	Hosts                                           map[string]*host.Host
 	ExistsErr, ListErr, LoadErr, RemoveErr, SaveErr error
 	T                                               *testing.T
 }
 
+// x7NOTE: changed implementation here --- [!!] fakeStore
+// if you don't remember.. it means it's ok to remove this commnt
 func (fs *FakeStore) Exists(name string) (bool, error) {
 	if fs.ExistsErr != nil {
 		return false, fs.ExistsErr
 	}
-	for _, h := range fs.Hosts {
-		if h.Name == name {
-			return true, nil
-		}
-	}
 
-	return false, nil
+	_, ok := fs.Hosts[name]
+	return ok, nil
 }
 
 func (fs *FakeStore) List() ([]string, error) {
@@ -54,31 +52,31 @@ func (fs *FakeStore) Load(name string) (*host.Host, error) {
 	if fs.LoadErr != nil {
 		return nil, fs.LoadErr
 	}
-	for _, h := range fs.Hosts {
-		if h.Name == name {
-			return h, nil
-		}
+
+	if hst, ok := fs.Hosts[name]; ok {
+		return hst, nil
 	}
 
-	return nil, nil
+	return nil, errors.New("no host was found inside the fakestore")
 }
 
 func (fs *FakeStore) Remove(name string) error {
 	if fs.RemoveErr != nil {
 		return fs.RemoveErr
 	}
-	for i, h := range fs.Hosts {
-		if h.Name == name {
-			fs.Hosts = append(fs.Hosts[:i], fs.Hosts[i+1:]...)
-			return nil
-		}
-	}
+
+	delete(fs.Hosts, name)
+
 	return nil
 }
 
-func (fs *FakeStore) Save(host *host.Host) error {
+func (fs *FakeStore) Save(hst *host.Host) error {
 	if fs.SaveErr == nil {
-		fs.Hosts = append(fs.Hosts, host)
+		if fs.Hosts == nil {
+			fs.Hosts = make(map[string]*host.Host, 0)
+		}
+
+		fs.Hosts[hst.Name] = hst
 		return nil
 	}
 	return fs.SaveErr

@@ -421,7 +421,7 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
 					Driver: &mockdriver.MockDriver{},
@@ -443,7 +443,7 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "no host",
 			api: &libmachinetest.MockAPI{
 				FakeStore: persisttest.FakeStore{
-					MiniHosts: make(map[string]*host.Host),
+					Hosts: make(map[string]*host.Host),
 				},
 			},
 			err: true,
@@ -494,7 +494,7 @@ func TestGetServiceURLs(t *testing.T) {
 func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
 					Driver: &mockdriver.MockDriver{},
@@ -517,7 +517,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			description: "no host",
 			api: &libmachinetest.MockAPI{
 				FakeStore: persisttest.FakeStore{
-					MiniHosts: make(map[string]*host.Host),
+					Hosts: make(map[string]*host.Host),
 				},
 			},
 			err: true,
@@ -826,7 +826,7 @@ func TestCreateSecret(t *testing.T) {
 func TestWaitAndMaybeOpenService(t *testing.T) {
 	defaultAPI := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
 					Driver: &mockdriver.MockDriver{},
@@ -976,7 +976,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 	defaultAPI := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				constants.DefaultClusterName: {
 					Name:   constants.DefaultClusterName,
 					Driver: &mockdriver.MockDriver{},

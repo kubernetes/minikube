@@ -26,7 +26,7 @@ import (
 
 func TestExists(t *testing.T) {
 	store := FakeStore{
-		Hosts: []*host.Host{{Name: "my-host"}},
+		Hosts: map[string]*host.Host{"my-host": {Name: "my-host"}},
 	}
 	exist, err := store.Exists("my-host")
 	if err != nil {
@@ -51,15 +51,20 @@ func TestExists(t *testing.T) {
 
 func TestList(t *testing.T) {
 	store := FakeStore{
-		Hosts: []*host.Host{{Name: "my-host"}, {Name: "my-host-2"}},
+		Hosts: map[string]*host.Host{
+			"my-host":   {Name: "my-host"},
+			"my-host-2": {Name: "my-host-2"},
+		},
 	}
 	list, err := store.List()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	expected := []string{"my-host", "my-host-2"}
+
 	if !reflect.DeepEqual(list, expected) {
-		t.Fatalf("Expected hosts to be %s. Got %s.", expected, list)
+		t.Fatalf("Expected hosts to be %s, Got %s", expected, list)
 	}
 	store.ListErr = fmt.Errorf("error listing")
 	_, err = store.List()
@@ -71,7 +76,7 @@ func TestList(t *testing.T) {
 func TestLoad(t *testing.T) {
 	expectedHost := &host.Host{Name: "my-host"}
 	store := FakeStore{
-		Hosts: []*host.Host{expectedHost},
+		Hosts: map[string]*host.Host{expectedHost.Name: expectedHost},
 	}
 	h, err := store.Load("my-host")
 	if err != nil {
@@ -80,13 +85,11 @@ func TestLoad(t *testing.T) {
 	if !reflect.DeepEqual(expectedHost, h) {
 		t.Fatalf("Wrong host. Expected %v. Got %v.", expectedHost, h)
 	}
-	h, err = store.Load("not-found")
-	if err != nil {
-		t.Fatal(err)
+	_, err = store.Load("not-found")
+	if err == nil {
+		t.Fatal("expected error while trying to find an unexisting host")
 	}
-	if h != nil {
-		t.Fatalf("Expected nil host. Got %v.", h)
-	}
+
 	store.LoadErr = fmt.Errorf("error loading")
 	h, err = store.Load("my-host")
 	if err != store.LoadErr {
@@ -99,7 +102,7 @@ func TestLoad(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	store := FakeStore{
-		Hosts: []*host.Host{{Name: "my-host"}},
+		Hosts: map[string]*host.Host{"my-host": {Name: "my-host"}},
 	}
 	err := store.Remove("not-found")
 	if err != nil {
@@ -125,7 +128,10 @@ func TestSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedHosts := []*host.Host{{Name: "my-host"}}
+
+	expectedHosts := map[string]*host.Host{
+		"my-host": &host.Host{Name: "my-host"},
+	}
 	if !reflect.DeepEqual(store.Hosts, expectedHosts) {
 		t.Fatalf("Expected hosts to be %v. Got %v.", expectedHosts, store.Hosts)
 	}

@@ -51,12 +51,12 @@ func TestInvalidCheckVBoxManageVersion(t *testing.T) {
 		version       string
 		expectedError string
 	}{
-		{"3.9", `We support Virtualbox starting with version 5. Your VirtualBox install is "3.9". Please upgrade at https://www.virtualbox.org`},
-		{"4.0", `We support Virtualbox starting with version 5. Your VirtualBox install is "4.0". Please upgrade at https://www.virtualbox.org`},
-		{"4.1.1", `We support Virtualbox starting with version 5. Your VirtualBox install is "4.1.1". Please upgrade at https://www.virtualbox.org`},
-		{"4.2.36-104064", `We support Virtualbox starting with version 5. Your VirtualBox install is "4.2.36-104064". Please upgrade at https://www.virtualbox.org`},
-		{"X.Y", `We support Virtualbox starting with version 5. Your VirtualBox install is "X.Y". Please upgrade at https://www.virtualbox.org`},
-		{"", `We support Virtualbox starting with version 5. Your VirtualBox install is "". Please upgrade at https://www.virtualbox.org`},
+		{"3.9", `we support Virtualbox starting with version 5. Your VirtualBox install is "3.9". Please upgrade at https://www.virtualbox.org`},
+		{"4.0", `we support Virtualbox starting with version 5. Your VirtualBox install is "4.0". Please upgrade at https://www.virtualbox.org`},
+		{"4.1.1", `we support Virtualbox starting with version 5. Your VirtualBox install is "4.1.1". Please upgrade at https://www.virtualbox.org`},
+		{"4.2.36-104064", `we support Virtualbox starting with version 5. Your VirtualBox install is "4.2.36-104064". Please upgrade at https://www.virtualbox.org`},
+		{"X.Y", `we support Virtualbox starting with version 5. Your VirtualBox install is "X.Y". Please upgrade at https://www.virtualbox.org`},
+		{"", `we support Virtualbox starting with version 5. Your VirtualBox install is "". Please upgrade at https://www.virtualbox.org`},
 	}
 
 	for _, test := range tests {

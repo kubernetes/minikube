@@ -34,7 +34,6 @@ func (p *SystemdProvisioner) String() string {
 func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) SystemdProvisioner {
 	return SystemdProvisioner{
 		GenericProvisioner{
-			Commander:         d,
 			DockerOptionsDir:  "/etc/docker",
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
 			OsReleaseID:       osReleaseID,

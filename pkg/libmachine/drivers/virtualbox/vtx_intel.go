@@ -1,5 +1,4 @@
 //go:build 386 || amd64
-// +build 386 amd64
 
 /*
 Copyright 2023 The Kubernetes Authors All rights reserved.

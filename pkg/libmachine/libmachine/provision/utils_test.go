@@ -24,8 +24,8 @@ import (
 	"k8s.io/minikube/pkg/libmachine/libmachine/auth"
 	"k8s.io/minikube/pkg/libmachine/libmachine/engine"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/pkgaction"
-	"k8s.io/minikube/pkg/libmachine/libmachine/provision/provisiontest"
 	"k8s.io/minikube/pkg/libmachine/libmachine/provision/serviceaction"
+	"k8s.io/minikube/pkg/libmachine/libmachine/runner"
 	"k8s.io/minikube/pkg/libmachine/libmachine/swarm"
 )
 
@@ -96,6 +96,7 @@ func (provisioner *fakeProvisioner) String() string {
 	return "fake"
 }
 
+// TestDecideStorageDriver tests the logic for decideStorageDriver
 func TestDecideStorageDriver(t *testing.T) {
 	var tests = []struct {
 		suppliedDriver       string
@@ -113,12 +114,16 @@ func TestDecideStorageDriver(t *testing.T) {
 	p := &fakeProvisioner{GenericProvisioner{
 		Driver: &fakedriver.Driver{},
 	}}
+
 	for _, test := range tests {
-		p.Commander = provisiontest.NewFakeSSHCommander(
-			provisiontest.FakeSSHCommanderOptions{
-				FilesystemType: test.remoteFilesystemType,
-			},
-		)
+		// at some point, decideStorageDriver runs the following command
+		// inside the linux machine; he're we're telling the fakeDriver what
+		// we're expecting to see as a return (i.e. the expected filesystem
+		// inside the machine)
+		p.Driver.(*fakedriver.Driver).SetCmdOutput(map[string]string{
+			"stat -f -c %T /var/lib": test.remoteFilesystemType,
+		})
+
 		storageDriver, err := decideStorageDriver(p, test.defaultDriver, test.suppliedDriver)
 		assert.NoError(t, err)
 		assert.Equal(t, test.expectedDriver, storageDriver)
@@ -129,11 +134,11 @@ func TestGetFilesystemType(t *testing.T) {
 	p := &fakeProvisioner{GenericProvisioner{
 		Driver: &fakedriver.Driver{},
 	}}
-	p.Commander = &provisiontest.FakeSSHCommander{
-		Responses: map[string]string{
-			"stat -f -c %T /var/lib": "btrfs\n",
-		},
-	}
+
+	p.Driver.(*fakedriver.Driver).SetCmdOutput(map[string]string{
+		"stat -f -c %T /var/lib": "btrfs\n",
+	})
+
 	fsType, err := getFilesystemType(p, "/var/lib")
 	assert.NoError(t, err)
 	assert.Equal(t, "btrfs", fsType)
@@ -149,13 +154,13 @@ func TestDockerClientVersion(t *testing.T) {
 		{"Docker version 1.13.0-dev, build deadbeef\n", "1.13.0-dev"},
 	}
 
-	sshCmder := &provisiontest.FakeSSHCommander{
-		Responses: make(map[string]string),
-	}
-
 	for _, tc := range cases {
-		sshCmder.Responses["docker --version"] = tc.output
-		got, err := DockerClientVersion(sshCmder)
+		fkrnr := runner.NewFakeCommandRunner()
+		fkrnr.SetCommandToOutput(map[string]string{
+			"docker --version": tc.output,
+		})
+
+		got, err := DockerClientVersion(fkrnr)
 		if err != nil {
 			t.Fatal(err)
 		}

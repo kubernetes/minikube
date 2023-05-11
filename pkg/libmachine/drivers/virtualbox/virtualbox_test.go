@@ -52,7 +52,7 @@ func (v *VBoxManagerMock) vbmOutErr(args ...string) (string, string, error) {
 	if strings.Join(args, " ") == v.args {
 		return v.stdOut, v.stdErr, v.err
 	}
-	return "", "", errors.New("Invalid args")
+	return "", "", errors.New("invalid args")
 }
 
 func newTestDriver() *Driver {
@@ -131,8 +131,8 @@ func TestStateErrors(t *testing.T) {
 		err      error
 		finalErr error
 	}{
-		{"Could not find a registered machine named 'unknown'", errors.New("Bug"), errors.New("machine does not exist")},
-		{"", errors.New("Unexpected error"), errors.New("Unexpected error")},
+		{"Could not find a registered machine named 'unknown'", errors.New("bug"), errors.New("machine does not exist")},
+		{"", errors.New("unexpected error"), errors.New("unexpected error")},
 	}
 
 	for _, expected := range tests {
@@ -199,7 +199,7 @@ func TestGetHostOnlyMACAddressWhenNoHostOnlyAdapter(t *testing.T) {
 
 	result, err := driver.getHostOnlyMACAddress()
 	assert.Empty(t, result)
-	assert.Equal(t, err, errors.New("Machine does not have a host-only adapter"))
+	assert.Equal(t, err, errors.New("machine does not have a host-only adapter"))
 }
 
 func TestParseIPForMACFromIPAddr(t *testing.T) {
@@ -217,7 +217,7 @@ func TestParseIPForMACFromIPAddr(t *testing.T) {
 
 	result, err = driver.parseIPForMACFromIPAddr(ipAddrOutput, "000000000000")
 	assert.Empty(t, result)
-	assert.Equal(t, err, errors.New("Could not find matching IP for MAC address 000000000000"))
+	assert.Equal(t, err, errors.New("could not find matching IP for MAC address 000000000000"))
 }
 
 func TestGetIPErrors(t *testing.T) {
@@ -226,8 +226,8 @@ func TestGetIPErrors(t *testing.T) {
 		err      error
 		finalErr error
 	}{
-		{`VMState="poweroff"`, nil, errors.New("Host is not running")},
-		{"", errors.New("Unable to get state"), errors.New("Unable to get state")},
+		{`VMState="poweroff"`, nil, errors.New("host is not running")},
+		{"", errors.New("unable to get state"), errors.New("unable to get state")},
 	}
 
 	for _, expected := range tests {
@@ -646,7 +646,7 @@ func TestStartWithHostOnlyAdapterCreationBug(t *testing.T) {
 		{"vbm showvminfo default --machinereadable", `VMState="poweroff"`, nil},
 		{"vbm list hostonlyifs", "", nil},
 		{"Interfaces", "", nil},
-		{"vbm hostonlyif create", "", errors.New("error: Failed to create the host-only adapter")},
+		{"vbm hostonlyif create", "", errors.New("error: failed to create the host-only adapter")},
 		{"vbm list hostonlyifs", "", nil},
 		{"vbm list hostonlyifs", `
 Name:            VirtualBox Host-Only Ethernet Adapter

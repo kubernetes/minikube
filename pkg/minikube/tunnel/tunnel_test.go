@@ -413,7 +413,7 @@ func TestTunnel(t *testing.T) {
 			machineName := "testmachine"
 			machineAPI := &libmachinetest.MockAPI{
 				FakeStore: persisttest.FakeStore{
-					MiniHosts: map[string]*host.Host{
+					Hosts: map[string]*host.Host{
 						machineName: {
 							Driver: &mockdriver.MockDriver{
 								CurrentState: tc.machineState,
@@ -467,7 +467,7 @@ func TestErrorCreatingTunnel(t *testing.T) {
 	machineName := "testmachine"
 	store := &libmachinetest.MockAPI{
 		FakeStore: persisttest.FakeStore{
-			MiniHosts: map[string]*host.Host{
+			Hosts: map[string]*host.Host{
 				machineName: {
 					Driver: &mockdriver.MockDriver{
 						CurrentState: state.Stopped,

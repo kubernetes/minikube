@@ -82,7 +82,7 @@ func TestLocalBinaryPluginAddressTimeout(t *testing.T) {
 	addr, err := lbp.Address()
 
 	assert.Empty(t, addr)
-	assert.EqualError(t, err, "Failed to dial the plugin server in 1s")
+	assert.EqualError(t, err, "failed to dial the plugin server in 1s")
 }
 
 func TestLocalBinaryPluginClose(t *testing.T) {

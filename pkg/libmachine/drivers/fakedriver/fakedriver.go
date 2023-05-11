@@ -32,6 +32,7 @@ type Driver struct {
 	MockState state.State
 	MockIP    string
 	MockName  string
+	Runner    *runner.FakeCommandRunner
 }
 
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
@@ -127,12 +128,26 @@ func (d *Driver) Upgrade() error {
 	return nil
 }
 
-func (d *Driver) RunCmd(_ *exec.Cmd) (*runner.RunResult, error) {
-	return nil, nil
+func (d *Driver) RunCmd(cmd *exec.Cmd) (*runner.RunResult, error) {
+	if d.Runner == nil {
+		_, _ = d.GetRunner()
+	}
+	return d.Runner.RunCmd(cmd)
 }
 
 func (d *Driver) GetRunner() (runner.Runner, error) {
-	return nil, nil
+	if d.Runner == nil {
+		d.Runner = runner.NewFakeCommandRunner()
+	}
+
+	return d.Runner, nil
+}
+
+func (d *Driver) SetCmdOutput(cmdToOut map[string]string) {
+	if d.Runner == nil {
+		_, _ = d.GetRunner()
+	}
+	d.Runner.SetCommandToOutput(cmdToOut)
 }
 
 func (d *Driver) IsISOBased() bool {
@@ -144,5 +159,5 @@ func (d *Driver) IsContainerBased() bool {
 }
 
 func (d *Driver) IsManaged() bool {
-	return false
+	return true
 }

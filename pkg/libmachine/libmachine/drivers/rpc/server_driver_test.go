@@ -38,7 +38,7 @@ func (fs *FakeStacker) Stack() []byte {
 	return fs.trace
 }
 
-func (p *panicDriver) Create() error {
+func (p *panicDriver) CreateMachine() error {
 	if p.panicErr != nil {
 		panic(p.panicErr)
 	}
@@ -63,16 +63,16 @@ func TestRPCServerDriverCreate(t *testing.T) {
 		},
 		{
 			description: "Normal error, no panic",
-			expectedErr: errors.New("API not available"),
+			expectedErr: errors.New("api not available"),
 			serverDriver: &RPCServerDriver{
 				ActualDriver: &panicDriver{
-					returnErr: errors.New("API not available"),
+					returnErr: errors.New("api not available"),
 				},
 			},
 		},
 		{
 			description: "Panic happened during create",
-			expectedErr: errors.New("Panic in the driver: index out of range\nSTACK TRACE"),
+			expectedErr: errors.New("panic in the driver: index out of range\nSTACK TRACE"),
 			serverDriver: &RPCServerDriver{
 				ActualDriver: &panicDriver{
 					panicErr: errors.New("index out of range"),
@@ -85,6 +85,8 @@ func TestRPCServerDriverCreate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		// This overrides the stdStacker in the server_driver.go file
+		// We're basiaclly panicking to this fake stack instead of the debug.Stack()
 		stdStacker = tc.stacker
 		assert.Equal(t, tc.expectedErr, tc.serverDriver.CreateMachine(nil, nil))
 	}

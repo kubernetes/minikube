@@ -52,8 +52,8 @@ func newSerialDriverWithLock(innerDriver Driver, lock sync.Locker) Driver {
 	}
 }
 
-// Create a host using the driver's config
-func (d *SerialDriver) Create() error {
+// CreateMachine a host using the driver's config
+func (d *SerialDriver) CreateMachine() error {
 	d.Lock()
 	defer d.Unlock()
 	return d.Driver.CreateMachine()
@@ -153,8 +153,8 @@ func (d *SerialDriver) RemoveMachine() error {
 	return d.Driver.RemoveMachine()
 }
 
-// Restart a host. This may just call Stop(); Start() if the provider does not
-// have any special restart behaviour.
+// RestartMachine restarts a host. This may just call StopMachine(); StartMachine()
+// if the provider does not have any special restart behaviour.
 func (d *SerialDriver) RestartMachine() error {
 	d.Lock()
 	defer d.Unlock()

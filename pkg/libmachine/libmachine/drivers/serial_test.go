@@ -177,7 +177,7 @@ func (d *MockDriver) StopMachine() error {
 	return nil
 }
 
-func TestSerialDriverCreate(t *testing.T) {
+func TestSerialDriverCreateMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
@@ -267,23 +267,23 @@ func TestSerialDriverGetURL(t *testing.T) {
 	assert.Equal(t, []string{"Lock", "GetURL", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverGetState(t *testing.T) {
+func TestSerialDriverGetMachineState(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{state: state.Running, calls: callRecorder}, &MockLocker{calls: callRecorder})
 	machineState, _ := driver.GetMachineState()
 
 	assert.Equal(t, state.Running, machineState)
-	assert.Equal(t, []string{"Lock", "GetState", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "GetMachineState", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverKill(t *testing.T) {
+func TestSerialDriverKillMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
 	_ = driver.KillMachine()
 
-	assert.Equal(t, []string{"Lock", "Kill", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "KillMachine", "Unlock"}, callRecorder.calls)
 }
 
 func TestSerialDriverPreCreateCheck(t *testing.T) {
@@ -295,22 +295,22 @@ func TestSerialDriverPreCreateCheck(t *testing.T) {
 	assert.Equal(t, []string{"Lock", "PreCreateCheck", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverRemove(t *testing.T) {
+func TestSerialDriverRemoveMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
 	_ = driver.RemoveMachine()
 
-	assert.Equal(t, []string{"Lock", "Remove", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "RemoveMachine", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverRestart(t *testing.T) {
+func TestSerialDriverRestartMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
 	_ = driver.RestartMachine()
 
-	assert.Equal(t, []string{"Lock", "Restart", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "RestartMachine", "Unlock"}, callRecorder.calls)
 }
 
 func TestSerialDriverSetConfigFromFlags(t *testing.T) {
@@ -322,20 +322,20 @@ func TestSerialDriverSetConfigFromFlags(t *testing.T) {
 	assert.Equal(t, []string{"Lock", "SetConfigFromFlags", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverStart(t *testing.T) {
+func TestSerialDriverStartMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
 	_ = driver.StartMachine()
 
-	assert.Equal(t, []string{"Lock", "Start", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "StartMachine", "Unlock"}, callRecorder.calls)
 }
 
-func TestSerialDriverStop(t *testing.T) {
+func TestSerialDriverStopMachine(t *testing.T) {
 	callRecorder := &CallRecorder{}
 
 	driver := newSerialDriverWithLock(&MockDriver{calls: callRecorder}, &MockLocker{calls: callRecorder})
 	_ = driver.StopMachine()
 
-	assert.Equal(t, []string{"Lock", "Stop", "Unlock"}, callRecorder.calls)
+	assert.Equal(t, []string{"Lock", "StopMachine", "Unlock"}, callRecorder.calls)
 }
