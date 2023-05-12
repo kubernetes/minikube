@@ -1,0 +1,126 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.4.1
+  name: traces.gadget.kinvolk.io
+spec:
+  group: gadget.kinvolk.io
+  names:
+    kind: Trace
+    listKind: TraceList
+    plural: traces
+    singular: trace
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Trace is the Schema for the traces API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TraceSpec defines the desired state of Trace
+            properties:
+              filter:
+                description: Filter is to tell the gadget to filter events based on
+                  namespace, pod name, labels or container name
+                properties:
+                  containerName:
+                    description: ContainerName selects events from containers with
+                      this name
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: Labels selects events from pods with these labels
+                    type: object
+                  namespace:
+                    description: Namespace selects events from this pod namespace
+                    type: string
+                  podname:
+                    description: Podname selects events from this pod name
+                    type: string
+                type: object
+              gadget:
+                description: Gadget is the name of the gadget such as "seccomp"
+                type: string
+              node:
+                description: Node is the name of the node on which this trace should
+                  run
+                type: string
+              output:
+                description: Output allows a gadget to output the results in the specified
+                  location. * With OutputMode=Status|Stream, Output is unused * With
+                  OutputMode=File, Output specifies the file path * With OutputMode=ExternalResource,
+                  Output specifies the external   resource (such as   seccompprofiles.security-profiles-operator.x-k8s.io
+                  for the   seccomp gadget)
+                type: string
+              outputMode:
+                description: OutputMode is "Status", "Stream", "File" or "ExternalResource"
+                enum:
+                - Status
+                - Stream
+                - File
+                - ExternalResource
+                type: string
+              parameters:
+                additionalProperties:
+                  type: string
+                description: Parameters contains gadget specific configurations.
+                type: object
+              runMode:
+                description: RunMode is "Auto" to automatically start the trace as
+                  soon as the resource is created, or "Manual" to be controlled by
+                  the "gadget.kinvolk.io/operation" annotation
+                enum:
+                - Auto
+                - Manual
+                type: string
+            type: object
+          status:
+            description: TraceStatus defines the observed state of Trace
+            properties:
+              operationError:
+                description: OperationError is the error returned by the gadget when
+                  applying the annotation gadget.kinvolk.io/operation=
+                type: string
+              operationWarning:
+                description: OperationWarning is returned by the gadget to notify
+                  about a malfunction when applying the annotation gadget.kinvolk.io/operation=.
+                  Unlike the OperationError that represents a fatal error, the OperationWarning
+                  could be ignored according to the context.
+                type: string
+              output:
+                description: Output is the output of the gadget
+                type: string
+              state:
+                description: State is "Started", "Stopped" or "Completed"
+                enum:
+                - Started
+                - Stopped
+                - Completed
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

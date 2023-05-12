@@ -60,6 +60,10 @@ var (
 	//go:embed istio/istio-default-profile.yaml.tmpl
 	IstioAssets embed.FS
 
+	// InspektorGadgetAssets assets for inspektor-gadget addon
+	//go:embed inspektor-gadget/*.tmpl inspektor-gadget/*.yaml
+	InspektorGadgetAssets embed.FS
+
 	// KongAssets assets for kong addon
 	//go:embed kong/kong-ingress-controller.yaml.tmpl
 	KongAssets embed.FS
