@@ -405,7 +405,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	// docs: Make sure image loading from file works by `minikube image load`
 	t.Run("ImageLoadFromFile", func(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath, "--alsologtostderr"))
-		if err != nil || rr.Stderr.String() != "" {
+		if err != nil || strings.Contains(rr.Output(), "failed pushing to: functional") {
 			t.Fatalf("loading image into minikube from file: %v\n%s", err, rr.Output())
 		}
 
