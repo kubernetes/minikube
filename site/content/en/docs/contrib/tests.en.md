@@ -449,6 +449,9 @@ tests the functionality of the gVisor addon
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
 
+#### validateSetupImageBuild
+starts a cluster for the image builds
+
 #### validateNormalImageBuild
 is normal test case for minikube image build, with -t parameter
 
