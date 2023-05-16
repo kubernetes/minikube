@@ -30,6 +30,7 @@ type dependency struct {
 var dependencies = map[string]dependency{
 	"buildkit":       {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
 	"cloud-spanner":  {"pkg/minikube/assets/addons.go", `cloud-spanner-emulator/emulator:(.*)@`},
+	"cni-plugins":    {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins/cni-plugins.mk", `CNI_PLUGINS_VERSION = (.*)`},
 	"containerd":     {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
 	"cri-o":          {"deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk", `CRIO_BIN_VERSION = (.*)`},
 	"docker":         {"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk", `DOCKER_BIN_VERSION = (.*)`},

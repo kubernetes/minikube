@@ -1112,6 +1112,11 @@ update-ubuntu-version:
 	(cd hack/update/ubuntu_version && \
 	 go run update_ubuntu_version.go)
 
+.PHONY: update-cni-plugins-version
+update-cni-plugins-version:
+	(cd hack/update/cni_plugins_version && \
+	 go run update_cni_plugins_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
