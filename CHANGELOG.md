@@ -1949,7 +1949,7 @@ Upgrades:
 * Upgrade Docker, from 19.03.13 to 19.03.14 [#9861](https://github.com/kubernetes/minikube/pull/9861)
 * Buildroot 2020.02.8 [#9862](https://github.com/kubernetes/minikube/pull/9862)
 * Update crictl to v1.18.0 [#9867](https://github.com/kubernetes/minikube/pull/9867)
-* bump storage provsioner to multi arch [#9822](https://github.com/kubernetes/minikube/pull/9822)
+* bump storage provisioner to multi arch [#9822](https://github.com/kubernetes/minikube/pull/9822)
 
 Thank you to our contributors for this release!
 
