@@ -240,7 +240,7 @@ func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage str
 		t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 	if err != nil {
 		t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 	}
@@ -256,7 +256,7 @@ func runImageList(ctx context.Context, t *testing.T, profile, testName, format, 
 	t.Run(testName, func(t *testing.T) {
 		MaybeParallel(t)
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
 		}
@@ -310,7 +310,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		newImage := fmt.Sprintf("localhost/my-image:%s", profile)
 
 		// try to build the new image with minikube
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build")))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "build", "-t", newImage, filepath.Join(*testdataDir, "build"), "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("building image with minikube: %v\n%s", err, rr.Output())
 		}
@@ -350,7 +350,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image loading from Docker daemon works by `minikube image load --daemon`
 	t.Run("ImageLoadDaemon", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 		}
@@ -360,7 +360,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
 	t.Run("ImageReloadDaemon", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 		}
@@ -375,7 +375,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image saving works by `minikube image load --daemon`
 	t.Run("ImageSaveToFile", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("saving image from minikube to file: %v\n%s", err, rr.Output())
 		}
@@ -387,7 +387,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image removal works by `minikube image rm`
 	t.Run("ImageRemove", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", taggedImage))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
 		}
@@ -404,8 +404,8 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image loading from file works by `minikube image load`
 	t.Run("ImageLoadFromFile", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath))
-		if err != nil || rr.Stderr.String() != "" {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath, "--alsologtostderr"))
+		if err != nil || strings.Contains(rr.Output(), "failed pushing to: functional") {
 			t.Fatalf("loading image into minikube from file: %v\n%s", err, rr.Output())
 		}
 
@@ -419,7 +419,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage))
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("saving image from minikube to daemon: %v\n%s", err, rr.Output())
 		}

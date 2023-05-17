@@ -446,7 +446,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=docker.io/alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}

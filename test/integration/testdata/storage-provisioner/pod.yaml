@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
     - name: myfrontend
-      image: nginx
+      image: docker.io/nginx
       volumeMounts:
       - mountPath: "/tmp/mount"
         name: mypd
