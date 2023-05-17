@@ -112,15 +112,6 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
-# tell systemd that it is in docker (it will check for the container env)
-# https://systemd.io/CONTAINER_INTERFACE/
-ENV container docker
-# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
-# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
-STOPSIGNAL SIGRTMIN+3
-# NOTE: this is *only* for documentation, the entrypoint is overridden later
-ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
-
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
 # available as a docker image: docker.io/kindest/base:v20210402-3d9112b0
@@ -254,3 +245,16 @@ RUN rm -rf \
   /usr/share/man/* \
   /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+
+# squash all layers into one
+FROM scratch
+COPY --from=kicbase / /
+EXPOSE 22
+# tell systemd that it is in docker (it will check for the container env)
+# https://systemd.io/CONTAINER_INTERFACE/
+ENV container docker
+# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
+# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
+STOPSIGNAL SIGRTMIN+3
+# NOTE: this is *only* for documentation, the entrypoint is overridden later
+ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
