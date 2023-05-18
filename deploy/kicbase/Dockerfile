@@ -247,7 +247,6 @@ RUN rm -rf \
   /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 
-
 # squash all layers into one
 FROM scratch
 COPY --from=kicbase / /
