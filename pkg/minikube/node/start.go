@@ -451,7 +451,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 
 	disableOthers := !driver.BareMetal(cc.Driver)
 	if err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace); err != nil {
-		// if this makes sense, should we extend this logic to the other exit.Error(RUNTIME_ENABLE) ?
 		switch strings.ToLower(cr.Name()) {
 		case constants.Docker:
 			exit.Error(reason.RuntimeDockerCrictl, "Failed to enable docker/cri-docker", err)
