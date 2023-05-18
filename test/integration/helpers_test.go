@@ -219,6 +219,8 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 		nodes = append(nodes, SecondNodeName, ThirdNodeName)
 	}
 
+	debugLogs(t, profile)
+
 	t.Logf("-----------------------post-mortem--------------------------------")
 
 	for _, n := range nodes {

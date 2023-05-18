@@ -582,6 +582,18 @@ func debugLogs(t *testing.T, profile string) {
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker daemon status:\n%s\n", out))
 
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo journalctl -eu cri-docker")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker daemon logs:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl status cri-docker.socket --all --full --no-pager")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker socket status:\n%s\n", out))
+
+	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo journalctl -eu cri-docker.socket")
+	out, _ = cmd.CombinedOutput()
+	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker socket logs:\n%s\n", out))
+
 	cmd = exec.Command(Target(), "ssh", "-p", profile, "sudo systemctl cat cri-docker --no-pager")
 	out, _ = cmd.CombinedOutput()
 	output.WriteString(fmt.Sprintf("\n>>> host: cri-docker daemon config:\n%s\n", out))
