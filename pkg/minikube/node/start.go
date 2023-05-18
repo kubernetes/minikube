@@ -446,7 +446,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		}
 		if err != nil {
 			klog.Warningf("cannot ensure containerd is configured properly and reloaded for docker - cluster might be unstable: %v", err)
-			// exit with error and recommend to check the installation doc for docker/cri-docker ?
 		}
 	}
 
