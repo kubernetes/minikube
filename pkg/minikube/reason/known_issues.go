@@ -1206,9 +1206,9 @@ var runtimeIssues = []match{
 	},
 	{
 		Kind: Kind{
-			ID:       "RUNTIME_DOCKER_ENABLE",
+			ID:       "RUNTIME_DOCKER_CRICTL",
 			ExitCode: ExRuntimeError,
-			Advice:   "It seems like docker/cri-docker could be misconfigured. Please make sure that you followed the recommended installation procedure and have crictl installed",
+			Advice:   "It seems like docker/cri-docker could be misconfigured. Please make sure that you followed the recommended installation procedure",
 			URL:      "https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker",
 			Issues:   []int{},
 		},

@@ -412,11 +412,11 @@ var (
 	// minikube failed to enable the current container runtime
 	RuntimeEnable = Kind{ID: "RUNTIME_ENABLE", ExitCode: ExRuntimeError}
 	// minikube failed to enable docker as container runtime
-	RuntimeDockerEnable = Kind{ID: "RUNTIME_DOCKER_ENABLE", ExitCode: ExRuntimeError}
+	RuntimeDockerCRICTL = Kind{ID: "RUNTIME_DOCKER_CRICTL", ExitCode: ExRuntimeError}
 	// minikube failed to enable containerd as container runtime
-	RuntimeContainerdEnable = Kind{ID: "RUNTIME_CONTAINERD_ENABLE", ExitCode: ExRuntimeError}
+	RuntimeContainerdCRICTL = Kind{ID: "RUNTIME_CONTAINERD_CRICTL", ExitCode: ExRuntimeError}
 	// minikube failed to enable crio as container runtime
-	RuntimeCrioEnable = Kind{ID: "RUNTIME_CRIO_ENABLE", ExitCode: ExRuntimeError}
+	RuntimeCrioCRICTL = Kind{ID: "RUNTIME_CRIO_CRICTL", ExitCode: ExRuntimeError}
 	// minikube failed to cache images for the current container runtime
 	RuntimeCache = Kind{ID: "RUNTIME_CACHE", ExitCode: ExRuntimeError}
 

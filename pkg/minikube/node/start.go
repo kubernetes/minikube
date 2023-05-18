@@ -455,7 +455,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		// if this makes sense, should we extend this logic to the other exit.Error(RUNTIME_ENABLE) ?
 		switch strings.ToLower(cr.Name()) {
 		case constants.Docker:
-			exit.Error(reason.RuntimeDockerEnable, "Failed to enable docker/cri-docker", err)
+			exit.Error(reason.RuntimeDockerCRICTL, "Failed to enable docker/cri-docker", err)
 		case constants.CRIO:
 			exit.Error(reason.RuntimeCrioEnable, "Failed to enable cri-o", err)
 		case constants.Containerd:
