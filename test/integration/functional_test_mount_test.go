@@ -45,6 +45,10 @@ const (
 )
 
 // validateMountCmd verifies the minikube mount command works properly
+// for the platforms that support it, we're testing:
+// - a generic 9p mount
+// - a 9p mount on a specific port
+// - cleaning-mechanism for profile-specific mounts
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // nolint
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
@@ -116,7 +120,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 			if runtime.GOOS == "darwin" {
-				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
 			}
 			t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 		}
@@ -244,7 +248,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 			if runtime.GOOS == "darwin" {
-				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
 			}
 			t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 		}
@@ -279,5 +283,96 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 		if !match {
 			t.Fatalf("failed to find bind address with port 46464. Mount command out: \n%v", mountText)
 		}
+	})
+
+	t.Run("VerifyCleanup", func(t *testing.T) {
+		tempDir := t.TempDir()
+
+		ctx, cancel := context.WithTimeout(ctx, Minutes(10))
+
+		guestMountPaths := []string{"/mount1", "/mount2", "/mount3"}
+
+		var mntProcs []*StartSession
+		for _, guestMount := range guestMountPaths {
+			args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
+			mntProc, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Fatalf("%v failed: %v", args, err)
+			}
+
+			mntProcs = append(mntProcs, mntProc)
+
+		}
+
+		defer func() {
+			// Still trying to stop mount processes that could otherwise
+			// (if something weird happens...) leave the test run hanging
+			// The worst thing that could happen is that we try to kill
+			// something that was aleardy killed...
+			for _, mp := range mntProcs {
+				mp.Stop(t)
+			}
+
+			cancel()
+			if *cleanup {
+				os.RemoveAll(tempDir)
+			}
+		}()
+
+		// are the mounts alive yet..?
+		checkMount := func() error {
+			for _, mnt := range guestMountPaths {
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T", mnt))
+				if err != nil {
+					// if something weird has happened from previous tests..
+					// this could at least spare us some waiting
+					if strings.Contains(rr.Stdout.String(), fmt.Sprintf("Profile \"%s\" not found.", profile)) {
+						t.Fatalf("profile was deleted, cancelling the test")
+					}
+					return err
+				}
+			}
+			return nil
+		}
+		if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
+			// For local testing, allow macOS users to click prompt. If they don't, skip the test.
+			if runtime.GOOS == "darwin" {
+				t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-code signed binaries to listen on non-localhost port")
+			}
+			t.Fatalf("mount was not ready in time: %v", err)
+		}
+
+		checkProcsAlive := func(end chan bool) {
+			for _, mntp := range mntProcs {
+				// Trying to wait for process end
+				// if the wait fail with ExitError we know that the process
+				// doesn't exist anymore..
+				go func(end chan bool) {
+					err := mntp.cmd.Wait()
+					if _, ok := err.(*exec.ExitError); ok {
+						end <- true
+					}
+				}(end)
+
+				// Either we know that the mount process has ended
+				// or we fail after 1 second
+				// TODO: is there a better way? rather than waiting..
+				select {
+				case <-time.After(1 * time.Second):
+					t.Fatalf("1s TIMEOUT: Process %d is still running\n", mntp.cmd.Process.Pid)
+				case <-end:
+					continue
+				}
+			}
+		}
+
+		// exec the mount killer
+		_, err := Run(t, exec.Command(Target(), "mount", "-p", profile, "--kill=true"))
+		if err != nil {
+			t.Fatalf("failed while trying to kill mounts")
+		}
+
+		end := make(chan bool, 1)
+		checkProcsAlive(end)
 	})
 }

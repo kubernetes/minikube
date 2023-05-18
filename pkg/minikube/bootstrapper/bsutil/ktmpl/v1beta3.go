@@ -34,7 +34,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
+  criSocket: {{if .CRISocket}}{{if .PrependCriSocketUnix}}unix://{{end}}{{.CRISocket}}{{else}}{{if .PrependCriSocketUnix}}unix://{{end}}/var/run/dockershim.sock{{end}}
   name: "{{.NodeName}}"
   kubeletExtraArgs:
     node-ip: {{.NodeIP}}

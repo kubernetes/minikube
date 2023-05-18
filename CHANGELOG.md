@@ -652,7 +652,7 @@ Bug Fixes:
 * Fix port validation error on specifying tcp/udp or range of ports. [#13812](https://github.com/kubernetes/minikube/pull/13812)
 * Fix not downloading kic for offline mode [#13910](https://github.com/kubernetes/minikube/pull/13910)
 * Fix trying to pause multiple containers with runc [#13783](https://github.com/kubernetes/minikube/pull/13783)
-* Fix `minikube servce` docker/port-forward issues [#13756](https://github.com/kubernetes/minikube/pull/13756)
+* Fix `minikube service` docker/port-forward issues [#13756](https://github.com/kubernetes/minikube/pull/13756)
 
 Version Upgrades:
 * Upgrade Kubernetes default: v1.23.6 and latest: v1.23.6 [#14144](https://github.com/kubernetes/minikube/pull/14144)
@@ -1491,7 +1491,7 @@ Bug Fixes:
 
 * Ingress Addon: fix bug which the networking.k8s.io/v1 ingress is always rejected [#11189](https://github.com/kubernetes/minikube/pull/11189)
 * Improve how cni and cruntimes work together [#11185, #11209](https://github.com/kubernetes/minikube/pull/11209, https://github.com/kubernetes/minikube/pull/11185)
-* Docker driverr: support docker installed by Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
+* Docker driver: support docker installed by Snap Package Manager [#11088](https://github.com/kubernetes/minikube/pull/11088)
 * Change 'minikube version --short' to only print the version without a prompt. [#11167](https://github.com/kubernetes/minikube/pull/11167)
 
 
@@ -1949,7 +1949,7 @@ Upgrades:
 * Upgrade Docker, from 19.03.13 to 19.03.14 [#9861](https://github.com/kubernetes/minikube/pull/9861)
 * Buildroot 2020.02.8 [#9862](https://github.com/kubernetes/minikube/pull/9862)
 * Update crictl to v1.18.0 [#9867](https://github.com/kubernetes/minikube/pull/9867)
-* bump storage provsioner to multi arch [#9822](https://github.com/kubernetes/minikube/pull/9822)
+* bump storage provisioner to multi arch [#9822](https://github.com/kubernetes/minikube/pull/9822)
 
 Thank you to our contributors for this release!
 

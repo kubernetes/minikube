@@ -123,7 +123,6 @@ echo "driver:    ${DRIVER}"
 echo "runtime:   ${CONTAINER_RUNTIME}"
 echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
-echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
 echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version check from erroring out due to permission issues
@@ -293,7 +292,7 @@ function cleanup_procs() {
   if [[ "${kprocs}" != "" ]]; then
     echo "error: killing hung kubectl processes ..."
     ps -f -p ${kprocs} || true
-    sudo -E kill ${kprocs} || true
+    kill ${kprocs} || true
   fi
 
 
@@ -303,10 +302,10 @@ function cleanup_procs() {
     echo "Found stale api servers listening on 8443 processes to kill: "
     for p in $none_procs
     do
-      echo "Kiling stale none driver:  $p"
-      sudo -E ps -f -p $p || true
-      sudo -E kill $p || true
-      sudo -E kill -9 $p || true
+      echo "Killing stale none driver: $p"
+      ps -f -p $p || true
+      kill $p || true
+      kill -9 $p || true
     done
   fi
 }
@@ -387,7 +386,7 @@ touch "${JSON_OUT}"
 
 gotestsum --jsonfile "${JSON_OUT}" -f standard-verbose --raw-command -- \
   go tool test2json -t \
-  ${SUDO_PREFIX}${E2E_BIN} \
+  ${E2E_BIN} \
     -minikube-start-args="--driver=${DRIVER} ${EXTRA_START_ARGS}" \
     -test.timeout=${TIMEOUT} -test.v \
     ${EXTRA_TEST_ARGS} \
@@ -429,7 +428,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.16.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.17.0
 # temporary: remove the old install of gopogh as it's taking priority over our current install, preventing updating
 sudo rm -f /usr/local/bin/gopogh
 
@@ -484,16 +483,16 @@ else
 fi
 
 echo ">> Cleaning up after ourselves ..."
-timeout 3m ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-timeout 5m ${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
+timeout 3m ${MINIKUBE_BIN} tunnel --cleanup || true
+timeout 5m ${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
-${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
-${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
-${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
-${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
-${SUDO_PREFIX} rm -f "${SUMMARY_OUT}" || true
+rm -Rf "${MINIKUBE_HOME}" || true
+rm -f "${KUBECONFIG}" || true
+rm -f "${TEST_OUT}" || true
+rm -f "${JSON_OUT}" || true
+rm -f "${HTML_OUT}" || true
+rm -f "${SUMMARY_OUT}" || true
 
 rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"

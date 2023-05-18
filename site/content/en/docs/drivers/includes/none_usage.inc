@@ -3,8 +3,9 @@
 A Linux VM with the following:
 
 * systemd or OpenRC
-* a container runtime, such as Docker or CRIO
-* [cri-dockerd](https://github.com/Mirantis/cri-dockerd) (if using Kubernetes +v1.24 & `docker` container-runtime)
+* a Container Runtime Interface (CRI), such as Docker or CRI-O
+* [containernetworking-plugins]({{<ref "/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver" >}})
+* [cri-dockerd](https://github.com/Mirantis/cri-dockerd) (Only if using Docker CRI)
 
 This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/), such as:
 
@@ -18,10 +19,8 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 
 ## Usage
 
-The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
-
 ```shell
-sudo -E minikube start --driver=none
+minikube start --driver=none
 ```
 
 To make `none` the default driver:

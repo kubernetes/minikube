@@ -168,9 +168,9 @@ func storageProvisioner(mirror string) string {
 // src: https://github.com/kubernetes-sigs/kind/tree/master/images/kindnetd
 func KindNet(repo string) string {
 	if repo == "" {
-		repo = "kindest"
+		repo = "docker.io/kindest"
 	}
-	return path.Join(repo, "kindnetd:v20230330-48f316cd")
+	return path.Join(repo, "kindnetd:v20230511-dc714da8")
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml

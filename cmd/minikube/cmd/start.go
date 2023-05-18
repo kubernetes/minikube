@@ -1581,7 +1581,7 @@ func validateInsecureRegistry() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
@@ -1608,7 +1608,6 @@ func createNode(cc config.ClusterConfig, kubeNodeName string, existing *config.C
 		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
 		ContainerRuntime:  getContainerRuntime(&cc),
-		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
 	}

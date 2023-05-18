@@ -9,6 +9,11 @@ Presentations about the minikube project, mostly from the Kubernetes blog and th
 
 ## Conferences
 
+### KubeCon EU 2023 (Amsterdam, Netherlands)
+
+* [Minikube from CLI to GUI! - YouTube](https://youtu.be/74X1RmqfUzs) (38:35)
+  * Medya Ghazizadeh, Google
+
 ### KubeCon EU 2022 (Valencia, Spain)
 
 * [Deep Dive into Minikube - YouTube](https://youtu.be/Iyq_MlSku-I) (38:37)

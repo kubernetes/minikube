@@ -33,3 +33,4 @@ spec:
         image: leeroy-app
         ports:
         - containerPort: 50051
+          name: http
