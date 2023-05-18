@@ -18,8 +18,8 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
-# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:focal-*
-ARG UBUNTU_FOCAL_IMAGE="ubuntu:focal-20230308"
+# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20230425"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.20.4 as auto-pause
 WORKDIR /src
@@ -37,9 +37,9 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 20.04, this image is reasonably small as a starting point
+# start from ubuntu 22.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ${UBUNTU_FOCAL_IMAGE} as kicbase
+FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.11.6"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
@@ -47,6 +47,7 @@ ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.24"
 ARG CRI_DOCKERD_VERSION="v0.3.2"
 ARG CRI_DOCKERD_COMMIT="23513f4cfe8f02bc02130b4edba2c9d2c8fd320b"
+ARG CNI_PLUGINS_VERSION="v1.2.0"
 ARG TARGETARCH
 
 # copy in static files (configs, scripts)
@@ -144,10 +145,7 @@ RUN clean-install \
     libglib2.0-0
 
 # install docker
-# use the bionic packages for arm32
-RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
-    sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
+RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu jammy stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
     clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
@@ -171,37 +169,40 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && chmod 755 /usr/local/bin/buildkitd \
     && systemctl enable buildkit.socket
 
-# Install cri-o/podman dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
-    else \
-       	clean-install containers-common conmon containernetworking-plugins crun; \
-    fi
-
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
-
 # install podman
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb http://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install podman && \
+RUN clean-install podman && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
            > /etc/systemd/system/podman.socket.d/override.conf && \
     mkdir -p /etc/tmpfiles.d && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
-    systemd-tmpfiles --create; fi
+    systemd-tmpfiles --create
+
+# install cri-o dependencies:
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
+    apt-key add - < Release.key && \
+    if [ "$ARCH" != "ppc64le" ]; then \
+        clean-install catatonit conmon cri-tools crun; \
+    else \
+        clean-install conmon crun; \
+    fi
+
+# install containernetworking-plugins
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
+    curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
+    mkdir -p /opt/cni/bin && \
+    tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
+    rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
+
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install cri-o cri-o-runc; fi
 
 # install version.json
 ARG VERSION_JSON
@@ -233,10 +234,6 @@ RUN mkdir /var/run/sshd
 RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
-
-# metacopy breaks crio on certain OS and isn't necessary for minikube
-# https://github.com/kubernetes/minikube/issues/10520
-RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username

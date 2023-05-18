@@ -9,7 +9,7 @@ metadata:
   name: inaccel-vadd
 spec:
   containers:
-  - image: inaccel/vadd
+  - image: docker.io/inaccel/vadd
     name: inaccel-vadd
     resources:
       limits:

@@ -306,6 +306,7 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 	for _, opt := range opts {
 		args = append(args, "--"+opt)
 	}
+	args = append(args, "--cgroup-manager=cgroupfs")
 	c := exec.Command("sudo", args...)
 	e := os.Environ()
 	e = append(e, env...)
