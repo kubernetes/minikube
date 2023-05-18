@@ -61,9 +61,8 @@ func TestDownloadOnly(t *testing.T) {
 
 	for _, v := range versions {
 		t.Run(v, func(t *testing.T) {
-			defer PostMortemLogs(t, profile)
-
 			t.Run("json-events", func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
 				// --force to avoid uid check
 				args := append([]string{"start", "-o=json", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v), fmt.Sprintf("--container-runtime=%s", containerRuntime)}, StartArgs()...)
 				rt, err := Run(t, exec.CommandContext(ctx, Target(), args...))
@@ -211,7 +210,7 @@ func TestDownloadOnlyKic(t *testing.T) {
 	}
 	profile := UniqueProfileName("download-docker")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
-	defer Cleanup(t, profile, cancel)
+	defer CleanupWithLogs(t, profile, cancel)
 
 	cRuntime := ContainerRuntime()
 
@@ -266,7 +265,7 @@ func createSha256File(filePath string) error {
 func TestBinaryMirror(t *testing.T) {
 	profile := UniqueProfileName("binary-mirror")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
-	defer Cleanup(t, profile, cancel)
+	defer CleanupWithLogs(t, profile, cancel)
 
 	tmpDir := t.TempDir()
 
