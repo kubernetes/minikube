@@ -13,7 +13,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 {{% tab "Standard Docker" %}}
 ## Requirements
 
-- [Install Docker](https://hub.docker.com/search?q=&type=edition&offering=community&sort=updated_at&order=desc) 18.09 or higher (20.10 or higher is recommended)
+- [Install Docker](https://docs.docker.com/engine/install/) 18.09 or higher (20.10 or higher is recommended)
 - amd64 or arm64 system.
 - If using WSL complete [these steps]({{<ref "/docs/tutorials/wsl_docker_driver">}}) first
 
