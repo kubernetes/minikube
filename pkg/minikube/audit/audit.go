@@ -121,7 +121,11 @@ func LogCommandEnd(id string) error {
 }
 
 func getStartIndex(entryCount int) int {
-	maxEntries := viper.GetInt(config.MaxAuditEntries)
+	// default to 1000 entries
+	maxEntries := 1000
+	if viper.IsSet(config.MaxAuditEntries) {
+		maxEntries = viper.GetInt(config.MaxAuditEntries)
+	}
 	startIndex := entryCount - maxEntries
 	if maxEntries <= 0 || startIndex <= 0 {
 		return 0
