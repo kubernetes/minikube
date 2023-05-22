@@ -1206,15 +1206,13 @@ var runtimeIssues = []match{
 	},
 	{
 		Kind: Kind{
-			ID:       "RUNTIME_DOCKER_CRICTL",
+			ID:       "RUNTIME_DOCKER_ENABLE",
 			ExitCode: ExRuntimeError,
 			Advice:   "It seems like docker/cri-docker could be misconfigured. Please make sure that you followed the recommended installation procedure",
 			URL:      "https://kubernetes.io/docs/setup/production-environment/container-runtimes/#docker",
 			Issues:   []int{},
 		},
-		// This regexp should match everything related to the crictl command failure,
-		// an rpc error, and anything related to cri-docker
-		Regexp: re(`(.*bin/crictl.*exit status.*)|(.*rpc error.*)|(.*cri-docker.*)`),
+		Regexp: re(`.*bin/crictl.*exit status.*`),
 		GOOS:   []string{"linux"},
 	},
 }

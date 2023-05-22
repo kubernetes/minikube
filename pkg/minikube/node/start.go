@@ -453,11 +453,11 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if err = cr.Enable(disableOthers, cgroupDriver(cc), inUserNamespace); err != nil {
 		switch strings.ToLower(cr.Name()) {
 		case constants.Docker:
-			exit.Error(reason.RuntimeDockerCrictl, "Failed to enable docker/cri-docker", err)
+			exit.Error(reason.RuntimeDockerEnable, "Failed to enable docker/cri-docker", err)
 		case constants.CRIO:
-			exit.Error(reason.RuntimeCrioCrictl, "Failed to enable cri-o", err)
+			exit.Error(reason.RuntimeCrioEnable, "Failed to enable cri-o", err)
 		case constants.Containerd:
-			exit.Error(reason.RuntimeContainerdCrictl, "Failed to enable containerd", err)
+			exit.Error(reason.RuntimeContainerdEnable, "Failed to enable containerd", err)
 		default:
 			exit.Error(reason.RuntimeEnable, "Failed to enable container runtime", err)
 		}
