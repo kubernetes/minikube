@@ -44,6 +44,11 @@ var (
 				`CNI_PLUGINS_VERSION = .*`: `CNI_PLUGINS_VERSION = {{.Version}}`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`CNI_PLUGINS_VERSION=.*`: `CNI_PLUGINS_VERSION="{{.Version}}"`,
+			},
+		},
 	}
 )
 
