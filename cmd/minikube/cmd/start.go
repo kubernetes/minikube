@@ -1757,8 +1757,17 @@ $ minikube config unset kubernetes-version`)
 	} else if strings.EqualFold(strings.ToLower(paramVersion), "latest") || strings.EqualFold(strings.ToLower(paramVersion), "newest") {
 		paramVersion = constants.NewestKubernetesVersion
 	}
-
-	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
+	kubernetesSemver := strings.TrimPrefix(paramVersion, version.VersionPrefix)
+	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
+	if majorMinorOnly.MatchString(kubernetesSemver) {
+		for _, k := range constants.ValidKubernetesVersions {
+			if strings.HasPrefix(k, fmt.Sprintf("v%s", kubernetesSemver)) {
+				kubernetesSemver = strings.TrimPrefix(k, version.VersionPrefix)
+				break
+			}
+		}
+	}
+	nvs, err := semver.Make(kubernetesSemver)
 	if err != nil {
 		exit.Message(reason.Usage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
