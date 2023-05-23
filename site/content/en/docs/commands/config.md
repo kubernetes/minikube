@@ -61,8 +61,6 @@ minikube config SUBCOMMAND [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -109,8 +107,6 @@ minikube config defaults PROPERTY_NAME [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -147,8 +143,6 @@ minikube config get PROPERTY_NAME [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -186,8 +180,6 @@ minikube config help [command] [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -225,8 +217,6 @@ minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -263,8 +253,6 @@ minikube config unset PROPERTY_NAME [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
@@ -308,8 +296,6 @@ minikube config view [flags]
       --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
   -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
       --rootless                         Force to use rootless driver (docker and podman driver only)
-      --s2a_enable_appengine_dialer      If true, opportunistically use AppEngine-specific dialer to call S2A.
-      --s2a_timeout duration             Timeout enforced on the connection to the S2A service for handshake. (default 3s)
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
