@@ -16,7 +16,11 @@ limitations under the License.
 
 package constants
 
-var KubernetesVersions = []string{
+// This file is updated automatically, do not manually modify
+
+// ValidKubernetesVersions is a list of Kubernetes versions in order from newest to oldest
+// This is used when outputting Kubernetes versions and to select the latest patch version when unspecified
+var ValidKubernetesVersions = []string{
 	"v1.27.2",
 	"v1.27.1",
 	"v1.27.0",
