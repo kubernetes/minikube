@@ -1659,6 +1659,13 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	newestVersion := semver.MustParse(strings.TrimPrefix(constants.NewestKubernetesVersion, version.VersionPrefix))
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
+	paramVersion := viper.GetString(kubernetesVersion)
+	paramVersion = strings.TrimPrefix(paramVersion, version.VersionPrefix)
+	isMajorMinorOnly, _ := getSemverFromMajorMinorOnly(paramVersion)
+
+	if isMajorMinorOnly {
+		out.Step(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
+	}
 	if nvs.Equals(zeroVersion) {
 		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
@@ -1758,14 +1765,9 @@ $ minikube config unset kubernetes-version`)
 		paramVersion = constants.NewestKubernetesVersion
 	}
 	kubernetesSemver := strings.TrimPrefix(paramVersion, version.VersionPrefix)
-	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
-	if majorMinorOnly.MatchString(kubernetesSemver) {
-		for _, k := range constants.ValidKubernetesVersions {
-			if strings.HasPrefix(k, fmt.Sprintf("v%s", kubernetesSemver)) {
-				kubernetesSemver = strings.TrimPrefix(k, version.VersionPrefix)
-				break
-			}
-		}
+	isMajorMinor, semverFromMajorMinor := getSemverFromMajorMinorOnly(kubernetesSemver)
+	if isMajorMinor {
+		kubernetesSemver = semverFromMajorMinor
 	}
 	nvs, err := semver.Make(kubernetesSemver)
 	if err != nil {
@@ -1886,4 +1888,16 @@ func exitGuestProvision(err error) {
 		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning guest", err)
+}
+
+func getSemverFromMajorMinorOnly(kubernetesSemver string) (bool, string) {
+	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
+	if majorMinorOnly.MatchString(kubernetesSemver) {
+		for _, k := range constants.ValidKubernetesVersions {
+			if strings.HasPrefix(k, fmt.Sprintf("v%s", kubernetesSemver)) {
+				return true, strings.TrimPrefix(k, version.VersionPrefix)
+			}
+		}
+	}
+	return false, ""
 }
