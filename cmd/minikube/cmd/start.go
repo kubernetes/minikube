@@ -1660,11 +1660,10 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
 	paramVersion := viper.GetString(kubernetesVersion)
-	paramVersion = strings.TrimPrefix(paramVersion, version.VersionPrefix)
-	isMajorMinorOnly, _ := getSemverFromMajorMinorOnly(paramVersion)
+	paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 
-	if isMajorMinorOnly {
-		out.Step(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
+	if isTwoDigitSemver(paramVersion) {
+		out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
 	}
 	if nvs.Equals(zeroVersion) {
 		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
@@ -1764,10 +1763,10 @@ $ minikube config unset kubernetes-version`)
 	} else if strings.EqualFold(strings.ToLower(paramVersion), "latest") || strings.EqualFold(strings.ToLower(paramVersion), "newest") {
 		paramVersion = constants.NewestKubernetesVersion
 	}
-	kubernetesSemver := strings.TrimPrefix(paramVersion, version.VersionPrefix)
-	isMajorMinor, semverFromMajorMinor := getSemverFromMajorMinorOnly(kubernetesSemver)
-	if isMajorMinor {
-		kubernetesSemver = semverFromMajorMinor
+
+	kubernetesSemver := strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
+	if isTwoDigitSemver(kubernetesSemver) {
+		kubernetesSemver = getLatestPatch(kubernetesSemver)
 	}
 	nvs, err := semver.Make(kubernetesSemver)
 	if err != nil {
@@ -1890,14 +1889,19 @@ func exitGuestProvision(err error) {
 	exit.Error(reason.GuestProvision, "error provisioning guest", err)
 }
 
-func getSemverFromMajorMinorOnly(kubernetesSemver string) (bool, string) {
-	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
-	if majorMinorOnly.MatchString(kubernetesSemver) {
-		for _, k := range constants.ValidKubernetesVersions {
-			if strings.HasPrefix(k, fmt.Sprintf("v%s", kubernetesSemver)) {
-				return true, strings.TrimPrefix(k, version.VersionPrefix)
-			}
+// Example input = 1.26 => output = "1.26.5"
+// Example input = 1.26.5 => output = ""
+func getLatestPatch(majorMinorVer string) string {
+	for _, k := range constants.ValidKubernetesVersions {
+		if strings.HasPrefix(k, fmt.Sprintf("v%s", majorMinorVer)) {
+			return strings.TrimPrefix(k, version.VersionPrefix)
 		}
+
 	}
-	return false, ""
+	return ""
+}
+
+func isTwoDigitSemver(ver string) bool {
+	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
+	return majorMinorOnly.MatchString(ver)
 }
