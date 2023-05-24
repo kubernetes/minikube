@@ -109,6 +109,7 @@ echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
 
 Restart Network Manager
 ```
+sudo rm /etc/resolv.conf # will be needed, at least on ubuntu 22.04
 systemctl restart NetworkManager.service
 ```
 Ensure your /etc/resolv.conf  contains only single nameserver
