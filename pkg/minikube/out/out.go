@@ -21,12 +21,12 @@ import (
 	"bytes"
 	"fmt"
 	"html"
-	"html/template"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/Delta456/box-cli-maker/v2"

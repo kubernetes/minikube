@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -102,7 +103,10 @@ func TestGetKubernetesVersion(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			viper.SetDefault(kubernetesVersion, test.paramVersion)
-			version := getKubernetesVersion(test.cfg)
+			version, err := getKubernetesVersion(test.cfg)
+			if err != nil {
+				klog.Warningf("get kubernetesVersion failed : %v", err)
+			}
 
 			// check whether we are getting the expected version
 			if version != test.expectedVersion {

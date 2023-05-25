@@ -811,7 +811,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+		kubeVer, err := getKubernetesVersion(existing)
+		if err != nil {
+			klog.Warningf("get kubernetesVersion failed : %v", err)
+		}
+		cc.KubernetesConfig.KubernetesVersion = kubeVer
 	}
 	if cmd.Flags().Changed(containerRuntime) {
 		cc.KubernetesConfig.ContainerRuntime = getContainerRuntime(existing)
