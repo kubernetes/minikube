@@ -28,7 +28,7 @@ can. The `ingress-dns` addon acts as a DNS service that runs inside your Kuberne
 install the service and add the `minikube ip` as a DNS server on your host machine. Each time the DNS service is
 queried, an API call is made to the Kubernetes master service for a list of all the ingresses. If a match is found for
 the name, a response is given with an IP address matching `minikube ip`. For example, with a `minikube ip` of
-`192.168.99.106` and an ingress rule for `myservice.test` configured in the cluster, a DNS query from the host would
+`192.168.99.169` and an ingress rule for `myservice.test` configured in the cluster, a DNS query from the host would
 produce:
 
 ```text
