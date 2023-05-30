@@ -14,30 +14,20 @@
 
 FROM ubuntu:20.04
 
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends \
+                ca-certificates \
+                gcc \
+                libc6-dev \
+                make \
+                pkg-config \
+                curl \
+                libvirt-dev \
+                git \
+        && rm -rf /var/lib/apt/lists/*
+
 ARG GO_VERSION
 
-RUN apt update
-
-RUN echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal main universe multiverse" >> /etc/apt/sources.list && \
-    echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports focal-updates main universe restricted multiverse" >> /etc/apt/sources.list && \
-    dpkg --add-architecture arm64 && \
-    (apt update || true)
-
-RUN DEBIAN_FRONTEND=noninteractive \
-    apt install \
-    -o APT::Immediate-Configure=false -y \
-    gcc-aarch64-linux-gnu \
-    make \
-    pkg-config \
-    curl \
-    libvirt-dev:arm64 && \
-    dpkg --configure -a
-
-RUN curl -sSL https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+RUN curl -sSL https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz | tar -C /usr/local -xzf -
 
 ENV GOPATH /go
-
-ENV CC=aarch64-linux-gnu-gcc
-ENV CGO_ENABLED=1
-ENV PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin
