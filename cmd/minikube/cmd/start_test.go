@@ -465,6 +465,99 @@ func TestValidateRuntime(t *testing.T) {
 	}
 }
 
+func TestIsTwoDigitSemver(t *testing.T) {
+	var tcs = []struct {
+		desc     string
+		version  string
+		expected bool
+	}{
+		{
+			desc:     "a valid three digit version",
+			version:  "1.26.5",
+			expected: false,
+		},
+		{
+			desc:     "a valid two digit version",
+			version:  "1.26",
+			expected: true,
+		},
+		{
+			desc:     "a valid two digit version with a period",
+			version:  "1.26.",
+			expected: false,
+		},
+		{
+			desc:     "an invalid major version",
+			version:  "2",
+			expected: false,
+		},
+		{
+			desc:     "a valid major version",
+			version:  "1",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with a 0 as the major/minor components",
+			version:  "0.0",
+			expected: true,
+		},
+		{
+			desc:     "a two digit version with negative major version",
+			version:  "-1.0",
+			expected: false,
+		},
+		{
+			desc:     "a two digit vesion with negative minor version",
+			version:  "1.-1",
+			expected: false,
+		},
+		{
+			desc:     "a missing minor version",
+			version:  "1.",
+			expected: false,
+		},
+		{
+			desc:     "a missing major version",
+			version:  ".2",
+			expected: false,
+		},
+		{
+			desc:     "a valid two digit version with whitespace between components",
+			version:  "1. 1",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with a nondigit major component",
+			version:  "a.12",
+			expected: false,
+		},
+		{
+			desc:     "a two digit vesion with a nondigit minor component",
+			version:  "1.a",
+			expected: false,
+		},
+		{
+			desc:     "a two digit vesion with extraneous nondigits in minor component",
+			version:  "1.2a",
+			expected: false,
+		},
+		{
+			desc:     "a two digit vesion larger major/minor components",
+			version:  "123456789.987654321",
+			expected: true,
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.desc, func(t *testing.T) {
+			actual := isTwoDigitSemver(tc.version)
+			// check whether the function correctly verifies if it is a 2 digit semver
+			if actual != tc.expected {
+				t.Fatalf("test failed. Expected version v%s to return %v", tc.version, tc.expected)
+			}
+		})
+	}
+}
+
 func TestValidatePorts(t *testing.T) {
 	isMicrosoftWSL := detect.IsMicrosoftWSL()
 	type portTest struct {
