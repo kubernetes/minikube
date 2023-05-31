@@ -1118,6 +1118,11 @@ update-gcp-auth-version:
 	(cd hack/update/gcp_auth_version && \
 	 go run update_gcp_auth_version.go)
 
+.PHONY: update-kubernetes-versions-list
+update-kubernetes-versions-list:
+	(cd hack/update/kubernetes_versions_list && \
+	 go run update_kubernetes_versions_list.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
