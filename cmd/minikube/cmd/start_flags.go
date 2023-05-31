@@ -813,7 +813,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
 		if err != nil {
-			klog.Warningf("get kubernetesVersion failed : %v", err)
+			klog.Warningf("failed getting Kubernetes version: %v", err)
 		}
 		cc.KubernetesConfig.KubernetesVersion = kubeVer
 	}

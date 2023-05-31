@@ -88,15 +88,14 @@ type versionJSON struct {
 	Commit          string `json:"commit"`
 }
 
-// ErrKubernetesPatchNotFound is when a patch was not found for the given <major>.<minor> version
-var ErrKubernetesPatchNotFound = errors.New("Unable to detect the latest patch release for specified Kubernetes version")
-
 var (
-	registryMirror   []string
-	insecureRegistry []string
-	apiServerNames   []string
-	apiServerIPs     []net.IP
-	hostRe           = regexp.MustCompile(`^[^-][\w\.-]+$`)
+	// ErrKubernetesPatchNotFound is when a patch was not found for the given <major>.<minor> version
+	ErrKubernetesPatchNotFound = errors.New("Unable to detect the latest patch release for specified Kubernetes version")
+	registryMirror             []string
+	insecureRegistry           []string
+	apiServerNames             []string
+	apiServerIPs               []net.IP
+	hostRe                     = regexp.MustCompile(`^[^-][\w\.-]+$`)
 )
 
 func init() {
@@ -1594,8 +1593,7 @@ func createNode(cc config.ClusterConfig, existing *config.ClusterConfig) (config
 		if err != nil {
 			return cc, config.Node{}, err
 		}
-		newVer, err := getKubernetesVersion(&cc)
-		cp.KubernetesVersion = newVer
+		cp.KubernetesVersion, err = getKubernetesVersion(&cc)
 		if err != nil {
 			klog.Warningf("failed getting Kubernetes version: %v", err)
 		}
@@ -1691,10 +1689,8 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	paramVersion := viper.GetString(kubernetesVersion)
 	paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 
-	if isTwoDigitSemver(paramVersion) {
-		if getLatestPatch(paramVersion) != "" {
-			out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
-		}
+	if isTwoDigitSemver(paramVersion) && getLatestPatch(paramVersion) != "" {
+		out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
 	}
 	if nvs.Equals(zeroVersion) {
 		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
@@ -1798,11 +1794,10 @@ $ minikube config unset kubernetes-version`)
 	kubernetesSemver := strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 	if isTwoDigitSemver(kubernetesSemver) {
 		potentialPatch := getLatestPatch(kubernetesSemver)
-		if potentialPatch != "" {
-			kubernetesSemver = potentialPatch
-		} else {
+		if potentialPatch == "" {
 			return "", ErrKubernetesPatchNotFound
 		}
+		kubernetesSemver = potentialPatch
 	}
 	nvs, err := semver.Make(kubernetesSemver)
 	if err != nil {
@@ -1931,7 +1926,7 @@ func exitGuestProvision(err error) {
 
 // Example input = 1.26 => output = "1.26.5"
 // Example input = 1.26.5 => output = "1.26.5"
-// Example input = 1.26.6 => output = ""
+// Example input = 1.26.999 => output = ""
 func getLatestPatch(majorMinorVer string) string {
 	for _, k := range constants.ValidKubernetesVersions {
 		if strings.HasPrefix(k, fmt.Sprintf("v%s.", majorMinorVer)) {

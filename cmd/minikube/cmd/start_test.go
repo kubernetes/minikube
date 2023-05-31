@@ -105,7 +105,7 @@ func TestGetKubernetesVersion(t *testing.T) {
 			viper.SetDefault(kubernetesVersion, test.paramVersion)
 			version, err := getKubernetesVersion(test.cfg)
 			if err != nil {
-				klog.Warningf("get kubernetesVersion failed : %v", err)
+				klog.Warningf("failed getting Kubernetes version: %v", err)
 			}
 
 			// check whether we are getting the expected version
@@ -507,7 +507,7 @@ func TestIsTwoDigitSemver(t *testing.T) {
 			expected: false,
 		},
 		{
-			desc:     "a two digit vesion with negative minor version",
+			desc:     "a two digit version with negative minor version",
 			version:  "1.-1",
 			expected: false,
 		},
@@ -527,22 +527,22 @@ func TestIsTwoDigitSemver(t *testing.T) {
 			expected: false,
 		},
 		{
-			desc:     "a two digit version with a nondigit major component",
+			desc:     "a two digit version with a non-digit major component",
 			version:  "a.12",
 			expected: false,
 		},
 		{
-			desc:     "a two digit vesion with a nondigit minor component",
+			desc:     "a two digit version with a non-digit minor component",
 			version:  "1.a",
 			expected: false,
 		},
 		{
-			desc:     "a two digit vesion with extraneous nondigits in minor component",
+			desc:     "a two digit version with extraneous non-digits in minor component",
 			version:  "1.2a",
 			expected: false,
 		},
 		{
-			desc:     "a two digit vesion larger major/minor components",
+			desc:     "a two digit version larger major/minor components",
 			version:  "123456789.987654321",
 			expected: true,
 		},
@@ -552,7 +552,7 @@ func TestIsTwoDigitSemver(t *testing.T) {
 			actual := isTwoDigitSemver(tc.version)
 			// check whether the function correctly verifies if it is a 2 digit semver
 			if actual != tc.expected {
-				t.Fatalf("test failed. Expected version v%s to return %v", tc.version, tc.expected)
+				t.Fatalf("test failed. Expected version v%s to return %t", tc.version, tc.expected)
 			}
 		})
 	}
