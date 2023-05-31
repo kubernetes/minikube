@@ -974,7 +974,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 				out.Infof("Using image {{.registry}}{{.image}}", out.V{
 					"registry": override,
 					// removing the SHA from UI
-					// SHA example gcr.io/k8s-minikube/gcp-auth-webhook:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
+					// SHA example docker.io/my_image:v0.0.4@sha256:65e9e69022aa7b0eb1e390e1916e3bf67f75ae5c25987f9154ef3b0e8ab8528b
 					"image": strings.Split(image, "@")[0],
 				})
 			} else if opts.ImageRepository != "" {

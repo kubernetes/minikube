@@ -34,6 +34,7 @@ var dependencies = map[string]dependency{
 	"containerd":     {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
 	"cri-o":          {"deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk", `CRIO_BIN_VERSION = (.*)`},
 	"docker":         {"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk", `DOCKER_BIN_VERSION = (.*)`},
+	"gcp-auth":       {"pkg/minikube/assets/addons.go", `k8s-minikube/gcp-auth-webhook:(.*)@`},
 	"gh":             {"hack/jenkins/installers/check_install_gh.sh", `GH_VERSION="(.*)"`},
 	"go":             {"Makefile", `GO_VERSION \?= (.*)`},
 	"golint":         {"Makefile", `GOLINT_VERSION \?= (.*)`},

@@ -1119,6 +1119,11 @@ update-cni-plugins-version:
 	(cd hack/update/cni_plugins_version && \
 	 go run update_cni_plugins_version.go)
 
+.PHONY: update-gcp-auth-version
+update-gcp-auth-version:
+	(cd hack/update/gcp_auth_version && \
+	 go run update_gcp_auth_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
