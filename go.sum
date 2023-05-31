@@ -248,11 +248,11 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7PamTW8vY5MyCA=
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.13.1 h1:sp0yJmv4948oRRHO+oobBbdX4hu9OxYApelEMgrUrwE=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.13.1/go.mod h1:R3iiqq2szEWcV2fugUIH/GsGeOs4U1V2nC7sOy6kccQ=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.37.1 h1:7itwqoVPFgQb+V0bPKnadS2PbKmVc6icomiQaLvwfwc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.37.1 h1:ah7raobL5uMeft+7+qMK4SCixxx1/HnIaLgYfdN8n4c=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.37.1/go.mod h1:oEccMakRmMNrayCPR+5OmZE/aeXmTPzUtmomEXIPBdI=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.15.0 h1:5uR5WqunMUqN5Z+USN/N25aM7zWd0JUCIfz1B/w0HtA=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.15.0/go.mod h1:LTScD9l1w6+z1IB3FKtXxS4oenRlIJQQrIiV/Iq1Bsw=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.39.0 h1:RDD62LpQbuv4rpLOm0w1zlLIcIo7k+zi3EZV5nVyAo8=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.39.0 h1:uZvy89rOd+9ryIir65RO7BmKYxQ9uBbFcnNcslu6RIM=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.39.0/go.mod h1:lz6DEePTxmjvYMtusOoS3qDAErC0STi/wmvqJucKY28=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Microsoft/go-winio v0.4.11/go.mod h1:VhR8bwka0BXejwEJY73c50VrPtXAaKcyvVC4A4RozmA=
