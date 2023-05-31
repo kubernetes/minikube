@@ -1668,10 +1668,10 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 
 // validateKubernetesVersion ensures that the requested version is reasonable
 func validateKubernetesVersion(old *config.ClusterConfig) {
+	paramVersion := viper.GetString(kubernetesVersion)
+	paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 	kubernetesVer, err := getKubernetesVersion(old)
 	if err != nil {
-		paramVersion := viper.GetString(kubernetesVersion)
-		paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 		if errors.Is(err, ErrKubernetesPatchNotFound) {
 			exit.Message(reason.PatchNotFound, "Unable to detect the latest patch release for specified major.minor version v{{.majorminor}}",
 				out.V{"majorminor": paramVersion})
@@ -1685,9 +1685,6 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
 	newestVersion := semver.MustParse(strings.TrimPrefix(constants.NewestKubernetesVersion, version.VersionPrefix))
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
-
-	paramVersion := viper.GetString(kubernetesVersion)
-	paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
 
 	if isTwoDigitSemver(paramVersion) && getLatestPatch(paramVersion) != "" {
 		out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})

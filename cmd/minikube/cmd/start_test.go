@@ -546,13 +546,23 @@ func TestIsTwoDigitSemver(t *testing.T) {
 			version:  "123456789.987654321",
 			expected: true,
 		},
+		{
+			desc:     "a valid two digit version with a version prefix",
+			version:  "v1.26",
+			expected: false,
+		},
+		{
+			desc:     "a valid three digit version with a version prefix",
+			version:  "v1.26.5",
+			expected: false,
+		},
 	}
 	for _, tc := range tcs {
 		t.Run(tc.desc, func(t *testing.T) {
 			actual := isTwoDigitSemver(tc.version)
 			// check whether the function correctly verifies if it is a 2 digit semver
 			if actual != tc.expected {
-				t.Fatalf("test failed. Expected version v%s to return %t", tc.version, tc.expected)
+				t.Fatalf("test failed. Expected version %s to return %t", tc.version, tc.expected)
 			}
 		})
 	}
