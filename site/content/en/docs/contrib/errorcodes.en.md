@@ -7,6 +7,9 @@ description: >
 
 ## Error Strings
 
+"MK_PATCH_NOT_FOUND" (Exit code ExProgramUsage)  
+minikube could not find a patch for the provided major.minor version  
+
 "MK_USAGE" (Exit code ExProgramUsage)  
 minikube has been passed an incorrect parameter  
 

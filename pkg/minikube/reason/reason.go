@@ -57,6 +57,11 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
+	// minikube could not find a patch for the provided major.minor version
+	PatchNotFound = Kind{ID: "MK_PATCH_NOT_FOUND", ExitCode: ExProgramUsage,
+		Advice: translate.T("Specify --kubernetes-version in v<major>.<minor.<build> form. example: 'v1.1.14'"),
+	}
+
 	// minikube has been passed an incorrect parameter
 	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
 	// minikube has no current cluster running

@@ -89,11 +89,13 @@ type versionJSON struct {
 }
 
 var (
-	registryMirror   []string
-	insecureRegistry []string
-	apiServerNames   []string
-	apiServerIPs     []net.IP
-	hostRe           = regexp.MustCompile(`^[^-][\w\.-]+$`)
+	// ErrKubernetesPatchNotFound is when a patch was not found for the given <major>.<minor> version
+	ErrKubernetesPatchNotFound = errors.New("Unable to detect the latest patch release for specified Kubernetes version")
+	registryMirror             []string
+	insecureRegistry           []string
+	apiServerNames             []string
+	apiServerIPs               []net.IP
+	hostRe                     = regexp.MustCompile(`^[^-][\w\.-]+$`)
 )
 
 func init() {
@@ -318,7 +320,10 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		stopk8s = true
 	}
 
-	k8sVersion := getKubernetesVersion(existing)
+	k8sVersion, err := getKubernetesVersion(existing)
+	if err != nil {
+		klog.Warningf("failed getting Kubernetes version: %v", err)
+	}
 	rtime := getContainerRuntime(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {
@@ -1585,17 +1590,23 @@ func createNode(cc config.ClusterConfig, existing *config.ClusterConfig) (config
 	// Create the initial node, which will necessarily be a control plane
 	if existing != nil {
 		cp, err := config.PrimaryControlPlane(existing)
-		cp.KubernetesVersion = getKubernetesVersion(&cc)
-		cp.ContainerRuntime = getContainerRuntime(&cc)
 		if err != nil {
 			return cc, config.Node{}, err
 		}
+		cp.KubernetesVersion, err = getKubernetesVersion(&cc)
+		if err != nil {
+			klog.Warningf("failed getting Kubernetes version: %v", err)
+		}
+		cp.ContainerRuntime = getContainerRuntime(&cc)
 
 		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
 		// KubernetesVersion is the only attribute that the user can override in the Node object
 		nodes := []config.Node{}
 		for _, n := range existing.Nodes {
-			n.KubernetesVersion = getKubernetesVersion(&cc)
+			n.KubernetesVersion, err = getKubernetesVersion(&cc)
+			if err != nil {
+				klog.Warningf("failed getting Kubernetes version: %v", err)
+			}
 			n.ContainerRuntime = getContainerRuntime(&cc)
 			nodes = append(nodes, n)
 		}
@@ -1604,9 +1615,13 @@ func createNode(cc config.ClusterConfig, existing *config.ClusterConfig) (config
 		return cc, cp, nil
 	}
 
+	kubeVer, err := getKubernetesVersion(&cc)
+	if err != nil {
+		klog.Warningf("failed getting Kubernetes version: %v", err)
+	}
 	cp := config.Node{
 		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: getKubernetesVersion(&cc),
+		KubernetesVersion: kubeVer,
 		ContainerRuntime:  getContainerRuntime(&cc),
 		ControlPlane:      true,
 		Worker:            true,
@@ -1653,12 +1668,27 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 
 // validateKubernetesVersion ensures that the requested version is reasonable
 func validateKubernetesVersion(old *config.ClusterConfig) {
-	nvs, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(old), version.VersionPrefix))
+	paramVersion := viper.GetString(kubernetesVersion)
+	paramVersion = strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
+	kubernetesVer, err := getKubernetesVersion(old)
+	if err != nil {
+		if errors.Is(err, ErrKubernetesPatchNotFound) {
+			exit.Message(reason.PatchNotFound, "Unable to detect the latest patch release for specified major.minor version v{{.majorminor}}",
+				out.V{"majorminor": paramVersion})
+		}
+		exit.Message(reason.Usage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
+
+	}
+
+	nvs, _ := semver.Make(strings.TrimPrefix(kubernetesVer, version.VersionPrefix))
 	oldestVersion := semver.MustParse(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	defaultVersion := semver.MustParse(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
 	newestVersion := semver.MustParse(strings.TrimPrefix(constants.NewestKubernetesVersion, version.VersionPrefix))
 	zeroVersion := semver.MustParse(strings.TrimPrefix(constants.NoKubernetesVersion, version.VersionPrefix))
 
+	if isTwoDigitSemver(paramVersion) && getLatestPatch(paramVersion) != "" {
+		out.Styled(style.Workaround, `Using Kubernetes {{.version}} since patch version was unspecified`, out.V{"version": nvs})
+	}
 	if nvs.Equals(zeroVersion) {
 		klog.Infof("No Kubernetes version set for minikube, setting Kubernetes version to %s", constants.NoKubernetesVersion)
 		return
@@ -1729,7 +1759,7 @@ func isBaseImageApplicable(drv string) bool {
 	return registry.IsKIC(drv)
 }
 
-func getKubernetesVersion(old *config.ClusterConfig) string {
+func getKubernetesVersion(old *config.ClusterConfig) (string, error) {
 	if viper.GetBool(noKubernetes) {
 		// Exit if --kubernetes-version is specified.
 		if viper.GetString(kubernetesVersion) != "" {
@@ -1758,12 +1788,20 @@ $ minikube config unset kubernetes-version`)
 		paramVersion = constants.NewestKubernetesVersion
 	}
 
-	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
+	kubernetesSemver := strings.TrimPrefix(strings.ToLower(paramVersion), version.VersionPrefix)
+	if isTwoDigitSemver(kubernetesSemver) {
+		potentialPatch := getLatestPatch(kubernetesSemver)
+		if potentialPatch == "" {
+			return "", ErrKubernetesPatchNotFound
+		}
+		kubernetesSemver = potentialPatch
+	}
+	nvs, err := semver.Make(kubernetesSemver)
 	if err != nil {
 		exit.Message(reason.Usage, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
 
-	return version.VersionPrefix + nvs.String()
+	return version.VersionPrefix + nvs.String(), nil
 }
 
 // validateDockerStorageDriver checks that docker is using overlay2
@@ -1848,7 +1886,11 @@ func validateBareMetal(drvName string) {
 	}
 
 	// conntrack is required starting with Kubernetes 1.18, include the release candidates for completion
-	version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+	kubeVer, err := getKubernetesVersion(nil)
+	if err != nil {
+		klog.Warningf("failed getting Kubernetes version: %v", err)
+	}
+	version, _ := util.ParseKubernetesVersion(kubeVer)
 	if version.GTE(semver.MustParse("1.18.0-beta.1")) {
 		if _, err := exec.LookPath("conntrack"); err != nil {
 			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
@@ -1877,4 +1919,22 @@ func exitGuestProvision(err error) {
 		exit.Message(reason.GuestProvisionContainerExited, "Docker container exited prematurely after it was created, consider investigating Docker's performance/health.")
 	}
 	exit.Error(reason.GuestProvision, "error provisioning guest", err)
+}
+
+// Example input = 1.26 => output = "1.26.5"
+// Example input = 1.26.5 => output = "1.26.5"
+// Example input = 1.26.999 => output = ""
+func getLatestPatch(majorMinorVer string) string {
+	for _, k := range constants.ValidKubernetesVersions {
+		if strings.HasPrefix(k, fmt.Sprintf("v%s.", majorMinorVer)) {
+			return strings.TrimPrefix(k, version.VersionPrefix)
+		}
+
+	}
+	return ""
+}
+
+func isTwoDigitSemver(ver string) bool {
+	majorMinorOnly := regexp.MustCompile(`^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)$`)
+	return majorMinorOnly.MatchString(ver)
 }
