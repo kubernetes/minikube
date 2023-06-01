@@ -92,15 +92,6 @@ define CNI_PLUGINS_AARCH64_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/host-local
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/flannel \
-		$(TARGET_DIR)/opt/cni/bin/flannel
-
-	ln -sf \
-		../../opt/cni/bin/flannel \
-		$(TARGET_DIR)/usr/bin/flannel
-
-
-	$(INSTALL) -D -m 0755 \
 		$(@D)/dhcp \
 		$(TARGET_DIR)/opt/cni/bin/dhcp
 
