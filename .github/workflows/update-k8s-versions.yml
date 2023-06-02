@@ -26,8 +26,6 @@ jobs:
           t=$(echo $t | head -n 1)
           echo "title=$t" >> $GITHUB_OUTPUT
           c=$(git status --porcelain)
-          c="${c//$'\n'/'%0A'}"
-          c="${c//$'\r'/'%0D'}"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> $GITHUB_OUTPUT
           echo "$c" >> $GITHUB_OUTPUT
