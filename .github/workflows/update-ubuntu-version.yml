@@ -26,8 +26,6 @@ jobs:
           make update-ubuntu-version
           echo "NEW_VERSION=$(DEP=ubuntu make get-dependency-version)" >> $GITHUB_OUTPUT
           c=$(git status --porcelain)
-          c="${c//$'\n'/'%0A'}"
-          c="${c//$'\r'/'%0D'}"
           echo "changes<<EOF" >> $GITHUB_OUTPUT
           echo "$c" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
