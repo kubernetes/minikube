@@ -41,6 +41,7 @@ var dependencies = map[string]dependency{
 	"gopogh":         {"hack/jenkins/common.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
 	"gotestsum":      {"hack/jenkins/installers/check_install_gotestsum.sh", `gotest\.tools/gotestsum@(.*)`},
 	"hugo":           {"netlify.toml", `HUGO_VERSION = "(.*)"`},
+	"ingress":        {"pkg/minikube/assets/addons.go", `ingress-nginx/controller:(.*)@`},
 	"metrics-server": {"pkg/minikube/assets/addons.go", `metrics-server/metrics-server:(.*)@`},
 	"runc":           {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"ubuntu":         {"deploy/kicbase/Dockerfile", `ubuntu:jammy-(.*)"`},

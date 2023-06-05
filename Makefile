@@ -1123,6 +1123,11 @@ update-kubernetes-versions-list:
 	(cd hack/update/kubernetes_versions_list && \
 	 go run update_kubernetes_versions_list.go)
 
+.PHONY: update-ingress-version
+update-ingress-version:
+	(cd hack/update/ingress_version && \
+	 go run update_ingress_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
