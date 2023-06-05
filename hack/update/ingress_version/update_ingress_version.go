@@ -98,7 +98,6 @@ func LatestControllerTag(ctx context.Context) (string, error) {
 			if strings.HasPrefix(ver, "controller-") {
 				return ver, nil
 			}
-			return ver, nil
 		}
 		if resp.NextPage == 0 {
 			break
