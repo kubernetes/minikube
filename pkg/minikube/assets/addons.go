@@ -130,7 +130,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 
 		// GuestPersistentDir
-	}, false, "auto-pause", "Google", "", "", map[string]string{
+	}, false, "auto-pause", "minikube", "", "", map[string]string{
 		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.4@sha256:c1792e370216fcdfd8c4540a87e3fa867da204dd5521623796e2d28498a894ff",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
@@ -174,7 +174,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640"),
-	}, true, "storage-provisioner", "Google", "", "", map[string]string{
+	}, true, "storage-provisioner", "minikube", "", "", map[string]string{
 		"StorageProvisioner": fmt.Sprintf("k8s-minikube/storage-provisioner:%s", version.GetStorageProvisionerVersion()),
 	}, map[string]string{
 		"StorageProvisioner": "gcr.io",
@@ -387,7 +387,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"registry-proxy.yaml",
 			"0640"),
-	}, false, "registry", "Google", "", "", map[string]string{
+	}, false, "registry", "minikube", "", "", map[string]string{
 		"Registry":          "registry:2.8.1@sha256:83bb78d7b28f1ac99c68133af32c93e9a1c149bcd3cb6e683a3ee56e312f1c96",
 		"KubeRegistryProxy": "google_containers/kube-registry-proxy:0.4@sha256:1040f25a5273de0d72c54865a8efd47e3292de9fb8e5353e3fa76736b854f2da",
 	}, map[string]string{
@@ -457,7 +457,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"nvidia-driver-installer.yaml",
 			"0640"),
-	}, false, "nvidia-driver-installer", "Google", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
+	}, false, "nvidia-driver-installer", "3rd party (Nvidia)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", map[string]string{
 		"NvidiaDriverInstaller": "minikube-nvidia-driver-installer:e2d9b43228decf5d6f7dce3f0a85d390f138fa01",
 		"Pause":                 "pause:2.0@sha256:9ce5316f9752b8347484ab0f6778573af15524124d52b93230b9a0dcc987e73e",
 	}, map[string]string{
@@ -507,7 +507,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestGvisorDir,
 			constants.GvisorConfigTomlTargetName,
 			"0640"),
-	}, false, "gvisor", "Google", "", "https://github.com/kubernetes/minikube/blob/master/deploy/addons/gvisor/README.md", map[string]string{
+	}, false, "gvisor", "minikube", "", "https://github.com/kubernetes/minikube/blob/master/deploy/addons/gvisor/README.md", map[string]string{
 		"GvisorAddon": "k8s-minikube/gvisor-addon:3@sha256:23eb17d48a66fc2b09c31454fb54ecae520c3e9c9197ef17fcb398b4f31d505a",
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
@@ -541,7 +541,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640"),
-	}, false, "ingress-dns", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
+	}, false, "ingress-dns", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
 		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
 	}, map[string]string{
 		"IngressDNS": "gcr.io",

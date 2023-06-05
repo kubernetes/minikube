@@ -50,7 +50,7 @@ var addonsEnableCmd = &cobra.Command{
 		addonBundle, ok := assets.Addons[addon]
 		if ok {
 			maintainer := addonBundle.Maintainer
-			if maintainer == "Google" || maintainer == "Kubernetes" {
+			if isOfficialMaintainer(maintainer) {
 				out.Styled(style.Tip, `{{.addon}} is an addon maintained by {{.maintainer}}. For any concerns contact minikube on GitHub.
 You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS`,
 					out.V{"addon": addon, "maintainer": maintainer})
@@ -80,6 +80,13 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 		}
 	},
+}
+
+func isOfficialMaintainer(maintainer string) bool {
+	// using map[string]struct{} as an empty struct occupies 0 bytes in memory
+	officialMaintainers := map[string]struct{}{"Google": {}, "Kubernetes": {}, "minikube": {}}
+	_, ok := officialMaintainers[maintainer]
+	return ok
 }
 
 var (
