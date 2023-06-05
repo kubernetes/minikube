@@ -29,167 +29,45 @@ import (
 )
 
 var (
+	workflowReplace = update.Item{
+		Replace: map[string]string{
+			`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+		},
+	}
+
 	schema = map[string]update.Item{
-		".github/workflows/build.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/master.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/docs.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/time-to-k8s.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/leaderboard.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/yearly-leaderboard.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/translations.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-k8s-versions.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-kubeadm-constants.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-golang-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-golint-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gopogh-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gh-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-docsy-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-hugo-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-ubuntu-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-cloud-spanner-emulator-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/time-to-k8s-public-chart.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/functional_verified.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gotestsum-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-containerd-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-buildkit-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-cri-o-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-metrics-server-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-runc-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-docker-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-cni-plugins-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gcp-auth-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-kubernetes-versions-list.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-ingress-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/sync-minikube.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
+		".github/workflows/build.yml":                                 workflowReplace,
+		".github/workflows/docs.yml":                                  workflowReplace,
+		".github/workflows/functional_verified.yml":                   workflowReplace,
+		".github/workflows/leaderboard.yml":                           workflowReplace,
+		".github/workflows/master.yml":                                workflowReplace,
+		".github/workflows/pr.yml":                                    workflowReplace,
+		".github/workflows/sync-minikube.yml":                         workflowReplace,
+		".github/workflows/time-to-k8s-public-chart.yml":              workflowReplace,
+		".github/workflows/time-to-k8s.yml":                           workflowReplace,
+		".github/workflows/translations.yml":                          workflowReplace,
+		".github/workflows/update-buildkit-version.yml":               workflowReplace,
+		".github/workflows/update-cloud-spanner-emulator-version.yml": workflowReplace,
+		".github/workflows/update-cni-plugins-version.yml":            workflowReplace,
+		".github/workflows/update-containerd-version.yml":             workflowReplace,
+		".github/workflows/update-cri-o-version.yml":                  workflowReplace,
+		".github/workflows/update-docker-version.yml":                 workflowReplace,
+		".github/workflows/update-docsy-version.yml":                  workflowReplace,
+		".github/workflows/update-gcp-auth-version.yml":               workflowReplace,
+		".github/workflows/update-gh-version.yml":                     workflowReplace,
+		".github/workflows/update-golang-version.yml":                 workflowReplace,
+		".github/workflows/update-golint-version.yml":                 workflowReplace,
+		".github/workflows/update-gopogh-version.yml":                 workflowReplace,
+		".github/workflows/update-gotestsum-version.yml":              workflowReplace,
+		".github/workflows/update-hugo-version.yml":                   workflowReplace,
+		".github/workflows/update-ingress-version.yml":                workflowReplace,
+		".github/workflows/update-k8s-versions.yml":                   workflowReplace,
+		".github/workflows/update-kubeadm-constants.yml":              workflowReplace,
+		".github/workflows/update-kubernetes-versions-list.yml":       workflowReplace,
+		".github/workflows/update-metrics-server-version.yml":         workflowReplace,
+		".github/workflows/update-runc-version.yml":                   workflowReplace,
+		".github/workflows/update-ubuntu-version.yml":                 workflowReplace,
+		".github/workflows/yearly-leaderboard.yml":                    workflowReplace,
 		"go.mod": {
 			Replace: map[string]string{
 				`(?m)^go .*`: `go {{.StableVersionMM}}`,
