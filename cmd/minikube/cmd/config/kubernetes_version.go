@@ -17,8 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"sort"
-
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -34,6 +32,5 @@ func supportedKubernetesVersions() (releases []string) {
 		}
 		releases = append(releases, ver)
 	}
-	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == 1 })
 	return releases
 }

@@ -114,7 +114,7 @@ func getKubeadmImagesMapString(version string) (string, error) {
 	url := fmt.Sprintf(kubeadmReleaseURL, version, arch)
 	fileName := fmt.Sprintf(kubeadmBinaryName, arch, version)
 	if err := downloadFile(url, fileName); err != nil {
-		klog.Errorf("failed to download kubeadm binary %s", err.Error())
+		klog.Errorf("failed to download kubeadm binary: %v", err)
 		return "", err
 	}
 
@@ -153,7 +153,7 @@ func formatKubeadmImageList(version, data string) (string, error) {
 	imageTemplate := template.New("kubeadmImage")
 	t, err := imageTemplate.Parse(kubeadmImagesTemplate)
 	if err != nil {
-		klog.Errorf("failed to create kubeadm image map template %s", err.Error())
+		klog.Errorf("failed to create kubeadm image map template: %v", err)
 		return "", err
 	}
 
