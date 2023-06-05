@@ -43,7 +43,7 @@ var dependencies = map[string]dependency{
 	"hugo":           {"netlify.toml", `HUGO_VERSION = "(.*)"`},
 	"metrics-server": {"pkg/minikube/assets/addons.go", `metrics-server/metrics-server:(.*)@`},
 	"runc":           {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
-	"ubuntu":         {"deploy/kicbase/Dockerfile", `UBUNTU_FOCAL_IMAGE="(.*)"`},
+	"ubuntu":         {"deploy/kicbase/Dockerfile", `ubuntu:jammy-(.*)"`},
 }
 
 func main() {
