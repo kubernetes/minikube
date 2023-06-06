@@ -1128,6 +1128,11 @@ update-ingress-version:
 	(cd hack/update/ingress_version && \
 	 go run update_ingress_version.go)
 
+.PHONY: update-calico-version
+update-calico-version:
+	(cd hack/update/calico_version && \
+	 go run update_calico_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
