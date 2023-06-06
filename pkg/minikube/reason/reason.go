@@ -401,8 +401,8 @@ var (
 		ID:       "ID_BOOTPD_FIREWALL",
 		ExitCode: ExLocalNetworkError,
 		Advice: translate.T(`Your firewall is likely blocking bootpd, to unblock it run:
-	/usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
-	/usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd`),
+	sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
+	sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd`),
 	}
 
 	// minikube failed to cache kubernetes binaries for the current runtime

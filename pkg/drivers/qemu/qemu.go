@@ -495,9 +495,10 @@ func (d *Driver) Start() error {
 			time.Sleep(2 * time.Second)
 		}
 
-		if isBootpdError(err) {
-			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
-		} else if err != nil {
+		if err != nil {
+			if isBootpdError(err) {
+				exit.Error(reason.IfBootpdFirewall, "ip not found", err)
+			}
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
 		log.Debugf("IP: %s", d.IPAddress)
