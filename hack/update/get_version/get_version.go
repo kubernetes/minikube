@@ -31,7 +31,7 @@ type dependency struct {
 
 var dependencies = map[string]dependency{
 	"buildkit":         {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
-  "calico":           {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
+	"calico":           {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
 	"cloud-spanner":    {addonsFile, `cloud-spanner-emulator/emulator:(.*)@`},
 	"cni-plugins":      {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins/cni-plugins.mk", `CNI_PLUGINS_VERSION = (.*)`},
 	"containerd":       {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
