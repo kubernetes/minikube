@@ -396,6 +396,14 @@ var (
 	IfSSHClient = Kind{ID: "IF_SSH_CLIENT", ExitCode: ExLocalNetworkError}
 	// minikube failed to create a dedicated network
 	IfDedicatedNetwork = Kind{ID: "IF_DEDICATED_NETWORK", ExitCode: ExLocalNetworkError}
+	// minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall
+	IfBootpdFirewall = Kind{
+		ID:       "ID_BOOTPD_FIREWALL",
+		ExitCode: ExLocalNetworkError,
+		Advice: translate.T(`Your firewall is likely blocking bootpd, to unblock it run:
+	/usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
+	/usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd`),
+	}
 
 	// minikube failed to cache kubernetes binaries for the current runtime
 	InetCacheBinaries = Kind{ID: "INET_CACHE_BINARIES", ExitCode: ExInternetError}

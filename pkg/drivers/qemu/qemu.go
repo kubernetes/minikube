@@ -41,6 +41,8 @@ import (
 	"github.com/pkg/errors"
 
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/network"
 )
 
@@ -493,7 +495,9 @@ func (d *Driver) Start() error {
 			time.Sleep(2 * time.Second)
 		}
 
-		if err != nil {
+		if isBootpdError(err) {
+			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
+		} else if err != nil {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
 		log.Debugf("IP: %s", d.IPAddress)
@@ -502,6 +506,13 @@ func (d *Driver) Start() error {
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+}
+
+func isBootpdError(err error) bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	return strings.Contains(err.Error(), "could not find an IP address")
 }
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
