@@ -1128,6 +1128,16 @@ update-ingress-version:
 	(cd hack/update/ingress_version && \
 	 go run update_ingress_version.go)
 
+.PHONY: update-flannel-version
+update-flannel-version:
+	(cd hack/update/flannel_version && \
+	 go run update_flannel_version.go)
+
+.PHONY: update-inspektor-gadget-version
+update-inspektor-gadget-version:
+	(cd hack/update/inspektor_gadget_version && \
+	 go run update_inspektor_gadget_version.go)
+
 .PHONY: update-calico-version
 update-calico-version:
 	(cd hack/update/calico_version && \
