@@ -1128,6 +1128,11 @@ update-ingress-version:
 	(cd hack/update/ingress_version && \
 	 go run update_ingress_version.go)
 
+.PHONY: update-inspektor-gadget-version
+update-inspektor-gadget-version:
+	(cd hack/update/inspektor_gadget_version && \
+	 go run update_inspektor_gadget_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \

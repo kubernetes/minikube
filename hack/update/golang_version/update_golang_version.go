@@ -61,6 +61,7 @@ var (
 		".github/workflows/update-gotestsum-version.yml":              workflowReplace,
 		".github/workflows/update-hugo-version.yml":                   workflowReplace,
 		".github/workflows/update-ingress-version.yml":                workflowReplace,
+		".github/workflows/update-inspektor-gadget-version.yml":       workflowReplace,
 		".github/workflows/update-k8s-versions.yml":                   workflowReplace,
 		".github/workflows/update-kubeadm-constants.yml":              workflowReplace,
 		".github/workflows/update-kubernetes-versions-list.yml":       workflowReplace,
