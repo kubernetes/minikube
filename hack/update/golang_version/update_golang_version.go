@@ -53,6 +53,7 @@ var (
 		".github/workflows/update-cri-o-version.yml":                  workflowReplace,
 		".github/workflows/update-docker-version.yml":                 workflowReplace,
 		".github/workflows/update-docsy-version.yml":                  workflowReplace,
+		".github/workflows/update-flannel-version.yml":                workflowReplace,
 		".github/workflows/update-gcp-auth-version.yml":               workflowReplace,
 		".github/workflows/update-gh-version.yml":                     workflowReplace,
 		".github/workflows/update-golang-version.yml":                 workflowReplace,
