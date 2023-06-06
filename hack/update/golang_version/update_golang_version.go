@@ -47,6 +47,7 @@ var (
 		".github/workflows/time-to-k8s.yml":                           workflowReplace,
 		".github/workflows/translations.yml":                          workflowReplace,
 		".github/workflows/update-buildkit-version.yml":               workflowReplace,
+		".github/workflows/update-calico-version.yml":                 workflowReplace,
 		".github/workflows/update-cloud-spanner-emulator-version.yml": workflowReplace,
 		".github/workflows/update-cni-plugins-version.yml":            workflowReplace,
 		".github/workflows/update-containerd-version.yml":             workflowReplace,
