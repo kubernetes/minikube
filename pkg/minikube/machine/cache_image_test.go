@@ -34,7 +34,7 @@ func TestMergeImageLists(t *testing.T) {
 	// test case 0: from #16556
 	// e.g. on node 1 image1 have an item with k8s.gcr.io/image1:v1.0.0 tag
 	// and another item with registry.k8s.io/image1:v1.0.0 tag too
-	testCase0 := CacheImageTestCase{
+	testCases := []CacheImageTestCase{
 		description: "same images with multiple tags appear on one node",
 		images: [][]cruntime.ListImage{
 			[]cruntime.ListImage{
