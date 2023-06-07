@@ -773,21 +773,18 @@ func mergeImageLists(lists [][]cruntime.ListImage) []cruntime.ListImage {
 	for _, list := range lists {
 		for _, img := range list {
 			img := img
-			if _, ok := images[img.ID]; !ok {
+			_, existingImg := images[img.ID]
+			if !existingImg {
 				images[img.ID] = &img
-				for _, repoTag := range img.RepoTags {
-					imageTagAndIDSet[img.ID+repoTag] = struct{}{}
-				}
-				continue
 			}
 			for _, repoTag := range img.RepoTags {
 				if _, ok := imageTagAndIDSet[img.ID+repoTag]; ok {
 					continue
 				}
-				// if there is any repo tag which is not included in the map's corresponding item
-				// add it to the repo tag list
 				imageTagAndIDSet[img.ID+repoTag] = struct{}{}
-				images[img.ID].RepoTags = append(images[img.ID].RepoTags, repoTag)
+				if existingImg {
+					images[img.ID].RepoTags = append(images[img.ID].RepoTags, repoTag)
+				}
 			}
 		}
 
