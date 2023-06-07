@@ -2328,7 +2328,7 @@ func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 	time.Sleep(3 * time.Second)
 
 	// try to expose a service, this action is supposed to fail
-	rrService, err := Run(t, exec.CommandContext(context.TODO(), Target(), "service", "invalid-svc", "-p", profile))
+	rrService, err := Run(t, exec.CommandContext(ctx, Target(), "service", "invalid-svc", "-p", profile))
 	if err == nil || rrService.ExitCode == 0 {
 		t.Fatalf("%s should have failed: ", rrService.Command())
 	}
