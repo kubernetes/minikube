@@ -971,7 +971,7 @@
 	"scheduled stop is not supported on the none driver, skipping scheduling": "none ドライバーでは予定停止がサポートされていません (予約をスキップします)",
 	"service {{.namespace_name}}/{{.service_name}} has no node port": "サービス {{.namespace_name}}/{{.service_name}} は NodePort がありません",
 	"set tunnel bind address, empty or '*' indicates the tunnel should be available for all interfaces": "トンネル バインド アドレスを設定します。空または '*' は、トンネルがすべてのインターフェイスで使用可能であることを示します",
-	"socket_vmnet was installed with an incorrect group, delete this cluster 'minikube delete' and update the group 'sudo chown root:$(stat -f \"%Sg\" ~) /var/run/socket_vmnet' and try again.": "",
+	"socket_vmnet was installed with an incorrect group, delete this cluster 'minikube delete' and update the group 'sudo chown root:$(id -ng) /var/run/socket_vmnet' and try again.": "",
 	"socket_vmnet was not found on the system, resolve by:\n\n\t\tOption 1) Installing socket_vmnet:\n\n\t\t  https://minikube.sigs.k8s.io/docs/drivers/qemu/#networking\n\n\t\tOption 2) Using the user network:\n\n\t\t  minikube start{{.profile}} --driver qemu --network user": "",
 	"stat failed": "stat に失敗しました",
 	"status json failure": "status json に失敗しました",
