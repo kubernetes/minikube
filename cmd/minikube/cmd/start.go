@@ -2009,7 +2009,7 @@ func isTwoDigitSemver(ver string) bool {
 }
 
 func startNerdctld() {
-	// for containerd runtime using ssh, we have installed nerdctld and nerdctl into kicbase (linux amd-64 only)
+	// for containerd runtime using ssh, we have installed nerdctld and nerdctl into kicbase
 	// These things will be included in the ISO/Base image in the future versions
 
 	// copy these binaries to the path of the containerd node

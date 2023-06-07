@@ -78,12 +78,11 @@ func download(src, dst string) error {
 	}
 	tmpDst := dst + ".download"
 	client := &getter.Client{
-		Src:           src,
-		Dst:           tmpDst,
-		Dir:           false,
-		Mode:          getter.ClientModeFile,
-		Options:       clientOptions,
-		Decompressors: map[string]getter.Decompressor{},
+		Src:     src,
+		Dst:     tmpDst,
+		Dir:     false,
+		Mode:    getter.ClientModeFile,
+		Options: clientOptions,
 		Getters: map[string]getter.Getter{
 			"file":  &getter.FileGetter{Copy: false},
 			"http":  &getter.HttpGetter{Netrc: false},

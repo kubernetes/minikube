@@ -169,7 +169,7 @@ func TestForceSystemdEnv(t *testing.T) {
 func TestDockerEnvContainerd(t *testing.T) {
 	t.Log("running with", ContainerRuntime(), DockerDriver(), runtime.GOOS, runtime.GOARCH)
 	if ContainerRuntime() != constants.Containerd || !DockerDriver() || runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
-		t.Skip("skipping: TestDockerEnvContainerd can only be run with the containerd amd64 runtime")
+		t.Skip("skipping: TestDockerEnvContainerd can only be run with the containerd amd64 runtime on Docker driver")
 	}
 	profile := UniqueProfileName("dockerenv")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
@@ -218,6 +218,9 @@ func TestDockerEnvContainerd(t *testing.T) {
 	}
 	dockerHost := groups[1]
 	segments := strings.Split(dockerHost, ":")
+	if len(segments) < 3 {
+		t.Errorf("failed to acquire dockerHost, output is %s", dockerHost)
+	}
 	port := segments[2]
 
 	// clear remaining keys
@@ -236,7 +239,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 
 	result, err = Run(t, cmd)
 	if err != nil {
-		t.Fatalf("failed to execute 'docker version',error: %v, output:%s", err, result.Output())
+		t.Fatalf("failed to execute 'docker version', error: %v, output: %s", err, result.Output())
 	}
 	// if we are really connecting to nerdctld inside node, docker version output should have word 'nerdctl'
 	// If everything works properly, in the output of `docker version` you should be able to see something like
@@ -256,7 +259,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 	}
 
 	// now try to build an image
-	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s  DOCKER_BUILDKIT=0 docker build -t local/minikube-dockerenv-conatinerd-test:latest testdata/docker-env", sshAuthSock, sshAgentPid, dockerHost))
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s DOCKER_BUILDKIT=0 docker build -t local/minikube-dockerenv-conatinerd-test:latest testdata/docker-env", sshAuthSock, sshAgentPid, dockerHost))
 	result, err = Run(t, cmd)
 	if err != nil {
 		t.Errorf("failed to build images, error: %v, output:%s", err, result.Output())
@@ -266,10 +269,9 @@ func TestDockerEnvContainerd(t *testing.T) {
 	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s docker image ls", sshAuthSock, sshAgentPid, dockerHost))
 	result, err = Run(t, cmd)
 	if err != nil {
-		t.Fatalf("failed to execute 'docker image ls',error: %v, output:%s", err, result.Output())
+		t.Fatalf("failed to execute 'docker image ls', error: %v, output: %s", err, result.Output())
 	}
-	fmt.Println(result.Output())
 	if !strings.Contains(result.Output(), "local/minikube-dockerenv-conatinerd-test") {
-		t.Fatal("failed to detect image'local/minikube-dockerenv-conatinerd-test' in output of docker image ls")
+		t.Fatal("failed to detect image 'local/minikube-dockerenv-conatinerd-test' in output of docker image ls")
 	}
 }

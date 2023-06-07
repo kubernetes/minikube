@@ -309,14 +309,14 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		}
 		cr := co.Config.KubernetesConfig.ContainerRuntime
 		// nerdctld supports amd64 and arm64
-		if !(cr == constants.Docker || cr == constants.Containerd && (runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64")) {
-			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" or "containerd"(amd64/arm64) runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
-				out.V{"runtime": cr})
+		if !dockerEnvSupported(cr, driverName) {
+			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" or "containerd" runtime on amd64/arm64 architectures, but this cluster is  configured to use the "{{.runtime}}" runtime on {{.arch}}.`,
+				out.V{"runtime": cr, "arch": runtime.GOARCH})
 		}
-		
+
 		// for the sake of docker-env command, download and start nerdctl and nerdctld
 		if cr == constants.Containerd {
-			out.WarningT("Using docker-env command with containerd-runtime  is a highly experimental feature, and please provide feedback or contribute to make it better")
+			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 			startNerdctld()
 		}
 
@@ -639,6 +639,20 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
+}
+
+func dockerEnvSupported(containerRuntime, driverName string) bool {
+	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
+		return false
+	}
+	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
+		return false
+	}
+	// we only support containerd-env on the Docker driver
+	if containerRuntime == constants.Containerd && driverName != driver.Docker {
+		return false
+	}
+	return true
 }
 
 func init() {
