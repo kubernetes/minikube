@@ -220,7 +220,7 @@ func (clnt *Clnt) recv() {
 				if r.Rc.Type != Rerror {
 					r.Err = &Error{"invalid response", EINVAL}
 					log.Printf("TTT %v\n", r.Tc)
-					log.Printf("RRR %v", r.Rc)
+					log.Printf("RRR %v\n", r.Rc)
 				} else {
 					if r.Err == nil {
 						r.Err = &Error{r.Rc.Error, r.Rc.Errornum}
