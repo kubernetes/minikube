@@ -929,7 +929,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := r.Preload(cfg); err != nil {
-		klog.Infof("preload failed, will try to load cached images: %v", err)
+		switch err.(type) {
+		case *cruntime.ErrISOFeature:
+			out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+		default:
+			klog.Infof("preload failed, will try to load cached images: %v", err)
+		}
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
