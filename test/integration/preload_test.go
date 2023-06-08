@@ -48,12 +48,7 @@ func TestPreload(t *testing.T) {
 
 	// Now, pull the busybox image into minikube
 	image := "gcr.io/k8s-minikube/busybox"
-	var cmd *exec.Cmd
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "pull", image)
-	} else {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "pull", image)
-	}
+	cmd := exec.CommandContext(ctx, Target(), "-p", profile, "image", "pull", image)
 	rr, err = Run(t, cmd)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -72,11 +67,7 @@ func TestPreload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
-	if ContainerRuntime() == "docker" {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images")
-	} else {
-		cmd = exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "sudo", "crictl", "image", "ls")
-	}
+	cmd = exec.CommandContext(ctx, Target(), "-p", profile, "image", "list")
 	rr, err = Run(t, cmd)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
