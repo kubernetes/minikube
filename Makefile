@@ -1143,6 +1143,11 @@ update-calico-version:
 	(cd hack/update/calico_version && \
 	 go run update_calico_version.go)
 
+.PHONY: update-hide-minikube-bot-comments-version
+update-hide-minikube-bot-comments-version:
+	(cd hack/update/hide_minikube_bot_comments_version && \
+	 go run update_hide_minikube_bot_comments_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
