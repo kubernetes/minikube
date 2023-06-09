@@ -85,6 +85,7 @@ type Driver struct {
 	MACAddress            string
 	SocketVMNetPath       string
 	SocketVMNetClientPath string
+	ExtraDisks            int
 }
 
 func (d *Driver) GetMachineName() string {
@@ -269,6 +270,16 @@ func (d *Driver) Create() error {
 		}
 	}
 
+	if d.ExtraDisks > 0 {
+		log.Info("Creating extra disk images...")
+		for i := 0; i < d.ExtraDisks; i++ {
+			path := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
+			if err := pkgdrivers.CreateRawDisk(path, d.DiskSize); err != nil {
+				return err
+			}
+		}
+	}
+
 	log.Info("Starting QEMU VM...")
 	return d.Start()
 }
@@ -442,6 +453,15 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-device",
 			"virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
+	}
+
+	for i := 0; i < d.ExtraDisks; i++ {
+		// use a higher index for extra disks to reduce ID collision with current or future
+		// low-indexed devices (e.g., firmware, ISO CDROM, cloud config, and network device)
+		index := i + 10
+		startCmd = append(startCmd,
+			"-drive", fmt.Sprintf("file=%s,index=%d,media=disk,format=raw,if=virtio", pkgdrivers.ExtraDiskPath(d.BaseDriver, i), index),
+		)
 	}
 
 	if d.VirtioDrives {

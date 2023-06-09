@@ -463,7 +463,7 @@
 	"Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:": "",
 	"Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:": "",
 	"Number of CPUs allocated to the minikube VM": "Número de CPU asignadas a la VM de minikube",
-	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)": "",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "",
 	"Number of lines back to go within the log": "",
 	"OS release is {{.pretty_name}}": "",
 	"One of 'text', 'yaml' or 'json'.": "",

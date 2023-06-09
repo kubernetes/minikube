@@ -196,6 +196,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		MACAddress:            mac,
 		SocketVMNetPath:       cc.SocketVMnetPath,
 		SocketVMNetClientPath: cc.SocketVMnetClientPath,
+		ExtraDisks:            cc.ExtraDisks,
 	}, nil
 }
 
