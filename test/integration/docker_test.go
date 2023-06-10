@@ -168,7 +168,7 @@ func TestForceSystemdEnv(t *testing.T) {
 // TestDockerEnvContainerd makes sure that minikube docker-env command works when the runtime is containerd
 func TestDockerEnvContainerd(t *testing.T) {
 	t.Log("running with", ContainerRuntime(), DockerDriver(), runtime.GOOS, runtime.GOARCH)
-	if ContainerRuntime() != constants.Containerd || !DockerDriver() || runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+	if ContainerRuntime() != constants.Containerd || !DockerDriver() || runtime.GOOS != "linux" {
 		t.Skip("skipping: TestDockerEnvContainerd can only be run with the containerd amd64 runtime on Docker driver")
 	}
 	profile := UniqueProfileName("dockerenv")

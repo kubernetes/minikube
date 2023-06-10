@@ -309,15 +309,23 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		}
 		cr := co.Config.KubernetesConfig.ContainerRuntime
 		// nerdctld supports amd64 and arm64
-		if !dockerEnvSupported(cr, driverName) {
-			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" or "containerd" runtime on amd64/arm64 architectures, but this cluster is  configured to use the "{{.runtime}}" runtime on {{.arch}}.`,
-				out.V{"runtime": cr, "arch": runtime.GOARCH})
+		if err := dockerEnvSupported(cr, driverName); err != nil {
+			exit.Message(reason.Usage, err.Error())
 		}
 
-		// for the sake of docker-env command, download and start nerdctl and nerdctld
+		// for the sake of docker-env command, start nerdctl and nerdctld
 		if cr == constants.Containerd {
 			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 			startNerdctld()
+
+			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
+			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
+			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
+			sshAdd = true
+			sshHost = true
+			// user also need to execute ssh-agent bash and minikube ssh-host --append-known before this
+			// so remind them to do so
+			out.WarningT("Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it")
 		}
 
 		r := co.CP.Runner
@@ -641,18 +649,18 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	return c.CombinedOutput()
 }
 
-func dockerEnvSupported(containerRuntime, driverName string) bool {
-	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
-		return false
-	}
+func dockerEnvSupported(containerRuntime, driverName string) error {
 	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
-		return false
+		return fmt.Errorf("the docker-env command only supports amd64 & arm64 architectures")
+	}
+	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
+		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
 	}
 	// we only support containerd-env on the Docker driver
 	if containerRuntime == constants.Containerd && driverName != driver.Docker {
-		return false
+		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
 	}
-	return true
+	return nil
 }
 
 func init() {
