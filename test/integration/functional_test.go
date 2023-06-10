@@ -2315,6 +2315,9 @@ func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 
 	// try to start an invalid service. This service is linked to a pod whose image name is invalid, so this pod will never become running
 	rrApply, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rrApply.Command(), err)
+	}
 	defer func() {
 		// Cleanup test configurations in advance of future tests
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
@@ -2322,9 +2325,6 @@ func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("clean up %s failed: %v", rr.Command(), err)
 		}
 	}()
-	if err != nil {
-		t.Fatalf("%s failed: %v", rrApply.Command(), err)
-	}
 	time.Sleep(3 * time.Second)
 
 	// try to expose a service, this action is supposed to fail
