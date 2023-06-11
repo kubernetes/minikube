@@ -323,7 +323,6 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 		{driver.VirtualBox, false},
 		{driver.HyperKit, false},
 		{driver.VMware, false},
-		{driver.VMwareFusion, false},
 		{driver.HyperV, false},
 		{driver.Parallels, false},
 		{"something_invalid", false},
