@@ -696,6 +696,7 @@
 	"The none driver is not compatible with multi-node clusters.": "none ドライバーはマルチノードクラスターと互換性がありません。",
 	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.\n\t\t\n\t\tPlease install cri-dockerd using these instructions:\n\n\t\thttps://github.com/Mirantis/cri-dockerd": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は cri-dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して cri-dockerd をインストールしてください:\n\n\t\thttps://github.com/Mirantis/cri-dockerd",
 	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.\n\t\t\n\t\tPlease install dockerd using these instructions:\n\n\t\thttps://docs.docker.com/engine/install/": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して dockerd をインストールしてください:\n\n\t\thttps://docs.docker.com/engine/install/",
+	"The none driver with Kubernetes v1.24+ requires containernetworking-plugins.\n\n\t\tPlease install containernetworking-plugins using these instructions:\n\n\t\thttps://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver": "",
 	"The number of nodes to spin up. Defaults to 1.": "起動するノード数。デフォルトは 1。",
 	"The output format. One of 'json', 'table'": "出力形式。'json', 'table' のいずれか",
 	"The path on the file system where the docs in markdown need to be saved": "markdown で書かれたドキュメントの保存先のファイルシステムパス",

@@ -506,6 +506,16 @@ var (
 		https://docs.docker.com/engine/install/`),
 		Style: style.Docker,
 	}
+	NotFoundCNIPlugins = Kind{
+		ID:       "NOT_FOUND_CNI_PLUGINS",
+		ExitCode: ExProgramNotFound,
+		Advice: translate.T(`The none driver with Kubernetes v1.24+ requires containernetworking-plugins.
+
+		Please install containernetworking-plugins using these instructions:
+
+		https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver`),
+		Style: style.CNI,
+	}
 	NotFoundSocketVMNet = Kind{
 		ID:       "NOT_FOUND_SOCKET_VMNET",
 		ExitCode: ExProgramNotFound,

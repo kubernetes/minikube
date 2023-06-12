@@ -124,7 +124,7 @@ func (r *Containerd) Available() error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check containerd availability")
 	}
-	return nil
+	return checkCNIPlugins(r.KubernetesVersion)
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
