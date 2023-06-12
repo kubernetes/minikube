@@ -409,6 +409,9 @@ service check timed out while starting minikube dashboard
 "SVC_TIMEOUT" (Exit code ExSvcTimeout)  
 minikube was unable to access a service  
 
+"SVC_UNREACHABLE" (Exit code ExSvcNotFound)  
+minikube found that the service has no available pods  
+
 "SVC_LIST" (Exit code ExSvcError)  
 minikube failed to list services for the specified namespace  
 

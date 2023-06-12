@@ -400,6 +400,9 @@ Steps:
 asserts that the `minikube license` command downloads and untars the licenses
 Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
 
+#### validateInvalidService
+makes sure minikube will not start a tunnel for an unavailable service that has no running pods
+
 #### validateMountCmd
 verifies the minikube mount command works properly
 for the platforms that support it, we're testing:
@@ -696,9 +699,6 @@ verifies that minikube pause works
 
 ## TestInsufficientStorage
 makes sure minikube status displays the correct info if there is insufficient disk space on the machine
-
-## TestInvalidService
-makes sure minikube will not start a tunnel for a unavailable service who has no running pods
 
 ## TestRunningBinaryUpgrade
 upgrades a running legacy cluster to minikube at HEAD
