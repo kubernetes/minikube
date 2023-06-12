@@ -955,6 +955,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "dry-run Modus. Validiert die Konfiguration, aber ändert den System Zustand nicht",
 	"dry-run validation complete!": "dry-run Validierung komplett!",
 	"enable failed": "aktivieren fehlgeschlagen",
+	"error checking service": "",
 	"error creating clientset": "Fehler beim Anlegen des Clientsets",
 	"error creating urls": "",
 	"error getting defaults: {{.error}}": "",

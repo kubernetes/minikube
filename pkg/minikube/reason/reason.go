@@ -431,6 +431,8 @@ var (
 	SvcCheckTimeout = Kind{ID: "SVC_CHECK_TIMEOUT", ExitCode: ExSvcTimeout}
 	// minikube was unable to access a service
 	SvcTimeout = Kind{ID: "SVC_TIMEOUT", ExitCode: ExSvcTimeout}
+	// minikube found that the service has no available pods
+	SvcUnreachable = Kind{ID: "SVC_UNREACHABLE", ExitCode: ExSvcNotFound}
 	// minikube failed to list services for the specified namespace
 	SvcList = Kind{ID: "SVC_LIST", ExitCode: ExSvcError}
 	// minikube failed to start a tunnel

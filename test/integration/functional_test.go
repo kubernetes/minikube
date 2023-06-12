@@ -106,6 +106,7 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", validateComponentHealth},
 			{"LogsCmd", validateLogsCmd},
 			{"LogsFileCmd", validateLogsFileCmd},
+			{"InvalidService", validateInvalidService},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -2306,5 +2307,29 @@ func validateLicenseCmd(ctx context.Context, t *testing.T, _ string) {
 	expectedString := "Apache License"
 	if !strings.Contains(string(data), expectedString) {
 		t.Errorf("expected license file to contain %q, but was not found", expectedString)
+	}
+}
+
+// validateInvalidService makes sure minikube will not start a tunnel for an unavailable service that has no running pods
+func validateInvalidService(ctx context.Context, t *testing.T, profile string) {
+
+	// try to start an invalid service. This service is linked to a pod whose image name is invalid, so this pod will never become running
+	rrApply, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rrApply.Command(), err)
+	}
+	defer func() {
+		// Cleanup test configurations in advance of future tests
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-f", filepath.Join(*testdataDir, "invalidsvc.yaml")))
+		if err != nil {
+			t.Fatalf("clean up %s failed: %v", rr.Command(), err)
+		}
+	}()
+	time.Sleep(3 * time.Second)
+
+	// try to expose a service, this action is supposed to fail
+	rrService, err := Run(t, exec.CommandContext(ctx, Target(), "service", "invalid-svc", "-p", profile))
+	if err == nil || rrService.ExitCode == 0 {
+		t.Fatalf("%s should have failed: ", rrService.Command())
 	}
 }
