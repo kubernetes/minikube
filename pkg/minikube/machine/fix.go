@@ -284,8 +284,6 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return machineExistsError(s, err, virtualbox.ErrMachineNotExist)
 	case driver.VMware:
 		return machineExistsState(s, err)
-	case driver.VMwareFusion:
-		return machineExistsState(s, err)
 	case driver.Docker:
 		return machineExistsDocker(s, err)
 	case driver.Mock:
