@@ -398,7 +398,7 @@ var (
 	IfDedicatedNetwork = Kind{ID: "IF_DEDICATED_NETWORK", ExitCode: ExLocalNetworkError}
 	// minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall
 	IfBootpdFirewall = Kind{
-		ID:       "ID_BOOTPD_FIREWALL",
+		ID:       "IF_BOOTPD_FIREWALL",
 		ExitCode: ExLocalNetworkError,
 		Advice: translate.T(`Your firewall is likely blocking bootpd, to unblock it run:
 	sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
