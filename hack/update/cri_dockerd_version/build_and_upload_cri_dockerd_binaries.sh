@@ -16,14 +16,14 @@
 
 set -eux -o pipefail
 
-if [ "$#" -ne 3 ]; then
-  echo "Usage: update_cri_dockerd_version.sh <version> <commit> <archlist>" >&2
+if [ "$#" -ne 1 ]; then
+  echo "Usage: build_and_upload_cri_dockerd_binaries.sh <archlist>" >&2
   exit 1
 fi
 
-readonly version=$1
-readonly commit=$2
-archlist=$3
+readonly version=$(egrep "CRI_DOCKERD_VERSION=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
+readonly commit=$(egrep "CRI_DOCKERD_COMMIT=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
+archlist=$1
 
 IFS=, read -a archarray <<< "$archlist"
 

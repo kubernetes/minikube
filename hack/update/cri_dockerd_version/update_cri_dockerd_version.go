@@ -17,16 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
+	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
@@ -76,28 +76,21 @@ type Data struct {
 }
 
 func main() {
-	if len(os.Args) < 4 {
-		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <commit> <archlist>")
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	stable, _, _, err := update.GHReleases(ctx, "Mirantis", "cri-dockerd")
+	if err != nil {
+		klog.Fatalf("Unable to get stable version: %v", err)
 	}
 
-	version := os.Args[1]
-	commit := os.Args[2]
-	archs := os.Args[3]
+	version := strings.TrimPrefix(stable.Tag, "v")
 
-	if !semver.IsValid(version) {
-		klog.Fatal(fmt.Errorf("invalid version %v", version))
-	}
-	version = strings.Replace(version, "v", "", 1)
-
-	data := Data{Version: version, FullCommit: commit, ShortCommit: commit[:7]}
+	data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
 
 	update.Apply(schema, data)
 
-	if out, err := exec.Command("./update_cri_dockerd_version.sh", version, commit, archs).CombinedOutput(); err != nil {
-		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
-	}
-
-	if err := updateHashFiles(commit); err != nil {
+	if err := updateHashFiles(stable.Commit); err != nil {
 		log.Fatalf("failed to update hash files: %v", err)
 	}
 }
