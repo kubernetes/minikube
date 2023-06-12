@@ -5,6 +5,6 @@ jobs:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-20.04
     steps:
-      - uses: spowelljr/hide-minikube-bot-comments@3e2cbc9fcd07d17eeea7dab7ac90a27cb29f8bce
+      - uses: spowelljr/hide-minikube-bot-comments@de281e1bb630835cb5e6f155198e2527223c0dd8
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
