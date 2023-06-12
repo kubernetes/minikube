@@ -40,7 +40,7 @@ func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 	h, err := machine.LoadHost(m.machineAPI, m.machineName)
 
 	if err != nil {
-		err = errors.Wrapf(err, "error loading docker-machine host for: %s", m.machineName)
+		err = errors.Wrapf(err, "error loading machine host for: %s", m.machineName)
 		return Unknown, nil, err
 	}
 
