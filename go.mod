@@ -67,7 +67,7 @@ require (
 	golang.org/x/term v0.8.0
 	golang.org/x/text v0.9.0
 	gonum.org/v1/plot v0.13.0
-	google.golang.org/api v0.126.0
+	google.golang.org/api v0.127.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.2
 	k8s.io/apimachinery v0.27.2
@@ -147,7 +147,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20220318212150-b2ab0324ddda // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
