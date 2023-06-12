@@ -7,7 +7,6 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.15.0
-	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/briandowns/spinner v1.11.1
@@ -33,7 +32,6 @@ require (
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/cpuid v1.2.0
-	github.com/machine-drivers/docker-machine-driver-vmware v0.1.5
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mitchellh/go-ps v1.0.0
@@ -87,6 +85,7 @@ require (
 	github.com/docker/cli v24.0.2+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v43 v43.0.0
+	github.com/hashicorp/go-version v1.6.0
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
@@ -152,7 +151,6 @@ require (
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
