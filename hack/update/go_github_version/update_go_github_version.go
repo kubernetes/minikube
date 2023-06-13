@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
 	"time"
 
@@ -54,12 +53,6 @@ func main() {
 	data := Data{Version: major}
 
 	update.Apply(generateSchema(), data)
-
-	packageName := fmt.Sprintf("github.com/google/go-github/%s", major)
-
-	if err := exec.Command("go", "get", packageName).Run(); err != nil {
-		klog.Fatalf("failed to run go get: %v", err)
-	}
 
 	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
 		klog.Fatalf("failed to run go mod tidy: %v", err)
