@@ -237,7 +237,6 @@
 	"Failed to build image": "",
 	"Failed to cache and load images": "",
 	"Failed to cache binaries": "",
-	"Failed to cache images": "",
 	"Failed to cache images to tar": "",
 	"Failed to cache kubectl": "",
 	"Failed to change permissions for {{.minikube_dir_path}}: {{.error}}": "",
