@@ -318,7 +318,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	// It places here because cluster config is required to get the old version.
 	if cmd.Flags().Changed(config.AddonListFlag) {
 		if k8sVersion == constants.NoKubernetesVersion || viper.GetBool(noKubernetes) {
-			exit.Message(reason.Usage, "You cannot enable the addons with a cluster without Kubernetes, to re-configure your cluster with Kubernetes, run this command: minikube start --no-kubernetes=false")
+			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
 		}
 	}
 
