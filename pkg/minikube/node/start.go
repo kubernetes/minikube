@@ -374,7 +374,9 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
-	waitDownloadKicBaseImage(&kicGroup)
+	if driver.IsKIC(cc.Driver) {
+		waitDownloadKicBaseImage(&kicGroup)
+	}
 
 	return startMachine(cc, n, delOnFail)
 }
