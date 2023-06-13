@@ -64,6 +64,12 @@ var (
 				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`CRI_DOCKERD_VERSION=.*`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=.*`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
+			},
+		},
 	}
 )
 
