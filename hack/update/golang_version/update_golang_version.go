@@ -36,41 +36,6 @@ var (
 	}
 
 	schema = map[string]update.Item{
-		".github/workflows/build.yml":                                 workflowReplace,
-		".github/workflows/docs.yml":                                  workflowReplace,
-		".github/workflows/functional_verified.yml":                   workflowReplace,
-		".github/workflows/leaderboard.yml":                           workflowReplace,
-		".github/workflows/master.yml":                                workflowReplace,
-		".github/workflows/pr.yml":                                    workflowReplace,
-		".github/workflows/sync-minikube.yml":                         workflowReplace,
-		".github/workflows/time-to-k8s-public-chart.yml":              workflowReplace,
-		".github/workflows/time-to-k8s.yml":                           workflowReplace,
-		".github/workflows/translations.yml":                          workflowReplace,
-		".github/workflows/update-buildkit-version.yml":               workflowReplace,
-		".github/workflows/update-calico-version.yml":                 workflowReplace,
-		".github/workflows/update-cloud-spanner-emulator-version.yml": workflowReplace,
-		".github/workflows/update-cni-plugins-version.yml":            workflowReplace,
-		".github/workflows/update-containerd-version.yml":             workflowReplace,
-		".github/workflows/update-cri-o-version.yml":                  workflowReplace,
-		".github/workflows/update-docker-version.yml":                 workflowReplace,
-		".github/workflows/update-docsy-version.yml":                  workflowReplace,
-		".github/workflows/update-flannel-version.yml":                workflowReplace,
-		".github/workflows/update-gcp-auth-version.yml":               workflowReplace,
-		".github/workflows/update-gh-version.yml":                     workflowReplace,
-		".github/workflows/update-golang-version.yml":                 workflowReplace,
-		".github/workflows/update-golint-version.yml":                 workflowReplace,
-		".github/workflows/update-gopogh-version.yml":                 workflowReplace,
-		".github/workflows/update-gotestsum-version.yml":              workflowReplace,
-		".github/workflows/update-hugo-version.yml":                   workflowReplace,
-		".github/workflows/update-ingress-version.yml":                workflowReplace,
-		".github/workflows/update-inspektor-gadget-version.yml":       workflowReplace,
-		".github/workflows/update-k8s-versions.yml":                   workflowReplace,
-		".github/workflows/update-kubeadm-constants.yml":              workflowReplace,
-		".github/workflows/update-kubernetes-versions-list.yml":       workflowReplace,
-		".github/workflows/update-metrics-server-version.yml":         workflowReplace,
-		".github/workflows/update-runc-version.yml":                   workflowReplace,
-		".github/workflows/update-ubuntu-version.yml":                 workflowReplace,
-		".github/workflows/yearly-leaderboard.yml":                    workflowReplace,
 		"go.mod": {
 			Replace: map[string]string{
 				`(?m)^go .*`: `go {{.StableVersionMM}}`,
@@ -117,6 +82,8 @@ type Data struct {
 }
 
 func main() {
+	addGitHubWorkflowFiles()
+
 	// get Golang stable version
 	stable, stableMM, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
@@ -186,4 +153,15 @@ func updateGoHashFile(version string) error {
 		return fmt.Errorf("failed to write to go.hash file: %v", err)
 	}
 	return nil
+}
+
+func addGitHubWorkflowFiles() {
+	files, err := os.ReadDir("../../../.github/workflows")
+	if err != nil {
+		klog.Fatalf("failed to read workflows dir: %v", err)
+	}
+	for _, f := range files {
+		filename := ".github/workflows/" + f.Name()
+		schema[filename] = workflowReplace
+	}
 }
