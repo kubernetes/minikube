@@ -413,23 +413,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
 	}
 
-	// Preload is overly invasive for bare metal, and caching is not meaningful.
-	// KIC handles preload elsewhere.
-	if driver.IsVM(cc.Driver) {
-		if err := cr.Preload(cc); err != nil {
-			switch err.(type) {
-			case *cruntime.ErrISOFeature:
-				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
-			default:
-				klog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
-			}
-
-			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.Error(reason.RuntimeCache, "Failed to cache images", err)
-			}
-		}
-	}
-
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
 	// for docker container runtime: ensure containerd is properly configured by calling Enable(), as docker could be bound to containerd
 	// it will also "soft" start containerd, but it will not disable others; docker will disable containerd if not used in the next step
