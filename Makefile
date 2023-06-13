@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.30.1-1686096373-16019
+ISO_VERSION ?= v1.30.1-1686592820-14689
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -708,12 +708,10 @@ KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
-CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
-CRI_DOCKERD_COMMIT ?= $(shell egrep "CRI_DOCKERD_COMMIT=" deploy/kicbase/Dockerfile | cut -d \" -f2)
-.PHONY: update-cri-dockerd
-update-cri-dockerd:
+.PHONY: build-and-upload-cri-dockerd-binaries
+build-and-upload-cri-dockerd-binaries:
 	(cd hack/update/cri_dockerd_version && \
-	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(CRI_DOCKERD_COMMIT) $(KICBASE_ARCH))
+	 ./build_and_upload_cri_dockerd_binaries.sh $(KICBASE_ARCH))
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
@@ -1142,6 +1140,11 @@ update-inspektor-gadget-version:
 update-calico-version:
 	(cd hack/update/calico_version && \
 	 go run update_calico_version.go)
+
+.PHONY: update-cri-dockerd-version
+update-cri-dockerd-version:
+	(cd hack/update/cri_dockerd_version && \
+	 go run update_cri_dockerd_version.go)
 
 .PHONY: update-go-github-version
 update-go-github-version:

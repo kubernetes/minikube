@@ -370,7 +370,7 @@ minikube failed to access an ssh client on the host machine
 "IF_DEDICATED_NETWORK" (Exit code ExLocalNetworkError)  
 minikube failed to create a dedicated network  
 
-"ID_BOOTPD_FIREWALL" (Exit code ExLocalNetworkError)  
+"IF_BOOTPD_FIREWALL" (Exit code ExLocalNetworkError)  
 minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall  
 
 "INET_CACHE_BINARIES" (Exit code ExInternetError)  

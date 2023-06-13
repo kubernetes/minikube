@@ -374,7 +374,9 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
-	waitDownloadKicBaseImage(&kicGroup)
+	if driver.IsKIC(cc.Driver) {
+		waitDownloadKicBaseImage(&kicGroup)
+	}
 
 	return startMachine(cc, n, delOnFail)
 }
@@ -411,23 +413,6 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	// make sure container runtime is restarted afterwards for these changes to take effect
 	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
 		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
-	}
-
-	// Preload is overly invasive for bare metal, and caching is not meaningful.
-	// KIC handles preload elsewhere.
-	if driver.IsVM(cc.Driver) {
-		if err := cr.Preload(cc); err != nil {
-			switch err.(type) {
-			case *cruntime.ErrISOFeature:
-				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
-			default:
-				klog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
-			}
-
-			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.Error(reason.RuntimeCache, "Failed to cache images", err)
-			}
-		}
 	}
 
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")

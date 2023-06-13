@@ -273,7 +273,6 @@
 	"Failed to cache ISO": "ISO 캐싱에 실패하였습니다",
 	"Failed to cache and load images": "이미지 캐싱 및 로딩에 실패하였습니다",
 	"Failed to cache binaries": "바이너리 캐싱에 실패하였습니다",
-	"Failed to cache images": "",
 	"Failed to cache images to tar": "이미지를 tar 로 캐싱하는 데 실패하였습니다",
 	"Failed to cache kubectl": "kubectl 캐싱에 실패하였습니다",
 	"Failed to change permissions for {{.minikube_dir_path}}: {{.error}}": "{{.minikube_dir_path}} 의 권한 변경에 실패하였습니다: {{.error}}",
