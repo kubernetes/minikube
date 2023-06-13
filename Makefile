@@ -1146,6 +1146,11 @@ update-cri-dockerd-version:
 	(cd hack/update/cri_dockerd_version && \
 	 go run update_cri_dockerd_version.go)
 
+.PHONY: update-go-github-version
+update-go-github-version:
+	(cd hack/update/go_github_version && \
+	 go run update_go_github_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \

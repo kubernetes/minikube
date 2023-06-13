@@ -42,6 +42,7 @@ var dependencies = map[string]dependency{
 	"gcp-auth":         {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},
 	"gh":               {"hack/jenkins/installers/check_install_gh.sh", `GH_VERSION="(.*)"`},
 	"go":               {"Makefile", `GO_VERSION \?= (.*)`},
+	"go-github":        {"go.mod", `github\.com\/google\/go-github\/.* (.*)`},
 	"golint":           {"Makefile", `GOLINT_VERSION \?= (.*)`},
 	"gopogh":           {"hack/jenkins/common.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
 	"gotestsum":        {"hack/jenkins/installers/check_install_gotestsum.sh", `gotest\.tools/gotestsum@(.*)`},
