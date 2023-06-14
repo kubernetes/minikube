@@ -86,7 +86,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/cli v24.0.2+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/google/go-github/v43 v43.0.0
+	github.com/google/go-github/v53 v53.1.0
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
@@ -107,6 +107,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.39.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
@@ -114,6 +115,7 @@ require (
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/containerd/containerd v1.6.19 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
