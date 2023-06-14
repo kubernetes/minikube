@@ -857,6 +857,7 @@
 	"You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.": "既存の minikube クラスターに対して、ディスクサイズを変更できません。最初にクラスターを削除してください。",
 	"You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.": "既存の minikube クラスターに対して、メモリサイズを変更できません。最初にクラスターを削除してください。",
 	"You cannot change the static IP of an existing minikube cluster. Please first delete the cluster.": "",
+	"You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable": "",
 	"You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue.": "",
 	"You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue. The image pull secret has been imported.": "関連する JSON ファイルがないサービスアカウントで認証しています。GCP Auth アドオンは、作業を続行するために JSON ファイル付きクレデンシャルを要求します。イメージ取得シークレットがインポートされました。",
 	"You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI": "CNI 無効が選択されましたが、「{{.name}}」コンテナランタイムは CNI が必要です",

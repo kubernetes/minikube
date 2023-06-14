@@ -916,6 +916,7 @@
 	"You cannot change the disk size for an existing minikube cluster. Please first delete the cluster.": "Die Plattengröße eines existierenden Minikube Clusters kann nicht geändert werden. Bitte löschen Sie den Cluster zuerst.",
 	"You cannot change the memory size for an existing minikube cluster. Please first delete the cluster.": "Die Speichergröße eines existierenden Minikube Clusters kann nicht geändert werden. Bitte löschen Sie den Cluster zuerst.",
 	"You cannot change the static IP of an existing minikube cluster. Please first delete the cluster.": "",
+	"You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable": "",
 	"You have authenticated with a service account that does not have an associated JSON file. The GCP Auth addon requires credentials with a JSON file in order to continue.": "",
 	"You have authenticated with a service account that does not have an associated JSON. The GCP Auth requires credentials with a JSON file to in order to continue. The image pull secret has been imported.": "Sie haben sich mit einem Service Account authentifiziert, welcher kein zugehöriges JSON besitzt. GCP Auth benötigt Zugangsdaten in einer JSON-Datei um weitermachen zu können. Das Image Pull Secret wurde importiert.",
 	"You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI": "Sie haben den CNI Treiber deaktiviert, aber die \"{{.name}}\" Container Laufzeitumgebung benötigt ein CNI",
