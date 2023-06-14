@@ -451,8 +451,8 @@ choco install minikube
     _Make sure to run PowerShell as Administrator._
     ```powershell
     $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
-    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
-      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
     }
     ```
     <span style="color:blue">
@@ -476,8 +476,8 @@ choco install minikube
     _Make sure to run PowerShell as Administrator._
     ```powershell
     $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
-    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
-      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
