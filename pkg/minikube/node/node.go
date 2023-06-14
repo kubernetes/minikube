@@ -28,6 +28,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -74,27 +75,22 @@ func Add(cc *config.ClusterConfig, n config.Node, delOnFail bool) error {
 }
 
 // drainNode drains then deletes (removes) node from cluster.
-func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, _, err := Retrieve(cc, name)
-	if err != nil {
-		return n, errors.Wrap(err, "retrieve")
-	}
-
+func drainNode(n *config.Node, cc config.ClusterConfig) error {
 	m := config.MachineName(cc, *n)
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		return n, err
+		return err
 	}
 
 	// grab control plane to use kubeconfig
 	host, err := machine.LoadHost(api, cc.Name)
 	if err != nil {
-		return n, err
+		return err
 	}
 
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
-		return n, err
+		return err
 	}
 
 	// kubectl drain with extra options to prevent ending up stuck in the process
@@ -103,34 +99,41 @@ func drainNode(cc config.ClusterConfig, name string) (*config.Node, error) {
 	cmd := exec.Command("sudo", "KUBECONFIG=/var/lib/minikube/kubeconfig", kubectl, "drain", m,
 		"--force", "--grace-period=1", "--skip-wait-for-delete-timeout=1", "--disable-eviction", "--ignore-daemonsets", "--delete-emptydir-data", "--delete-local-data")
 	if _, err := runner.RunCmd(cmd); err != nil {
-		klog.Warningf("unable to drain node %q: %v", name, err)
+		klog.Warningf("unable to drain node %q: %v", n.Name, err)
 	} else {
-		klog.Infof("successfully drained node %q", name)
+		klog.Infof("successfully drained node %q", n.Name)
 	}
 
 	// kubectl delete
 	client, err := kapi.Client(cc.Name)
 	if err != nil {
-		return n, err
+		return err
 	}
 
 	// set 'GracePeriodSeconds: 0' option to delete node immediately (ie, w/o waiting)
 	var grace *int64
 	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{GracePeriodSeconds: grace})
 	if err != nil {
-		klog.Errorf("unable to delete node %q: %v", name, err)
-		return n, err
+		klog.Errorf("unable to delete node %q: %v", n.Name, err)
+		return err
 	}
-	klog.Infof("successfully deleted node %q", name)
+	klog.Infof("successfully deleted node %q", n.Name)
 
-	return n, nil
+	return nil
 }
 
 // Delete calls drainNode to remove node from cluster and deletes the host.
 func Delete(cc config.ClusterConfig, name string) (*config.Node, error) {
-	n, err := drainNode(cc, name)
+	n, _, err := Retrieve(cc, name)
 	if err != nil {
-		return n, err
+		return n, errors.Wrap(err, "retrieve")
+	}
+
+	if cc.KubernetesConfig.KubernetesVersion != constants.NoKubernetesVersion {
+		err := drainNode(n, cc)
+		if err != nil {
+			return n, err
+		}
 	}
 
 	m := config.MachineName(cc, *n)

@@ -139,6 +139,23 @@ func Running(name string) ClusterController {
 	}
 }
 
+// HealthyOrNoKubernetes is a cmd-friendly way to load a healthy cluster
+// also allowing clusters without Kubernetes.
+func HealthyOrNoKubernetes(name string) ClusterController {
+	api, cc := Partial(name)
+
+	// if we're in a cluster that has Kubernetes deployed, expect it to be healthy.
+	if cc.KubernetesConfig.KubernetesVersion != constants.NoKubernetesVersion {
+		return Healthy(name)
+	}
+
+	// otherwise just add a node without Kubernetes.
+	return ClusterController{
+		API:    api,
+		Config: cc,
+	}
+}
+
 // Healthy is a cmd-friendly way to load a healthy cluster
 func Healthy(name string) ClusterController {
 	co := Running(name)

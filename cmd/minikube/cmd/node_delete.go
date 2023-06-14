@@ -42,7 +42,7 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 		name := args[0]
 
-		co := mustload.Healthy(ClusterFlagValue())
+		co := mustload.HealthyOrNoKubernetes(ClusterFlagValue())
 		out.Step(style.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
 		n, err := node.Delete(*co.Config, name)
