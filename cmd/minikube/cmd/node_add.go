@@ -41,14 +41,25 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Healthy(ClusterFlagValue())
+		co := mustload.HealthyOrNoKubernetes(ClusterFlagValue())
 		cc := co.Config
 
 		if driver.BareMetal(cc.Driver) {
 			out.FailureT("none driver does not support multi-node clusters")
 		}
 
-		name := node.Name(len(cc.Nodes) + 1)
+		usedNodeNames := map[string]bool{}
+		for _, v := range cc.Nodes {
+			usedNodeNames[v.Name] = true
+		}
+
+		// find unused node name
+		ndx := 2
+		name := node.Name(ndx)
+		for usedNodeNames[name] {
+			ndx++
+			name = node.Name(ndx)
+		}
 
 		// for now control-plane feature is not supported
 		if cp {

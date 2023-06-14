@@ -311,8 +311,13 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
 	// You must delete the existing Node or change the name of this new joining Node"
 	if starter.PreExists {
+		n, _, err := Retrieve(*starter.Cfg, starter.Node.Name)
+		if err != nil {
+			return err
+		}
+
 		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
-		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
+		if err := drainNode(n, *starter.Cfg); err != nil {
 			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
 		}
 		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
