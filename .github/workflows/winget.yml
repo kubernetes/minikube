@@ -6,8 +6,9 @@ jobs:
   publish:
     runs-on: windows-latest # action can only be run on windows
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@v1
+      - uses: vedantmgoyal2009/winget-releaser@v2
         with:
           identifier: Kubernetes.minikube
           installers-regex: 'minikube-installer.exe'
           token: ${{ secrets.WINGET_TOKEN }}
+          fork-user: minikube-bot
