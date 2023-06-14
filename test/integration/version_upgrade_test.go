@@ -307,7 +307,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	legacyVersion := "v1.9.1"
+	legacyVersion := legacyVersion()
 
 	tf, err := installRelease(legacyVersion)
 	if err != nil {
