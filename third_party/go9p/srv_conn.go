@@ -105,7 +105,7 @@ func (conn *Conn) recv() {
 			}
 			fc, err, fcsize := Unpack(buf, conn.Dotu)
 			if err != nil {
-				log.Println(fmt.Sprintf("invalid packet : %v %v", err, buf))
+				log.Printf("invalid packet : %v %v\n", err, buf)
 				conn.conn.Close()
 				conn.close()
 				return

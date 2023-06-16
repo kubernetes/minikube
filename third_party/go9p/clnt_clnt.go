@@ -219,8 +219,8 @@ func (clnt *Clnt) recv() {
 			if r.Tc.Type != r.Rc.Type-1 {
 				if r.Rc.Type != Rerror {
 					r.Err = &Error{"invalid response", EINVAL}
-					log.Println(fmt.Sprintf("TTT %v", r.Tc))
-					log.Println(fmt.Sprintf("RRR %v", r.Rc))
+					log.Printf("TTT %v\n", r.Tc)
+					log.Printf("RRR %v\n", r.Rc)
 				} else {
 					if r.Err == nil {
 						r.Err = &Error{r.Rc.Error, r.Rc.Errornum}
