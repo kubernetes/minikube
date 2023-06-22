@@ -75,20 +75,13 @@ minikube start --driver qemu --network builtin
 {{% tab socket_vmnet %}}
 ##  `/var/db/dhcpd_leases` errors
 
-If you're seeing errors related to `/var/db/dhcpd_leases` we recommend the following:
+If you're seeing errors related to `/var/db/dhcpd_leases` your firewall is likely blocking the bootpd process.
 
-1. Uninstall `socket_vmnet`:
-
+Run the following to unblock bootpd from the macOS builtin firewall:
 ```shell
-# if installed via brew
-HOMEBREW=$(which brew) && sudo ${HOMEBREW_PREFIX}/bin/brew services stop socket_vmnet
-brew uninstall socket_vmnet
-
-# if installed from source
-cd socket_vmnet && sudo make uninstall
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd
 ```
-2. Reboot
-3. [Reinstall `socket_vmnet`](#requirements)
 {{% /tab %}}
 {{% tab builtin %}}
 ## Start stuck on corp machine or with custom DNS
