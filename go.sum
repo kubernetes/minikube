@@ -1108,8 +1108,6 @@ github.com/lunixbochs/vtclean v0.0.0-20160125035106-4fbf7632a2c6/go.mod h1:pHhQN
 github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.5 h1:51GqJ84u9EBATnn8rWsHNavcuRPlCLnDmvjzZVuliwY=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.5/go.mod h1:dTnTzUH3uzhMo0ddV1zRjGYWcVhQWwqiHPxz5l+HPd0=
-github.com/machine-drivers/machine v0.7.1-0.20230328203412-ddb74f7e6e56 h1:C2yN1rj/WG98W6hcWNsO4Icczt+63rVvrUSczaGpVbE=
-github.com/machine-drivers/machine v0.7.1-0.20230328203412-ddb74f7e6e56/go.mod h1:yvZ+/PEaFkg2SJx14jjWgoO8QV0R9+W87n+BJQwTwgY=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
@@ -1168,6 +1166,8 @@ github.com/miekg/dns v1.1.41/go.mod h1:p6aan82bvRIyn+zDIv9xYNUpwa73JcSh9BKwknJys
 github.com/miekg/dns v1.1.48 h1:Ucfr7IIVyMBz4lRE8qmGUuZ4Wt3/ZGu9hmcMT3Uu4tQ=
 github.com/miekg/dns v1.1.48/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7XnME=
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
+github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593 h1:iHsknRh/KnT8bYbYMZ8AQKbABQXRYBcJTFxboT23liU=
+github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593/go.mod h1:ZZqZXeOiJbM3ayXlWTWx0yeqCwiyr31qF0FWB0wZ8Pw=
 github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible/go.mod h1:8AuVvqP/mXw1px98n46wfvcGfQ4ci2FwoAjKYxuo3Z4=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/cli v1.1.0/go.mod h1:xcISNoH86gajksDmfB23e/pu+B+GeFRMYmoHXxx3xhI=
