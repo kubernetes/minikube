@@ -11,6 +11,7 @@ description: >
 |Linux|docker|containerd|[Docker_Linux_containerd](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Linux_containerd&period=last90)|
 |Linux|docker|crio|[Docker_Linux_crio](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Linux_crio&period=last90)|
 |Linux - arm64|docker|crio|[Docker_Linux_crio_arm64](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Linux_crio_arm64&period=last90)|
+|Linux - arm64|docker|containerd|[Docker_Linux_containerd_arm64](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Linux_containerd_arm64&period=last90)|
 |Linux - arm64|docker|docker|[Docker_Linux_docker_arm64](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=Docker_Linux_docker_arm64&period=last90)|
 |Linux|kvm2|docker|[KVM_Linux](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=KVM_Linux&period=last90)|
 |Linux|kvm2|containerd|[KVM_Linux_containerd](https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=KVM_Linux_containerd&period=last90)|
