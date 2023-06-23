@@ -169,7 +169,7 @@ func TestForceSystemdEnv(t *testing.T) {
 func TestDockerEnvContainerd(t *testing.T) {
 	t.Log("running with", ContainerRuntime(), DockerDriver(), runtime.GOOS, runtime.GOARCH)
 	if ContainerRuntime() != constants.Containerd || !DockerDriver() || runtime.GOOS != "linux" {
-		t.Skip("skipping: TestDockerEnvContainerd can only be run with the containerd amd64 runtime on Docker driver")
+		t.Skip("skipping: TestDockerEnvContainerd can only be run with the containerd runtime on Docker driver")
 	}
 	profile := UniqueProfileName("dockerenv")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
@@ -259,7 +259,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 	}
 
 	// now try to build an image
-	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s DOCKER_BUILDKIT=0 docker build -t local/minikube-dockerenv-conatinerd-test:latest testdata/docker-env", sshAuthSock, sshAgentPid, dockerHost))
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s DOCKER_BUILDKIT=0 docker build -t local/minikube-dockerenv-containerd-test:latest testdata/docker-env", sshAuthSock, sshAgentPid, dockerHost))
 	result, err = Run(t, cmd)
 	if err != nil {
 		t.Errorf("failed to build images, error: %v, output:%s", err, result.Output())
@@ -271,7 +271,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to execute 'docker image ls', error: %v, output: %s", err, result.Output())
 	}
-	if !strings.Contains(result.Output(), "local/minikube-dockerenv-conatinerd-test") {
-		t.Fatal("failed to detect image 'local/minikube-dockerenv-conatinerd-test' in output of docker image ls")
+	if !strings.Contains(result.Output(), "local/minikube-dockerenv-containerd-test") {
+		t.Fatal("failed to detect image 'local/minikube-dockerenv-containerd-test' in output of docker image ls")
 	}
 }
