@@ -37,8 +37,8 @@ type sshAgent struct {
 	agentPID int
 }
 
-// StartSSHAgent starts an ssh-agent process
-func StartSSHAgent(profile string) error {
+// Start starts an ssh-agent process
+func Start(profile string) error {
 	if runtime.GOOS == "windows" {
 		return fmt.Errorf("starting an SSH agent on Windows is not yet supported")
 	}
@@ -46,7 +46,7 @@ func StartSSHAgent(profile string) error {
 	if err != nil {
 		return fmt.Errorf("failed loading config: %v", err)
 	}
-	running, err := isSSHAgentRunning(cc)
+	running, err := isRunning(cc)
 	if err != nil {
 		return fmt.Errorf("failed checking if SSH agent is running: %v", err)
 	}
@@ -59,7 +59,7 @@ func StartSSHAgent(profile string) error {
 	if err != nil {
 		return fmt.Errorf("failed starting ssh-agent: %s: %v", string(out), err)
 	}
-	parsed, err := parseSSHAgentOutput(string(out))
+	parsed, err := parseOutput(string(out))
 	if err != nil {
 		return fmt.Errorf("failed to parse ssh-agent output: %v", err)
 	}
@@ -71,7 +71,7 @@ func StartSSHAgent(profile string) error {
 	return nil
 }
 
-func parseSSHAgentOutput(out string) (*sshAgent, error) {
+func parseOutput(out string) (*sshAgent, error) {
 	sockSubmatches := regexp.MustCompile(`SSH_AUTH_SOCK=(.*?);`).FindStringSubmatch(out)
 	if len(sockSubmatches) < 2 {
 		return nil, fmt.Errorf("SSH_AUTH_SOCK not found in output: %s", out)
@@ -87,7 +87,7 @@ func parseSSHAgentOutput(out string) (*sshAgent, error) {
 	return &sshAgent{sockSubmatches[1], pid}, nil
 }
 
-func isSSHAgentRunning(cc *config.ClusterConfig) (bool, error) {
+func isRunning(cc *config.ClusterConfig) (bool, error) {
 	if cc.SSHAgentPID == 0 {
 		return false, nil
 	}
@@ -101,18 +101,18 @@ func isSSHAgentRunning(cc *config.ClusterConfig) (bool, error) {
 	return strings.Contains(entry.Executable(), "ssh-agent"), nil
 }
 
-// StopSSHAgent stops an ssh-agent process
-func StopSSHAgent(profile string) error {
+// Stop stops an ssh-agent process
+func Stop(profile string) error {
 	cc, err := config.Load(profile)
 	if err != nil {
 		return fmt.Errorf("failed loading config: %v", err)
 	}
-	running, err := isSSHAgentRunning(cc)
+	running, err := isRunning(cc)
 	if err != nil {
 		return fmt.Errorf("failed checking if SSH agent is running: %v", err)
 	}
 	if running {
-		if err := killSSHAgentProcess(cc.SSHAgentPID); err != nil {
+		if err := killProcess(cc.SSHAgentPID); err != nil {
 			return fmt.Errorf("failed killing SSH agent process: %v", err)
 		}
 	}
@@ -124,7 +124,7 @@ func StopSSHAgent(profile string) error {
 	return nil
 }
 
-func killSSHAgentProcess(pid int) error {
+func killProcess(pid int) error {
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		return fmt.Errorf("failed finding process: %v", err)
