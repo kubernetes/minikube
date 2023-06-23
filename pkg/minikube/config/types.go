@@ -105,6 +105,8 @@ type ClusterConfig struct {
 	SocketVMnetClientPath   string
 	SocketVMnetPath         string
 	StaticIP                string
+	SSHAuthSock             string
+	SSHAgentPID             int
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

@@ -92,6 +92,10 @@ const (
 	// MinikubeActiveDockerdEnv holds the docker daemon which user's shell is pointing at
 	// value would be profile or empty if pointing to the user's host daemon.
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
+	// SSHAuthSock is used for docker-env
+	SSHAuthSock = "SSH_AUTH_SOCK"
+	// SSHAgentPID is used for docker-env
+	SSHAgentPID = "SSH_AGENT_PID"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
 	// PodmanContainerHostEnv is used for podman settings
