@@ -314,12 +314,14 @@ MINIKUBE_ACTIVE_DOCKERD
 		{
 			"none",
 			"text",
-			DockerEnvConfig{profile: "nonetext", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "nonetext", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`DOCKER_TLS_VERIFY=1
 DOCKER_HOST=tcp://127.0.0.1:32842
 DOCKER_CERT_PATH=/certs
 MINIKUBE_ACTIVE_DOCKERD=nonetext
+SSH_AUTH_SOCK=/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227
+SSH_AGENT_PID=29228
 `,
 			`DOCKER_TLS_VERIFY
 DOCKER_HOST
@@ -338,13 +340,15 @@ MINIKUBE_ACTIVE_DOCKERD
 		{
 			"none",
 			"json",
-			DockerEnvConfig{profile: "nonejson", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "nonejson", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`{
 				"DOCKER_TLS_VERIFY": "1",
 				"DOCKER_HOST": "tcp://127.0.0.1:32842",
 				"DOCKER_CERT_PATH": "/certs",
-				"MINIKUBE_ACTIVE_DOCKERD": "nonejson"
+				"MINIKUBE_ACTIVE_DOCKERD": "nonejson",
+				"SSH_AUTH_SOCK": "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227",
+				"SSH_AGENT_PID": "29228"
 			}`,
 			`[
 				"DOCKER_TLS_VERIFY",
@@ -367,12 +371,14 @@ MINIKUBE_ACTIVE_DOCKERD
 		{
 			"none",
 			"yaml",
-			DockerEnvConfig{profile: "noneyaml", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "noneyaml", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`DOCKER_TLS_VERIFY: "1"
 DOCKER_HOST: tcp://127.0.0.1:32842
 DOCKER_CERT_PATH: /certs
 MINIKUBE_ACTIVE_DOCKERD: noneyaml
+SSH_AUTH_SOCK: /var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227
+SSH_AGENT_PID: "29228"
 `,
 			`- DOCKER_TLS_VERIFY
 - DOCKER_HOST

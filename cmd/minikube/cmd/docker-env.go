@@ -515,13 +515,18 @@ func sshURL(username string, hostname string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
+	agentPID := strconv.Itoa(ec.sshAgentPID)
+	// set agentPID to nil value if not set
+	if agentPID == "0" {
+		agentPID = ""
+	}
 	envTCP := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 		constants.SSHAuthSock:              ec.sshAuthSock,
-		constants.SSHAgentPID:              strconv.Itoa(ec.sshAgentPID),
+		constants.SSHAgentPID:              agentPID,
 	}
 	envSSH := map[string]string{
 		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
