@@ -52,6 +52,7 @@ func Start(profile string) error {
 	}
 	if running {
 		klog.Info("SSH agent is already running, aborting start")
+		return nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
