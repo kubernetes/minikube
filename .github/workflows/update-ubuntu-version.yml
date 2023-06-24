@@ -35,14 +35,14 @@ jobs:
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Kicbase: Bump ubuntu:jammy from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outpus.NEW_VERSION }}'
+          commit-message: 'Kicbase: Bump ubuntu:jammy from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_ubuntu_version
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Kicbase: Bump ubuntu:jammy from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outpus.NEW_VERSION }}'
+          title: 'Kicbase: Bump ubuntu:jammy from ${{ steps.bumpUbuntu.outputs.OLD_VERSION }} to ${{ steps.bumpUbuntu.outputs.NEW_VERSION }}'
           body: |
             The ubuntu:jammy image released a new version
 
