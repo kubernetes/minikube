@@ -1156,6 +1156,11 @@ update-docker-buildx-version:
 	(cd hack/update/docker_buildx_version && \
 	 go run update_docker_buildx_version.go)
 
+.PHONY: update-nerdctl-version
+update-nerdctl-version:
+	(cd hack/update/nerdctl_version && \
+	 go run update_nerdctl_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
