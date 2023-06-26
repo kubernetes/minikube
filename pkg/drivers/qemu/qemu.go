@@ -40,8 +40,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/network"
 )
@@ -515,13 +517,18 @@ func (d *Driver) Start() error {
 			time.Sleep(2 * time.Second)
 		}
 
-		if err != nil {
-			if isBootpdError(err) {
-				exit.Error(reason.IfBootpdFirewall, "ip not found", err)
-			}
+		if err == nil {
+			log.Debugf("IP: %s", d.IPAddress)
+			break
+		}
+		if !isBootpdError(err) {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
-		log.Debugf("IP: %s", d.IPAddress)
+		if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
+		}
+		return fmt.Errorf("bootpd process is unblocked, will retry")
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
