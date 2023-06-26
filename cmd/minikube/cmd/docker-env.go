@@ -90,9 +90,17 @@ var dockerEnvTCPTmpl = fmt.Sprintf(
 var dockerEnvSSHTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ if .SSHAuthSock }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAuthSock }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .SSHAgentPID }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAgentPID }}{{ .Suffix }}"+
+		"{{ end }}"+
 		"{{ .UsageHint }}",
 	constants.DockerHostEnv,
-	constants.MinikubeActiveDockerdEnv)
+	constants.MinikubeActiveDockerdEnv,
+	constants.SSHAuthSock,
+	constants.SSHAgentPID)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -557,6 +565,8 @@ func dockerEnvNames(ec DockerEnvConfig) []string {
 		constants.DockerHostEnv,
 		constants.DockerCertPathEnv,
 		constants.MinikubeActiveDockerdEnv,
+		constants.SSHAuthSock,
+		constants.SSHAgentPID,
 	}
 
 	if ec.noProxy {
@@ -575,6 +585,8 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
 		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
 		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+		fmt.Sprintf("%s=%s", constants.SSHAuthSock, ec.sshAuthSock),
+		fmt.Sprintf("%s=%d", constants.SSHAgentPID, ec.sshAgentPID),
 	}
 }
 
