@@ -122,6 +122,14 @@ func updateHashFiles(commit string) error {
 }
 
 func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
+	b, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read hash file: %v", err)
+	}
+	if strings.Contains(string(b), commit) {
+		klog.Infof("hash file already contains %q", commit)
+		return nil
+	}
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open hash file: %v", err)
