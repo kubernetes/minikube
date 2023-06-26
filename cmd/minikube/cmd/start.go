@@ -427,7 +427,7 @@ func isBootpdBlocked(cc config.ClusterConfig) bool {
 		klog.Warningf("failed to get firewall state: %v", err)
 		return false
 	}
-	if !strings.Contains(string(out), "Firewall is enabled") {
+	if regexp.MustCompile(`Firewall is disabled`).Match(out) {
 		return false
 	}
 	out, err = exec.Command("/usr/libexec/ApplicationFirewall/socketfilterfw", "--listapps").Output()
@@ -435,17 +435,7 @@ func isBootpdBlocked(cc config.ClusterConfig) bool {
 		klog.Warningf("failed to list firewall apps: %v", err)
 		return false
 	}
-	if !strings.Contains(string(out), "/usr/libexec/bootpd") {
-		return true
-	}
-	parts := strings.Split(string(out), `/usr/libexec/bootpd
-         ( `)
-	// if bootpd is not in application list it's blocked
-	if len(parts) == 1 {
-		return true
-	}
-
-	return strings.HasPrefix(parts[1], "Block")
+	return !regexp.MustCompile(`\/usr\/libexec\/bootpd.*\n.*\( Allow`).Match(out)
 }
 
 // unblockBootpdFirewall adds bootpd to the built-in macOS firewall and then unblocks it
