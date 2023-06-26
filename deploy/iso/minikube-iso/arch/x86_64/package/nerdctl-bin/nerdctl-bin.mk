@@ -11,7 +11,7 @@ NERDCTL_BIN_SOURCE = nerdctl-$(NERDCTL_BIN_AARCH64_VERSION)-linux-amd64.tar.gz
 
 define NERDCTL_BIN_INSTALL_TARGET_CMDS
         $(INSTALL) -D -m 0755 \
-                $(@D)/nerdctlctl \
+                $(@D)/nerdctl \
                 $(TARGET_DIR)/usr/bin
 endef
 
