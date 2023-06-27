@@ -11,7 +11,7 @@ NERDCTL_BIN_AARCH64_SOURCE = nerdctl-$(NERDCTL_BIN_AARCH64_VERSION)-linux-arm64.
 
 define NERDCTL_BIN_AARCH64_INSTALL_TARGET_CMDS
         $(INSTALL) -D -m 0755 \
-                $(@D)/nerdctl \
+                $(NERDCTL_BIN_AARCH64_PKGDIR)/nerdctl \
                 $(TARGET_DIR)/usr/bin
 endef
 
