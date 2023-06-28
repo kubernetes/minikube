@@ -530,7 +530,7 @@ func (d *Driver) Start() error {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}
-		out.Styled(style.Restarting, "Sucessfully unblocked bootpd process from firewall, retrying")
+		out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
 		return fmt.Errorf("ip not found: %v", err)
 	}
 
