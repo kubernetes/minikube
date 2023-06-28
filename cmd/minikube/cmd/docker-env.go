@@ -437,7 +437,7 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	return shell.SetScript(w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
-// dockerSetScript writes out a shell-compatible 'docker-env unset' script
+// dockerUnsetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := dockerEnvNames(ec)
 	if ec.Shell == "none" {
