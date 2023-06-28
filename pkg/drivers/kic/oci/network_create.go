@@ -27,8 +27,8 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/network"
 )
 
@@ -329,7 +329,7 @@ func networkNamesByLabel(ociBin string, label string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-// DeleteAllKICKNetworksByLabel deletes all networks that have a specific label
+// DeleteKICNetworksByLabel deletes all networks that have a specific label
 func DeleteKICNetworksByLabel(ociBin string, label string) []error {
 	var errs []error
 	ns, err := networkNamesByLabel(ociBin, label)

@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog/v2"
+	"k8s.io/klog"
 )
 
 // SysInfo Info represents common system Information between docker and podman that minikube cares
@@ -272,7 +272,7 @@ var podmanInfoGetter = func() (string, error) {
 	return rr.Stdout.String(), err
 }
 
-// podmanSysInfo returns podman system info --format '{{json .}}'
+// podmanSystemInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
 	rawJSON, err := podmanInfoGetter()

@@ -40,6 +40,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
@@ -587,7 +588,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return nil
 }
 
-// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+// ensureServiceStarted will start a systemd or init.d service if it is not running.
 func (k *Bootstrapper) ensureServiceStarted(svc string) error {
 	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
 		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)

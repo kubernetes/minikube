@@ -30,11 +30,10 @@ import (
 	"time"
 
 	apiWait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	"k8s.io/klog/v2"
-
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/drivers/qemu"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -437,7 +436,7 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	return shell.SetScript(w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
-// dockerSetScript writes out a shell-compatible 'docker-env unset' script
+// dockerUnsetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := dockerEnvNames(ec)
 	if ec.Shell == "none" {
