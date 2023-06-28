@@ -44,7 +44,9 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
 )
 
@@ -528,7 +530,8 @@ func (d *Driver) Start() error {
 			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
 			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
 		}
-		return fmt.Errorf("bootpd process is unblocked, will retry")
+		out.Styled(style.Restarting, "Sucessfully unblocked bootpd process from firewall, retrying")
+		return fmt.Errorf("ip not found: %v", err)
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
