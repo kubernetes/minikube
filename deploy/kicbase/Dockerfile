@@ -177,9 +177,9 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
     apt-key add - < Release.key && \
     if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit conmon cri-tools crun; \
+        clean-install catatonit conmon cri-tools; \
     else \
-        clean-install conmon crun; \
+        clean-install conmon; \
     fi
 
 # install containernetworking-plugins
