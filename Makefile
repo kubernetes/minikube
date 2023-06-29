@@ -1151,6 +1151,11 @@ update-go-github-version:
 	(cd hack/update/go_github_version && \
 	 go run update_go_github_version.go)
 
+.PHONY: update-docker-buildx-version
+update-docker-buildx-version:
+	(cd hack/update/docker_buildx_version && \
+	 go run update_docker_buildx_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
