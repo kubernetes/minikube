@@ -42,7 +42,6 @@ jobs:
           base: master
           delete-branch: true
           title: 'Update go-github from ${{ steps.bumpGoGithub.outputs.OLD_VERSION }} to ${{ steps.bumpGoGithub.outputs.NEW_VERSION }}'
-          labels: ok-to-test
           body: |
             The go-github project released a [new version](https://github.com/google/go-github)
 
