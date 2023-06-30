@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -92,6 +93,9 @@ func (error DeletionError) Error() string {
 var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
 	if err := killMountProcess(); err != nil {
 		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+	if err := sshagent.Stop(profileName); err != nil {
+		out.FailureT("Failed to stop ssh-agent process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)

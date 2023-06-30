@@ -71,6 +71,12 @@ var dockerEnvTCPTmpl = fmt.Sprintf(
 		"{{ if .NoProxyVar }}"+
 		"{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}"+
 		"{{ end }}"+
+		"{{ if .SSHAuthSock }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAuthSock }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .SSHAgentPID }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAgentPID }}{{ .Suffix }}"+
+		"{{ end }}"+
 		"{{ .UsageHint }}",
 	constants.DockerTLSVerifyEnv,
 	constants.DockerHostEnv,
@@ -78,13 +84,23 @@ var dockerEnvTCPTmpl = fmt.Sprintf(
 	constants.ExistingDockerTLSVerifyEnv,
 	constants.ExistingDockerHostEnv,
 	constants.ExistingDockerCertPathEnv,
-	constants.MinikubeActiveDockerdEnv)
+	constants.MinikubeActiveDockerdEnv,
+	constants.SSHAuthSock,
+	constants.SSHAgentPID)
 var dockerEnvSSHTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ if .SSHAuthSock }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAuthSock }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .SSHAgentPID }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAgentPID }}{{ .Suffix }}"+
+		"{{ end }}"+
 		"{{ .UsageHint }}",
 	constants.DockerHostEnv,
-	constants.MinikubeActiveDockerdEnv)
+	constants.MinikubeActiveDockerdEnv,
+	constants.SSHAuthSock,
+	constants.SSHAgentPID)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -99,6 +115,9 @@ type DockerShellConfig struct {
 	ExistingDockerCertPath  string
 	ExistingDockerHost      string
 	ExistingDockerTLSVerify string
+
+	SSHAuthSock string
+	SSHAgentPID string
 }
 
 var (
@@ -141,6 +160,9 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	s.ExistingDockerTLSVerify = envMap[constants.ExistingDockerTLSVerifyEnv]
 
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
+
+	s.SSHAuthSock = envMap[constants.SSHAuthSock]
+	s.SSHAgentPID = envMap[constants.SSHAgentPID]
 
 	if ec.noProxy {
 		noProxyVar, noProxyValue := defaultNoProxyGetter.GetNoProxyVar()
@@ -316,18 +338,20 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		hostIP := co.CP.IP.String()
 		ec := DockerEnvConfig{
-			EnvConfig: sh,
-			profile:   cname,
-			driver:    driverName,
-			ssh:       sshHost,
-			hostIP:    hostIP,
-			port:      port,
-			certsDir:  localpath.MakeMiniPath("certs"),
-			noProxy:   noProxy,
-			username:  d.GetSSHUsername(),
-			hostname:  hostname,
-			sshport:   sshport,
-			keypath:   d.GetSSHKeyPath(),
+			EnvConfig:   sh,
+			profile:     cname,
+			driver:      driverName,
+			ssh:         sshHost,
+			hostIP:      hostIP,
+			port:        port,
+			certsDir:    localpath.MakeMiniPath("certs"),
+			noProxy:     noProxy,
+			username:    d.GetSSHUsername(),
+			hostname:    hostname,
+			sshport:     sshport,
+			keypath:     d.GetSSHKeyPath(),
+			sshAuthSock: co.Config.SSHAuthSock,
+			sshAgentPID: co.Config.SSHAgentPID,
 		}
 
 		dockerPath, err := exec.LookPath("docker")
@@ -371,17 +395,19 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 // DockerEnvConfig encapsulates all external inputs into shell generation for Docker
 type DockerEnvConfig struct {
 	shell.EnvConfig
-	profile  string
-	driver   string
-	ssh      bool
-	hostIP   string
-	port     int
-	certsDir string
-	noProxy  bool
-	username string
-	hostname string
-	sshport  int
-	keypath  string
+	profile     string
+	driver      string
+	ssh         bool
+	hostIP      string
+	port        int
+	certsDir    string
+	noProxy     bool
+	username    string
+	hostname    string
+	sshport     int
+	keypath     string
+	sshAuthSock string
+	sshAgentPID int
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
@@ -497,11 +523,18 @@ func sshURL(username string, hostname string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
+	agentPID := strconv.Itoa(ec.sshAgentPID)
+	// set agentPID to nil value if not set
+	if agentPID == "0" {
+		agentPID = ""
+	}
 	envTCP := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
+		constants.SSHAuthSock:              ec.sshAuthSock,
+		constants.SSHAgentPID:              agentPID,
 	}
 	envSSH := map[string]string{
 		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
@@ -532,6 +565,8 @@ func dockerEnvNames(ec DockerEnvConfig) []string {
 		constants.DockerHostEnv,
 		constants.DockerCertPathEnv,
 		constants.MinikubeActiveDockerdEnv,
+		constants.SSHAuthSock,
+		constants.SSHAgentPID,
 	}
 
 	if ec.noProxy {
@@ -550,6 +585,8 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
 		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
 		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+		fmt.Sprintf("%s=%s", constants.SSHAuthSock, ec.sshAuthSock),
+		fmt.Sprintf("%s=%d", constants.SSHAgentPID, ec.sshAgentPID),
 	}
 }
 
