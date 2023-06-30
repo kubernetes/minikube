@@ -298,6 +298,7 @@
 	"Failed to start container runtime": "Start der Container Runtime fehlgeschlagen",
 	"Failed to start {{.driver}} {{.driver_type}}. Running \"{{.cmd}}\" may fix it: {{.error}}": "Start von {{.driver}} {{.driver_type}} fehlgeschlagen. Das Ausführen von \"{{.cmd}}\" könnte des Beheben: {{.error}}",
 	"Failed to stop node {{.name}}": "Anhalten von Node {{.name}} fehlgeschlagen",
+	"Failed to stop ssh-agent process: {{.error}}": "",
 	"Failed to tag images": "Erstellung des Tags für das Image fehlgeschlagen",
 	"Failed to update cluster": "Aktualisierung des Clusters fehlgeschlagen",
 	"Failed to update config": "Aktualisierung der Konfiguration fehlgeschlagen",
