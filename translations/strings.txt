@@ -278,6 +278,7 @@
 	"Failed to start container runtime": "",
 	"Failed to start {{.driver}} {{.driver_type}}. Running \"{{.cmd}}\" may fix it: {{.error}}": "",
 	"Failed to stop node {{.name}}": "",
+	"Failed to stop ssh-agent process: {{.error}}": "",
 	"Failed to tag images": "",
 	"Failed to update cluster": "",
 	"Failed to update config": "",

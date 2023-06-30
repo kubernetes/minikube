@@ -283,6 +283,7 @@
 	"Failed to start container runtime": "コンテナーランタイムの起動に失敗しました",
 	"Failed to start {{.driver}} {{.driver_type}}. Running \"{{.cmd}}\" may fix it: {{.error}}": "{{.driver}} {{.driver_type}} の開始に失敗しました。「{{.cmd}}」実行で解決するかも知れません: {{.error}}",
 	"Failed to stop node {{.name}}": "{{.name}} ノードの停止に失敗しました",
+	"Failed to stop ssh-agent process: {{.error}}": "",
 	"Failed to tag images": "イメージのタグ付与に失敗しました",
 	"Failed to update cluster": "クラスター更新に失敗しました",
 	"Failed to update config": "設定更新に失敗しました",

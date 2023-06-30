@@ -293,6 +293,7 @@
 	"Failed to start container runtime": "Échec du démarrage de l'exécution du conteneur",
 	"Failed to start {{.driver}} {{.driver_type}}. Running \"{{.cmd}}\" may fix it: {{.error}}": "Échec du démarrage de {{.driver}} {{.driver_type}}. L'exécution de \"{{.cmd}}\" peut résoudre le problème : {{.error}}",
 	"Failed to stop node {{.name}}": "Échec de l'arrêt du nœud {{.name}}",
+	"Failed to stop ssh-agent process: {{.error}}": "",
 	"Failed to tag images": "Échec du marquage des images",
 	"Failed to update cluster": "Échec de la mise à jour du cluster",
 	"Failed to update config": "Échec de la mise à jour de la configuration",
