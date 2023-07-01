@@ -235,7 +235,7 @@ replace (
 	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593
-	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.5
+	github.com/machine-drivers/docker-machine-driver-vmware => github.com/lbogdan/docker-machine-driver-vmware v0.2.0
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )

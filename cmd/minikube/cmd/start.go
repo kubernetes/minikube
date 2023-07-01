@@ -303,7 +303,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
-	vmwareUnsupported(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -411,14 +410,62 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 `, out.V{"driver": suggestedDriver})
 }
 
-func vmwareUnsupported(driverName string) {
-	if !driver.IsVMware(driverName) {
+// isBootpdBlocked returns true if the built-in macOS firewall is on and bootpd is not unblocked
+func isBootpdBlocked(cc config.ClusterConfig) bool {
+	// only applies to qemu, on macOS, with socket_vmnet
+	if cc.Driver != driver.QEMU2 || runtime.GOOS != "darwin" || cc.Network != "socket_vmnet" {
+		return false
+	}
+	out, err := exec.Command("/usr/libexec/ApplicationFirewall/socketfilterfw", "--getglobalstate").Output()
+	if err != nil {
+		klog.Warningf("failed to get firewall state: %v", err)
+		return false
+	}
+	if regexp.MustCompile(`Firewall is disabled`).Match(out) {
+		return false
+	}
+	out, err = exec.Command("/usr/libexec/ApplicationFirewall/socketfilterfw", "--listapps").Output()
+	if err != nil {
+		klog.Warningf("failed to list firewall apps: %v", err)
+		return false
+	}
+	return !regexp.MustCompile(`\/usr\/libexec\/bootpd.*\n.*\( Allow`).Match(out)
+}
+
+// unblockBootpdFirewall adds bootpd to the built-in macOS firewall and then unblocks it
+func unblockBootpdFirewall(cc config.ClusterConfig) {
+	if !isBootpdBlocked(cc) {
 		return
 	}
-	exit.Message(reason.DrvUnsupported, `Due to security improvements to minikube the VMware driver is currently not supported. Available workarounds are to use a different driver or downgrade minikube to v1.29.0.
 
-    We are accepting community contributions to fix this, for more details on the issue see: https://github.com/kubernetes/minikube/issues/16221
-`)
+	cmds := []*exec.Cmd{
+		exec.Command("sudo", "/usr/libexec/ApplicationFirewall/socketfilterfw", "--add", "/usr/libexec/bootpd"),
+		exec.Command("sudo", "/usr/libexec/ApplicationFirewall/socketfilterfw", "--unblock", "/usr/libexec/bootpd"),
+	}
+
+	var cmdString strings.Builder
+	for _, c := range cmds {
+		cmdString.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
+	}
+
+	out.Styled(style.Permissions, "Your firewall is blocking bootpd which is required for socket_vmnet. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n", out.V{"commands": cmdString.String()})
+
+	for _, c := range cmds {
+		testArgs := append([]string{"-n"}, c.Args[1:]...)
+		test := exec.Command("sudo", testArgs...)
+		klog.Infof("testing: %s", test.Args)
+		if err := test.Run(); err != nil {
+			klog.Infof("%v may require a password: %v", c.Args, err)
+			if !viper.GetBool("interactive") {
+				klog.Warningf("%s requires a password, and --interactive=false", c.Args)
+			}
+		}
+		klog.Infof("running: %s", c.Args)
+		err := c.Run()
+		if err != nil {
+			klog.Warningf("running %s failed: %v", c.Args, err)
+		}
+	}
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
