@@ -184,35 +184,15 @@ func TestDockerEnvContainerd(t *testing.T) {
 	}
 	time.Sleep(time.Second * 10)
 
-	// if we are in a shell, we need to run 'ssh-agent bash' to enable the ssh-agent
-	// but if we are in an integration test, we don't have a bash, so we need to get the environment variables set by ssh-agent, and use them in the following tests
-	result, err := Run(t, exec.CommandContext(ctx, "ssh-agent"))
-	if err != nil {
-		t.Errorf("failed to execute ssh-agent bash, error: %v, output: %s", err, result.Output())
-	}
-	output := result.Output()
-	// get SSH_AUTH_SOCK
-	groups := regexp.MustCompile(`SSH_AUTH_SOCK=(\S*);`).FindStringSubmatch(output)
-	if len(groups) < 2 {
-		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
-	}
-	sshAuthSock := groups[1]
-	// get SSH_AGENT_PID
-	groups = regexp.MustCompile(`SSH_AGENT_PID=(\S*);`).FindStringSubmatch(output)
-	if len(groups) < 2 {
-		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
-	}
-	sshAgentPid := groups[1]
-
 	// execute 'minikube docker-env --ssh-host --ssh-add' and extract the 'DOCKER_HOST' environment value
-	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s %s docker-env --ssh-host --ssh-add -p %s", sshAuthSock, sshAgentPid, Target(), profile))
-	result, err = Run(t, cmd)
+	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s docker-env --ssh-host --ssh-add -p %s", Target(), profile))
+	result, err := Run(t, cmd)
 	if err != nil {
 		t.Errorf("failed to execute minikube docker-env --ssh-host --ssh-add, error: %v, output: %s", err, result.Output())
 	}
 
-	output = result.Output()
-	groups = regexp.MustCompile(`DOCKER_HOST="(\S*)"`).FindStringSubmatch(output)
+	output := result.Output()
+	groups := regexp.MustCompile(`DOCKER_HOST="(\S*)"`).FindStringSubmatch(output)
 	if len(groups) < 2 {
 		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
 	}
@@ -221,19 +201,19 @@ func TestDockerEnvContainerd(t *testing.T) {
 	if len(segments) < 3 {
 		t.Errorf("failed to acquire dockerHost, output is %s", dockerHost)
 	}
-	port := segments[2]
 
-	// clear remaining keys
-	clearResult, err := Run(t, exec.CommandContext(ctx, "ssh-keygen", "-R", "[127.0.0.1]:"+port))
-	if err != nil {
-		t.Logf("failed to clear duplicate keys: %q : %v", clearResult.Command(), err)
+	// get SSH_AUTH_SOCK
+	groups = regexp.MustCompile(`SSH_AUTH_SOCK=(\S*)`).FindStringSubmatch(output)
+	if len(groups) < 2 {
+		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
 	}
-
-	// execute 'minikube ssh-host --append-known'
-	result, err = Run(t, exec.CommandContext(ctx, Target(), "ssh-host", "--append-known", "-p", profile))
-	if err != nil {
-		t.Errorf("failed to execute 'minikube ssh-host --append-known', error: %v, output: %s", err, result.Output())
+	sshAuthSock := groups[1]
+	// get SSH_AGENT_PID
+	groups = regexp.MustCompile(`SSH_AGENT_PID=(\S*)`).FindStringSubmatch(output)
+	if len(groups) < 2 {
+		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
 	}
+	sshAgentPid := groups[1]
 
 	cmd = exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("SSH_AUTH_SOCK=%s SSH_AGENT_PID=%s DOCKER_HOST=%s docker version", sshAuthSock, sshAgentPid, dockerHost))
 

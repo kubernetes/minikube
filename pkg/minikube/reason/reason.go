@@ -428,6 +428,8 @@ var (
 	RuntimeEnable = Kind{ID: "RUNTIME_ENABLE", ExitCode: ExRuntimeError}
 	// minikube failed to cache images for the current container runtime
 	RuntimeCache = Kind{ID: "RUNTIME_CACHE", ExitCode: ExRuntimeError}
+	// minikube failed to start an ssh-agent when executing docker-env
+	SshAgentStart = Kind{ID: "SSH_AGENT_START", ExitCode: ExRuntimeError}
 
 	// service check timed out while starting minikube dashboard
 	SvcCheckTimeout = Kind{ID: "SVC_CHECK_TIMEOUT", ExitCode: ExSvcTimeout}

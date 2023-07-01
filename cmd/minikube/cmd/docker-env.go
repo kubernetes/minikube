@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
+	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	pkgnetwork "k8s.io/minikube/pkg/network"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
@@ -296,6 +297,14 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		}
 
 		cname := ClusterFlagValue()
+
+		// start the ssh-agent
+		// this must be done before the cluster config is loaded
+		// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
+		if err := sshagent.Start(cname); err != nil {
+			exit.Message(reason.SshAgentStart, err.Error())
+		}
+
 		co := mustload.Running(cname)
 
 		driverName := co.CP.Host.DriverName
@@ -316,6 +325,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		// for the sake of docker-env command, start nerdctl and nerdctld
 		if cr == constants.Containerd {
 			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
+
 			startNerdctld()
 
 			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
@@ -327,6 +337,10 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// so remind them to do so
 			out.WarningT("Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it")
 		}
+
+		// set the ssh-agent envs for current process
+		os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
+		os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
 
 		r := co.CP.Runner
 
@@ -400,14 +414,18 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
-
 			cmd := exec.Command(path, d.GetSSHKeyPath())
 			cmd.Stderr = os.Stderr
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
 			err = cmd.Run()
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
 		}
+
+		// eventually, run something similar to ssh --append-known
+		appendKnownHelper(nodeName, true)
 	},
 }
 
@@ -558,6 +576,8 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	envSSH := map[string]string{
 		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
 		constants.MinikubeActiveDockerdEnv: ec.profile,
+		constants.SSHAuthSock:              ec.sshAuthSock,
+		constants.SSHAgentPID:              agentPID,
 	}
 
 	var rt map[string]string
