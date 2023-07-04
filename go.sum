@@ -282,8 +282,6 @@ github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb0
 github.com/NYTimes/gziphandler v1.1.1/go.mod h1:n/CVRwUEOgIxrgPvAQhUUr9oeUtvrhMomdKFjzJNB0c=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/Parallels/docker-machine-parallels/v2 v2.0.1 h1:3Rj+4tcm/UqMU5g2bLJmpxD0ssn1BB5am4Cd6yUDbVI=
-github.com/Parallels/docker-machine-parallels/v2 v2.0.1/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
 github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 h1:wPbRQzjjwFc0ih8puEVAOFGELsn1zoIIYdxvML7mDxA=
 github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8/go.mod h1:I0gYDMZ6Z5GRU7l58bNFSkPTFN6Yl12dsUlAZ8xy98g=
 github.com/PuerkitoBio/purell v1.0.0/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
@@ -1093,8 +1091,6 @@ github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 h1:6E+4a0GO5zZEnZ
 github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0/go.mod h1:zJYVVT2jmtg6P3p1VtQj7WsuWi/y4VnjVBn7F8KPB3I=
 github.com/lunixbochs/vtclean v0.0.0-20160125035106-4fbf7632a2c6/go.mod h1:pHhQNgMf3btfWnGBVipUOjRYhoOsdGqdm/+2c2E2WMI=
 github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
-github.com/machine-drivers/docker-machine-driver-vmware v0.1.5 h1:51GqJ84u9EBATnn8rWsHNavcuRPlCLnDmvjzZVuliwY=
-github.com/machine-drivers/docker-machine-driver-vmware v0.1.5/go.mod h1:dTnTzUH3uzhMo0ddV1zRjGYWcVhQWwqiHPxz5l+HPd0=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.1/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.7 h1:IeQXZAiQcpL9mgcAe1Nu6cX9LLw6ExEHKjN0VQdvPDY=
@@ -1155,6 +1151,10 @@ github.com/miekg/dns v1.1.48/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7Xn
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593 h1:iHsknRh/KnT8bYbYMZ8AQKbABQXRYBcJTFxboT23liU=
 github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593/go.mod h1:ZZqZXeOiJbM3ayXlWTWx0yeqCwiyr31qF0FWB0wZ8Pw=
+github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1 h1:eYP7NkEv+tUZeB7BLfJ8PF4UNCW6lVyrbMvcWh1rgMA=
+github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
+github.com/minikube-machine/machine-driver-vmware v0.1.5 h1:xy7yS1rI8kAdyQtvk5pY8MdTkfXOXKYbiUs7x5grk2Q=
+github.com/minikube-machine/machine-driver-vmware v0.1.5/go.mod h1:dTnTzUH3uzhMo0ddV1zRjGYWcVhQWwqiHPxz5l+HPd0=
 github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible/go.mod h1:8AuVvqP/mXw1px98n46wfvcGfQ4ci2FwoAjKYxuo3Z4=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/cli v1.1.0/go.mod h1:xcISNoH86gajksDmfB23e/pu+B+GeFRMYmoHXxx3xhI=
