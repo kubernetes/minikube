@@ -298,13 +298,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		cname := ClusterFlagValue()
 
-		// start the ssh-agent
-		// this must be done before the cluster config is loaded
-		// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
-		if err := sshagent.Start(cname); err != nil {
-			exit.Message(reason.SshAgentStart, err.Error())
-		}
-
 		co := mustload.Running(cname)
 
 		driverName := co.CP.Host.DriverName
@@ -336,11 +329,19 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// user also need to execute ssh-agent bash and minikube ssh-host --append-known before this
 			// so remind them to do so
 			out.WarningT("Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it")
-		}
 
-		// set the ssh-agent envs for current process
-		os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
-		os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
+			// start the ssh-agent
+			if err := sshagent.Start(cname); err != nil {
+				exit.Message(reason.SSHAgentStart, err.Error())
+			}
+			// cluster config must be reloaded
+			// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
+			co = mustload.Running(cname)
+
+			// set the ssh-agent envs for current process
+			os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
+			os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
+		}
 
 		r := co.CP.Runner
 

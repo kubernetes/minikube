@@ -194,12 +194,12 @@ func TestDockerEnvContainerd(t *testing.T) {
 	output := result.Output()
 	groups := regexp.MustCompile(`DOCKER_HOST="(\S*)"`).FindStringSubmatch(output)
 	if len(groups) < 2 {
-		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
+		t.Errorf("DOCKER_HOST doesn't match expected format, output is %s", output)
 	}
 	dockerHost := groups[1]
 	segments := strings.Split(dockerHost, ":")
 	if len(segments) < 3 {
-		t.Errorf("failed to acquire dockerHost, output is %s", dockerHost)
+		t.Errorf("DOCKER_HOST doesn't match expected format, output is %s", dockerHost)
 	}
 
 	// get SSH_AUTH_SOCK
@@ -211,7 +211,7 @@ func TestDockerEnvContainerd(t *testing.T) {
 	// get SSH_AGENT_PID
 	groups = regexp.MustCompile(`SSH_AGENT_PID=(\S*)`).FindStringSubmatch(output)
 	if len(groups) < 2 {
-		t.Errorf("failed to acquire SSH_AUTH_SOCK, output is %s", output)
+		t.Errorf("failed to acquire SSH_AUTH_PID, output is %s", output)
 	}
 	sshAgentPid := groups[1]
 

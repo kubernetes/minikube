@@ -406,6 +406,9 @@ minikube failed to enable the current container runtime
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
 
+"SSH_AGENT_START" (Exit code ExRuntimeError)  
+minikube failed to start an ssh-agent when executing docker-env  
+
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
 
