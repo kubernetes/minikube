@@ -1,15 +1,13 @@
 ---
-title: "Using Ambassador Ingress Controller"
-linkTitle: "Using Ambassador Ingress Controller"
+title: "Using the Ambassador Addon"
+linkTitle: "Ambassador"
 weight: 1
 date: 2020-05-14
-description: >
-  Using Ambassador Ingress Controller with Minikube
 ---
 
 ## Overview
 
-[Ambassador](https://getambassador.io/) allows access to Kubernetes services running inside Minikube. Ambassador can be
+[Ambassador](https://getambassador.io/) allows access to Kubernetes services running inside minikube. Ambassador can be
 configured via both, [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) resources and
 [Mapping](https://www.getambassador.io/docs/latest/topics/using/intro-mappings/) resources.
 
@@ -134,4 +132,3 @@ curl http://<Ambassdor's External IP'/hello-mapping/>
 ```
 
 **Note:** Read more about mappings in Ambassador's
-[documentation](https://www.getambassador.io/docs/latest/topics/using/mappings/).

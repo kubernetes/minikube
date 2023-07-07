@@ -1,5 +1,5 @@
 ---
-title: "Using Headlamp Addon"
+title: "Using the Headlamp Addon"
 linkTitle: "Headlamp"
 weight: 1
 date: 2022-06-08

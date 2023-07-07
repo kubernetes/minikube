@@ -1,10 +1,8 @@
 ---
-title: "Using Minikube with Pod Security Policies"
-linkTitle: "Using Minikube with Pod Security Policies"
+title: "Using the Pod Security Policy Addon"
+linkTitle: "Pod Security Policy"
 weight: 1
 date: 2019-11-24
-description: >
-  Using Minikube with Pod Security Policies
 ---
 
 ## Overview
@@ -13,7 +11,7 @@ This tutorial explains how to start minikube with Pod Security Policies (PSP) en
 
 ## Prerequisites
 
-- Minikube 1.11.1 with Kubernetes 1.16.x or higher
+- minikube 1.11.1 with Kubernetes 1.16.x or higher
 
 ## Tutorial
 
@@ -32,7 +30,7 @@ controller to prevent issues during bootstrap.
 Older versions of minikube do not ship with the `pod-security-policy` addon, so
 the policies that addon enables must be separately applied to the cluster.
 
-## Minikube 1.5.2 through 1.6.2
+## minikube 1.5.2 through 1.6.2
 
 Before starting minikube, you need to give it the PSP YAMLs in order to allow minikube to bootstrap.
 
@@ -183,7 +181,7 @@ subjects:
   apiGroup: rbac.authorization.k8s.io
 ```
 
-### Minikube between 1.6.2 and 1.11.1
+### minikube between 1.6.2 and 1.11.1
 
 With minikube versions greater than 1.6.2 and less than 1.11.1, the YAML files
 shown above will not be automatically applied to the cluster. You may have
