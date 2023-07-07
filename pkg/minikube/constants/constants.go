@@ -166,8 +166,6 @@ const (
 var (
 	// IsMinikubeChildProcess is the name of "is minikube child process" variable
 	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
-	GvisorConfigTomlTargetName = "gvisor-config.toml"
 	// MountProcessFileName is the filename of the mount process
 	MountProcessFileName = ".mount-process"
 
