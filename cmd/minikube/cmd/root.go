@@ -225,6 +225,8 @@ func init() {
 	RootCmd.PersistentFlags().Bool(config.SkipAuditFlag, false, "Skip recording the current command in the audit logs.")
 	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
 
+	translate.DetermineLocale()
+
 	groups := templates.CommandGroups{
 		{
 			Message: translate.T("Basic Commands:"),
@@ -297,7 +299,6 @@ func init() {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
 
-	translate.DetermineLocale()
 	cobra.OnInitialize(initConfig)
 }
 
