@@ -140,7 +140,7 @@ func Execute() {
 		}
 	}
 
-	for _, c := range RootCmd.Commands() {
+	visitAllCommand(RootCmd, func(c *cobra.Command) {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(f *pflag.Flag) {
@@ -148,7 +148,8 @@ func Execute() {
 		})
 
 		c.SetUsageTemplate(usageTemplate())
-	}
+	})
+
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
 	RootCmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -339,4 +340,14 @@ func addToPath(dir string) {
 
 func validateUsername(name string) bool {
 	return len(name) <= 60
+}
+
+// visitAllCommand visit all command include subCommand
+func visitAllCommand(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
+	for _, c := range cmd.Commands() {
+		f(c)
+		if c.HasSubCommands() {
+			visitAllCommand(c, f)
+		}
+	}
 }
