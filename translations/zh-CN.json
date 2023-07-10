@@ -87,7 +87,7 @@
 	"Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager": "",
 	"Another tunnel process is already running, terminate the existing instance to start a new one": "",
 	"At least needs control plane nodes to enable addon": "至少需要控制平面节点来启用插件",
-	"Auto-pause is already enabled.": "自动暂停已经启用",
+	"Auto-pause is already enabled.": "自动暂停已经启用。",
 	"Automatically selected the '{{.driver}}' driver": "自动选择 '{{.driver}}' 驱动",
 	"Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})": "自动选择 '{{.driver}}' 驱动（可选项：{{.alternates}}）",
 	"Automatically selected the {{.driver}} driver": "自动选择 {{.driver}} 驱动",
