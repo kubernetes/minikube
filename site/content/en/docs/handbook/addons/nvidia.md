@@ -1,10 +1,8 @@
 ---
-title: "NVIDIA GPU Support"
-linkTitle: "NVIDIA GPU Support"
+title: "Using the Nvidia Addons"
+linkTitle: "Nvidia"
 weight: 1
 date: 2018-01-02
-description: >
-  Using NVIDIA GPU support within minikube
 ---
 
 ## Prerequisites

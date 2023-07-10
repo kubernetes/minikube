@@ -19,7 +19,7 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20230605"
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20230624"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.20.5 as auto-pause
 WORKDIR /src

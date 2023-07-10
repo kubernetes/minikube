@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.31.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.15.2
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.16.1
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
 	github.com/blang/semver/v4 v4.0.0
@@ -15,7 +15,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/cloudevents/sdk-go/v2 v2.14.0
-	github.com/docker/docker v24.0.2+incompatible
+	github.com/docker/docker v24.0.3+incompatible
 	github.com/docker/go-units v0.5.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
@@ -48,7 +48,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.5
+	github.com/shirou/gopsutil/v3 v3.23.6
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.16.0
@@ -58,16 +58,16 @@ require (
 	go.opentelemetry.io/otel/sdk v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
-	golang.org/x/crypto v0.10.0
+	golang.org/x/crypto v0.11.0
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
-	golang.org/x/mod v0.11.0
-	golang.org/x/oauth2 v0.9.0
+	golang.org/x/mod v0.12.0
+	golang.org/x/oauth2 v0.10.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/sys v0.9.0
-	golang.org/x/term v0.9.0
-	golang.org/x/text v0.10.0
+	golang.org/x/sys v0.10.0
+	golang.org/x/term v0.10.0
+	golang.org/x/text v0.11.0
 	gonum.org/v1/plot v0.13.0
-	google.golang.org/api v0.129.0
+	google.golang.org/api v0.130.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
@@ -97,14 +97,14 @@ require (
 
 require (
 	cloud.google.com/go v0.110.2 // indirect
-	cloud.google.com/go/compute v1.19.3 // indirect
+	cloud.google.com/go/compute v1.20.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.0 // indirect
 	cloud.google.com/go/monitoring v1.13.0 // indirect
 	cloud.google.com/go/trace v1.9.0 // indirect
 	git.sr.ht/~sbinet/gg v0.4.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.39.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.40.1 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
@@ -211,14 +211,14 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/image v0.7.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529 // indirect
 	google.golang.org/grpc v1.56.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -232,8 +232,10 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
+	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20230610170757-350a83297593
+	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.5
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )

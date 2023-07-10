@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.30.1-1687455737-16703
+ISO_VERSION ?= v1.30.1-1688144767-16765
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -784,11 +784,11 @@ endif
 .PHONY: out/gvisor-addon
 out/gvisor-addon: ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
-	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+	docker build --platform=linux/amd64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
@@ -1155,6 +1155,11 @@ update-go-github-version:
 update-docker-buildx-version:
 	(cd hack/update/docker_buildx_version && \
 	 go run update_docker_buildx_version.go)
+
+.PHONY: update-nerdctl-version
+update-nerdctl-version:
+	(cd hack/update/nerdctl_version && \
+	 go run update_nerdctl_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

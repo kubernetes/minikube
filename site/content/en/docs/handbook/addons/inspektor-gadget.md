@@ -1,5 +1,5 @@
 ---
-title: "Using Inspektor Gadget Addon"
+title: "Using the Inspektor Gadget Addon"
 linkTitle: "Inspektor Gadget"
 weight: 1
 date: 2023-02-16

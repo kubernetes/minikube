@@ -22,12 +22,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blang/semver/v4"
+	semver "github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/deploy/addons"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
@@ -259,7 +258,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L445
-		"IngressController": "ingress-nginx/controller:v1.8.0@sha256:744ae2afd433a395eeb13dc03d3313facba92e96ad71d9feaafc85925493fee3",
+		"IngressController": "ingress-nginx/controller:v1.8.1@sha256:e5c4824e7375fcf2a393e1c03c293b69759af37a9ca6abdb91b13d78a93da8bd",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L552
 		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v20230407@sha256:543c40fd093964bc9ab509d3e791f9989963021f1e9e4c9c7b6700b02bfb227b",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L601
@@ -298,7 +297,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-daemonset.yaml.tmpl", vmpath.GuestAddonsDir, "ig-daemonset.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.17.0@sha256:3ce187116b22ff706e9c17f25cbbe0b4556dd984281cc41e7bb503d51e745e7a",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.18.1@sha256:32f20b28cb05502dd6bcd2364321c834b97317039b456cff6f074b09824a7ac5",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}),
@@ -502,13 +501,8 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"gvisor-runtimeclass.yaml",
 			"0640"),
-		MustBinAsset(addons.GvisorAssets,
-			"gvisor/gvisor-config.toml",
-			vmpath.GuestGvisorDir,
-			constants.GvisorConfigTomlTargetName,
-			"0640"),
 	}, false, "gvisor", "minikube", "", "https://github.com/kubernetes/minikube/blob/master/deploy/addons/gvisor/README.md", map[string]string{
-		"GvisorAddon": "k8s-minikube/gvisor-addon:3@sha256:23eb17d48a66fc2b09c31454fb54ecae520c3e9c9197ef17fcb398b4f31d505a",
+		"GvisorAddon": "k8s-minikube/gvisor-addon:4@sha256:4bdc0bec3f36a32e534d9da98552810c832dd58fd0a361e5c0b836606b164bc2",
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
 	}),
@@ -759,7 +753,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.6@sha256:a7149890b97a17b55173a27fd36a6b0f6eacc54672a9f4fd1e0a16f0fc89554a",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.7@sha256:79c79804e8dcc89a9f70e08c362340fcc0f1a15828fdb147e8ae42936d1c0455",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),

@@ -49,6 +49,7 @@ jobs:
 
             A minikube maintainer needs to checkout this PR, run `make build-and-upload-cri-dockerd-binaries`, and then comment `ok-to-build-image`.
       - uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410
+        if: ${{ steps.bumpCriDockerd.outputs.changes != '' }}
         with:
           github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
           script: |
