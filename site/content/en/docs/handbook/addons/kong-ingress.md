@@ -1,5 +1,5 @@
 ---
-title: "Using Kong Ingress Controller Addon"
+title: "Using the Kong Ingress Controller Addon"
 linkTitle: "Kong Ingress"
 weight: 1
 date: 2022-01-25
