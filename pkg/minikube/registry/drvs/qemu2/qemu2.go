@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -80,26 +79,13 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
-		var p, fw string
 		switch arch {
 		case "amd64":
-			p = "/usr/local/Cellar/qemu"
-			fw = "share/qemu/edk2-x86_64-code.fd"
+			return "/usr/local/opt/qemu/share/qemu/edk2-x86_64-code.fd", nil
 		case "arm64":
-			p = "/opt/homebrew/Cellar/qemu"
-			fw = "share/qemu/edk2-aarch64-code.fd"
+			return "/opt/homebrew/opt/qemu/share/qemu/edk2-aarch64-code.fd", nil
 		default:
 			return "", fmt.Errorf("unknown arch: %s", arch)
-		}
-
-		v, err := os.ReadDir(p)
-		if err != nil {
-			return "", fmt.Errorf("lookup qemu: %v", err)
-		}
-		for _, version := range v {
-			if version.IsDir() {
-				return path.Join(p, version.Name(), fw), nil
-			}
 		}
 	}
 
