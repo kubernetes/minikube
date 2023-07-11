@@ -488,7 +488,6 @@
 	"Please also attach the following file to the GitHub issue:": "Bitte hängen Sie die folgende Datei an das GitHub Issue an:",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "Bitte erstellen Sie einen Cluster mit größerer Disk-Größe: `minikube start --disk SIZE_MB` ",
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "Entweder authentifizieren Sie sich bitte bei der Registry oder verwenden Sie den --base-image Parameter um eine andere Registry zu verwenden.",
-	"Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it": "",
 	"Please enter a value:": "Bitte geben Sie einen Wert ein:",
 	"Please free up disk or prune images.": "Bitte geben Sie Plattenplatz frei oder löschen Sie unbenutzte Images (prune)",
 	"Please increase Desktop's disk size.": "Bitte erhöhen Sie die Plattengröße von Desktop",

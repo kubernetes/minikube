@@ -577,7 +577,6 @@
 	"Please also attach the following file to the GitHub issue:": "请同时将以下文件附加到 GitHub 问题中：",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "",
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "",
-	"Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it": "",
 	"Please enter a value:": "请输入一个值：",
 	"Please free up disk or prune images.": "",
 	"Please increase Desktop's disk size.": "",

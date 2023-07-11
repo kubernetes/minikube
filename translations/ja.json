@@ -465,7 +465,6 @@
 	"Please also attach the following file to the GitHub issue:": "GitHub issue に次のファイルも添付してください:",
 	"Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ": "より大きなディスクサイズでクラスターを作ってください: `minikube start --disk SIZE_MB` ",
 	"Please either authenticate to the registry or use --base-image flag to use a different registry.": "レジストリーに認証するか、--base-image フラグで別のレジストリーを指定するかどちらを行ってください。",
-	"Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it": "",
 	"Please enter a value:": "値を入力してください:",
 	"Please free up disk or prune images.": "ディスクを解放するか、イメージを削除してください。",
 	"Please increase Desktop's disk size.": "Desktop のディスクサイズを増やしてください。",

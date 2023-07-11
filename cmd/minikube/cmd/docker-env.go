@@ -326,9 +326,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
 			sshAdd = true
 			sshHost = true
-			// user also need to execute ssh-agent bash and minikube ssh-host --append-known before this
-			// so remind them to do so
-			out.WarningT("Please ensure you have executed 'ssh-agent bash' and 'minikube ssh-host --append-known' in this shell before using docker-env on containerd. Ignore this message if you have done it")
 
 			// start the ssh-agent
 			if err := sshagent.Start(cname); err != nil {

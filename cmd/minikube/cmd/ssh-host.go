@@ -100,11 +100,16 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 			out.ErrLn("OpenFile: %v", err)
 			os.Exit(1)
 		}
-		defer f.Close()
 
 		_, err = f.WriteString(keys)
 		if err != nil {
 			out.ErrLn("WriteString: %v", err)
+			f.Close()
+			os.Exit(1)
+		}
+
+		if err := f.Close(); err != nil {
+			out.ErrLn("Close: %v", err)
 			os.Exit(1)
 		}
 
