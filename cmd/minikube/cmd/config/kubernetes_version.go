@@ -17,6 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"context"
+	"sort"
+
+	"github.com/google/go-github/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -33,4 +37,30 @@ func supportedKubernetesVersions() (releases []string) {
 		releases = append(releases, ver)
 	}
 	return releases
+}
+
+// GetGithubKubernetesVersions returns reverse-sort Kubernetes releases
+func GetGithubKubernetesVersions(ver string) ([]string, error) {
+	ghc := github.NewClient(nil)
+
+	opts := &github.ListOptions{PerPage: 100}
+	var releases []string
+	for {
+		rls, resp, err := ghc.Repositories.ListReleases(context.Background(), "kubernetes", "kubernetes", opts)
+		if err != nil {
+			return nil, err
+		}
+		for _, rl := range rls {
+			tag := rl.GetTagName()
+			if semver.IsValid(tag) {
+				releases = append(releases, tag)
+			}
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
+	}
+	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == -1 })
+	return releases, nil
 }
