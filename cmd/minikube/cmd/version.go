@@ -39,7 +39,7 @@ var (
 )
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
+	Use:   "versi",
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
 	Run: func(command *cobra.Command, args []string) {
