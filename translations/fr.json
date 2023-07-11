@@ -651,6 +651,7 @@
 	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "Répertoire minikube purgé avec succès situé à - [{{.minikubeDirectory}}]",
 	"Successfully started node {{.name}}!": "Nœud {{.name}} démarré avec succès !",
 	"Successfully stopped node {{.name}}": "Nœud {{.name}} arrêté avec succès",
+	"Successfully unblocked bootpd process from firewall, retrying": "",
 	"Suggestion: {{.advice}}": "Suggestion : {{.advice}}",
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "Le système n'a que {{.size}} Mio disponibles, moins que les {{.req}} Mio requis pour Kubernetes",
 	"Tag images": "Marquer des images",
