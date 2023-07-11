@@ -989,6 +989,7 @@
 	"Using rootless driver was required, but the current driver does not seem rootless": "",
 	"Using rootless {{.driver_name}} driver": "",
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "同时使用 'none' 驱动以及 '{{.runtime}}' 运行时是未经测试过的配置！",
+	"Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better": "",
 	"Using the running {{.driver_name}} \"{{.profile_name}}\" VM ...": "使用正在运行的 {{.driver_name}} \"{{.profile_name}}\" 虚拟机",
 	"Using the {{.driver}} driver based on existing profile": "根据现有的配置文件使用 {{.driver}} 驱动程序",
 	"Using the {{.driver}} driver based on user configuration": "根据用户配置使用 {{.driver}} 驱动程序",

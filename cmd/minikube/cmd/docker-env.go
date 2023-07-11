@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -47,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
+	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	pkgnetwork "k8s.io/minikube/pkg/network"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
@@ -295,6 +297,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		}
 
 		cname := ClusterFlagValue()
+
 		co := mustload.Running(cname)
 
 		driverName := co.CP.Host.DriverName
@@ -306,14 +309,42 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		if len(co.Config.Nodes) > 1 {
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
+		cr := co.Config.KubernetesConfig.ContainerRuntime
+		// nerdctld supports amd64 and arm64
+		if err := dockerEnvSupported(cr, driverName); err != nil {
+			exit.Message(reason.Usage, err.Error())
+		}
 
-		if co.Config.KubernetesConfig.ContainerRuntime != constants.Docker {
-			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
-				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
+		// for the sake of docker-env command, start nerdctl and nerdctld
+		if cr == constants.Containerd {
+			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
+
+			startNerdctld()
+
+			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
+			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
+			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
+			sshAdd = true
+			sshHost = true
+
+			// start the ssh-agent
+			if err := sshagent.Start(cname); err != nil {
+				exit.Message(reason.SSHAgentStart, err.Error())
+			}
+			// cluster config must be reloaded
+			// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
+			co = mustload.Running(cname)
+
+			// set the ssh-agent envs for current process
+			os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
+			os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
 		}
 
 		r := co.CP.Runner
-		ensureDockerd(cname, r)
+
+		if cr == constants.Docker {
+			ensureDockerd(cname, r)
+		}
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
@@ -381,14 +412,18 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
-
 			cmd := exec.Command(path, d.GetSSHKeyPath())
 			cmd.Stderr = os.Stderr
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
 			err = cmd.Run()
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
 		}
+
+		// eventually, run something similar to ssh --append-known
+		appendKnownHelper(nodeName, true)
 	},
 }
 
@@ -539,6 +574,8 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	envSSH := map[string]string{
 		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
 		constants.MinikubeActiveDockerdEnv: ec.profile,
+		constants.SSHAuthSock:              ec.sshAuthSock,
+		constants.SSHAgentPID:              agentPID,
 	}
 
 	var rt map[string]string
@@ -628,6 +665,20 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
+}
+
+func dockerEnvSupported(containerRuntime, driverName string) error {
+	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
+		return fmt.Errorf("the docker-env command only supports amd64 & arm64 architectures")
+	}
+	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
+		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
+	}
+	// we only support containerd-env on the Docker driver
+	if containerRuntime == constants.Containerd && driverName != driver.Docker {
+		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
+	}
+	return nil
 }
 
 func init() {

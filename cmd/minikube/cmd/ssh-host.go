@@ -45,69 +45,76 @@ var sshHostCmd = &cobra.Command{
 	Short: "Retrieve the ssh host key of the specified node",
 	Long:  "Retrieve the ssh host key of the specified node.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cname := ClusterFlagValue()
-		co := mustload.Running(cname)
-		if co.CP.Host.DriverName == driver.None {
-			exit.Message(reason.Usage, "'none' driver does not support 'minikube ssh-host' command")
-		}
+		appendKnownHelper(nodeName, appendKnown)
+	},
+}
 
-		var err error
-		var n *config.Node
-		if nodeName == "" {
-			n = co.CP.Node
-		} else {
-			n, _, err = node.Retrieve(*co.Config, nodeName)
-			if err != nil {
-				exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
-			}
-		}
+func appendKnownHelper(nodeName string, appendKnown bool) {
+	cname := ClusterFlagValue()
+	co := mustload.Running(cname)
+	if co.CP.Host.DriverName == driver.None {
+		exit.Message(reason.Usage, "'none' driver does not support 'minikube ssh-host' command")
+	}
 
-		scanArgs := []string{"-t", "rsa"}
-
-		keys, err := machine.RunSSHHostCommand(co.API, *co.Config, *n, "ssh-keyscan", scanArgs)
+	var err error
+	var n *config.Node
+	if nodeName == "" {
+		n = co.CP.Node
+	} else {
+		n, _, err = node.Retrieve(*co.Config, nodeName)
 		if err != nil {
-			// This is typically due to a non-zero exit code, so no need for flourish.
-			out.ErrLn("ssh-keyscan: %v", err)
-			// It'd be nice if we could pass up the correct error code here :(
+			exit.Message(reason.GuestNodeRetrieve, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+		}
+	}
+
+	scanArgs := []string{"-t", "rsa"}
+
+	keys, err := machine.RunSSHHostCommand(co.API, *co.Config, *n, "ssh-keyscan", scanArgs)
+	if err != nil {
+		// This is typically due to a non-zero exit code, so no need for flourish.
+		out.ErrLn("ssh-keyscan: %v", err)
+		// It'd be nice if we could pass up the correct error code here :(
+		os.Exit(1)
+	}
+
+	if appendKnown {
+		addr, port, err := machine.GetSSHHostAddrPort(co.API, *co.Config, *n)
+		if err != nil {
+			out.ErrLn("GetSSHHostAddrPort: %v", err)
 			os.Exit(1)
 		}
 
-		if appendKnown {
-			addr, port, err := machine.GetSSHHostAddrPort(co.API, *co.Config, *n)
-			if err != nil {
-				out.ErrLn("GetSSHHostAddrPort: %v", err)
-				os.Exit(1)
-			}
+		host := addr
+		if port != 22 {
+			host = fmt.Sprintf("[%s]:%d", addr, port)
+		}
+		knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
 
-			host := addr
-			if port != 22 {
-				host = fmt.Sprintf("[%s]:%d", addr, port)
-			}
-			knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
-
-			fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
-			if sshutil.KnownHost(host, knownHosts) {
-				return
-			}
-
-			f, err := os.OpenFile(knownHosts, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-			if err != nil {
-				out.ErrLn("OpenFile: %v", err)
-				os.Exit(1)
-			}
-			defer f.Close()
-
-			_, err = f.WriteString(keys)
-			if err != nil {
-				out.ErrLn("WriteString: %v", err)
-				os.Exit(1)
-			}
-
+		fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
+		if sshutil.KnownHost(host, knownHosts) {
 			return
 		}
 
-		fmt.Printf("%s", keys)
-	},
+		f, err := os.OpenFile(knownHosts, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		if err != nil {
+			out.ErrLn("OpenFile: %v", err)
+			os.Exit(1)
+		}
+
+		_, err = f.WriteString(keys)
+		if err != nil {
+			out.ErrLn("WriteString: %v", err)
+			f.Close()
+			os.Exit(1)
+		}
+
+		if err := f.Close(); err != nil {
+			out.ErrLn("Close: %v", err)
+			os.Exit(1)
+		}
+
+		return
+	}
 }
 
 func init() {

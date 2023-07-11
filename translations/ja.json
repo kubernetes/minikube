@@ -824,6 +824,7 @@
 	"Using rootless driver was required, but the current driver does not seem rootless": "rootless ドライバー使用が必要でしたが、現在のドライバーは rootless が必要ないようです",
 	"Using rootless {{.driver_name}} driver": "rootless {{.driver_name}} ドライバー使用",
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "' none' ドライバーでの '{{.runtime}}' ランタイム使用は、未テストの設定です！",
+	"Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better": "",
 	"Using the {{.driver}} driver based on existing profile": "既存のプロファイルを元に、{{.driver}} ドライバーを使用します",
 	"Using the {{.driver}} driver based on user configuration": "ユーザーの設定に基づいて {{.driver}} ドライバーを使用します",
 	"Using {{.driver_name}} driver with root privileges": "root 権限を持つ {{.driver_name}} ドライバーを使用",

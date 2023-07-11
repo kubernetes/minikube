@@ -879,6 +879,7 @@
 	"Using rootless driver was required, but the current driver does not seem rootless": "",
 	"Using rootless {{.driver_name}} driver": "",
 	"Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!": "Das Verwenden der '{{.runtime}}' Laufzeitumgebung mit dem 'none' Treiber ist eine ungetestete Konfiguration!",
+	"Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better": "",
 	"Using the {{.driver}} driver based on existing profile": "Verwende den Treiber {{.driver}} basierend auf dem existierenden Profil",
 	"Using the {{.driver}} driver based on user configuration": "Verwende den Treiber {{.driver}} basierend auf der Benutzer-Konfiguration",
 	"Using {{.driver_name}} driver with root privileges": "",

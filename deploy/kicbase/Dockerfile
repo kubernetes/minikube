@@ -49,6 +49,8 @@ ARG CRI_DOCKERD_VERSION="v0.3.3"
 ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
 ARG CNI_PLUGINS_VERSION="v1.3.0"
 ARG TARGETARCH
+ARG NERDCTL_VERSION="1.0.0"
+ARG NERDCTLD_VERSION="0.2.0"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -59,6 +61,8 @@ COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/dock
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY deploy/kicbase/CHANGELOG ./CHANGELOG
+COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
+COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
@@ -135,6 +139,18 @@ RUN clean-install \
     dnsutils \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
+
+# Install nerdctl and nerdctld
+RUN export ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
+        echo "Installing nerdctl and nerdctld ..." && \
+        curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
+        tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
+        curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
+        tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
+        chmod 777  /usr/local/bin/nerdctl &&\
+        chmod 777 /usr/local/bin/nerdctld; \
+    fi
 
 # install docker
 RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu jammy stable' > /etc/apt/sources.list.d/docker.list" && \

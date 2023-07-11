@@ -49,6 +49,9 @@ minkube failed to cache and load cached images
 "MK_COMMAND_RUNNER" (Exit code ExProgramError)  
 minikube failed to load a Docker Machine CommandRunner  
 
+"MK_START_NERDCTLD" (Exit code ExProgramError)  
+minikube failed to start nerdctld  
+
 "MK_COMPLETION" (Exit code ExProgramError)  
 minikube failed to generate shell command completion for a supported shell  
 
@@ -402,6 +405,9 @@ minikube failed to enable the current container runtime
 
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
+
+"SSH_AGENT_START" (Exit code ExRuntimeError)  
+minikube failed to start an ssh-agent when executing docker-env  
 
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
