@@ -672,6 +672,7 @@
 	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "",
 	"Successfully started node {{.name}}!": "{{.name}} 노드가 정상적으로 시작되었습니다!",
 	"Successfully stopped node {{.name}}": "{{.name}} 노드가 정상적으로 중지되었습니다",
+	"Successfully unblocked bootpd process from firewall, retrying": "",
 	"Suggestion: {{.advice}}": "권장: {{.advice}}",
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "",
 	"Tag images": "",

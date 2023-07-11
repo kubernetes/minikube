@@ -626,6 +626,7 @@
 	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "[{{.minikubeDirectory}}] にある minikube ディレクトリーの削除に成功しました",
 	"Successfully started node {{.name}}!": "{{.name}} ノードの起動に成功しました！",
 	"Successfully stopped node {{.name}}": "{{.name}} ノードの停止に成功しました",
+	"Successfully unblocked bootpd process from firewall, retrying": "",
 	"Suggestion: {{.advice}}": "提案: {{.advice}}",
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "システムは Kubernetes 用に要求された {{.req}}MiB より少ない {{.size}}MiB のみ利用可能です",
 	"Tag images": "イメージのタグ付与",

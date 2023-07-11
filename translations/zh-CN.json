@@ -759,6 +759,7 @@
 	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "成功清理 [{{.minikubeDirectory}}] 下的 minukube 目录",
 	"Successfully started node {{.name}}!": "",
 	"Successfully stopped node {{.name}}": "",
+	"Successfully unblocked bootpd process from firewall, retrying": "",
 	"Suggestion: {{.advice}}": "建议：{{.advice}}",
 	"Suggestion: {{.fix}}": "建议：{{.fix}}",
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "",

@@ -615,6 +615,7 @@
 	"Successfully purged minikube directory located at - [{{.minikubeDirectory}}]": "",
 	"Successfully started node {{.name}}!": "",
 	"Successfully stopped node {{.name}}": "",
+	"Successfully unblocked bootpd process from firewall, retrying": "",
 	"Suggestion: {{.advice}}": "",
 	"System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes": "",
 	"Tag images": "",
