@@ -1,7 +1,0 @@
-config BR2_PACKAGE_HOST_PAHOLE
-	bool "host pahole"
-	default y
-	help
-	  Pahole and other DWARF utils.
-
-	  https://git.kernel.org/pub/scm/devel/pahole/pahole.git
