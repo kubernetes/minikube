@@ -303,7 +303,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
-	vmwareUnsupported(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -409,16 +408,6 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
 `, out.V{"driver": suggestedDriver})
-}
-
-func vmwareUnsupported(driverName string) {
-	if !driver.IsVMware(driverName) {
-		return
-	}
-	exit.Message(reason.DrvUnsupported, `Due to security improvements to minikube the VMware driver is currently not supported. Available workarounds are to use a different driver or downgrade minikube to v1.29.0.
-
-    We are accepting community contributions to fix this, for more details on the issue see: https://github.com/kubernetes/minikube/issues/16221
-`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
