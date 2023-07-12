@@ -18,9 +18,9 @@ package config
 
 import (
 	"context"
-	"sort"
+	"net/http"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v53/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -39,28 +39,20 @@ func supportedKubernetesVersions() (releases []string) {
 	return releases
 }
 
-// GetGithubKubernetesVersions returns reverse-sort Kubernetes releases
-func GetGithubKubernetesVersions(ver string) ([]string, error) {
+// IsInGithubKubernetesVersions checks whether ver is in the Github list of k8s versions
+func IsInGithubKubernetesVersions(ver string) (bool, error) {
 	ghc := github.NewClient(nil)
 
-	opts := &github.ListOptions{PerPage: 100}
-	var releases []string
-	for {
-		rls, resp, err := ghc.Repositories.ListReleases(context.Background(), "kubernetes", "kubernetes", opts)
-		if err != nil {
-			return nil, err
+	release, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return false, nil
 		}
-		for _, rl := range rls {
-			tag := rl.GetTagName()
-			if semver.IsValid(tag) {
-				releases = append(releases, tag)
-			}
-		}
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
+		return false, err
 	}
-	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == -1 })
-	return releases, nil
+	if release.GetTagName() == ver {
+		return true, nil
+	}
+
+	return false, nil
 }
