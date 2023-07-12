@@ -140,7 +140,7 @@ func Execute() {
 		}
 	}
 
-	visitAllCommand(RootCmd, func(c *cobra.Command) {
+	applyToAllCommands(RootCmd, func(c *cobra.Command) {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(f *pflag.Flag) {
