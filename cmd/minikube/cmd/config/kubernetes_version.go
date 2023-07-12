@@ -43,16 +43,12 @@ func supportedKubernetesVersions() (releases []string) {
 func IsInGithubKubernetesVersions(ver string) (bool, error) {
 	ghc := github.NewClient(nil)
 
-	release, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
+	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
 			return false, nil
 		}
 		return false, err
 	}
-	if release.GetTagName() == ver {
-		return true, nil
-	}
-
-	return false, nil
+	return true, nil
 }

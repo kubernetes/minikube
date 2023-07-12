@@ -1724,13 +1724,13 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 			out.WarningT("Specified Kubernetes version {{.specified}} not found in Kubernetes version list. Searching the internet...", out.V{"specified": nvs})
 			found, err := cmdcfg.IsInGithubKubernetesVersions(kubernetesVer)
 			if err != nil && !viper.GetBool(force) {
-				exit.Error(reason.KubernetesNotConnect, "error fetching Kubernetes version list from Github", err)
+				exit.Error(reason.KubernetesNotConnect, "error fetching Kubernetes version list from GitHub", err)
 			}
 			if found {
-				out.Styled(style.Check, "Kubernetes version {{.specified}} found in Github version list", out.V{"specified": nvs})
+				out.Styled(style.Check, "Kubernetes version {{.specified}} found in GitHub version list", out.V{"specified": nvs})
 			} else if !viper.GetBool(force) {
-				out.WarningT("Kubernetes version not found in Github version list. You can force a Kubernetes version via the --force flag")
-				exitIfNotForced(reason.KubernetesTooNew, "Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+				out.WarningT("Kubernetes version not found in GitHub version list. You can force a Kubernetes version via the --force flag")
+				exitIfNotForced(reason.KubernetesTooNew, "Kubernetes version {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 			}
 		}
 	}

@@ -470,7 +470,7 @@ var (
 	KubernetesTooOld = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
 	// a too new Kubernetes version was specified for minikube to use
 	KubernetesTooNew = Kind{ID: "K8S_NEW_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
-	// error fetching github kubernetes version list
+	// error fetching GitHub Kubernetes version list
 	KubernetesNotConnect = Kind{ID: "K8S_FAIL_CONNECT"}
 	// minikube was unable to safely downgrade installed Kubernetes version
 	KubernetesDowngrade = Kind{
