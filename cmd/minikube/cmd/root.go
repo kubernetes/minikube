@@ -342,8 +342,8 @@ func validateUsername(name string) bool {
 	return len(name) <= 60
 }
 
-// visitAllCommand visit all command include subCommand
-func visitAllCommand(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
+// applyToAllCommands applies the provided func to all commands including sub commands
+func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
 	for _, c := range cmd.Commands() {
 		f(c)
 		if c.HasSubCommands() {
