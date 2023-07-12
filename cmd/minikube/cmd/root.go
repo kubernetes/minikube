@@ -347,7 +347,7 @@ func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
 	for _, c := range cmd.Commands() {
 		f(c)
 		if c.HasSubCommands() {
-			visitAllCommand(c, f)
+			applyToAllCommands(c, f)
 		}
 	}
 }
