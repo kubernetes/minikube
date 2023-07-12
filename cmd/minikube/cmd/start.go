@@ -1774,7 +1774,8 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 		if contains(constants.ValidKubernetesVersions, kubernetesVer) {
 			out.Styled(style.Check, "Kubernetes version {{.specified}} found in version list", out.V{"specified": nvs})
 		} else {
-			out.WarningT("Specified Kubernetes version {{.specified}} not found in Kubernetes version list. Searching the internet...", out.V{"specified": nvs})
+			out.WarningT("Specified Kubernetes version {{.specified}} not found in Kubernetes version list", out.V{"specified": nvs})
+			out.Styled(style.Verifying, "Searching the internet for Kubernetes version...")
 			found, err := cmdcfg.IsInGithubKubernetesVersions(kubernetesVer)
 			if err != nil && !viper.GetBool(force) {
 				exit.Error(reason.KubernetesNotConnect, "error fetching Kubernetes version list from GitHub", err)
