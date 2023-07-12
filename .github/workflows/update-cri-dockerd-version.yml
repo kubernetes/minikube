@@ -30,6 +30,7 @@ jobs:
           echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Create PR
+        id: createPR
         if: ${{ steps.bumpCriDockerd.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
