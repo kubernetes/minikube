@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"path"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -102,14 +101,14 @@ func setDstFileNameFromSrc(dst, src string) string {
 	var dd, df, sf string
 	switch {
 	case guestToHost:
-		_, sf = path.Split(src)
+		_, sf = pt.Split(src)
 		dd, df = filepath.Split(dst)
 	case guestToGuest:
-		_, sf = path.Split(src)
-		dd, df = path.Split(dst)
+		_, sf = pt.Split(src)
+		dd, df = pt.Split(dst)
 	default:
 		_, sf = filepath.Split(src)
-		dd, df = path.Split(dst)
+		dd, df = pt.Split(dst)
 	}
 
 	// if dst is empty, dd and df will be empty, so return dst
@@ -133,7 +132,7 @@ func setDstFileNameFromSrc(dst, src string) string {
 		return filepath.Join(dd, sf)
 	}
 
-	return path.Join(dd, sf)
+	return pt.Join(dd, sf)
 }
 
 // split path to node name and file path
