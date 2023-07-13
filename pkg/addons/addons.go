@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -611,6 +612,15 @@ func VerifyNotPaused(profile string, enable bool) error {
 	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
 	if err != nil {
 		return errors.Wrap(err, "get host")
+	}
+
+	s, err := host.Driver.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get state")
+	}
+	if s != state.Running {
+		// can't check the status of pods on a non-running cluster
+		return nil
 	}
 
 	runner, err := machine.CommandRunner(host)
