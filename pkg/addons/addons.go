@@ -637,14 +637,14 @@ func VerifyNotPaused(profile string, enable bool) error {
 	if err != nil {
 		return errors.Wrap(err, "check paused")
 	}
-	if runtimePaused {
-		action := "disable"
-		if enable {
-			action = "enable"
-		}
-		msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
-		out.Styled(style.Shrug, msg)
-		return errors.New(msg)
+	if !runtimePaused {
+		return nil
 	}
-	return nil
+	action := "disable"
+	if enable {
+		action = "enable"
+	}
+	msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
+	out.Styled(style.Shrug, msg)
+	return errors.New(msg)
 }
