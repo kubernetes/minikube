@@ -39,8 +39,8 @@ func supportedKubernetesVersions() (releases []string) {
 	return releases
 }
 
-// IsInGithubKubernetesVersions checks whether ver is in the Github list of k8s versions
-func IsInGithubKubernetesVersions(ver string) (bool, error) {
+// IsInGitHubKubernetesVersions checks whether ver is in the GitHub list of K8s versions
+func IsInGitHubKubernetesVersions(ver string) (bool, error) {
 	ghc := github.NewClient(nil)
 
 	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
