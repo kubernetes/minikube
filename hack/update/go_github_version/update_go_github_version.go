@@ -67,6 +67,7 @@ func generateSchema() map[string]update.Item {
 		"hack/update/kubeadm_constants/update_kubeadm_constants.go",
 		"hack/update/kubernetes_versions_list/update_kubernetes_versions_list.go",
 		"pkg/perf/monitor/github.go",
+		"cmd/minikube/cmd/config/kubernetes_version.go",
 	}
 
 	schema := make(map[string]update.Item)
