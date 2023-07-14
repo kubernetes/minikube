@@ -957,6 +957,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "",
 	"dry-run validation complete!": "dry-run 검증 완료!",
 	"enable failed": "활성화가 실패하였습니다",
+	"enabled failed": "",
 	"error creating clientset": "clientset 생성 오류",
 	"error creating machine client": "머신 client 생성 오류",
 	"error creating urls": "",

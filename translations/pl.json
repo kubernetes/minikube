@@ -967,6 +967,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "",
 	"dry-run validation complete!": "",
 	"enable failed": "",
+	"enabled failed": "",
 	"error creating clientset": "",
 	"error creating urls": "",
 	"error getting defaults: {{.error}}": "",

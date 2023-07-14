@@ -1077,6 +1077,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "dry-run 模式。仅验证配置，不改变系统状态",
 	"dry-run validation complete!": "",
 	"enable failed": "开启失败",
+	"enabled failed": "",
 	"error creating clientset": "clientset 创建失败",
 	"error creating urls": "url 创建失败",
 	"error getting defaults: {{.error}}": "获取默认值时出错: {{.error}}",
