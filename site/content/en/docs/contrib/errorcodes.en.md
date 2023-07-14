@@ -34,6 +34,12 @@ minikube could not disable an addon, e.g. dashboard addon
 "MK_ADDON_ENABLE" (Exit code ExProgramError)  
 minikube could not enable an addon, e.g. dashboard addon  
 
+"MK_ADDON_ENABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not enable an addon on a paused cluster  
+
+"MK_ADDON_DISABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not disable an addon on a paused cluster  
+
 "MK_ADD_CONFIG" (Exit code ExProgramError)  
 minikube failed to update internal configuration, such as the cached images config map  
 
