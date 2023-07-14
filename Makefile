@@ -300,13 +300,14 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
 		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
+		rm $(BUILD_DIR)/buildroot/package/go/0003-runtime-support-riscv64-SV57-mode.patch; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
+
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
-	rm $(BUILD_DIR)/buildroot/package/go/0003-runtime-support-riscv64-SV57-mode.patch
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
                 mv $(BUILD_DIR)/buildroot/output-aarch64/images/boot.iso $(BUILD_DIR)/minikube-arm64.iso; \
