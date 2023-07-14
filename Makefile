@@ -303,7 +303,6 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		rm $(BUILD_DIR)/buildroot/package/go/0003-runtime-support-riscv64-SV57-mode.patch; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
