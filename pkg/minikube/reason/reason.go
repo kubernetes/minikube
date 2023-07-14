@@ -85,6 +85,11 @@ var (
 	InternalAddonDisable = Kind{ID: "MK_ADDON_DISABLE", ExitCode: ExProgramError}
 	// minikube could not enable an addon, e.g. dashboard addon
 	InternalAddonEnable = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
+	// minikube could not enable an addon on a paused cluster
+	InternalAddonEnablePaused = Kind{ID: "MK_ADDON_ENABLE_PAUSED", ExitCode: ExProgramConflict}
+	// minikube could not disable an addon on a paused cluster
+	InternalAddonDisablePaused = Kind{ID: "MK_ADDON_DISABLE_PAUSED", ExitCode: ExProgramConflict}
+
 	// minikube failed to update internal configuration, such as the cached images config map
 	InternalAddConfig = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
 	// minikube failed to create a cluster bootstrapper

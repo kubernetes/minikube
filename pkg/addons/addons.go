@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -36,9 +37,11 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -584,4 +587,64 @@ func UpdateConfigToDisable(cc *config.ClusterConfig) {
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+}
+
+// VerifyNotPaused verifies the cluster is not paused before enable/disable an addon.
+func VerifyNotPaused(profile string, enable bool) error {
+	klog.Info("checking whether the cluster is paused")
+
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		return errors.Wrap(err, "control plane")
+	}
+
+	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
+	if err != nil {
+		return errors.Wrap(err, "get host")
+	}
+
+	s, err := host.Driver.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get state")
+	}
+	if s != state.Running {
+		// can't check the status of pods on a non-running cluster
+		return nil
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		return errors.Wrap(err, "command runner")
+	}
+
+	crName := cc.KubernetesConfig.ContainerRuntime
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "container runtime")
+	}
+	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		return errors.Wrap(err, "check paused")
+	}
+	if !runtimePaused {
+		return nil
+	}
+	action := "disable"
+	if enable {
+		action = "enable"
+	}
+	msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
+	out.Styled(style.Shrug, msg)
+	return errors.New(msg)
 }
