@@ -900,6 +900,7 @@
 	"dry-run mode. Validates configuration, but does not mutate system state": "dry-run モード。設定は検証しますが、システムの状態は変更しません",
 	"dry-run validation complete!": "dry-run の検証が終了しました！",
 	"enable failed": "有効化に失敗しました",
+	"enabled failed": "",
 	"error creating clientset": "clientset 作成中にエラー",
 	"error creating urls": "URL 作成でエラー",
 	"error getting defaults: {{.error}}": "デフォルト取得中にエラー: {{.error}}",
