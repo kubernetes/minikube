@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.31.0 - 2023-07-17
+## Version 1.31.0 - 2023-07-18
 
 Features:
 * Add back VMware driver support [#16796](https://github.com/kubernetes/minikube/pull/16796)
@@ -22,7 +22,7 @@ Minor Improvements:
 * --kubernetes-version: Assume latest patch version if not specified [#16569](https://github.com/kubernetes/minikube/pull/16569)
 * audit: Set default max file size [#16543](https://github.com/kubernetes/minikube/pull/16543)
 * service: Fail if no pods available [#15079](https://github.com/kubernetes/minikube/pull/15079)
-* Kicbase: Image building uses docker buildx [#16252](https://github.com/kubernetes/minikube/pull/16252)
+* docker/podman driver: Use buildx for `image build` command [#16252](https://github.com/kubernetes/minikube/pull/16252)
 * Addon gvisor: Simplify runtime configuration and use latest version [#14996](https://github.com/kubernetes/minikube/pull/14996)
 * Add PowerShell code completion [#16232](https://github.com/kubernetes/minikube/pull/16232)
 * build: Support DOS-style path for Dockerfile path [#15074](https://github.com/kubernetes/minikube/pull/15074)
