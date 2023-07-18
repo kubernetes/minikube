@@ -1,2 +1,2 @@
-FROM golang:1.20.5
+FROM golang:1.20.6
 ADD auto-pause-hook /auto-pause-hook
