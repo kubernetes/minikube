@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 1.31.1 - 2023-07-19
+
+* cni: Fix regression in auto selection [#16912](https://github.com/kubernetes/minikube/pull/16912)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Jeff MAURY
+- Medya Ghazizadeh
+- Steven Powell
+
+Thank you to our triage members for this release!
+
+- afbjorklund (5 comments)
+- torenware (5 comments)
+- mprimeaux (3 comments)
+- prezha (3 comments)
+- spowelljr (1 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.31.1/) for this release!
+
 ## Version 1.31.0 - 2023-07-18
 
 Features:
