@@ -426,9 +426,27 @@ func validateBuiltImageVersion(r command.Runner, driverName string) {
 		return
 	}
 
-	if versionDetails.MinikubeVersion != version.GetVersion() {
+	if !imageMatchesBinaryVersion(versionDetails.MinikubeVersion, version.GetVersion()) {
 		out.WarningT("Image was not built for the current minikube version. To resolve this you can delete and recreate your minikube cluster using the latest images. Expected minikube version: {{.imageMinikubeVersion}} -> Actual minikube version: {{.minikubeVersion}}", out.V{"imageMinikubeVersion": versionDetails.MinikubeVersion, "minikubeVersion": version.GetVersion()})
 	}
+}
+
+func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
+	// the map below is used to map the binary version to the version the image expects
+	// this is usually done when a patch version is released but a new ISO/Kicbase is not needed
+	// that way a version mismatch warning won't be thrown
+	//
+	// ex.
+	// the v1.31.0 and v1.31.1 minikube binaries both use v1.31.0 ISO & Kicbase
+	// to prevent the v1.31.1 binary from throwing a version mismatch warning we use the map to use change the binary version used in the comparison
+
+	mappedVersions := map[string]string{
+		"v1.31.1": "v1.31.0",
+	}
+	if v, ok := mappedVersions[binaryVersion]; ok {
+		binaryVersion = v
+	}
+	return binaryVersion == imageVersion
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {

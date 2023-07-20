@@ -840,3 +840,23 @@ func TestValidateStaticIP(t *testing.T) {
 		}
 	}
 }
+
+func TestImageMatchesBinaryVersion(t *testing.T) {
+	tests := []struct {
+		imageVersion  string
+		binaryVersion string
+		versionMatch  bool
+	}{
+		{"v1.17.0", "v1.17.0", true},
+		{"v1.17.0", "v1.20.0", false},
+		{"v1.31.0", "v1.31.1", true},
+		{"v1.31.1", "v1.31.0", false},
+	}
+
+	for _, tc := range tests {
+		got := imageMatchesBinaryVersion(tc.imageVersion, tc.binaryVersion)
+		if got != tc.versionMatch {
+			t.Errorf("imageMatchesBinaryVersion(%s, %s) = %t; want = %t", tc.imageVersion, tc.binaryVersion, got, tc.versionMatch)
+		}
+	}
+}
