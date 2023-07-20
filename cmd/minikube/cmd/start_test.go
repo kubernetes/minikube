@@ -845,7 +845,7 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 	tests := []struct {
 		imageVersion  string
 		binaryVersion string
-		want          bool
+		versionMatch  bool
 	}{
 		{"v1.17.0", "v1.17.0", true},
 		{"v1.17.0", "v1.20.0", false},
@@ -855,8 +855,8 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 
 	for _, tc := range tests {
 		got := imageMatchesBinaryVersion(tc.imageVersion, tc.binaryVersion)
-		if got != tc.want {
-			t.Errorf("imageMatchesBinaryVersion(%s, %s) = %t; want = %t", tc.imageVersion, tc.binaryVersion, got, tc.want)
+		if got != tc.versionMatch {
+			t.Errorf("imageMatchesBinaryVersion(%s, %s) = %t; want = %t", tc.imageVersion, tc.binaryVersion, got, tc.versionMatch)
 		}
 	}
 }

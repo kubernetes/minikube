@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.31.1 - 2023-07-19
+## Version 1.31.1 - 2023-07-20
 
 * cni: Fix regression in auto selection [#16912](https://github.com/kubernetes/minikube/pull/16912)
 
