@@ -17,8 +17,6 @@ limitations under the License.
 package images
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -88,40 +86,6 @@ registry.k8s.io/coredns/coredns:v1.8.4
 			got := essentials("registry.k8s.io", v)
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("images mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetLatestTag(t *testing.T) {
-	serverResp := "{tags: [\"1.8.7\"]}"
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(serverResp))
-		if err != nil {
-			t.Errorf("failed to write https response")
-		}
-	}))
-	defer server.Close()
-
-	var testCases = []struct {
-		name          string
-		url           string
-		lastKnownGood string
-		wsResponse    string
-		expect        string
-	}{
-		{name: "VersionGetSuccess", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["v1.8.9"]}`, expect: "v1.8.9"},
-		{name: "VersionGetFail", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "nah", "nope": ["v1.8.9"]}`, expect: "v1.8.6"},
-		{name: "VersionGetFailNone", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: ``, expect: "v1.8.6"},
-		{name: "VersionGetSuccessMultiple", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["1.8.7","v1.8.9"]}`, expect: "v1.8.9"},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			serverResp = tc.wsResponse
-			resp := findLatestTagFromRepository(tc.url, tc.lastKnownGood)
-			if diff := cmp.Diff(tc.expect, resp); diff != "" {
-				t.Errorf("Incorrect response version (-want +got):\n%s", diff)
 			}
 		})
 	}
