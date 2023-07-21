@@ -88,9 +88,16 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 		if port != 22 {
 			host = fmt.Sprintf("[%s]:%d", addr, port)
 		}
-		knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
 
-		fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
+		sshDir := filepath.Join(homedir.HomeDir(), ".ssh")
+		err = os.MkdirAll(sshDir, os.FileMode(0700)) // drwx------, to match ssh-keygen behavior
+		if err != nil {
+			out.ErrLn("MkdirAll: %v", err)
+			os.Exit(1)
+		}
+
+		knownHosts := filepath.Join(sshDir, "known_hosts")
+
 		if sshutil.KnownHost(host, knownHosts) {
 			return
 		}
@@ -112,6 +119,8 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 			out.ErrLn("Close: %v", err)
 			os.Exit(1)
 		}
+
+		fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
 
 		return
 	}
