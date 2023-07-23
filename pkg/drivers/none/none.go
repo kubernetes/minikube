@@ -47,9 +47,10 @@ var cleanupPaths = []string{
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL     string
-	runtime cruntime.Manager
-	exec    command.Runner
+	URL        string
+	runtime    cruntime.Manager
+	exec       command.Runner
+	NodeConfig Config
 }
 
 // Config is configuration for the None driver
@@ -61,24 +62,29 @@ type Config struct {
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := command.NewExecRunner(true)
-	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
-	// Libraries shouldn't panic, but there is no way for drivers to return error :(
-	if err != nil {
-		klog.Fatalf("unable to create container runtime: %v", err)
-	}
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		runtime: runtime,
-		exec:    runner,
+		NodeConfig: c,
 	}
 }
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
+	runner := command.NewExecRunner(true)
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: runner})
+	// Libraries shouldn't panic, but there is no way for drivers to return error :(
+	if err != nil {
+		klog.Fatalf("unable to create container runtime: %v", err)
+	}
+
+	d.runtime = runtime
+	d.exec = runner
+
+	fmt.Printf("We've put a command runner inside Driver in PrecreateCheck: %#v\n\n\n", d.exec)
+
 	return d.runtime.Available()
 }
 
@@ -125,6 +131,9 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
+	runner := command.NewExecRunner(true)
+	d.exec = runner
+
 	hostname, port, err := kubeconfig.Endpoint(d.BaseDriver.MachineName)
 	if err != nil {
 		klog.Warningf("unable to get port: %v", err)
