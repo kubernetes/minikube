@@ -92,7 +92,7 @@ require (
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/moby/patternmatcher v0.5.0
 	github.com/opencontainers/runc v1.1.7
-	github.com/santhosh-tekuri/jsonschema/v5 v5.3.0
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 )
 
 require (
