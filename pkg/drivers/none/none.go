@@ -83,8 +83,6 @@ func (d *Driver) PreCreateCheck() error {
 	d.runtime = runtime
 	d.exec = runner
 
-	fmt.Printf("We've put a command runner inside Driver in PrecreateCheck: %#v\n\n\n", d.exec)
-
 	return d.runtime.Available()
 }
 
