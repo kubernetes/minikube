@@ -21,6 +21,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 
 * [LoadBalancer](https://minikube.sigs.k8s.io/docs/handbook/accessing/#loadbalancer-access) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
+* [Mult-node]([https://minikube.sigs.k8s.io/docs/handbook/accessing/#nodeport-access](https://minikube.sigs.k8s.io/docs/tutorials/multi_node/)) - using `minikube start -n=2`
 * [NodePorts](https://minikube.sigs.k8s.io/docs/handbook/accessing/#nodeport-access) - using `minikube service`
 * [Persistent Volumes](https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/)
 * [Ingress](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
@@ -28,6 +29,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `minikube start --container-runtime`
 * [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags
 * Supports common [CI environments](https://github.com/minikube-ci/examples)
+* Support [international languages](https://minikube.sigs.k8s.io/docs/contrib/translations/).
 
 As well as developer-friendly features:
 
@@ -49,7 +51,11 @@ See https://minikube.sigs.k8s.io/docs/
 
 ## More Examples
 
-See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
+See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/) and also check out the tutorials section on [minikube website](https://minikube.sigs.k8s.io/docs/tutorials/)
+
+## Video Tutorials
+
+Checkout Youtube videos by maintainers on [What is minikube](https://www.youtube.com/watch?v=uo82-n1gMcI) and [local developement using minikube](https://www.youtube.com/watch?v=_1uWY1GdDVY)?
 
 ## Community
 
