@@ -347,7 +347,7 @@ var Addons = map[string]*Addon{
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server", "Kubernetes", "", "", map[string]string{
-		"MetricsServer": "metrics-server/metrics-server:v0.6.3@sha256:c60778fa1c44d0c5a0c4530ebe83f9243ee6fc02f4c3dc59226c201931350b10",
+		"MetricsServer": "metrics-server/metrics-server:v0.6.4@sha256:ee4304963fb035239bb5c5e8c10f2f38ee80efc16ecbdb9feb7213c17ae2e86e",
 	}, map[string]string{
 		"MetricsServer": "registry.k8s.io",
 	}),
