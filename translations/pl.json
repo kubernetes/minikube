@@ -1080,7 +1080,7 @@
 	"zsh completion failed": "autouzupełnianie zsh nie powiodło się",
 	"zsh completion.": "autouzupełnianie zsh",
 	"{{ .name }}: Suggestion: {{ .suggestion}}": "",
-	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
+	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, setting preload=false": "",
 	"{{.addonName}} was successfully enabled": "{{.addonName}} został aktywowany pomyślnie",
 	"{{.addon}} does not currently have an associated maintainer.": "",
 	"{{.addon}} is a 3rd party addon and is not maintained or verified by minikube maintainers, enable at your own risk.": "",
