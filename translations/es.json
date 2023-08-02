@@ -1067,7 +1067,7 @@
 	"zsh completion.": "autocompletado zsh",
 	"{{ .name }}: Suggestion: {{ .suggestion}}": "{{ .name }}: Sugerencia: {{ .suggestion}}",
 	"{{ .name }}: {{ .rejection }}": "{{ .name }}: {{ .rejection }}",
-	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "",
+	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, setting preload=false": "",
 	"{{.addon}} does not currently have an associated maintainer.": "",
 	"{{.addon}} is a 3rd party addon and is not maintained or verified by minikube maintainers, enable at your own risk.": "",
 	"{{.addon}} is an addon maintained by {{.maintainer}}. For any concerns contact minikube on GitHub.\nYou can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS": "",

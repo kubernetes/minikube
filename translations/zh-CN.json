@@ -1194,6 +1194,7 @@
 	"zsh completion.": "",
 	"{{ .name }}: Suggestion: {{ .suggestion}}": "{{ .name }}：建议：{{ .suggestion }}",
 	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, consider switching to overlay2 for better performance": "{{.Driver}} 当前正在使用 {{.StorageDriver}} 存储驱动程序，请考虑切换到 overlay2 以获得更好的性能",
+	"{{.Driver}} is currently using the {{.StorageDriver}} storage driver, setting preload=false": "",
 	"{{.addon}} does not currently have an associated maintainer.": "{{.addon}} 目前没有相关的维护者。",
 	"{{.addon}} is a 3rd party addon and is not maintained or verified by minikube maintainers, enable at your own risk.": "{{.addon}} 是第三方插件，不由 minikube 维护者进行维护或验证，启用需自担风险。",
 	"{{.addon}} is an addon maintained by {{.maintainer}}. For any concerns contact minikube on GitHub.\nYou can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS": "{{.addon}} 是由 {{.maintainer}} 维护的插件。如有任何问题，请在 GitHub 上联系 minikube。\n您可以在以下链接查看 minikube 的维护者列表：https://github.com/kubernetes/minikube/blob/master/OWNERS",
