@@ -51,6 +51,10 @@ function cleanup() {
 			fi
 		fi
 		sudo killall --user "${user}" minikube >/dev/null 2>&1 || true
+		# clear the known_host file (~/.ssh/known_hosts)
+		if test -f /home/${user}/.ssh/known_hosts; then
+			sudo echo "" > /home/${user}/.ssh/known_hosts
+		fi
 	done
 	# clean docker left overs
 	echo -e "\ncleanup docker..."
