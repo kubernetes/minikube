@@ -440,7 +440,7 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-if [ "$EXTERNAL" != "yes" ] && [ "MINIKUBE_LOCATION" = "master" ]
+if [ "$EXTERNAL" != "yes" ] && [ "$MINIKUBE_LOCATION" = "master" ]
 then
 	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth || true
 else
