@@ -120,7 +120,7 @@ If($env:EXTERNAL -eq "yes"){
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json
 	cp testout.html test_reports/out.html
-	cp testout_summary.json test_reports/summary.txt
+	cp testout_summary.json test_reports/summary.json
 } Else {
 	gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt
 	gsutil -qm cp testout.json gs://$gcs_bucket/${env:JOB_NAME}.json
