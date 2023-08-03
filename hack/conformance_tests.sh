@@ -47,7 +47,7 @@ curl -LO $sonobuoy
 tarball=$(echo $sonobuoy | awk -F "/" '{print $(NF)}')
 tar -xzf $tarball
 
-./sonobuoy run --mode=certified-conformance --wait --alsologtostderr
+./sonobuoy run --plugin-env=e2e.E2E_EXTRA_ARGS="--ginkgo.v" --mode=certified-conformance --wait --alsologtostderr
 outdir="$(mktemp -d)"
 ./sonobuoy retrieve "${outdir}"
 
