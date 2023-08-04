@@ -52,7 +52,7 @@ var (
 				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
-		"hack/jenkins/common.sh": {
+		"hack/jenkins/installers/check_install_gopogh.sh": {
 			Replace: map[string]string{
 				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
