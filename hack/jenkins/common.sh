@@ -428,10 +428,7 @@ if ! type "jq" > /dev/null; then
 fi
 
 echo ">> Installing gopogh"
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.19.0
-# temporary: remove the old install of gopogh as it's taking priority over our current install, preventing updating
-sudo rm -f /usr/local/bin/gopogh
-
+./installers/check_install_gopogh.sh
 
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
@@ -442,7 +439,7 @@ touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
 if [ "$EXTERNAL" != "yes" ] && [ "$MINIKUBE_LOCATION" = "master" ]
 then
-	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth || true
+	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth || true
 else
 	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" || true
 fi
