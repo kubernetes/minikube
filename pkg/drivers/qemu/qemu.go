@@ -503,7 +503,7 @@ func (d *Driver) Start() error { //nolint to suppress cyclomatic complexity 31 i
 	if strings.HasPrefix(d.Network, "vmnet-") {
 		//TODO: handle windows
 		startProgram = "sudo"
-		startCmd = append([]string{"-S", d.Program}, startCmd...)
+		startCmd = append([]string{"--stdin", "env", fmt.Sprintf("PATH=%q", os.Getenv("PATH")), d.Program}, startCmd...)
 	}
 
 	startFunc := cmdOutErr
