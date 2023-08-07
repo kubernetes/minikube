@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/kapi"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
@@ -154,4 +155,64 @@ func IsPodReady(pod *core.Pod) (ready bool, reason string) {
 		}
 	}
 	return false, fmt.Sprintf("pod %q in %q namespace does not have %q status: %+v", pod.Name, pod.Namespace, core.PodReady, pod.Status)
+}
+
+// UnloathPods deletes once pod(s) with label in namespace if they don't become Ready within timeout after they're Running.
+func UnloathPods(ctx context.Context, kcontext, label, namespace string, timeout time.Duration) error {
+	client, err := kapi.Client(kcontext)
+	if err != nil {
+		return fmt.Errorf("kapi client: %v", err)
+	}
+
+	var pods *core.PodList
+	lap := time.Now()
+	// need at least one running pod
+	if err := wait.PollUntilContextCancel(ctx, kconst.APICallRetryInterval, true, func(_ context.Context) (done bool, err error) {
+		pods, err = client.CoreV1().Pods(namespace).List(ctx, meta.ListOptions{LabelSelector: label})
+		if err != nil || len(pods.Items) == 0 {
+			// reduce log spam
+			if time.Since(lap) > (2 * time.Second) {
+				klog.Infof("waiting for running pod(s) with %q label in %q namespace (error: %v)...", label, namespace, err)
+				lap = time.Now()
+			}
+			return false, nil
+		}
+
+		running := false
+		for _, pod := range pods.Items {
+			if running = (pod.Status.Phase == core.PodRunning); running {
+				break
+			}
+		}
+		if !running {
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		return fmt.Errorf("waiting for running pod(s) with %q label in %q namespace failed: %v", label, namespace, err)
+	}
+
+	// need at least one pod to become ready - within timeout
+	if err := wait.PollUntilContextTimeout(ctx, kconst.APICallRetryInterval, timeout, true, func(_ context.Context) (done bool, err error) {
+		ready := false
+		for _, pod := range pods.Items {
+			if ready, _ = IsPodReady(&pod); ready {
+				break
+			}
+		}
+		if !ready {
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		klog.Errorf("waiting for ready pod(s) with %q label in %q namespace failed (will try deleting them once): %v", label, namespace, err)
+		now := int64(0)
+		if err := client.CoreV1().Pods(namespace).DeleteCollection(ctx, meta.DeleteOptions{GracePeriodSeconds: &now}, meta.ListOptions{LabelSelector: label}); err != nil {
+			return fmt.Errorf("deleting pod(s) with %q label in %q namespace failed: %v", label, namespace, err)
+		}
+		klog.Infof("deleting pod(s) with %q label in %q namespace initiated", label, namespace)
+		return nil
+	}
+	klog.Infof("pod(s) with %q label in %q namespace reached %q condition within %v", label, namespace, core.PodReady, timeout)
+	return nil
 }

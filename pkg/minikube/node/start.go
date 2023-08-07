@@ -34,7 +34,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm/dns"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -68,7 +68,6 @@ import (
 	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
-	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 const waitTimeout = "wait-timeout"
@@ -91,6 +90,8 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
+//
+//gocyclo:ignore
 func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var wg sync.WaitGroup
 	stopk8s, err := handleNoKubernetes(starter)
@@ -136,9 +137,42 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
 	if apiServer {
-		kcs, bs, err = handleAPIServer(starter, cr, hostIP)
+		kcs, bs, err = handleAPIServer(starter, cr)
 		if err != nil {
 			return nil, err
+		}
+
+		if !starter.Cfg.DisableOptimizations {
+			// deploy our custom CoreDNS addon
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if err := dns.DeployCoreDNS(*starter.Cfg, starter.Runner, hostIP.String(), constants.HostAlias); err != nil {
+					out.FailureT("Unable to deploy CoreDNS: {{.error}}", out.V{"error": err})
+				}
+			}()
+
+			// wg.Add(1)
+			// go func() {
+			// 	defer wg.Done()
+			// 	// 	// Scale down CoreDNS from default 2 to 1 replica.
+			// 	// 	if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+			// 	// 		klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+			// 	// 	}
+
+			// 	// benchmark hack: ensure CoreDNS is Ready for tests - might add overhead of few seconds to each startup time!
+			// 	timeout := 5 * time.Second
+			// 	klog.Infof("ensure CoreDNS is Ready within %v after starting...", timeout)
+			// 	if err := kverify.UnloathPods(context.Background(), starter.Cfg.Name, "k8s-app=kube-dns", meta.NamespaceSystem, timeout); err != nil {
+			// 		klog.Errorf("unable to ensure CoreDNS Ready condition %v after starting: %v", timeout, err)
+			// 	}
+			// }()
+		} else {
+			// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
+			if err := addCoreDNSEntry(starter.Runner, constants.HostAlias, hostIP.String(), *starter.Cfg); err != nil {
+				klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
+				out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+			}
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
@@ -213,13 +247,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	if !starter.Cfg.DisableOptimizations {
-		// Scale down CoreDNS from default 2 to 1 replica.
-		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-		}
-	}
-
 	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
@@ -261,7 +288,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 }
 
 // handleAPIServer handles starting the API server.
-func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
+func handleAPIServer(starter Starter, cr cruntime.Manager) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
 	var err error
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP.
@@ -284,14 +311,6 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
 	}
 
-	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
-	go func() {
-		// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
-		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-			klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-			out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
-		}
-	}()
 	return kcs, bs, nil
 }
 
