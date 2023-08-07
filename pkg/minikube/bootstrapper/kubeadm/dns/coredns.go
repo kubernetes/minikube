@@ -261,6 +261,7 @@ metadata:
 `
 )
 
+// DeployCoreDNS deploys custom CoreDNS addon manifests
 func DeployCoreDNS(cc config.ClusterConfig, r command.Runner, hostIP, hostFQDN string) error {
 	manifests, err := coreDNSManifests(cc, hostIP, hostFQDN)
 	if err != nil {
@@ -288,6 +289,7 @@ func DeployCoreDNS(cc config.ClusterConfig, r command.Runner, hostIP, hostFQDN s
 	return nil
 }
 
+// coreDNSManifests generates custom CoreDNS addon manifests
 func coreDNSManifests(cc config.ClusterConfig, hostIP, hostFQDN string) ([]byte, error) {
 	toml := CoreDNSServiceAccount + "---" +
 		CoreDNSClusterRole + "---" +

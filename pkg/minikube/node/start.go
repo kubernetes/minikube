@@ -152,15 +152,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 				}
 			}()
 
+			// benchmark hack: ensure CoreDNS is Ready for tests - might add overhead of few seconds to each startup time!
 			// wg.Add(1)
 			// go func() {
 			// 	defer wg.Done()
-			// 	// 	// Scale down CoreDNS from default 2 to 1 replica.
-			// 	// 	if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			// 	// 		klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-			// 	// 	}
-
-			// 	// benchmark hack: ensure CoreDNS is Ready for tests - might add overhead of few seconds to each startup time!
 			// 	timeout := 5 * time.Second
 			// 	klog.Infof("ensure CoreDNS is Ready within %v after starting...", timeout)
 			// 	if err := kverify.UnloathPods(context.Background(), starter.Cfg.Name, "k8s-app=kube-dns", meta.NamespaceSystem, timeout); err != nil {
