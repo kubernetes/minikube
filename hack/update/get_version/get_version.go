@@ -44,7 +44,7 @@ var dependencies = map[string]dependency{
 	"go":               {"Makefile", `GO_VERSION \?= (.*)`},
 	"go-github":        {"go.mod", `github\.com\/google\/go-github\/.* (.*)`},
 	"golint":           {"Makefile", `GOLINT_VERSION \?= (.*)`},
-	"gopogh":           {"hack/jenkins/common.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
+	"gopogh":           {"hack/jenkins/installers/check_install_gopogh.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
 	"gotestsum":        {"hack/jenkins/installers/check_install_gotestsum.sh", `gotest\.tools/gotestsum@(.*)`},
 	"hugo":             {"netlify.toml", `HUGO_VERSION = "(.*)"`},
 	"ingress":          {addonsFile, `ingress-nginx/controller:(.*)@`},
