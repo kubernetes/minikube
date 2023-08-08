@@ -91,7 +91,7 @@ require (
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/moby/patternmatcher v0.5.0
-	github.com/opencontainers/runc v1.1.7
+	github.com/opencontainers/runc v1.1.8
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 )
 
