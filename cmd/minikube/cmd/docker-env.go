@@ -420,10 +420,10 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
-		}
 
-		// eventually, run something similar to ssh --append-known
-		appendKnownHelper(nodeName, true)
+			// eventually, run something similar to ssh --append-known
+			appendKnownHelper(nodeName, true)
+		}
 	},
 }
 
