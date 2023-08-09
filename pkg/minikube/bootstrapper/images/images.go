@@ -76,6 +76,7 @@ func tagFromKubeadm(v, name, lastKnownGood string) string {
 		klog.Warningf("failed to download kubeadm binary: %v", err)
 		return lastKnownGood
 	}
+	// TODO: Once kubeadm graduates the "-experimental-output" flag to non-experimental should use JSON output here
 	b, err := exec.Command(kubeadm, "config", "images", "list").Output()
 	if err != nil {
 		klog.Warningf("failed getting kubeadm image list: %v", err)
