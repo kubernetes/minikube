@@ -52,6 +52,20 @@ early_exit_handler() {
 
 trap early_exit_handler TERM INT
 
+# prevent 'cannot enter cgroupv2 "/sys/fs/cgroup/docker" with domain controllers -- it is in threaded mode: unknown' error
+# ref: https://github.com/containerd/containerd/issues/6659#issuecomment-1064754423
+# ref: https://github.com/moby/moby/blob/89b542b421f439b3c703098f7f1c29f661e430bb/hack/dind#L28-L38
+# cgroup v2: enable nesting
+if [ -f /sys/fs/cgroup/cgroup.controllers ]; then
+	# move the processes from the root group to the /init group,
+	# otherwise writing subtree_control fails with EBUSY.
+	# An error during moving non-existent process (i.e., "cat") is ignored.
+	mkdir -p /sys/fs/cgroup/init
+	xargs -rn1 < /sys/fs/cgroup/cgroup.procs > /sys/fs/cgroup/init/cgroup.procs || :
+	# enable controllers
+	sed -e 's/ / +/g' -e 's/^/+/' < /sys/fs/cgroup/cgroup.controllers \
+		> /sys/fs/cgroup/cgroup.subtree_control
+fi
 
 >&2 echo "wrapper.sh] [SETUP] Docker in Docker enabled, initializing ..."
 # If we have opted in to docker in docker, start the docker daemon,
