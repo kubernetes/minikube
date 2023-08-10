@@ -113,7 +113,7 @@ GVISOR_TAG ?= latest
 AUTOPAUSE_HOOK_TAG ?= v0.0.4
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.4
+PROW_TEST_TAG ?= v0.0.5
 
 BUILDX_BUILDER ?= multiarch
 
