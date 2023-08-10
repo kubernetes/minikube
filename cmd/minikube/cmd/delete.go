@@ -33,6 +33,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -53,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -232,7 +234,15 @@ func runDelete(_ *cobra.Command, args []string) {
 	delCtx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
+	// use a background goroutine to run this delete
+	// so that this will not block for a long time
+	deleteKnownHostsChannel := make(chan struct{})
+	go func() {
+		deleteKnownHosts()
+		deleteKnownHostsChannel <- struct{}{}
+	}()
 	if deleteAll {
+
 		deleteContainersAndVolumes(delCtx, oci.Docker)
 		deleteContainersAndVolumes(delCtx, oci.Podman)
 
@@ -244,6 +254,7 @@ func runDelete(_ *cobra.Command, args []string) {
 		} else {
 			out.Step(style.DeletingHost, "Successfully deleted all profiles")
 		}
+
 	} else {
 		if len(args) > 0 {
 			exit.Message(reason.Usage, "usage: minikube delete")
@@ -270,6 +281,8 @@ func runDelete(_ *cobra.Command, args []string) {
 			delete.PossibleLeftOvers(delCtx, cname, driver.Podman)
 		}
 	}
+	// if deleteKnownHosts hasn't finished, then wait
+	<-deleteKnownHostsChannel
 
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge {
@@ -724,4 +737,45 @@ func getPids(path string) ([]int, error) {
 	}
 
 	return pids, nil
+}
+
+// deleKnownHost read minikube nodes' keys from the minikube home folder
+// and remove them from the known_hosts file
+// This is the long term solution for issue https://github.com/kubernetes/minikube/issues/16868
+func deleteKnownHosts() {
+	// remove this line from known_hosts file if it exists
+	knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")
+	machinesDir := filepath.Join(localpath.MiniPath(), "machines")
+	fileInfo, err := os.ReadDir(machinesDir)
+	if err != nil {
+		klog.Warningf("error reading machines in minikube home: %v", err)
+		return
+	}
+	if _, err := os.Stat(knownHosts); err != nil {
+		klog.Warningf("no host files found when cleaning host files: %v", err)
+		return
+	}
+	for _, file := range fileInfo {
+		if file.IsDir() {
+			nodeName := file.Name()
+
+			knowHostPath := filepath.Join(localpath.MiniPath(), "machines", nodeName, "known_host")
+			if _, err := os.Stat(knowHostPath); err == nil {
+				// if this file exists, remove this line from known_hosts
+				key, err := os.ReadFile(knowHostPath)
+				if err != nil {
+					klog.Warningf("error reading keys from %s: %v", knowHostPath, err)
+					continue
+				}
+				if err := util.RemoveLineFromFile(string(key), knownHosts); err != nil {
+					klog.Warningf("failed to remove key: %v", err)
+				}
+				// and, remove the file which stores this key
+				if err := os.Remove(knowHostPath); err != nil {
+					klog.Warningf("failed to remove key: %v", err)
+				}
+			}
+		}
+	}
+
 }

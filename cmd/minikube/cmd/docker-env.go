@@ -388,7 +388,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			dockerPath = ""
 		}
 
-		if dockerPath != "" {
+		if dockerPath != "" && co.Config.KubernetesConfig.ContainerRuntime == constants.Docker {
 			out, err := tryDockerConnectivity("docker", ec)
 			if err != nil { // docker might be up but been loaded with wrong certs/config
 				// to fix issues like this #8185
@@ -425,7 +425,9 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// TODO: refactor to work with docker, temp fix to resolve regression
 			if cr == constants.Containerd {
 				// eventually, run something similar to ssh --append-known
-				appendKnownHelper(nodeName, true)
+				if err := appendKnownHelper(nodeName, true); err != nil {
+					exit.Error(reason.AppendKnownError, "failed to apppen keys to known_hosts", err)
+				}
 			}
 		}
 	},
