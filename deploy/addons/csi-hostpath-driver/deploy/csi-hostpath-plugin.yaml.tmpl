@@ -107,13 +107,13 @@ spec:
             name: healthz
             protocol: TCP
           livenessProbe:
-            failureThreshold: 5
+            failureThreshold: 6
             httpGet:
               path: /healthz
               port: healthz
             initialDelaySeconds: 10
-            timeoutSeconds: 3
-            periodSeconds: 2
+            timeoutSeconds: 10
+            periodSeconds: 10
           volumeMounts:
             - mountPath: /csi
               name: socket-dir
