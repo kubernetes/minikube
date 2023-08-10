@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/user"
@@ -162,4 +163,40 @@ func MaskProxyPasswordWithKey(v string) string {
 		}
 	}
 	return v
+}
+
+// remove the specified line from the given file
+func RemoveLineFromFile(knownHostLine string, filePath string) error {
+	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %v", filePath, err)
+	}
+	defer fd.Close()
+
+	// read each line from known_hosts and find theline we want to delete
+	scanner := bufio.NewScanner(fd)
+	newLines := make([]string, 0)
+	for scanner.Scan() {
+		line := string(scanner.Bytes())
+		if strings.TrimSpace(line) != strings.TrimSpace(knownHostLine) {
+			// remove the line which is identical with the key
+			newLines = append(newLines, line)
+		}
+	}
+	// remove the contents and move to the head of this file
+	if err := fd.Truncate(0); err != nil {
+		return fmt.Errorf("failed to write to %s: %v", filePath, err)
+	}
+	if _, err := fd.Seek(0, 0); err != nil {
+		return fmt.Errorf("failed to write to %s: %v", filePath, err)
+	}
+
+	// write the new content into the file
+
+	for _, line := range newLines {
+		if _, err := fmt.Fprintln(fd, line); err != nil {
+			return fmt.Errorf("failed to write to %s: %v", filePath, err)
+		}
+	}
+	return nil
 }

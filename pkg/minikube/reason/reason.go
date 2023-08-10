@@ -158,6 +158,8 @@ var (
 	InternalSemverParse = Kind{ID: "MK_SEMVER_PARSE", ExitCode: ExProgramError}
 	// minikube was unable to daemonize the minikube process
 	DaemonizeError = Kind{ID: "MK_DAEMONIZE", ExitCode: ExProgramError}
+	// minikube was unable to add keys to known_hosts
+	AppendKnownError = Kind{ID: "MK_APPENDKNOWN", ExitCode: ExProgramError}
 
 	// insufficient cores available for use by minikube and kubernetes
 	RsrcInsufficientCores = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.UnmetRequirement}
