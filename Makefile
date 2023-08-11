@@ -115,8 +115,6 @@ AUTOPAUSE_HOOK_TAG ?= v0.0.4
 # prow-test tag to push changes to
 PROW_TEST_TAG ?= v0.0.5
 
-BUILDX_BUILDER ?= multiarch
-
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
 STORAGE_PROVISIONER_TAG ?= v5
@@ -704,7 +702,6 @@ storage-provisioner-image-%: out/storage-provisioner-%
 docker-multi-arch-build:
 	# installs QEMU static binaries to allow docker multi-arch build, see: https://github.com/docker/setup-qemu-action
 	docker run --rm --privileged tonistiigi/binfmt:latest --install all
-	docker buildx create --name $(BUILDX_BUILDER) --bootstrap
 
 KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/arm,linux/ppc64le
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
@@ -734,8 +731,7 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 
 .PHONY: build-kic-base-image
 build-kic-base-image: docker-multi-arch-build ## Build multi-arch local/kicbase:latest
-	docker buildx build --builder $(BUILDX_BUILDER) -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
-	docker buildx rm $(BUILDX_BUILDER)
+	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
 
 .PHONY: push-kic-base-image
 push-kic-base-image: docker-multi-arch-build ## Push multi-arch local/kicbase:latest to all remote registries
@@ -750,8 +746,7 @@ ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	docker buildx build --builder $(BUILDX_BUILDER) -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
-	docker buildx rm $(BUILDX_BUILDER)
+	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
 out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
@@ -876,8 +871,7 @@ kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to b
 
 .PHONY: kvm-image-arm64
 kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64 docker-multi-arch-build  ## Convenient alias to build the docker container
-	docker buildx build --builder $(BUILDX_BUILDER) --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
-	docker buildx rm $(BUILDX_BUILDER)
+	docker buildx build --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
@@ -972,9 +966,10 @@ push-auto-pause-hook-image: auto-pause-hook-image
 .PHONY: push-prow-test-image
 push-prow-test-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	docker buildx build --push --builder $(BUILDX_BUILDER) --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
-	docker buildx build --push --builder $(BUILDX_BUILDER) --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:latest ./deploy/prow
-	docker buildx rm $(BUILDX_BUILDER)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:latest ./deploy/prow
+	docker buildx rm multiarch
 
 .PHONY: out/performance-bot
 out/performance-bot:
