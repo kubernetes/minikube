@@ -136,9 +136,14 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 }
 
 func verifyStorage(containerRuntime string) error {
-	if containerRuntime == "docker" || containerRuntime == "containerd" {
+	if containerRuntime == "docker" {
 		if err := retry.Expo(verifyDockerStorage, 100*time.Microsecond, time.Minute*2); err != nil {
 			return errors.Wrap(err, "Docker storage type is incompatible")
+		}
+	}
+	if containerRuntime == "containerd" {
+		if err := retry.Expo(verifyContainerdStorage, 100*time.Microsecond, time.Minute*2); err != nil {
+			return errors.Wrap(err, "containerd storage type is incompatible")
 		}
 	}
 	if containerRuntime == "cri-o" {

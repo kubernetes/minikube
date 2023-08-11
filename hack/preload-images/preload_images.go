@@ -41,16 +41,17 @@ const (
 )
 
 var (
-	dockerStorageDriver = "overlay2"
-	podmanStorageDriver = "overlay"
-	containerRuntimes   = []string{"docker", "containerd", "cri-o"}
-	k8sVersions         []string
-	k8sVersion          = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
-	noUpload            = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
-	force               = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
-	limit               = flag.Int("limit", 0, "Limit the number of tarballs to generate")
-	armUpload           = flag.Bool("arm-upload", false, "Upload the arm64 preload tarballs to GCS")
-	armPreloadsDir      = flag.String("arm-preloads-dir", "artifacts", "Directory containing the arm64 preload tarballs")
+	dockerStorageDriver   = "overlay2"
+	containerdSnapshotter = "overlayfs"
+	podmanStorageDriver   = "overlay"
+	containerRuntimes     = []string{"docker", "containerd", "cri-o"}
+	k8sVersions           []string
+	k8sVersion            = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
+	noUpload              = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
+	force                 = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
+	limit                 = flag.Int("limit", 0, "Limit the number of tarballs to generate")
+	armUpload             = flag.Bool("arm-upload", false, "Upload the arm64 preload tarballs to GCS")
+	armPreloadsDir        = flag.String("arm-preloads-dir", "artifacts", "Directory containing the arm64 preload tarballs")
 )
 
 type preloadCfg struct {
@@ -175,6 +176,27 @@ var verifyDockerStorage = func() error {
 	driver := strings.Trim(string(output), " \n")
 	if driver != dockerStorageDriver {
 		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
+	}
+	return nil
+}
+
+var verifyContainerdStorage = func() error {
+	cmd := exec.Command("docker", "exec", profile, "sudo", "containerd", "config", "dump")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
+	}
+	var driver string
+	for _, line := range strings.Split(string(output), "\n") {
+		if strings.Contains(line, "snapshotter = ") {
+			driver = strings.Split(line, " = ")[1]
+			driver = strings.Trim(driver, "\"")
+		}
+	}
+	if driver != containerdSnapshotter {
+		return fmt.Errorf("containerd snapshotter %s does not match requested %s", driver, containerdSnapshotter)
 	}
 	return nil
 }
