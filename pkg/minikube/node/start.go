@@ -151,17 +151,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 					out.FailureT("Unable to deploy CoreDNS: {{.error}}", out.V{"error": err})
 				}
 			}()
-
-			// benchmark hack: ensure CoreDNS is Ready for tests - might add overhead of few seconds to each startup time!
-			// wg.Add(1)
-			// go func() {
-			// 	defer wg.Done()
-			// 	timeout := 5 * time.Second
-			// 	klog.Infof("ensure CoreDNS is Ready within %v after starting...", timeout)
-			// 	if err := kverify.UnloathPods(context.Background(), starter.Cfg.Name, "k8s-app=kube-dns", meta.NamespaceSystem, timeout); err != nil {
-			// 		klog.Errorf("unable to ensure CoreDNS Ready condition %v after starting: %v", timeout, err)
-			// 	}
-			// }()
 		} else {
 			// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
 			if err := addCoreDNSEntry(starter.Runner, constants.HostAlias, hostIP.String(), *starter.Cfg); err != nil {
