@@ -414,6 +414,8 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			}
 			cmd := exec.Command(path, d.GetSSHKeyPath())
 			cmd.Stderr = os.Stderr
+
+			// TODO: refactor to work with docker, temp fix to resolve regression
 			if cr == constants.Containerd {
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
 				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
@@ -423,8 +425,11 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
 
-			// eventually, run something similar to ssh --append-known
-			appendKnownHelper(nodeName, true)
+			// TODO: refactor to work with docker, temp fix to resolve regression
+			if cr == constants.Containerd {
+				// eventually, run something similar to ssh --append-known
+				appendKnownHelper(nodeName, true)
+			}
 		}
 	},
 }
