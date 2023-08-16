@@ -446,6 +446,7 @@ func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
 
 	mappedVersions := map[string]string{
 		"v1.31.1": "v1.31.0",
+		"v1.31.2": "v1.31.0",
 	}
 	binaryVersion, ok := mappedVersions[binaryVersion]
 
