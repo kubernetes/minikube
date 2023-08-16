@@ -257,11 +257,11 @@ var addonsConfigureCmd = &cobra.Command{
 					out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
 				}
 			}
-		case "auto-pause":
+		case "auto-pause-interval":
 			profile := ClusterFlagValue()
 			_, cfg := mustload.Partial(profile)
 
-			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause (in minutes): ")
+			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (in minutes): ")
 			intervalTime, err := strconv.Atoi(intervalInput)
 			if err != nil {
 				out.ErrT(style.Fatal, "Failed to extract integer in minutes to pause.")
