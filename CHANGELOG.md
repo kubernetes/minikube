@@ -1,5 +1,59 @@
 # Release Notes
 
+## Version 1.31.2 - 2023-08-16
+
+docker-env Regression:
+* Create `~/.ssh` directory if missing [#16934](https://github.com/kubernetes/minikube/pull/16934)
+* Fix adding guest to `~/.ssh/known_hosts` when not needed [#17030](https://github.com/kubernetes/minikube/pull/17030)
+
+Minor Improvements:
+* Verify containerd storage separately from docker [#16972](https://github.com/kubernetes/minikube/pull/16972)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.27.4 and latest: v1.28.0-rc.1 [#17011](https://github.com/kubernetes/minikube/pull/17011) [#17051](https://github.com/kubernetes/minikube/pull/17051)
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.7 to 1.5.9 [#17017](https://github.com/kubernetes/minikube/pull/17017) [#17044](https://github.com/kubernetes/minikube/pull/17044)
+* Addon headlamp: Update headlamp-k8s/headlamp image from v0.18.0 to v0.19.0 [#16992](https://github.com/kubernetes/minikube/pull/16992)
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.18.1 to v0.19.0 [#17016](https://github.com/kubernetes/minikube/pull/17016)
+* Addon metrics-server: Update metrics-server/metrics-server image from v0.6.3 to v0.6.4 [#16969](https://github.com/kubernetes/minikube/pull/16969)
+* CNI flannel: Update from v0.22.0 to v0.22.1 [#16968](https://github.com/kubernetes/minikube/pull/16968)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Alex Serbul
+- Anders F Björklund
+- Jeff MAURY
+- Medya Ghazizadeh
+- Michelle Thompson
+- Predrag Rogic
+- Seth Rylan Gainey
+- Steven Powell
+- aiyijing
+- joaquimrocha
+- renyanda
+- shixiuguo
+- sunyuxuan
+- Товарищ программист
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (8 comments)
+- spowelljr (2 comments)
+- ComradeProgrammer (1 comments)
+- Lyllt8 (1 comments)
+- aiyijing (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (6 comments)
+- vaibhav2107 (5 comments)
+- kundan2707 (3 comments)
+- spowelljr (3 comments)
+- ao390 (2 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.31.2/) for this release!
+
 ## Version 1.31.1 - 2023-07-20
 
 * cni: Fix regression in auto selection [#16912](https://github.com/kubernetes/minikube/pull/16912)
