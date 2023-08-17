@@ -1729,6 +1729,22 @@ func validateKubernetesVersion(old *config.ClusterConfig) {
 	}
 	if nvs.GT(newestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is newer than the newest supported version: {{.newest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "newest": constants.NewestKubernetesVersion})
+		if contains(constants.ValidKubernetesVersions, kubernetesVer) {
+			out.Styled(style.Check, "Kubernetes version {{.specified}} found in version list", out.V{"specified": nvs})
+		} else {
+			out.WarningT("Specified Kubernetes version {{.specified}} not found in Kubernetes version list", out.V{"specified": nvs})
+			out.Styled(style.Verifying, "Searching the internet for Kubernetes version...")
+			found, err := cmdcfg.IsInGitHubKubernetesVersions(kubernetesVer)
+			if err != nil && !viper.GetBool(force) {
+				exit.Error(reason.KubernetesNotConnect, "error fetching Kubernetes version list from GitHub", err)
+			}
+			if found {
+				out.Styled(style.Check, "Kubernetes version {{.specified}} found in GitHub version list", out.V{"specified": nvs})
+			} else if !viper.GetBool(force) {
+				out.WarningT("Kubernetes version not found in GitHub version list. You can force a Kubernetes version via the --force flag")
+				exitIfNotForced(reason.KubernetesTooNew, "Kubernetes version {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+			}
+		}
 	}
 	if nvs.LT(oldestVersion) {
 		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}. Use `minikube config defaults kubernetes-version` for details.", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
@@ -1994,4 +2010,15 @@ func startNerdctld() {
 	if out, err := runner.RunCmd(envSetupCommand); err != nil {
 		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", out.Output()), err)
 	}
+}
+
+// contains checks whether the parameter slice contains the parameter string
+func contains(sl []string, s string) bool {
+	for _, k := range sl {
+		if s == k {
+			return true
+		}
+
+	}
+	return false
 }
