@@ -36,7 +36,7 @@ const (
 	dbBackend     = "postgres"
 	mkRepo        = "github.com/kubernetes/minikube/"
 	host          = "k8s-minikube:us-west1:flake-rate"
-	dbPathPattern = "user=postgres dbname=flakedbdev password=%s"
+	dbPathPattern = "user=postgres dbname=flaketest2 password=%s"
 	gopoghCommand = "%s -name '%s' -repo '%s' -pr 'HEAD' -in '%s' -out_html './out/output.html' -out_summary out/output_summary.json -details '%s' -use_cloudsql -db_host '%s' -db_path '%s' -db_backend '%s'"
 )
 
@@ -154,7 +154,7 @@ func processCommitFolder(commitSha string, logger *log.Logger, gp string) error 
 
 	dbPath := fmt.Sprintf(dbPathPattern, os.Getenv("DB_PASS"))
 	// Iterate over the JSON files in the local directory
-	filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		filename := filepath.Base(path[:len(path)-len(".json")])
 		if !info.IsDir() && strings.HasSuffix(path, ".json") && !strings.HasSuffix(path, "summary.json") && notInDB(commitSha, filename) {
 			gopoghCmd := fmt.Sprintf(gopoghCommand, gp, filename, mkRepo, path, commitSha, host, dbPath, dbBackend)
@@ -170,6 +170,9 @@ func processCommitFolder(commitSha string, logger *log.Logger, gp string) error 
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -237,16 +240,22 @@ func populateExistingEnvironments() {
 	if err != nil {
 		log.Fatalf("failed to select environment table: %v", err)
 	}
-	defer rows.Close()
 	for rows.Next() {
 		var environmentName, commitSHA string
 		if err := rows.Scan(&environmentName, &commitSHA); err != nil {
+			closeErr := rows.Close()
+			if closeErr != nil {
+				log.Printf("failed to close rows: %v", closeErr)
+			}
 			log.Fatalf("failed to parse env table: %v", err)
 		}
 		if _, ok := existingEnvironments[environmentName]; !ok {
 			existingEnvironments[environmentName] = make(map[string]struct{})
 		}
 		existingEnvironments[environmentName][commitSHA] = struct{}{}
+	}
+	if closeErr := rows.Close(); closeErr != nil {
+		log.Printf("failed to close rows: %v", closeErr)
 	}
 	if err = dbx.Close(); err != nil {
 		log.Fatalf("failed to close database connection: %v", err)
