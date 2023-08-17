@@ -469,6 +469,9 @@ an outdated Kubernetes version was specified for minikube to use
 "K8S_NEW_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 a too new Kubernetes version was specified for minikube to use  
 
+"K8S_FAIL_CONNECT" (Exit code ExInternetError)  
+error fetching GitHub Kubernetes version list  
+
 "K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 minikube was unable to safely downgrade installed Kubernetes version  
 
