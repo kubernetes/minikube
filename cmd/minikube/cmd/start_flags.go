@@ -141,6 +141,7 @@ const (
 	socketVMnetClientPath   = "socket-vmnet-client-path"
 	socketVMnetPath         = "socket-vmnet-path"
 	staticIP                = "static-ip"
+	importProfile           = "import-profile"
 )
 
 var (
@@ -202,6 +203,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
+	startCmd.Flags().String(importProfile, "", "Import the profile config.json at the specified path. This creates a new profile with the values of said file. If a profile with said name already exists, minikube will exit. This can be overwritten with the '--force' flag")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options

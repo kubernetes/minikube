@@ -283,6 +283,26 @@ var (
 	// minikube failed to persist profile config
 	HostSaveProfile = Kind{ID: "HOST_SAVE_PROFILE", ExitCode: ExHostConfig}
 
+	// minikube failed to load the specied profile for import
+	ImportConfigLoad = Kind{ID: "PROFILE_CONFIG_LOAD", ExitCode: ExHostConfig}
+	// the user wants to import a profile that does not exist
+	ImportConfigNotExist = Kind{
+		ID:       "IMPORT_CONFIG_NOT_EXIST",
+		ExitCode: ExHostNotFound,
+		Advice:   translate.T("The profile you tried to import does not exist."),
+	}
+	// the current user has insufficient permissions to import the profile
+	ImportConfigPermission = Kind{
+		ID:       "IMPORT_CONFIG_PERMISSION",
+		ExitCode: ExHostPermission,
+		Advice:   translate.T("Your user lacks permissions to import the specified profile config. Run: 'sudo chown $USER <profile-config>; chmod -R u+r <profile-config>' to fix"),
+	}
+	// the user tried to import a profile that already exists
+	ImportConfigExists = Kind{
+		ID:       "IMPORT_CONFIG_EXISTS",
+		ExitCode: ExHostConflict,
+	}
+
 	// minikube could not find a provider for the selected driver
 	ProviderNotFound = Kind{ID: "PROVIDER_NOT_FOUND", ExitCode: ExProviderNotFound}
 	// the host does not support or is improperly configured to support a provider for the selected driver

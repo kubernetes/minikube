@@ -166,7 +166,9 @@ func runStart(cmd *cobra.Command, _ []string) {
 	go notify.MaybePrintUpdateTextFromGithub()
 
 	displayEnviron(os.Environ())
-	if viper.GetBool(force) {
+
+	useForce := viper.GetBool(force)
+	if useForce {
 		out.WarningT("minikube skips various validations when --force is supplied; this may lead to unexpected behavior")
 	}
 
@@ -181,6 +183,13 @@ func runStart(cmd *cobra.Command, _ []string) {
 		registryMirror = viper.GetStringSlice("registry-mirror")
 	}
 
+	var err error
+	var importConfig *config.ClusterConfig
+	profileConfigFlag := viper.GetString(importProfile)
+	if profileConfigFlag != "" {
+		importConfig = loadImportConfig(profileConfigFlag)
+	}
+
 	if !config.ProfileNameValid(ClusterFlagValue()) {
 		out.WarningT("Profile name '{{.name}}' is not valid", out.V{"name": ClusterFlagValue()})
 		exit.Message(reason.Usage, "Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.")
@@ -192,6 +201,10 @@ func runStart(cmd *cobra.Command, _ []string) {
 			kind = reason.HostHomePermission
 		}
 		exit.Message(kind, "Unable to load config: {{.error}}", out.V{"error": err})
+	}
+
+	if importConfig != nil {
+		setImportConfig(existing, importConfig, useForce)
 	}
 
 	if existing != nil {
@@ -220,8 +233,6 @@ func runStart(cmd *cobra.Command, _ []string) {
 			)
 		}
 	}
-
-	useForce := viper.GetBool(force)
 
 	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil {
@@ -291,6 +302,32 @@ func runStart(cmd *cobra.Command, _ []string) {
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Node.ContainerRuntime, starter.Cfg.Name); err != nil {
 		klog.Errorf("kubectl info: %v", err)
 	}
+}
+
+func loadImportConfig(profileConfigFlag string) *config.ClusterConfig {
+	importConfig, err := config.Load(profileConfigFlag)
+	if err != nil {
+		kind := reason.ImportConfigLoad
+		if config.IsPermissionDenied(err) {
+			kind = reason.ImportConfigPermission
+		}
+		if config.IsNotExist(err) {
+			kind = reason.ImportConfigNotExist
+		}
+		exit.Message(kind, "Unable to load config for import: {{.error}}", out.V{"error": err})
+	}
+
+	viper.Set(config.ProfileName, importConfig.Name)
+	return importConfig
+}
+
+func setImportConfig(existing *config.ClusterConfig, importConfig *config.ClusterConfig, useForce bool) {
+	if existing != nil && !useForce {
+		out.WarningT("A profile with the name '{{.name}}' already exists.", out.V{"name": importConfig.Name})
+		exit.Message(reason.ImportConfigExists, "If you wish to overwrite it anyway, use '--force'.", out.V{"name": importConfig.Name})
+	}
+
+	existing = importConfig
 }
 
 func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
