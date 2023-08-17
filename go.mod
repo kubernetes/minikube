@@ -43,7 +43,7 @@ require (
 	github.com/otiai10/copy v1.12.0
 	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
-	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
+	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.0
@@ -82,11 +82,13 @@ require (
 )
 
 require (
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.10
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/cli v24.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v54 v54.0.0
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
@@ -118,7 +120,7 @@ require (
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/containerd/containerd v1.6.19 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
-	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -164,6 +166,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/juju/errors v0.0.0-20220203013757-bd733f3c86b9 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -209,7 +212,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/image v0.7.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect

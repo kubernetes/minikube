@@ -59,6 +59,7 @@ test/integration/testdata/minikube-linux-amd64-latest-stable
 /site/resources
 /_gen
 
-# Qt
-*.pro.user
-*build-*
+# gopogh filldb
+hack/gopogh/out/output.html
+hack/gopogh/out/output_summary.json
+hack/gopogh/gopogh_filldb_log.txt
