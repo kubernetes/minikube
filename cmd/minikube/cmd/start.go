@@ -43,6 +43,7 @@ import (
 	"github.com/shirou/gopsutil/v3/cpu"
 	gopshost "github.com/shirou/gopsutil/v3/host"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -187,7 +188,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	var importConfig *config.ClusterConfig
 	profileConfigFlag := viper.GetString(importProfile)
 	if profileConfigFlag != "" {
-		importConfig = loadImportConfig(profileConfigFlag)
+		importConfig = loadImportConfig(cmd.Flags(), profileConfigFlag)
 	}
 
 	if !config.ProfileNameValid(ClusterFlagValue()) {
@@ -304,7 +305,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 }
 
-func loadImportConfig(profileConfigFlag string) *config.ClusterConfig {
+func loadImportConfig(flags *pflag.FlagSet, profileConfigFlag string) *config.ClusterConfig {
 	importConfig, err := config.Load(profileConfigFlag)
 	if err != nil {
 		kind := reason.ImportConfigLoad
@@ -317,7 +318,13 @@ func loadImportConfig(profileConfigFlag string) *config.ClusterConfig {
 		exit.Message(kind, "Unable to load config for import: {{.error}}", out.V{"error": err})
 	}
 
-	viper.Set(config.ProfileName, importConfig.Name)
+	// flags must overwrite imported values
+	if flags.Changed(config.ProfileName) {
+		importConfig.Name = ClusterFlagValue()
+	} else {
+		viper.Set(config.ProfileName, importConfig.Name)
+	}
+
 	return importConfig
 }
 
