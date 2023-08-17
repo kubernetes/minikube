@@ -32,12 +32,12 @@ import (
 )
 
 const (
-	BucketPath    = "gs://minikube-builds/logs/master"
-	DbBackend     = "postgres"
-	MkRepo        = "github.com/kubernetes/minikube/"
-	Host          = "k8s-minikube:us-west1:flake-rate"
-	DbPathPattern = "user=postgres dbname=flaketest2 password=%s"
-	GopoghCommand = "%s -name '%s' -repo '%s' -pr 'HEAD' -in '%s' -out_html './out/output.html' -out_summary out/output_summary.json -details '%s' -use_cloudsql -db_host '%s' -db_path '%s' -db_backend '%s'"
+	bucketPath    = "gs://minikube-builds/logs/master"
+	dbBackend     = "postgres"
+	mkRepo        = "github.com/kubernetes/minikube/"
+	host          = "k8s-minikube:us-west1:flake-rate"
+	dbPathPattern = "user=postgres dbname=flakedbdev password=%s"
+	gopoghCommand = "%s -name '%s' -repo '%s' -pr 'HEAD' -in '%s' -out_html './out/output.html' -out_summary out/output_summary.json -details '%s' -use_cloudsql -db_host '%s' -db_path '%s' -db_backend '%s'"
 )
 
 var rateLimitExceeded = false
@@ -50,7 +50,7 @@ func main() {
 	}
 	f, err := os.OpenFile("gopogh_filldb_log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("failed to open/create gopogh-filldb_log: %v", err)
+		log.Fatalf("failed to open/create gopogh_filldb_log: %v", err)
 	}
 	logger := log.New(f, "", log.LstdFlags)
 	var wg sync.WaitGroup
@@ -65,7 +65,7 @@ func main() {
 			// Calculate the partition range
 			folders, err := listFolders(partition, numPartitions)
 			if err != nil {
-				fmt.Println("Error listing folders:", err)
+				fmt.Printf("Error listing folders: %v", err)
 				return
 			}
 
@@ -77,9 +77,9 @@ func main() {
 				// Process the commit folder
 				err := processCommitFolder(commitSha, logger, gp)
 				if err != nil {
-					fmt.Println("Error processing commit folder:", commitSha, err)
+					fmt.Printf("Error processing commit folder %s: %v", commitSha, err)
 					if !strings.Contains(err.Error(), "failed to copy jsons. may not exist for folder") {
-						logger.Printf("Failed to process commit folder: %s. Error: %v\n", commitSha, err)
+						logger.Printf("Failed to process commit folder: %s. Error: %v\n\n", commitSha, err)
 					}
 				}
 			}
@@ -91,7 +91,7 @@ func main() {
 
 func listFolders(partition, numPartitions int) ([]string, error) {
 	// Use the 'gsutil' command to list the folders and then partition them
-	cmd := exec.Command("gsutil", "ls", "-lah", BucketPath)
+	cmd := exec.Command("gsutil", "ls", "-lah", bucketPath)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -118,15 +118,15 @@ func processCommitFolder(commitSha string, logger *log.Logger, gp string) error 
 	defer os.RemoveAll(dirPath)
 
 	// Copy all JSON files from the folder to the local directory
-	copyCmd := exec.Command("gsutil", "cp", fmt.Sprintf("%s/%s/*.json", BucketPath, commitSha), dirPath)
+	copyCmd := exec.Command("gsutil", "cp", fmt.Sprintf("%s/%s/*.json", bucketPath, commitSha), dirPath)
 	if err := copyCmd.Run(); err != nil {
-		return fmt.Errorf("failed to copy jsons. may not exist for folder. %w", err)
+		return fmt.Errorf("failed to copy jsons. may not exist for folder. %v", err)
 	}
 
 	// Get the summary JSON filename
 	summaryFilename, err := findSummaryJSON(dirPath)
 	if err != nil {
-		return fmt.Errorf("failed to get summary json: %w", err)
+		return fmt.Errorf("failed to get summary json: %v", err)
 	}
 
 	// If a summary JSON file exists, extract the commitSha from the "Details" field
@@ -152,12 +152,12 @@ func processCommitFolder(commitSha string, logger *log.Logger, gp string) error 
 		}
 	}
 
-	dbPath := fmt.Sprintf(DbPathPattern, os.Getenv("DB_PASS"))
+	dbPath := fmt.Sprintf(dbPathPattern, os.Getenv("DB_PASS"))
 	// Iterate over the JSON files in the local directory
 	filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		filename := filepath.Base(path[:len(path)-len(".json")])
 		if !info.IsDir() && strings.HasSuffix(path, ".json") && !strings.HasSuffix(path, "summary.json") && notInDB(commitSha, filename) {
-			gopoghCmd := fmt.Sprintf(GopoghCommand, gp, filename, MkRepo, path, commitSha, Host, dbPath, DbBackend)
+			gopoghCmd := fmt.Sprintf(gopoghCommand, gp, filename, mkRepo, path, commitSha, host, dbPath, dbBackend)
 
 			for rateLimitExceeded {
 				time.Sleep(time.Hour)
@@ -226,8 +226,8 @@ func findSummaryJSON(dirPath string) (string, error) {
 }
 
 func populateExistingEnvironments() {
-	dbPath := fmt.Sprintf(DbPathPattern, os.Getenv("DB_PASS"))
-	connectString := fmt.Sprintf("host=%s %s sslmode=disable", Host, dbPath)
+	dbPath := fmt.Sprintf(dbPathPattern, os.Getenv("DB_PASS"))
+	connectString := fmt.Sprintf("host=%s %s sslmode=disable", host, dbPath)
 
 	dbx, err := sqlx.Connect("cloudsqlpostgres", connectString)
 	if err != nil {
@@ -235,7 +235,7 @@ func populateExistingEnvironments() {
 	}
 	rows, err := dbx.Query("SELECT envname, commitid FROM db_environment_tests")
 	if err != nil {
-		log.Fatalf("failed to select enviornment table: %v", err)
+		log.Fatalf("failed to select environment table: %v", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -248,5 +248,7 @@ func populateExistingEnvironments() {
 		}
 		existingEnvironments[environmentName][commitSHA] = struct{}{}
 	}
-	dbx.Close()
+	if err = dbx.Close(); err != nil {
+		log.Fatalf("failed to close database connection: %v", err)
+	}
 }
