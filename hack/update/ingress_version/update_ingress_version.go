@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v53/github"
+	"github.com/google/go-github/v54/github"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
