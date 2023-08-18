@@ -96,7 +96,7 @@ TMP_COMMENT=$(mktemp)
 printf "These are the flake rates of all failed tests.\n|Environment|Failed Tests|Flake Rate (%%)|\n|---|---|---|\n" > "$TMP_COMMENT"
 
 # Create variables to use for sed command.
-ENV_CHART_LINK_FORMAT='https://storage.googleapis.com/minikube-flake-rate/flake_chart.html?env=%1$s&period=last90'
+ENV_CHART_LINK_FORMAT='https://gopogh-server-tts3vkcpgq-uc.a.run.app/?env=%1$s'
 TEST_CHART_LINK_FORMAT=${ENV_CHART_LINK_FORMAT}'&test=%2$s'
 TEST_GOPOGH_LINK_FORMAT='https://storage.googleapis.com/minikube-builds/logs/'${PR_NUMBER}'/'${ROOT_JOB}'/%1$s.html#fail_%2$s'
 # 1) Get the first $MAX_REPORTED_TESTS lines.
