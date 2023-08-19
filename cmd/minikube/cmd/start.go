@@ -331,7 +331,7 @@ func loadImportConfig(flags *pflag.FlagSet, profileConfigFlag string) *config.Cl
 func setImportConfig(existing *config.ClusterConfig, importConfig *config.ClusterConfig, useForce bool) {
 	if existing != nil && !useForce {
 		out.WarningT("A profile with the name '{{.name}}' already exists.", out.V{"name": importConfig.Name})
-		exit.Message(reason.ImportConfigExists, "If you wish to overwrite it anyway, use '--force'.", out.V{"name": importConfig.Name})
+		exit.Message(reason.ImportConfigExists, "If you wish to overwrite it, use '--force'.", out.V{"name": importConfig.Name})
 	}
 
 	existing = importConfig

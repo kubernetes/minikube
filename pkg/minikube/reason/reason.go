@@ -289,13 +289,13 @@ var (
 	ImportConfigNotExist = Kind{
 		ID:       "IMPORT_CONFIG_NOT_EXIST",
 		ExitCode: ExHostNotFound,
-		Advice:   translate.T("The profile you tried to import does not exist."),
+		Advice:   translate.T("The file you tried to import does not exist."),
 	}
 	// the current user has insufficient permissions to import the profile
 	ImportConfigPermission = Kind{
 		ID:       "IMPORT_CONFIG_PERMISSION",
 		ExitCode: ExHostPermission,
-		Advice:   translate.T("Your user lacks permissions to import the specified profile config. Run: 'sudo chown $USER <profile-config>; chmod -R u+r <profile-config>' to fix"),
+		Advice:   translate.T("Your user lacks permissions to import the specified profile config. Run: 'sudo chown $USER <profile-config>; chmod -R u+r <profile-config>' to fix."),
 	}
 	// the user tried to import a profile that already exists
 	ImportConfigExists = Kind{
