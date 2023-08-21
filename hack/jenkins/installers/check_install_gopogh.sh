@@ -22,4 +22,4 @@ set -eux -o pipefail
 # temporary: remove the old install of gopogh as it's taking priority over our current install, preventing updating
 sudo rm -f /usr/local/bin/gopogh
 
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.19.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.23.0
