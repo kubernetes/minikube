@@ -217,4 +217,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
+	{
+		name:      "kubeflow",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
 }
