@@ -37,6 +37,7 @@ var dependencies = map[string]dependency{
 	"containerd":       {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
 	"cri-dockerd":      {"deploy/kicbase/Dockerfile", `CRI_DOCKERD_VERSION="(.*)"`},
 	"cri-o":            {"deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk", `CRIO_BIN_VERSION = (.*)`},
+	"crictl":           {"deploy/iso/minikube-iso/arch/x86_64/package/crictl-bin/crictl-bin.mk", `CRICTL_BIN_VERSION = (.*)`},
 	"docker":           {"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk", `DOCKER_BIN_VERSION = (.*)`},
 	"flannel":          {"pkg/minikube/cni/flannel.yaml", `flannel:(.*)`},
 	"gcp-auth":         {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},

@@ -1160,6 +1160,11 @@ update-nerdctl-version:
 	(cd hack/update/nerdctl_version && \
 	 go run update_nerdctl_version.go)
 
+.PHONY: update-crictl-version
+update-crictl-version:
+	(cd hack/update/crictl_version && \
+	 go run update_crictl_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
