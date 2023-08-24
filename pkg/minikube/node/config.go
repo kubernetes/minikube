@@ -21,7 +21,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -47,6 +49,16 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
 	for _, v := range config.DockerEnv {
+		parts := strings.Split(v, "=")
+		if len(parts) == 2 {
+			key := strings.ToUpper(parts[0])
+			if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
+				pattern := `//(\w+):\w+@`
+				regexpPattern := regexp.MustCompile(pattern)
+				value := regexpPattern.ReplaceAllString(parts[1], "//$1:*****@")
+				v = key + "=" + value
+			}
+		}
 		out.Infof("env {{.docker_env}}", out.V{"docker_env": v})
 	}
 }
