@@ -41,7 +41,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.11.6"
+ARG BUILDKIT_VERSION="v0.12.2"
 ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
 ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
 ARG CRIO_VERSION="1.24"
