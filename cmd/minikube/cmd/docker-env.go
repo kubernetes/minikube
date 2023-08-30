@@ -125,7 +125,7 @@ type DockerShellConfig struct {
 var (
 	noProxy              bool
 	sshHost              bool
-	sshAdd               bool
+	sshAdd               bool // deprecated
 	dockerUnset          bool
 	defaultNoProxyGetter NoProxyGetter
 )
@@ -271,6 +271,10 @@ For example, you can do all docker operations such as docker build, docker run, 
 Note: You need the docker-cli to be installed on your machine.
 docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if sshAdd {
+			out.WarningT("--ssh-add flag has been deprecated, please user --ssh-host instead. Now if you use --ssh-host to enable ssh connection with docker, minikube will automatically add ssh-agent and append hosts to known_hosts")
+		}
 		var err error
 
 		shl := shell.ForceShell
@@ -326,7 +330,11 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
 			sshAdd = true
 			sshHost = true
+		}
 
+		d := co.CP.Host.Driver
+
+		if sshHost || sshAdd {
 			// start the ssh-agent
 			if err := sshagent.Start(cname); err != nil {
 				exit.Message(reason.SSHAgentStart, err.Error())
@@ -338,6 +346,27 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// set the ssh-agent envs for current process
 			os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
 			os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
+
+			klog.Infof("Adding %v", d.GetSSHKeyPath())
+
+			path, err := exec.LookPath("ssh-add")
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+			cmd := exec.Command(path, d.GetSSHKeyPath())
+			cmd.Stderr = os.Stderr
+
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
+			cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
+
+			err = cmd.Run()
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+
+			// if we use ssh to connect the docker daemon, appending know is always required
+			// eventually, run something similar to ssh --append-known
+			appendKnownHelper(nodeName, true)
 		}
 
 		r := co.CP.Runner
@@ -346,7 +375,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			ensureDockerd(cname, r)
 		}
 
-		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
 		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
@@ -403,33 +431,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		if err := dockerSetScript(ec, os.Stdout); err != nil {
 			exit.Error(reason.InternalDockerScript, "Error generating set output", err)
-		}
-
-		if sshAdd {
-			klog.Infof("Adding %v", d.GetSSHKeyPath())
-
-			path, err := exec.LookPath("ssh-add")
-			if err != nil {
-				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
-			}
-			cmd := exec.Command(path, d.GetSSHKeyPath())
-			cmd.Stderr = os.Stderr
-
-			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
-				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
-				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
-			}
-			err = cmd.Run()
-			if err != nil {
-				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
-			}
-
-			// TODO: refactor to work with docker, temp fix to resolve regression
-			if cr == constants.Containerd {
-				// eventually, run something similar to ssh --append-known
-				appendKnownHelper(nodeName, true)
-			}
 		}
 	},
 }
@@ -692,7 +693,7 @@ func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
 	dockerEnvCmd.Flags().BoolVar(&sshHost, "ssh-host", false, "Use SSH connection instead of HTTPS (port 2376)")
-	dockerEnvCmd.Flags().BoolVar(&sshAdd, "ssh-add", false, "Add SSH identity key to SSH authentication agent")
+	dockerEnvCmd.Flags().BoolVar(&sshAdd, "ssh-add", false, "Deprecated: Add SSH identity key to SSH authentication agent")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	dockerEnvCmd.Flags().StringVarP(&outputFormat, "output", "o", "", "One of 'text', 'yaml' or 'json'.")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
