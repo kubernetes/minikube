@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.31.0
+ISO_VERSION ?= v1.31.0-1692872107-17120
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -78,7 +78,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.54.1
+GOLINT_VERSION ?= v1.54.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -1159,6 +1159,11 @@ update-docker-buildx-version:
 update-nerdctl-version:
 	(cd hack/update/nerdctl_version && \
 	 go run update_nerdctl_version.go)
+
+.PHONY: update-crictl-version
+update-crictl-version:
+	(cd hack/update/crictl_version && \
+	 go run update_crictl_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:
