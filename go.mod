@@ -239,7 +239,7 @@ replace (
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516
 	github.com/intel-go/cpuid => github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6
-	github.com/machine-drivers/docker-machine-driver-vmware => github.com/lbogdan/docker-machine-driver-vmware v0.2.0
+	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )

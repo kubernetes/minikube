@@ -1750,8 +1750,6 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/kylelemons/godebug v0.0.0-20170820004349-d65d576e9348/go.mod h1:B69LEHPfb2qLo0BaaOLcbitczOKLWTsrBG9LczfCD4k=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
-github.com/lbogdan/docker-machine-driver-vmware v0.2.0 h1:ew0GbsB9/TeQjPO3nWgivOmx7EakXeMbS5kvArvddOM=
-github.com/lbogdan/docker-machine-driver-vmware v0.2.0/go.mod h1:HifYFOWR0bAMN4hWtaSADClogvtPy/jV0aRC5alhrKo=
 github.com/leodido/go-urn v1.2.0/go.mod h1:+8+nEpDfqqsY+g338gtMEUOtuK+4dEMhiQEgxpxOKII=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/lib/pq v1.1.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
@@ -1838,6 +1836,8 @@ github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516 h1:TdnOOG
 github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516/go.mod h1:I+HtQRi2cs3knYUuHwiY59H9j52F03+l489Vm6AoMok=
 github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1 h1:eYP7NkEv+tUZeB7BLfJ8PF4UNCW6lVyrbMvcWh1rgMA=
 github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
+github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5 h1:1z7xOzfMO4aBR9+2nYjlhRXX1773fX60HTS0QGpGRPU=
+github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5/go.mod h1:HifYFOWR0bAMN4hWtaSADClogvtPy/jV0aRC5alhrKo=
 github.com/minio/asm2plan9s v0.0.0-20200509001527-cdd76441f9d8/go.mod h1:mC1jAcsrzbxHt8iiaC+zU4b1ylILSosueou12R++wfY=
 github.com/minio/c2goasm v0.0.0-20190812172519-36a3d3bbc4f3/go.mod h1:RagcQ7I8IeTMnF8JTXieKnO4Z6JCsikNEzj0DwauVzE=
 github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible/go.mod h1:8AuVvqP/mXw1px98n46wfvcGfQ4ci2FwoAjKYxuo3Z4=
