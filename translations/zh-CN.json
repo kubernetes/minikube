@@ -1048,7 +1048,7 @@
 	"You have selected \"virtualbox\" driver, but there are better options !\nFor better performance and support consider using a different driver: {{.drivers}}\n\nTo turn off this warning run:\n\n\t$ minikube config set WantVirtualBoxDriverWarning false\n\n\nTo learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/\nTo see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/\n\n": "",
 	"You may need to manually remove the \"{{.name}}\" VM from your hypervisor": "您可能需要从管理程序中手动移除“{{.name}}”虚拟机",
 	"You may need to stop the Hyper-V Manager and run `minikube delete` again.": "您可能需要停止 Hyper-V 管理器并再次运行 `minikube delete`。",
-	"You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead": "您可能在 M1 Mac 上使用了 amd64 版本的 minikube，请使用 arm64 版本的 minikube",
+	"You might be using an amd64 version of minikube on a Apple Silicon Mac, use the arm64 version of minikube instead": "您可能在 Apple Silicon Mac 上使用了 amd64 版本的 minikube，请使用 arm64 版本的 minikube",
 	"You must specify service name(s) or --all": "",
 	"Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.": "你的 GCP 凭证现在将被挂载到 {{.name}} 集群中创建的每个 Pod 中。",
 	"Your cgroup does not allow setting memory.": "",
