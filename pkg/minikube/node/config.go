@@ -41,24 +41,29 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+func maskProxyPassword(v string) string {
+	parts := strings.Split(v, "=")
+	if len(parts) == 2 {
+		key := strings.ToUpper(parts[0])
+		if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
+			pattern := `//([^:]+):[^\@]+@`
+			regexpPattern := regexp.MustCompile(pattern)
+			value := regexpPattern.ReplaceAllString(parts[1], "//$1:*****@")
+			v = key + "=" + value
+		}
+	}
+	return v
+}
+
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	register.Reg.SetStep(register.PreparingKubernetes)
 	out.Step(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range config.DockerOpt {
+		v = maskProxyPassword(v)
 		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
 	for _, v := range config.DockerEnv {
-		parts := strings.Split(v, "=")
-		if len(parts) == 2 {
-			key := strings.ToUpper(parts[0])
-			if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
-				pattern := `//(\w+):\w+@`
-				regexpPattern := regexp.MustCompile(pattern)
-				value := regexpPattern.ReplaceAllString(parts[1], "//$1:*****@")
-				v = key + "=" + value
-			}
-		}
 		out.Infof("env {{.docker_env}}", out.V{"docker_env": v})
 	}
 }
