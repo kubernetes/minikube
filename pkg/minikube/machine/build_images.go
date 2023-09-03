@@ -80,7 +80,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 
 			if !allNodes {
 				// build images on the primary control plane node by default
-				if nodeName == "" && n != cp {
+				if nodeName == "" && n.Name != cp.Name {
 					continue
 				} else if nodeName != n.Name && nodeName != m {
 					continue

@@ -32,8 +32,9 @@ import (
 )
 
 var (
-	cp     bool
-	worker bool
+	cp           bool
+	worker       bool
+	exposedPorts []string
 )
 
 var nodeAddCmd = &cobra.Command{
@@ -60,6 +61,7 @@ var nodeAddCmd = &cobra.Command{
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
 			Name:              name,
+			ExposedPorts:      exposedPorts,
 			Worker:            worker,
 			ControlPlane:      cp,
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
@@ -96,6 +98,7 @@ func init() {
 	// TODO(https://github.com/kubernetes/minikube/issues/7366): We should figure out which minikube start flags to actually import
 	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "This flag is currently unsupported.")
 	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
+	nodeAddCmd.Flags().StringArrayVar(&exposedPorts, "ports", nil, "Ports to expose on additional node. Defaults to none.")
 	nodeAddCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 
 	nodeCmd.AddCommand(nodeAddCmd)

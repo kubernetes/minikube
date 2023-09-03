@@ -66,10 +66,16 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 			return nil, err
 		}
 	}
-
+	var portsToExpose []string
 	extraArgs := []string{}
 
-	for _, port := range cc.ExposedPorts {
+	if n.ControlPlane {
+		portsToExpose = cc.ExposedPorts
+	} else {
+		portsToExpose = n.ExposedPorts
+	}
+
+	for _, port := range portsToExpose {
 		extraArgs = append(extraArgs, "-p", port)
 	}
 

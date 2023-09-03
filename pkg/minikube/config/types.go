@@ -146,6 +146,7 @@ type Node struct {
 	Name              string
 	IP                string
 	Port              int
+	ExposedPorts      []string // Only used by the docker and podman driver
 	KubernetesVersion string
 	ContainerRuntime  string
 	ControlPlane      bool
