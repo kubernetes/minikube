@@ -513,7 +513,7 @@ If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) fo
 If you already have kubectl installed, you can now use it to access your shiny new cluster:
 
 ```shell
-kubectl get po -A
+kubectl get pod -A
 ```
 
 Alternatively, minikube can download the appropriate version of kubectl and you should be able to use it like this:
