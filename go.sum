@@ -787,11 +787,11 @@ github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7Pam
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
 github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.10 h1:h2qYaJSDGyVzjGVj3HansB3mJUnyU9wBc/8/nm/kSLs=
 github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.10/go.mod h1:+FaFzlKsx+X/2dR5Rjr6EN9ZzuYDW950s4MmFILchJM=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.18.0 h1:82lUmcpHzBEpGP4qURZvMSU1rJV0AAfXtOCh7Qz6oDw=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.18.0/go.mod h1:6abS6wU43wU97qP+JseSJq2+C8/XL50co74AhoMJwwU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.42.0 h1:thAXdOpdEJPWW7kZmD8wU/yhQjd7PA6L01TxFcR5OOY=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.42.0 h1:4gL61NwEDGAFvLJeEMjTYJm6r1T26k3QYuDZK9YEaAk=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.42.0/go.mod h1:lz6DEePTxmjvYMtusOoS3qDAErC0STi/wmvqJucKY28=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.19.1 h1:lP8YpTi26Bei2OrXpQEUnNFPqKT6bTn3P8DvJC4i8WQ=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.19.1/go.mod h1:g9zEQ45EhrGGA6HyCtxi8yL0BZ0vD+pVaqSkiLjVIzY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.43.1 h1:EA/FmSYRyeL2ZogHD8ZCPAt96UZh/U76wQjGhzRFEHE=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.43.1 h1:ti4stlXHjDhGl+1h+EpqXv9+Wxv0XqCB3XTT4W6ZoQU=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.43.1/go.mod h1:lv7cjEH/BKG+7xh3vR4T8//UkWZ9eIkgAk6HpN/T6rk=
 github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
