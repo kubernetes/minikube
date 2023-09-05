@@ -872,7 +872,7 @@
 	"You have selected \"virtualbox\" driver, but there are better options !\nFor better performance and support consider using a different driver: {{.drivers}}\n\nTo turn off this warning run:\n\n\t$ minikube config set WantVirtualBoxDriverWarning false\n\n\nTo learn more about on minikube drivers checkout https://minikube.sigs.k8s.io/docs/drivers/\nTo see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/\n\n": "「virtualbox」ドライバーが選択されましたが、より良い選択肢があります！\n性能と機能の向上のため、別のドライバー使用を検討してください: {{.drivers}}\n\nこの警告を表示させないためには、以下を実行してください:\n\n\t$ minikube config set WantVirtualBoxDriverWarning false\n\n\nminikube ドライバーについてもっと知るためには、https://minikube.sigs.k8s.io/docs/drivers/ を確認してください。\nベンチマークについては https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage/ を確認してください\n\n",
 	"You may need to manually remove the \"{{.name}}\" VM from your hypervisor": "ハイパーバイザーから「{{.name}}」VM を手動で削除することが必要かもしれません",
 	"You may need to stop the Hyper-V Manager and run `minikube delete` again.": "Hyper-V マネージャーを停止して、'minikube delete' を再度実行する必要があるかもしれません。",
-	"You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead": "M1 Mac 上で amd64 版 minikube を使用しているかもしれません。代わりに arm64 版 minikube を使用してください",
+	"You might be using an amd64 version of minikube on a Apple Silicon Mac, use the arm64 version of minikube instead": "Apple シリコンの Mac 上で amd64 版 minikube を使用しているかもしれません。代わりに arm64 版 minikube を使用してください",
 	"You must specify service name(s) or --all": "サービス名か --all を指定する必要があります",
 	"Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.": "あなたの GCP クレデンシャルは、{{.name}} クラスターに作成された各 Pod にマウントされます。",
 	"Your cgroup does not allow setting memory.": "あなたの cgroup ではメモリーの設定ができません。",
