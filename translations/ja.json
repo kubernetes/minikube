@@ -855,7 +855,7 @@
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "--network-plugin=cni を用いる場合、自身の CNI を提供する必要があります。便利な代替策として --cni フラグを参照してください",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "プロキシーを使用しようとしていますが、minikube の IP ({{.ip_address}}) が NO_PROXY 環境変数に含まれていません。",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "WSL 内で Windows の .exe バイナリーを実行しようとしています。これより優れた統合として、Linux バイナリーを代わりに使用してください (https://minikube.sigs.k8s.io/docs/start/ でダウンロードしてください)。そうではなく、引き続きこのバイナリーを使用したい場合、--force オプションを使用してください",
-	"You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "M1 システム上で amd64 バイナリーを実行しようとしています。\ndarwin/arm64 バイナリーを代わりに実行することをご検討ください。\n{{.url}} でダウンロードしてください。",
+	"You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "Apple シリコンの システム上で amd64 バイナリーを実行しようとしています。\ndarwin/arm64 バイナリーを代わりに実行することをご検討ください。\n{{.url}} でダウンロードしてください。",
 	"You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` \u0026 `minikube tunnel` commands.": "独立したネットワークなしで QEMU ドライバーを使用しています。これは `minikube service` \u0026 `minikube tunnel` コマンドをサポートしていません。",
 	"You can create one using 'minikube start'.\n\t\t": "'minikube start' を使って新しいものを作成できます。\n\t\t",
 	"You can delete them using the following command(s): ": "次のコマンドで削除できます: ",

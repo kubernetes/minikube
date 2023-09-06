@@ -908,7 +908,7 @@
 	"With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "",
-	"You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "",
+	"You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "Apple Silicon 시스템에서 amd64 바이너리를 실행하려고 합니다.\n이것 대신, darwin/arm64 바이너리를 실행하는 것이 좋습니다.\n{.url}}에서 다운로드하세요.",
 	"You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` \u0026 `minikube tunnel` commands.": "",
 	"You can also use 'minikube kubectl -- get pods' to invoke a matching version": "맞는 버전의 kubectl 을 사용하기 위해서는 다음과 같이 사용 가능합니다. minikube kubectl -- get pods'",
 	"You can create one using 'minikube start'.\n\t\t": "",

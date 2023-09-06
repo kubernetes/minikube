@@ -911,7 +911,7 @@
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details": "Parece que estás usando un proxy, pero tu entorno NO_PROXY no incluye la dirección IP de minikube ({{.ip_address}}). Consulta {{.documentation_url}} para obtener más información",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "",
-	"You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "",
+	"You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "",
 	"You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` \u0026 `minikube tunnel` commands.": "",
 	"You can create one using 'minikube start'.\n\t\t": "",
 	"You can delete them using the following command(s): ": "",
