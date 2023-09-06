@@ -110,8 +110,8 @@ func Execute() {
 		}
 	}
 
-	if runtime.GOOS == "darwin" && detect.IsAmd64M1Emulation() {
-		out.Boxed("You are trying to run the amd64 binary on an M1 system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}",
+	if runtime.GOOS == "darwin" && detect.IsAmd64AppleSiliconEmulation() {
+		out.Boxed("You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}",
 			out.V{"url": notify.DownloadURL(version.GetVersion(), "darwin", "arm64")})
 	}
 

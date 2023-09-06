@@ -78,15 +78,15 @@ func IsCloudShell() bool {
 	return e == "true"
 }
 
-// IsAmd64M1Emulation  determines whether amd64 minikube binary is running on M1 mac in emulation mode
-func IsAmd64M1Emulation() bool {
+// IsAmd64AppleSiliconEmulation determines whether amd64 minikube binary is running on AppleSilicon mac in emulation mode
+func IsAmd64AppleSiliconEmulation() bool {
 	return runtime.GOARCH == "amd64" && strings.HasPrefix(cpuid.CPU.BrandName, "VirtualApple")
 }
 
 // EffectiveArch return architecture to use in minikube VM/container
 // may differ from host arch
 func EffectiveArch() string {
-	if IsAmd64M1Emulation() {
+	if IsAmd64AppleSiliconEmulation() {
 		return "arm64"
 	}
 	return runtime.GOARCH
