@@ -61,6 +61,10 @@ Enable the minikube registry-creds addon with the following command:
 minikube addons enable registry-creds
 ```
 
+The add-on will create secrets in each namespace other than `kube-system` that can be used for `imagePullSecrets` on a pod.  It also
+updates the `default` service account in each namespace to use these `imagePullSecrets`, which means any pod created outside
+the `kube-system` namespace without an explicit service account other than `default` will use the image pull secrets automatically.
+
 ### Create a deployment that uses an image in AWS ECR
 
 This tutorial will use a vanilla alpine image that has been already uploaded into a repository in AWS ECR.
@@ -122,11 +126,9 @@ In the above tutorial, we configured the `registry-creds` addon to refresh the c
 - Check if you have a secret called `awsecr-cred` in the `default` namespace by running `kubectl get secrets`.
 - Check if the image path is valid.
 - Check if the registry-creds addon is enabled by using `minikube addons list`.
-
-## Caveats
-
-The service account token for the `default` service account in the `default` namespace is kept updated by the addon. If you create your deployment in a different namespace, the image pull will not work.
+- Check if you have specified `imagePullSecrets` on the workload or related service account if you're using a custom service account.
 
 ## Related articles
 
 - [registry-creds addon](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry-creds)
+- [registry-creds controller source](https://github.com/upmc-enterprises/registry-creds#registry-credentials)
