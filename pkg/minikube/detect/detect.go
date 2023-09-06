@@ -78,7 +78,7 @@ func IsCloudShell() bool {
 	return e == "true"
 }
 
-// IsAmd64AppleSiliconEmulation determines whether amd64 minikube binary is running on AppleSilicon mac in emulation mode
+// IsAmd64AppleSiliconEmulation determines whether amd64 minikube binary is running on Apple Silicon Mac in emulation mode
 func IsAmd64AppleSiliconEmulation() bool {
 	return runtime.GOARCH == "amd64" && strings.HasPrefix(cpuid.CPU.BrandName, "VirtualApple")
 }
