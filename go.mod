@@ -87,7 +87,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/cli v24.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/google/go-github/v54 v54.0.0
+	github.com/google/go-github/v55 v55.0.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
