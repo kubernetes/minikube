@@ -1032,7 +1032,7 @@
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).": "",
 	"You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details": "您似乎正在使用代理，但您的 NO_PROXY 环境不包含 minikube IP ({{.ip_address}})。如需了解详情，请参阅 {{.documentation_url}}",
 	"You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force": "您正在尝试在 WSL 中运行 Windows .exe 二进制文件。为了更好的集成，请改为使用 Linux 二进制文件（在 https://minikube.sigs.k8s.io/docs/start/ 下载）。如果仍然想要执行此操作，您可以使用 --force。",
-	"You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "你正在尝试在 M1 系统上运行 amd64 二进制文件。\n请考虑改用 darwin/arm64 二进制文件。\n下载地址：{{.url}}",
+	"You are trying to run the amd64 binary on an Apple Silicon system.\nPlease consider running the darwin/arm64 binary instead.\nDownload at {{.url}}": "你正在尝试在 Apple Silicon 系统上运行 amd64 二进制文件。\n请考虑改用 darwin/arm64 二进制文件。\n下载地址：{{.url}}",
 	"You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` \u0026 `minikube tunnel` commands.": "",
 	"You can create one using 'minikube start'.\n\t\t": "",
 	"You can delete them using the following command(s): ": "",
