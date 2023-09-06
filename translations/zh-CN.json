@@ -489,7 +489,7 @@
 	"List existing minikube nodes.": "列出现有的minikube节点。",
 	"List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list": "",
 	"List images": "列出镜像",
-	"List nodes.": "列出节点",
+	"List nodes.": "列出节点。",
 	"List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)": "应在主机上公开为套接字的访客 VSock 端口列表（仅限 hyperkit 驱动程序）",
 	"List of ports that should be exposed (docker and podman driver only)": "应该公开的端口列表（仅适用于 docker 和 podman 驱动）",
 	"Listening to 0.0.0.0 on external docker host {{.host}}. Please be advised": "",
