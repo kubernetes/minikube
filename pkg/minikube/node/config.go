@@ -43,13 +43,30 @@ import (
 
 func maskProxyPassword(v string) string {
 	parts := strings.Split(v, "=")
+	// Is it an attribution variable?
 	if len(parts) == 2 {
 		key := strings.ToUpper(parts[0])
+		// Is it a proxy setting?
 		if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
-			pattern := `//([^:]+):[^\@]+@`
-			regexpPattern := regexp.MustCompile(pattern)
-			value := regexpPattern.ReplaceAllString(parts[1], "//$1:*****@")
-			v = key + "=" + value
+			proxyValue := parts[1]
+			// Proxy variable values SHOULD have a value like
+			// https(s)://<whatever>
+			proxyAddressParts := strings.Split(proxyValue, "://")
+			if len(proxyAddressParts) == 2 {
+				proxyURL := ""
+				proxyURL = proxyAddressParts[1]
+				// Let's store the username, the URL and and optional port address
+				pattern := `([^:]+):.+(@[\w\.]+)(:\d+)?`
+				regexpPattern := regexp.MustCompile(pattern)
+				matches := regexpPattern.FindStringSubmatch(proxyURL)
+				mask := "*****"
+				if len(matches) == 4 {
+					proxyValue = fmt.Sprintf("%s://%s:%s%s%s", proxyAddressParts[0], matches[1], mask, matches[2], matches[3])
+				} else if len(matches) == 3 {
+					proxyValue = fmt.Sprintf("%s//%s:%s@%s", proxyAddressParts[0], matches[1], mask, matches[2])
+				}
+			}
+			v = key + "=" + proxyValue
 		}
 	}
 	return v

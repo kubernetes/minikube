@@ -35,20 +35,32 @@ func Test_maskProxyPassword(t *testing.T) {
 			output: "myDockerOption=value",
 		},
 		{
-			input:  "http_proxy=http://myproxy.company.com",
-			output: "HTTP_PROXY=http://myproxy.company.com",
+			input:  "http_proxy=http://minikube.sigs.k8s.io",
+			output: "HTTP_PROXY=http://minikube.sigs.k8s.io",
 		},
 		{
-			input:  "https_proxy=http://jdoe@myproxy.company.com:8080",
-			output: "HTTPS_PROXY=http://jdoe@myproxy.company.com:8080",
+			input:  "https_proxy=http://jdoe@minikube.sigs.k8s.io:8080",
+			output: "HTTPS_PROXY=http://jdoe@minikube.sigs.k8s.io:8080",
 		},
 		{
-			input:  "https_proxy=https://mary:am$uT8zB(rP@myproxy.company.com:8080",
-			output: "HTTPS_PROXY=https://mary:*****@myproxy.company.com:8080",
+			input:  "https_proxy=https://mary:iam$Fake!password@minikube.sigs.k8s.io:8080",
+			output: "HTTPS_PROXY=https://mary:*****@minikube.sigs.k8s.io:8080",
 		},
 		{
-			input:  "http_proxy=http://jdoe:mPu3z9uT#!@myproxy.company.com:8080",
-			output: "HTTP_PROXY=http://jdoe:*****@myproxy.company.com:8080",
+			input:  "http_proxy=http://jdoe:%n0tRe@al:Password!@minikube.sigs.k8s.io:8080",
+			output: "HTTP_PROXY=http://jdoe:*****@minikube.sigs.k8s.io:8080",
+		},
+		{
+			input:  "http_proxy=http://jo@han:n0tRe@al:&Password!@minikube.sigs.k8s.io:8080",
+			output: "HTTP_PROXY=http://jo@han:*****@minikube.sigs.k8s.io:8080",
+		},
+		{
+			input:  "http_proxy=http://k@r3n!:an0th3erF@akeP@55word@minikube.sigs.k8s.io",
+			output: "HTTP_PROXY=http://k@r3n!:*****@minikube.sigs.k8s.io",
+		},
+		{
+			input:  "https_proxy=https://fr@ank5t3in:an0th3erF@akeP@55word@minikube.sigs.k8s.io",
+			output: "HTTPS_PROXY=https://fr@ank5t3in:*****@minikube.sigs.k8s.io",
 		},
 	}
 	for _, test := range tests {
