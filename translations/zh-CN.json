@@ -486,7 +486,7 @@
 	"Launching Kubernetes ... ": "正在启动 Kubernetes ... ",
 	"Launching proxy ...": "正在启动代理...",
 	"List all available images from the local cache.": "列出本地缓存中所有可用的镜像。",
-	"List existing minikube nodes.": "列出现有的minikube节点",
+	"List existing minikube nodes.": "列出现有的minikube节点。",
 	"List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list": "",
 	"List images": "列出镜像",
 	"List nodes.": "列出节点",
