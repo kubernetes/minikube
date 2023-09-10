@@ -76,8 +76,9 @@ func legacyVersion() string {
 	// the version containerd in ISO was upgraded to 1.4.2
 	// we need it to use runc.v2 plugin
 	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
+	// note: TestMissingContainerUpgrade requires minikube v1.26.0+ where we copy over initial containerd config in kicbase via deploy/kicbase/Dockerfile
 	if ContainerRuntime() == "containerd" {
-		version = "v1.22.0"
+		version = "v1.26.0"
 	}
 	return version
 }
