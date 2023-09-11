@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"k8s.io/klog/v2"
 
@@ -29,25 +28,23 @@ import (
 )
 
 const (
-	dockerHubUbuntuBaseURL = "https://hub.docker.com/v2/repositories/library/ubuntu/tags"
+	dockerHubKindnetdTags = "https://hub.docker.com/v2/repositories/kindest/kindnetd/tags"
 )
 
 var (
 	schema = map[string]update.Item{
-		"deploy/kicbase/Dockerfile": {
+		"pkg/minikube/bootstrapper/images/images.go": {
 			Replace: map[string]string{
-				`UBUNTU_JAMMY_IMAGE=.*`: `UBUNTU_JAMMY_IMAGE="{{.LatestVersion}}"`,
+				`kindnetd:.*"`: `kindnetd:{{.LatestVersion}}"`,
 			},
 		},
 	}
 )
 
-// Data holds latest Ubuntu jammy version in semver format.
 type Data struct {
 	LatestVersion string
 }
 
-// Response is used to unmarshal the response from Docker Hub
 type Response struct {
 	Results []struct {
 		Name string `json:"name"`
@@ -55,40 +52,36 @@ type Response struct {
 }
 
 func getLatestVersion() (string, error) {
-	resp, err := http.Get(dockerHubUbuntuBaseURL)
+	resp, err := http.Get(dockerHubKindnetdTags)
 	if err != nil {
-		return "", fmt.Errorf("unable to get Ubuntu jammy's latest version: %v", err)
+		return "", fmt.Errorf("failed to get tags: %v", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("unable to read HTTP response from Docker Hub: %v", err)
+		return "", fmt.Errorf("failed to read HTTP response: %v", err)
 	}
 
 	var content Response
 	err = json.Unmarshal(body, &content)
 	if err != nil {
-		return "", fmt.Errorf("unable to unmarshal response from Docker Hub: %v", err)
+		return "", fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
-	for _, i := range content.Results {
-		if strings.Contains(i.Name, "jammy-") {
-			return i.Name, nil
-		}
+	if len(content.Results) == 0 {
+		return "", fmt.Errorf("tag list is empty")
 	}
 
-	return "", fmt.Errorf("response from Docker Hub does not contain a latest jammy image")
+	return content.Results[0].Name, nil
 }
 
 func main() {
-	// get Ubuntu Jammy latest version
 	latest, err := getLatestVersion()
 	if err != nil {
-		klog.Fatalf("Unable to find latest ubuntu:jammy version: %v\n", err)
+		klog.Fatalf("failed to get latest version: %v", err)
 	}
-	data := Data{LatestVersion: fmt.Sprintf("ubuntu:%s", latest)}
-	klog.Infof("Ubuntu jammy latest version: %s", latest)
+	data := Data{LatestVersion: latest}
 
 	update.Apply(schema, data)
 }
