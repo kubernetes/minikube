@@ -85,7 +85,7 @@ require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.10
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/docker/cli v24.0.5+incompatible
+	github.com/docker/cli v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v55 v55.0.0
 	github.com/jmoiron/sqlx v1.3.5
