@@ -1170,6 +1170,11 @@ update-kindnetd-version:
 	(cd hack/update/kindnetd_version && \
 	 go run update_kindnetd_version.go)
 
+.PHONY: update-fuse-overlayfs-version
+update-fuse-overlayfs-version:
+	(cd hack/update/fuse_overlayfs_version && \
+	 go run update_fuse_overlayfs_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
