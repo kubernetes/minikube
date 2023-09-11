@@ -1165,6 +1165,11 @@ update-crictl-version:
 	(cd hack/update/crictl_version && \
 	 go run update_crictl_version.go)
 
+.PHONY: update-kindnetd-version
+update-kindnetd-version:
+	(cd hack/update/kindnetd_version && \
+	 go run update_kindnetd_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \

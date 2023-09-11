@@ -50,6 +50,7 @@ var dependencies = map[string]dependency{
 	"hugo":             {"netlify.toml", `HUGO_VERSION = "(.*)"`},
 	"ingress":          {addonsFile, `ingress-nginx/controller:(.*)@`},
 	"inspektor-gadget": {addonsFile, `inspektor-gadget/inspektor-gadget:(.*)@`},
+	"kindnetd":         {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"metrics-server":   {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":          {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"runc":             {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
