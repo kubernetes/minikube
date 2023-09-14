@@ -87,8 +87,8 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			msg := "minikube service is not currently implemented with the user network on QEMU"
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
+			msg := "minikube service is not currently implemented with the builtin network on QEMU"
 			if runtime.GOOS == "darwin" {
 				msg += ", try starting minikube with '--network=socket_vmnet'"
 			}
@@ -147,6 +147,10 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 				if serviceURLMode && !driver.NeedsPortForward(co.Config.Driver) {
 					out.String(fmt.Sprintf("%s\n", serviceURLs))
 				}
+			}
+			// check whether there are running pods for this service
+			if err := service.CheckServicePods(cname, svc.Name, namespace); err != nil {
+				exit.Error(reason.SvcUnreachable, "service not available", err)
 			}
 		}
 

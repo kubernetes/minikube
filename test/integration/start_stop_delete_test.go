@@ -181,7 +181,7 @@ func TestStartStop(t *testing.T) {
 }
 
 // validateFirstStart runs the initial minikube start
-func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateFirstStart(ctx context.Context, t *testing.T, profile, _, _ string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -190,7 +190,7 @@ func validateFirstStart(ctx context.Context, t *testing.T, profile string, tcNam
 }
 
 // validateDeploying deploys an app the minikube cluster
-func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateDeploying(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if !strings.Contains(tcName, "cni") {
 		testPodScheduling(ctx, t, profile)
@@ -198,11 +198,11 @@ func validateDeploying(ctx context.Context, t *testing.T, profile string, tcName
 }
 
 // validateEnableAddonWhileActive makes sure addons can be enabled while cluster is active.
-func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 
 	// Enable an addon to assert it requests the correct image.
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=k8s.gcr.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "metrics-server", "-p", profile, "--images=MetricsServer=registry.k8s.io/echoserver:1.4", "--registries=MetricsServer=fake.domain"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -217,13 +217,13 @@ func validateEnableAddonWhileActive(ctx context.Context, t *testing.T, profile s
 		t.Errorf("failed to get info on auto-pause deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " fake.domain/k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " fake.domain/registry.k8s.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" fake.domain/registry.k8s.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
 // validateStop tests minikube stop
-func validateStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateStop(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 	if err != nil {
@@ -232,7 +232,7 @@ func validateStop(ctx context.Context, t *testing.T, profile string, tcName stri
 }
 
 // validateEnableAddonAfterStop makes sure addons can be enabled on a stopped cluster
-func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	// The none driver never really stops
 	if !NoneDriver() {
@@ -243,7 +243,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 	}
 
 	// Enable an addon to assert it comes up afterwards
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=k8s.gcr.io/echoserver:1.4"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile, "--images=MetricsScraper=registry.k8s.io/echoserver:1.4"))
 	if err != nil {
 		t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 	}
@@ -251,7 +251,7 @@ func validateEnableAddonAfterStop(ctx context.Context, t *testing.T, profile str
 }
 
 // validateSecondStart verifies that starting a stopped cluster works
-func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateSecondStart(ctx context.Context, t *testing.T, profile, _, _ string, startArgs []string) {
 	defer PostMortemLogs(t, profile)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
@@ -267,7 +267,7 @@ func validateSecondStart(ctx context.Context, t *testing.T, profile string, tcNa
 }
 
 // validateAppExistsAfterStop verifies that a user's app will not vanish after a minikube stop
-func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
@@ -278,7 +278,7 @@ func validateAppExistsAfterStop(ctx context.Context, t *testing.T, profile strin
 }
 
 // validateAddonAfterStop validates that an addon which was enabled when minikube is stopped will be enabled and working..
-func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateAddonAfterStop(ctx context.Context, t *testing.T, profile, tcName, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	if strings.Contains(tcName, "cni") {
 		t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
@@ -293,20 +293,20 @@ func validateAddonAfterStop(ctx context.Context, t *testing.T, profile string, t
 		t.Errorf("failed to get info on kubernetes-dashboard deployments. args %q: %v", rr.Command(), err)
 	}
 	deploymentInfo := rr.Stdout.String()
-	if !strings.Contains(deploymentInfo, " k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("addon did not load correct image. Expected to contain \" k8s.gcr.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
+	if !strings.Contains(deploymentInfo, " registry.k8s.io/echoserver:1.4") {
+		t.Errorf("addon did not load correct image. Expected to contain \" registry.k8s.io/echoserver:1.4\". Addon deployment info: %s", deploymentInfo)
 	}
 }
 
 // validateKubernetesImages verifies that a restarted cluster contains all the necessary images
-func validateKubernetesImages(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validateKubernetesImages(ctx context.Context, t *testing.T, profile, _, tcVersion string, _ []string) {
 	if !NoneDriver() {
 		testPulledImages(ctx, t, profile, tcVersion)
 	}
 }
 
 // validatePauseAfterStart verifies that minikube pause works
-func validatePauseAfterStart(ctx context.Context, t *testing.T, profile string, tcName string, tcVersion string, startArgs []string) {
+func validatePauseAfterStart(ctx context.Context, t *testing.T, profile, _, _ string, _ []string) {
 	defer PostMortemLogs(t, profile)
 	testPause(ctx, t, profile)
 }
@@ -348,13 +348,13 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 }
 
 // testPulledImages asserts that this configuration pulls only expected images
-func testPulledImages(ctx context.Context, t *testing.T, profile string, version string) {
+func testPulledImages(ctx context.Context, t *testing.T, profile, version string) {
 	t.Helper()
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
-		t.Errorf("failed tp get images inside minikube. args %q: %v", rr.Command(), err)
+		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
 	}
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
@@ -377,7 +377,13 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 			}
 		}
 	}
-	wantRaw, err := images.Kubeadm("", version)
+
+	mirror := ""
+	// Kubernetes versions prior to v1.25 will contain the old registry due to the preload
+	if v, _ := util.ParseKubernetesVersion(version); v.LT(semver.MustParse("1.25.0-alpha.1")) {
+		mirror = "k8s.gcr.io"
+	}
+	wantRaw, err := images.Kubeadm(mirror, version)
 	if err != nil {
 		t.Errorf("failed to get kubeadm images for %s : %v", version, err)
 	}

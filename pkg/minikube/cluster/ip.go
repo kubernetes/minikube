@@ -58,9 +58,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM/Host IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
-	case driver.QEMU:
-		fallthrough
-	case driver.QEMU2:
+	case driver.QEMU, driver.QEMU2:
 		ipString, err := host.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting IP address")
@@ -128,7 +126,9 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 
 		return net.ParseIP(ip), nil
 	case driver.HyperKit:
-		return net.ParseIP("192.168.64.1"), nil
+		vmIPString, _ := host.Driver.GetIP()
+		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
+		return net.ParseIP(gatewayIPString), nil
 	case driver.VMware:
 		vmIPString, err := host.Driver.GetIP()
 		if err != nil {

@@ -31,7 +31,7 @@ type copyFailRunner struct {
 	command.Runner
 }
 
-func (copyFailRunner) Copy(a assets.CopyableFile) error {
+func (copyFailRunner) Copy(_ assets.CopyableFile) error {
 	return fmt.Errorf("test error during copy file")
 }
 

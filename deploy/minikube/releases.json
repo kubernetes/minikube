@@ -1,6 +1,46 @@
 [
     {
         "checksums": {
+            "darwin": "c655de8bf27557f706f196a08a0afb8730e98c4976207542e05b73c11bcc0b38",
+            "linux": "88a80c051696adaa1a2a0c6aba5fde18176fd5afa87be10617ecaab9cd3a719b",
+            "windows": "5754e4b86ee66f111f4460f45730f32592701283ac79e1d9c07b217aab236dae"
+        },
+        "name": "v1.31.2"
+    },
+    {
+        "checksums": {
+            "darwin": "a465e5b537b63ac8e6624396f490dd79516fd625c1110cbf1f49e7b55c1dfcf6",
+            "linux": "ebcdfb0a520e9e746360a9dd954a9006ca75770e53fcdae493b6ac9a20026733",
+            "windows": "a08699d25fede796e6fdc56d8630380bd5864fb291592fc2be24fe881656d064"
+        },
+        "name": "v1.31.1"
+    },
+    {
+        "checksums": {
+            "darwin": "38e6b4d5b4bc33aaa3f18a5f02d5eb68a9ad3afc997a7fb0eb3d3ac9c5967139",
+            "linux": "0bcf12e4f72a2f2c9250bd85948166134a292c456e76224f517c4a8a52a948ac",
+            "windows": "cc40ddbad68457e78651e47e63493a5a409ced511fef494d3c536173b53f59bc"
+        },
+        "name": "v1.31.0"
+    },
+    {
+        "checksums": {
+            "darwin": "b5938a8772c5565b5d0b795938c367c5190bf65bb51fc55fb2417cb4e1d04ef1",
+            "linux": "e53d9e8c31f4c5f683182f5323d3527aa0725f713945c6d081cf71aa548ab388",
+            "windows": "cb3cf94860bd7a6ccb514fb1fed6641c51bcd9de1ea1a823cf862e632852af4a"
+        },
+        "name": "v1.30.1"
+    },
+    {
+        "checksums": {
+            "darwin": "929e79926e27f149ada6f1c4ee5774fbde586359b731868e15af28b6c24ab57c",
+            "linux": "aea52db72714b832f7f544ff0b71fbc231c47c044deda3f822708431dc68cc48",
+            "windows": "670bcaae30f1e6b8a8fe3a6b0566a3df397581ddefc70bff1bcf9455c477c0d7"
+        },
+        "name": "v1.30.0"
+    },
+    {
+        "checksums": {
             "darwin": "cb54ef7cdbcef7f078ac2966bc6c0aa43db75bbde8b361f428858137e803dac0",
             "linux": "aafb65cbee8e971ec00509fdb1817254b17d6bee4890b839c3b6e8f11e97413a",
             "windows": "c53785c02c0327e74342e7100dd2fa8a52a689c9fea7782a9a1491b5d68dbd6a"

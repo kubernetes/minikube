@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -41,6 +40,10 @@ import (
 const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
 
 func init() {
+	priority := registry.Default
+	if runtime.GOOS == "windows" {
+		priority = registry.Experimental
+	}
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.QEMU2,
 		Alias:    []string{driver.AliasQEMU},
@@ -48,7 +51,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Default,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -70,29 +73,19 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	if customPath != "" {
 		return customPath, nil
 	}
+	if runtime.GOOS == "windows" {
+		return "C:\\Program Files\\qemu\\share\\edk2-x86_64-code.fd", nil
+	}
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware
 	if runtime.GOOS == "darwin" {
-		var p, fw string
 		switch arch {
 		case "amd64":
-			p = "/usr/local/Cellar/qemu"
-			fw = "share/qemu/edk2-x86_64-code.fd"
+			return "/usr/local/opt/qemu/share/qemu/edk2-x86_64-code.fd", nil
 		case "arm64":
-			p = "/opt/homebrew/Cellar/qemu"
-			fw = "share/qemu/edk2-aarch64-code.fd"
+			return "/opt/homebrew/opt/qemu/share/qemu/edk2-aarch64-code.fd", nil
 		default:
 			return "", fmt.Errorf("unknown arch: %s", arch)
-		}
-
-		v, err := os.ReadDir(p)
-		if err != nil {
-			return "", fmt.Errorf("lookup qemu: %v", err)
-		}
-		for _, version := range v {
-			if version.IsDir() {
-				return path.Join(p, version.Name(), fw), nil
-			}
 		}
 	}
 
@@ -190,6 +183,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		MACAddress:            mac,
 		SocketVMNetPath:       cc.SocketVMnetPath,
 		SocketVMNetClientPath: cc.SocketVMnetClientPath,
+		ExtraDisks:            cc.ExtraDisks,
 	}, nil
 }
 

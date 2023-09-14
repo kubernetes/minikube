@@ -18,10 +18,8 @@ package main
 
 import (
 	"context"
-	"strings"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -36,12 +34,12 @@ var (
 	schema = map[string]update.Item{
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
-				`(?U)https://github.com/gotestyourself/gotestsum/releases/download/.*/gotestsum_.*_`: `https://github.com/gotestyourself/gotestsum/releases/download/v{{.StableVersion}}/gotestsum_{{.StableVersion}}_`,
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/installers/check_install_gotestsum.sh": {
 			Replace: map[string]string{
-				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@v{{.StableVersion}}`,
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
 			},
 		},
 	}
@@ -58,22 +56,12 @@ func main() {
 	defer cancel()
 
 	// get gotestsum stable version from https://github.com/gotestyourself/gotestsum
-	stable, err := gotestsumVersion(ctx, "gotestyourself", "gotestsum")
+	stable, err := update.StableVersion(ctx, "gotestyourself", "gotestsum")
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gotestsum stable version: %v", err)
 	}
-	data := Data{StableVersion: strings.TrimPrefix(stable, "v")}
+	data := Data{StableVersion: stable}
 	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
-}
-
-// gotestsumVersion returns gotestsum stable version in semver format.
-func gotestsumVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get gotestsum version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

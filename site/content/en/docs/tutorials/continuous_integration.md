@@ -41,9 +41,9 @@ curl -LO \
   https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
   && install minikube-linux-amd64 /tmp/
   
-kv=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)
+kv=$(curl -sSL https://dl.k8s.io/release/stable.txt)
 curl -LO \
-  https://storage.googleapis.com/kubernetes-release/release/$kv/bin/linux/amd64/kubectl \
+  https://dl.k8s.io/$kv/bin/linux/amd64/kubectl \
   && install kubectl /tmp/
 
 /tmp/minikube-linux-amd64 config set WantUpdateNotification false

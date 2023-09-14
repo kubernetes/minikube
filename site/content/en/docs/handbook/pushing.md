@@ -392,7 +392,7 @@ buildctl --addr unix://buildkitd.sock build \
     --frontend=dockerfile.v0 \
     --local context=. \
     --local dockerfile=. \
-    --output type=image,name=k8s.gcr.io/username/imagename:latest
+    --output type=image,name=registry.k8s.io/username/imagename:latest
 ```
 
 Now you can 'build' against the storage inside minikube. which is instantly accessible to kubernetes cluster.

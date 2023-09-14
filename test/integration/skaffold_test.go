@@ -82,9 +82,9 @@ func TestSkaffold(t *testing.T) {
 	}
 
 	if filepath.Base(Target()) != binaryName {
-		new := filepath.Join(filepath.Dir(abs), binaryName)
-		t.Logf("copying %s to %s", Target(), new)
-		if err := copy.Copy(Target(), new); err != nil {
+		dst := filepath.Join(filepath.Dir(abs), binaryName)
+		t.Logf("copying %s to %s", Target(), dst)
+		if err := copy.Copy(Target(), dst); err != nil {
 			t.Fatalf("error copying to minikube")
 		}
 	}

@@ -28,9 +28,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // TestMultiNode tests all multi node cluster functionality
@@ -487,19 +489,31 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	}
 
 	// resolve Pod IPs
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
-	if err != nil {
-		t.Errorf("failed to retrieve Pod IPs")
+	resolvePodIPs := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
+		if err != nil {
+			err := fmt.Errorf("failed to retrieve Pod IPs (may be temporary): %v", err)
+			t.Logf(err.Error())
+			return err
+		}
+		podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
+		if len(podIPs) != 2 {
+			err := fmt.Errorf("expected 2 Pod IPs but got %d (may be temporary), output: %q", len(podIPs), rr.Output())
+			t.Logf(err.Error())
+			return err
+		} else if podIPs[0] == podIPs[1] {
+			err := fmt.Errorf("expected 2 different pod IPs but got %s and %s (may be temporary), output: %q", podIPs[0], podIPs[1], rr.Output())
+			t.Logf(err.Error())
+			return err
+		}
+		return nil
 	}
-	podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
-	if len(podIPs) != 2 {
-		t.Errorf("expected 2 Pod IPs but got %d", len(podIPs))
-	} else if podIPs[0] == podIPs[1] {
-		t.Errorf("expected 2 different pod IPs but got %s and %s", podIPs[0], podIPs[0])
+	if err := retry.Expo(resolvePodIPs, 1*time.Second, Seconds(120)); err != nil {
+		t.Errorf("failed to resolve pod IPs: %v", err)
 	}
 
 	// get Pod names
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {
 		t.Errorf("failed get Pod names")
 	}
@@ -549,6 +563,9 @@ func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 			continue
 		}
 		hostIP := net.ParseIP(strings.TrimSpace(out.Stdout.String()))
+		if hostIP == nil {
+			t.Fatalf("minikube host ip is nil: %s", out.Output())
+		}
 		// try pinging host from pod
 		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
 		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {

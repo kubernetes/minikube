@@ -60,6 +60,9 @@ func TestAddonsList(t *testing.T) {
 				pipeCount += strings.Count(buf.Text(), "|")
 				got += buf.Text()
 			}
+			if err := buf.Err(); err != nil {
+				t.Errorf("failed to read stdout: %v", err)
+			}
 			// The lines we pull should look something like
 			// |------------|------------|(------|)
 			// | ADDON NAME | MAINTAINER |( DOCS |)
@@ -77,7 +80,6 @@ func TestAddonsList(t *testing.T) {
 			Ambassador *interface{} `json:"ambassador"`
 		}
 
-		b := make([]byte, 590)
 		r, w, err := os.Pipe()
 		if err != nil {
 			t.Fatalf("failed to create pipe: %v", err)
@@ -93,12 +95,10 @@ func TestAddonsList(t *testing.T) {
 		if err := w.Close(); err != nil {
 			t.Fatalf("failed to close pipe: %v", err)
 		}
-		if _, err := r.Read(b); err != nil {
-			t.Fatalf("failed to read bytes: %v", err)
-		}
 		got := addons{}
-		if err := json.Unmarshal(b, &got); err != nil {
-			t.Fatalf("failed to unmarshal output; output: %q; err: %v", string(b), err)
+		dec := json.NewDecoder(r)
+		if err := dec.Decode(&got); err != nil {
+			t.Fatalf("failed to decode: %v", err)
 		}
 		if got.Ambassador == nil {
 			t.Errorf("expected `ambassador` field to not be nil, but was")

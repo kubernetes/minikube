@@ -130,7 +130,7 @@ func (r *CRIO) Available() error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available")
 	}
-	return nil
+	return checkCNIPlugins(r.KubernetesVersion)
 }
 
 // Active returns if CRIO is active on the host
@@ -306,6 +306,7 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 	for _, opt := range opts {
 		args = append(args, "--"+opt)
 	}
+	args = append(args, "--cgroup-manager=cgroupfs")
 	c := exec.Command("sudo", args...)
 	e := os.Environ()
 	e = append(e, env...)
@@ -358,11 +359,7 @@ func (r *CRIO) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
-	return map[string]string{
-		"container-runtime":          "remote",
-		"container-runtime-endpoint": r.SocketPath(),
-		"image-service-endpoint":     r.SocketPath(),
-	}
+	return kubeletCRIOptions(r, r.KubernetesVersion)
 }
 
 // ListContainers returns a list of managed by this container runtime

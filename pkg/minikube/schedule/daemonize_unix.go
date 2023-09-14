@@ -76,7 +76,7 @@ func killPIDForProfile(profile string) error {
 	return nil
 }
 
-func daemonize(profiles []string, duration time.Duration) error {
+func daemonize(profiles []string, _ time.Duration) error {
 	_, _, err := godaemon.MakeDaemon(&godaemon.DaemonAttr{})
 	if err != nil {
 		return err

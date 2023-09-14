@@ -94,32 +94,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() (retState registry.State) {
-	_, err := exec.LookPath(oci.Docker)
-	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")
-	o, err := cmd.Output()
-	if err != nil {
-		reason := ""
-		if ctx.Err() == context.DeadlineExceeded {
-			err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
-			reason = "PROVIDER_DOCKER_DEADLINE_EXCEEDED"
-		}
-
-		klog.Warningf("docker version returned error: %v", err)
-
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			stderr := strings.TrimSpace(string(exitErr.Stderr))
-			newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
-			return suggestFix("version", exitErr.ExitCode(), stderr, newErr)
-		}
-
-		return registry.State{Reason: reason, Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+	version, state := dockerVersionOrState()
+	if state.Error != nil {
+		return state
 	}
 
 	var improvement string
@@ -135,15 +112,18 @@ func status() (retState registry.State) {
 		}
 	}()
 
-	versions := strings.Split(string(o), ":")
+	versions := strings.Split(version, ":")
+	if len(versions) < 2 {
+		versions = append(versions, "")
+	}
 	dockerEngineVersion := versions[0]
 	dockerPlatformVersion := versions[1]
-	klog.Infof("docker version: %s", o)
+	klog.Infof("docker version: %s", version)
 	if !viper.GetBool("force") {
-		if s := checkDockerDesktopVersion(dockerPlatformVersion); s != nil {
-			return *s
+		if s := checkDockerDesktopVersion(dockerPlatformVersion); s.Error != nil {
+			return s
 		}
-		s := checkDockerEngineVersion(strings.TrimSpace(dockerEngineVersion)) // remove '\n' from o at the end
+		s := checkDockerEngineVersion(dockerEngineVersion)
 		if s.Error != nil {
 			return s
 		}
@@ -163,6 +143,38 @@ func status() (retState registry.State) {
 	// TODO: validate cgroup v2 delegation when si.Rootless is true
 
 	return checkNeedsImprovement()
+}
+
+var dockerVersionOrState = func() (string, registry.State) {
+	if _, err := exec.LookPath(oci.Docker); err != nil {
+		return "", registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Os}}-{{.Server.Version}}:{{.Server.Platform.Name}}")
+	o, err := cmd.Output()
+	if err == nil {
+		return string(o), registry.State{}
+	}
+
+	reason := ""
+	if ctx.Err() == context.DeadlineExceeded {
+		err = errors.Wrapf(err, "deadline exceeded running %q", strings.Join(cmd.Args, " "))
+		reason = "PROVIDER_DOCKER_DEADLINE_EXCEEDED"
+	}
+
+	klog.Warningf("docker version returned error: %v", err)
+
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		return "", registry.State{Reason: reason, Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+	}
+
+	stderr := strings.TrimSpace(string(exitErr.Stderr))
+	newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+	return "", suggestFix("version", exitErr.ExitCode(), stderr, newErr)
 }
 
 func checkDockerEngineVersion(o string) registry.State {
@@ -246,17 +258,17 @@ func checkDockerEngineVersion(o string) registry.State {
 		Doc:              docURL + "#requirements"}
 }
 
-func checkDockerDesktopVersion(version string) *registry.State {
+func checkDockerDesktopVersion(version string) (s registry.State) {
 	fields := strings.Fields(version)
 	if len(fields) < 3 || fields[0] != "Docker" || fields[1] != "Desktop" {
-		return nil
+		return s
 	}
 	currSemver, err := semver.Parse(fields[2])
 	if err != nil {
-		return nil
+		return s
 	}
 	if currSemver.EQ(semver.MustParse("4.16.0")) {
-		return &registry.State{
+		return registry.State{
 			Reason:    "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
 			Running:   true,
 			Error:     errors.New("Docker Desktop 4.16.0 has a regression that prevents minikube from starting"),
@@ -264,7 +276,7 @@ func checkDockerDesktopVersion(version string) *registry.State {
 			Fix:       "Update Docker Desktop to 4.16.1 or greater",
 		}
 	}
-	return nil
+	return s
 }
 
 // checkNeedsImprovement if overlay mod is installed on a system

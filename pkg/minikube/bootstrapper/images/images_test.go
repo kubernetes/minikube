@@ -17,8 +17,6 @@ limitations under the License.
 package images
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -33,49 +31,49 @@ func TestEssentials(t *testing.T) {
 		images  []string
 	}{
 		{"v1.18.0", strings.Split(strings.Trim(`
-k8s.gcr.io/kube-apiserver:v1.18.0
-k8s.gcr.io/kube-controller-manager:v1.18.0
-k8s.gcr.io/kube-scheduler:v1.18.0
-k8s.gcr.io/kube-proxy:v1.18.0
-k8s.gcr.io/pause:3.2
-k8s.gcr.io/etcd:3.4.3-0
-k8s.gcr.io/coredns:1.6.7
+registry.k8s.io/kube-apiserver:v1.18.0
+registry.k8s.io/kube-controller-manager:v1.18.0
+registry.k8s.io/kube-scheduler:v1.18.0
+registry.k8s.io/kube-proxy:v1.18.0
+registry.k8s.io/pause:3.2
+registry.k8s.io/etcd:3.4.3-0
+registry.k8s.io/coredns:1.6.7
 `, "\n"), "\n")},
 		{"v1.19.0", strings.Split(strings.Trim(`
-k8s.gcr.io/kube-apiserver:v1.19.0
-k8s.gcr.io/kube-controller-manager:v1.19.0
-k8s.gcr.io/kube-scheduler:v1.19.0
-k8s.gcr.io/kube-proxy:v1.19.0
-k8s.gcr.io/pause:3.2
-k8s.gcr.io/etcd:3.4.9-1
-k8s.gcr.io/coredns:1.7.0
+registry.k8s.io/kube-apiserver:v1.19.0
+registry.k8s.io/kube-controller-manager:v1.19.0
+registry.k8s.io/kube-scheduler:v1.19.0
+registry.k8s.io/kube-proxy:v1.19.0
+registry.k8s.io/pause:3.2
+registry.k8s.io/etcd:3.4.9-1
+registry.k8s.io/coredns:1.7.0
 `, "\n"), "\n")},
 		{"v1.20.0", strings.Split(strings.Trim(`
-k8s.gcr.io/kube-apiserver:v1.20.0
-k8s.gcr.io/kube-controller-manager:v1.20.0
-k8s.gcr.io/kube-scheduler:v1.20.0
-k8s.gcr.io/kube-proxy:v1.20.0
-k8s.gcr.io/pause:3.2
-k8s.gcr.io/etcd:3.4.13-0
-k8s.gcr.io/coredns:1.7.0
+registry.k8s.io/kube-apiserver:v1.20.0
+registry.k8s.io/kube-controller-manager:v1.20.0
+registry.k8s.io/kube-scheduler:v1.20.0
+registry.k8s.io/kube-proxy:v1.20.0
+registry.k8s.io/pause:3.2
+registry.k8s.io/etcd:3.4.13-0
+registry.k8s.io/coredns:1.7.0
 `, "\n"), "\n")},
 		{"v1.21.0", strings.Split(strings.Trim(`
-k8s.gcr.io/kube-apiserver:v1.21.0
-k8s.gcr.io/kube-controller-manager:v1.21.0
-k8s.gcr.io/kube-scheduler:v1.21.0
-k8s.gcr.io/kube-proxy:v1.21.0
-k8s.gcr.io/pause:3.4.1
-k8s.gcr.io/etcd:3.4.13-0
-k8s.gcr.io/coredns/coredns:v1.8.0
+registry.k8s.io/kube-apiserver:v1.21.0
+registry.k8s.io/kube-controller-manager:v1.21.0
+registry.k8s.io/kube-scheduler:v1.21.0
+registry.k8s.io/kube-proxy:v1.21.0
+registry.k8s.io/pause:3.4.1
+registry.k8s.io/etcd:3.4.13-0
+registry.k8s.io/coredns/coredns:v1.8.0
 `, "\n"), "\n")},
 		{"v1.22.0", strings.Split(strings.Trim(`
-k8s.gcr.io/kube-apiserver:v1.22.0
-k8s.gcr.io/kube-controller-manager:v1.22.0
-k8s.gcr.io/kube-scheduler:v1.22.0
-k8s.gcr.io/kube-proxy:v1.22.0
-k8s.gcr.io/pause:3.5
-k8s.gcr.io/etcd:3.5.0-0
-k8s.gcr.io/coredns/coredns:v1.8.4
+registry.k8s.io/kube-apiserver:v1.22.0
+registry.k8s.io/kube-controller-manager:v1.22.0
+registry.k8s.io/kube-scheduler:v1.22.0
+registry.k8s.io/kube-proxy:v1.22.0
+registry.k8s.io/pause:3.5
+registry.k8s.io/etcd:3.5.0-0
+registry.k8s.io/coredns/coredns:v1.8.4
 `, "\n"), "\n")},
 	}
 	for _, tc := range testCases {
@@ -85,43 +83,9 @@ k8s.gcr.io/coredns/coredns:v1.8.4
 				t.Fatal(err)
 			}
 			want := tc.images
-			got := essentials("k8s.gcr.io", v)
+			got := essentials("registry.k8s.io", v)
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("images mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetLatestTag(t *testing.T) {
-	serverResp := "{tags: [\"1.8.7\"]}"
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte(serverResp))
-		if err != nil {
-			t.Errorf("failed to write https response")
-		}
-	}))
-	defer server.Close()
-
-	var testCases = []struct {
-		name          string
-		url           string
-		lastKnownGood string
-		wsResponse    string
-		expect        string
-	}{
-		{name: "VersionGetSuccess", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["v1.8.9"]}`, expect: "v1.8.9"},
-		{name: "VersionGetFail", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "nah", "nope": ["v1.8.9"]}`, expect: "v1.8.6"},
-		{name: "VersionGetFailNone", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: ``, expect: "v1.8.6"},
-		{name: "VersionGetSuccessMultiple", url: server.URL, lastKnownGood: "v1.8.6", wsResponse: `{"name": "coredns", "tags": ["1.8.7","v1.8.9"]}`, expect: "v1.8.9"},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			serverResp = tc.wsResponse
-			resp := findLatestTagFromRepository(tc.url, tc.lastKnownGood)
-			if diff := cmp.Diff(tc.expect, resp); diff != "" {
-				t.Errorf("Incorrect response version (-want +got):\n%s", diff)
 			}
 		})
 	}

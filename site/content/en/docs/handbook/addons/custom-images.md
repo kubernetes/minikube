@@ -19,8 +19,8 @@ minikube addons images efk
 |----------------------|------------------------------|-------------------|
 |      IMAGE NAME      |        DEFAULT IMAGE         | DEFAULT REGISTRY  |
 |----------------------|------------------------------|-------------------|
-| Elasticsearch        | elasticsearch:v5.6.2         | k8s.gcr.io        |
-| FluentdElasticsearch | fluentd-elasticsearch:v2.0.2 | k8s.gcr.io        |
+| Elasticsearch        | elasticsearch:v5.6.2         | registry.k8s.io   |
+| FluentdElasticsearch | fluentd-elasticsearch:v2.0.2 | registry.k8s.io   |
 | Alpine               | alpine:3.6                   |                   |
 | Kibana               | kibana/kibana:5.6.2          | docker.elastic.co |
 |----------------------|------------------------------|-------------------|
@@ -31,7 +31,7 @@ An empty registry means the image is stored locally or default registry `docker.
 
 The `IMAGE NAME` column is used to customize the corresponding image and registry.
 
-Assume we have a private registry at `192.168.10.2:5555` to replace `k8s.gcr.io` and a locally built Kibana called `kibana/kibana:5.6.2-custom`.
+Assume we have a private registry at `192.168.10.2:5555` to replace `registry.k8s.io` and a locally built Kibana called `kibana/kibana:5.6.2-custom`.
 
 We could load local images to minikube by:
 

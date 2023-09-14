@@ -77,7 +77,7 @@ var RootCmd = &cobra.Command{
 		var err error
 		auditID, err = audit.LogCommandStart()
 		if err != nil {
-			klog.Errorf("failed to log command start to audit: %v", err)
+			klog.Warningf("failed to log command start to audit: %v", err)
 		}
 		// viper maps $MINIKUBE_ROOTLESS to "rootless" property automatically, but it does not do vice versa,
 		// so we map "rootless" property to $MINIKUBE_ROOTLESS expliclity here.
@@ -88,7 +88,7 @@ var RootCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		if err := audit.LogCommandEnd(auditID); err != nil {
-			klog.Errorf("failed to log command end to audit: %v", err)
+			klog.Warningf("failed to log command end to audit: %v", err)
 		}
 	},
 }
@@ -140,7 +140,7 @@ func Execute() {
 		}
 	}
 
-	for _, c := range RootCmd.Commands() {
+	applyToAllCommands(RootCmd, func(c *cobra.Command) {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(f *pflag.Flag) {
@@ -148,7 +148,8 @@ func Execute() {
 		})
 
 		c.SetUsageTemplate(usageTemplate())
-	}
+	})
+
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
 	RootCmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -222,7 +223,10 @@ func init() {
 	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the Kubernetes cluster.")
 	RootCmd.PersistentFlags().String(config.UserFlag, "", "Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.")
+	RootCmd.PersistentFlags().Bool(config.SkipAuditFlag, false, "Skip recording the current command in the audit logs.")
 	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
+
+	translate.DetermineLocale()
 
 	groups := templates.CommandGroups{
 		{
@@ -296,7 +300,6 @@ func init() {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
 
-	translate.DetermineLocale()
 	cobra.OnInitialize(initConfig)
 }
 
@@ -327,14 +330,25 @@ func setupViper() {
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.WantVirtualBoxDriverWarning, true)
 	viper.SetDefault(config.MaxAuditEntries, 1000)
+	viper.SetDefault(config.SkipAuditFlag, false)
 }
 
 func addToPath(dir string) {
-	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	path := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
 	klog.Infof("Updating PATH: %s", dir)
-	os.Setenv("PATH", new)
+	os.Setenv("PATH", path)
 }
 
 func validateUsername(name string) bool {
 	return len(name) <= 60
+}
+
+// applyToAllCommands applies the provided func to all commands including sub commands
+func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
+	for _, c := range cmd.Commands() {
+		f(c)
+		if c.HasSubCommands() {
+			applyToAllCommands(c, f)
+		}
+	}
 }

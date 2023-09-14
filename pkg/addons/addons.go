@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -35,9 +37,11 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -381,7 +385,7 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 				"KubeWebhookCertgenPatch":  "docker.io/jettech/kube-webhook-certgen:v1.5.1@sha256:950833e19ade18cd389d647efb88992a7cc077abedef343fa59e012d376d79b7",
 			}
 			addon.Registries = map[string]string{
-				"IngressController": "k8s.gcr.io",
+				"IngressController": "registry.k8s.io",
 			}
 			return nil
 		}
@@ -433,11 +437,17 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		}
 	}
 
+	// on the first attempt try without force, but on subsequent attempts use force
+	force := false
+
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		_, err := runner.RunCmd(kubectlCommand(cc, deployFiles, enable))
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		defer cancel()
+		_, err := runner.RunCmd(kubectlCommand(ctx, cc, deployFiles, enable, force))
 		if err != nil {
 			klog.Warningf("apply failed, will retry: %v", err)
+			force = true
 		}
 		return err
 	}
@@ -538,7 +548,7 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 	// Get the default values of any addons not saved to our config
 	for name, a := range assets.Addons {
 		if _, exists := existing[name]; !exists {
-			enable[name] = a.IsEnabled(cc)
+			enable[name] = a.IsEnabledOrDefault(cc)
 		}
 	}
 
@@ -563,10 +573,78 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 
 // UpdateConfig tries to update config with all enabled addons (not thread-safe).
 // Any error will be logged and it will continue.
-func UpdateConfig(cc *config.ClusterConfig, enabled []string) {
+func UpdateConfigToEnable(cc *config.ClusterConfig, enabled []string) {
 	for _, a := range enabled {
 		if err := Set(cc, a, "true"); err != nil {
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+}
+
+func UpdateConfigToDisable(cc *config.ClusterConfig) {
+	for name := range assets.Addons {
+		if err := Set(cc, name, "false"); err != nil {
+			klog.Errorf("store failed: %v", err)
+		}
+	}
+}
+
+// VerifyNotPaused verifies the cluster is not paused before enable/disable an addon.
+func VerifyNotPaused(profile string, enable bool) error {
+	klog.Info("checking whether the cluster is paused")
+
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		return errors.Wrap(err, "control plane")
+	}
+
+	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
+	if err != nil {
+		return errors.Wrap(err, "get host")
+	}
+
+	s, err := host.Driver.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get state")
+	}
+	if s != state.Running {
+		// can't check the status of pods on a non-running cluster
+		return nil
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		return errors.Wrap(err, "command runner")
+	}
+
+	crName := cc.KubernetesConfig.ContainerRuntime
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "container runtime")
+	}
+	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		return errors.Wrap(err, "check paused")
+	}
+	if !runtimePaused {
+		return nil
+	}
+	action := "disable"
+	if enable {
+		action = "enable"
+	}
+	msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
+	out.Styled(style.Shrug, msg)
+	return errors.New(msg)
 }

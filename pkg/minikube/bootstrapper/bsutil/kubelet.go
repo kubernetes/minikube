@@ -90,9 +90,12 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["hostname-override"] = nodeName
 	}
 
-	pauseImage := images.Pause(version, k8s.ImageRepository)
-	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
-		extraOpts["pod-infra-container-image"] = pauseImage
+	// Handled by CRI in 1.24+, and not by kubelet
+	if version.LT(semver.MustParse("1.24.0-alpha.2")) {
+		pauseImage := images.Pause(version, k8s.ImageRepository)
+		if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
+			extraOpts["pod-infra-container-image"] = pauseImage
+		}
 	}
 
 	// parses a map of the feature gates for kubelet

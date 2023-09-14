@@ -18,49 +18,37 @@ package config
 
 import (
 	"context"
-	"sort"
+	"net/http"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v55/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// supportedKubernetesVersions returns reverse-sort supported Kubernetes releases from GitHub that are in [constants.OldestKubernetesVersion, constants.NewestKubernetesVersion] range, including prereleases.
-// in case it cannot get it from GitHub, in addition to [constants.NewestKubernetesVersion, constants.OldestKubernetesVersion], 'constants.DefaultKubernetesVersion' is also returned if different from 'constants.NewestKubernetesVersion'.
+// supportedKubernetesVersions returns reverse-sort supported Kubernetes releases that are in [constants.OldestKubernetesVersion, constants.NewestKubernetesVersion] range, including prereleases.
 func supportedKubernetesVersions() (releases []string) {
 	minver := constants.OldestKubernetesVersion
-	defver := constants.DefaultKubernetesVersion
 	maxver := constants.NewestKubernetesVersion
 
+	for _, ver := range constants.ValidKubernetesVersions {
+		if (minver != "" && semver.Compare(minver, ver) == 1) || (maxver != "" && semver.Compare(ver, maxver) == 1) {
+			continue
+		}
+		releases = append(releases, ver)
+	}
+	return releases
+}
+
+// IsInGitHubKubernetesVersions checks whether ver is in the GitHub list of K8s versions
+func IsInGitHubKubernetesVersions(ver string) (bool, error) {
 	ghc := github.NewClient(nil)
 
-	opts := &github.ListOptions{PerPage: 100}
-	for (opts.Page+1)*100 <= 300 {
-		rls, resp, err := ghc.Repositories.ListReleases(context.Background(), "kubernetes", "kubernetes", opts)
-		if err != nil {
-			v := []string{maxver}
-			if defver != maxver {
-				v = append(v, defver)
-			}
-			v = append(v, minver)
-			return v
+	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return false, nil
 		}
-		for _, rl := range rls {
-			ver := rl.GetTagName()
-			if !semver.IsValid(ver) {
-				continue
-			}
-			// skip out-of-range versions
-			if (minver != "" && semver.Compare(minver, ver) == 1) || (maxver != "" && semver.Compare(ver, maxver) == 1) {
-				continue
-			}
-			releases = append(releases, ver)
-		}
-		if resp.NextPage == 0 {
-			break
-		}
-		opts.Page = resp.NextPage
+		return false, err
 	}
-	sort.Slice(releases, func(i, j int) bool { return semver.Compare(releases[i], releases[j]) == 1 })
-	return releases
+	return true, nil
 }

@@ -6,7 +6,7 @@ on:
     - cron: "0 2,14 * * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.20'
+  GO_VERSION: '1.21.1'
 permissions:
   contents: read
 
@@ -19,11 +19,10 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true
           cache-dependency-path: ./go.sum
       - name: Benchmark time-to-k8s for Docker driver with Docker runtime
         run: |
@@ -39,17 +38,16 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true
           cache-dependency-path: ./go.sum
       - name: Disable firewall
         run: |

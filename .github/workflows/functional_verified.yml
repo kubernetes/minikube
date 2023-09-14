@@ -22,7 +22,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.20'
+  GO_VERSION: '1.21.1'
 
 permissions:
   contents: read
@@ -34,11 +34,10 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
-          cache: true
           cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
@@ -48,7 +47,7 @@ jobs:
           sudo apt-get install -y libvirt-dev
           MINIKUBE_BUILD_IN_DOCKER=y make cross e2e-cross debs
           cp -r test/integration/testdata ./out
-      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
         with:
           name: minikube_binaries
           path: out
@@ -63,10 +62,14 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     steps:
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
+        with:
+          go-version: ${{env.GO_VERSION}}
       - name: Install tools
         shell: bash
         run: |
           sudo apt update
+          sudo apt upgrade -y
           sudo apt install -y jq docker git cron
           sudo usermod -aG docker $USER
 
@@ -79,24 +82,22 @@ jobs:
           fi
           sudo touch /var/run/job.in.progress
           rm -rf cleanup.sh install_cleanup.sh
-          # after this PR is merged, update URLs to get the scripts from github master
-          wget https://storage.googleapis.com/minikube-ci-utils/cleanup.sh
-          wget https://storage.googleapis.com/minikube-ci-utils/install_cleanup.sh
+          wget https://raw.githubusercontent.com/kubernetes/minikube/master/hack/gh_actions/cleanup.sh
+          wget https://raw.githubusercontent.com/kubernetes/minikube/master/hack/gh_actions/install_cleanup.sh
           chmod +x cleanup.sh install_cleanup.sh
           ./install_cleanup.sh
 
       - name: Install kubectl
         shell: bash
         run: |
-          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/arm64/kubectl"
+          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
 
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-linux-arm64
-          sudo install gopogh-linux-arm64 /usr/local/bin/gopogh
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.23.0
 
       - name: Docker Info
         shell: bash
@@ -116,9 +117,6 @@ jobs:
           echo "--------------------------"
           hostname || true
           echo "--------------------------"
-      - uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
-        with:
-          go-version: ${{env.GO_VERSION}}
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
@@ -167,7 +165,7 @@ jobs:
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
 
-      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
         with:
           name: functional_docker_ubuntu_arm64
           path: minikube_binaries/report
@@ -211,7 +209,7 @@ jobs:
         run: |
           mkdir -p all_reports
           cp -r ./functional_docker_ubuntu_arm64 ./all_reports/
-      - uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32
         with:
           name: all_reports
           path: all_reports

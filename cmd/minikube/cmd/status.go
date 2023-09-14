@@ -501,7 +501,7 @@ func readEventLog(name string) ([]cloudevents.Event, time.Time, error) {
 		events = append(events, ev)
 	}
 
-	return events, st.ModTime(), nil
+	return events, st.ModTime(), scanner.Err()
 }
 
 // clusterState converts Status structs into a ClusterState struct

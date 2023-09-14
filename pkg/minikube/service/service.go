@@ -261,11 +261,6 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 		interval = 1
 	}
 
-	err := CheckService(cname, namespace, service)
-	if err != nil {
-		return nil, &SVCNotFoundError{err}
-	}
-
 	chkSVC := func() error { return CheckService(cname, namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
@@ -377,4 +372,37 @@ func DeleteSecret(cname string, namespace, name string) error {
 	}
 
 	return nil
+}
+
+// check whether there are running pods for a service
+func CheckServicePods(cname, svcName, namespace string) error {
+	clientset, err := K8s.GetCoreClient(cname)
+	if err != nil {
+		return errors.Wrap(err, "failed to get k8s client")
+	}
+
+	svc, err := clientset.Services(namespace).Get(context.Background(), svcName, meta.GetOptions{})
+	if err != nil {
+		return errors.Wrap(err, "Get service")
+	}
+	// There are four types of service in k8s: NodePort, ClusterIp, LoadBalancer and ExternalName
+	// However, NodePort means that this service will not be exposed outside the cluster
+	// while ExternalName means that this service is not provided by this k8s cluster
+	// So we only check when service type is NodePort or LoadBalancer
+	if svc.Spec.Type != core.ServiceTypeNodePort && svc.Spec.Type != core.ServiceTypeLoadBalancer {
+		return nil
+	}
+	pods, err := clientset.Pods(namespace).List(context.Background(), meta.ListOptions{
+		LabelSelector: labels.Set(svc.Spec.Selector).AsSelector().String(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "List Pods")
+	}
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == core.PodRunning {
+			return nil
+		}
+	}
+	return fmt.Errorf("no running pod for service %s found", svcName)
 }

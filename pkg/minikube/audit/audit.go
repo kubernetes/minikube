@@ -121,7 +121,11 @@ func LogCommandEnd(id string) error {
 }
 
 func getStartIndex(entryCount int) int {
-	maxEntries := viper.GetInt(config.MaxAuditEntries)
+	// default to 1000 entries
+	maxEntries := 1000
+	if viper.IsSet(config.MaxAuditEntries) {
+		maxEntries = viper.GetInt(config.MaxAuditEntries)
+	}
 	startIndex := entryCount - maxEntries
 	if maxEntries <= 0 || startIndex <= 0 {
 		return 0
@@ -131,6 +135,10 @@ func getStartIndex(entryCount int) int {
 
 // shouldLog returns if the command should be logged.
 func shouldLog() bool {
+	if viper.GetBool(config.SkipAuditFlag) {
+		return false
+	}
+
 	// in rare chance we get here without a command, don't log
 	if pflag.NArg() == 0 {
 		return false
@@ -141,7 +149,7 @@ func shouldLog() bool {
 	}
 
 	// commands that should not be logged.
-	no := []string{"status", "version", "logs", "generate-docs"}
+	no := []string{"status", "version", "logs", "generate-docs", "profile"}
 	a := pflag.Arg(0)
 	for _, c := range no {
 		if a == c {

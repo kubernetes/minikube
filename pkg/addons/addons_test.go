@@ -115,7 +115,7 @@ func TestSetAndSave(t *testing.T) {
 	}
 }
 
-func TestStart(t *testing.T) {
+func TestStartWithAddonsEnabled(t *testing.T) {
 	// this test will write a config.json into MinikubeHome, create a temp dir for it
 	tests.MakeTempDir(t)
 
@@ -133,10 +133,30 @@ func TestStart(t *testing.T) {
 	go Enable(&wg, cc, toEnable, enabled)
 	wg.Wait()
 	if ea, ok := <-enabled; ok {
-		UpdateConfig(cc, ea)
+		UpdateConfigToEnable(cc, ea)
 	}
 
 	if !assets.Addons["dashboard"].IsEnabled(cc) {
 		t.Errorf("expected dashboard to be enabled")
+	}
+}
+
+func TestStartWithAllAddonsDisabled(t *testing.T) {
+	// this test will write a config.json into MinikubeHome, create a temp dir for it
+	tests.MakeTempDir(t)
+
+	cc := &config.ClusterConfig{
+		Name:             "start",
+		CPUs:             2,
+		Memory:           2500,
+		KubernetesConfig: config.KubernetesConfig{},
+	}
+
+	UpdateConfigToDisable(cc)
+
+	for name := range assets.Addons {
+		if assets.Addons[name].IsEnabled(cc) {
+			t.Errorf("expected %s to be disabled", name)
+		}
 	}
 }

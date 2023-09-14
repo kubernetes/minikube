@@ -119,6 +119,12 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 			vols = append(vols, v)
 		}
 	}
+	if scanErr := s.Err(); scanErr != nil {
+		klog.Warningf("failed to read output: %v", scanErr)
+		if err == nil {
+			err = scanErr
+		}
+	}
 	return vols, err
 }
 

@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path"
@@ -27,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec.Cmd {
+func kubectlCommand(ctx context.Context, cc *config.ClusterConfig, files []string, enable, force bool) *exec.Cmd {
 	v := constants.DefaultKubernetesVersion
 	if cc != nil {
 		v = cc.KubernetesConfig.KubernetesVersion
@@ -41,6 +42,9 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 	}
 
 	args := []string{fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), kubectlBinary, kubectlAction}
+	if force {
+		args = append(args, "--force")
+	}
 	if !enable {
 		// --ignore-not-found just ignores when we try to delete a resource that is already gone,
 		// like a completed job with a ttlSecondsAfterFinished
@@ -50,5 +54,5 @@ func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec
 		args = append(args, []string{"-f", f}...)
 	}
 
-	return exec.Command("sudo", args...)
+	return exec.CommandContext(ctx, "sudo", args...)
 }

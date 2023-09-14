@@ -18,12 +18,14 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strconv"
 
+	"github.com/juju/fslock"
 	"github.com/spf13/cobra"
 
 	"k8s.io/klog/v2"
@@ -44,6 +46,7 @@ import (
 
 var cleanup bool
 var bindAddress string
+var lockHandle *fslock.Lock
 
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
@@ -58,8 +61,8 @@ var tunnelCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsUser(co.Config.Network) {
-			msg := "minikube tunnel is not currently implemented with the user network on QEMU"
+		if driver.IsQEMU(co.Config.Driver) && pkgnetwork.IsBuiltinQEMU(co.Config.Network) {
+			msg := "minikube tunnel is not currently implemented with the builtin network on QEMU"
 			if runtime.GOOS == "darwin" {
 				msg += ", try starting minikube with '--network=socket_vmnet'"
 			}
@@ -72,6 +75,9 @@ var tunnelCmd = &cobra.Command{
 				klog.Errorf("error cleaning up: %s", err)
 			}
 		}
+
+		mustLockOrExit(cname)
+		defer cleanupLock()
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
 		// We define the tunnel and minikube error free if the API server responds within a second.
@@ -114,6 +120,28 @@ var tunnelCmd = &cobra.Command{
 		}
 		<-done
 	},
+}
+
+func cleanupLock() {
+	if lockHandle != nil {
+		err := lockHandle.Unlock()
+		if err != nil {
+			out.Styled(style.Warning, fmt.Sprintf("failed to release lock during cleanup: %v", err))
+		}
+	}
+}
+
+func mustLockOrExit(profile string) {
+	tunnelLockPath := filepath.Join(localpath.Profile(profile), ".tunnel_lock")
+
+	lockHandle = fslock.New(tunnelLockPath)
+	err := lockHandle.TryLock()
+	if err == fslock.ErrLocked {
+		exit.Message(reason.SvcTunnelAlreadyRunning, "Another tunnel process is already running, terminate the existing instance to start a new one")
+	}
+	if err != nil {
+		exit.Error(reason.SvcTunnelStart, "failed to acquire lock due to unexpected error", err)
+	}
 }
 
 func outputTunnelStarted() {

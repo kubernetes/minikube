@@ -141,7 +141,7 @@ func (d *MockDriver) Restart() error {
 }
 
 // SetConfigFromFlags sets the machine config
-func (d *MockDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
+func (d *MockDriver) SetConfigFromFlags(_ drivers.DriverOptions) error {
 	return nil
 }
 

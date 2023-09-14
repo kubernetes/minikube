@@ -22,7 +22,7 @@ function check_jenkins() {
   fi
   pstree "${jenkins_pid}" \
         | egrep -i 'bash|integration|e2e|minikube' \
-        && echo "tests are is running on pid ${jenkins_pid} ..." \
+        && echo "tests are running on pid ${jenkins_pid} ..." \
         && exit 1
 }
 
@@ -51,6 +51,11 @@ function cleanup() {
 			fi
 		fi
 		sudo killall --user "${user}" minikube >/dev/null 2>&1 || true
+		# clear the known_host file (~/.ssh/known_hosts)
+		if test -f /home/${user}/.ssh/known_hosts; then
+			sudo echo "" > /home/${user}/.ssh/known_hosts
+			ssh-keyscan github.com >> /home/${user}/.ssh/known_hosts
+		fi
 	done
 	# clean docker left overs
 	echo -e "\ncleanup docker..."
@@ -124,4 +129,7 @@ systemctl list-unit-files --state=enabled \
         | xargs systemctl disable
 
 # update and reboot
-apt update -y && apt upgrade -y && apt-get autoclean && reboot
+check_jenkins
+apt update -y && apt upgrade -y && apt-get autoclean
+check_jenkins
+reboot

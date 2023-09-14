@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v55/github"
 )
 
 const (
@@ -122,4 +122,12 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge R
 	}
 
 	return stable, latest, edge, fmt.Errorf("wasn't able to find commit for releases")
+}
+
+func StableVersion(ctx context.Context, owner, repo string) (string, error) {
+	stable, _, _, err := GHReleases(ctx, owner, repo)
+	if err != nil || !semver.IsValid(stable.Tag) {
+		return "", err
+	}
+	return stable.Tag, nil
 }

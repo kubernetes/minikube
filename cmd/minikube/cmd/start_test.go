@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/klog/v2"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -63,6 +64,16 @@ func TestGetKubernetesVersion(t *testing.T) {
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 		{
+			description:     "kubernetes-version without patch version",
+			expectedVersion: "v1.16.15",
+			paramVersion:    "v1.16",
+		},
+		{
+			description:     "kubernetes-version without patch version",
+			expectedVersion: "v1.16.15",
+			paramVersion:    "1.16",
+		},
+		{
 			description:     "kubernetes-version given as 'stable', no config",
 			expectedVersion: constants.DefaultKubernetesVersion,
 			paramVersion:    "stable",
@@ -92,7 +103,10 @@ func TestGetKubernetesVersion(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			viper.SetDefault(kubernetesVersion, test.paramVersion)
-			version := getKubernetesVersion(test.cfg)
+			version, err := getKubernetesVersion(test.cfg)
+			if err != nil {
+				klog.Warningf("failed getting Kubernetes version: %v", err)
+			}
 
 			// check whether we are getting the expected version
 			if version != test.expectedVersion {
@@ -309,7 +323,6 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 		{driver.VirtualBox, false},
 		{driver.HyperKit, false},
 		{driver.VMware, false},
-		{driver.VMwareFusion, false},
 		{driver.HyperV, false},
 		{driver.Parallels, false},
 		{"something_invalid", false},
@@ -446,6 +459,109 @@ func TestValidateRuntime(t *testing.T) {
 			}
 			if gotError != test.errorMsg {
 				t.Errorf("ValidateRuntime(runtime=%v): got %v, expected %v", test.runtime, got, test.errorMsg)
+			}
+		})
+	}
+}
+
+func TestIsTwoDigitSemver(t *testing.T) {
+	var tcs = []struct {
+		desc     string
+		version  string
+		expected bool
+	}{
+		{
+			desc:     "a valid three digit version",
+			version:  "1.26.5",
+			expected: false,
+		},
+		{
+			desc:     "a valid two digit version",
+			version:  "1.26",
+			expected: true,
+		},
+		{
+			desc:     "a valid two digit version with a period",
+			version:  "1.26.",
+			expected: false,
+		},
+		{
+			desc:     "an invalid major version",
+			version:  "2",
+			expected: false,
+		},
+		{
+			desc:     "a valid major version",
+			version:  "1",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with a 0 as the major/minor components",
+			version:  "0.0",
+			expected: true,
+		},
+		{
+			desc:     "a two digit version with negative major version",
+			version:  "-1.0",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with negative minor version",
+			version:  "1.-1",
+			expected: false,
+		},
+		{
+			desc:     "a missing minor version",
+			version:  "1.",
+			expected: false,
+		},
+		{
+			desc:     "a missing major version",
+			version:  ".2",
+			expected: false,
+		},
+		{
+			desc:     "a valid two digit version with whitespace between components",
+			version:  "1. 1",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with a non-digit major component",
+			version:  "a.12",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with a non-digit minor component",
+			version:  "1.a",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version with extraneous non-digits in minor component",
+			version:  "1.2a",
+			expected: false,
+		},
+		{
+			desc:     "a two digit version larger major/minor components",
+			version:  "123456789.987654321",
+			expected: true,
+		},
+		{
+			desc:     "a valid two digit version with a version prefix",
+			version:  "v1.26",
+			expected: false,
+		},
+		{
+			desc:     "a valid three digit version with a version prefix",
+			version:  "v1.26.5",
+			expected: false,
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.desc, func(t *testing.T) {
+			actual := isTwoDigitSemver(tc.version)
+			// check whether the function correctly verifies if it is a 2 digit semver
+			if actual != tc.expected {
+				t.Fatalf("test failed. Expected version %s to return %t", tc.version, tc.expected)
 			}
 		})
 	}
@@ -721,6 +837,26 @@ func TestValidateStaticIP(t *testing.T) {
 		}
 		if gotError != tt.errorMsg {
 			t.Errorf("validateStaticIP(%s, %s): got %v, expected %v", tt.staticIP, tt.drvName, got, tt.errorMsg)
+		}
+	}
+}
+
+func TestImageMatchesBinaryVersion(t *testing.T) {
+	tests := []struct {
+		imageVersion  string
+		binaryVersion string
+		versionMatch  bool
+	}{
+		{"v1.17.0", "v1.17.0", true},
+		{"v1.17.0", "v1.20.0", false},
+		{"v1.31.0", "v1.31.1", true},
+		{"v1.31.1", "v1.31.0", false},
+	}
+
+	for _, tc := range tests {
+		got := imageMatchesBinaryVersion(tc.imageVersion, tc.binaryVersion)
+		if got != tc.versionMatch {
+			t.Errorf("imageMatchesBinaryVersion(%s, %s) = %t; want = %t", tc.imageVersion, tc.binaryVersion, got, tc.versionMatch)
 		}
 	}
 }

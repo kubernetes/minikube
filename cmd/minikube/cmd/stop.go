@@ -69,7 +69,7 @@ func init() {
 }
 
 // runStop handles the executes the flow of "minikube stop"
-func runStop(cmd *cobra.Command, args []string) {
+func runStop(_ *cobra.Command, _ []string) {
 	out.SetJSON(outputFormat == "json")
 	register.Reg.SetStep(register.Stopping)
 

@@ -38,7 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func createMockDriverHost(c config.ClusterConfig, n config.Node) (interface{}, error) {
+func createMockDriverHost(_ config.ClusterConfig, _ config.Node) (interface{}, error) {
 	return nil, nil
 }
 

@@ -87,7 +87,7 @@ func (s *sshReadableFile) Read(p []byte) (int, error) {
 	return s.reader.Read(p)
 }
 
-func (s *sshReadableFile) Seek(offset int64, whence int) (int64, error) {
+func (s *sshReadableFile) Seek(_ int64, _ int) (int64, error) {
 	return 0, fmt.Errorf("Seek is not implemented for sshReadableFile")
 }
 

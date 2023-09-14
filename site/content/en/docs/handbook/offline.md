@@ -10,9 +10,11 @@ description: >
 minikube has built-in support for caching downloaded resources into `$MINIKUBE_HOME/cache`. Here are the important file locations:
 
 * `~/.minikube/cache` - Top-level folder
-* `~/.minikube/cache/iso` - VM ISO image. Typically updated once per major minikube release.
-* `~/.minikube/cache/images` - Docker images used by Kubernetes.
-* `~/.minikube/cache/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
+* `~/.minikube/cache/iso/<arch>` - VM ISO image. Typically updated once per major minikube release.
+* `~/.minikube/cache/kic/<arch>` - Docker base image. Typically updated once per major minikube release.
+* `~/.minikube/cache/images/<arch>` - Images used by Kubernetes, only exists if preload doesn't exist.
+* `~/.minikube/cache/<os>/<arch>/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
+* `~/.minikube/cache/preloaded-tarball` - Tarball of preloaded images to improve start time
 
 ## Kubernetes image cache
 
@@ -22,25 +24,13 @@ NOTE: the `none` driver caches images directly into Docker rather than a separat
 
 ## Sharing the minikube cache
 
-For offline use on other hosts, one can copy the contents of `~/.minikube/cache`. As of the v1.0 release, this directory contains 685MB of data:
+For offline use on other hosts, one can copy the contents of `~/.minikube/cache`.
 
 ```text
-cache/iso/minikube-v1.0.0.iso
-cache/images/gcr.io/k8s-minikube/storage-provisioner_v1.8.1
-cache/images/k8s.gcr.io/k8s-dns-sidecar-amd64_1.14.13
-cache/images/k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64_1.14.13
-cache/images/k8s.gcr.io/kubernetes-dashboard-amd64_v1.10.1
-cache/images/k8s.gcr.io/kube-scheduler_v1.14.0
-cache/images/k8s.gcr.io/coredns_1.3.1
-cache/images/k8s.gcr.io/kube-controller-manager_v1.14.0
-cache/images/k8s.gcr.io/kube-apiserver_v1.14.0
-cache/images/k8s.gcr.io/pause_3.1
-cache/images/k8s.gcr.io/etcd_3.3.10
-cache/images/k8s.gcr.io/kube-addon-manager_v9.0
-cache/images/k8s.gcr.io/k8s-dns-kube-dns-amd64_1.14.13
-cache/images/k8s.gcr.io/kube-proxy_v1.14.0
-cache/v1.14.0/kubeadm
-cache/v1.14.0/kubelet
+cache/linux/amd64/v1.26.1/kubectl
+cache/kic/amd64/kicbase_v0.0.37@sha256_8bf7a0e8a062bc5e2b71d28b35bfa9cc862d9220e234e86176b3785f685d8b15.tar
+cache/preloaded-tarball/preloaded-images-k8s-v18-v1.26.1-docker-overlay2-amd64.tar.lz4
+cache/preloaded-tarball/preloaded-images-k8s-v18-v1.26.1-docker-overlay2-amd64.tar.lz4.checksum
 ```
 
 If any of these files exist, minikube will use copy them into the VM directly rather than pulling them from the internet.

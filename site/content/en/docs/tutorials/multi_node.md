@@ -14,6 +14,10 @@ date: 2019-11-24
 - minikube 1.10.1 or higher
 - kubectl
 
+## Caveat
+
+Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volumes" >}}) doesn't support multi-node clusters ([#12360](https://github.com/kubernetes/minikube/issues/12360)). To be able to provision or claim volumes in multi-node clusters, you could use [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon.
+
 ## Tutorial
 
 - Start a cluster with 2 nodes in the driver of your choice:

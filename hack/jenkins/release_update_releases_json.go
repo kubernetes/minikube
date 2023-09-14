@@ -100,10 +100,7 @@ func updateReleases(releasesFile, version string) error {
 
 	r.Releases = append([]release{e}, r.Releases...)
 
-	if err := updateJSON(releasesFile, r); err != nil {
-		return err
-	}
-	return nil
+	return updateJSON(releasesFile, r)
 }
 
 func getReleases(path string) (releases, error) {
@@ -217,10 +214,7 @@ func updateReleasesLegacy(releasesFile, version string) error {
 
 	r.Releases = append([]releaseLegacy{e}, r.Releases...)
 
-	if err := updateJSONLegacy(releasesFile, r); err != nil {
-		return err
-	}
-	return nil
+	return updateJSONLegacy(releasesFile, r)
 }
 
 func getReleasesLegacy(path string) (releasesLegacy, error) {

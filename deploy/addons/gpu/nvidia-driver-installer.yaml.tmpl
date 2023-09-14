@@ -77,5 +77,5 @@ spec:
         - name: root-mount
           mountPath: /root
       containers:
-      - image: "{{default "k8s.gcr.io" .ImageRepository}}/{{.Images.Pause}}"
+      - image: "{{default "registry.k8s.io" .ImageRepository}}/{{.Images.Pause}}"
         name: pause

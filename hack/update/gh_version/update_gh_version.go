@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -53,22 +52,12 @@ func main() {
 	defer cancel()
 
 	// get gh stable version
-	stable, err := ghVersion(ctx, "cli", "cli")
+	stable, err := update.StableVersion(ctx, "cli", "cli")
 	if err != nil {
 		klog.Fatalf("Unable to get gh stable version: %v", err)
 	}
-	data := Data{StableVersion: stable}
+	data := Data{StableVersion: strings.TrimPrefix(stable, "v")}
 	klog.Infof("gh stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
-}
-
-// ghVersion returns stable version in semver format.
-func ghVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get gh version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return strings.TrimPrefix(stable.Tag, "v"), nil
 }

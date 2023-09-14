@@ -1,0 +1,10 @@
+name: hide-minikube-bot-comments
+on: issue_comment
+jobs:
+  hide-comments:
+    if: ${{ github.event.issue.pull_request }}
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: spowelljr/hide-minikube-bot-comments@7d9688dd9b7fce605c24be174110c344728160de
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}

@@ -22,7 +22,9 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 type testCase struct {
@@ -154,7 +156,7 @@ func TestCheckDockerEngineVersion(t *testing.T) {
 func TestCheckDockerDesktopVersion(t *testing.T) {
 	tests := []struct {
 		input             string
-		shouldReturnState bool
+		shouldReturnError bool
 	}{
 		{"Docker Desktop", false},
 		{"Cat Desktop 4.16.0", false},
@@ -165,8 +167,30 @@ func TestCheckDockerDesktopVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		state := checkDockerDesktopVersion(tt.input)
-		if (state == nil && tt.shouldReturnState) || (state != nil && !tt.shouldReturnState) {
-			t.Errorf("checkDockerDesktopVersion(%q) = %v; expected shouldRetunState = %t", tt.input, state, tt.shouldReturnState)
+		err := state.Error
+		if (err == nil && tt.shouldReturnError) || (err != nil && !tt.shouldReturnError) {
+			t.Errorf("checkDockerDesktopVersion(%q) = %+v; expected shouldReturnError = %t", tt.input, state, tt.shouldReturnError)
+		}
+	}
+}
+
+func TestStatus(t *testing.T) {
+	tests := []struct {
+		input             string
+		shouldReturnError bool
+	}{
+		{"linux-20.10.22:Docker Desktop 4.16.2 (95914)", false},
+		{"noDashHere:Docker Desktop 4.16.2 (95914)", true},
+		{"linux-20.10.22:Docker Desktop 4.16.0 (95914)", true},
+		{"", true},
+	}
+	for _, tt := range tests {
+		dockerVersionOrState = func() (string, registry.State) { return tt.input, registry.State{} }
+		oci.CachedDaemonInfo = func(string) (oci.SysInfo, error) { return oci.SysInfo{}, nil }
+		state := status()
+		err := state.Error
+		if (err == nil && tt.shouldReturnError) || (err != nil && !tt.shouldReturnError) {
+			t.Errorf("status(%q) = %+v; expected shouldReturnError = %t", tt.input, state, tt.shouldReturnError)
 		}
 	}
 }

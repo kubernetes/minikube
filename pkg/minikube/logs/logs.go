@@ -80,9 +80,8 @@ var importantPods = []string{
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
-	"kubernetes-dashboard",
-	"storage-provisioner",
 	"kube-controller-manager",
+	"kindnet",
 }
 
 // logRunner is the subset of CommandRunner used for logging
@@ -139,6 +138,9 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 				klog.Warningf("Found %s problem: %s", name, l)
 				problems = append(problems, l)
 			}
+		}
+		if err := scanner.Err(); err != nil {
+			klog.Warningf("failed to read output: %v", err)
 		}
 		if len(problems) > 0 {
 			pMap[name] = problems
@@ -198,6 +200,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
 			l += scanner.Text() + "\n"
+		}
+		if err := scanner.Err(); err != nil {
+			klog.Errorf("failed to read output: %v", err)
+			failed = append(failed, name)
 		}
 		out.Styled(style.Empty, l)
 	}
@@ -267,9 +273,8 @@ func OutputOffline(lines int, logOutput *os.File) {
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	pods := importantPods
-	if assets.Addons["gcp-auth"].IsEnabled(&cfg) {
-		pods = append(pods, "gcp-auth")
-	}
+	addonPods := enabledAddonPods(cfg)
+	pods = append(pods, addonPods...)
 	for _, pod := range pods {
 		ids, err := r.ListContainers(cruntime.ListContainersOptions{Name: pod})
 		if err != nil {
@@ -290,4 +295,22 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cl
 	cmds["container status"] = cruntime.ContainerStatusCommand()
 
 	return cmds
+}
+
+// enabledAddonPods returns the pod names for enabled addons
+// this does not currently include all addons, mostly just addons that we occasionally get users reporting issues with
+func enabledAddonPods(cfg config.ClusterConfig) []string {
+	addonPodMap := map[string]string{
+		"dashboard":           "kubernetes-dashboard",
+		"gcp-auth":            "gcp-auth",
+		"ingress":             "controller_ingress",
+		"storage-provisioner": "storage-provisioner",
+	}
+	addonsPods := []string{}
+	for addon, podName := range addonPodMap {
+		if assets.Addons[addon].IsEnabled(&cfg) {
+			addonsPods = append(addonsPods, podName)
+		}
+	}
+	return addonsPods
 }

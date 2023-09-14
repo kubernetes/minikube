@@ -447,11 +447,27 @@ enable_network_magic(){
       -e 's/-A OUTPUT \(.*\) -j DOCKER_OUTPUT/\0\n-A PREROUTING \1 -j DOCKER_OUTPUT/' \
       `# switch docker DNS SNAT rules rules to our chosen IP` \
       -e "s/--to-source :53/--to-source ${docker_host_ip}:53/g"\
+      `# nftables incompatibility between 1.8.8 and 1.8.7 omit the --dport flag on DNAT rules` \
+      `# ensure --dport on DNS rules, due to https://github.com/kubernetes-sigs/kind/issues/3054` \
+      -e "s/p -j DNAT --to-destination ${docker_embedded_dns_ip}/p --dport 53 -j DNAT --to-destination ${docker_embedded_dns_ip}/g" \
     | iptables-restore
 
   # now we can ensure that DNS is configured to use our IP
   cp /etc/resolv.conf /etc/resolv.conf.original
-  sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original >/etc/resolv.conf
+  replaced="$(sed -e "s/${docker_embedded_dns_ip}/${docker_host_ip}/g" /etc/resolv.conf.original)"
+  if [[ "${KIND_DNS_SEARCH+x}" == "" ]]; then
+    # No DNS search set, just pass through as is
+    echo "$replaced" >/etc/resolv.conf
+  elif [[ -z "$KIND_DNS_SEARCH" ]]; then
+    # Empty search - remove all current search clauses
+    echo "$replaced" | grep -v "^search" >/etc/resolv.conf
+  else
+    # Search set - remove all current search clauses, and add the configured search
+    {
+      echo "search $KIND_DNS_SEARCH";
+      echo "$replaced" | grep -v "^search";
+    } >/etc/resolv.conf
+  fi
 
   local files_to_update=(
     /etc/kubernetes/manifests/etcd.yaml

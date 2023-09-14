@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
+	"github.com/docker/machine/libmachine/drivers"
+	vmware "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -32,8 +33,9 @@ func init() {
 	err := registry.Register(registry.DriverDef{
 		Name:     driver.VMware,
 		Config:   configure,
-		Default:  true,
-		Priority: registry.Default,
+		Default:  false,
+		Priority: registry.Deprecated,
+		Init:     func() drivers.Driver { return vmware.NewDriver("", "") },
 		Status:   status,
 	})
 	if err != nil {
@@ -42,7 +44,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwcfg.NewConfig(config.MachineName(cc, n), localpath.MiniPath())
+	d := vmware.NewDriver(config.MachineName(cc, n), localpath.MiniPath()).(*vmware.Driver)
 	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs
@@ -55,11 +57,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("docker-machine-driver-vmware")
-	if err != nil {
-		return registry.State{Error: err, Fix: "Install docker-machine-driver-vmware", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
-	}
-	_, err = exec.LookPath("vmrun")
+	_, err := exec.LookPath("vmrun")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
 	}

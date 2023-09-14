@@ -686,7 +686,7 @@ func ListImages(profile *config.Profile, format string) error {
 		return errors.Wrapf(err, "error loading config for profile :%v", pName)
 	}
 
-	images := map[string]cruntime.ListImage{}
+	imageListsFromNodes := [][]cruntime.ListImage{}
 	for _, n := range c.Nodes {
 		m := config.MachineName(*c, n)
 
@@ -715,19 +715,12 @@ func ListImages(profile *config.Profile, format string) error {
 				klog.Warningf("Failed to list images for profile %s %v", pName, err.Error())
 				continue
 			}
+			imageListsFromNodes = append(imageListsFromNodes, list)
 
-			for _, img := range list {
-				if _, ok := images[img.ID]; !ok {
-					images[img.ID] = img
-				}
-			}
 		}
 	}
 
-	uniqueImages := []cruntime.ListImage{}
-	for _, img := range images {
-		uniqueImages = append(uniqueImages, img)
-	}
+	uniqueImages := mergeImageLists(imageListsFromNodes)
 
 	switch format {
 	case "table":
@@ -768,6 +761,39 @@ func ListImages(profile *config.Profile, format string) error {
 	}
 
 	return nil
+}
+
+// mergeImageLists merges image lists from different nodes into a single list
+// all the repo tags of the same image will be preserved and grouped in one image item
+func mergeImageLists(lists [][]cruntime.ListImage) []cruntime.ListImage {
+	images := map[string]*cruntime.ListImage{}
+	// key of this set is img.ID+img.repoTag
+	// we use this set to detect whether a tag of a image is included in images map
+	imageTagAndIDSet := map[string]struct{}{}
+	for _, list := range lists {
+		for _, img := range list {
+			img := img
+			_, existingImg := images[img.ID]
+			if !existingImg {
+				images[img.ID] = &img
+			}
+			for _, repoTag := range img.RepoTags {
+				if _, ok := imageTagAndIDSet[img.ID+repoTag]; ok {
+					continue
+				}
+				imageTagAndIDSet[img.ID+repoTag] = struct{}{}
+				if existingImg {
+					images[img.ID].RepoTags = append(images[img.ID].RepoTags, repoTag)
+				}
+			}
+		}
+
+	}
+	uniqueImages := []cruntime.ListImage{}
+	for _, img := range images {
+		uniqueImages = append(uniqueImages, *img)
+	}
+	return uniqueImages
 }
 
 // parseRepoTag splits input string for two parts: image name and image tag

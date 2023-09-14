@@ -27,13 +27,16 @@ function Write-GithubStatus {
 	Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT" -Headers $headers -Body $JsonBody -ContentType "application/json" -Method Post -usebasicparsing
 }
 
+# cleanup possible leftovers from previous run
+rm -r -Force test_reports
+rm -Force testout*
+
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
-$GoVersion = "1.20"
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
-$KubeVersion = (Invoke-WebRequest -Uri 'https://storage.googleapis.com/kubernetes-release/release/stable.txt' -UseBasicParsing).Content
+$KubeVersion = (Invoke-WebRequest -Uri 'https://dl.k8s.io/release/stable.txt' -UseBasicParsing).Content
 (New-Object Net.WebClient).DownloadFile("https://dl.k8s.io/release/$KubeVersion/bin/windows/amd64/kubectl.exe", "C:\Program Files\Docker\Docker\resources\bin\kubectl.exe")
 
 # Setup the cleanup and reboot cron
@@ -41,42 +44,36 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_cleanup_cron.ps1 out/
 ./out/windows_cleanup_cron.ps1
 
-# Make sure Docker is up and running
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
-./out/setup_docker_desktop_windows.ps1
-If ($lastexitcode -gt 0) {
-	echo "Docker failed to start, exiting."
-
-	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/Hyper-V_Windows.txt`", `"context`": `"$env:JOB_NAME`"}"
-
-	Write-GithubStatus -JsonBody $json
-	docker system prune -a --volumes -f
-	Exit $lastexitcode
-}
-
-# Download Go
-$CurrentGo = go version
-if ($CurrentGo -NotLike "*$GoVersion*") {
-  (New-Object Net.WebClient).DownloadFile("https://go.dev/dl/go$GoVersion.windows-amd64.zip", "$env:TEMP\golang.zip")
-  Remove-Item "c:\Program Files\Go\*" -Recurse
-  Add-Type -Assembly "System.IO.Compression.Filesystem"
-  [System.IO.Compression.ZipFile]::ExtractToDirectory("$env:TEMP\golang.zip", "$env:TEMP\golang")
-  Copy-Item -Path "$env:TEMP\golang\go\*" -Destination "c:\Program Files\Go\" -Recurse
-  Remove-Item "$env:TEMP\golang" -Recurse
-  Remove-Item "$env:TEMP\golang.zip"
-}
-
-# Download gopogh and gotestsum
-(New-Object Net.WebClient).DownloadFile("https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh.exe", "C:\Go\bin\gopogh.exe")
-(New-Object Net.WebClient).DownloadFile("https://github.com/gotestyourself/gotestsum/releases/download/v1.9.0/gotestsum_1.9.0_windows_amd64.tar.gz", "$env:TEMP\gotestsum.tar.gz")
-tar --directory "C:\Go\bin\" -xzvf "$env:TEMP\gotestsum.tar.gz" "gotestsum.exe"
-
 # Grab all the scripts we'll need for integration tests
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_setup.ps1 out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/windows_integration_teardown.ps1 out/
+
+# Make sure Docker is up and running
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/setup_docker_desktop_windows.ps1 out/
+./out/setup_docker_desktop_windows.ps1
+If ($lastexitcode -gt 0) {
+	echo "Docker failed to start, exiting."
+	$json = "{`"state`": `"failure`", `"description`": `"Jenkins: docker failed to start`", `"target_url`": `"https://storage.googleapis.com/$gcs_bucket/$env:JOB_NAME.txt`", `"context`": `"$env:JOB_NAME`"}"
+	Write-GithubStatus -JsonBody $json
+	./out/windows_integration_teardown.ps1
+	Exit $lastexitcode
+}
+docker system prune -a --volumes -f
+
+# install/update Go if required
+gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check_install_golang.ps1 out/
+./out/check_install_golang.ps1
+
+# Download gopogh and gotestsum
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.23.0
+go install gotest.tools/gotestsum@v1.10.1
+# temporary: remove the old install of gopogh & gotestsum as it's taking priority over our current install, preventing updating
+if (Test-Path "C:\Go") {
+    Remove-Item "C:\Go" -Recurse -Force
+}
 
 ./out/windows_integration_setup.ps1
 
@@ -123,7 +120,7 @@ If($env:EXTERNAL -eq "yes"){
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json
 	cp testout.html test_reports/out.html
-	cp testout_summary.json test_reports/summary.txt
+	cp testout_summary.json test_reports/summary.json
 } Else {
 	gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt
 	gsutil -qm cp testout.json gs://$gcs_bucket/${env:JOB_NAME}.json

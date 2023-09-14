@@ -163,7 +163,7 @@ func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 }
 
 // ReadableFile implements interface (without implementation)
-func (f *FakeCommandRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+func (f *FakeCommandRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, nil
 }
 

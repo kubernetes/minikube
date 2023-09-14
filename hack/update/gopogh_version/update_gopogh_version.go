@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -35,27 +34,27 @@ var (
 	schema = map[string]update.Item{
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
 		".github/workflows/functional_verified.yml": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
-		"hack/jenkins/common.sh": {
+		"hack/jenkins/installers/check_install_gopogh.sh": {
 			Replace: map[string]string{
-				`(?U)https://github.com/medyagh/gopogh/releases/download/.*/gopogh`: `https://github.com/medyagh/gopogh/releases/download/{{.StableVersion}}/gopogh`,
+				`github.com/medyagh/gopogh/cmd/gopogh@.*`: `github.com/medyagh/gopogh/cmd/gopogh@{{.StableVersion}}`,
 			},
 		},
 	}
@@ -72,7 +71,7 @@ func main() {
 	defer cancel()
 
 	// get gopogh stable version from https://github.com/medyagh/gopogh
-	stable, err := gopoghVersion(ctx, "medyagh", "gopogh")
+	stable, err := update.StableVersion(ctx, "medyagh", "gopogh")
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gopogh stable version: %v", err)
 	}
@@ -80,14 +79,4 @@ func main() {
 	klog.Infof("gopogh stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
-}
-
-// gopoghVersion returns gopogh stable version in semver format.
-func gopoghVersion(ctx context.Context, owner, repo string) (string, error) {
-	// get gopogh version from GitHub Releases
-	stable, _, _, err := update.GHReleases(ctx, owner, repo)
-	if err != nil || !semver.IsValid(stable.Tag) {
-		return "", err
-	}
-	return stable.Tag, nil
 }

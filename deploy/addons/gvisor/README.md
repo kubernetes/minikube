@@ -1,8 +1,8 @@
 ## gVisor Addon
-[gVisor](https://gvisor.dev/), a sandboxed container runtime, allows users to securely run pods with untrusted workloads within Minikube.
+[gVisor](https://gvisor.dev/), a sandboxed container runtime, allows users to securely run pods with untrusted workloads within minikube.
 
-### Starting Minikube
-gVisor depends on the containerd runtime to run in Minikube.
+### Starting minikube
+gVisor depends on the containerd runtime to run in minikube.
 When starting minikube, specify the following flags, along with any additional desired flags:
 
 ```shell
@@ -29,7 +29,7 @@ NAME                              CREATED AT
 runtimeclass.node.k8s.io/gvisor   2019-06-15T04:35:09Z
 ```
 
-Once the pod has status `Running`, gVisor is enabled in Minikube.
+Once the pod has status `Running`, gVisor is enabled in minikube.
 
 ### Running pods in gVisor
 
@@ -71,4 +71,4 @@ NAME      READY     STATUS        RESTARTS   AGE
 gvisor    1/1       Terminating   0          5m
 ```
 
-_Note: Once gVisor is disabled, any pod with the `gvisor` Runtime Class or `io.kubernetes.cri.untrusted-workload` annotation will fail with a FailedCreatePodSandBox error._
+_Note: Once gVisor is disabled, any pod with the `gvisor` Runtime Class will fail with a FailedCreatePodSandBox error._

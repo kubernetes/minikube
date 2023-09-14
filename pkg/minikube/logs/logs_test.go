@@ -18,6 +18,8 @@ package logs
 
 import (
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestIsProblem(t *testing.T) {
@@ -59,5 +61,31 @@ func TestIsProblem(t *testing.T) {
 				t.Fatalf("IsProblem(%s)=%v, want %v", tc.input, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestEnabledAddonPods(t *testing.T) {
+	cfg := config.ClusterConfig{
+		Addons: map[string]bool{
+			"dashboard":           true,
+			"gcp-auth":            true,
+			"ingress":             true,
+			"storage-provisioner": true,
+		},
+	}
+
+	got := enabledAddonPods(cfg)
+	expectedPods := []string{"kubernetes-dashboard", "gcp-auth", "controller_ingress", "storage-provisioner"}
+	for _, expectedPod := range expectedPods {
+		found := false
+		for _, pod := range got {
+			if expectedPod == pod {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("%q was not found; got = %s", expectedPod, got)
+		}
 	}
 }

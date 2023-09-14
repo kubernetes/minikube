@@ -7,7 +7,7 @@ description: >
   How to triage issues in the minikube repo
 ---
 
-Community triage takes place **every Wednesday** from **11:30AM-12:30PM PST**.
+Community triage takes place **every Wednesday** from **11:05AM-11:55PM PT**.
 
 - Hangouts link: https://meet.google.com/sss-wdet-gwe
 - Google Group: https://groups.google.com/forum/#!forum/minikube-dev

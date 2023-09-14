@@ -16,64 +16,37 @@
 # are needed only because of condition explained in
 # https://github.com/kubernetes/kubernetes/issues/69608
 
-kind: Service
-apiVersion: v1
-metadata:
-  name: csi-hostpathplugin
-  namespace: kube-system
-  labels:
-    app: csi-hostpathplugin
-    addonmanager.kubernetes.io/mode: Reconcile
-spec:
-  selector:
-    app: csi-hostpathplugin
-  ports:
-    - name: dummy
-      port: 12345
----
-kind: StatefulSet
+kind: DaemonSet
 apiVersion: apps/v1
 metadata:
   name: csi-hostpathplugin
   namespace: kube-system
   labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: plugin
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  serviceName: "csi-hostpathplugin"
-  # One replica only:
-  # Host path driver only works when everything runs
-  # on a single node. We achieve that by starting it once and then
-  # co-locate all other pods via inter-pod affinity
-  replicas: 1
   selector:
     matchLabels:
-      app: csi-hostpathplugin
+      app.kubernetes.io/instance: hostpath.csi.k8s.io
+      app.kubernetes.io/part-of: csi-driver-host-path
+      app.kubernetes.io/name: csi-hostpathplugin
+      app.kubernetes.io/component: plugin
       addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        app: csi-hostpathplugin
+        app.kubernetes.io/instance: hostpath.csi.k8s.io
+        app.kubernetes.io/part-of: csi-driver-host-path
+        app.kubernetes.io/name: csi-hostpathplugin
+        app.kubernetes.io/component: plugin
         addonmanager.kubernetes.io/mode: Reconcile
         kubernetes.io/minikube-addons: csi-hostpath-driver
     spec:
-      serviceAccount: csi-external-health-monitor-controller
+      serviceAccount: csi-hostpathplugin-sa
       containers:
-        - name: csi-external-health-monitor-agent
-          image: {{.CustomRegistries.HostMonitorAgent  | default .ImageRepository | default .Registries.HostMonitorAgent }}{{.Images.HostMonitorAgent}}
-          args:
-            - "--v=5"
-            - "--csi-address=$(ADDRESS)"
-          env:
-            - name: NODE_NAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.nodeName
-            - name: ADDRESS
-              value: /csi/csi.sock
-          imagePullPolicy: "IfNotPresent"
-          volumeMounts:
-            - name: socket-dir
-              mountPath: /csi
         - name: csi-external-health-monitor-controller
           image: {{.CustomRegistries.HostMonitorController  | default .ImageRepository | default .Registries.HostMonitorController }}{{.Images.HostMonitorController}}
           args:
@@ -162,6 +135,62 @@ spec:
           args:
           - --csi-address=/csi/csi.sock
           - --health-port=9898
+
+        - name: csi-provisioner
+          image: {{.CustomRegistries.Provisioner  | default .ImageRepository | default .Registries.Provisioner }}{{.Images.Provisioner}}
+          args:
+            - -v=5
+            - --csi-address=/csi/csi.sock
+            - --feature-gates=Topology=true
+            - --enable-capacity
+            - --capacity-ownerref-level=0 # pod is owner
+            - --node-deployment=true
+            - --strict-topology=true
+            - --immediate-topology=false
+            - --worker-threads=5
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: spec.nodeName
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          securityContext:
+            # This is necessary only for systems with SELinux, where
+            # non-privileged sidecar containers cannot access unix domain socket
+            # created by privileged CSI driver container.
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+
+        - name: csi-snapshotter
+          image: {{.CustomRegistries.Snapshotter  | default .ImageRepository | default .Registries.Snapshotter }}{{.Images.Snapshotter}}
+          args:
+            - -v=5
+            - --csi-address=/csi/csi.sock
+            - --node-deployment
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+          securityContext:
+            # This is necessary only for systems with SELinux, where
+            # non-privileged sidecar containers cannot access unix domain socket
+            # created by privileged CSI driver container.
+            privileged: true
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
 
       volumes:
         - hostPath:

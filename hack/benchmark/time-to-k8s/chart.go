@@ -271,11 +271,7 @@ func createChart(chartPath string, values []plotter.Values, totals []float64, na
 
 	p.Add(l)
 
-	if err := p.Save(12*vg.Inch, 8*vg.Inch, chartPath); err != nil {
-		return err
-	}
-
-	return nil
+	return p.Save(12*vg.Inch, 8*vg.Inch, chartPath)
 }
 
 func createBars(values plotter.Values, index int) (*plotter.BarChart, error) {

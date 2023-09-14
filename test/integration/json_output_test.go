@@ -103,7 +103,7 @@ func TestJSONOutput(t *testing.T) {
 }
 
 // validateDistinctCurrentSteps makes sure each step has a distinct step number
-func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+func validateDistinctCurrentSteps(_ context.Context, t *testing.T, ces []*cloudEvent) {
 	steps := map[string]string{}
 	for _, ce := range ces {
 		currentStep, exists := ce.data["currentstep"]
@@ -118,7 +118,7 @@ func validateDistinctCurrentSteps(ctx context.Context, t *testing.T, ces []*clou
 }
 
 // validateIncreasingCurrentSteps verifies that for a successful minikube start, 'current step' should be increasing
-func validateIncreasingCurrentSteps(ctx context.Context, t *testing.T, ces []*cloudEvent) {
+func validateIncreasingCurrentSteps(_ context.Context, t *testing.T, ces []*cloudEvent) {
 	step := -1
 	for i, ce := range ces {
 		currentStep, exists := ce.data["currentstep"]

@@ -29,5 +29,4 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/ssh"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/vmware"
-	_ "k8s.io/minikube/pkg/minikube/registry/drvs/vmwarefusion"
 )

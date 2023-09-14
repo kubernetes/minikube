@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
@@ -309,6 +310,12 @@ var buildImageCmd = &cobra.Command{
 				}
 				// Otherwise, assume it's a tar
 			}
+		}
+		if runtime.GOOS == "windows" && strings.Contains(dockerFile, "\\") {
+			// if dockerFile is a DOS path, translate it into UNIX path
+			// because we are going to build this image in UNIX environment
+			out.String("minikube detects that you are using DOS-style path %s. minikube will convert it to UNIX-style by replacing all \\ to /", dockerFile)
+			dockerFile = strings.ReplaceAll(dockerFile, "\\", "/")
 		}
 		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)

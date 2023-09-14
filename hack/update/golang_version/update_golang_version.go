@@ -29,107 +29,13 @@ import (
 )
 
 var (
+	workflowReplace = update.Item{
+		Replace: map[string]string{
+			`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
+		},
+	}
+
 	schema = map[string]update.Item{
-		".github/workflows/build.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/master.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/pr.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/docs.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/time-to-k8s.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/leaderboard.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/yearly-leaderboard.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/translations.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-k8s-versions.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-kubeadm-constants.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-golang-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-golint-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gopogh-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gh-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-docsy-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-hugo-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/time-to-k8s-public-chart.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/functional_verified.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/update-gotestsum-version.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
-		".github/workflows/sync-minikube.yml": {
-			Replace: map[string]string{
-				`GO_VERSION: .*`: `GO_VERSION: '{{.StableVersion}}'`,
-			},
-		},
 		"go.mod": {
 			Replace: map[string]string{
 				`(?m)^go .*`: `go {{.StableVersionMM}}`,
@@ -140,7 +46,8 @@ var (
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
 				`GO_VERSION \?= 1.*`:             `GO_VERSION ?= {{.StableVersion}}`,
 				`GO_K8S_VERSION_PREFIX \?= v1.*`: `GO_K8S_VERSION_PREFIX ?= {{.K8SVersion}}`,
-				`GO_VERSION=[0-9.]+`:             `GO_VERSION={{.StableVersion}}`,
+				// Below line commented out due to https://github.com/kubernetes/minikube/issues/15841
+				// `GO_VERSION=[0-9.]+`:             `GO_VERSION={{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/installers/check_install_golang.sh": {
@@ -148,7 +55,7 @@ var (
 				`VERSION_TO_INSTALL=.*`: `VERSION_TO_INSTALL={{.StableVersion}}`,
 			},
 		},
-		"hack/jenkins/common.ps1": {
+		"hack/jenkins/installers/check_install_golang.ps1": {
 			Replace: map[string]string{
 				`GoVersion = ".*"`: `GoVersion = "{{.StableVersion}}"`,
 			},
@@ -175,6 +82,8 @@ type Data struct {
 }
 
 func main() {
+	addGitHubWorkflowFiles()
+
 	// get Golang stable version
 	stable, stableMM, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
@@ -244,4 +153,15 @@ func updateGoHashFile(version string) error {
 		return fmt.Errorf("failed to write to go.hash file: %v", err)
 	}
 	return nil
+}
+
+func addGitHubWorkflowFiles() {
+	files, err := os.ReadDir("../../../.github/workflows")
+	if err != nil {
+		klog.Fatalf("failed to read workflows dir: %v", err)
+	}
+	for _, f := range files {
+		filename := ".github/workflows/" + f.Name()
+		schema[filename] = workflowReplace
+	}
 }

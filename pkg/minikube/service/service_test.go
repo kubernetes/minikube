@@ -25,6 +25,7 @@ import (
 	"strings"
 	"testing"
 	"text/template"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -62,7 +63,7 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		secretsMap:   m.secretsMap}, nil
 }
 
-func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
+func (m *MockCoreClient) Secrets(_ string) typed_core.SecretInterface {
 	return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
 }
 
@@ -217,7 +218,7 @@ var endpointMap = map[string]*core.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
+func (e MockEndpointsInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -235,7 +236,7 @@ type MockSecretInterface struct {
 	SecretsList *core.SecretList
 }
 
-func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
+func (s MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	serviceList := &core.ServiceList{
 		Items: []core.Service{},
 	}
@@ -254,14 +255,19 @@ func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
+func (s MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
 		}
 	}
 
-	return nil, nil
+	return nil, errors.New("Service not found")
+}
+
+func (s MockServiceInterface) Create(_ context.Context, service *core.Service, _ meta.CreateOptions) (*core.Service, error) {
+	s.ServiceList.Items = append(s.ServiceList.Items, *service)
+	return service, nil
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
@@ -896,6 +902,14 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			expected:    []string{},
 			err:         true,
 		},
+		{
+			description: "correctly return serviceURLs for a delayed service",
+			namespace:   "default",
+			service:     "mock-dashboard-delayed",
+			api:         defaultAPI,
+			https:       true,
+			expected:    []string{"http://127.0.0.1:1111"},
+		},
 	}
 	defer revertK8sClient(K8s)
 	for _, test := range tests {
@@ -905,8 +919,33 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 				endpointsMap: endpointNamespaces,
 			}
 
+			go func() {
+				// wait for the delayed mock service to be created
+				time.Sleep(2 * time.Second)
+
+				_, _ = serviceNamespaces[test.namespace].Create(context.Background(), &core.Service{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "mock-dashboard-delayed",
+						Namespace: "default",
+						Labels:    map[string]string{"mock": "mock"},
+					},
+					Spec: core.ServiceSpec{
+						Ports: []core.ServicePort{
+							{
+								Name:     "port1",
+								NodePort: int32(1111),
+								Port:     int32(11111),
+								TargetPort: intstr.IntOrString{
+									IntVal: int32(11111),
+								},
+							},
+						},
+					},
+				}, meta.CreateOptions{})
+			}()
+
 			var urlList []string
-			urlList, err := WaitForService(test.api, "minikube", test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			urlList, err := WaitForService(test.api, "minikube", test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 5, 0)
 			if test.err && err == nil {
 				t.Fatalf("WaitForService expected to fail for test: %v", test)
 			}

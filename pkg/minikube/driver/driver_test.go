@@ -60,20 +60,19 @@ func TestBareMetal(t *testing.T) {
 
 func TestMachineType(t *testing.T) {
 	types := map[string]string{
-		Podman:       "container",
-		Docker:       "container",
-		Mock:         "bare metal machine",
-		None:         "bare metal machine",
-		SSH:          "bare metal machine",
-		KVM2:         "VM",
-		QEMU2:        "VM",
-		QEMU:         "VM",
-		VirtualBox:   "VM",
-		HyperKit:     "VM",
-		VMware:       "VM",
-		VMwareFusion: "VM",
-		HyperV:       "VM",
-		Parallels:    "VM",
+		Podman:     "container",
+		Docker:     "container",
+		Mock:       "bare metal machine",
+		None:       "bare metal machine",
+		SSH:        "bare metal machine",
+		KVM2:       "VM",
+		QEMU2:      "VM",
+		QEMU:       "VM",
+		VirtualBox: "VM",
+		HyperKit:   "VM",
+		VMware:     "VM",
+		HyperV:     "VM",
+		Parallels:  "VM",
 	}
 
 	drivers := SupportedDrivers()

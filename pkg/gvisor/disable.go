@@ -28,11 +28,11 @@ import (
 // Disable reverts containerd config files and restarts containerd
 func Disable() error {
 	log.Print("Disabling gvisor...")
-	if err := os.Remove(filepath.Join(nodeDir, containerdConfigTomlPath)); err != nil {
-		return errors.Wrapf(err, "removing %s", containerdConfigTomlPath)
+	if err := os.Remove(filepath.Join(nodeDir, containerdConfigPath)); err != nil {
+		return errors.Wrapf(err, "removing %s", containerdConfigPath)
 	}
-	log.Printf("Restoring default config.toml at %s", containerdConfigTomlPath)
-	if err := mcnutils.CopyFile(filepath.Join(nodeDir, storedContainerdConfigTomlPath), filepath.Join(nodeDir, containerdConfigTomlPath)); err != nil {
+	log.Printf("Restoring default config.toml at %s", containerdConfigPath)
+	if err := mcnutils.CopyFile(filepath.Join(nodeDir, containerdConfigBackupPath), filepath.Join(nodeDir, containerdConfigPath)); err != nil {
 		return errors.Wrap(err, "reverting back to default config.toml")
 	}
 	// restart containerd

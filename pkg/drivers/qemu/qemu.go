@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -39,7 +40,14 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/firewall"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/network"
 )
 
 const (
@@ -81,6 +89,7 @@ type Driver struct {
 	MACAddress            string
 	SocketVMNetPath       string
 	SocketVMNetClientPath string
+	ExtraDisks            int
 }
 
 func (d *Driver) GetMachineName() string {
@@ -88,7 +97,7 @@ func (d *Driver) GetMachineName() string {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	if d.Network == "user" {
+	if network.IsBuiltinQEMU(d.Network) {
 		return "localhost", nil
 	}
 	return d.IPAddress, nil
@@ -145,7 +154,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	if d.Network == "user" {
+	if network.IsBuiltinQEMU(d.Network) {
 		return "127.0.0.1", nil
 	}
 	return d.IPAddress, nil
@@ -169,21 +178,23 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
-		return state.Stopped, nil
-	}
-	p, err := os.ReadFile(d.pidfilePath())
-	if err != nil {
-		return state.Error, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
-		return state.Error, err
-	}
-	if err := checkPid(pid); err != nil {
-		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
-		return state.Stopped, nil
+	if runtime.GOOS != "windows" {
+		if _, err := os.Stat(d.pidfilePath()); err != nil {
+			return state.Stopped, nil
+		}
+		p, err := os.ReadFile(d.pidfilePath())
+		if err != nil {
+			return state.Error, err
+		}
+		pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
+		if err != nil {
+			return state.Error, err
+		}
+		if err := checkPid(pid); err != nil {
+			// No pid, remove pidfile
+			os.Remove(d.pidfilePath())
+			return state.Stopped, nil
+		}
 	}
 	ret, err := d.RunQMPCommand("query-status")
 	if err != nil {
@@ -213,7 +224,7 @@ func (d *Driver) PreCreateCheck() error {
 func (d *Driver) Create() error {
 	var err error
 	switch d.Network {
-	case "user":
+	case "builtin", "user":
 		minPort, maxPort, err := parsePortRange(d.LocalPorts)
 		log.Debugf("port range: %d -> %d", minPort, maxPort)
 		if err != nil {
@@ -260,6 +271,16 @@ func (d *Driver) Create() error {
 		log.Info("Creating Userdata Disk...")
 		if d.CloudConfigRoot, err = d.generateUserdataDisk(d.UserDataFile); err != nil {
 			return err
+		}
+	}
+
+	if d.ExtraDisks > 0 {
+		log.Info("Creating extra disk images...")
+		for i := 0; i < d.ExtraDisks; i++ {
+			path := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
+			if err := pkgdrivers.CreateRawDisk(path, d.DiskSize); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -412,7 +433,7 @@ func (d *Driver) Start() error {
 	)
 
 	switch d.Network {
-	case "user":
+	case "builtin", "user":
 		startCmd = append(startCmd,
 			"-nic", fmt.Sprintf("user,model=virtio,hostfwd=tcp::%d-:22,hostfwd=tcp::%d-:2376,hostname=%s", d.SSHPort, d.EnginePort, d.GetMachineName()),
 		)
@@ -424,8 +445,10 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("unknown network: %s", d.Network)
 	}
 
-	startCmd = append(startCmd,
-		"-daemonize")
+	if runtime.GOOS != "windows" {
+		startCmd = append(startCmd,
+			"-daemonize")
+	}
 
 	if d.CloudConfigRoot != "" {
 		startCmd = append(startCmd,
@@ -434,6 +457,15 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-device",
 			"virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
+	}
+
+	for i := 0; i < d.ExtraDisks; i++ {
+		// use a higher index for extra disks to reduce ID collision with current or future
+		// low-indexed devices (e.g., firmware, ISO CDROM, cloud config, and network device)
+		index := i + 10
+		startCmd = append(startCmd,
+			"-drive", fmt.Sprintf("file=%s,index=%d,media=disk,format=raw,if=virtio", pkgdrivers.ExtraDiskPath(d.BaseDriver, i), index),
+		)
 	}
 
 	if d.VirtioDrives {
@@ -452,14 +484,18 @@ func (d *Driver) Start() error {
 		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
 	}
 
-	if stdout, stderr, err := cmdOutErr(startProgram, startCmd...); err != nil {
+	startFunc := cmdOutErr
+	if runtime.GOOS == "windows" {
+		startFunc = cmdStart
+	}
+	if stdout, stderr, err := startFunc(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
 		return err
 	}
 
 	switch d.Network {
-	case "user":
+	case "builtin", "user":
 		d.IPAddress = "127.0.0.1"
 	case "socket_vmnet":
 		var err error
@@ -483,15 +519,31 @@ func (d *Driver) Start() error {
 			time.Sleep(2 * time.Second)
 		}
 
-		if err != nil {
+		if err == nil {
+			log.Debugf("IP: %s", d.IPAddress)
+			break
+		}
+		if !isBootpdError(err) {
 			return errors.Wrap(err, "IP address never found in dhcp leases file")
 		}
-		log.Debugf("IP: %s", d.IPAddress)
+		if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+			klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+			exit.Error(reason.IfBootpdFirewall, "ip not found", err)
+		}
+		out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
+		return fmt.Errorf("ip not found: %v", err)
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+}
+
+func isBootpdError(err error) bool {
+	if runtime.GOOS != "darwin" {
+		return false
+	}
+	return strings.Contains(err.Error(), "could not find an IP address")
 }
 
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
@@ -519,6 +571,12 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 		}
 	}
 	return stdoutStr, stderrStr, err
+}
+
+func cmdStart(cmdStr string, args ...string) (string, string, error) {
+	cmd := exec.Command(cmdStr, args...)
+	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+	return "", "", cmd.Start()
 }
 
 func (d *Driver) Stop() error {
@@ -793,7 +851,7 @@ func WaitForTCPWithDelay(addr string, duration time.Duration) error {
 			continue
 		}
 		defer conn.Close()
-		if _, err := conn.Read(make([]byte, 1)); err != nil {
+		if _, err := conn.Read(make([]byte, 1)); err != nil && err != io.EOF {
 			time.Sleep(duration)
 			continue
 		}

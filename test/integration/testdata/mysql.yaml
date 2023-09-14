@@ -24,7 +24,7 @@ spec:
         app: mysql
     spec:
       containers:
-      - image: mysql:5.7
+      - image: docker.io/mysql:5.7
         name: mysql
         resources:
           requests:

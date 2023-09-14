@@ -32,7 +32,7 @@ import (
 
 // DefaultKubeBinariesURL returns a URL to kube binaries
 func DefaultKubeBinariesURL() string {
-	return fmt.Sprintf("https://%s/kubernetes-release/release", downloadHost)
+	return fmt.Sprintf("https://%s%s/release", releaseHost, releasePath)
 }
 
 // binaryWithChecksumURL gets the location of a Kubernetes binary
