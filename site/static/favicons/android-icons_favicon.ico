@@ -1,5 +1,26 @@
-"icons": [ {
+`".$_build.icons.png"
+```
+[Content-Security-Policy:resource]("https://raw.githubusercontent.com/favicon.ico")]
+(“default-src@github.com/users/lostleolotus”)"```.
+```FaviconLoader.jsm:180:19```
+handle error:``` 
+Error:```
+```"doc is null"```    
+```assertDocument``` 
+"moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/assertIsBlankDocument.js:12"
+```ui``` 
+"moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/selector/ui.js:103"
+```catcher``` 
+"moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/catcher.js:59"
+ undefined 
+"catcher.js:21:11"
+TypeError: 
+"doc is nullassertIsBlankDocument.js:12:7"
+    assertIsBlankDocument moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/assertIsBlankDocument.js:12
+```ui```
+moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/selector/ui.js:103
+    catcher moz-extension://423c5caa-4165-41f4-acab-0d958abb4c40/catcher.js:59 {
   "src": "favicon.ico",
   "sizes": "64x64 32x32 24x24 16x16",
   "type": "image/x-icon"
-}
+}"`
