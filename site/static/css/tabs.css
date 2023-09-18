@@ -1,9 +1,19 @@
-/* Tabs CSS implementation. Borrowed from Skaffold & Kubernetes websites */
-ul.nav.nav-tabs {
-    padding: 0;
-    list-style-type: none;
-    overflow: hidden;
-    content: none;
+TAB Implementation using 
+".$_tabs_css"
+# Tabs CSS implementation. 
+Borrowed "from Skaffold & Kubernetes websites" 
+`".$_build.tabs.css-ul.nav.nav-tabs"
+{"run_build.jss"    
+    padding:fittopage;
+    list-style-type: 
+        "constant"
+  - const=
+ - constant=
+-*".$_-0/const-style_css_json_js_java.js"
+    overflow: 
+"none"
+    content: 
+"tabs_css_html"
 }
 
 div.code-tabs li.nav-tab {
