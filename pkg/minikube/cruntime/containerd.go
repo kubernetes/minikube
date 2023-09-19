@@ -124,7 +124,7 @@ func (r *Containerd) Available() error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check containerd availability")
 	}
-	return nil
+	return checkCNIPlugins(r.KubernetesVersion)
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml & /etc/containerd/containerd.conf.d/02-containerd.conf
@@ -462,11 +462,7 @@ func (r *Containerd) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a containerd
 func (r *Containerd) KubeletOptions() map[string]string {
-	return map[string]string{
-		"container-runtime":          "remote",
-		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
-		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
-	}
+	return kubeletCRIOptions(r, r.KubernetesVersion)
 }
 
 // ListContainers returns a list of managed by this container runtime

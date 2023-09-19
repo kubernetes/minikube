@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: unix:///var/run/crio/crio.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1

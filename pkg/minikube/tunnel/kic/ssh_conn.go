@@ -186,6 +186,9 @@ func logOutput(r io.Reader, service string) {
 	for s.Scan() {
 		klog.Infof("%s tunnel: %s", service, s.Text())
 	}
+	if err := s.Err(); err != nil {
+		klog.Warningf("failed to read: %v", err)
+	}
 }
 
 func (c *sshConn) stop() error {

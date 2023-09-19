@@ -139,6 +139,9 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 				problems = append(problems, l)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			klog.Warningf("failed to read output: %v", err)
+		}
 		if len(problems) > 0 {
 			pMap[name] = problems
 		}
@@ -197,6 +200,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
 			l += scanner.Text() + "\n"
+		}
+		if err := scanner.Err(); err != nil {
+			klog.Errorf("failed to read output: %v", err)
+			failed = append(failed, name)
 		}
 		out.Styled(style.Empty, l)
 	}

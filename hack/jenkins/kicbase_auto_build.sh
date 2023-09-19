@@ -27,6 +27,9 @@ docker login -u ${DOCKERHUB_USER} -p ${DOCKERHUB_PASS}
 # Make sure golang is installed and configured
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local" || true
 
+# install cron jobs
+source ./hack/jenkins/installers/check_install_linux_crons.sh
+
 ./hack/jenkins/build_changelog.sh ./deploy/kicbase/CHANGELOG
 
 export GOBIN=/usr/local/go/bin

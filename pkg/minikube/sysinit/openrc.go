@@ -116,7 +116,7 @@ func (s *OpenRC) Start(svc string) error {
 }
 
 // Disable does nothing
-func (s *OpenRC) Disable(svc string) error {
+func (s *OpenRC) Disable(_ string) error {
 	return nil
 }
 
@@ -128,12 +128,12 @@ func (s *OpenRC) DisableNow(svc string) error {
 }
 
 // Mask does nothing
-func (s *OpenRC) Mask(svc string) error {
+func (s *OpenRC) Mask(_ string) error {
 	return nil
 }
 
 // Enable does nothing
-func (s *OpenRC) Enable(svc string) error {
+func (s *OpenRC) Enable(_ string) error {
 	return nil
 }
 
@@ -145,7 +145,7 @@ func (s *OpenRC) EnableNow(svc string) error {
 }
 
 // Unmask does nothing
-func (s *OpenRC) Unmask(svc string) error {
+func (s *OpenRC) Unmask(_ string) error {
 	return nil
 }
 
@@ -161,7 +161,7 @@ func (s *OpenRC) Restart(svc string) error {
 
 // Reload reloads a service
 // currently only used by our docker-env that doesn't need openrc implementation
-func (s *OpenRC) Reload(svc string) error {
+func (s *OpenRC) Reload(_ string) error {
 	return fmt.Errorf("reload is not implemented for OpenRC yet ! Please implement if needed")
 }
 

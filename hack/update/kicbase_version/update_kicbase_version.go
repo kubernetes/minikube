@@ -127,7 +127,7 @@ func KICVersions() (current, stable string, err error) {
 // prepareImage checks if current image exists locally, tries to pull it if not, tags it with release version.
 // Returns reference image url and any error occurred.
 func prepareImage(ctx context.Context, data Data) (image string, err error) {
-	image, err = update.PullImage(ctx, data.CurrentVersion, data.StableVersion)
+	image, err = update.PullImage(ctx, data.CurrentVersion)
 	if err != nil {
 		return "", err
 	}

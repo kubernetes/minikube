@@ -44,7 +44,7 @@ var (
 )
 
 // CachedDaemonInfo will run and return a docker/podman info only once per minikube run time. to avoid performance
-func CachedDaemonInfo(ociBin string) (SysInfo, error) {
+var CachedDaemonInfo = func(ociBin string) (SysInfo, error) {
 	if cachedSysInfo == nil {
 		si, err := DaemonInfo(ociBin)
 		cachedSysInfo = &si
@@ -272,7 +272,7 @@ var podmanInfoGetter = func() (string, error) {
 	return rr.Stdout.String(), err
 }
 
-// podmanSysInfo returns podman system info --format '{{json .}}'
+// podmanSystemInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
 	rawJSON, err := podmanInfoGetter()

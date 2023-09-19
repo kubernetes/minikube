@@ -11,7 +11,7 @@ spec:
         claimName: hpvc-restore
   containers:
     - name: task-pv-container
-      image: nginx
+      image: docker.io/nginx
       ports:
         - containerPort: 80
           name: "http-server"

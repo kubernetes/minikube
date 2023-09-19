@@ -263,7 +263,7 @@ type ConnChecker struct {
 }
 
 // Check checks the connection
-func (cc *ConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Options, error) {
+func (cc *ConnChecker) Check(h *host.Host, _ bool) (string, *auth.Options, error) {
 	authOptions := h.AuthOptions()
 	dockerHost, err := h.Driver.GetURL()
 	if err != nil {

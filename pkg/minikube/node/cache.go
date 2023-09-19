@@ -87,7 +87,9 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
-	waitDownloadKicBaseImage(kicGroup)
+	if driver.IsKIC(driverName) {
+		waitDownloadKicBaseImage(kicGroup)
+	}
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.Error(reason.InetCacheTar, "Failed to cache images to tar", err)
 	}

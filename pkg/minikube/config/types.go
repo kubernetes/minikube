@@ -76,7 +76,7 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
-	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> k8s.gcr.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
+	CustomAddonImages       map[string]string // Maps image names to the image to use for addons. e.g. Dashboard -> registry.k8s.io/echoserver:1.4 makes dashboard addon use echoserver for its Dashboard deployment.
 	CustomAddonRegistries   map[string]string // Maps image names to the registry to use for addons. See CustomAddonImages for example.
 	VerifyComponents        map[string]bool   // map of components to verify and wait for after start.
 	StartHostTimeout        time.Duration
@@ -105,6 +105,9 @@ type ClusterConfig struct {
 	SocketVMnetClientPath   string
 	SocketVMnetPath         string
 	StaticIP                string
+	SSHAuthSock             string
+	SSHAgentPID             int
+	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

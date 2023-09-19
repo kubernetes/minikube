@@ -7,6 +7,9 @@ description: >
 
 ## Error Strings
 
+"MK_PATCH_NOT_FOUND" (Exit code ExProgramUsage)  
+minikube could not find a patch for the provided major.minor version  
+
 "MK_USAGE" (Exit code ExProgramUsage)  
 minikube has been passed an incorrect parameter  
 
@@ -31,6 +34,12 @@ minikube could not disable an addon, e.g. dashboard addon
 "MK_ADDON_ENABLE" (Exit code ExProgramError)  
 minikube could not enable an addon, e.g. dashboard addon  
 
+"MK_ADDON_ENABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not enable an addon on a paused cluster  
+
+"MK_ADDON_DISABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not disable an addon on a paused cluster  
+
 "MK_ADD_CONFIG" (Exit code ExProgramError)  
 minikube failed to update internal configuration, such as the cached images config map  
 
@@ -45,6 +54,9 @@ minkube failed to cache and load cached images
 
 "MK_COMMAND_RUNNER" (Exit code ExProgramError)  
 minikube failed to load a Docker Machine CommandRunner  
+
+"MK_START_NERDCTLD" (Exit code ExProgramError)  
+minikube failed to start nerdctld  
 
 "MK_COMPLETION" (Exit code ExProgramError)  
 minikube failed to generate shell command completion for a supported shell  
@@ -223,6 +235,9 @@ minikube failed to access the driver control plane or API endpoint
 "DRV_PORT_FORWARD" (Exit code ExDriverError)  
 minikube failed to bind container ports to host ports  
 
+"DRV_UNSUPPORTED" (Exit code ExDriverUnsupported)  
+the driver is currently not supported by minikube  
+
 "DRV_UNSUPPORTED_MULTINODE" (Exit code ExDriverConflict)  
 the driver in use does not support multi-node clusters  
 
@@ -346,6 +361,9 @@ minikube cluster was created used a driver that is incompatible with the driver 
 "GUEST_MISSING_CONNTRACK" (Exit code ExGuestUnsupported)  
 minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards  
 
+"GUEST_MISSING_CRICTL" (Exit code ExGuestUnsupported)  
+minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards  
+
 "IF_HOST_IP" (Exit code ExLocalNetworkError)  
 minikube failed to get the host IP to use from within the VM  
 
@@ -360,6 +378,9 @@ minikube failed to access an ssh client on the host machine
 
 "IF_DEDICATED_NETWORK" (Exit code ExLocalNetworkError)  
 minikube failed to create a dedicated network  
+
+"IF_BOOTPD_FIREWALL" (Exit code ExLocalNetworkError)  
+minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall  
 
 "INET_CACHE_BINARIES" (Exit code ExInternetError)  
 minikube failed to cache kubernetes binaries for the current runtime  
@@ -391,11 +412,17 @@ minikube failed to enable the current container runtime
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
 
+"SSH_AGENT_START" (Exit code ExRuntimeError)  
+minikube failed to start an ssh-agent when executing docker-env  
+
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
 
 "SVC_TIMEOUT" (Exit code ExSvcTimeout)  
 minikube was unable to access a service  
+
+"SVC_UNREACHABLE" (Exit code ExSvcNotFound)  
+minikube found that the service has no available pods  
 
 "SVC_LIST" (Exit code ExSvcError)  
 minikube failed to list services for the specified namespace  
@@ -405,6 +432,9 @@ minikube failed to start a tunnel
 
 "SVC_TUNNEL_STOP" (Exit code ExSvcError)  
 minikube could not stop an active tunnel  
+
+"TUNNEL_ALREADY_RUNNING" (Exit code ExSvcConflict)  
+another instance of tunnel already running  
 
 "SVC_URL_TIMEOUT" (Exit code ExSvcTimeout)  
 minikube was unable to access the service url  
@@ -439,12 +469,17 @@ an outdated Kubernetes version was specified for minikube to use
 "K8S_NEW_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 a too new Kubernetes version was specified for minikube to use  
 
+"K8S_FAIL_CONNECT" (Exit code ExInternetError)  
+error fetching GitHub Kubernetes version list  
+
 "K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 minikube was unable to safely downgrade installed Kubernetes version  
 
 "NOT_FOUND_CRI_DOCKERD" (Exit code ExProgramNotFound)  
 
 "NOT_FOUND_DOCKERD" (Exit code ExProgramNotFound)  
+
+"NOT_FOUND_CNI_PLUGINS" (Exit code ExProgramNotFound)  
 
 "NOT_FOUND_SOCKET_VMNET" (Exit code ExProgramNotFound)  
 

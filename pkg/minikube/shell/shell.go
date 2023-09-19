@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
-
 package shell
 
 import (
@@ -196,7 +193,7 @@ type EnvConfig struct {
 }
 
 // SetScript writes out a shell-compatible set script
-func SetScript(ec EnvConfig, w io.Writer, envTmpl string, data interface{}) error {
+func SetScript(w io.Writer, envTmpl string, data interface{}) error {
 	tmpl := template.Must(template.New("envConfig").Parse(envTmpl))
 	return tmpl.Execute(w, data)
 }

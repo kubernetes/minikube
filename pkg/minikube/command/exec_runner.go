@@ -162,23 +162,19 @@ func (e *execRunner) Copy(f assets.CopyableFile) error {
 		// write to temp location ...
 		tmpfile, err := os.CreateTemp("", "minikube")
 		if err != nil {
-			return errors.Wrapf(err, "error creating tempfile")
+			return errors.Wrap(err, "error creating tempfile")
 		}
 		defer os.Remove(tmpfile.Name())
-		err = writeFile(tmpfile.Name(), f, os.FileMode(perms))
-		if err != nil {
+
+		if err := writeFile(tmpfile.Name(), f, os.FileMode(perms)); err != nil {
 			return errors.Wrapf(err, "error writing to tempfile %s", tmpfile.Name())
 		}
 
-		// ... then use sudo to move to target ...
-		_, err = e.RunCmd(exec.Command("sudo", "cp", "-a", tmpfile.Name(), dst))
-		if err != nil {
+		// ... then use sudo to move to target
+		if _, err := e.RunCmd(exec.Command("sudo", "cp", "-a", tmpfile.Name(), dst)); err != nil {
 			return errors.Wrapf(err, "error copying tempfile %s to dst %s", tmpfile.Name(), dst)
 		}
-
-		// ... then fix file permission that should have been fine because of "cp -a"
-		err = os.Chmod(dst, os.FileMode(perms))
-		return err
+		return nil
 	}
 	return writeFile(dst, f, os.FileMode(perms))
 }
@@ -220,6 +216,6 @@ func (e *execRunner) Remove(f assets.CopyableFile) error {
 	return os.Remove(dst)
 }
 
-func (e *execRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+func (e *execRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, fmt.Errorf("execRunner does not support ReadableFile - you could be the first to add it")
 }

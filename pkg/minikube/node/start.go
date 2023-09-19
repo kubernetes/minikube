@@ -271,7 +271,10 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	}
 
 	// Setup kubeadm (must come after setupKubeconfig).
-	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	bs, err := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to setup kubeadm")
+	}
 	err = bs.StartCluster(*starter.Cfg)
 	if err != nil {
 		ExitIfFatal(err, false)
@@ -374,7 +377,9 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
-	waitDownloadKicBaseImage(&kicGroup)
+	if driver.IsKIC(cc.Driver) {
+		waitDownloadKicBaseImage(&kicGroup)
+	}
 
 	return startMachine(cc, n, delOnFail)
 }
@@ -385,6 +390,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		Type:              cc.KubernetesConfig.ContainerRuntime,
 		Socket:            cc.KubernetesConfig.CRISocket,
 		Runner:            runner,
+		NetworkPlugin:     cc.KubernetesConfig.NetworkPlugin,
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
@@ -404,34 +410,12 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	// make sure container runtime is restarted afterwards for these changes to take effect
 	disableLoopback := co.Type == constants.CRIO
 	if err := cni.ConfigureLoopbackCNI(runner, disableLoopback); err != nil {
-		klog.Warningf("unable to name loopback interface in dockerConfigureNetworkPlugin: %v", err)
-	}
-	if kv.GTE(semver.MustParse("1.24.0-alpha.2")) {
-		if err := cruntime.ConfigureNetworkPlugin(cr, runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
-			exit.Error(reason.RuntimeEnable, "Failed to configure network plugin", err)
-		}
+		klog.Warningf("unable to name loopback interface in configureRuntimes: %v", err)
 	}
 	// ensure all default CNI(s) are properly configured on each and every node (re)start
 	// make sure container runtime is restarted afterwards for these changes to take effect
 	if err := cni.ConfigureDefaultBridgeCNIs(runner, cc.KubernetesConfig.NetworkPlugin); err != nil {
 		klog.Errorf("unable to disable preinstalled bridge CNI(s): %v", err)
-	}
-
-	// Preload is overly invasive for bare metal, and caching is not meaningful.
-	// KIC handles preload elsewhere.
-	if driver.IsVM(cc.Driver) {
-		if err := cr.Preload(cc); err != nil {
-			switch err.(type) {
-			case *cruntime.ErrISOFeature:
-				out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
-			default:
-				klog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
-			}
-
-			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.Error(reason.RuntimeCache, "Failed to cache images", err)
-			}
-		}
 	}
 
 	inUserNamespace := strings.Contains(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")
@@ -573,10 +557,15 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) (bootstrapper.Bootstrapper, error) {
+	deleteOnFailure := viper.GetBool("delete-on-failure")
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
-		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
+		klog.Errorf("Failed to get bootstrapper: %v", err)
+		if !deleteOnFailure {
+			exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
+		}
+		return nil, err
 	}
 	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
@@ -585,17 +574,25 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
-		if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
-			exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+		if !deleteOnFailure {
+			if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
+				exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+			}
+			exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 		}
-		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
+		klog.Errorf("Failed to update cluster: %v", err)
+		return nil, err
 	}
 
 	if err := bs.SetupCerts(cfg, n); err != nil {
-		exit.Error(reason.GuestCert, "Failed to setup certs", err)
+		if !deleteOnFailure {
+			exit.Error(reason.GuestCert, "Failed to setup certs", err)
+		}
+		klog.Errorf("Failed to setup certs: %v", err)
+		return nil, err
 	}
 
-	return bs
+	return bs, nil
 }
 
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
@@ -645,7 +642,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
 	}
@@ -728,7 +725,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kubernetesVersion string) (string, error) {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return ip, err
@@ -760,7 +757,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string, kub
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName(), imageRepository, kubernetesVersion, ip)
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository, ip)
 	return ip, nil
 }
 
@@ -816,7 +813,7 @@ func trySSH(h *host.Host, ip string) error {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string, imageRepository string, kubernetesVersion string, ip string) {
+func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -826,8 +823,7 @@ func tryRegistry(r command.Runner, driverName string, imageRepository string, ku
 	}
 
 	if imageRepository == "" {
-		v, _ := util.ParseKubernetesVersion(kubernetesVersion)
-		imageRepository = images.DefaultKubernetesRepo(v)
+		imageRepository = images.DefaultKubernetesRepo
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))
@@ -927,7 +923,7 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 func warnVirtualBox() {
 	var altDriverList strings.Builder
 	for _, choice := range driver.Choices(true) {
-		if choice.Name != "virtualbox" && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
+		if !driver.IsVirtualBox(choice.Name) && choice.Priority != registry.Discouraged && choice.State.Installed && choice.State.Healthy {
 			altDriverList.WriteString(fmt.Sprintf("\n\t- %s", choice.Name))
 		}
 	}

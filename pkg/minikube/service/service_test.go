@@ -63,7 +63,7 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		secretsMap:   m.secretsMap}, nil
 }
 
-func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
+func (m *MockCoreClient) Secrets(_ string) typed_core.SecretInterface {
 	return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
 }
 
@@ -218,7 +218,7 @@ var endpointMap = map[string]*core.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
+func (e MockEndpointsInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -236,7 +236,7 @@ type MockSecretInterface struct {
 	SecretsList *core.SecretList
 }
 
-func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
+func (s MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	serviceList := &core.ServiceList{
 		Items: []core.Service{},
 	}
@@ -255,7 +255,7 @@ func (s MockServiceInterface) List(ctx context.Context, opts meta.ListOptions) (
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(ctx context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
+func (s MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
@@ -265,7 +265,7 @@ func (s MockServiceInterface) Get(ctx context.Context, name string, _ meta.GetOp
 	return nil, errors.New("Service not found")
 }
 
-func (s MockServiceInterface) Create(ctx context.Context, service *core.Service, _ meta.CreateOptions) (*core.Service, error) {
+func (s MockServiceInterface) Create(_ context.Context, service *core.Service, _ meta.CreateOptions) (*core.Service, error) {
 	s.ServiceList.Items = append(s.ServiceList.Items, *service)
 	return service, nil
 }

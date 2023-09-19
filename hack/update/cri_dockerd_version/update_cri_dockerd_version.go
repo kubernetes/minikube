@@ -17,16 +17,15 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
+	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
@@ -47,7 +46,7 @@ var (
 		},
 		"hack/jenkins/linux_integration_tests_none.sh": {
 			Replace: map[string]string{
-				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_VERSION=".*"`: `CRI_DOCKERD_VERSION="{{.Version}}"`,
 				`CRI_DOCKERD_COMMIT=".*"`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
 			},
 		},
@@ -65,6 +64,12 @@ var (
 				`CRI_DOCKERD_REV = .*`:     `CRI_DOCKERD_REV = {{.ShortCommit}}`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`CRI_DOCKERD_VERSION=.*`: `CRI_DOCKERD_VERSION="v{{.Version}}"`,
+				`CRI_DOCKERD_COMMIT=.*`:  `CRI_DOCKERD_COMMIT="{{.FullCommit}}"`,
+			},
+		},
 	}
 )
 
@@ -76,29 +81,22 @@ type Data struct {
 }
 
 func main() {
-	if len(os.Args) < 4 {
-		log.Fatalf("Usage: update_cri_dockerd_version.go <version> <commit> <archlist>")
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	stable, _, _, err := update.GHReleases(ctx, "Mirantis", "cri-dockerd")
+	if err != nil {
+		klog.Fatalf("Unable to get stable version: %v", err)
 	}
 
-	version := os.Args[1]
-	commit := os.Args[2]
-	archs := os.Args[3]
+	version := strings.TrimPrefix(stable.Tag, "v")
 
-	if !semver.IsValid(version) {
-		klog.Fatal(fmt.Errorf("invalid version %v", version))
-	}
-	version = strings.Replace(version, "v", "", 1)
-
-	data := Data{Version: version, FullCommit: commit, ShortCommit: commit[:7]}
+	data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
 
 	update.Apply(schema, data)
 
-	if out, err := exec.Command("./update_cri_dockerd_version.sh", version, commit, archs).CombinedOutput(); err != nil {
-		log.Fatalf("failed to build and upload cri-dockerd binaries: %s", string(out))
-	}
-
-	if err := updateHashFiles(commit); err != nil {
-		log.Fatalf("failed to update hash files: %v", err)
+	if err := updateHashFiles(stable.Commit); err != nil {
+		klog.Fatalf("failed to update hash files: %v", err)
 	}
 }
 
@@ -124,6 +122,14 @@ func updateHashFiles(commit string) error {
 }
 
 func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
+	b, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read hash file: %v", err)
+	}
+	if strings.Contains(string(b), commit) {
+		klog.Infof("hash file already contains %q", commit)
+		return nil
+	}
 	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to open hash file: %v", err)

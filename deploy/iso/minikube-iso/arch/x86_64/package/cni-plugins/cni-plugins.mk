@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_PLUGINS_VERSION = v0.8.5
+CNI_PLUGINS_VERSION = v1.3.0
 CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_VERSION)
 CNI_PLUGINS_SOURCE = cni-plugins-linux-amd64-$(CNI_PLUGINS_VERSION).tgz
 CNI_PLUGINS_LICENSE = Apache-2.0
@@ -90,15 +90,6 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 	ln -sf \
 		../../opt/cni/bin/host-local \
 		$(TARGET_DIR)/usr/bin/host-local
-
-	$(INSTALL) -D -m 0755 \
-		$(@D)/flannel \
-		$(TARGET_DIR)/opt/cni/bin/flannel
-
-	ln -sf \
-		../../opt/cni/bin/flannel \
-		$(TARGET_DIR)/usr/bin/flannel
-
 
 	$(INSTALL) -D -m 0755 \
 		$(@D)/dhcp \

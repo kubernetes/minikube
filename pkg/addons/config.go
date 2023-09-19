@@ -71,7 +71,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{IsRuntimeContainerd},
+		validations: []setFn{SupportsAmd64, IsRuntimeContainerd},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
@@ -96,6 +96,11 @@ var Addons = []*Addon{
 	},
 	{
 		name:      "istio",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "inspektor-gadget",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},

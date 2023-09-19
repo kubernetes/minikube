@@ -89,5 +89,5 @@ func Error(r reason.Kind, msg string, err error) {
 	}
 	// By default, unmatched errors should show a link
 	r.NewIssueLink = true
-	Message(r, err.Error())
+	Message(r, fmt.Sprintf("%s: %v", msg, err))
 }

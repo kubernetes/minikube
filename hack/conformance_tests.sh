@@ -47,7 +47,7 @@ curl -LO $sonobuoy
 tarball=$(echo $sonobuoy | awk -F "/" '{print $(NF)}')
 tar -xzf $tarball
 
-./sonobuoy run --mode=certified-conformance --wait --alsologtostderr
+./sonobuoy run --plugin-env=e2e.E2E_EXTRA_ARGS="--ginkgo.v" --mode=certified-conformance --wait --alsologtostderr
 outdir="$(mktemp -d)"
 ./sonobuoy retrieve "${outdir}"
 
@@ -73,9 +73,10 @@ documentation_url: https://minikube.sigs.k8s.io/docs/
 product_logo_url: https://raw.githubusercontent.com/kubernetes/minikube/master/images/logo/logo.svg
 type: installer
 description: minikube runs a local Kubernetes cluster on macOS, Linux, and Windows.
+contact_email_address: minikube-dev@googlegroups.com
 EOF
 
-cat <<EOF >README.md
+cat <<"EOF" >README.md
 # Reproducing the test results
 
 ## Run minikube with docker driver

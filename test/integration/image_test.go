@@ -35,13 +35,7 @@ func TestImageBuild(t *testing.T) {
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("image")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
-	startArgs := []string{"start", "-p", profile}
-	startArgs = append(startArgs, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	defer Cleanup(t, profile, cancel)
-	if err != nil {
-		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
-	}
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
@@ -49,6 +43,7 @@ func TestImageBuild(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
+			{"Setup", validateSetupImageBuild},
 			{"NormalBuild", validateNormalImageBuild},
 			{"BuildWithBuildArg", validateImageBuildWithBuildArg},
 			{"BuildWithDockerIgnore", validateImageBuildWithDockerIgnore},
@@ -58,12 +53,22 @@ func TestImageBuild(t *testing.T) {
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
-				if t.Failed() && *postMortemLogs {
-					PostMortemLogs(t, profile)
-				}
 			})
+			// if setup fails bail
+			if tc.name == "Setup" && t.Failed() {
+				return
+			}
 		}
 	})
+}
+
+// validateSetupImageBuild starts a cluster for the image builds
+func validateSetupImageBuild(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+	startArgs := append([]string{"start", "-p", profile}, StartArgs()...)
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...)); err != nil {
+		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
 }
 
 // validateNormalImageBuild is normal test case for minikube image build, with -t parameter
@@ -95,7 +100,7 @@ func validateImageBuildWithBuildArg(ctx context.Context, t *testing.T, profile s
 	if err != nil {
 		t.Fatalf("failed to build image with args: %q : %v", rr.Command(), err)
 	}
-	output := rr.Stdout.String()
+	output := rr.Output()
 	if !strings.Contains(output, "test_env_str") {
 		t.Fatalf("failed to pass build-args with args: %q : %s", rr.Command(), output)
 	}

@@ -67,7 +67,7 @@ type Driver struct {
 }
 
 // NewDriver creates a new driver for a host
-func NewDriver(hostName, storePath string) *Driver {
+func NewDriver(_, _ string) *Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser: "docker",

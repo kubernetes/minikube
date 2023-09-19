@@ -31,6 +31,7 @@ import (
 	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
@@ -57,7 +58,8 @@ func TestNetworkPlugins(t *testing.T) {
 			namespace     string
 			hairpin       bool
 		}{
-			{"auto", []string{}, "", "", "", true},
+			// kindnet CNI is used by default and hairpin is enabled
+			{"auto", []string{}, "", "", "", usingCNI()},
 			{"kubenet", []string{"--network-plugin=kubenet"}, "kubenet", "", "", true},
 			{"bridge", []string{"--cni=bridge"}, "cni", "", "", true},
 			{"enable-default-cni", []string{"--enable-default-cni=true"}, "cni", "", "", true},
@@ -88,7 +90,6 @@ func TestNetworkPlugins(t *testing.T) {
 
 				if ContainerRuntime() != "docker" && tc.name == "kubenet" {
 					// CNI is disabled when --network-plugin=kubenet option is passed. See cni.New(..) function
-					// But for containerd/crio CNI has to be configured
 					t.Skipf("Skipping the test as %s container runtimes requires CNI", ContainerRuntime())
 				}
 
@@ -210,6 +211,21 @@ func TestNetworkPlugins(t *testing.T) {
 			})
 		}
 	})
+}
+
+// usingCNI checks if not using dockershim
+func usingCNI() bool {
+	if ContainerRuntime() != "docker" {
+		return true
+	}
+	version, err := util.ParseKubernetesVersion(constants.DefaultKubernetesVersion)
+	if err != nil {
+		return false
+	}
+	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
+		return true
+	}
+	return false
 }
 
 // validateFalseCNI checks that minikube returns and error

@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -28,6 +29,7 @@ func TestKubectlCommand(t *testing.T) {
 		description string
 		files       []string
 		enable      bool
+		force       bool
 		expected    string
 	}{
 		{
@@ -35,11 +37,26 @@ func TestKubectlCommand(t *testing.T) {
 			files:       []string{"a", "b"},
 			enable:      true,
 			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl apply -f a -f b",
-		}, {
+		},
+		{
 			description: "disable an addon",
 			files:       []string{"a", "b"},
 			enable:      false,
 			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete --ignore-not-found -f a -f b",
+		},
+		{
+			description: "enable an addon",
+			files:       []string{"a", "b"},
+			enable:      true,
+			force:       true,
+			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl apply --force -f a -f b",
+		},
+		{
+			description: "disable an addon",
+			files:       []string{"a", "b"},
+			enable:      false,
+			force:       true,
+			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete --force --ignore-not-found -f a -f b",
 		},
 	}
 
@@ -51,7 +68,7 @@ func TestKubectlCommand(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			command := kubectlCommand(cc, test.files, test.enable)
+			command := kubectlCommand(context.Background(), cc, test.files, test.enable, test.force)
 			actual := strings.Join(command.Args, " ")
 
 			if actual != test.expected {

@@ -35,7 +35,8 @@ ENV GOPATH=/home/prow/go \
 # We're already inside docker though so we can be sure these are already mounted.
 # Trying to remount these makes for a very noisy error block in the beginning of
 # the pod logs, so we just comment out the call to it... :shrug:
-RUN echo "Installing Packages ..." \
+RUN export ARCH=$(dpkg --print-architecture) \
+    && echo "Installing Packages ..." \
         && apt-get update \
         && apt-get install -y --no-install-recommends \
             apt-transport-https \
@@ -58,7 +59,7 @@ RUN echo "Installing Packages ..." \
             unzip \
         && rm -rf /var/lib/apt/lists/* \
     && echo "Installing Go ..." \
-        && export GO_TARBALL="go${GO_VERSION}.linux-amd64.tar.gz"\
+        && export GO_TARBALL="go${GO_VERSION}.linux-${ARCH}.tar.gz"\
         && curl -fsSL "https://storage.googleapis.com/golang/${GO_TARBALL}" --output "${GO_TARBALL}" \
         && tar xzf "${GO_TARBALL}" -C /usr/local \
         && rm "${GO_TARBALL}"\
@@ -66,7 +67,7 @@ RUN echo "Installing Packages ..." \
     && echo "Installing Docker ..." \
         && curl -fsSL https://download.docker.com/linux/$(. /etc/os-release; echo "$ID")/gpg | apt-key add - \
         && add-apt-repository \
-            "deb [arch=amd64] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
+            "deb [arch="$(dpkg --print-architecture)"] https://download.docker.com/linux/$(. /etc/os-release; echo "$ID") \
             $(lsb_release -cs) stable" \
         && apt-get update \
         && apt-get install -y --no-install-recommends docker-ce \
@@ -76,7 +77,7 @@ RUN echo "Installing Packages ..." \
         && update-alternatives --set iptables /usr/sbin/iptables-legacy \
         && update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy \
     && echo "Installing Kubectl ..." \
-        && curl -LO "https://dl.k8s.io/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+        && curl -LO "https://dl.k8s.io/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/${ARCH}/kubectl" \
         && chmod +x ./kubectl \
         && cp kubectl /usr/local/bin        
 # copy in image utility scripts

@@ -57,6 +57,11 @@ func (k *Kind) IssueURLs() []string {
 
 // Sections are ordered roughly by stack dependencies
 var (
+	// minikube could not find a patch for the provided major.minor version
+	PatchNotFound = Kind{ID: "MK_PATCH_NOT_FOUND", ExitCode: ExProgramUsage,
+		Advice: translate.T("Specify --kubernetes-version in v<major>.<minor.<build> form. example: 'v1.1.14'"),
+	}
+
 	// minikube has been passed an incorrect parameter
 	Usage = Kind{ID: "MK_USAGE", ExitCode: ExProgramUsage}
 	// minikube has no current cluster running
@@ -80,6 +85,11 @@ var (
 	InternalAddonDisable = Kind{ID: "MK_ADDON_DISABLE", ExitCode: ExProgramError}
 	// minikube could not enable an addon, e.g. dashboard addon
 	InternalAddonEnable = Kind{ID: "MK_ADDON_ENABLE", ExitCode: ExProgramError}
+	// minikube could not enable an addon on a paused cluster
+	InternalAddonEnablePaused = Kind{ID: "MK_ADDON_ENABLE_PAUSED", ExitCode: ExProgramConflict}
+	// minikube could not disable an addon on a paused cluster
+	InternalAddonDisablePaused = Kind{ID: "MK_ADDON_DISABLE_PAUSED", ExitCode: ExProgramConflict}
+
 	// minikube failed to update internal configuration, such as the cached images config map
 	InternalAddConfig = Kind{ID: "MK_ADD_CONFIG", ExitCode: ExProgramError}
 	// minikube failed to create a cluster bootstrapper
@@ -90,6 +100,8 @@ var (
 	InternalCacheLoad = Kind{ID: "MK_CACHE_LOAD", ExitCode: ExProgramError}
 	// minikube failed to load a Docker Machine CommandRunner
 	InternalCommandRunner = Kind{ID: "MK_COMMAND_RUNNER", ExitCode: ExProgramError}
+	// minikube failed to start nerdctld
+	StartNerdctld = Kind{ID: "MK_START_NERDCTLD", ExitCode: ExProgramError}
 	// minikube failed to generate shell command completion for a supported shell
 	InternalCompletion = Kind{ID: "MK_COMPLETION", ExitCode: ExProgramError}
 	// minikube failed to set an internal config value
@@ -286,6 +298,8 @@ var (
 	}
 	// minikube failed to bind container ports to host ports
 	DrvPortForward = Kind{ID: "DRV_PORT_FORWARD", ExitCode: ExDriverError}
+	// the driver is currently not supported by minikube
+	DrvUnsupported = Kind{ID: "DRV_UNSUPPORTED", ExitCode: ExDriverUnsupported}
 	// the driver in use does not support multi-node clusters
 	DrvUnsupportedMulti = Kind{ID: "DRV_UNSUPPORTED_MULTINODE", ExitCode: ExDriverConflict}
 	// the specified driver is not supported on the host OS
@@ -376,6 +390,8 @@ var (
 	GuestDrvMismatch = Kind{ID: "GUEST_DRIVER_MISMATCH", ExitCode: ExGuestConflict, Style: style.Conflict}
 	// minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards
 	GuestMissingConntrack = Kind{ID: "GUEST_MISSING_CONNTRACK", ExitCode: ExGuestUnsupported}
+	// minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards
+	GuestMissingCrictl = Kind{ID: "GUEST_MISSING_CRICTL", ExitCode: ExGuestUnsupported}
 
 	// minikube failed to get the host IP to use from within the VM
 	IfHostIP = Kind{ID: "IF_HOST_IP", ExitCode: ExLocalNetworkError}
@@ -387,6 +403,14 @@ var (
 	IfSSHClient = Kind{ID: "IF_SSH_CLIENT", ExitCode: ExLocalNetworkError}
 	// minikube failed to create a dedicated network
 	IfDedicatedNetwork = Kind{ID: "IF_DEDICATED_NETWORK", ExitCode: ExLocalNetworkError}
+	// minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall
+	IfBootpdFirewall = Kind{
+		ID:       "IF_BOOTPD_FIREWALL",
+		ExitCode: ExLocalNetworkError,
+		Advice: translate.T(`Your firewall is likely blocking bootpd, to unblock it run:
+	sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
+	sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd`),
+	}
 
 	// minikube failed to cache kubernetes binaries for the current runtime
 	InetCacheBinaries = Kind{ID: "INET_CACHE_BINARIES", ExitCode: ExInternetError}
@@ -409,17 +433,23 @@ var (
 	RuntimeEnable = Kind{ID: "RUNTIME_ENABLE", ExitCode: ExRuntimeError}
 	// minikube failed to cache images for the current container runtime
 	RuntimeCache = Kind{ID: "RUNTIME_CACHE", ExitCode: ExRuntimeError}
+	// minikube failed to start an ssh-agent when executing docker-env
+	SSHAgentStart = Kind{ID: "SSH_AGENT_START", ExitCode: ExRuntimeError}
 
 	// service check timed out while starting minikube dashboard
 	SvcCheckTimeout = Kind{ID: "SVC_CHECK_TIMEOUT", ExitCode: ExSvcTimeout}
 	// minikube was unable to access a service
 	SvcTimeout = Kind{ID: "SVC_TIMEOUT", ExitCode: ExSvcTimeout}
+	// minikube found that the service has no available pods
+	SvcUnreachable = Kind{ID: "SVC_UNREACHABLE", ExitCode: ExSvcNotFound}
 	// minikube failed to list services for the specified namespace
 	SvcList = Kind{ID: "SVC_LIST", ExitCode: ExSvcError}
 	// minikube failed to start a tunnel
 	SvcTunnelStart = Kind{ID: "SVC_TUNNEL_START", ExitCode: ExSvcError}
 	// minikube could not stop an active tunnel
 	SvcTunnelStop = Kind{ID: "SVC_TUNNEL_STOP", ExitCode: ExSvcError}
+	// another instance of tunnel already running
+	SvcTunnelAlreadyRunning = Kind{ID: "TUNNEL_ALREADY_RUNNING", ExitCode: ExSvcConflict, Style: style.Usage}
 	// minikube was unable to access the service url
 	SvcURLTimeout = Kind{ID: "SVC_URL_TIMEOUT", ExitCode: ExSvcTimeout}
 	// minikube couldn't find the specified service in the specified namespace
@@ -445,6 +475,8 @@ var (
 	KubernetesTooOld = Kind{ID: "K8S_OLD_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
 	// a too new Kubernetes version was specified for minikube to use
 	KubernetesTooNew = Kind{ID: "K8S_NEW_UNSUPPORTED", ExitCode: ExControlPlaneUnsupported}
+	// error fetching GitHub Kubernetes version list
+	KubernetesNotConnect = Kind{ID: "K8S_FAIL_CONNECT", ExitCode: ExInternetError}
 	// minikube was unable to safely downgrade installed Kubernetes version
 	KubernetesDowngrade = Kind{
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",
@@ -472,7 +504,7 @@ var (
 		
 		Please install cri-dockerd using these instructions:
 
-		https://github.com/Mirantis/cri-dockerd#build-and-install`),
+		https://github.com/Mirantis/cri-dockerd`),
 		Style: style.Docker,
 	}
 	NotFoundDockerd = Kind{
@@ -484,6 +516,16 @@ var (
 
 		https://docs.docker.com/engine/install/`),
 		Style: style.Docker,
+	}
+	NotFoundCNIPlugins = Kind{
+		ID:       "NOT_FOUND_CNI_PLUGINS",
+		ExitCode: ExProgramNotFound,
+		Advice: translate.T(`The none driver with Kubernetes v1.24+ requires containernetworking-plugins.
+
+		Please install containernetworking-plugins using these instructions:
+
+		https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver`),
+		Style: style.CNI,
 	}
 	NotFoundSocketVMNet = Kind{
 		ID:       "NOT_FOUND_SOCKET_VMNET",

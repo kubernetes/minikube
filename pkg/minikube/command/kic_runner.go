@@ -131,15 +131,15 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 }
 
-func (k *kicRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+func (k *kicRunner) StartCmd(_ *exec.Cmd) (*StartedCmd, error) {
 	return nil, fmt.Errorf("kicRunner does not support StartCmd - you could be the first to add it")
 }
 
-func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+func (k *kicRunner) WaitCmd(_ *StartedCmd) (*RunResult, error) {
 	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
 }
 
-func (k *kicRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
+func (k *kicRunner) ReadableFile(_ string) (assets.ReadableFile, error) {
 	return nil, fmt.Errorf("kicRunner does not support ReadableFile - you could be the first to add it")
 }
 

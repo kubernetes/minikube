@@ -148,6 +148,10 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 					out.String(fmt.Sprintf("%s\n", serviceURLs))
 				}
 			}
+			// check whether there are running pods for this service
+			if err := service.CheckServicePods(cname, svc.Name, namespace); err != nil {
+				exit.Error(reason.SvcUnreachable, "service not available", err)
+			}
 		}
 
 		if driver.NeedsPortForward(co.Config.Driver) && services != nil {

@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -35,12 +34,12 @@ var (
 	schema = map[string]update.Item{
 		"hack/jenkins/common.ps1": {
 			Replace: map[string]string{
-				`(?U)https://github.com/gotestyourself/gotestsum/releases/download/.*/gotestsum_.*_`: `https://github.com/gotestyourself/gotestsum/releases/download/v{{.StableVersion}}/gotestsum_{{.StableVersion}}_`,
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
 			},
 		},
 		"hack/jenkins/installers/check_install_gotestsum.sh": {
 			Replace: map[string]string{
-				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@v{{.StableVersion}}`,
+				`gotest.tools/gotestsum@.*`: `gotest.tools/gotestsum@{{.StableVersion}}`,
 			},
 		},
 	}
@@ -61,7 +60,7 @@ func main() {
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get gotestsum stable version: %v", err)
 	}
-	data := Data{StableVersion: strings.TrimPrefix(stable, "v")}
+	data := Data{StableVersion: stable}
 	klog.Infof("gotestsum stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)

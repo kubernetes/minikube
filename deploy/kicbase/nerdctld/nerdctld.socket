@@ -1,0 +1,9 @@
+[Unit]
+Description=nerdctld
+
+[Socket]
+ListenStream=/var/run/nerdctld.sock
+SocketMode=0666
+
+[Install]
+WantedBy=sockets.target

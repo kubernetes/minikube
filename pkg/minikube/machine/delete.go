@@ -97,11 +97,11 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 	}
 
 	out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	return delete(api, host, machineName)
+	return deleteHost(api, host, machineName)
 }
 
 // delete removes a host and its local data files
-func delete(api libmachine.API, h *host.Host, machineName string) error {
+func deleteHost(api libmachine.API, h *host.Host, machineName string) error {
 	if err := h.Driver.Remove(); err != nil {
 		klog.Warningf("remove failed, will retry: %v", err)
 		time.Sleep(1 * time.Second)
@@ -124,17 +124,16 @@ func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *hos
 	klog.Infof("DEMOLISHING %s ...", machineName)
 
 	// This will probably fail
-	err := stop(h)
-	if err != nil {
+	if err := stop(h); err != nil {
 		klog.Infof("stophost failed (probably ok): %v", err)
 	}
 
 	// For 95% of cases, this should be enough
-	err = DeleteHost(api, machineName)
-	if err != nil {
+	if err := DeleteHost(api, machineName); err != nil {
 		klog.Warningf("deletehost failed: %v", err)
 	}
 
-	err = delete(api, h, machineName)
-	klog.Warningf("delete failed (probably ok) %v", err)
+	if err := deleteHost(api, h, machineName); err != nil {
+		klog.Warningf("delete failed (probably ok) %v", err)
+	}
 }

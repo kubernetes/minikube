@@ -156,7 +156,7 @@ WantedBy=multi-user.target
 }
 
 // Package installs a package
-func (p *UbuntuProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (p *UbuntuProvisioner) Package(_ string, _ pkgaction.PackageAction) error {
 	return nil
 }
 

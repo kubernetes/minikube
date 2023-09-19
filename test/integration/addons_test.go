@@ -78,7 +78,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -104,6 +104,7 @@ func TestAddons(t *testing.T) {
 		}{
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
+			{"InspektorGadget", validateInspektorGadgetAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
@@ -156,6 +157,11 @@ func TestAddons(t *testing.T) {
 		if err != nil {
 			t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 		}
+		// Disable a non-enabled addon
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "gvisor", "-p", profile))
+		if err != nil {
+			t.Errorf("failed to disable non-enabled addon: args %q : %v", rr.Command(), err)
+		}
 	})
 }
 
@@ -183,12 +189,17 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	ingressYaml := "nginx-ingress-v1.yaml"
 	ingressDNSYaml := "ingress-dns-example-v1.yaml"
 	v, err := client.ServerVersion()
-	if err != nil {
+	if err == nil {
+		// for pre-release k8s version, remove any "+" suffix in minor version to be semver-compliant and not panic
+		// ref: https://github.com/kubernetes/minikube/pull/16145#issuecomment-1483283260
+		minor := strings.TrimSuffix(v.Minor, "+")
+		if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, minor))) {
+			// legacy: k8s < v1.19 & ingress api v1beta1
+			ingressYaml = "nginx-ingress-v1beta1.yaml"
+			ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
+		}
+	} else {
 		t.Log("failed to get k8s version, assuming v1.19+ => ingress api v1")
-	} else if semver.MustParseRange("<1.19.0")(semver.MustParse(fmt.Sprintf("%s.%s.0", v.Major, v.Minor))) {
-		// legacy: k8s < v1.19 & ingress api v1beta1
-		ingressYaml = "nginx-ingress-v1beta1.yaml"
-		ingressDNSYaml = "ingress-dns-example-v1beta1.yaml"
 	}
 
 	// create networking.k8s.io/v1 ingress
@@ -435,7 +446,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=docker.io/alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}
@@ -793,6 +804,18 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 
 	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for headlamp pod: %v", err)
+	}
+}
+
+// validateInspektorGadgetAddon tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
+func validateInspektorGadgetAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "gadget", "k8s-app=gadget", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for inspektor-gadget pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "inspektor-gadget", "-p", profile)); err != nil {
+		t.Errorf("failed to disable inspektor-gadget addon: args %q : %v", rr.Command(), err)
 	}
 }
 

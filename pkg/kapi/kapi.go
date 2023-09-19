@@ -74,9 +74,9 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 	start := time.Now()
 	klog.Infof("Waiting for pod with label %q in ns %q ...", selector, ns)
 	lastKnownPodNumber := -1
-	f := func() (bool, error) {
+	f := func(ctx context.Context) (bool, error) {
 		listOpts := meta.ListOptions{LabelSelector: selector}
-		pods, err := c.CoreV1().Pods(ns).List(context.Background(), listOpts)
+		pods, err := c.CoreV1().Pods(ns).List(ctx, listOpts)
 		if err != nil {
 			klog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", selector, err)
 			return false, nil
@@ -103,7 +103,7 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 	if timeOut != nil {
 		t = timeOut[0]
 	}
-	err := wait.PollImmediate(kconst.APICallRetryInterval, t, f)
+	err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, t, true, f)
 	klog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), selector)
 	return err
 }
@@ -177,8 +177,8 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
 func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
-	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		_, err := c.CoreV1().Services(namespace).Get(context.Background(), name, meta.GetOptions{})
+	err := wait.PollUntilContextTimeout(context.Background(), interval, timeout, true, func(ctx context.Context) (bool, error) {
+		_, err := c.CoreV1().Services(namespace).Get(ctx, name, meta.GetOptions{})
 		switch {
 		case err == nil:
 			klog.Infof("Service %s in namespace %s found.", name, namespace)
@@ -219,8 +219,8 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 		return fmt.Errorf("client: %v", err)
 	}
 
-	err = wait.PollImmediate(kconst.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
-		scale, err := client.AppsV1().Deployments(namespace).GetScale(context.Background(), deploymentName, meta.GetOptions{})
+	err = wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, ReasonableMutateTime, true, func(ctx context.Context) (bool, error) {
+		scale, err := client.AppsV1().Deployments(namespace).GetScale(ctx, deploymentName, meta.GetOptions{})
 		if err != nil {
 			if !IsRetryableAPIError(err) {
 				return false, fmt.Errorf("non-retryable failure while getting %q deployment scale: %v", deploymentName, err)
@@ -230,7 +230,7 @@ func ScaleDeployment(kcontext, namespace, deploymentName string, replicas int) e
 		}
 		if scale.Spec.Replicas != int32(replicas) {
 			scale.Spec.Replicas = int32(replicas)
-			if _, err = client.AppsV1().Deployments(namespace).UpdateScale(context.Background(), deploymentName, scale, meta.UpdateOptions{}); err != nil {
+			if _, err = client.AppsV1().Deployments(namespace).UpdateScale(ctx, deploymentName, scale, meta.UpdateOptions{}); err != nil {
 				if !IsRetryableAPIError(err) {
 					return false, fmt.Errorf("non-retryable failure while rescaling %s deployment: %v", deploymentName, err)
 				}

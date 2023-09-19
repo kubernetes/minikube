@@ -70,6 +70,7 @@ type Docker struct {
 	Type              string
 	Socket            string
 	Runner            CommandRunner
+	NetworkPlugin     string
 	ImageRepository   string
 	KubernetesVersion semver.Version
 	Init              sysinit.Manager
@@ -117,6 +118,9 @@ func (r *Docker) Available() error {
 			return err
 		}
 	}
+	if err := checkCNIPlugins(r.KubernetesVersion); err != nil {
+		return err
+	}
 	_, err := exec.LookPath("docker")
 	return err
 }
@@ -139,6 +143,9 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 	}
 
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
+		return err
+	}
+	if err := generateCRIDockerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion, r.NetworkPlugin); err != nil {
 		return err
 	}
 
@@ -169,6 +176,9 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 			return err
 		}
 		if err := r.Init.Restart(r.CRIService); err != nil {
+			return err
+		}
+		if err := r.Init.Restart("cri-docker"); err != nil {
 			return err
 		}
 	}
@@ -383,11 +393,7 @@ func (r *Docker) CGroupDriver() (string, error) {
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
 	if r.UseCRI {
-		return map[string]string{
-			"container-runtime":          "remote",
-			"container-runtime-endpoint": r.SocketPath(),
-			"image-service-endpoint":     r.SocketPath(),
-		}
+		return kubeletCRIOptions(r, r.KubernetesVersion)
 	}
 	return map[string]string{
 		"container-runtime": "docker",
@@ -517,7 +523,7 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Docker) SystemLogCmd(len int) string {
-	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", len)
 }
 
 type dockerDaemonConfig struct {
@@ -724,7 +730,9 @@ func getCriDockerdPath(cr CommandRunner) string {
 	return strings.TrimSuffix(rr.Stdout.String(), "\n")
 }
 
-func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error {
+func generateCRIDockerdConfig(cr CommandRunner, imageRepository string, kv semver.Version, networkPlugin string) error {
+
+	pauseImage := images.Pause(kv, imageRepository)
 	// $ cri-dockerd --version
 	// cri-dockerd 0.2.6 (d8accf7)
 	// $ cri-dockerd --help | grep -i cni
@@ -739,10 +747,12 @@ func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error 
 	}
 	opts := struct {
 		ExecPath       string
+		PauseImage     string
 		NetworkPlugin  string
 		ExtraArguments string
 	}{
 		ExecPath:       getCriDockerdPath(cr),
+		PauseImage:     pauseImage,
 		NetworkPlugin:  networkPlugin,
 		ExtraArguments: args,
 	}
@@ -750,7 +760,7 @@ func dockerConfigureNetworkPlugin(cr CommandRunner, networkPlugin string) error 
 	const CRIDockerServiceConfFile = "/etc/systemd/system/cri-docker.service.d/10-cni.conf"
 	var CRIDockerServiceConfTemplate = template.Must(template.New("criDockerServiceConfTemplate").Parse(`[Service]
 ExecStart=
-ExecStart={{.ExecPath}} --container-runtime-endpoint fd:// --network-plugin={{.NetworkPlugin}}{{.ExtraArguments}}`))
+ExecStart={{.ExecPath}} --container-runtime-endpoint fd:// --pod-infra-container-image={{.PauseImage}} --network-plugin={{.NetworkPlugin}}{{.ExtraArguments}}`))
 
 	b := bytes.Buffer{}
 	if err := CRIDockerServiceConfTemplate.Execute(&b, opts); err != nil {

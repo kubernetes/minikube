@@ -20,62 +20,30 @@ date: 2022-02-25
 
 {{% tabs %}}
 {{% mactab %}}
-1. Download the zipped folder
+1. [Download minikube-gui](https://github.com/kubernetes-sigs/minikube-gui/releases/latest/download/minikube-gui-macos.dmg)
+
+2. Open the dmg and copy minikube-gui to your Applications folder
+
+3. Run this command to allow running the unsigned application:
 ```shell
-curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-mac.zip
+xattr -d com.apple.quarantine /Applications/minikube-gui.app
 ```
 
-2. Unzip
-```shell
-unzip minikube-gui-mac.zip
-```
-
-3. Open the application
-```shell
-open dist/minikube.app
-```
-
-4. If you see the following, click cancel.
-
-![Mac unverified developer](/images/gui/mac.png)
-
-5. Open System Preferences and go to Security & Privacy -> General and click "Open Anyway".
+4. Run the application
 {{% /mactab %}}
 {{% windowstab %}}
-1. Download the zipped folder via PowerShell (below) or via your [browser](https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip) (faster)
-```shell
-Invoke-WebRequest -Uri 'https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-windows.zip' -UseBasicParsing
-```
+1. [Download minikube-gui](https://github.com/kubernetes-sigs/minikube-gui/releases/latest/download/minikube-gui-windows.zip)
 
-2. Unzip
-```shell
-Expand-Archive minikube-gui-windows.zip
-```
+2. Unzip and run minikube-gui.exe
 
-3. Open the application
-```shell
-.\minikube-gui-windows\dist\minikube.exe
-```
-
-4. If you see the following, click `More info` and then `Run anyway`
+3. If you see the following, click `More info` and then `Run anyway`
 
 ![Windows unreconized app](/images/gui/windows.png)
 {{% /windowstab %}}
 {{% linuxtab %}}
-1. Download the zipped folder
-```shell
-curl -LO https://storage.googleapis.com/minikube-gui/nightly/minikube-gui-linux.zip
-```
+1. [Download minikube-gui](https://github.com/kubernetes-sigs/minikube-gui/releases/latest/download/minikube-gui-linux.tar.gz)
 
-2. Unzip
-```shell
-unzip minikube-gui-linux.zip
-```
-
-3. Open the application
-```shell
-dist/minikube
-```
+2. Untar and run minikube-gui
 {{% /linuxtab %}}
 {{% /tabs %}}
 

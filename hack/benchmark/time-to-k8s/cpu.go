@@ -93,11 +93,7 @@ func createCPUChart(chartPath string, values []plotter.Values, names []string) e
 	p.Legend.Top = true
 	p.NominalX(fields...)
 
-	if err := p.Save(8*vg.Inch, 8*vg.Inch, chartPath); err != nil {
-		return err
-	}
-
-	return nil
+	return p.Save(8*vg.Inch, 8*vg.Inch, chartPath)
 }
 
 func setYMax(p *plot.Plot, values []plotter.Values) {

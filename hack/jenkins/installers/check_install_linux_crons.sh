@@ -16,6 +16,6 @@
 
 set -e
 
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION:=master}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP AND REBOOT"
 sudo install cron/cleanup_go_modules.sh /etc/cron.monthly/cleanup_go_modules || echo "FAILED TO INSTALL GO MODULES CLEANUP"

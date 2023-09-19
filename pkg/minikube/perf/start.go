@@ -19,7 +19,6 @@ package perf
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -36,7 +35,7 @@ const (
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
-func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
+func CompareMinikubeStart(ctx context.Context, binaries []*Binary) error {
 	drivers := []string{"kvm2", "docker"}
 	if runtime.GOOS == "darwin" {
 		drivers = []string{"hyperkit", "docker"}

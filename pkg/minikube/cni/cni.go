@@ -138,6 +138,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	}
 
 	if cc.KubernetesConfig.ContainerRuntime != constants.Docker {
+		// Always use CNI when running with CRI (without dockershim)
 		if driver.IsKIC(cc.Driver) {
 			klog.Infof("%q driver + %q runtime found, recommending kindnet", cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 			return KindNet{cc: cc}

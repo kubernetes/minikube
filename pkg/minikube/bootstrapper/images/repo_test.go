@@ -19,42 +19,27 @@ package images
 import (
 	"testing"
 
-	"github.com/blang/semver/v4"
 	"github.com/google/go-cmp/cmp"
 )
 
 func Test_kubernetesRepo(t *testing.T) {
-	kv := semver.MustParse("1.23.0")
 	tests := []struct {
-		mirror  string
-		version semver.Version
-		want    string
+		mirror string
+		want   string
 	}{
 		{
 			"",
-			kv,
-			DefaultKubernetesRepo(kv),
+			DefaultKubernetesRepo,
 		},
 		{
 			"mirror.k8s.io",
-			kv,
 			"mirror.k8s.io",
-		},
-		{
-			"",
-			semver.MustParse("1.24.0"),
-			OldDefaultKubernetesRepo,
-		},
-		{
-			"",
-			semver.MustParse("1.25.0"),
-			NewDefaultKubernetesRepo,
 		},
 	}
 	for _, tc := range tests {
-		got := kubernetesRepo(tc.mirror, tc.version)
+		got := kubernetesRepo(tc.mirror)
 		if !cmp.Equal(got, tc.want) {
-			t.Errorf("mirror miss match, want: %s, got: %s", tc.want, got)
+			t.Errorf("mirror mismatch, want: %s, got: %s", tc.want, got)
 		}
 	}
 

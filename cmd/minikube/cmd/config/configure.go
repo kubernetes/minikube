@@ -20,6 +20,8 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
@@ -254,6 +256,25 @@ var addonsConfigureCmd = &cobra.Command{
 				if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true"); err != nil {
 					out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
 				}
+			}
+		case "auto-pause-interval":
+			profile := ClusterFlagValue()
+			_, cfg := mustload.Partial(profile)
+
+			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (in minutes): ")
+			intervalTime, err := strconv.Atoi(intervalInput)
+			if err != nil {
+				out.ErrT(style.Fatal, "Failed to extract integer in minutes to pause.")
+			}
+
+			if intervalTime <= 0 {
+				out.ErrT(style.Fatal, "Auto-pause interval must be greater than 0,"+
+					" not current value of {{.interval}}", out.V{"interval": intervalTime})
+			}
+
+			cfg.AutoPauseInterval = time.Minute * time.Duration(intervalTime)
+			if err := config.SaveProfile(profile, cfg); err != nil {
+				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 
 		default:

@@ -38,7 +38,6 @@ var supportedDrivers = func() []string {
 		return []string{
 			VirtualBox,
 			Parallels,
-			VMwareFusion,
 			HyperKit,
 			VMware,
 			Docker,
@@ -48,7 +47,6 @@ var supportedDrivers = func() []string {
 	return []string{
 		VirtualBox,
 		Parallels,
-		VMwareFusion,
 		HyperKit,
 		VMware,
 		QEMU2,

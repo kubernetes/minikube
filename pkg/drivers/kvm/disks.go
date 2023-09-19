@@ -21,13 +21,7 @@ package kvm
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"text/template"
-
-	"github.com/docker/machine/libmachine/log"
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/util"
 )
 
 // extraDisksTmpl ExtraDisks XML Template
@@ -57,24 +51,4 @@ func getExtraDiskXML(diskpath string, logicalName string) (string, error) {
 		return "", fmt.Errorf("couldn't generate extra disks XML: %v", err)
 	}
 	return extraDisksXML.String(), nil
-}
-
-// createExtraDisks creates the extra disk files
-func createExtraDisk(d *Driver, index int) (string, error) {
-	diskPath := drivers.ExtraDiskPath(d.BaseDriver, index)
-	log.Infof("Creating raw disk image: %s of size %v", diskPath, d.DiskSize)
-
-	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
-		file, err := os.OpenFile(diskPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
-		if err != nil {
-			return "", errors.Wrap(err, "open")
-		}
-		defer file.Close()
-
-		if err := file.Truncate(util.ConvertMBToBytes(d.DiskSize)); err != nil {
-			return "", errors.Wrap(err, "truncate")
-		}
-	}
-	return diskPath, nil
-
 }

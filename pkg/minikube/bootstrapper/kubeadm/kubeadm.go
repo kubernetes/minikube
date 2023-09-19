@@ -76,7 +76,7 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
+func NewBootstrapper(_ libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
 	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
 }
 
@@ -238,7 +238,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
@@ -341,6 +341,9 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 		nextStepIndex++
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read logs: %v", err)
+	}
 	wg.Done()
 }
 
@@ -426,7 +429,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		// Fall-through to init
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
 	}
@@ -584,7 +587,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return nil
 }
 
-// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+// ensureServiceStarted will start a systemd or init.d service if it is not running.
 func (k *Bootstrapper) ensureServiceStarted(svc string) error {
 	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
 		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
@@ -675,7 +678,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// If the cluster is running, check if we have any work to do.
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 
 	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		klog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
@@ -926,7 +929,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := r.Preload(cfg); err != nil {
-		klog.Infof("preload failed, will try to load cached images: %v", err)
+		switch err.(type) {
+		case *cruntime.ErrISOFeature:
+			out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+		default:
+			klog.Infof("preload failed, will try to load cached images: %v", err)
+		}
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
@@ -979,7 +987,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	if n.ControlPlane {
-		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
+		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, constants.KubeadmYamlPath+".new", "0640"))
 	}
 
 	// Installs compatibility shims for non-systemd environments
@@ -1097,7 +1105,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
-		checkSA := func() (bool, error) {
+		checkSA := func(_ context.Context) (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
 				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 			rr, err = k.c.RunCmd(cmd)
@@ -1108,7 +1116,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 
 		// retry up to make sure SA is created
-		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
+		if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, time.Minute, true, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
 		}
 	}

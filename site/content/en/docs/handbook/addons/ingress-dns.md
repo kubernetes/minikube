@@ -28,7 +28,7 @@ can. The `ingress-dns` addon acts as a DNS service that runs inside your Kuberne
 install the service and add the `minikube ip` as a DNS server on your host machine. Each time the DNS service is
 queried, an API call is made to the Kubernetes master service for a list of all the ingresses. If a match is found for
 the name, a response is given with an IP address matching `minikube ip`. For example, with a `minikube ip` of
-`192.168.99.106` and an ingress rule for `myservice.test` configured in the cluster, a DNS query from the host would
+`192.168.99.169` and an ingress rule for `myservice.test` configured in the cluster, a DNS query from the host would
 produce:
 
 ```text
@@ -254,8 +254,8 @@ Hostname: hello-world-app-557ff7dbd8-64mtv
 
 ## Known issues
 
-### .localhost domains will not resolve on chromium
-.localhost domains will not correctly resolve on chromium since it is used as a loopback address. Instead use .test, .example, or .invalid
+### .localhost always resolves to the loopback address
+.localhost will often resolve to the loopback address (see [RFC 2606](https://datatracker.ietf.org/doc/html/rfc2606#section-2) and [RFC 6761](https://datatracker.ietf.org/doc/html/rfc6761#section-6.3)), so it can't be used for `minikube ip`. Instead use .test, .example, or .invalid
 
 ### .local is a reserved TLD
 Do not use .local as this is a reserved TLD for mDNS and bind9 DNS servers

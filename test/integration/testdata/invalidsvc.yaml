@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: invalid-svc
+  name: invalid-svc
+  namespace: default
+spec:
+  containers:
+  - name: nginx
+    image: nonexistingimage:latest
+    ports:
+    - containerPort: 80
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: invalid-svc
+  name: invalid-svc
+  namespace: default
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: invalid-svc
+  sessionAffinity: None
+  type: NodePort

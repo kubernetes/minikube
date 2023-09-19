@@ -60,3 +60,26 @@ func TestParsePath(t *testing.T) {
 		}
 	}
 }
+
+func TestSetDstFileNameFromSrc(t *testing.T) {
+	cases := []struct {
+		src  string
+		dst  string
+		want string
+	}{
+		{"./a/b", "/c/", "/c/b"},
+		{"./a/b", "node:/c/", "node:/c/b"},
+		{"./a", "/c/", "/c/a"},
+		{"", "/c/", "/c/"},
+		{"./a/b", "", ""},
+		{"./a/b", "/c", "/c"},
+		{"./a/", "/c/", "/c/"},
+	}
+
+	for _, c := range cases {
+		got := setDstFileNameFromSrc(c.dst, c.src)
+		if c.want != got {
+			t.Fatalf("wrong dst path for src=%s & dst=%s. want: %q, got: %q", c.src, c.dst, c.want, got)
+		}
+	}
+}

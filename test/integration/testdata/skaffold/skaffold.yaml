@@ -1,18 +1,33 @@
-apiVersion: skaffold/v2beta5
+apiVersion: skaffold/v4beta5
 kind: Config
 build:
   artifacts:
     - image: leeroy-web
       context: leeroy-web
+      requires:
+        - image: base
+          alias: BASE
     - image: leeroy-app
       context: leeroy-app
-deploy:
-  kubectl:
-    manifests:
-      - leeroy-web/kubernetes/*
-      - leeroy-app/kubernetes/*
+      requires:
+        - image: base
+          alias: BASE
+    - image: base
+      context: base
+manifests:
+  rawYaml:
+    - leeroy-web/kubernetes/*
+    - leeroy-app/kubernetes/*
 portForward:
   - resourceType: deployment
     resourceName: leeroy-web
     port: 8080
     localPort: 9000
+  - resourceType: deployment
+    resourceName: leeroy-app
+    port: http
+    localPort: 9001
+profiles:
+  - name: gcb
+    build:
+      googleCloudBuild: {}

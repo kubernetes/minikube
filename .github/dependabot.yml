@@ -5,11 +5,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    labels:
-      - "ok-to-test"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-        interval: "weekly"
-    labels:
-      - "ok-to-test"
+      interval: "weekly"
+    ignore:
+      - dependency-name: "vedantmgoyal2009/winget-releaser"

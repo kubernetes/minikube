@@ -141,6 +141,7 @@ const (
 	socketVMnetClientPath   = "socket-vmnet-client-path"
 	socketVMnetPath         = "socket-vmnet-path"
 	staticIP                = "static-ip"
+	autoPauseInterval       = "auto-pause-interval"
 )
 
 var (
@@ -196,12 +197,13 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(network, "", "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().StringP(trace, "", "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
+	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s).  To disable, set to 0s")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -329,11 +331,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		proxy.SetDockerEnv()
 	}
 
-	var kubeNodeName string
-	if driver.BareMetal(cc.Driver) {
-		kubeNodeName = "m01"
-	}
-	return createNode(cc, kubeNodeName, existing)
+	return createNode(cc, existing)
 }
 
 func getCPUCount(drvName string) int {
@@ -596,6 +594,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			NodePort:               viper.GetInt(apiServerPort),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
+		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -815,7 +814,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
-		cc.KubernetesConfig.KubernetesVersion = getKubernetesVersion(existing)
+		kubeVer, err := getKubernetesVersion(existing)
+		if err != nil {
+			klog.Warningf("failed getting Kubernetes version: %v", err)
+		}
+		cc.KubernetesConfig.KubernetesVersion = kubeVer
 	}
 	if cmd.Flags().Changed(containerRuntime) {
 		cc.KubernetesConfig.ContainerRuntime = getContainerRuntime(existing)
@@ -940,7 +943,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit, driver.KVM2}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

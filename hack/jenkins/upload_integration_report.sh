@@ -44,6 +44,12 @@ HTML_OUT="$ARTIFACTS/out.html"
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-SUMMARY_OUT="$ARTIFACTS/summary.txt"
+SUMMARY_OUT="$ARTIFACTS/summary.json"
 echo ">> uploading ${SUMMARY_OUT}"
 gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
+
+if [ "$MINIKUBE_LOCATION" = "master" ]
+then
+	./installers/check_install_gopogh.sh
+	gopogh -in "${JSON_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth || true
+fi

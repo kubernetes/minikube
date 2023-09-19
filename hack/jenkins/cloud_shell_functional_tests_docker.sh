@@ -40,6 +40,7 @@ gcloud cloud-shell ssh --authorize-session << EOF
  ROOT_JOB_ID=$ROOT_JOB_ID
 
  # Prevent cloud-shell is ephemeral warnings on apt-get
+ mkdir ~/.cloudshell
  touch ~/.cloudshell/no-apt-get-warning
 
  gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/installers .

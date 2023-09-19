@@ -52,5 +52,5 @@ func auditContains(substr string) (bool, error) {
 			return true, nil
 		}
 	}
-	return false, nil
+	return false, s.Err()
 }
