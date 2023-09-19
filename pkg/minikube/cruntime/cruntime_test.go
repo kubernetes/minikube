@@ -157,7 +157,12 @@ func TestKubeletOptions(t *testing.T) {
 		{"docker", "1.24.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
 		}},
-		{"nvidia-docker", "1.25.0", map[string]string{"container-runtime": "docker"}},
+		{"nvidia-docker", "1.23.0", map[string]string{
+			"container-runtime": "docker",
+		}},
+		{"nvidia-docker", "1.25.0", map[string]string{
+			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
+		}},
 		{"crio", "1.25.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/crio/crio.sock",
 		}},
