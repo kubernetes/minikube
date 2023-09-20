@@ -40,6 +40,7 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
+		{"nvidia-docker", "Docker"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
@@ -124,6 +125,7 @@ func TestCGroupDriver(t *testing.T) {
 		want    string
 	}{
 		{"docker", "cgroupfs"},
+		{"nvidia-docker", "cgroupfs"},
 		{"crio", "cgroupfs"},
 		{"containerd", "cgroupfs"},
 	}
@@ -153,6 +155,12 @@ func TestKubeletOptions(t *testing.T) {
 	}{
 		{"docker", "1.23.0", map[string]string{"container-runtime": "docker"}},
 		{"docker", "1.24.0", map[string]string{
+			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
+		}},
+		{"nvidia-docker", "1.23.0", map[string]string{
+			"container-runtime": "docker",
+		}},
+		{"nvidia-docker", "1.25.0", map[string]string{
 			"container-runtime-endpoint": "unix:///var/run/cri-dockerd.sock",
 		}},
 		{"crio", "1.25.0", map[string]string{
@@ -680,6 +688,13 @@ func TestEnable(t *testing.T) {
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
 			}},
+		{"nvidia-docker", defaultServices,
+			map[string]serviceState{
+				"docker":        SvcRestarted,
+				"containerd":    SvcExited,
+				"crio":          SvcExited,
+				"crio-shutdown": SvcExited,
+			}},
 		{"containerd", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcExited,
@@ -721,6 +736,7 @@ func TestContainerFunctions(t *testing.T) {
 		runtime string
 	}{
 		{"docker"},
+		{"nvidia-docker"},
 		{"crio"},
 		{"containerd"},
 	}
@@ -730,7 +746,7 @@ func TestContainerFunctions(t *testing.T) {
 		t.Run(tc.runtime, func(t *testing.T) {
 			runner := NewFakeRunner(t)
 			prefix := ""
-			if tc.runtime == "docker" {
+			if tc.runtime == "docker" || tc.runtime == "nvidia-docker" {
 				prefix = "k8s_"
 			}
 			runner.containers = map[string]string{

@@ -50,7 +50,7 @@ func (cs ContainerState) String() string {
 
 // ValidRuntimes lists the supported container runtimes
 func ValidRuntimes() []string {
-	return []string{"docker", "cri-o", "containerd"}
+	return []string{"docker", "nvidia-docker", "cri-o", "containerd"}
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
@@ -210,7 +210,7 @@ func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
-	case "", "docker":
+	case "", "docker", "nvidia-docker":
 		sp := c.Socket
 		cs := ""
 		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
@@ -219,6 +219,7 @@ func New(c Config) (Manager, error) {
 			cs = "cri-docker.socket"
 		}
 		return &Docker{
+			Type:              c.Type,
 			Socket:            sp,
 			Runner:            c.Runner,
 			NetworkPlugin:     c.NetworkPlugin,
