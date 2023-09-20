@@ -1479,8 +1479,8 @@ github.com/google/s2a-go v0.1.3/go.mod h1:Ej+mSEMGRnqRzjc7VtF+jdBwYG5fuJfiZ8ELkj
 github.com/google/s2a-go v0.1.4/go.mod h1:Ej+mSEMGRnqRzjc7VtF+jdBwYG5fuJfiZ8ELkjEwM0A=
 github.com/google/s2a-go v0.1.7 h1:60BLSyTrOV4/haCDW4zb1guZItoSq8foHCXrAnjBo/o=
 github.com/google/s2a-go v0.1.7/go.mod h1:50CgR4k1jNlWBu4UfS4AcfhVe1r6pdZPygJ3R8F0Qdw=
-github.com/google/slowjam v1.0.1 h1:RrR0qrKELIC1iv7r1FgbtohxDl6QytIj67B9brpgrdg=
-github.com/google/slowjam v1.0.1/go.mod h1:13Ws7TkS56WroVpQFout67W7EjTn+VUVhKxJqPgopWg=
+github.com/google/slowjam v1.1.0 h1:mENjYWhA6/p7P4vRwfMA5mfLEjOk48fKScuzryYnFA0=
+github.com/google/slowjam v1.1.0/go.mod h1:TgQpyJRz/UwCoMohYql6d4sKewcB24pK9SZxsMXebSE=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
