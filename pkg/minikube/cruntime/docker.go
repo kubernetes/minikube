@@ -49,6 +49,8 @@ const KubernetesContainerPrefix = "k8s_"
 const InternalDockerCRISocket = "/var/run/dockershim.sock"
 const ExternalDockerCRISocket = "/var/run/cri-dockerd.sock"
 
+const DockerDaemonJSON = "/etc/docker/daemon.json"
+
 // ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
@@ -546,31 +548,79 @@ type dockerDaemonRuntimes struct {
 
 // configureDocker configures the docker daemon to use driver as cgroup manager
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
+// If /etc/docker/daemon.json does not exist, file is created. Otherwise we just ensure that 
+// cgroup manager is set and do not adjust it beyond that. 
 func (r *Docker) configureDocker(driver string) error {
 	if driver == constants.UnknownCgroupDriver {
 		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
 	}
-
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
+	
+	var daemonData map[string]any
+	natCgroupDriver := "native.cgroupdriver"
+	cgroupKeyValue := natCgroupDriver + "=" + driver
+
+	// defines default docker json 
 	daemonConfig := dockerDaemonConfig{
-		ExecOpts:  []string{"native.cgroupdriver=" + driver},
+		ExecOpts:  []string{cgroupKeyValue},
 		LogDriver: "json-file",
 		LogOpts: dockerDaemonLogOpts{
 			MaxSize: "100m",
 		},
 		StorageDriver: "overlay2",
 	}
+	
 	if r.Type == "nvidia-docker" {
 		daemonConfig.DefaultRuntime = "nvidia"
 		runtimes := &dockerDaemonRuntimes{}
 		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
 		daemonConfig.Runtimes = runtimes
 	}
-	daemonConfigBytes, err := json.Marshal(daemonConfig)
+
+	file, err := os.ReadFile(DockerDaemonJSON)
+	if err != nil {
+		klog.Warningf("Failed to load %s. Creating new json file.", DockerDaemonJSON)
+		dataBytes, err := json.Marshal(daemonConfig)
+		if err != nil {
+			return err
+		}
+		return r.writeToDockerdJSON(dataBytes)
+	}
+
+	// we don't know the exact structure that user has already been using
+	err = json.Unmarshal(file, &daemonData)
+	if err != nil {
+		klog.Warningf("Failed to parse %s", file)
+	}
+	execOpts := daemonData["exec-opts"]
+	if execOpts == nil {
+		klog.Infof("%s does not contain any 'exec-opts' key. Configuring docker to use %s as cgroup driver...", DockerDaemonJSON, driver)
+		daemonData["exec-opts"] = []string{cgroupKeyValue}
+		dataBytes, _ := json.MarshalIndent(daemonData, "", "  ")
+		return r.writeToDockerdJSON(dataBytes)
+	}
+	klog.Infof("%s contains exec-opts option. Checking for %s key presence.", DockerDaemonJSON, driver)
+	jsonExecOpts, ok := execOpts.([]string)
+	if ok {
+		for _, value := range jsonExecOpts {
+			dKey := strings.Split(value, "=")[0]
+			if dKey == natCgroupDriver {
+				return nil
+			}
+		}
+	}
+	klog.Infof("Insert %s driver with option %s into %s file.", natCgroupDriver, driver, DockerDaemonJSON)
+	daemonData["exec-opts"] = append(jsonExecOpts, cgroupKeyValue)
+
+	dataBytes, err := json.MarshalIndent(daemonData, "", "  ")
 	if err != nil {
 		return err
 	}
-	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
+	return r.writeToDockerdJSON(dataBytes)
+}
+
+func (r *Docker) writeToDockerdJSON(data []byte) error {
+	ma := assets.NewMemoryAsset(data, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
 }
 
