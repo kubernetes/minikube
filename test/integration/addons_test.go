@@ -79,7 +79,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -113,6 +113,7 @@ func TestAddons(t *testing.T) {
 			{"Headlamp", validateHeadlampAddon},
 			{"CloudSpanner", validateCloudSpannerAddon},
 			{"LocalPath", validateLocalPathAddon},
+			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -898,5 +899,17 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "storage-provisioner-rancher", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable storage-provisioner-rancher addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+// validateNvidiaDevicePlugin tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
+func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "nvidia-device-plugin-ds", Minutes(1)); err != nil {
+		t.Fatalf("failed waiting for nvidia-device-plugin-ds pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
+		t.Errorf("failed to disable nvidia-device-plugin: args %q : %v", rr.Command(), err)
 	}
 }
