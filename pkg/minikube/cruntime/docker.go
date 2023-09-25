@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/image"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -560,7 +561,11 @@ func (r *Docker) configureDocker(driver string) error {
 		},
 		StorageDriver: "overlay2",
 	}
-	if r.Type == "nvidia-docker" {
+	if r.Type == constants.NvidiaDocker {
+		if err := r.installNvidiaContainerToolkit(); err != nil {
+			return fmt.Errorf("failed installing the NVIDIA Container Toolkit: %v", err)
+		}
+		assets.Addons["nvidia-device-plugin"].EnableByDefault()
 		daemonConfig.DefaultRuntime = "nvidia"
 		runtimes := &dockerDaemonRuntimes{}
 		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
@@ -572,6 +577,25 @@ func (r *Docker) configureDocker(driver string) error {
 	}
 	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
+}
+
+// installNvidiaContainerToolkit installs the NVIDIA Container Toolkit
+// https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+func (r *Docker) installNvidiaContainerToolkit() error {
+	out.Styled(style.Toolkit, "Installing the NVIDIA Container Toolkit...")
+	cmds := []string{
+		"curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
+		"curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list",
+		"sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit",
+	}
+
+	for _, cmd := range cmds {
+		c := exec.Command("/bin/bash", "-c", cmd)
+		if _, err := r.Runner.RunCmd(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Preload preloads docker with k8s images:

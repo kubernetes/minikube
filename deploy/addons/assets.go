@@ -163,4 +163,8 @@ var (
 	// CloudSpanner assets for cloud-spanner addon
 	//go:embed cloud-spanner/*.yaml
 	CloudSpanner embed.FS
+
+	// NvidiaDevicePlugin assets for nvidia-device-plugin addon
+	//go:embed nvidia-device-plugin/*.tmpl
+	NvidiaDevicePlugin embed.FS
 )
