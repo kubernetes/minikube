@@ -63,6 +63,8 @@ const (
 	CRIO = "crio"
 	// Docker is the default name and spelling for the docker container runtime
 	Docker = "docker"
+	// NvidiaDocker is the default name and spelling for the nvidia-docker container runtime
+	NvidiaDocker = "nvidia-docker"
 	// DefaultContainerRuntime is our default container runtime
 	DefaultContainerRuntime = ""
 

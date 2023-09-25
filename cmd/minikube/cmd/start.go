@@ -1289,7 +1289,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
-		err := validateRuntime(viper.GetString(containerRuntime))
+		err := validateRuntime(viper.GetString(containerRuntime), drvName)
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
@@ -1406,7 +1406,7 @@ func validateDiskSize(diskSize string) error {
 }
 
 // validateRuntime validates the supplied runtime
-func validateRuntime(rtime string) error {
+func validateRuntime(rtime, driverName string) error {
 	validOptions := cruntime.ValidRuntimes()
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
@@ -1435,6 +1435,11 @@ func validateRuntime(rtime string) error {
 	if !validRuntime {
 		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
 	}
+
+	if rtime == constants.NvidiaDocker && driverName != constants.Docker {
+		return errors.Errorf("The nvidia-docker container-runtime can only be run with the docker driver")
+	}
+
 	return nil
 }
 
@@ -1802,7 +1807,7 @@ func validateContainerRuntime(old *config.ClusterConfig) {
 		return
 	}
 
-	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
+	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime, old.Driver); err != nil {
 		klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
 	}
 }

@@ -166,4 +166,8 @@ var (
 	// Kubeflow assets for kubeflow addon
 	//go:embed kubeflow/*.yaml
 	Kubeflow embed.FS
+
+	// NvidiaDevicePlugin assets for nvidia-device-plugin addon
+	//go:embed nvidia-device-plugin/*.tmpl
+	NvidiaDevicePlugin embed.FS
 )
