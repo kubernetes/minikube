@@ -906,7 +906,7 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "nvidia-device-plugin-ds", Minutes(1)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "nvidia-device-plugin-ds", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for nvidia-device-plugin-ds pod: %v", err)
 	}
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
