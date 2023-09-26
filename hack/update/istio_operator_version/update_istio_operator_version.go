@@ -29,7 +29,7 @@ import (
 var schema = map[string]update.Item{
 	"pkg/minikube/assets/addons.go": {
 		Replace: map[string]string{
-			`istio/operator:.*`: `istio/operator:{{.Version}}@{{.SHA}}"`,
+			`istio/operator:.*`: `istio/operator:{{.Version}}@{{.SHA}}",`,
 		},
 	},
 }
