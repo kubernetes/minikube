@@ -208,6 +208,19 @@ var Addons = map[string]*Addon{
 		"GlusterfsServer":        "docker.io",
 		"GlusterfileProvisioner": "docker.io",
 	}),
+	"storage-provisioner-rancher": NewAddon([]*BinAsset{
+		MustBinAsset(addons.StorageProvisionerRancherAssets,
+			"storage-provisioner-rancher/storage-provisioner-rancher.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"storage-provisioner-rancher.yaml",
+			"0640"),
+	}, false, "storage-provisioner-rancher", "3rd party (Rancher)", "", "", map[string]string{
+		"LocalPathProvisioner": "rancher/local-path-provisioner:v0.0.22@sha256:e34c88ae0affb1cdefbb874140d6339d4a27ec4ee420ae8199cd839997b05246",
+		"Helper":               "busybox:stable@sha256:3fbc632167424a6d997e74f52b878d7cc478225cffac6bc977eedfe51c7f4e79",
+	}, map[string]string{
+		"LocalPathProvisioner": "docker.io",
+		"Helper":               "docker.io",
+	}),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(addons.EfkAssets,
 			"efk/elasticsearch-rc.yaml.tmpl",

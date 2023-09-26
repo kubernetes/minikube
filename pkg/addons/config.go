@@ -167,6 +167,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 	{
+		name:      "storage-provisioner-rancher",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableStorageClasses},
+	},
+	{
 		name:      "metallb",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
