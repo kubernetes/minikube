@@ -53,6 +53,9 @@ tests the inspektor-gadget addon by ensuring the pod has come up and addon disab
 #### validateCloudSpannerAddon
 tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
+#### validateLocalPathAddon
+tests the functionality of the storage-provisioner-rancher addon
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
