@@ -34,7 +34,7 @@ date: 2018-01-02
   ```
 - Start minikube:
   ```shell
-  minikube start --driver docker --container-runtime nvidia-docker
+  minikube start --driver docker --container-runtime docker --enable-nvidia-gpus
   ```
 {{% /tab %}}
 {{% tab none %}}

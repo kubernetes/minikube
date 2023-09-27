@@ -68,7 +68,6 @@ func (e *ErrISOFeature) Error() string {
 
 // Docker contains Docker runtime state
 type Docker struct {
-	Type              string
 	Socket            string
 	Runner            CommandRunner
 	NetworkPlugin     string
@@ -77,6 +76,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
+	NvidiaGPUs        bool
 }
 
 // Name is a human readable name for Docker
@@ -561,7 +561,7 @@ func (r *Docker) configureDocker(driver string) error {
 		},
 		StorageDriver: "overlay2",
 	}
-	if r.Type == constants.NvidiaDocker {
+	if r.NvidiaGPUs {
 		if err := r.installNvidiaContainerToolkit(); err != nil {
 			return fmt.Errorf("failed installing the NVIDIA Container Toolkit: %v", err)
 		}

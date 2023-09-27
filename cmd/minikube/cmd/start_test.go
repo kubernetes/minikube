@@ -434,7 +434,6 @@ func TestValidateDiskSize(t *testing.T) {
 func TestValidateRuntime(t *testing.T) {
 	var tests = []struct {
 		runtime  string
-		driver   string
 		errorMsg string
 	}{
 		{
@@ -449,20 +448,10 @@ func TestValidateRuntime(t *testing.T) {
 			runtime:  "test",
 			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
 		},
-		{
-			runtime:  "nvidia-docker",
-			driver:   "docker",
-			errorMsg: "",
-		},
-		{
-			runtime:  "nvidia-docker",
-			driver:   "kvm",
-			errorMsg: "The nvidia-docker container-runtime can only be run with the docker driver",
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.runtime, func(t *testing.T) {
-			got := validateRuntime(test.runtime, test.driver)
+			got := validateRuntime(test.runtime)
 			gotError := ""
 			if got != nil {
 				gotError = got.Error()

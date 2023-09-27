@@ -1289,7 +1289,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if cmd.Flags().Changed(containerRuntime) {
-		err := validateRuntime(viper.GetString(containerRuntime), drvName)
+		err := validateRuntime(viper.GetString(containerRuntime))
 		if err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
@@ -1298,6 +1298,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
+	if cmd.Flags().Changed(enableNvidiaGPUs) {
+		if err := validateEnableNvidiaGPUs(viper.GetBool(enableNvidiaGPUs), drvName, viper.GetString(containerRuntime)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1406,7 +1412,7 @@ func validateDiskSize(diskSize string) error {
 }
 
 // validateRuntime validates the supplied runtime
-func validateRuntime(rtime, driverName string) error {
+func validateRuntime(rtime string) error {
 	validOptions := cruntime.ValidRuntimes()
 	// `crio` is accepted as an alternative spelling to `cri-o`
 	validOptions = append(validOptions, constants.CRIO)
@@ -1435,12 +1441,18 @@ func validateRuntime(rtime, driverName string) error {
 	if !validRuntime {
 		return errors.Errorf("Invalid Container Runtime: %s. Valid runtimes are: %s", rtime, cruntime.ValidRuntimes())
 	}
-
-	if rtime == constants.NvidiaDocker && driverName != constants.Docker {
-		return errors.Errorf("The nvidia-docker container-runtime can only be run with the docker driver")
-	}
-
 	return nil
+}
+
+// validateEnableNvidiaGPUs validates that the nvidia GPU(s) can be used with the given configuration
+func validateEnableNvidiaGPUs(gpusEnabled bool, drvName, rtime string) error {
+	if !gpusEnabled {
+		return nil
+	}
+	if drvName == constants.Docker && rtime == constants.Docker {
+		return nil
+	}
+	return errors.Errorf("The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime")
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
@@ -1807,7 +1819,7 @@ func validateContainerRuntime(old *config.ClusterConfig) {
 		return
 	}
 
-	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime, old.Driver); err != nil {
+	if err := validateRuntime(old.KubernetesConfig.ContainerRuntime); err != nil {
 		klog.Errorf("Error parsing old runtime %q: %v", old.KubernetesConfig.ContainerRuntime, err)
 	}
 }

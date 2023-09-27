@@ -77,22 +77,20 @@ func NewDriver(c Config) *Driver {
 func (d *Driver) Create() error {
 	ctx := context.Background()
 	params := oci.CreateParams{
-		Mounts:        d.NodeConfig.Mounts,
-		Name:          d.NodeConfig.MachineName,
-		Image:         d.NodeConfig.ImageDigest,
-		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
-		NodeLabel:     oci.NodeLabelKey + "=" + d.NodeConfig.MachineName,
-		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
-		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
-		Envs:          d.NodeConfig.Envs,
-		ExtraArgs:     append([]string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)}, d.NodeConfig.ExtraArgs...),
-		OCIBinary:     d.NodeConfig.OCIBinary,
-		APIServerPort: d.NodeConfig.APIServerPort,
+		Mounts:           d.NodeConfig.Mounts,
+		Name:             d.NodeConfig.MachineName,
+		Image:            d.NodeConfig.ImageDigest,
+		ClusterLabel:     oci.ProfileLabelKey + "=" + d.MachineName,
+		NodeLabel:        oci.NodeLabelKey + "=" + d.NodeConfig.MachineName,
+		CPUs:             strconv.Itoa(d.NodeConfig.CPU),
+		Memory:           strconv.Itoa(d.NodeConfig.Memory) + "mb",
+		Envs:             d.NodeConfig.Envs,
+		ExtraArgs:        append([]string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)}, d.NodeConfig.ExtraArgs...),
+		OCIBinary:        d.NodeConfig.OCIBinary,
+		APIServerPort:    d.NodeConfig.APIServerPort,
+		EnableNvidiaGPUs: d.NodeConfig.EnableNvidiaGPUs,
 	}
 
-	if d.NodeConfig.ContainerRuntime == constants.NvidiaDocker {
-		params.GPUs = true
-	}
 	networkName := d.NodeConfig.Network
 	if networkName == "" {
 		networkName = d.NodeConfig.ClusterName
@@ -455,7 +453,7 @@ func (d *Driver) Stop() error {
 		}
 	}
 
-	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec, EnableNvidiaGPUs: d.NodeConfig.EnableNvidiaGPUs})
 	if err != nil { // won't return error because:
 		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
 		klog.Errorf("unable to get container runtime: %v", err)

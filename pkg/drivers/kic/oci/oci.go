@@ -190,7 +190,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--network", p.Network)
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
-	if p.GPUs {
+	if p.EnableNvidiaGPUs {
 		runArgs = append(runArgs, "--gpus", "all")
 	}
 

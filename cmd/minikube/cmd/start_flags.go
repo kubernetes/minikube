@@ -142,6 +142,7 @@ const (
 	socketVMnetPath         = "socket-vmnet-path"
 	staticIP                = "static-ip"
 	autoPauseInterval       = "auto-pause-interval"
+	enableNvidiaGPUs        = "enable-nvidia-gpus"
 )
 
 var (
@@ -204,6 +205,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s).  To disable, set to 0s")
+	startCmd.Flags().Bool(enableNvidiaGPUs, false, "If set, allows pods to use your NVIDIA GPU(s) (Docker driver with Docker container-runtime only)")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -595,6 +597,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1,
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
+		EnableNvidiaGPUs:   viper.GetBool(enableNvidiaGPUs),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
