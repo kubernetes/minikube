@@ -870,13 +870,17 @@ func TestValidateEnableNvidiaGPUs(t *testing.T) {
 		{false, "kvm", "containerd", ""},
 		{true, "docker", "docker", ""},
 		{true, "docker", "", ""},
-		{true, "kvm", "docker", "The nvidia-docker container-runtime can only be run with the docker driver"},
-		{true, "docker", "containerd", "The nvidia-docker container-runtime can only be run with the docker driver"},
+		{true, "kvm", "docker", "The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime"},
+		{true, "docker", "containerd", "The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime"},
 	}
 
 	for _, tc := range tests {
+		gotError := ""
 		got := validateEnableNvidiaGPUs(tc.enableNvidiaGPUs, tc.drvName, tc.runtime)
-		if got.Error() != tc.errorMsg {
+		if got != nil {
+			gotError = got.Error()
+		}
+		if gotError != tc.errorMsg {
 			t.Errorf("validateEnableNvidiaGPUs(%t, %s, %s) = %q; want = %q", tc.enableNvidiaGPUs, tc.drvName, tc.runtime, got, tc.errorMsg)
 		}
 	}
