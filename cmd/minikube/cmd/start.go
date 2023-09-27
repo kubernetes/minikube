@@ -1449,7 +1449,7 @@ func validateEnableNvidiaGPUs(gpusEnabled bool, drvName, rtime string) error {
 	if !gpusEnabled {
 		return nil
 	}
-	if drvName == constants.Docker && rtime == constants.Docker {
+	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil
 	}
 	return errors.Errorf("The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime")

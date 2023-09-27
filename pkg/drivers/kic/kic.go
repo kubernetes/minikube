@@ -453,7 +453,7 @@ func (d *Driver) Stop() error {
 		}
 	}
 
-	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec, EnableNvidiaGPUs: d.NodeConfig.EnableNvidiaGPUs})
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
 	if err != nil { // won't return error because:
 		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
 		klog.Errorf("unable to get container runtime: %v", err)
