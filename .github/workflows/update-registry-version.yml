@@ -34,7 +34,7 @@ jobs:
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Addon resitry: Update registry image from ${{ steps.bumpRegistry.outputs.OLD_VERSION }} to ${{ steps.bumpRegistry.outputs.NEW_VERSION }}'
+          commit-message: 'Addon registry: Update registry image from ${{ steps.bumpRegistry.outputs.OLD_VERSION }} to ${{ steps.bumpRegistry.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_registry_version
