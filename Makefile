@@ -1180,6 +1180,11 @@ update-registry-version:
 	(cd hack/update/registry_version && \
 	 go run update_registry_version.go)
 
+.PHONY: update-kong-version
+update-kong-version:
+	(cd hack/update/kong_version && \
+	 go run update_kong_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \

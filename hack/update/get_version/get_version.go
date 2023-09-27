@@ -52,6 +52,7 @@ var dependencies = map[string]dependency{
 	"inspektor-gadget": {addonsFile, `inspektor-gadget/inspektor-gadget:(.*)@`},
 	"istio-operator":   {addonsFile, `istio/operator:(.*)@`},
 	"kindnetd":         {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
+	"kong":             {addonsFile, `kong:(.*)@`},
 	"metrics-server":   {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":          {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"registry":         {addonsFile, `registry:(.*)@`},
