@@ -859,3 +859,25 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateEnableNvidiaGPUs(t *testing.T) {
+	tests := []struct {
+		enableNvidiaGPUs bool
+		drvName          string
+		runtime          string
+		errorMsg         string
+	}{
+		{false, "kvm", "containerd", ""},
+		{true, "docker", "docker", ""},
+		{true, "docker", "", ""},
+		{true, "kvm", "docker", "The nvidia-docker container-runtime can only be run with the docker driver"},
+		{true, "docker", "containerd", "The nvidia-docker container-runtime can only be run with the docker driver"},
+	}
+
+	for _, tc := range tests {
+		got := validateEnableNvidiaGPUs(tc.enableNvidiaGPUs, tc.drvName, tc.runtime)
+		if got.Error() != tc.errorMsg {
+			t.Errorf("validateEnableNvidiaGPUs(%t, %s, %s) = %q; want = %q", tc.enableNvidiaGPUs, tc.drvName, tc.runtime, got, tc.errorMsg)
+		}
+	}
+}
