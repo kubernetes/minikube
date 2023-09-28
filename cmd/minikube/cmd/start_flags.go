@@ -619,9 +619,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		}
 		if si.Rootless {
 			out.Styled(style.Notice, "Using rootless {{.driver_name}} driver", out.V{"driver_name": driver.FullName(drvName)})
-			if cc.KubernetesConfig.ContainerRuntime == constants.Docker {
-				exit.Message(reason.Usage, "--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless")
-			}
 			// KubeletInUserNamespace feature gate is essential for rootless driver.
 			// See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-in-userns/
 			cc.KubernetesConfig.FeatureGates = addFeatureGate(cc.KubernetesConfig.FeatureGates, "KubeletInUserNamespace=true")

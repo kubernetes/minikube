@@ -134,9 +134,15 @@ func (r *Docker) Active() bool {
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
-		return errors.New("inUserNamespace must not be true for docker")
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
 	}
-
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
