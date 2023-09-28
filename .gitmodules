@@ -4,3 +4,6 @@
 [submodule "hack/benchmark/time-to-k8s/time-to-k8s-repo"]
 	path = hack/benchmark/time-to-k8s/time-to-k8s-repo
 	url = https://github.com/tstromberg/time-to-k8s.git
+[submodule "hack/benchmark/image-build/minikube-image-benchmark"]
+	path = hack/benchmark/image-build/minikube-image-benchmark
+	url = https://github.com/GoogleContainerTools/minikube-image-benchmark.git
