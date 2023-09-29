@@ -217,6 +217,12 @@ var (
 		Style: style.UnmetRequirement,
 		URL:   "https://docs.docker.com/docker-for-mac/#resources",
 	}
+	// invalid memory value for Hyper-V
+	RsrcInvalidHyperVMemory = Kind{
+		ID:       "RSRC_INVALID_HYPERV_MEMORY",
+		ExitCode: ExResourceError,
+		Style:    style.UnmetRequirement,
+	}
 
 	// insufficient disk storage available to the docker driver
 	RsrcInsufficientDockerStorage = Kind{
