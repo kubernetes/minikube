@@ -50,7 +50,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
-	t.Run("PreSetupTests", func(t *testing.T) {
+	t.Run("PreSetup", func(t *testing.T) {
 		tests := []struct {
 			name      string
 			validator validateFunc
