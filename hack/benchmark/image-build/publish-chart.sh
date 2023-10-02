@@ -27,7 +27,7 @@ run_benchmark() {
         ( cd ./hack/benchmark/image-build/minikube-image-benchmark &&
                 git submodule update --init &&
                 make                        &&
-                ./out/benchmark )
+                ./out/benchmark --runs=4)
 }
 
 generate_chart() {
