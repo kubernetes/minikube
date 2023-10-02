@@ -1170,6 +1170,11 @@ update-kindnetd-version:
 	(cd hack/update/kindnetd_version && \
 	 go run update_kindnetd_version.go)
 
+.PHONY: update-istio-operator-version
+update-istio-operator-version:
+	(cd hack/update/istio_operator_version && \
+	 go run update_istio_operator_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
