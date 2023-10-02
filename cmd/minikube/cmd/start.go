@@ -1180,7 +1180,7 @@ func validateRequestedMemorySize(req int, drvName string) {
 	}
 
 	if driver.IsHyperV(drvName) && req%2 == 1 {
-		exitIfNotForced(reason.RsrcInvalidHyperVMemory, "Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified", out.V{"memory": req})
+		exitIfNotForced(reason.RsrcInvalidHyperVMemory, "Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`", out.V{"memory": req, "suggestMemory": req - 1})
 	}
 }
 
