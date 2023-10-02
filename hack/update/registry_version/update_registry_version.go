@@ -74,7 +74,7 @@ func getLatestVersion() (string, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read reponse body: %v", err)
+		return "", fmt.Errorf("failed to read response body: %v", err)
 	}
 
 	var content Response
