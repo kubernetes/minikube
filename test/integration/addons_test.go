@@ -927,7 +927,7 @@ func validateEnablingAddonOnNonExistingCluster(ctx context.Context, t *testing.T
 	if err == nil {
 		t.Fatalf("enabling addon succeeded when it shouldn't have: %s", rr.Output())
 	}
-	if !strings.Contains(err.Error(), "To start a cluster, run") {
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
 		t.Fatalf("unexpected error was returned: %v", err)
 	}
 }
@@ -938,7 +938,7 @@ func validateDisablingAddonOnNonExistingCluster(ctx context.Context, t *testing.
 	if err == nil {
 		t.Fatalf("disabling addon succeeded when it shouldn't have: %s", rr.Output())
 	}
-	if !strings.Contains(err.Error(), "To start a cluster, run") {
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
 		t.Fatalf("unexpected error was returned: %v", err)
 	}
 }
