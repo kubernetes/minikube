@@ -860,28 +860,31 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 	}
 }
 
-func TestValidateEnableNvidiaGPUs(t *testing.T) {
+func TestValidateGPUs(t *testing.T) {
 	tests := []struct {
-		enableNvidiaGPUs bool
-		drvName          string
-		runtime          string
-		errorMsg         string
+		gpus     string
+		drvName  string
+		runtime  string
+		errorMsg string
 	}{
-		{false, "kvm", "containerd", ""},
-		{true, "docker", "docker", ""},
-		{true, "docker", "", ""},
-		{true, "kvm", "docker", "The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime"},
-		{true, "docker", "containerd", "The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime"},
+		{"", "kvm", "containerd", ""},
+		{"all", "docker", "docker", ""},
+		{"nvidia", "docker", "docker", ""},
+		{"all", "docker", "", ""},
+		{"nvidia", "docker", "", ""},
+		{"all", "kvm", "docker", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"nvidia", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia" or "all"`},
 	}
 
 	for _, tc := range tests {
 		gotError := ""
-		got := validateEnableNvidiaGPUs(tc.enableNvidiaGPUs, tc.drvName, tc.runtime)
+		got := validateGPUs(tc.gpus, tc.drvName, tc.runtime)
 		if got != nil {
 			gotError = got.Error()
 		}
 		if gotError != tc.errorMsg {
-			t.Errorf("validateEnableNvidiaGPUs(%t, %s, %s) = %q; want = %q", tc.enableNvidiaGPUs, tc.drvName, tc.runtime, got, tc.errorMsg)
+			t.Errorf("validateGPUs(%s, %s, %s) = %q; want = %q", tc.gpus, tc.drvName, tc.runtime, got, tc.errorMsg)
 		}
 	}
 }
