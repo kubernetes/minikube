@@ -43,23 +43,23 @@ const (
 
 // CreateParams are parameters needed to create a container
 type CreateParams struct {
-	ClusterName      string            // cluster(profile name) that this container belongs to
-	Name             string            // used for container name and hostname
-	Image            string            // container image to use to create the node.
-	ClusterLabel     string            // label the clusters we create using minikube so we can clean up
-	NodeLabel        string            // label the nodes so we can clean up by node name
-	Role             string            // currently only role supported is control-plane
-	Mounts           []Mount           // volume mounts
-	APIServerPort    int               // Kubernetes api server port
-	PortMappings     []PortMapping     // ports to map to container from host
-	CPUs             string            // number of cpu cores assign to container
-	Memory           string            // memory (mbs) to assign to the container
-	Envs             map[string]string // environment variables to pass to the container
-	ExtraArgs        []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
-	OCIBinary        string            // docker or podman
-	Network          string            // network name that the container will attach to
-	IP               string            // static IP to assign the container in the cluster network
-	EnableNvidiaGPUs bool              // add NVIDIA GPU devices to the container
+	ClusterName   string            // cluster(profile name) that this container belongs to
+	Name          string            // used for container name and hostname
+	Image         string            // container image to use to create the node.
+	ClusterLabel  string            // label the clusters we create using minikube so we can clean up
+	NodeLabel     string            // label the nodes so we can clean up by node name
+	Role          string            // currently only role supported is control-plane
+	Mounts        []Mount           // volume mounts
+	APIServerPort int               // Kubernetes api server port
+	PortMappings  []PortMapping     // ports to map to container from host
+	CPUs          string            // number of cpu cores assign to container
+	Memory        string            // memory (mbs) to assign to the container
+	Envs          map[string]string // environment variables to pass to the container
+	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	OCIBinary     string            // docker or podman
+	Network       string            // network name that the container will attach to
+	IP            string            // static IP to assign the container in the cluster network
+	GPUs          string            // add NVIDIA GPU devices to the container
 }
 
 // createOpt is an option for Create

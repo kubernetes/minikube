@@ -76,7 +76,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
-	NvidiaGPUs        bool
+	GPUs              bool
 }
 
 // Name is a human readable name for Docker
@@ -561,7 +561,7 @@ func (r *Docker) configureDocker(driver string) error {
 		},
 		StorageDriver: "overlay2",
 	}
-	if r.NvidiaGPUs {
+	if r.GPUs {
 		if err := r.installNvidiaContainerToolkit(); err != nil {
 			return fmt.Errorf("failed installing the NVIDIA Container Toolkit: %v", err)
 		}

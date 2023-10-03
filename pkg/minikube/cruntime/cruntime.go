@@ -155,8 +155,8 @@ type Config struct {
 	KubernetesVersion semver.Version
 	// InsecureRegistry list of insecure registries
 	InsecureRegistry []string
-	// EnableNvidiaGPUs add GPU devices to the container
-	EnableNvidiaGPUs bool
+	// GPUs add GPU devices to the container
+	GPUs bool
 }
 
 // ListContainersOptions are the options to use for listing containers
@@ -229,7 +229,7 @@ func New(c Config) (Manager, error) {
 			Init:              sm,
 			UseCRI:            (sp != ""), // !dockershim
 			CRIService:        cs,
-			NvidiaGPUs:        c.EnableNvidiaGPUs,
+			GPUs:              c.GPUs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{

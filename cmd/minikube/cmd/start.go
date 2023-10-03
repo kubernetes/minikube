@@ -1302,8 +1302,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
-	if cmd.Flags().Changed(enableNvidiaGPUs) {
-		if err := validateEnableNvidiaGPUs(viper.GetBool(enableNvidiaGPUs), drvName, viper.GetString(containerRuntime)); err != nil {
+	if cmd.Flags().Changed(gpus) {
+		if err := validateGPUs(viper.GetString(gpus), drvName, viper.GetString(containerRuntime)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1444,15 +1444,18 @@ func validateRuntime(rtime string) error {
 	return nil
 }
 
-// validateEnableNvidiaGPUs validates that the nvidia GPU(s) can be used with the given configuration
-func validateEnableNvidiaGPUs(gpusEnabled bool, drvName, rtime string) error {
-	if !gpusEnabled {
+// validateGPUs validates that a valid option was given, and if so, can it be used with the given configuration
+func validateGPUs(value, drvName, rtime string) error {
+	if value == "" {
 		return nil
+	}
+	if value != "nvidia" && value != "all" {
+		return errors.Errorf(`The gpus flag must be passed a value of "nvidia" or "all"`)
 	}
 	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil
 	}
-	return errors.Errorf("The enable-nvidia-gpus flag can only be run with the docker driver and docker container-runtime")
+	return errors.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {

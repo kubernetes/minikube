@@ -394,7 +394,9 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
-		EnableNvidiaGPUs:  cc.EnableNvidiaGPUs,
+	}
+	if cc.GPUs != "" {
+		co.GPUs = true
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
