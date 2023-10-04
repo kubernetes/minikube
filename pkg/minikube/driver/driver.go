@@ -198,6 +198,11 @@ func IsVMware(name string) bool {
 	return name == VMware
 }
 
+// IsHyperV check if the driver is Hyper-V
+func IsHyperV(name string) bool {
+	return name == HyperV
+}
+
 // AllowsPreload returns if preload is allowed for the driver
 func AllowsPreload(driverName string) bool {
 	return !BareMetal(driverName) && !IsSSH(driverName)

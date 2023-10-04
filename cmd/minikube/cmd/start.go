@@ -1178,6 +1178,10 @@ func validateRequestedMemorySize(req int, drvName string) {
 			`The requested memory allocation of {{.requested}}MiB does not leave room for system overhead (total system memory: {{.system_limit}}MiB). You may face stability issues.`,
 			out.V{"requested": req, "system_limit": sysLimit, "advised": advised})
 	}
+
+	if driver.IsHyperV(drvName) && req%2 == 1 {
+		exitIfNotForced(reason.RsrcInvalidHyperVMemory, "Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`", out.V{"memory": req, "suggestMemory": req - 1})
+	}
 }
 
 // validateCPUCount validates the cpu count matches the minimum recommended & not exceeding the available cpu count
@@ -1507,7 +1511,12 @@ func noLimitMemory(sysLimit, containerLimit int, drvName string) int {
 		// Because of this allow more system overhead to prevent out of memory issues
 		sysOverhead = 1536
 	}
-	return sysLimit - sysOverhead
+	mem := sysLimit - sysOverhead
+	// Hyper-V requires an even number of MB, so if odd remove one MB
+	if driver.IsHyperV(drvName) && mem%2 == 1 {
+		mem--
+	}
+	return mem
 }
 
 // This function validates if the --registry-mirror
