@@ -1343,6 +1343,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	validateBareMetal(drvName)
 	validateRegistryMirror()
+
+	// Add the insecure registry from the minikube config if available
+	insecureRegistryFromConfig, err := config.Get("insecure-registry")
+	if err == nil {
+		insecureRegistry = append(insecureRegistry, insecureRegistryFromConfig)
+	}
 	validateInsecureRegistry()
 }
 
