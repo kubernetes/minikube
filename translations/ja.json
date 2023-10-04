@@ -326,6 +326,7 @@
 	"Group ID:     {{.groupID}}": "グループ ID:     {{.groupID}}",
 	"Headlamp can display more detailed information when metrics-server is installed. To install it, run:\n\nminikube{{.profileArg}} addons enable metrics-server\t\n\n": "metrics-server がインストールされていると、Headlamp はより詳細な情報を表示できます。インストールするには、次のコマンドを実行します:\n\nminikube{{.profileArg}} addons enable metrics-server\t\n\n",
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "minikube 中のゲストに対してハイパーバイザー署名を非表示にします (kvm2 ドライバーのみ)",
+	"Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`": "",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "Hyperkit は故障しています。最新バージョンの Hyperkit と Docker for Desktop にアップグレードしてください。あるいは、別の --driver を選択することもできます。",
 	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "Hyperkit ネットワーキングは故障しています。インターネット共有の無効化を試してください: システム環境設定 \u003e 共有 \u003e インターネット共有。\nあるいは、最新の Hyperkit バージョンへのアップグレードか、別のドライバー使用を試すこともできます。",
 	"IP Address to use to expose ports (docker and podman driver only)": "ポートの expose に使用する IP アドレス (docker, podman ドライバーのみ)",

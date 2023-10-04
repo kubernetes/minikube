@@ -166,6 +166,9 @@ insufficient memory available to Docker Desktop on Windows
 "RSRC_DOCKER_MEMORY" (Exit code ExInsufficientMemory)  
 insufficient memory available to Docker Desktop on Mac  
 
+"RSRC_INVALID_HYPERV_MEMORY" (Exit code ExResourceError)  
+invalid memory value for Hyper-V  
+
 "RSRC_DOCKER_STORAGE" (Exit code ExInsufficientStorage)  
 insufficient disk storage available to the docker driver  
 

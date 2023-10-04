@@ -56,6 +56,12 @@ tests the cloud-spanner addon by ensuring the deployment and pod come up and add
 #### validateLocalPathAddon
 tests the functionality of the storage-provisioner-rancher addon
 
+#### validateEnablingAddonOnNonExistingCluster
+tests enabling an addon on a non-existing cluster
+
+#### validateDisablingAddonOnNonExistingCluster
+tests disabling an addon on a non-existing cluster
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
