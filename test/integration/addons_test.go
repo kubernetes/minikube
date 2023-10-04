@@ -50,6 +50,26 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
 
+	t.Run("PreSetup", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"EnablingAddonOnNonExistingCluster", validateEnablingAddonOnNonExistingCluster},
+			{"DisablingAddonOnNonExistingCluster", validateDisablingAddonOnNonExistingCluster},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				MaybeParallel(t)
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
 	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		// Set an env var to point to our dummy credentials file
 		// don't use t.Setenv because we sometimes manually unset the env var later manually
@@ -898,5 +918,27 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "storage-provisioner-rancher", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable storage-provisioner-rancher addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+// validateEnablingAddonOnNonExistingCluster tests enabling an addon on a non-existing cluster
+func validateEnablingAddonOnNonExistingCluster(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err == nil {
+		t.Fatalf("enabling addon succeeded when it shouldn't have: %s", rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
+		t.Fatalf("unexpected error was returned: %v", err)
+	}
+}
+
+// validateDisablingAddonOnNonExistingCluster tests disabling an addon on a non-existing cluster
+func validateDisablingAddonOnNonExistingCluster(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+	if err == nil {
+		t.Fatalf("disabling addon succeeded when it shouldn't have: %s", rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
+		t.Fatalf("unexpected error was returned: %v", err)
 	}
 }
