@@ -9,6 +9,7 @@ date: 2018-01-02
 
 - Linux
 - Latest NVIDIA GPU drivers
+- minikube v1.32.0-beta0 or later (docker driver only)
 
 ## Instructions per driver
 
