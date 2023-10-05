@@ -60,7 +60,7 @@ require (
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.13.0
 	golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b
-	golang.org/x/mod v0.12.0
+	golang.org/x/mod v0.13.0
 	golang.org/x/oauth2 v0.12.0
 	golang.org/x/sync v0.4.0
 	golang.org/x/sys v0.12.0
@@ -217,7 +217,7 @@ require (
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.9.1 // indirect
+	golang.org/x/tools v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
