@@ -582,6 +582,7 @@ func (r *Docker) configureDocker(driver string) error {
 // installNvidiaContainerToolkit installs the NVIDIA Container Toolkit
 // https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 func (r *Docker) installNvidiaContainerToolkit() error {
+	out.Styled(style.Warning, "Using GPUs with the Docker driver is experimental, if you experience any issues please report them at: https://github.com/kubernetes/minikube/issues/new/choose")
 	out.Styled(style.Toolkit, "Installing the NVIDIA Container Toolkit...")
 	cmds := []string{
 		"curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
