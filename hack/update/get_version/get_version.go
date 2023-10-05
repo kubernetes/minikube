@@ -54,6 +54,7 @@ var dependencies = map[string]dependency{
 	"kindnetd":         {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"metrics-server":   {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":          {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
+	"registry":         {addonsFile, `registry:(.*)@`},
 	"runc":             {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"ubuntu":           {"deploy/kicbase/Dockerfile", `ubuntu:jammy-(.*)"`},
 }

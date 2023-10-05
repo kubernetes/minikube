@@ -1175,6 +1175,11 @@ update-istio-operator-version:
 	(cd hack/update/istio_operator_version && \
 	 go run update_istio_operator_version.go)
 
+.PHONY: update-registry-version
+update-registry-version:
+	(cd hack/update/registry_version && \
+	 go run update_registry_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
