@@ -770,6 +770,10 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),
+	"kubeflow": NewAddon([]*BinAsset{
+		MustBinAsset(addons.Kubeflow, "kubeflow/kubeflow.yaml", vmpath.GuestAddonsDir, "kubeflow.yaml", "0640"),
+	}, false, "kubeflow", "3rd party", "", "", nil, nil,
+	),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

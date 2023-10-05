@@ -162,4 +162,8 @@ var (
 	// CloudSpanner assets for cloud-spanner addon
 	//go:embed cloud-spanner/*.tmpl
 	CloudSpanner embed.FS
+
+	// Kubeflow assets for kubeflow addon
+	//go:embed kubeflow/*.yaml
+	Kubeflow embed.FS
 )
