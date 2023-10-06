@@ -1,0 +1,4 @@
+config BR2_PACKAGE_DOCKER_BUILDX
+        bool "docker-buildx"
+        default y
+        depends on BR2_x86_64

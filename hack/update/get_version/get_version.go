@@ -43,6 +43,7 @@ var dependencies = map[string]dependency{
 	"crictl":                  {"deploy/iso/minikube-iso/arch/x86_64/package/crictl-bin/crictl-bin.mk", `CRICTL_BIN_VERSION = (.*)`},
 	"crun":                    {"deploy/iso/minikube-iso/package/crun-latest/crun-latest.mk", `CRUN_LATEST_VERSION = (.*)`},
 	"docker":                  {"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk", `DOCKER_BIN_VERSION = (.*)`},
+	"docker-buildx":           {"deploy/iso/minikube-iso/arch/x86_64/package/docker-buildx/docker-buildx.mk", `DOCKER_BUILDX_VERSION = (.*)`},
 	"flannel":                 {"pkg/minikube/cni/flannel.yaml", `flannel:(.*)`},
 	"gcp-auth":                {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},
 	"gh":                      {"hack/jenkins/installers/check_install_gh.sh", `GH_VERSION="(.*)"`},
