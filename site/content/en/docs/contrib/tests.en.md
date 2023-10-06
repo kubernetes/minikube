@@ -62,6 +62,9 @@ tests enabling an addon on a non-existing cluster
 #### validateDisablingAddonOnNonExistingCluster
 tests disabling an addon on a non-existing cluster
 
+#### validateNvidiaDevicePlugin
+tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
