@@ -10,7 +10,7 @@ The goal of this scenario is to scale a deployment with kubectl scale and to see
 
 ## Step 1 - Scaling a deployment
 
-First, let's recreate the Deployment we deleted in the previous module:
+First, let's recreate the Service we deleted in the previous module:
 
 ```shell
 kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
