@@ -58,7 +58,8 @@ type CreateParams struct {
 	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	OCIBinary     string            // docker or podman
 	Network       string            // network name that the container will attach to
-	IP            string            // static IP to assign for th container in the cluster network
+	IP            string            // static IP to assign the container in the cluster network
+	GPUs          string            // add NVIDIA GPU devices to the container
 }
 
 // createOpt is an option for Create

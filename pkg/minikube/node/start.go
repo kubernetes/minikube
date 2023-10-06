@@ -395,6 +395,9 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
 	}
+	if cc.GPUs != "" {
+		co.GPUs = true
+	}
 	cr, err := cruntime.New(co)
 	if err != nil {
 		exit.Error(reason.InternalRuntime, "Failed runtime", err)

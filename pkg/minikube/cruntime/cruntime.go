@@ -50,7 +50,7 @@ func (cs ContainerState) String() string {
 
 // ValidRuntimes lists the supported container runtimes
 func ValidRuntimes() []string {
-	return []string{"docker", "nvidia-docker", "cri-o", "containerd"}
+	return []string{"docker", "cri-o", "containerd"}
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
@@ -155,6 +155,8 @@ type Config struct {
 	KubernetesVersion semver.Version
 	// InsecureRegistry list of insecure registries
 	InsecureRegistry []string
+	// GPUs add GPU devices to the container
+	GPUs bool
 }
 
 // ListContainersOptions are the options to use for listing containers
@@ -210,7 +212,7 @@ func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
 
 	switch c.Type {
-	case "", "docker", "nvidia-docker":
+	case "", "docker":
 		sp := c.Socket
 		cs := ""
 		// There is no more dockershim socket, in Kubernetes version 1.24 and beyond
@@ -219,7 +221,6 @@ func New(c Config) (Manager, error) {
 			cs = "cri-docker.socket"
 		}
 		return &Docker{
-			Type:              c.Type,
 			Socket:            sp,
 			Runner:            c.Runner,
 			NetworkPlugin:     c.NetworkPlugin,
@@ -228,6 +229,7 @@ func New(c Config) (Manager, error) {
 			Init:              sm,
 			UseCRI:            (sp != ""), // !dockershim
 			CRIService:        cs,
+			GPUs:              c.GPUs,
 		}, nil
 	case "crio", "cri-o":
 		return &CRIO{

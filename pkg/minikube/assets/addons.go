@@ -93,6 +93,11 @@ func (a *Addon) IsEnabledOrDefault(cc *config.ClusterConfig) bool {
 	return a.enabled
 }
 
+// EnableByDefault will enable the addon by default on cluster start
+func (a *Addon) EnableByDefault() {
+	a.enabled = true
+}
+
 // Addons is the list of addons
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
@@ -774,6 +779,14 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.Kubeflow, "kubeflow/kubeflow.yaml", vmpath.GuestAddonsDir, "kubeflow.yaml", "0640"),
 	}, false, "kubeflow", "3rd party", "", "", nil, nil,
 	),
+	"nvidia-device-plugin": NewAddon([]*BinAsset{
+		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
+	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "",
+		map[string]string{
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.14.1@sha256:15c4280d13a61df703b12d1fd1b5b5eec4658157db3cb4b851d3259502310136",
+		}, map[string]string{
+			"NvidiaDevicePlugin": "nvcr.io",
+		}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
