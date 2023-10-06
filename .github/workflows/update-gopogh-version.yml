@@ -6,7 +6,7 @@ on:
     - cron: "0 9 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.1'
+  GO_VERSION: '1.21.2'
 permissions:
   contents: read
 
