@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.1'
+  GO_VERSION: '1.21.2'
 permissions:
   contents: read
 
