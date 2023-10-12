@@ -6,7 +6,7 @@ on:
       - master
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.2'
+  GO_VERSION: '1.21.3'
 permissions:
   contents: read
 
