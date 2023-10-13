@@ -23,10 +23,7 @@
 
 set -x
 
-# upload results to GCS
-UPSTREAM_JOB=${UPSTREAM_JOB%"_integration"}
-
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${UPSTREAM_JOB}"
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${UPSTREAM_JOB}_integration"
 
 ARTIFACTS=artifacts/test_reports
 
@@ -51,5 +48,5 @@ gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
 if [ "$MINIKUBE_LOCATION" = "master" ]
 then
 	./installers/check_install_gopogh.sh
-	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth
+	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -name "${UPSTREAM_JOB}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth
 fi
