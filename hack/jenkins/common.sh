@@ -148,7 +148,7 @@ mkdir -p out/ testdata/
 if ! type -P gsutil >/dev/null; then
   if [[ ! -x "out/gsutil/gsutil" ]]; then
     echo "Installing gsutil to $(pwd)/out ..."
-    curl -s https://storage.googleapis.com/pub/gsutil.tar.gz | tar -C out/ -zxf -
+    curl -s https://storage.googleapis.com/pub/gsutil.tar.gz | tar -C out/ -xf -
   fi
   PATH="$(pwd)/out/gsutil:$PATH"
 fi
