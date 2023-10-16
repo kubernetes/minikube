@@ -61,7 +61,7 @@ var Environments = []string{
 	"Microk8s",
 }
 
-var RuntimeEnvironments = map[string][]string{
+var RuntimeMethods = map[string][]string{
 	"docker": {
 		"MinikubeImageLoadDocker",
 		"MinikubeImageBuild",
@@ -81,13 +81,13 @@ const (
 	NONINTERATIVE = "NonIterative"
 )
 
-var Methods = []string{
+var Itrs = []string{
 	INTERATIVE,
 	// to simplify the output, non-interative is omitted
 	// NONINTERATIVE,
 }
 
-// env name-> test result
+// method name-> test result
 type TestResult map[string]float64
 
 func NewTestResult(values []float64) TestResult {
@@ -101,14 +101,14 @@ func NewTestResult(values []float64) TestResult {
 // imageName->TestResult
 type ImageTestResults map[string]TestResult
 
-type MethodTestResults struct {
+type ItrTestResults struct {
 	Date time.Time
-	// method name -> results
+	// itr name -> results
 	Results map[string]ImageTestResults
 }
 
 type Records struct {
-	Records []MethodTestResults
+	Records []ItrTestResults
 }
 
 func main() {
@@ -127,9 +127,9 @@ func main() {
 
 // readInLatestTestResult reads in the latest benchmark result from a CSV file
 // and return the MethodTestResults object
-func readInLatestTestResult(latestBenchmarkPath string) MethodTestResults {
+func readInLatestTestResult(latestBenchmarkPath string) ItrTestResults {
 
-	var res = MethodTestResults{
+	var res = ItrTestResults{
 		Results: make(map[string]ImageTestResults),
 	}
 	res.Results[INTERATIVE] = make(ImageTestResults)
@@ -163,6 +163,11 @@ func readInLatestTestResult(latestBenchmarkPath string) MethodTestResults {
 		indicesNonInterative := []int{3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51}
 
 		for _, i := range indicesInterative {
+			if line[i] == "NaN" {
+				// we use -1 as invalid value
+				valuesInterative = append(valuesInterative, -1)
+				continue
+			}
 			v, err := strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
@@ -171,6 +176,11 @@ func readInLatestTestResult(latestBenchmarkPath string) MethodTestResults {
 		}
 
 		for _, i := range indicesNonInterative {
+			if line[i] == "NaN" {
+				// we use -1 as invalid value
+				valuesNonInterative = append(valuesNonInterative, -1)
+				continue
+			}
 			v, err := strconv.ParseFloat(line[i], 64)
 			if err != nil {
 				log.Fatal(err)
@@ -220,19 +230,19 @@ func updatePastTestResults(h Records, pastTestRecordPath string) {
 }
 func createDailyChart(record Records, outputFolder string) {
 
-	for _, method := range Methods {
+	for _, itr := range Itrs {
 		for _, image := range Images {
-			createChart(record, method, image, "docker", outputFolder)
-			createChart(record, method, image, "containerd", outputFolder)
+			createChart(record, itr, image, "docker", outputFolder)
+			createChart(record, itr, image, "containerd", outputFolder)
 		}
 	}
 }
 
-func createChart(record Records, methodName string, imageName string, runtime string, chartOutputPath string) {
+func createChart(record Records, itr string, imageName string, runtime string, chartOutputPath string) {
 	p := plot.New()
 	p.Add(plotter.NewGrid())
 	p.Legend.Top = true
-	p.Title.Text = fmt.Sprintf("%s-%s-%s-performance", methodName, imageName, runtime)
+	p.Title.Text = fmt.Sprintf("%s-%s-%s-performance", itr, imageName, runtime)
 	p.X.Label.Text = "date"
 	p.X.Tick.Marker = plot.TimeTicks{Format: "2006-01-02"}
 	p.Y.Label.Text = "time (seconds)"
@@ -244,22 +254,29 @@ func createChart(record Records, methodName string, imageName string, runtime st
 	colors = append(colors, plotutil.DarkColors...)
 
 	pointGroup := make(map[string]plotter.XYs)
-	for _, name := range RuntimeEnvironments[runtime] {
-		pointGroup[name] = make(plotter.XYs, len(record.Records))
-
+	for _, name := range RuntimeMethods[runtime] {
+		pointGroup[name] = make(plotter.XYs, 0)
 	}
 
 	for i := 0; i < len(record.Records); i++ {
-		for _, envName := range RuntimeEnvironments[runtime] {
-			pointGroup[envName][i].X = float64(record.Records[i].Date.Unix())
-			pointGroup[envName][i].Y = record.Records[i].Results[methodName][imageName][envName]
-			yMaxTotal = math.Max(yMaxTotal, pointGroup[envName][i].Y)
+		for _, method := range RuntimeMethods[runtime] {
+			// for invalid values(<0) this point is dropped
+			if record.Records[i].Results[itr][imageName][method] >= 0 {
+				point := plotter.XY{
+					X: float64(record.Records[i].Date.Unix()),
+					Y: record.Records[i].Results[itr][imageName][method],
+				}
+				pointGroup[method] = append(pointGroup[method], point)
+
+				yMaxTotal = math.Max(yMaxTotal, point.Y)
+
+			}
 		}
 	}
 	p.Y.Max = yMaxTotal
 
 	i := 0
-	for envName, xys := range pointGroup {
+	for method, xys := range pointGroup {
 		line, points, err := plotter.NewLinePoints(xys)
 		if err != nil {
 			log.Fatal(err)
@@ -269,10 +286,10 @@ func createChart(record Records, methodName string, imageName string, runtime st
 		points.Shape = draw.CircleGlyph{}
 		i++
 		p.Add(line, points)
-		p.Legend.Add(envName, line)
+		p.Legend.Add(method, line)
 	}
 
-	filename := filepath.Join(chartOutputPath, fmt.Sprintf("%s_%s_%s_chart.png", methodName, imageName, runtime))
+	filename := filepath.Join(chartOutputPath, fmt.Sprintf("%s_%s_%s_chart.png", itr, imageName, runtime))
 
 	if err := p.Save(12*vg.Inch, 8*vg.Inch, filename); err != nil {
 		log.Fatalf("failed creating png: %v", err)

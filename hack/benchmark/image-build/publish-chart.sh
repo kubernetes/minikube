@@ -27,7 +27,7 @@ run_benchmark() {
         ( cd ./hack/benchmark/image-build/minikube-image-benchmark &&
                 git submodule update --init &&
                 make                        &&
-                ./out/benchmark --runs=4)
+                ./out/benchmark --runs=4 --memory="1800m" --images="buildpacksFewLargeFiles" --iters="iterative" --bench-methods="image load docker,image build docker,docker-env docker,registry docker,image load containerd,image build containerd,registry containerd")
 }
 
 generate_chart() {
