@@ -293,7 +293,7 @@ var Addons = map[string]*Addon{
 			"istio-operator.yaml",
 			"0640"),
 	}, false, "istio-provisioner", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", map[string]string{
-		"IstioOperator": "istio/operator:1.19.1@sha256:b4bd0f3ffa03347a01068f1ba7ecfc6f7a83ebc2503ebf787a66c208e24c4281",
+		"IstioOperator": "istio/operator:1.19.3@sha256:9316e9e8a32beba0edce44608a1d3be1502c1ccf48196ce2befd160bdc888daa",
 	}, map[string]string{
 		"IstioOperator": "docker.io",
 	}),
