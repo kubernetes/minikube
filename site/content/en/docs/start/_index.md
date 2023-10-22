@@ -129,7 +129,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64/Stable" name="Installer type" %}}
-{{% quiz_button option=".exe download" %}} {{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}}
+{{% quiz_button option=".exe download" %}} {{% quiz_button option="Windows Package Manager" %}} {{% quiz_button option="Chocolatey" %}} {{% quiz_button option="WSL2" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64/Beta" name="Installer type" %}}
@@ -435,6 +435,24 @@ If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use t
 ```shell
 choco install minikube
 ```
+{{% /quiz_instruction %}}
+
+{{% quiz_instruction id="/Windows/x86-64/Stable/WSL2" %}}
+
+Install docker directly into WSL2 without Docker Desktop following [docker documentation](https://docs.docker.com/engine/install/ubuntu), with docker engine installed follow Linux instructions to install [minikube](https://minikube.sigs.k8s.io/docs/start/) and [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
+
+After install minikube and kubectl, you can start minikube with the following command:
+
+```shell
+minikube start
+```
+
+To test run command to show dashboard in terminal and open link in browser:
+
+```shell
+minikube dashboard
+```
+
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
