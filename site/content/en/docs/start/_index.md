@@ -441,18 +441,6 @@ choco install minikube
 
 Install docker directly into WSL2 without Docker Desktop following [docker documentation](https://docs.docker.com/engine/install/ubuntu), with docker engine installed follow Linux instructions to install [minikube](https://minikube.sigs.k8s.io/docs/start/) and [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
 
-After install minikube and kubectl, you can start minikube with the following command:
-
-```shell
-minikube start
-```
-
-To test run command to show dashboard in terminal and open link in browser:
-
-```shell
-minikube dashboard
-```
-
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
