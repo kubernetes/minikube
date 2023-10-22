@@ -16,7 +16,7 @@
 
 set -x
 
-BUCKET="s3://image-benchmark"
+BUCKET="s3://time-to-k8s/image-benchmark"
 
 install_minikube() {
         make
