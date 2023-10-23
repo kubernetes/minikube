@@ -23,7 +23,10 @@
 
 set -x
 
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${UPSTREAM_JOB}_integration"
+# upload results to GCS
+UPSTREAM_JOB=${UPSTREAM_JOB%"_integration"}
+
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${ROOT_JOB_ID}/${UPSTREAM_JOB}"
 
 ARTIFACTS=artifacts/test_reports
 
