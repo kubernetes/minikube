@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -68,7 +67,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 	}
 
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion)
 	})
 }
 
@@ -113,7 +112,7 @@ func doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL strin
 	if !download.PreloadExists(k8sVersion, containerRuntime, driverName) {
 		existingBinaries = nil
 	}
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper), existingBinaries, binariesURL)
+	return machine.CacheBinariesForBootstrapper(k8sVersion, existingBinaries, binariesURL)
 }
 
 // beginDownloadKicBaseImage downloads the kic image
