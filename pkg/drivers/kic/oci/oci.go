@@ -147,7 +147,7 @@ func checkRunning(p CreateParams) func() error {
 }
 
 // CreateContainerNode creates a new container node
-func CreateContainerNode(p CreateParams) error {
+func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic complexity
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
 	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
 		info, err := DaemonInfo(p.OCIBinary)
