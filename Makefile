@@ -1185,6 +1185,11 @@ update-kong-version:
 	(cd hack/update/kong_version && \
 	 go run update_kong_version.go)
 
+.PHONY: update-kong-ingress-controller-version
+update-kong-ingress-controller-version:
+	(cd hack/update/kong_ingress_controller_version && \
+	 go run update_kong_ingress_controller_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
