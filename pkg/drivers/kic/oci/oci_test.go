@@ -130,6 +130,7 @@ func TestDaemonHost(t *testing.T) {
 		{"docker", "", "unix:///var/run/something", "127.0.0.1", false},
 		{"docker", "", "tcp://127.0.0.1/foo", "127.0.0.1", true},
 		{"docker", "", "ssh://127.0.0.1/bar", "127.0.0.1", true},
+		{"docker", "", "tcp://:", "127.0.0.1", true},
 	}
 	for _, test := range tests {
 		t.Setenv("CONTAINER_HOST", test.containerHost)
