@@ -583,6 +583,10 @@ func (r *Docker) configureDocker(driver string) error {
 // https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 func (r *Docker) installNvidiaContainerToolkit() error {
 	out.Styled(style.Warning, "Using GPUs with the Docker driver is experimental, if you experience any issues please report them at: https://github.com/kubernetes/minikube/issues/new/choose")
+	if _, err := r.Runner.RunCmd(exec.Command("dpkg", "-l", "nvidia-container-toolkit")); err == nil {
+		klog.Info("nvidia-container-toolkit is already installed, skipping install")
+		return nil
+	}
 	out.Styled(style.Toolkit, "Installing the NVIDIA Container Toolkit...")
 	cmds := []string{
 		"curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg",
