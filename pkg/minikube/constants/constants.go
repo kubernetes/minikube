@@ -138,6 +138,8 @@ const (
 	TimeFormat = time.RFC822
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
+	// NoLimit is the value that can be passed into the memory and cpus flags to specify to not set the resource limit on the container (Docker & Podman only)
+	NoLimit = "no-limit"
 
 	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
 	DefaultCertExpiration = time.Hour * 24 * 365 * 3

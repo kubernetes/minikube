@@ -160,8 +160,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs.", constants.MaxResources))
-	startCmd.Flags().String(memory, "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory.", constants.MaxResources))
+	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
+	startCmd.Flags().String(memory, "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -337,6 +337,12 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 }
 
 func getCPUCount(drvName string) int {
+	if viper.GetString(cpus) == constants.NoLimit {
+		if driver.IsKIC(drvName) {
+			return 0
+		}
+		exit.Message(reason.Usage, "The '{{.name}}' driver does not support --cpus=no-limit", out.V{"name": drvName})
+	}
 	if viper.GetString(cpus) != constants.MaxResources {
 		return viper.GetInt(cpus)
 	}
@@ -370,7 +376,9 @@ func getMemorySize(cmd *cobra.Command, drvName string) int {
 	if cmd.Flags().Changed(memory) || viper.IsSet(memory) {
 		memString := viper.GetString(memory)
 		var err error
-		if memString == constants.MaxResources {
+		if memString == constants.NoLimit && driver.IsKIC(drvName) {
+			mem = 0
+		} else if memString == constants.MaxResources {
 			mem = noLimitMemory(sysLimit, containerLimit, drvName)
 		} else {
 			mem, err = pkgutil.CalculateSizeInMB(memString)

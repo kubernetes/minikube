@@ -39,6 +39,8 @@ const (
 	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
 	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
 	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
+	// NoLimit is the value that specifies that no resource limit should be set
+	NoLimit = "0"
 )
 
 // CreateParams are parameters needed to create a container

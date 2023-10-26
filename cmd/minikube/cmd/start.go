@@ -1149,6 +1149,11 @@ func validateRequestedMemorySize(req int, drvName string) {
 		exitIfNotForced(reason.RsrcInsufficientSysMemory, "System only has {{.size}}MiB available, less than the required {{.req}}MiB for Kubernetes", out.V{"size": sysLimit, "req": minUsableMem})
 	}
 
+	// if --memory=no-limit, ignore remaining checks
+	if req == 0 && driver.IsKIC(drvName) {
+		return
+	}
+
 	if req < minUsableMem {
 		exitIfNotForced(reason.RsrcInsufficientReqMemory, "Requested memory allocation {{.requested}}MiB is less than the usable minimum of {{.minimum_memory}}MB", out.V{"requested": req, "minimum_memory": minUsableMem})
 	}
@@ -1208,6 +1213,21 @@ func validateCPUCount(drvName string) {
 		availableCPUs = ci
 	}
 
+	if availableCPUs < 2 {
+		if drvName == oci.Docker && runtime.GOOS == "darwin" {
+			exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+		} else if drvName == oci.Docker && runtime.GOOS == "windows" {
+			exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
+		} else {
+			exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
+		}
+	}
+
+	// if --cpus=no-limit, ignore remaining checks
+	if cpuCount == 0 && driver.IsKIC(drvName) {
+		return
+	}
+
 	if cpuCount < minimumCPUS {
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
@@ -1225,19 +1245,6 @@ func validateCPUCount(drvName string) {
 		}
 
 		exitIfNotForced(reason.RsrcInsufficientCores, "Requested cpu count {{.requested_cpus}} is greater than the available cpus of {{.avail_cpus}}", out.V{"requested_cpus": cpuCount, "avail_cpus": availableCPUs})
-	}
-
-	// looks good
-	if availableCPUs >= 2 {
-		return
-	}
-
-	if drvName == oci.Docker && runtime.GOOS == "darwin" {
-		exitIfNotForced(reason.RsrcInsufficientDarwinDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-	} else if drvName == oci.Docker && runtime.GOOS == "windows" {
-		exitIfNotForced(reason.RsrcInsufficientWindowsDockerCores, "Docker Desktop has less than 2 CPUs configured, but Kubernetes requires at least 2 to be available")
-	} else {
-		exitIfNotForced(reason.RsrcInsufficientCores, "{{.driver_name}} has less than 2 CPUs available, but Kubernetes requires at least 2 to be available", out.V{"driver_name": driver.FullName(viper.GetString("driver"))})
 	}
 }
 
@@ -1505,13 +1512,18 @@ func validateChangedMemoryFlags(drvName string) {
 	var req int
 	var err error
 	memString := viper.GetString(memory)
-	if memString == constants.MaxResources {
+	if memString == constants.NoLimit && driver.IsKIC(drvName) {
+		req = 0
+	} else if memString == constants.MaxResources {
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
 			klog.Warningf("Unable to query memory limits: %+v", err)
 		}
 		req = noLimitMemory(sysLimit, containerLimit, drvName)
 	} else {
+		if memString == constants.NoLimit {
+			exit.Message(reason.Usage, "The '{{.name}}' driver does not support --memory=no-limit", out.V{"name": drvName})
+		}
 		req, err = util.CalculateSizeInMB(memString)
 		if err != nil {
 			exitIfNotForced(reason.Usage, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": memString, "error": err})
