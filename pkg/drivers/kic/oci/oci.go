@@ -701,10 +701,8 @@ func DaemonHost(driver string) string {
 	if driver == Docker {
 		if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
 			if u, err := url.Parse(dh); err == nil {
-				if u.Host != "" {
-					if hostname := u.Hostname(); hostname != "" {
-						return u.Hostname()
-					}
+				if u.Hostname() != "" {
+					return u.Hostname()
 				}
 			}
 		}
