@@ -38,7 +38,6 @@ jobs:
           NEW_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
-          NEW_DOCKER_BUILDX=$(DEP=docker-buildx make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
           NEW_RUNC=$(DEP=runc make get-dependency-version)
