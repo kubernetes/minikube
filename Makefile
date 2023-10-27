@@ -1190,6 +1190,11 @@ update-kong-ingress-controller-version:
 	(cd hack/update/kong_ingress_controller_version && \
 	 go run update_kong_ingress_controller_version.go)
 
+.PHONY: update-nvidia-device-plugin-version
+update-nvidia-device-plugin-version:
+	(cd hack/update/nvidia_device_plugin_version && \
+	 go run update_nvidia_device_plugin_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
