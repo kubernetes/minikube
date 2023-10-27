@@ -210,6 +210,13 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc; fi
 
+# install NVIDIA container toolkit
+RUN curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list && \
+    clean-install nvidia-container-toolkit
+
 # install version.json
 ARG VERSION_JSON
 RUN echo "${VERSION_JSON}" > /version.json
