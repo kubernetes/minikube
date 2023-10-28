@@ -547,4 +547,14 @@ var (
 		  minikube start{{.profile}} --driver qemu --network user`),
 		Style: style.SeeNoEvil,
 	}
+
+	// permission denied for socket_vmnet
+	QemuSocketVmnetPermission = Kind{
+		ID:       "PR_QEMU_SOCKET_VMNET_DENIED",
+		ExitCode: ExHostPermission,
+		Advice: translate.T(`socket_vmnet was installed with an incorrect group, 
+		delete this cluster 'minikube delete' and update the 
+		group 'sudo chown root:$(id -ng) /var/run/socket_vmnet' and try again.`),
+		Style: style.Conflict,
+	}
 )

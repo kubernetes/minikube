@@ -498,7 +498,10 @@ func (d *Driver) Start() error {
 	if stdout, stderr, err := startFunc(startProgram, startCmd...); err != nil {
 		fmt.Printf("OUTPUT: %s\n", stdout)
 		fmt.Printf("ERROR: %s\n", stderr)
-		return err
+		if stderr == "Failed to connect to \"/var/run/socket_vmnet\": Permission denied\n" {
+			exit.Message(reason.QemuSocketVmnetPermission, stderr+"\n\n")
+		}
+
 	}
 
 	switch d.Network {
