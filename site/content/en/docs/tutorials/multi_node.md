@@ -16,7 +16,10 @@ date: 2019-11-24
 
 ## Caveat
 
-Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volumes" >}}) doesn't support multi-node clusters ([#12360](https://github.com/kubernetes/minikube/issues/12360)). To be able to provision or claim volumes in multi-node clusters, you could use [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon.
+- Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volumes" >}}) doesn't support multi-node clusters ([#12360](https://github.com/kubernetes/minikube/issues/12360)). To be able to provision or claim volumes in multi-node clusters, you could use [CSI Hostpath Driver]({{< ref "/docs/tutorials/volume_snapshots_and_csi" >}}) addon.
+
+- If you use rootless Docker containers, you won't have a bridge network for your cluster, which means that you would need a port forward to communicate with the service.
+```minikube service list -p multinode-demo``` only shows service URLs that are directly accessible. Therefore you won't see the service URL in the last step if you use rootless containers.
 
 ## Tutorial
 
