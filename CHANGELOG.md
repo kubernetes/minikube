@@ -3,7 +3,7 @@
 ## Version 1.32.0-beta0 - 2023-10-27
 
 Features:
-* Kicbase: New `--gpus=nvidia` flag to enable NVIDIA container runtime (GPU container support) [#15927](https://github.com/kubernetes/minikube/pull/15927) [#17314](https://github.com/kubernetes/minikube/pull/17314) [#17488](https://github.com/kubernetes/minikube/pull/17488)
+* NVIDIA GPU support with new `--gpus=nvidia` flag for docker driver [#15927](https://github.com/kubernetes/minikube/pull/15927) [#17314](https://github.com/kubernetes/minikube/pull/17314) [#17488](https://github.com/kubernetes/minikube/pull/17488)
 * New `kubeflow` addon [#17114](https://github.com/kubernetes/minikube/pull/17114)
 * New `local-path-provisioner` addon [#15062](https://github.com/kubernetes/minikube/pull/15062)
 * Kicbase: Add `no-limit` option to `--cpus` & `--memory` flags [#17491](https://github.com/kubernetes/minikube/pull/17491)
