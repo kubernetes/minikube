@@ -10,13 +10,13 @@ The goal of this scenario is to scale a deployment with kubectl scale and to see
 
 ## Step 1 - Scaling a deployment
 
-First, let's recreate the Deployment we deleted in the previous module:
+First, let's recreate the Service we deleted in the previous module:
 
 ```shell
 kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 8080
 ```
 
-To list your deployments use the `get deployment` command:
+To list your deployments use the `get deployments` command:
 
 ```shell
 kubectl get deployments
@@ -103,7 +103,7 @@ We hit a different Pod with every request. This demonstrates that the load-balan
 
 ## Step 3 - Scale Down
 
-To scale down the Service to 2 replicas, run again the `scale` command:
+To scale down the Deployment to 2 replicas, run again the `scale` command:
 
 ```shell
 kubectl scale deployments/kubernetes-bootcamp --replicas=2
