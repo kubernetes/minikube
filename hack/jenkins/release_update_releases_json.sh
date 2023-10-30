@@ -43,7 +43,7 @@ if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
   go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta.json --version "$TAGNAME" --legacy
   go run "${DIR}/release_update_releases_json.go" --releases-file deploy/minikube/releases-beta-v2.json --version "$TAGNAME" > binary_checksums.txt
 
-  git add -A
+  git add deploy/minikube/*
   git commit -m "Update releases-beta.json & releases-beta-v2.json to include ${TAGNAME}"
   git remote add minikube-bot git@github.com:minikube-bot/minikube.git
   git push -f minikube-bot jenkins-releases.json-${TAGNAME}
