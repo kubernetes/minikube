@@ -20,7 +20,6 @@
 	"- Ensure your {{.driver_name}} daemon has access to enough CPU/memory resources.": "",
 	"- Prune unused {{.driver_name}} images, volumes, networks and abandoned containers.\n\n\t\t\t\t{{.driver_name}} system prune --volumes": "",
 	"- Restart your {{.driver_name}} service": "",
-	"--container-runtime must be set to \"containerd\" or \"cri-o\" for rootless": "",
 	"--kvm-numa-count range is 1-8": "",
 	"--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored": "",
 	"--network with QEMU must be 'builtin' or 'socket_vmnet'": "",
