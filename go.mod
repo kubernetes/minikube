@@ -74,7 +74,7 @@ require (
 	k8s.io/client-go v0.28.3
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.28.3
-	k8s.io/klog/v2 v2.100.1
+	k8s.io/klog/v2 v2.110.1
 	k8s.io/kubectl v0.28.3
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	libvirt.org/go/libvirt v1.9007.0
@@ -133,7 +133,7 @@ require (
 	github.com/fvbommel/sortorder v1.1.0 // indirect
 	github.com/go-fonts/liberation v0.3.1 // indirect
 	github.com/go-latex/latex v0.0.0-20230307184459-12ec69307ad9 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
