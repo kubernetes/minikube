@@ -409,7 +409,7 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 
 // PushImage pushes an image
 func (r *Containerd) PushImage(name string) error {
-	klog.Infof("Pushing image %s: %s", name)
+	klog.Infof("Pushing image %s", name)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images push")
