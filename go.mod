@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.21
 
 require (
-	cloud.google.com/go/storage v1.33.0
+	cloud.google.com/go/storage v1.34.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.20.0
