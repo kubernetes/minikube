@@ -1456,6 +1456,9 @@ func validateGPUs(value, drvName, rtime string) error {
 	if value == "" {
 		return nil
 	}
+	if err := validateGPUsArch(); err != nil {
+		return err
+	}
 	if value != "nvidia" && value != "all" {
 		return errors.Errorf(`The gpus flag must be passed a value of "nvidia" or "all"`)
 	}
@@ -1463,6 +1466,14 @@ func validateGPUs(value, drvName, rtime string) error {
 		return nil
 	}
 	return errors.Errorf("The gpus flag can only be used with the docker driver and docker container-runtime")
+}
+
+func validateGPUsArch() error {
+	switch runtime.GOARCH {
+	case "amd64", "arm64", "ppc64le":
+		return nil
+	}
+	return errors.Errorf("The GPUs flag is only supported on amd64, arm64 & ppc64le, currently using %s", runtime.GOARCH)
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
