@@ -501,7 +501,7 @@ func (s *SSHRunner) CopyFrom(f assets.CopyableFile) error {
 
 // ReadableFile returns assets.ReadableFile for the sourcePath (via `stat` command)
 func (s *SSHRunner) ReadableFile(sourcePath string) (assets.ReadableFile, error) {
-	klog.V(4).Infof("NewsshReadableFile: %s -> %s", sourcePath)
+	klog.V(4).Infof("NewsshReadableFile: %s", sourcePath)
 
 	if !strings.HasPrefix(sourcePath, "/") {
 		return nil, fmt.Errorf("sourcePath must be an absolute Path. Relative Path is not allowed")
