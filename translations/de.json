@@ -447,7 +447,7 @@
 	"NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)": "NIC Type der fürs NAT Network verwendet wird. Einer aus Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (Nur virtualbox Treiber)",
 	"NOTE: Please do not close this terminal as this process must stay alive for the tunnel to be accessible ...": "ACHTUNG: Schließen Sie dieses Terminal nicht. Der Prozess muss am Laufen bleiben, damit die Tunnels zugreifbar sind ...",
 	"NOTE: This process must stay alive for the mount to be accessible ...": "ACHTUNG: Dieser Prozess muss am Laufen bleiben, damit die Mounts zugreifbar bleiben ...",
-	"Networking and Connectivity Commands:": "Netwerk- und Verbindungs-Befehle:",
+	"Networking and Connectivity Commands:": "Netzwerk- und Verbindungs-Befehle:",
 	"No IP address provided. Try specifying --ssh-ip-address, or see https://minikube.sigs.k8s.io/docs/drivers/ssh/": "Es wurde keine IP-Addresse angegeben. Verwernden Sie --ssh-ip-address oder lesen Sie https://minikube.sigs.k8s.io/docs/drivers/ssh/",
 	"No changes required for the \"{{.context}}\" context": "Keine Anpassungen erforderlich für den Kontext \"{{.context}}\"",
 	"No minikube profile was found. ": "Kein Minikube Profil gefunden. ",
