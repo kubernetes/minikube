@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20230816"
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20231004"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.21.1 as auto-pause
+FROM golang:1.21.3 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -41,15 +41,13 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.12.2"
-ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG BUILDKIT_VERSION="v0.12.3"
 ARG CRIO_VERSION="1.24"
 ARG CRI_DOCKERD_VERSION="v0.3.3"
 ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
 ARG CNI_PLUGINS_VERSION="v1.3.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.5.0"
+ARG NERDCTL_VERSION="1.6.2"
 ARG NERDCTLD_VERSION="0.2.0"
 
 # copy in static files (configs, scripts)
@@ -211,6 +209,15 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
     apt-key add - < Release.key && \
     clean-install cri-o cri-o-runc; fi
+
+# install NVIDIA container toolkit
+RUN export ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ] || [ "$ARCH" = 'ppc64el' ]; then \
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list && \
+    clean-install nvidia-container-toolkit; fi
 
 # install version.json
 ARG VERSION_JSON

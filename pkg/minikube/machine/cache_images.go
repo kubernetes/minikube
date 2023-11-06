@@ -59,14 +59,14 @@ var loadImageLock sync.Mutex
 var saveRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
-func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
-	images, err := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
+func CacheImagesForBootstrapper(imageRepository, version string) error {
+	images, err := bootstrapper.GetCachedImageList(imageRepository, version)
 	if err != nil {
 		return errors.Wrap(err, "cached images list")
 	}
 
 	if err := image.SaveToDir(images, detect.ImageCacheDir(), false); err != nil {
-		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
+		return errors.Wrap(err, "Caching images")
 	}
 
 	return nil

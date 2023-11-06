@@ -108,6 +108,7 @@ type ClusterConfig struct {
 	SSHAuthSock             string
 	SSHAgentPID             int
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	GPUs                    string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: registry-aliases-hosts-update
+  namespace: kube-system
+  labels:
+    kubernetes.io/minikube-addons: registry-aliases
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    matchLabels:
+      app: registry-aliases-hosts-update
+  template:
+    metadata:
+      labels:
+        app: registry-aliases-hosts-update
+    spec:
+      initContainers:
+        - name: update
+          image: {{.CustomRegistries.Alpine  | default .ImageRepository | default .Registries.Alpine }}{{.Images.Alpine}}
+          volumeMounts:
+            - name: etchosts
+              mountPath: /host-etc/hosts
+              readOnly: false
+          env:
+            - name: REGISTRY_ALIASES
+              valueFrom:
+                configMapKeyRef:
+                  name: registry-aliases
+                  key: registryAliases
+          command:
+            - sh
+            - -ce
+            - |
+              NL=$'\n'
+              TAB=$'\t'
+              HOSTS="$(cat /host-etc/hosts)"
+              [ -z "$REGISTRY_SERVICE_HOST" ] && echo "Failed to get hosts entry for default registry" && exit 1;
+              for H in $REGISTRY_ALIASES; do                
+                echo "$HOSTS" | grep "$H"  || HOSTS="$HOSTS$NL$REGISTRY_SERVICE_HOST$TAB$H";
+              done;
+              echo "$HOSTS" | diff -U 3 /host-etc/hosts - || echo "$HOSTS" > /host-etc/hosts
+              echo "Done."
+      containers:
+        - name: pause-for-update
+          image: {{.CustomRegistries.Pause  | default .ImageRepository | default .Registries.Pause }}{{.Images.Pause}}
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: etchosts
+          hostPath:
+            path: /etc/hosts

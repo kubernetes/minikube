@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+    kubernetes.io/name: "Metrics-server"
+    kubernetes.io/minikube-addons: metrics-server
+    kubernetes.io/minikube-addons-endpoint: metrics-server
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    k8s-app: metrics-server
+  ports:
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: https

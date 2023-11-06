@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 31
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 32
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.31.0-1694468241-17194
+ISO_VERSION ?= v1.32.0-1698920115-17545
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -34,7 +34,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.21.1
+GO_VERSION ?= 1.21.3
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.29.0
 
@@ -78,7 +78,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.54.2
+GOLINT_VERSION ?= v1.55.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -1169,6 +1169,31 @@ update-crictl-version:
 update-kindnetd-version:
 	(cd hack/update/kindnetd_version && \
 	 go run update_kindnetd_version.go)
+
+.PHONY: update-istio-operator-version
+update-istio-operator-version:
+	(cd hack/update/istio_operator_version && \
+	 go run update_istio_operator_version.go)
+
+.PHONY: update-registry-version
+update-registry-version:
+	(cd hack/update/registry_version && \
+	 go run update_registry_version.go)
+
+.PHONY: update-kong-version
+update-kong-version:
+	(cd hack/update/kong_version && \
+	 go run update_kong_version.go)
+
+.PHONY: update-kong-ingress-controller-version
+update-kong-ingress-controller-version:
+	(cd hack/update/kong_ingress_controller_version && \
+	 go run update_kong_ingress_controller_version.go)
+
+.PHONY: update-nvidia-device-plugin-version
+update-nvidia-device-plugin-version:
+	(cd hack/update/nvidia_device_plugin_version && \
+	 go run update_nvidia_device_plugin_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

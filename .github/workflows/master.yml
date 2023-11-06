@@ -14,17 +14,17 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.1'
+  GO_VERSION: '1.21.3'
 permissions:
   contents: read
 
 jobs:
-  # Runs before all other jobs
-  # builds the minikube binaries
-  build_minikube:
+  # Runs before before the functional tests
+  # builds the binaries required for testing
+  build_minikube_test_binaries:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
@@ -33,8 +33,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
-          make cross
-          make e2e-cross
+          make e2e-linux-amd64 e2e-darwin-amd64
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
@@ -48,10 +47,24 @@ jobs:
         with:
           name: minikube_binaries
           path: out
+  build_minikube:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
+        with:
+          go-version: ${{env.GO_VERSION}}
+          cache-dependency-path: ./go.sum
+      - name: Download Dependencies
+        run: go mod download
+      - name: Build Binaries
+        run: |
+          make cross
+          make e2e-cross
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
@@ -70,7 +83,7 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
@@ -91,7 +104,7 @@ jobs:
   functional_docker_ubuntu:
     permissions:
       contents: none
-    needs: [build_minikube]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_ubuntu"
@@ -189,7 +202,7 @@ jobs:
   functional_docker_containerd_ubuntu:
     permissions:
       contents: none
-    needs: [build_minikube]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_docker_containerd_ubuntu"
@@ -288,7 +301,7 @@ jobs:
   functional_podman_ubuntu:
     permissions:
       contents: none
-    needs: [ build_minikube ]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: functional_podman_ubuntu
@@ -390,7 +403,7 @@ jobs:
   functional_virtualbox_macos:
     permissions:
       contents: none
-    needs: [build_minikube]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_virtualbox_macos"
@@ -487,7 +500,7 @@ jobs:
   functional_baremetal_ubuntu20_04:
     permissions:
       contents: none
-    needs: [build_minikube]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_baremetal_ubuntu20_04"
@@ -520,7 +533,7 @@ jobs:
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
           sudo chmod +x /usr/bin/cri-dockerd
-          CRICTL_VERSION="v1.17.0"
+          CRICTL_VERSION="v1.28.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
       - name: Install gopogh

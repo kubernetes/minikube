@@ -66,7 +66,7 @@ minikube completion SHELL [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
@@ -102,7 +102,7 @@ minikube completion bash [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
@@ -138,7 +138,7 @@ minikube completion fish [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
@@ -175,7 +175,7 @@ minikube completion help [command] [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
@@ -211,7 +211,7 @@ minikube completion powershell [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
@@ -247,7 +247,7 @@ minikube completion zsh [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging

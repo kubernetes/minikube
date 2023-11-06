@@ -395,6 +395,9 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
 	}
+	if cc.GPUs != "" {
+		co.GPUs = true
+	}
 	cr, err := cruntime.New(co)
 	if err != nil {
 		exit.Error(reason.InternalRuntime, "Failed runtime", err)
@@ -739,9 +742,15 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 				out.Styled(style.Internet, "Found network options:")
 				optSeen = true
 			}
+			k = strings.ToUpper(k) // let's get the key right away to mask password from output
+			// If http(s)_proxy contains password, let's not splatter on the screen
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				pattern := `//(\w+):\w+@`
+				regexpPattern := regexp.MustCompile(pattern)
+				v = regexpPattern.ReplaceAllString(v, "//$1:*****@")
+			}
 			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
-			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
 				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).", out.V{"ip_address": ip})
 				out.Styled(style.Documentation, "Please see {{.documentation_url}} for more details", out.V{"documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})

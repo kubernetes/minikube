@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    kubernetes.io/minikube-addons: registry
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: registry
+  namespace: kube-system
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    name: http
+    targetPort: 5000
+  - port: 443
+    name: https
+    targetPort: 443
+  selector:
+    actual-registry: "true"
+    kubernetes.io/minikube-addons: registry

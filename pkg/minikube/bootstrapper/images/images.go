@@ -24,8 +24,6 @@ import (
 	"runtime"
 	"strings"
 
-	"k8s.io/klog/v2"
-
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 
@@ -66,21 +64,19 @@ func componentImage(name string, v semver.Version, mirror string) string {
 	return fmt.Sprintf("%s:v%s", path.Join(kubernetesRepo(mirror), name), v)
 }
 
-func tagFromKubeadm(v, name, lastKnownGood string) string {
+// tagFromKubeadm gets the image tag by running kubeadm image list command on the host machine (Linux only)
+func tagFromKubeadm(v, name string) (string, error) {
 	if runtime.GOOS != "linux" {
-		klog.Warningf("can only get tag from kubeadm on Linux")
-		return lastKnownGood
+		return "", fmt.Errorf("can only get tag from kubeadm on Linux")
 	}
 	kubeadm, err := download.Binary("kubeadm", v, "linux", runtime.GOARCH, "")
 	if err != nil {
-		klog.Warningf("failed to download kubeadm binary: %v", err)
-		return lastKnownGood
+		return "", fmt.Errorf("failed to download kubeadm binary: %v", err)
 	}
 	// TODO: Once kubeadm graduates the "-experimental-output" flag to non-experimental should use JSON output here
 	b, err := exec.Command(kubeadm, "config", "images", "list").Output()
 	if err != nil {
-		klog.Warningf("failed getting kubeadm image list: %v", err)
-		return lastKnownGood
+		return "", fmt.Errorf("failed getting kubeadm image list: %v", err)
 	}
 	lines := strings.Split(string(b), "\n")
 	for _, line := range lines {
@@ -89,13 +85,29 @@ func tagFromKubeadm(v, name, lastKnownGood string) string {
 		}
 		parts := strings.Split(line, ":")
 		if len(parts) != 2 {
-			klog.Warningf("unexpected image format: %s", line)
-			return lastKnownGood
+			return "", fmt.Errorf("unexpected image format: %s", line)
 		}
-		return parts[1]
+		return parts[1], nil
 	}
-	klog.Warningf("failed to find %q image in kubeadm image list", name)
-	return lastKnownGood
+	return "", fmt.Errorf("failed to find %q image in kubeadm image list", name)
+}
+
+// tagFromLastMinor finds the last matching minor version in the kubeadm images map and uses its image version
+func tagFromLastMinor(v semver.Version, name, lastKnownGood string) string {
+	majorMinor := fmt.Sprintf("v%d.%d", v.Major, v.Minor)
+	var latestMinorVer string
+	for _, existingVer := range constants.ValidKubernetesVersions {
+		if !strings.HasPrefix(existingVer, majorMinor) {
+			continue
+		}
+		latestMinorVer = existingVer
+		break
+	}
+	tag, ok := constants.KubeadmImages[latestMinorVer][name]
+	if !ok {
+		return lastKnownGood
+	}
+	return tag
 }
 
 // coreDNS returns the images used for CoreDNS
@@ -133,7 +145,10 @@ func imageVersion(v semver.Version, imageName, defaultVersion string) string {
 	if ver, ok := constants.KubeadmImages[versionString][imageName]; ok {
 		return ver
 	}
-	return tagFromKubeadm(versionString, imageName, defaultVersion)
+	if ver, err := tagFromKubeadm(versionString, imageName); err == nil {
+		return ver
+	}
+	return tagFromLastMinor(v, imageName, defaultVersion)
 }
 
 // auxiliary returns images that are helpful for running minikube
@@ -168,7 +183,7 @@ func KindNet(repo string) string {
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-const calicoVersion = "v3.26.1"
+const calicoVersion = "v3.26.3"
 const calicoRepo = "docker.io/calico"
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet

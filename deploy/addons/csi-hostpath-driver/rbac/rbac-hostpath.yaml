@@ -1,0 +1,137 @@
+# Copyright 2023 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# All of the individual sidecar RBAC roles get bound
+# to this account.
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: serviceaccount
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: provisioner-cluster-role
+  name: csi-hostpathplugin-provisioner-cluster-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-provisioner-runner
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: snapshotter-cluster-role
+  name: csi-hostpathplugin-snapshotter-cluster-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-snapshotter-runner
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: health-monitor-cluster-role
+  name: csi-hostpathplugin-health-monitor-cluster-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-health-monitor-controller-runner
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: provisioner-role
+  name: csi-hostpathplugin-provisioner-role
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-provisioner-cfg
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: snapshotter-role
+  name: csi-hostpathplugin-snapshotter-role
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-snapshotter-leaderelection
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/instance: hostpath.csi.k8s.io
+    app.kubernetes.io/part-of: csi-driver-host-path
+    app.kubernetes.io/name: csi-hostpathplugin
+    app.kubernetes.io/component: snapshotter-role
+  name: csi-hostpathplugin-health-monitor-role
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: external-health-monitor-controller-cfg
+subjects:
+- kind: ServiceAccount
+  name: csi-hostpathplugin-sa
+  namespace: kube-system

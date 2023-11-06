@@ -126,7 +126,7 @@ This confirms that our Service was removed. To confirm that route is not exposed
 curl $(minikube ip):$NODE_PORT
 ```
 
-This proces that the app is not reachable anymore from outside of the cluster. You can confirm that the app is still running with a curl inside the pod:
+This proves that the app is not reachable anymore from outside of the cluster. You can confirm that the app is still running with a curl inside the pod:
 
 ```shell
 kubectl exec -ti $POD_NAME -- curl localhost:8080

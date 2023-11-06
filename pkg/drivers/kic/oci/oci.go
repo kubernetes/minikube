@@ -147,7 +147,7 @@ func checkRunning(p CreateParams) func() error {
 }
 
 // CreateContainerNode creates a new container node
-func CreateContainerNode(p CreateParams) error {
+func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic complexity
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
 	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
 		info, err := DaemonInfo(p.OCIBinary)
@@ -190,6 +190,9 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--network", p.Network)
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
+	if p.GPUs != "" {
+		runArgs = append(runArgs, "--gpus", "all")
+	}
 
 	memcgSwap := hasMemorySwapCgroup()
 	memcg := HasMemoryCgroup()
@@ -200,11 +203,11 @@ func CreateContainerNode(p CreateParams) error {
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 
-		if memcgSwap {
+		if memcgSwap && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 		}
 
-		if memcg {
+		if memcg && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
 
@@ -215,10 +218,10 @@ func CreateContainerNode(p CreateParams) error {
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
-		if memcg {
+		if memcg && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
-		if memcgSwap {
+		if memcgSwap && p.Memory != NoLimit {
 			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 		}
@@ -241,7 +244,7 @@ func CreateContainerNode(p CreateParams) error {
 		}
 	}
 
-	if cpuCfsPeriod && cpuCfsQuota {
+	if cpuCfsPeriod && cpuCfsQuota && p.CPUs != NoLimit {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
 	}
 

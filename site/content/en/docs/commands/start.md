@@ -27,13 +27,13 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s).  To disable, set to 0s (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.40-1694457807-17194@sha256:a43492789075efb9a6b2ea51ab0c60354400324130ed0bb27d969c2fba2f2402")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.41-1698881667-17516@sha256:966390c8d9b756c6e7044095f0ca5e5551da4c170cb501439eea24d1ad19bb89")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
       --cni string                        CNI plug-in to use. Valid options: auto, bridge, calico, cilium, flannel, kindnet, or path to a CNI manifest (default: auto)
       --container-runtime string          The container runtime to be used. Valid options: docker, cri-o, containerd (default: auto)
-      --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. (default "2")
+      --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. Use "no-limit" to not specify a limit (Docker/Podman only) (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
@@ -57,6 +57,7 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
+  -g, --gpus string                       Allow pods to use your NVIDIA GPUs. Options include: [all,nvidia] (Docker driver with Docker container-runtime only)
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
@@ -72,14 +73,14 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. The list depends on the machine architecture.
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.28.1, 'latest' for v1.28.1). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.28.3, 'latest' for v1.28.3). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
-      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory.
+      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory. Use "no-limit" to not specify a limit (Docker/Podman only)
       --mount                             This will start the mount daemon and automatically mount files into minikube.
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
       --mount-gid string                  Default group id used for the mount (default "docker")
@@ -140,7 +141,7 @@ minikube start [flags]
       --skip-audit                       Skip recording the current command in the audit logs.
       --skip_headers                     If true, avoid header prefixes in the log messages
       --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=false) (default 2)
+      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
       --user string                      Specifies the user executing the operation. Useful for auditing operations executed by 3rd party tools. Defaults to the operating system username.
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging

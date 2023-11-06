@@ -1,0 +1,9 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storage-gluster
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile

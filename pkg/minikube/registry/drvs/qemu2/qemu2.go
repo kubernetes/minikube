@@ -126,7 +126,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	switch runtime.GOARCH {
 	case "amd64":
 		qemuMachine = "" // default
-		qemuCPU = ""     // default
+		// set cpu type to max to enable higher microarchitecture levels
+		// see https://lists.gnu.org/archive/html/qemu-devel/2022-08/msg04066.html for details
+		qemuCPU = "max"
 	case "arm64":
 		qemuMachine = "virt"
 		qemuCPU = "cortex-a72"

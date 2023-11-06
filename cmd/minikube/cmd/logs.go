@@ -70,7 +70,7 @@ var logsCmd = &cobra.Command{
 			defer func() {
 				err := logOutput.Close()
 				if err != nil {
-					klog.Warning("Failed to close file: %v", err)
+					klog.Warningf("Failed to close file: %v", err)
 				}
 			}()
 			if err != nil {
