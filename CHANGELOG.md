@@ -1,5 +1,49 @@
 # Release Notes
 
+## Version 1.32.0 - 2023-11-07
+
+Features:
+* rootless: support `--container-runtime=docker` [#17520](https://github.com/kubernetes/minikube/pull/17520)
+
+Minor Improvements:
+* Install NVIDIA container toolkit during image build (offline support) [#17516](https://github.com/kubernetes/minikube/pull/17516)
+
+Bugs:
+* Fix no-limit option for config validation [#17530](https://github.com/kubernetes/minikube/pull/17530)
+
+Version Upgrades:
+* Addon ingress: Update ingress-nginx/controller image from v1.9.3 to v1.9.4 [#17525](https://github.com/kubernetes/minikube/pull/17525)
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.21.0 to v0.22.0 [#17550](https://github.com/kubernetes/minikube/pull/17550)
+* Addon kong: Update kong/kubernetes-ingress-controller image from 2.9.3 to 2.12.0 [#17526](https://github.com/kubernetes/minikube/pull/17526)
+* Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.14.1 to v0.14.2 [#17523](https://github.com/kubernetes/minikube/pull/17523)
+* Kicbase/ISO: Update buildkit from v0.12.2 to v0.12.3 [#17486](https://github.com/kubernetes/minikube/pull/17486)
+* Kicbase/ISO: Update containerd from v1.7.7 to v1.7.8 [#17527](https://github.com/kubernetes/minikube/pull/17527)
+* Kicbase/ISO: Update docker from 24.0.6 to 24.0.7 [#17545](https://github.com/kubernetes/minikube/pull/17545)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Akihiro Suda
+- Christian Bergschneider
+- Jeff MAURY
+- Medya Ghazizadeh
+- Raiden Shogun
+- Steven Powell
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (1 comments)
+- r0b2g1t (1 comments)
+
+Thank you to our triage members for this release!
+
+- willsu (2 comments)
+- afbjorklund (1 comments)
+- ankur0904 (1 comments)
+- ceelian (1 comments)
+- idoly (1 comments)
+
 ## Version 1.32.0-beta0 - 2023-10-27
 
 Features:
