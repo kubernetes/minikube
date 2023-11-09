@@ -706,12 +706,12 @@ func upgradeExistingConfig(cmd *cobra.Command, cc *config.ClusterConfig) {
 		klog.Infof("config upgrade: KicBaseImage=%s", cc.KicBaseImage)
 	}
 
-	if cc.CPUs == 0 {
+	if cc.CPUs == 0 && !driver.IsKIC(cc.Driver) {
 		klog.Info("Existing config file was missing cpu. (could be an old minikube config), will use the default value")
 		cc.CPUs = viper.GetInt(cpus)
 	}
 
-	if cc.Memory == 0 {
+	if cc.Memory == 0 && !driver.IsKIC(cc.Driver) {
 		klog.Info("Existing config file was missing memory. (could be an old minikube config), will use the default value")
 		memInMB := getMemorySize(cmd, cc.Driver)
 		cc.Memory = memInMB
