@@ -1230,7 +1230,7 @@
 	"{{.name}} was successfully configured": "{{.name}} 成功配置",
 	"{{.n}} is nearly out of disk space, which may cause deployments to fail! ({{.p}}% of capacity). You can pass '--force' to skip this check.": "{{.n}} 的磁盘空间即将耗尽，可能导致部署失败！（已使用容量的{{.p}}%）。您可以传递 '--force' 参数来跳过此检查。",
 	"{{.n}} is out of disk space! (/var is at {{.p}}% of capacity). You can pass '--force' to skip this check.": "{{.n}} 的磁盘空间已满！（/var 目录已使用 {{.p}}% 的容量）。您可以传递 '--force' 参数跳过此检查。",
-	"{{.ociBin}} rmi {{.images}}": "{.ociBin}} rmi {{.images}}",
+	"{{.ociBin}} rmi {{.images}}": "{{.ociBin}} rmi {{.images}}",
 	"{{.ocibin}} is taking an unusually long time to respond, consider restarting {{.ocibin}}": "{{.ocibin}} 的响应时间过长，请考虑重新启动 {{.ocibin}}",
 	"{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster": "{{.path}} 的版本是 {{.client_version}}，且与 Kubernetes {{.cluster_version}} 不兼容。您需要更新 {{.path}} 或者使用 'minikube kubectl' 连接到这个集群",
 	"{{.path}} is version {{.client_version}}, which may have incompatibilities with Kubernetes {{.cluster_version}}.": "{{.path}} 的版本为 {{.client_version}}，可能与 Kubernetes {{.cluster_version}} 不兼容。",
