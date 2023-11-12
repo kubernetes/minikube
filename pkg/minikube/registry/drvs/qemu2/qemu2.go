@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -37,7 +38,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+const (
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+
+	defaultSSHUser = "docker"
+)
 
 func init() {
 	priority := registry.Default
@@ -163,7 +168,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
-			SSHUser:     "docker",
+			SSHUser:     getuser(),
 		},
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
@@ -186,6 +191,15 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		SocketVMNetClientPath: cc.SocketVMnetClientPath,
 		ExtraDisks:            cc.ExtraDisks,
 	}, nil
+}
+
+func getuser() string {
+	us, err := user.Current()
+	if err != nil {
+		return defaultSSHUser
+	}
+
+	return us.Username
 }
 
 func status() registry.State {
