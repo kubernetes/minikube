@@ -172,7 +172,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     getUser(),
-			SSHPort:     getColimaPort(),
+			SSHPort:     getSSHPort(renderColimaSSHConfig()),
 		},
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
@@ -197,25 +197,37 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func getColimaPort() int {
+func renderColimaSSHConfig() *os.File {
 	hdir, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Printf("failed to get homedir: %v", err.Error())
-		return 0
+		fmt.Printf("error encountered: %v\n", err.Error())
 	}
-
 	path := filepath.Join(hdir, ".colima", "ssh_config")
-
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Printf("failed to open a file: %v", err.Error())
-		return 0
+		panic(err)
 	}
-	defer file.Close()
 
+	return file
+}
+
+func getSSHPort(file *os.File) int {
+	defer file.Close()
+	sshp := make(chan int, 1)
+	done := make(chan bool)
+
+	go scanForPort("Port", done, sshp, file)
+	<-done
+	go getColimaPort(sshp, done)
+	done <- true
+
+	return <-sshp
+}
+
+func scanForPort(phrase string, done chan bool, sshp chan int, file *os.File) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "Port") {
+		if strings.Contains(scanner.Text(), phrase) {
 			modified := func(r rune) rune {
 				if r == ' ' {
 					return 0
@@ -230,14 +242,22 @@ func getColimaPort() int {
 			if err != nil {
 				fmt.Printf("%s error is: ", err.Error())
 			}
-			return sshPort
+			sshp <- sshPort
 		}
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("failed to scan a file: %v", err.Error())
 	}
 
-	return 0
+	close(sshp)
+	done <- true
+}
+
+func getColimaPort(sshp <-chan int, done <-chan bool) {
+	for i := range sshp {
+		fmt.Println(i)
+	}
+	<-done
 }
 
 func getUser() string {

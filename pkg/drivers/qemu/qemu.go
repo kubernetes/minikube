@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -147,11 +148,20 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,
 		BaseDriver: &drivers.BaseDriver{
-			SSHUser:     defaultSSHUser,
+			SSHUser:     getSSHUser(),
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
 	}
+}
+
+func getSSHUser() string {
+	us, err := user.Current()
+	if err != nil {
+		return defaultSSHUser
+	}
+
+	return us.Username
 }
 
 func (d *Driver) GetIP() (string, error) {
@@ -541,7 +551,7 @@ func (d *Driver) Start() error {
 		return fmt.Errorf("ip not found: %v", err)
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+	log.Infof("Waiting for VM to start (ssh -p %d %s@%s)...", d.SSHPort, d.SSHUser, d.IPAddress)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
 }
