@@ -17,13 +17,16 @@ limitations under the License.
 package qemu2
 
 import (
+	"bufio"
 	"crypto/rand"
 	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
@@ -168,7 +171,8 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
-			SSHUser:     getuser(),
+			SSHUser:     getUser(),
+			SSHPort:     getColimaPort(),
 		},
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
@@ -193,7 +197,50 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func getuser() string {
+func getColimaPort() int {
+	hdir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("failed to get homedir: %v", err.Error())
+		return 0
+	}
+
+	path := filepath.Join(hdir, ".colima", "ssh_config")
+
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Printf("failed to open a file: %v", err.Error())
+		return 0
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), "Port") {
+			modified := func(r rune) rune {
+				if r == ' ' {
+					return 0
+				}
+				return r
+			}
+			out := strings.Map(modified, scanner.Text())
+			re := regexp.MustCompile("[0-9]+")
+			numb := re.FindAllString(out, -1)[0]
+
+			sshPort, err := strconv.Atoi(numb)
+			if err != nil {
+				fmt.Printf("%s error is: ", err.Error())
+			}
+			return sshPort
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("failed to scan a file: %v", err.Error())
+	}
+
+	return 0
+}
+
+func getUser() string {
 	us, err := user.Current()
 	if err != nil {
 		return defaultSSHUser
