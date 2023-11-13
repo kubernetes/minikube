@@ -97,7 +97,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.23.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.24.0
 
       - name: Docker Info
         shell: bash
