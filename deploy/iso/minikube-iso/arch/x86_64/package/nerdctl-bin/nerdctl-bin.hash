@@ -2,3 +2,4 @@ sha256 d8dcd4e270ae76ab294be3a451a2d8299010e69dce6ae559bc3193535610e4cc  nerdctl
 sha256 6dc945e3dfdc38e77ceafd2ec491af753366a3cf83fefccb1debaed3459829f1  nerdctl-1.5.0-linux-amd64.tar.gz
 sha256 fc3e7eef775eff85eb6c16b2761a574e83de444831312bc92e755a1f5577872d  nerdctl-1.6.0-linux-amd64.tar.gz
 sha256 67991fc144b03596f15be6c20ca112d10bd92ad467414e95b0f1d60d332ae34e  nerdctl-1.6.2-linux-amd64.tar.gz
+sha256 844c47b175a3d6bc8eaad0c51f23624a5ef10c09e55607803ec2bc846fb04df9  nerdctl-1.7.0-linux-amd64.tar.gz
