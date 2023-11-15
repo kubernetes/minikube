@@ -82,7 +82,7 @@ require (
 )
 
 require (
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.13
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.14
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/cli v24.0.7+incompatible
@@ -215,7 +215,7 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/net v0.18.0 // indirect
-	golang.org/x/time v0.3.0 // indirect
+	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
