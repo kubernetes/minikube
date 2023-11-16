@@ -69,13 +69,13 @@ require (
 	gonum.org/v1/plot v0.14.0
 	google.golang.org/api v0.150.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.28.3
-	k8s.io/apimachinery v0.28.3
-	k8s.io/client-go v0.28.3
+	k8s.io/api v0.28.4
+	k8s.io/apimachinery v0.28.4
+	k8s.io/client-go v0.28.4
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.28.3
+	k8s.io/component-base v0.28.4
 	k8s.io/klog/v2 v2.110.1
-	k8s.io/kubectl v0.28.3
+	k8s.io/kubectl v0.28.4
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	libvirt.org/go/libvirt v1.9008.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
