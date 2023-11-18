@@ -352,7 +352,23 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 	t.Helper()
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+	cmd := "sudo crictl images -o json"
+
+	// handle old kubernetes versions (before v1.24) with docker as container runtime
+	// avoid 'validate service connection: validate CRI v1 image API for endpoint "unix:///var/run/dockershim.sock": rpc error: code = Unimplemented desc = unknown service runtime.v1.ImageService' error
+	// as newer crictl needs cri-dockerd.sock instead of dockershim.sock
+	// and if unspecified, crictl will try dockershim.sock first and cri-dockerd.sock last
+	// ref: https://github.com/shannonxtreme/cri-tools/blob/17484cda811c93b69e61448835db9559c7f3ab9c/cmd/crictl/main_unix.go#L30
+	if v, _ := util.ParseKubernetesVersion(version); v.LT(semver.Version{Major: 1, Minor: 24}) {
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--ssh", "--", "get nodes -o wide"))
+		if err == nil && strings.Contains(rr.Stdout.String(), "docker://") {
+			cmd = "sudo crictl --runtime-endpoint unix:///var/run/cri-dockerd.sock images -o json"
+			// try to ensure active "cri-docker.socket", fallthrough on error
+			_, _ = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "systemctl", "restart", "cri-docker.socket"))
+		}
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, cmd))
 	if err != nil {
 		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
 	}
