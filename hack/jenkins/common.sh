@@ -282,6 +282,10 @@ function cleanup_procs() {
   fi
 
   if [[ "${DRIVER}" == "hyperkit" ]]; then
+    # even though Internet Sharing is disabled in the UI settings, it's still preventing HyperKit from starting
+    # the error is "Could not create vmnet interface, permission denied or no entitlement?"
+    # I've discovered that if you kill the "InternetSharing" process that this resolves the error and HyperKit starts normally
+    sudo pkill InternetSharing
     if [[ -e out/docker-machine-driver-hyperkit ]]; then
       sudo chown root:wheel out/docker-machine-driver-hyperkit || true
       sudo chmod u+s out/docker-machine-driver-hyperkit || true
