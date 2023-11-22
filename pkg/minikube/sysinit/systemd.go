@@ -78,7 +78,7 @@ func (s *Systemd) Enable(svc string) error {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // EnableNow enables a service and then activates it too (not waiting for next start)
@@ -87,7 +87,7 @@ func (s *Systemd) EnableNow(svc string) error {
 		return errors.New("please don't enable kubelet as it creates a race condition; if it starts on systemd boot it will pick up /etc/hosts before we have time to configure /etc/hosts")
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", "--now", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // Unmask allows a service to be started
@@ -102,7 +102,7 @@ func (s *Systemd) Start(svc string) error {
 		return err
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "start", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // Restart restarts a service
@@ -111,7 +111,7 @@ func (s *Systemd) Restart(svc string) error {
 		return err
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "restart", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // Reload reloads a service
@@ -120,13 +120,13 @@ func (s *Systemd) Reload(svc string) error {
 		return err
 	}
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "reload", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // Stop stops a service
 func (s *Systemd) Stop(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", svc))
-	return err
+	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 
 // ForceStop terminates a service with prejudice
@@ -150,4 +150,17 @@ func (s *Systemd) GenerateInitShim(_, _, _ string) ([]assets.CopyableFile, error
 func usesSystemd(r Runner) bool {
 	_, err := r.RunCmd(exec.Command("systemctl", "--version"))
 	return err == nil
+}
+
+// appendJournalctlLogsOnFailure appends journalctl logs for the service to the error if err is not nil
+func (s *Systemd) appendJournalctlLogsOnFailure(svc string, err error) error {
+	if err == nil {
+		return nil
+	}
+	rr, logErr := s.r.RunCmd(exec.Command("sudo", "journalctl", "--no-pager", "-u", svc))
+	if logErr != nil {
+		return fmt.Errorf("%v\nfailed to get journalctl logs: %v", err, logErr)
+	}
+
+	return fmt.Errorf("%v\n%s:\n%s", err, rr.Command(), rr.Output())
 }
