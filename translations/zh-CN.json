@@ -1133,7 +1133,7 @@
 	"loading profile": "加载配置文件",
 	"max time to wait per Kubernetes core services to be healthy.": "每个 Kubernetes 核心服务保持健康所需的最长时间。",
 	"max time to wait per Kubernetes or host to be healthy.": "Kubernetes 或主机正常运行前的最大等待时间。",
-	"minikube addons list --output OUTPUT. json, list": "minikube addons list --output OUTPUT。输出结果为json列表",
+	"minikube addons list --output OUTPUT. json, list": "minikube addons list --output OUTPUT. json, list",
 	"minikube does not support the BTRFS storage driver yet, there is a workaround, add the following flag to your start command `--feature-gates=\"LocalStorageCapacityIsolation=false\"`": "minikube 尚不支持 BTRFS 存储驱动程序，有一个解决方法，将以下标志添加到你的启动命令 `--feature-gates=\"LocalStorageCapacityIsolation=false\"`",
 	"minikube is exiting due to an error. If the above message is not useful, open an issue:": "由于出错 minikube 正在退出。如果以上信息没有帮助，请提交问题反馈：",
 	"minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'": "Minikube 缺少与客户环境相关的文件。这可以通过运行 'minikube delete' 来修复。",
