@@ -248,12 +248,12 @@ func (r *Containerd) Disable() error {
 
 // ImageExists checks if image exists based on image name and optionally image sha
 func (r *Containerd) ImageExists(name string, sha string) bool {
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s", name))
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return false
-	}
-	if sha != "" && !strings.Contains(rr.Output(), sha) {
+	klog.Infof("Checking existence of image with name %q and sha %q", name, sha)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "check")
+	// note: image name and image id's sha can be on different lines in ctr output
+	if rr, err := r.Runner.RunCmd(c); err != nil ||
+		!strings.Contains(rr.Output(), name) ||
+		(sha != "" && !strings.Contains(rr.Output(), sha)) {
 		return false
 	}
 	return true
