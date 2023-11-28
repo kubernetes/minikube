@@ -250,8 +250,7 @@ func (r *Containerd) Disable() error {
 func (r *Containerd) ImageExists(name string, sha string) bool {
 	klog.Infof("Checking existence of image with name %q and sha %q", name, sha)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "check")
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil ||
+	if rr, err := r.Runner.RunCmd(c); err != nil ||
 		!strings.Contains(rr.Output(), name) ||
 		(sha != "" && !strings.Contains(rr.Output(), sha)) {
 		return false
