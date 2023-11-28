@@ -352,6 +352,10 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 	t.Helper()
 	defer PostMortemLogs(t, profile)
 
+	// TODO(prezha): once we bump the minimum supported k8s version to v1.24+
+	// (where dockershim is deprecated, while cri-tools we use support cri v1 api),
+	// we can revert back to the "crictl" to check images here - eg:
+	// rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "list", "--format=json"))
 	if err != nil {
 		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
