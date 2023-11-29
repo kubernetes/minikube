@@ -19,7 +19,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
 * [QEMU]({{<ref "qemu.md">}}) - VM
 * [None]({{<ref "none.md">}}) -  bare-metal
-* [Podman]({{<ref "podman.md">}}) - container (experimental)
+* [Podman]({{<ref "podman.md">}}) - container-based (experimental)
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
 
@@ -31,6 +31,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware Fusion]({{<ref "vmware.md">}}) - VM
 * [QEMU]({{<ref "qemu.md">}}) - VM
+* [Podman]({{<ref "podman.md">}}) - VM + Container (experimental)
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
 ## Windows
@@ -40,4 +41,5 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [VirtualBox]({{<ref "virtualbox.md">}}) - VM
 * [VMware Workstation]({{<ref "vmware.md">}}) - VM
 * [QEMU]({{<ref "qemu.md">}}) - VM (experimental)
+* [Podman]({{<ref "podman.md">}}) - VM + Container (experimental)
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
