@@ -35,6 +35,7 @@ type LogOptions struct {
 
 // Bootstrapper contains all the methods needed to bootstrap a Kubernetes cluster
 type Bootstrapper interface {
+	ApplyNodeLabels(config.ClusterConfig) error
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
