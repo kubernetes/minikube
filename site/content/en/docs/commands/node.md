@@ -58,7 +58,7 @@ minikube node add [flags]
 ```
       --control-plane       This flag is currently unsupported.
       --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
-      --worker              If true, the added node will be marked for work. Defaults to true. (default true)
+      --worker              If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet
 ```
 
 ### Options inherited from parent commands
