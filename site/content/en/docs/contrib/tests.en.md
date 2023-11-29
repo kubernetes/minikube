@@ -553,6 +553,13 @@ make sure minikube profile list outputs correct with multinode clusters
 #### validateCopyFileWithMultiNode
 validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
 
+#### validateMultiNodeLabels
+check if all node labels were configured correctly
+
+Steps:
+- Get the node labels from the cluster with `kubectl get nodes`
+- check if all node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
+
 #### validateStopRunningNode
 tests the minikube node stop command
 
