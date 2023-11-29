@@ -351,7 +351,7 @@
 	"If true, pods might get deleted and restarted on addon enable": "true の場合、有効なアドオンの Pod は削除され、再起動されます",
 	"If true, print web links to addons' documentation if using --output=list (default).": "true の場合、--output=list (default) を利用することでアドオンのドキュメントへの web リンクを表示します",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "true の場合、クラスター状態の検証を省略することにより高速にプロファイル一覧を返します。",
-	"If true, the added node will be marked for work. Defaults to true.": "true の場合、追加されたノードはワーカー用としてマークされます。デフォルトは true です。",
+	"If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet.": "true の場合、追加されたノードはワーカー用としてマークされます。デフォルトは true です。",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "true の場合、潜在的に危険な操作を行うことになります。慎重に使用してください。",
 	"If you are running minikube within a VM, consider using --driver=none:": "VM 内で minikube を実行している場合、--driver=none の使用を検討してください:",
 	"If you are still interested to make {{.driver_name}} driver work. The following suggestions might help you get passed this issue:": "{{.driver_name}} ドライバーを機能させることに引き続き興味がある場合。次の提案がこの問題を通過する手助けになるかもしれません:",

@@ -454,7 +454,7 @@
 	"If true, pods might get deleted and restarted on addon enable": "如果为 true，pods可能会被删除并在启用插件时重新启动",
 	"If true, print web links to addons' documentation if using --output=list (default).": "如果为 true，则使用 --output=list（默认值）输出 web 链接到插件文档。",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "如果为 true，则通过跳过验证群集的状态从而更快地返回配置文件列表。",
-	"If true, the added node will be marked for work. Defaults to true.": "如果为true，则添加的节点将标记为 work，默认为 true。",
+	"If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet.": "如果为true，则添加的节点将标记为 work，默认为 true。",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "如果为 true，将执行潜在的危险操作。谨慎使用。",
 	"If you are running minikube within a VM, consider using --driver=none:": "如果您在VM中运行 minikube，请考虑使用 --driver=none:",
 	"If you are still interested to make {{.driver_name}} driver work. The following suggestions might help you get passed this issue:": "如果您仍然有兴趣使 {{.driver_name}} 驱动工作。以下建议可能会帮助您解决此问题：",

@@ -376,7 +376,7 @@
 	"If true, pods might get deleted and restarted on addon enable": "",
 	"If true, print web links to addons' documentation if using --output=list (default).": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "",
-	"If true, the added node will be marked for work. Defaults to true.": "",
+	"If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet.": "",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "",
 	"If using the none driver, ensure that systemctl is installed": "Jeśli użyto sterownika 'none', upewnij się że systemctl jest zainstalowany",
 	"If you are running minikube within a VM, consider using --driver=none:": "",

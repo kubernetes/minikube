@@ -370,7 +370,7 @@
 	"If true, pods might get deleted and restarted on addon enable": "Falls gesetzt, könnten Pods gelöscht und neugestartet werden, wenn ein Addon aktiviert wird",
 	"If true, print web links to addons' documentation if using --output=list (default).": "Falls gesetzt, gibt Links zu den Dokumentationen der Addons aus. Funktioniert nur, wenn --output=list (default).",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "Falls gesetzt, gibt die Liste der Profile schneller aus, indem das Validieren des Status des Clusters ausgelassen wird.",
-	"If true, the added node will be marked for work. Defaults to true.": "Falls gesetzt, wird der hinzugefügte Node als Arbeitsnode markiert. Default: true",
+	"If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet.": "Falls gesetzt, wird der hinzugefügte Node als Arbeitsnode markiert. Default: true",
 	"If true, the node added will also be a control plane in addition to a worker.": "Falls gesetzt, wird der Knoten auch als Control Plane hinzugefügt, zusätzlich zu als Worker.",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "Falls gesetzt, werden potentiell gefährliche Funktionalitäten durchgeführt. Mit Vorsicht verwenden.",
 	"If you are running minikube within a VM, consider using --driver=none:": "Wenn Sie Minikube in einer VM verwenden, erwägen Sie --driver=none zu verwenden.",

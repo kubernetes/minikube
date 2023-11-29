@@ -95,7 +95,7 @@ var nodeAddCmd = &cobra.Command{
 func init() {
 	// TODO(https://github.com/kubernetes/minikube/issues/7366): We should figure out which minikube start flags to actually import
 	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "This flag is currently unsupported.")
-	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
+	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. (default true) Always true even if you set this flag to false due to adding control plane nodes feature is not supported yet.")
 	nodeAddCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 
 	nodeCmd.AddCommand(nodeAddCmd)
