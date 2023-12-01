@@ -35,7 +35,7 @@ jobs:
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Kicbase/ISO: Update nerdctld from ${{ steps.bumpNerdctld.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctld.outputs.NEW_VERSION }}'
+          commit-message: 'Kicbase: Update nerdctld from ${{ steps.bumpNerdctld.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctld.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_nerdctld_version
@@ -43,7 +43,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Kicbase/ISO: Update nerdctld from ${{ steps.bumpNerdctld.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctld.outputs.NEW_VERSION }}'
+          title: 'Kicbase: Update nerdctld from ${{ steps.bumpNerdctld.outputs.OLD_VERSION }} to ${{ steps.bumpNerdctld.outputs.NEW_VERSION }}'
           body: |
             The nerdctld project released a [new version](https://github.com/afbjorklund/nerdctld/releases)
 
