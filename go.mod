@@ -82,7 +82,7 @@ require (
 )
 
 require (
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.14
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/cli v24.0.7+incompatible

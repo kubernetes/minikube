@@ -249,8 +249,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7PamTW8vY5MyCA=
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
-github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.14 h1:9bRF9/edlX1kycHVm/icATaIWfVyHcUB9c68iWWeNok=
-github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.14/go.mod h1:vroGijye9h4A6kMWeCtk9/zIh5ebseV/JmbKJ0VL3w8=
+github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15 h1:7VpdhpAaNeplth/YEdmtrqfeJgFsRBOxxRyjrozksgA=
+github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15/go.mod h1:3g3UWOGAuHmmiroIbIgM0Nb/N/eVpiEQ3LMdrkYGOyw=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.21.0 h1:OEgjQy1rH4Fbn5IpuI9d0uhLl+j6DkDvh9Q2Ucd6GK8=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.21.0/go.mod h1:EUfJ8lb3pjD8VasPPwqIvG2XVCE6DOT8tY5tcwbWA+A=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.45.0 h1:/BF7rO6PYcmFoyJrq6HA3LqQpFSQei9aNuO1fvV3OqU=
