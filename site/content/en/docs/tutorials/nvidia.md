@@ -17,6 +17,8 @@ date: 2018-01-02
 {{% tab docker %}}
 ## Using the docker driver
 
+- Ensure you have an NVIDIA driver installed, you can check if one is installed by running `nvidia-smi`, if one is not installed follow the [NVIDIA Driver Installation Guide](https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html)
+
 - Check if `bpf_jit_harden` is set to `0`
   ```shell
   sudo sysctl net.core.bpf_jit_harden
