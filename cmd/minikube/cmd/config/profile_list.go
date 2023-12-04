@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -53,12 +54,18 @@ var profileListCmd = &cobra.Command{
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
 		go notify.MaybePrintUpdateTextFromGithub()
+		
+		var kctx string
+		kctx,err := kubeconfig.GetCurrentContext(kubeconfig.PathFromEnv())
+		if err != nil{
+			exit.Message(reason.Usage, "Could not load current kubeconfig context")
+		}
 
 		switch output {
 		case "json":
 			printProfilesJSON()
 		case "table":
-			printProfilesTable()
+			printProfilesTable(kctx)
 		default:
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", profileOutput))
 		}
@@ -75,7 +82,7 @@ func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error
 	return validProfiles, invalidProfiles, err
 }
 
-func printProfilesTable() {
+func printProfilesTable(currentKubeconfigContext string) {
 	validProfiles, invalidProfiles, err := listProfiles()
 
 	if err != nil {
@@ -87,7 +94,7 @@ func printProfilesTable() {
 	}
 
 	updateProfilesStatus(validProfiles)
-	renderProfilesTable(profilesToTableData(validProfiles))
+	renderProfilesTable(profilesToTableData(validProfiles,currentKubeconfigContext))
 	warnInvalidProfiles(invalidProfiles)
 }
 
@@ -154,7 +161,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active Kubecontext"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -162,7 +169,7 @@ func renderProfilesTable(ps [][]string) {
 	table.Render()
 }
 
-func profilesToTableData(profiles []*config.Profile) [][]string {
+func profilesToTableData(profiles []*config.Profile, currentKubeconfigContext string) [][]string {
 	var data [][]string
 	currentProfile := ClusterFlagValue()
 	for _, p := range profiles {
@@ -175,11 +182,14 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
-		var c string
+		var c,kctx string
 		if p.Name == currentProfile {
 			c = "*"
+		} 
+		if p.Name == currentKubeconfigContext {
+			kctx = "*"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
+		data = append(data, []string{c+p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), kctx})
 	}
 	return data
 }
