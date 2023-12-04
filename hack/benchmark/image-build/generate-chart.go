@@ -52,6 +52,7 @@ var Environments = []string{
 	"MinikubeAddonRegistryDocker",
 	"MinikubeImageLoadContainerd",
 	"MinikubeImageContainerd",
+	"MinikubeDockerEnvContainerd",
 	"MinikubeAddonRegistryContainerd",
 	"MinikubeImageLoadCrio",
 	"MinikubeImageCrio",
@@ -72,6 +73,7 @@ var RuntimeMethods = map[string][]string{
 	"containerd": {
 		"MinikubeImageLoadContainerd",
 		"MinikubeImageContainerd",
+		"MinikubeDockerEnvContainerd",
 		"MinikubeAddonRegistryContainerd",
 	},
 }
@@ -158,9 +160,9 @@ func readInLatestTestResult(latestBenchmarkPath string) ItrTestResults {
 		valuesInterative := []float64{}
 		valuesNonInterative := []float64{}
 		// interative test results of each env are stored in the following columns
-		indicesInterative := []int{1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49}
+		indicesInterative := []int{1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53}
 		// non-interative test results of each env are stored in the following columns
-		indicesNonInterative := []int{3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51}
+		indicesNonInterative := []int{3, 7, 11, 15, 19, 23, 27, 31, 35, 39, 43, 47, 51, 55}
 
 		for _, i := range indicesInterative {
 			if line[i] == "NaN" {
@@ -261,7 +263,7 @@ func createChart(record Records, itr string, imageName string, runtime string, c
 	for i := 0; i < len(record.Records); i++ {
 		for _, method := range RuntimeMethods[runtime] {
 			// for invalid values(<0) this point is dropped
-			if record.Records[i].Results[itr][imageName][method] >= 0 {
+			if v, ok := record.Records[i].Results[itr][imageName][method]; ok && v > 0 {
 				point := plotter.XY{
 					X: float64(record.Records[i].Date.Unix()),
 					Y: record.Records[i].Results[itr][imageName][method],
