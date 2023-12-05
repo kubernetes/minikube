@@ -29,6 +29,7 @@ type Profile struct {
 	Status string // running, stopped, paused, unknown
 	Config *ClusterConfig
 	Active bool
+	ActiveKubeContext bool
 }
 
 // ClusterConfig contains the parameters used to start a cluster.
