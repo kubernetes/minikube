@@ -32,12 +32,12 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
         image: {{.CustomRegistries.InspektorGadget  | default .ImageRepository | default .Registries.InspektorGadget }}{{.Images.InspektorGadget}}
         imagePullPolicy: "Always"
-        command: [ "/entrypoint.sh" ]
+        command: [ "/entrypoint" ]
         lifecycle:
           preStop:
             exec:
               command:
-                - "/cleanup.sh"
+                - "/cleanup"
         readinessProbe:
           periodSeconds: 5
           timeoutSeconds: 2
