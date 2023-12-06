@@ -24,6 +24,7 @@ jobs:
           OLD_CRICTL=$(DEP=crictl make get-dependency-version)
           OLD_DOCKER=$(DEP=docker make get-dependency-version)
           OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
+          OLD_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
           OLD_RUNC=$(DEP=runc make get-dependency-version)
           OLD_UBUNTU=$(DEP=ubuntu make get-dependency-version)
           make update-buildkit-version
@@ -32,6 +33,7 @@ jobs:
           make update-crictl-version
           make update-docker-version
           make update-nerdctl-version
+          make update-nerdctld-version
           make update-runc-version
           make update-ubuntu-version
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
@@ -40,6 +42,7 @@ jobs:
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
+          NEW_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
           NEW_RUNC=$(DEP=runc make get-dependency-version)
           NEW_UBUNTU=$(DEP=ubuntu make get-dependency-version)
           if [ "$OLD_BUILDKIT" != "$NEW_BUILDKIT" ]; then
@@ -59,6 +62,9 @@ jobs:
           fi
           if [ "$OLD_NERDCTL" != "$NEW_NERDCTL" ]; then
             echo "changelog=https://github.com/containerd/nerdctl/releases/tag/v$NEW_NERDCTL" >> $GITHUB_OUTPUT
+          fi
+          if [ "$OLD_NERDCTLD" != "$NEW_NERDCTLD" ]; then
+            echo "changelog=https://github.com/afbjorklund/nerdctld/releases/tag/v$NEW_NERDCTL" >> $GITHUB_OUTPUT
           fi
           if [ "$OLD_RUNC" != "$NEW_RUNC" ]; then
             echo "changelog=https://github.com/opencontainers/runc/releases/tag/$NEW_RUNC" >> $GITHUB_OUTPUT

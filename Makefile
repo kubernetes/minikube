@@ -1195,6 +1195,11 @@ update-nvidia-device-plugin-version:
 	(cd hack/update/nvidia_device_plugin_version && \
 	 go run update_nvidia_device_plugin_version.go)
 
+.PHONY: update-nerctld-version
+update-nerdctld-version:
+	(cd hack/update/nerdctld_version && \
+	 go run update_nerdctld_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
