@@ -45,6 +45,7 @@ import (
 
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -205,7 +206,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:%d", ip, port), nil
 }
 
-func NewDriver(hostName, storePath string) drivers.Driver {
+func NewDriver(hostName, storePath string, kcfg kic.Config) drivers.Driver {
 	return &Driver{
 		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,

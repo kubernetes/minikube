@@ -18,7 +18,6 @@ package qemu2
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -45,10 +44,6 @@ const (
 	privateNetworkName = "docker-machines"
 )
 
-type HostMachineData struct {
-	name, clusterName string
-}
-
 func extractConfigData(chan registry.Configurator) func() (interface{}, error) {
 	return func() (interface{}, error) {
 		rc := make(chan registry.Configurator, 1)
@@ -67,18 +62,38 @@ func extractConfigData(chan registry.Configurator) func() (interface{}, error) {
 	}
 }
 
-type RegistryClucterFunc = func(config.ClusterConfig, config.Node) interface{}
+type HostMachineData struct {
+	name, clusterName string
+}
 
-func (hmd *HostMachineData) extract() func(config.ClusterConfig, config.Node) interface{} {
+func (hmd *HostMachineData) extractHMD() func(config.ClusterConfig, config.Node) interface{} {
 	return func(cc config.ClusterConfig, n config.Node) interface{} {
 		hmd.name = cc.Name
 		hmd.clusterName = cc.KubernetesConfig.ClusterName
 
-		return &HostMachineData{
+		sender := make(chan *HostMachineData, 1)
+		hmd = &HostMachineData{
 			name:        hmd.name,
 			clusterName: hmd.clusterName,
 		}
+		sender <- hmd
+		close(sender)
+		return sender
 	}
+}
+
+func newHostMachineData(hmd *HostMachineData, receiver <-chan *HostMachineData) *HostMachineData {
+	go hmd.extractHMD()
+	data, ok := <-receiver
+	if !ok {
+		panic(fmt.Sprintf("failed to receive channel data from %v", receiver))
+	}
+	hmd = &HostMachineData{
+		name:        data.name,
+		clusterName: data.clusterName,
+	}
+
+	return hmd
 }
 
 func init() {
@@ -90,20 +105,22 @@ func init() {
 	configChanFunc := make(chan registry.Configurator, 1)
 	_ = extractConfigData(configChanFunc)
 	if err := extractConfigData(configChanFunc); err != nil {
-		errors.New("invalid configuration registry failed to seed")
+		panic(err)
 	}
 
-	// _ := extractConfigData(configChanFunc)
-	hmd := HostMachineData{}
+	hmdChan := make(chan *HostMachineData, 1)
+	machineData := newHostMachineData(&HostMachineData{}, hmdChan)
+	storePath := localpath.MiniPath()
 
 	if err := registry.Register(registry.DriverDef{
 		Name:  driver.QEMU2,
 		Alias: []string{driver.AliasQEMU},
 		Init: func() drivers.Driver {
 			return qemu.NewDriver(
+				"hostmachine01", storePath,
 				kic.Config{
-					ClusterName: hmd.clusterName,
-					MachineName: hmd.name,
+					ClusterName: machineData.clusterName,
+					MachineName: machineData.name,
 				})
 		},
 		Config:   <-configChanFunc,
@@ -220,7 +237,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	storePath := localpath.MiniPath()
 
 	return &qemu.Driver{
-		BaseDriver:            GetBaseDriver(name, storePath),
+		BaseDriver:            getBaseDriver(name, storePath),
 		PrivateNetwork:        privateNetworkName,
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
@@ -245,7 +262,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func GetBaseDriver(hostName, storePath string) *drivers.BaseDriver {
+func getBaseDriver(hostName, storePath string) *drivers.BaseDriver {
 	return &drivers.BaseDriver{
 		// IPAddress:      "",
 		MachineName: hostName,
