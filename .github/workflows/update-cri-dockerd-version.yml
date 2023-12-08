@@ -22,13 +22,13 @@ jobs:
       - name: Bump cri-dockerd version
         id: bumpCriDockerd
         run: |
-          echo "OLD_VERSION=$(DEP=cri-dockerd make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "OLD_VERSION=$(DEP=cri-dockerd make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-cri-dockerd-version
-          echo "NEW_VERSION=$(DEP=cri-dockerd make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$(DEP=cri-dockerd make get-dependency-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpCriDockerd.outputs.changes != '' }}

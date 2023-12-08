@@ -21,13 +21,13 @@ jobs:
       - name: Bump kindnetd version
         id: bumpKindnetd
         run: |
-          echo "OLD_VERSION=$(DEP=kindnetd make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "OLD_VERSION=$(DEP=kindnetd make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-kindnetd-version
-          echo "NEW_VERSION=$(DEP=kindnetd make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$(DEP=kindnetd make get-dependency-version)" >> "$GITHUB_OUTPUT"
           c=$(git status --porcelain)
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$c" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$c" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpKindnetd.outputs.changes != '' }}

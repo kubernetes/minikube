@@ -22,13 +22,13 @@ jobs:
       - name: Bump Ubuntu version
         id: bumpUbuntu
         run: |
-          echo "OLD_VERSION=$(DEP=ubuntu make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "OLD_VERSION=$(DEP=ubuntu make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-ubuntu-version
-          echo "NEW_VERSION=$(DEP=ubuntu make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$(DEP=ubuntu make get-dependency-version)" >> "$GITHUB_OUTPUT"
           c=$(git status --porcelain)
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$c" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$c" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpUbuntu.outputs.changes != '' }}

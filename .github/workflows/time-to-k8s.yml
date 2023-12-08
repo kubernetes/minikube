@@ -24,7 +24,7 @@ jobs:
         id: timeToK8sBenchmark
         run: |
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh
-          echo "version=$(minikube version --short)" >> $GITHUB_OUTPUT
+          echo "version=$(minikube version --short)" >> "$GITHUB_OUTPUT"
       - name: Create PR
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
