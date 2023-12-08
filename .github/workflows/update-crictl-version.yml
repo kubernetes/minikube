@@ -22,13 +22,13 @@ jobs:
       - name: Bump crictl Version
         id: bumpCrictl
         run: |
-          echo "OLD_VERSION=$(DEP=crictl make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "OLD_VERSION=$(DEP=crictl make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-crictl-version
-          echo "NEW_VERSION=$(DEP=crictl make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$(DEP=crictl make get-dependency-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpCrictl.outputs.changes != '' }}

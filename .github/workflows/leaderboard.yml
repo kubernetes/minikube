@@ -25,9 +25,9 @@ jobs:
           make update-leaderboard
           c=$(git status --porcelain)
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$c" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$c" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
