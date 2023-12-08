@@ -18,6 +18,7 @@ package qemu
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -109,18 +111,78 @@ func (d *Driver) GetSSHKeyPath() string {
 	return d.ResolveStorePath("id_rsa")
 }
 
-func (d *Driver) GetSSHPort() (int, error) {
-	if d.SSHPort == 0 {
-		d.SSHPort = 22
-	}
-	return d.SSHPort, nil
+func GetSSHPort(file *os.File) int {
+	defer file.Close()
+	sshp := make(chan int, 1)
+	done := make(chan bool)
+
+	go scanForPort("Port", done, sshp, file)
+	<-done
+	go getColimaPort(sshp, done)
+	done <- true
+
+	return <-sshp
 }
 
-func (d *Driver) GetSSHUsername() string {
-	if d.SSHUser == "" {
-		d.SSHUser = defaultSSHUser
+func RenderColimaSSHConfig() *os.File {
+	hdir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error encountered: %v\n", err.Error())
 	}
-	return d.SSHUser
+	path := filepath.Join(hdir, ".colima", "ssh_config")
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+
+	return file
+}
+
+func GetLimaSSHConfigPath() string {
+	hdir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("error encountered: %v\n", err.Error())
+	}
+	sshPath := filepath.Join(hdir, ".lima", "_config", "user")
+
+	return sshPath
+}
+
+func scanForPort(phrase string, done chan bool, sshp chan int, file *os.File) {
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), phrase) {
+			modified := func(r rune) rune {
+				if r == ' ' {
+					return 0
+				}
+				return r
+			}
+			out := strings.Map(modified, scanner.Text())
+			re := regexp.MustCompile("[0-9]+")
+			numb := re.FindAllString(out, -1)[0]
+
+			sshPort, err := strconv.Atoi(numb)
+			log.Infof("discovered ssh port %d", sshPort)
+			if err != nil {
+				fmt.Printf("%s error is: ", err.Error())
+			}
+			sshp <- sshPort
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("failed to scan a file: %v", err.Error())
+	}
+
+	close(sshp)
+	done <- true
+}
+
+func getColimaPort(sshp <-chan int, done <-chan bool) {
+	for i := range sshp {
+		fmt.Println(i)
+	}
+	<-done
 }
 
 func (d *Driver) DriverName() string {
@@ -148,14 +210,16 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 		BIOS:           runtime.GOARCH != "arm64",
 		PrivateNetwork: privateNetworkName,
 		BaseDriver: &drivers.BaseDriver{
-			SSHUser:     getSSHUser(),
 			MachineName: hostName,
 			StorePath:   storePath,
+			SSHUser:     GetSSHUsername(),
+			SSHPort:     GetSSHPort(RenderColimaSSHConfig()),
+			SSHKeyPath:  GetLimaSSHConfigPath(),
 		},
 	}
 }
 
-func getSSHUser() string {
+func GetSSHUsername() string {
 	us, err := user.Current()
 	if err != nil {
 		return defaultSSHUser
@@ -376,6 +440,7 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 }
 
 func (d *Driver) Start() error {
+
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
@@ -456,7 +521,7 @@ func (d *Driver) Start() error {
 		)
 	case "socket_vmnet":
 		startCmd = append(startCmd,
-			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=3",
+			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=5",
 		)
 	default:
 		return fmt.Errorf("unknown network: %s", d.Network)

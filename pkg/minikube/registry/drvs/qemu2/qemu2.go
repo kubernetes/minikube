@@ -17,21 +17,19 @@ limitations under the License.
 package qemu2
 
 import (
-	"bufio"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -42,21 +40,73 @@ import (
 )
 
 const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
-
-	defaultSSHUser = "docker"
+	defaultSSHUser     = "docker"
+	docURL             = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+	privateNetworkName = "docker-machines"
 )
+
+type HostMachineData struct {
+	name, clusterName string
+}
+
+func extractConfigData(chan registry.Configurator) func() (interface{}, error) {
+	return func() (interface{}, error) {
+		rc := make(chan registry.Configurator, 1)
+		rc <- configure
+
+		var c chan func() registry.Configurator
+		// errChan := make(chan error, 1)
+		c <- func() registry.Configurator {
+			return func(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+
+				machineName := cc.Name
+				return machineName, nil
+			}
+		}
+		return "", nil
+	}
+}
+
+type RegistryClucterFunc = func(config.ClusterConfig, config.Node) interface{}
+
+func (hmd *HostMachineData) extract() func(config.ClusterConfig, config.Node) interface{} {
+	return func(cc config.ClusterConfig, n config.Node) interface{} {
+		hmd.name = cc.Name
+		hmd.clusterName = cc.KubernetesConfig.ClusterName
+
+		return &HostMachineData{
+			name:        hmd.name,
+			clusterName: hmd.clusterName,
+		}
+	}
+}
 
 func init() {
 	priority := registry.Default
 	if runtime.GOOS == "windows" {
 		priority = registry.Experimental
 	}
+
+	configChanFunc := make(chan registry.Configurator, 1)
+	_ = extractConfigData(configChanFunc)
+	if err := extractConfigData(configChanFunc); err != nil {
+		errors.New("invalid configuration registry failed to seed")
+	}
+
+	// _ := extractConfigData(configChanFunc)
+	hmd := HostMachineData{}
+
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.QEMU2,
-		Alias:    []string{driver.AliasQEMU},
-		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
-		Config:   configure,
+		Name:  driver.QEMU2,
+		Alias: []string{driver.AliasQEMU},
+		Init: func() drivers.Driver {
+			return qemu.NewDriver(
+				kic.Config{
+					ClusterName: hmd.clusterName,
+					MachineName: hmd.name,
+				})
+		},
+		Config:   <-configChanFunc,
 		Status:   status,
 		Default:  true,
 		Priority: priority,
@@ -167,13 +217,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		return nil, fmt.Errorf("generating MAC address: %v", err)
 	}
 
-	return qemu.Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: name,
-			StorePath:   localpath.MiniPath(),
-			SSHUser:     getUser(),
-			SSHPort:     getSSHPort(renderColimaSSHConfig()),
-		},
+	storePath := localpath.MiniPath()
+
+	return &qemu.Driver{
+		BaseDriver:            GetBaseDriver(name, storePath),
+		PrivateNetwork:        privateNetworkName,
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
 		Memory:                cc.Memory,
@@ -197,76 +245,18 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func renderColimaSSHConfig() *os.File {
-	hdir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("error encountered: %v\n", err.Error())
+func GetBaseDriver(hostName, storePath string) *drivers.BaseDriver {
+	return &drivers.BaseDriver{
+		// IPAddress:      "",
+		MachineName: hostName,
+		SSHUser:     qemu.GetSSHUsername(),
+		SSHPort:     qemu.GetSSHPort(qemu.RenderColimaSSHConfig()),
+		SSHKeyPath:  qemu.GetLimaSSHConfigPath(),
+		StorePath:   localpath.MiniPath(),
+		// SwarmMaster:    false,
+		// SwarmHost:      "",
+		// SwarmDiscovery: "",
 	}
-	path := filepath.Join(hdir, ".colima", "ssh_config")
-	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-
-	return file
-}
-
-func getSSHPort(file *os.File) int {
-	defer file.Close()
-	sshp := make(chan int, 1)
-	done := make(chan bool)
-
-	go scanForPort("Port", done, sshp, file)
-	<-done
-	go getColimaPort(sshp, done)
-	done <- true
-
-	return <-sshp
-}
-
-func scanForPort(phrase string, done chan bool, sshp chan int, file *os.File) {
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), phrase) {
-			modified := func(r rune) rune {
-				if r == ' ' {
-					return 0
-				}
-				return r
-			}
-			out := strings.Map(modified, scanner.Text())
-			re := regexp.MustCompile("[0-9]+")
-			numb := re.FindAllString(out, -1)[0]
-
-			sshPort, err := strconv.Atoi(numb)
-			if err != nil {
-				fmt.Printf("%s error is: ", err.Error())
-			}
-			sshp <- sshPort
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("failed to scan a file: %v", err.Error())
-	}
-
-	close(sshp)
-	done <- true
-}
-
-func getColimaPort(sshp <-chan int, done <-chan bool) {
-	for i := range sshp {
-		fmt.Println(i)
-	}
-	<-done
-}
-
-func getUser() string {
-	us, err := user.Current()
-	if err != nil {
-		return defaultSSHUser
-	}
-
-	return us.Username
 }
 
 func status() registry.State {
