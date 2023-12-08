@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
@@ -66,24 +67,22 @@ type HostMachineData struct {
 	name, clusterName string
 }
 
-func (hmd *HostMachineData) extractHMD() func(config.ClusterConfig, config.Node) interface{} {
+func extractHMD(wg *sync.WaitGroup, sender chan<- *HostMachineData) func(config.ClusterConfig, config.Node) interface{} {
 	return func(cc config.ClusterConfig, n config.Node) interface{} {
-		hmd.name = cc.Name
-		hmd.clusterName = cc.KubernetesConfig.ClusterName
 
-		sender := make(chan *HostMachineData, 1)
-		hmd = &HostMachineData{
-			name:        hmd.name,
-			clusterName: hmd.clusterName,
+		sender <- &HostMachineData{
+			name:        n.Name,
+			clusterName: cc.Name,
 		}
-		sender <- hmd
+
 		close(sender)
-		return sender
+		return &HostMachineData{}
 	}
 }
 
-func newHostMachineData(hmd *HostMachineData, receiver <-chan *HostMachineData) *HostMachineData {
-	go hmd.extractHMD()
+func newHostMachineData(wg *sync.WaitGroup, hmd *HostMachineData, receiver <-chan *HostMachineData) *HostMachineData {
+	defer wg.Done()
+
 	data, ok := <-receiver
 	if !ok {
 		panic(fmt.Sprintf("failed to receive channel data from %v", receiver))
@@ -94,6 +93,16 @@ func newHostMachineData(hmd *HostMachineData, receiver <-chan *HostMachineData) 
 	}
 
 	return hmd
+}
+
+func getFromChannel(hmdChan chan *HostMachineData) (cn string, name string) {
+	for i := range hmdChan {
+		cn := i.clusterName
+		name := i.name
+		return name, cn
+	}
+
+	return
 }
 
 func init() {
@@ -108,9 +117,14 @@ func init() {
 		panic(err)
 	}
 
-	hmdChan := make(chan *HostMachineData, 1)
-	machineData := newHostMachineData(&HostMachineData{}, hmdChan)
 	storePath := localpath.MiniPath()
+	hmdChan := make(chan *HostMachineData, 1)
+	name, cn := getFromChannel(hmdChan)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go newHostMachineData(wg, &HostMachineData{}, hmdChan)
+	go extractHMD(wg, hmdChan)
+	wg.Wait()
 
 	if err := registry.Register(registry.DriverDef{
 		Name:  driver.QEMU2,
@@ -119,8 +133,8 @@ func init() {
 			return qemu.NewDriver(
 				"hostmachine01", storePath,
 				kic.Config{
-					ClusterName: machineData.clusterName,
-					MachineName: machineData.name,
+					ClusterName: cn,
+					MachineName: name,
 				})
 		},
 		Config:   <-configChanFunc,
