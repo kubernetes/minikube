@@ -48,7 +48,7 @@ ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
 ARG CNI_PLUGINS_VERSION="v1.3.0"
 ARG TARGETARCH
 ARG NERDCTL_VERSION="1.7.1"
-ARG NERDCTLD_VERSION="0.2.0"
+ARG NERDCTLD_VERSION="0.4.1"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
