@@ -629,6 +629,7 @@
 	"Pull images": "拉取镜像",
 	"Pull the remote image (no caching)": "拉取远程镜像（禁用缓存）",
 	"Pulling base image ...": "正在拉取基础镜像 ...",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Pulling images ...": "拉取镜像 ...",
 	"Push images": "推送镜像",
 	"Push the new image (requires tag)": "推送新的镜像（需要标签）",

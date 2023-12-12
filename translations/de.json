@@ -538,6 +538,7 @@
 	"Pull images": "Ziehe (pull) Images",
 	"Pull the remote image (no caching)": "Ziehe (pull) das Remote Image (kein Caching)",
 	"Pulling base image ...": "Ziehe das Base Image ...",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Push images": "Veröffentliche (push) Images",
 	"Push the new image (requires tag)": "Veröffentliche das neue Image (benötigt einen Tag)",
 	"Reboot to complete VirtualBox installation, verify that VirtualBox is not blocked by your system, and/or use another hypervisor": "Restarten (reboot) Sie die komplette VirtualBox Installation und stellen Sie sicher, dass VirtualBox nicht durch Ihr System blockiert wird, und/oder verwenden Sie einen anderen Hypervisor",

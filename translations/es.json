@@ -541,7 +541,7 @@
 	"Provides instructions to point your terminal's docker-cli to the Docker Engine inside minikube. (Useful for building docker images directly inside minikube)\n\nFor example, you can do all docker operations such as docker build, docker run, and docker ps directly on the docker inside minikube.\n\nNote: You need the docker-cli to be installed on your machine.\ndocker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps": "",
 	"Pull images": "",
 	"Pull the remote image (no caching)": "",
-	"Pulling base image ...": "",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Push images": "",
 	"Push the new image (requires tag)": "",
 	"Reboot to complete VirtualBox installation, verify that VirtualBox is not blocked by your system, and/or use another hypervisor": "",

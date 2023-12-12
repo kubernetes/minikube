@@ -502,6 +502,7 @@
 	"Pull images": "",
 	"Pull the remote image (no caching)": "",
 	"Pulling base image ...": "Скачивается базовый образ ...",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Push images": "",
 	"Push the new image (requires tag)": "",
 	"Reboot to complete VirtualBox installation, verify that VirtualBox is not blocked by your system, and/or use another hypervisor": "",
