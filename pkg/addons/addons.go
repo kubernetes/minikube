@@ -125,9 +125,9 @@ func postStartMessages(cc *config.ClusterConfig, name, value string) {
 `, out.V{"profileArg": tipProfileArg})
 	case "headlamp":
 		out.Styled(style.Tip, `To access Headlamp, use the following command:
-minikube service headlamp -n headlamp
+minikube{{.profileArg}} service headlamp -n headlamp
 
-`)
+`, out.V{"profileArg": tipProfileArg})
 		tokenGenerationTip := "To authenticate in Headlamp, fetch the Authentication Token using the following command:"
 		createSvcAccountToken := "kubectl create token headlamp --duration 24h -n headlamp"
 		getSvcAccountToken := `export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
