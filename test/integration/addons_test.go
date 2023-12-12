@@ -134,6 +134,7 @@ func TestAddons(t *testing.T) {
 			{"CloudSpanner", validateCloudSpannerAddon},
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
+			{"Yakd", validateYakdAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -953,5 +954,18 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 	}
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
 		t.Errorf("failed to disable nvidia-device-plugin: args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "yakd", "-p", profile, "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Fatalf("failed to enable yakd addon: args: %q: %v", rr.Command(), err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
+		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
 	}
 }

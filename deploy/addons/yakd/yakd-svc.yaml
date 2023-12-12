@@ -1,0 +1,17 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: yakd-dashboard
+    kubernetes.io/minikube-addons: yakd-dashboard
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: yakd-dashboard
+  namespace: yakd-dashboard
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    app.kubernetes.io/name: yakd-dashboard
+    app.kubernetes.io/instance: yakd-dashboard
