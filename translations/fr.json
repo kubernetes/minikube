@@ -533,6 +533,7 @@
 	"Pull images": "Extraction des images",
 	"Pull the remote image (no caching)": "Extraire l'image distante (pas de mise en cache)",
 	"Pulling base image ...": "Extraction de l'image de base...",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Push images": "Diffusion des images",
 	"Push the new image (requires tag)": "Pousser la nouvelle image (nécessite une balise)",
 	"Reboot to complete VirtualBox installation, verify that VirtualBox is not blocked by your system, and/or use another hypervisor": "Redémarrez pour terminer l'installation de VirtualBox, vérifiez que VirtualBox n'est pas bloqué par votre système et/ou utilisez un autre hyperviseur",

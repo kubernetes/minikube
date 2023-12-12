@@ -514,6 +514,7 @@
 	"Pull images": "イメージを取得します",
 	"Pull the remote image (no caching)": "リモートイメージを取得します (キャッシュなし)",
 	"Pulling base image ...": "ベースイメージを取得しています...",
+	"Pulling base image {{.kicVersion}} ...": "",
 	"Push images": "イメージを登録します",
 	"Push the new image (requires tag)": "新イメージを登録します (タグが必要)",
 	"Reboot to complete VirtualBox installation, verify that VirtualBox is not blocked by your system, and/or use another hypervisor": "VirtualBox インストールを完了させるために再起動し、VirtualBox がシステムや別のハイパーバイザーにブロックされていないことを検証してください",
