@@ -99,7 +99,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin", "--addons=yakd"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -959,11 +959,6 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 
 func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "yakd", "-p", profile, "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Fatalf("failed to enable yakd addon: args: %q: %v", rr.Command(), err)
-	}
 
 	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
 		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
