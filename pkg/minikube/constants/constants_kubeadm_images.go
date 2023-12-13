@@ -18,6 +18,11 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.29.0": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
 		"v1.29.0-rc.2": {
 			"coredns/coredns": "v1.11.1",
 			"etcd":            "3.5.10-0",
