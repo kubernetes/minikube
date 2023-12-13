@@ -7,7 +7,7 @@ date: 2023-12-12
 
 ## YAKD - Kubernetes Dashboard Addon
 
-[YAKD - Kubernetes Dashboard](https://github.com/manusa/yakd) is a full-featured web-based Kubernetes Dashboard with special functionality for Minikube.
+[YAKD - Kubernetes Dashboard](https://github.com/manusa/yakd) is a full-featured web-based Kubernetes Dashboard with special functionality for minikube.
 
 The dashboard features a real-time Search pane that allows you to search for Kubernetes resources and see them update in real-time as you type.
 
