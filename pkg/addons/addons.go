@@ -153,9 +153,9 @@ minikube{{.profileArg}} addons enable metrics-server
 	case "yakd":
 		out.Styled(style.Tip, `To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:
 
-	minikube service yakd-dashboard -n yakd-dashboard
+	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 
-`)
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 
