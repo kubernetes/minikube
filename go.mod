@@ -23,7 +23,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.17.0
 	github.com/google/slowjam v1.1.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/hashicorp/go-getter v1.7.3
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
