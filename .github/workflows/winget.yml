@@ -2,6 +2,9 @@ name: Publish to WinGet
 on:
   release:
     types: [released]
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: windows-latest # action can only be run on windows
