@@ -6,31 +6,37 @@ require (
 	cloud.google.com/go/storage v1.36.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.21.0
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
+	github.com/Xuanwo/go-locale v1.1.0
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/blang/semver/v4 v4.0.0
 	github.com/briandowns/spinner v1.11.1
-	github.com/c4milo/gotoolkit v0.0.0-20190525173301-67483a18c17a // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cheggaaa/pb/v3 v3.1.4
 	github.com/cloudevents/sdk-go/v2 v2.14.0
+	github.com/docker/cli v24.0.7+incompatible
 	github.com/docker/docker v24.0.7+incompatible
+	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.5.0
 	github.com/docker/machine v0.16.2
 	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.17.0
+	github.com/google/go-github/v57 v57.0.0
 	github.com/google/slowjam v1.1.0
 	github.com/google/uuid v1.5.0
 	github.com/hashicorp/go-getter v1.7.3
 	github.com/hashicorp/go-retryablehttp v0.7.5
-	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
-	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v1.0.0
-	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
+	github.com/jmoiron/sqlx v1.3.5
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
+	github.com/juju/clock v1.0.3
+	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
+	github.com/juju/mutex/v2 v2.0.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/klauspost/cpuid v1.2.0
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.5
@@ -38,8 +44,10 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
+	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/go-digest v1.0.0
+	github.com/opencontainers/runc v1.1.10
 	github.com/otiai10/copy v1.14.0
 	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
@@ -47,7 +55,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
-	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/shirou/gopsutil/v3 v3.23.11
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -79,19 +87,9 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	libvirt.org/go/libvirt v1.9008.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15
-	github.com/Xuanwo/go-locale v1.1.0
-	github.com/blang/semver v3.5.1+incompatible
-	github.com/docker/cli v24.0.7+incompatible
-	github.com/docker/go-connections v0.4.0
-	github.com/google/go-github/v57 v57.0.0
-	github.com/jmoiron/sqlx v1.3.5
-	github.com/juju/clock v1.0.3
-	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
-	github.com/juju/mutex/v2 v2.0.0
-	github.com/moby/patternmatcher v0.6.0
-	github.com/opencontainers/runc v1.1.10
-	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
+)
+
+require (
 	cloud.google.com/go v0.110.10 // indirect
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -108,6 +106,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
+	github.com/c4milo/gotoolkit v0.0.0-20190525173301-67483a18c17a // indirect
 	github.com/campoy/embedmd v1.0.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -153,9 +152,12 @@ require (
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
+	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -196,6 +198,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.1 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
