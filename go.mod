@@ -79,9 +79,6 @@ require (
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	libvirt.org/go/libvirt v1.9008.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
-)
-
-require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.33.15
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver v3.5.1+incompatible
@@ -95,9 +92,6 @@ require (
 	github.com/moby/patternmatcher v0.6.0
 	github.com/opencontainers/runc v1.1.10
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-)
-
-require (
 	cloud.google.com/go v0.110.10 // indirect
 	cloud.google.com/go/compute v1.23.3 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
