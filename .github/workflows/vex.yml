@@ -14,5 +14,5 @@ jobs:
       - uses: openvex/generate-vex@31b415924ea0d72ed5f2640f1dee59dea6c2770b
         name: Run vexctl
         with:
-          product: pkg:golang/k8s.io/minikube@@${{ env.RELEASE_VERSION }}
+          product: pkg:golang/k8s.io/minikube@${{ env.RELEASE_VERSION }}
 
