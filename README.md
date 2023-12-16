@@ -53,6 +53,14 @@ See https://minikube.sigs.k8s.io/docs/
 
 See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
+## Governance
+
+Kubernetes project is governed by a framework of principles, values, policies and processes to help our community and constituents towards our shared goals.
+
+The [Kubernetes Community](https://github.com/kubernetes/community/blob/master/governance.md) is the launching point for learning about how we organize ourselves.
+
+The [Kubernetes Steering community repo](https://github.com/kubernetes/steering) is used by the Kubernetes Steering Committee, which oversees governance of the Kubernetes project.
+
 ## Community
 
 minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
