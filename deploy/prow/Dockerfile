@@ -15,7 +15,7 @@
 # Includes tools used for kubernetes/minikube CI
 # NOTE: we attempt to avoid unnecessary tools and image layers while
 # supporting kubernetes builds, minikube installation, etc.
-FROM debian:bullseye
+FROM debian:bullseye@sha256:ab2b95aa8d7d6d54866b92c322cf0693933c1ae8038652f24ddfda1d1763a45a
 
 # arg that specifies the go version to install
 ARG GO_VERSION

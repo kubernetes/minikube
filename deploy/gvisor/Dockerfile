@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Need an image with chroot
-FROM alpine:3
+FROM alpine:3@sha256:51b67269f354137895d43f3b3d810bfacd3945438e94dc5ac55fdac340352f48
 RUN apk -U add ca-certificates
 COPY out/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]

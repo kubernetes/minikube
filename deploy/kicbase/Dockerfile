@@ -21,7 +21,7 @@
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
 ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20231128"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.21.5 as auto-pause
+FROM golang:1.21.5@sha256:2ff79bcdaff74368a9fdcb06f6599e54a71caf520fd2357a55feddd504bcaffb as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible

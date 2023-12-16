@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM gcr.io/gcp-runtimes/ubuntu_20_0_4
+FROM gcr.io/gcp-runtimes/ubuntu_20_0_4@sha256:666805a878d9cd58ce9dfd6f423e2d0e3bdf01eea0cddd2be3a88244c1d4dfa5
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		gcc \
