@@ -183,7 +183,7 @@ func KindNet(repo string) string {
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml
-const calicoVersion = "v3.26.4"
+const calicoVersion = "v3.27.0"
 const calicoRepo = "docker.io/calico"
 
 // CalicoDaemonSet returns the image used for calicoDaemonSet
