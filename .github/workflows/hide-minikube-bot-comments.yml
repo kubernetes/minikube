@@ -1,5 +1,8 @@
 name: hide-minikube-bot-comments
 on: issue_comment
+permissions:
+  contents: read
+
 jobs:
   hide-comments:
     if: ${{ github.event.issue.pull_request }}
