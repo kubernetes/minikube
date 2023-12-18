@@ -4,7 +4,7 @@ on:
   release:
     types: [published]
 permissions:
-  contents: read
+  contents: write
 jobs:
   generate_sbom_action:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Install bom
-        uses: kubernetes-sigs/release-actions/setup-bom@main
+        uses: kubernetes-sigs/release-actions/setup-bom@ef6d340ddd115f41dc26c18893b41d9c79cdc7d2 # main
       - name: Generage SBOM
         run: |
           bom generate -o minikube_${{github.ref_name}}_sbom.spdx \
