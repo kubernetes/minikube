@@ -25,7 +25,7 @@ Once the addon is enabled, you can access the YAKD - Kubernetes Dashboard's web 
 minikube service yakd-dashboard -n yakd-dashboard
 ```
 
-There dashboard will open in a new browser window and you should be able to start using it with no further hassle.
+The dashboard will open in a new browser window and you should be able to start using it with no further hassle.
 
 YAKD - Kubernetes Dashboard is also compatible with metrics-server. To install it, run:
 
