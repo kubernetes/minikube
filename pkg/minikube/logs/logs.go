@@ -184,9 +184,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			out.Styled(style.Empty, "")
+			out.Styled(style.None, "")
 		}
-		out.Styled(style.Empty, "==> {{.name}} <==", out.V{"name": name})
+		out.Styled(style.None, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdout = &b
@@ -205,7 +205,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 			klog.Errorf("failed to read output: %v", err)
 			failed = append(failed, name)
 		}
-		out.Styled(style.Empty, l)
+		out.Styled(style.None, l)
 	}
 
 	if len(failed) > 0 {
@@ -216,25 +216,25 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 
 // outputAudit displays the audit logs.
 func OutputAudit(lines int) error {
-	out.Styled(style.Empty, "")
-	out.Styled(style.Empty, "==> Audit <==")
+	out.Styled(style.None, "")
+	out.Styled(style.None, "==> Audit <==")
 	r, err := audit.Report(lines)
 	if err != nil {
 		return fmt.Errorf("failed to create audit report: %v", err)
 	}
-	out.Styled(style.Empty, r.ASCIITable())
+	out.Styled(style.None, r.ASCIITable())
 	return nil
 }
 
 // outputLastStart outputs the last start logs.
 func OutputLastStart() error {
-	out.Styled(style.Empty, "")
-	out.Styled(style.Empty, "==> Last Start <==")
+	out.Styled(style.None, "")
+	out.Styled(style.None, "==> Last Start <==")
 	fp := localpath.LastStartLog()
 	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		msg := fmt.Sprintf("Last start log file not found at %s", fp)
-		out.Styled(style.Empty, msg)
+		out.Styled(style.None, msg)
 		return nil
 	}
 	if err != nil {
@@ -246,7 +246,7 @@ func OutputLastStart() error {
 	for s.Scan() {
 		l += s.Text() + "\n"
 	}
-	out.Styled(style.Empty, l)
+	out.Styled(style.None, l)
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read file %s: %v", fp, err)
 	}
@@ -266,7 +266,7 @@ func OutputOffline(lines int, logOutput *os.File) {
 		klog.Errorf("failed to output last start logs: %v", err)
 	}
 
-	out.Styled(style.Empty, "")
+	out.Styled(style.None, "")
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
