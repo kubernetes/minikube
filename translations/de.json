@@ -794,6 +794,7 @@
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "Tip: Um diesen zu root gehörenden Cluster zu entfernen, führe {{.cmd}} aus",
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete": "Tipp: Um diesen Root-Cluster zu entfernen, führen Sie Folgendes aus: sudo {{.cmd}} delete",
 	"To access Headlamp, use the following command:\nminikube service headlamp -n headlamp\n\n": "Um auf Headlamp zuzugreifen, führen Sie folgenden Befehl aus:\nminikube service headlamp -n headlamp\n\n",
+	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n\n": "",
 	"To connect to this cluster, use:  --context={{.name}}": "Um zu diesem Cluster zu verbinden, verwende  --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.name}}": "Verwenden Sie zum Herstellen einer Verbindung zu diesem Cluster: kubectl --context = {{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.name}}__1": "Verwenden Sie zum Herstellen einer Verbindung zu diesem Cluster: kubectl --context = {{.name}}",
