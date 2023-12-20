@@ -121,7 +121,6 @@ func postStartMessages(cc *config.ClusterConfig, name, value string) {
 		out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
 	minikube{{.profileArg}} addons enable metrics-server
-
 `, out.V{"profileArg": tipProfileArg})
 	case "headlamp":
 		out.Styled(style.Tip, `To access Headlamp, use the following command:
