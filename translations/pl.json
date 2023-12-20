@@ -799,6 +799,7 @@
 	"This {{.type}} is having trouble accessing https://{{.repository}}": "",
 	"Tip: To remove this root owned cluster, run: sudo {{.cmd}}": "",
 	"To access Headlamp, use the following command:\nminikube service headlamp -n headlamp\n\n": "",
+	"To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:\n\n\tminikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard\n\n": "",
 	"To connect to this cluster, use:  --context={{.name}}": "",
 	"To connect to this cluster, use: kubectl --context={{.name}}": "Aby połączyć się z klastrem użyj: kubectl --context={{.name}}",
 	"To connect to this cluster, use: kubectl --context={{.profile_name}}": "Aby połaczyć się z klastrem użyj: kubectl --context={{.profile_name}}",
