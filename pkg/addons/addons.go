@@ -150,6 +150,12 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 minikube{{.profileArg}} addons enable metrics-server	
 
 `, out.V{"profileArg": tipProfileArg})
+	case "yakd":
+		out.Styled(style.Tip, `To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:
+
+	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
+
+`, out.V{"profileArg": tipProfileArg})
 	}
 }
 

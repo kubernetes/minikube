@@ -99,7 +99,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin", "--addons=yakd"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -134,6 +134,7 @@ func TestAddons(t *testing.T) {
 			{"CloudSpanner", validateCloudSpannerAddon},
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
+			{"Yakd", validateYakdAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -953,5 +954,13 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 	}
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
 		t.Errorf("failed to disable nvidia-device-plugin: args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
+		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
 	}
 }

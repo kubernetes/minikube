@@ -787,6 +787,19 @@ var Addons = map[string]*Addon{
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}),
+	"yakd": NewAddon([]*BinAsset{
+		MustBinAsset(addons.YakdAssets, "yakd/yakd-ns.yaml", vmpath.GuestAddonsDir, "yakd-ns.yaml", "0640"),
+		MustBinAsset(addons.YakdAssets, "yakd/yakd-sa.yaml", vmpath.GuestAddonsDir, "yakd-sa.yaml", "0640"),
+		MustBinAsset(addons.YakdAssets, "yakd/yakd-crb.yaml", vmpath.GuestAddonsDir, "yakd-crb.yaml", "0640"),
+		MustBinAsset(addons.YakdAssets, "yakd/yakd-svc.yaml", vmpath.GuestAddonsDir, "yakd-svc.yaml", "0640"),
+		MustBinAsset(addons.YakdAssets, "yakd/yakd-dp.yaml.tmpl", vmpath.GuestAddonsDir, "yakd-dp.yaml", "0640"),
+	}, false, "yakd", "3rd party (marcnuri.com)", "manusa", "https://minikube.sigs.k8s.io/docs/handbook/addons/yakd/",
+		map[string]string{
+			"Yakd": "marcnuri/yakd:0.0.4@sha256:a3f540278e4c11373e15605311851dd9c64d208f4d63e727bccc0e39f9329310",
+		},
+		map[string]string{
+			"Yakd": "docker.io",
+		}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...

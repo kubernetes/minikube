@@ -1,0 +1,69 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app.kubernetes.io/name: yakd-dashboard
+    app.kubernetes.io/instance: yakd-dashboard
+    kubernetes.io/minikube-addons: yakd-dashboard
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: yakd-dashboard
+  namespace: yakd-dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: yakd-dashboard
+      app.kubernetes.io/instance: yakd-dashboard
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: yakd-dashboard
+        app.kubernetes.io/instance: yakd-dashboard
+        gcp-auth-skip-secret: "true"
+    spec:
+      containers:
+        - name: yakd
+          image: {{.CustomRegistries.Yakd  | default .ImageRepository | default .Registries.Yakd }}{{.Images.Yakd}}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            runAsUser: 1001
+            runAsGroup: 2001
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+      restartPolicy: Always
+      serviceAccountName: yakd-dashboard
+      nodeSelector:
+        "kubernetes.io/os": linux
