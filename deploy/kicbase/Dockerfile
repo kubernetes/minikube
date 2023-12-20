@@ -41,9 +41,6 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-# delete this file due to https://github.com/kubernetes/minikube/issues/17700
-RUN rm -f /usr/lib/binfmt.d/python3.10.conf
-
 ARG BUILDKIT_VERSION="v0.12.4"
 ARG CRIO_VERSION="1.24"
 ARG CRI_DOCKERD_VERSION="v0.3.3"
@@ -117,6 +114,8 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
+# delete this file due to https://github.com/kubernetes/minikube/issues/17700
+RUN rm -f /usr/lib/binfmt.d/python3.10.conf
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
