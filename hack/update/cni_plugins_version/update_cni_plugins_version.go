@@ -18,12 +18,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -34,16 +28,6 @@ const cxTimeout = 5 * time.Minute
 
 var (
 	schema = map[string]update.Item{
-		"deploy/iso/minikube-iso/arch/aarch64/package/cni-plugins-aarch64/cni-plugins.mk": {
-			Replace: map[string]string{
-				`CNI_PLUGINS_AARCH64_VERSION = .*`: `CNI_PLUGINS_AARCH64_VERSION = {{.Version}}`,
-			},
-		},
-		"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins/cni-plugins.mk": {
-			Replace: map[string]string{
-				`CNI_PLUGINS_VERSION = .*`: `CNI_PLUGINS_VERSION = {{.Version}}`,
-			},
-		},
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
 				`CNI_PLUGINS_VERSION=.*`: `CNI_PLUGINS_VERSION="{{.Version}}"`,
@@ -68,42 +52,4 @@ func main() {
 	data := Data{Version: stable.Tag}
 
 	update.Apply(schema, data)
-
-	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-aarch64"); err != nil {
-		klog.Fatalf("failed to update hash files: %v", err)
-	}
-	if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins"); err != nil {
-		klog.Fatalf("failed to update hash files: %v", err)
-	}
-}
-
-func updateHashFile(version, arch, packagePath string) error {
-	r, err := http.Get(fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/%s/cni-plugins-linux-%s-%s.tgz", version, arch, version))
-	if err != nil {
-		return fmt.Errorf("failed to download source code: %v", err)
-	}
-	defer r.Body.Close()
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %v", err)
-	}
-	sum := sha256.Sum256(b)
-	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/cni-plugins.hash", packagePath)
-	b, err = os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read hash file: %v", err)
-	}
-	if strings.Contains(string(b), version) {
-		klog.Infof("hash file already contains %q", version)
-		return nil
-	}
-	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open hash file: %v", err)
-	}
-	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x  cni-plugins-linux-%s-%s.tgz\n", sum, arch, version)); err != nil {
-		return fmt.Errorf("failed to write to hash file: %v", err)
-	}
-	return nil
 }

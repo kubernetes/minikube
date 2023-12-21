@@ -35,7 +35,7 @@ jobs:
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: 'Kicbase/ISO: Update cni-plugins from ${{ steps.bumpCNIPlugins.outputs.OLD_VERSION }} to ${{ steps.bumpCNIPlugins.outputs.NEW_VERSION }}'
+          commit-message: 'Kicbase: Update cni-plugins from ${{ steps.bumpCNIPlugins.outputs.OLD_VERSION }} to ${{ steps.bumpCNIPlugins.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_cni_plugins_version
@@ -43,7 +43,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Kicbase/ISO: Update cni-plugins from ${{ steps.bumpCNIPlugins.outputs.OLD_VERSION }} to ${{ steps.bumpCNIPlugins.outputs.NEW_VERSION }}'
+          title: 'Kicbase: Update cni-plugins from ${{ steps.bumpCNIPlugins.outputs.OLD_VERSION }} to ${{ steps.bumpCNIPlugins.outputs.NEW_VERSION }}'
           body: |
             The cni-plugins project released a [new version](https://github.com/containernetworking/plugins/releases)
 
@@ -58,15 +58,4 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'ok-to-build-image'
-            })
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
-        if: ${{ steps.bumpCNIPlugins.outputs.changes != '' }}
-        with:
-          github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          script: |
-            github.rest.issues.createComment({
-              issue_number: ${{ steps.createPR.outputs.pull-request-number }},
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: 'ok-to-build-iso'
             })
