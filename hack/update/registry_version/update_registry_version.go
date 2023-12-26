@@ -84,7 +84,7 @@ func getLatestVersion() (string, error) {
 	}
 
 	for _, i := range content.Results {
-		if !strings.Contains(i.Name, "latest") {
+		if !strings.Contains(i.Name, "latest") && !strings.Contains(i.Name, "alpha") && !strings.Contains(i.Name, "beta") {
 			return i.Name, nil
 		}
 	}
