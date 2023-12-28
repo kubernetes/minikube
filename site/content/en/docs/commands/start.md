@@ -25,7 +25,6 @@ minikube start [flags]
       --apiserver-name string             The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine (default "minikubeCA")
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
-      --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s).  To disable, set to 0s (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
       --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.42-1704751654-17830@sha256:cabd32f8d9e8d804966eb117ed5366660f6363a4d1415f0b5480de6e396be617")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
