@@ -110,7 +110,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.4
+AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # prow-test tag to push changes to
 PROW_TEST_TAG ?= v0.0.5
@@ -959,9 +959,11 @@ auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker 
 	docker build -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
 
 .PHONY: push-auto-pause-hook-image
-push-auto-pause-hook-image: auto-pause-hook-image
+push-auto-pause-hook-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: push-prow-test-image
 push-prow-test-image: docker-multi-arch-build
