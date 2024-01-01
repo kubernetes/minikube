@@ -119,6 +119,8 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 		}
 
 		var data [][]string
+		var noNodePortServices service.URLs
+
 		for _, svc := range services {
 			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, https, wait, interval)
 
@@ -133,6 +135,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 
 			if len(openUrls) == 0 {
 				data = append(data, []string{svc.Namespace, svc.Name, "No node port"})
+				noNodePortServices = append(noNodePortServices, svc)
 			} else {
 				servicePortNames := strings.Join(svc.PortNames, "\n")
 				serviceURLs := strings.Join(openUrls, "\n")
@@ -154,10 +157,22 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 			}
 		}
 
+		noNodePortSvcNames := []string{}
+		for _, svc := range noNodePortServices {
+			noNodePortSvcNames = append(noNodePortSvcNames, fmt.Sprintf("%s/%s", svc.Namespace, svc.Name))
+		}
+		if len(noNodePortServices) != 0 {
+			out.WarningT("Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local developement minikube allows you to access this !", out.V{"svc_names": noNodePortSvcNames})
+		}
+
 		if driver.NeedsPortForward(co.Config.Driver) && services != nil {
 			startKicServiceTunnel(services, cname, co.Config.Driver)
 		} else if !serviceURLMode {
 			openURLs(data)
+			if len(noNodePortServices) != 0 {
+				startKicServiceTunnel(noNodePortServices, cname, co.Config.Driver)
+			}
+
 		}
 	},
 }

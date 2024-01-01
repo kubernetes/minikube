@@ -605,6 +605,7 @@
 	"Select a valid value for --dnsdomain": "Wähle einen gültigen Wert für --dnsdomain",
 	"Send trace events. Options include: [gcp]": "Schicke Trace Events. Mögliche Optionen sind [gcp]",
 	"Service '{{.service}}' was not found in '{{.namespace}}' namespace.\nYou may select another namespace by using 'minikube service {{.service}} -n \u003cnamespace\u003e'. Or list out all the services using 'minikube service list'": "Service '{{.service}}' konnte nicht im Namespace '{{.namespace}} gefunden werden.\nEs ist möglich einen anderen Namespace mit 'minikube service {{.service}} -n \u003cnamespace\u003e' auszuwählen. Oder die Liste aller Services anzuzeigen mit 'minikube service list'",
+	"Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local developement minikube allows you to access this !": "",
 	"Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)": "Setzte eine statische IP für den Minikube Cluster, die IP muss folgendes erfüllen: eine private Addresse, IPv4, das letzte Oktet muss zwischen 2 und 254 liegen, z.B. 192.168.200.200 (Nur Docker und Podman Treiber)",
 	"Set failed": "Setzen fehlgeschlagen",
 	"Set flag to delete all profiles": "Setze Flag um alle Profile zu löschen",
