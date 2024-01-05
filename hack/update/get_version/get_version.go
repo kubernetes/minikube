@@ -58,6 +58,7 @@ var dependencies = map[string]dependency{
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":                 {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},
+	"node":                    {"netlify.toml", `NODE_VERSION = "(.*)"`},
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
