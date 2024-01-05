@@ -21,6 +21,7 @@ VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+HUGO_VERSION ?= $(shell egrep "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v1.32.1-1702708929-17806
@@ -928,7 +929,7 @@ out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	(cd out/hugo && go build --tags extended)
+	(cd out/hugo && git fetch origin && git checkout $(HUGO_VERSION) && go build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
