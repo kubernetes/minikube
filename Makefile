@@ -1200,6 +1200,11 @@ update-nerdctld-version:
 	(cd hack/update/nerdctld_version && \
 	 go run update_nerdctld_version.go)
 
+.PHONY: update-kubectl-version
+update-kubectl-version:
+	(cd hack/update/kubectl_version && \
+	 go run update_kubectl_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
