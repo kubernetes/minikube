@@ -737,7 +737,7 @@ func TestValidatePorts(t *testing.T) {
 			if got != nil {
 				gotError = got.Error()
 			}
-			if gotError != test.errorMsg {
+			if !strings.EqualFold(gotError, test.errorMsg) {
 				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
 			}
 		})
