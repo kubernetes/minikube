@@ -34,7 +34,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 As well as developer-friendly features:
 
 * [Addons](https://minikube.sigs.k8s.io/docs/handbook/deploying/#addons) - a marketplace for developers to share configurations for running services on minikube
-* [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/handbook/addons/nvidia/) - for machine learning
+* [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia/) - for machine learning
 * [Filesystem mounts](https://minikube.sigs.k8s.io/docs/handbook/mount/)
 
 **For more information, see the official [minikube website](https://minikube.sigs.k8s.io)**
