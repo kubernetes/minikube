@@ -94,7 +94,7 @@ func getRoute(host *host.Host, clusterConfig config.ClusterConfig) (*Route, erro
 	if ip == nil {
 		return nil, fmt.Errorf("invalid IP for host %s", hostDriverIP)
 	}
-	dnsIP, err := util.GetDNSIP(ipNet.String())
+	dnsIP, err := util.DNSIP(ipNet.String())
 	if err != nil {
 		return nil, err
 	}

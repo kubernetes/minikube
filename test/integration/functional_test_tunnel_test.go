@@ -100,8 +100,8 @@ func checkDNSForward(t *testing.T) {
 	}
 }
 
-// getKubeDNSIP returns kube-dns ClusterIP
-func getKubeDNSIP(t *testing.T, profile string) string {
+// kubeDNSIP returns kube-dns ClusterIP
+func kubeDNSIP(t *testing.T, profile string) string {
 	// Load ClusterConfig
 	c, err := config.Load(profile)
 	if err != nil {
@@ -113,7 +113,7 @@ func getKubeDNSIP(t *testing.T, profile string) string {
 		t.Errorf("failed to parse service CIDR: %v", err)
 	}
 	// Get kube-dns ClusterIP
-	ip, err := util.GetDNSIP(ipNet.String())
+	ip, err := util.DNSIP(ipNet.String())
 	if err != nil {
 		t.Errorf("failed to get kube-dns IP: %v", err)
 	}
@@ -312,7 +312,7 @@ func validateDNSDig(ctx context.Context, t *testing.T, profile string) {
 	checkRoutePassword(t)
 	checkDNSForward(t)
 
-	ip := getKubeDNSIP(t, profile)
+	ip := kubeDNSIP(t, profile)
 	dnsIP := fmt.Sprintf("@%s", ip)
 
 	// Check if the dig DNS lookup works toward kube-dns IP
@@ -375,7 +375,7 @@ func validateAccessDNS(_ context.Context, t *testing.T, profile string) {
 	got := []byte{}
 	url := fmt.Sprintf("http://%s", domain)
 
-	ip := getKubeDNSIP(t, profile)
+	ip := kubeDNSIP(t, profile)
 	dnsIP := fmt.Sprintf("%s:53", ip)
 
 	// Set kube-dns dial

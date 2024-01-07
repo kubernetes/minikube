@@ -138,7 +138,7 @@ func shouldSilentFail() bool {
 
 	api, cc := mustload.Partial(ClusterFlagValue())
 
-	cp, err := config.PrimaryControlPlane(cc)
+	cp, err := config.ControlPlane(*cc)
 	if err != nil {
 		return false
 	}

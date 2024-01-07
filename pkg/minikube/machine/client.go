@@ -168,7 +168,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 	klog.Infof("LocalClient.Create starting")
 	start := time.Now()
 	defer func() {
-		klog.Infof("LocalClient.Create took %s", time.Since(start))
+		klog.Infof("duration metric: took %s to LocalClient.Create", time.Since(start))
 	}()
 
 	def := registry.Driver(h.DriverName)

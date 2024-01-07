@@ -244,10 +244,13 @@ func MultiNode(cc ClusterConfig) bool {
 	if len(cc.Nodes) > 1 {
 		return true
 	}
+	return viper.GetInt("nodes") > 1
+}
 
-	if viper.GetInt("nodes") > 1 {
+// HA returns true if HA is requested.
+func HA(cc ClusterConfig) bool {
+	if len(ControlPlanes(cc)) > 1 {
 		return true
 	}
-
-	return false
+	return viper.GetBool("ha")
 }

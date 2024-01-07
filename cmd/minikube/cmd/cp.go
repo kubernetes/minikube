@@ -71,7 +71,7 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
 			runner = remoteCommandRunner(&co, dst.node)
 		} else if src.node == "" {
 			// if node name not explicitly specified in both of source and target,
-			// consider target is controlpanel node for backward compatibility.
+			// consider target is control-plane node for backward compatibility.
 			runner = co.CP.Runner
 		} else {
 			runner = command.NewExecRunner(false)
@@ -82,9 +82,6 @@ Example Command : "minikube cp a.txt /home/docker/b.txt" +
 			exit.Error(reason.InternalCommandRunner, fmt.Sprintf("Fail to copy file %s", fa.GetSourcePath()), err)
 		}
 	},
-}
-
-func init() {
 }
 
 // setDstFileNameFromSrc sets the src filename as dst filename
@@ -211,7 +208,7 @@ func validateArgs(src, dst *remotePath) {
 	}
 
 	// if node name not explicitly specified in both of source and target,
-	// consider target node is controlpanel for backward compatibility.
+	// consider target node is control-plane for backward compatibility.
 	if src.node == "" && dst.node == "" && !strings.HasPrefix(dst.path, "/") {
 		exit.Message(reason.Usage, `Target <remote file path> must be an absolute Path. Relative Path is not allowed (example: "minikube:/home/docker/copied.txt")`)
 	}

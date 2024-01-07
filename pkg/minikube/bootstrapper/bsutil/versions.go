@@ -17,12 +17,10 @@ limitations under the License.
 package bsutil
 
 import (
-	"path"
 	"strings"
 
 	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -44,57 +42,11 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	{
 		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "require-kubeconfig",
-			Value:     "true",
-		},
-		LessThanOrEqual: semver.MustParse("1.9.10"),
-	},
-
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "allow-privileged",
-			Value:     "true",
-		},
-		LessThanOrEqual: semver.MustParse("1.15.0-alpha.3"),
-	},
-
-	// before 1.16.0-beta.2, kubeadm bug did not allow overriding this via config file, so this has
-	// to be passed in as a kubelet flag. See https://github.com/kubernetes/kubernetes/pull/81903 for more details.
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "client-ca-file",
-			Value:     path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
-		},
-		LessThanOrEqual: semver.MustParse("1.16.0-beta.1"),
-	},
-
-	{
-		Option: config.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
-		},
-		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
-		LessThanOrEqual:    semver.MustParse("1.13.1000"),
-	},
-	{
-		Option: config.ExtraOption{
-			Component: Apiserver,
-			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
+			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
-	},
-	{
-		Option: config.ExtraOption{
-			Component: Kubelet,
-			Key:       "cadvisor-port",
-			Value:     "0",
-		},
-		LessThanOrEqual: semver.MustParse("1.11.1000"),
 	},
 	{
 		Option: config.ExtraOption{

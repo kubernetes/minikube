@@ -169,7 +169,7 @@ func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, f
 			kubeadmExtraArgs = append(kubeadmExtraArgs, componentOptions{
 				Component: kubeadmComponentKey,
 				ExtraArgs: extraConfig,
-				Pairs:     optionPairsForComponent(component, version, cp),
+				Pairs:     optionPairsForComponent(component, cp),
 			})
 		}
 	}
@@ -178,9 +178,8 @@ func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, f
 }
 
 // optionPairsForComponent generates a map of value pairs for a k8s component
-func optionPairsForComponent(component string, version semver.Version, cp config.Node) map[string]string {
-	// For the ktmpl.V1Beta1 users
-	if component == Apiserver && version.GTE(semver.MustParse("1.14.0-alpha.0")) {
+func optionPairsForComponent(component string, cp config.Node) map[string]string {
+	if component == Apiserver {
 		return map[string]string{
 			"certSANs": fmt.Sprintf(`["127.0.0.1", "localhost", "%s"]`, cp.IP),
 		}

@@ -53,7 +53,7 @@ func WaitForService(cr command.Runner, svc string, timeout time.Duration) error 
 		return fmt.Errorf("not running: %s", err)
 	}
 
-	klog.Infof("duration metric: took %s WaitForService to wait for %s.", time.Since(pStart), svc)
+	klog.Infof("duration metric: took %s WaitForService to wait for %s", time.Since(pStart), svc)
 
 	return nil
 

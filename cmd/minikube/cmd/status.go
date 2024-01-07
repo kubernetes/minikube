@@ -403,18 +403,21 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	if cc.Addons["auto-pause"] {
 		hostname, _, port, err = driver.AutoPauseProxyEndpoint(&cc, &n, host.DriverName)
 	} else {
-		hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+		if config.HA(cc) {
+			hostname = cc.KubernetesConfig.APIServerHAVIP
+			port = cc.APIServerPort
+			err = nil // checked below
+		} else {
+			hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+		}
 	}
 
 	if err != nil {
 		klog.Errorf("forwarded endpoint: %v", err)
 		st.Kubeconfig = Misconfigured
-	} else {
-		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
-		if err != nil && st.Host != state.Starting.String() {
-			klog.Errorf("kubeconfig endpoint: %v", err)
-			st.Kubeconfig = Misconfigured
-		}
+	} else if err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port, ""); err != nil && st.Host != state.Starting.String() {
+		klog.Errorf("kubeconfig endpoint: %v", err)
+		st.Kubeconfig = Misconfigured
 	}
 
 	sta, err := kverify.APIServerStatus(cr, hostname, port)
