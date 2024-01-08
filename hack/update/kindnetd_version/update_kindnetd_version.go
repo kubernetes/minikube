@@ -17,18 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
-)
-
-const (
-	dockerHubKindnetdTags = "https://hub.docker.com/v2/repositories/kindest/kindnetd/tags"
 )
 
 var (
@@ -45,43 +36,12 @@ type Data struct {
 	LatestVersion string
 }
 
-type Response struct {
-	Results []struct {
-		Name string `json:"name"`
-	}
-}
-
-func getLatestVersion() (string, error) {
-	resp, err := http.Get(dockerHubKindnetdTags)
-	if err != nil {
-		return "", fmt.Errorf("failed to get tags: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read HTTP response: %v", err)
-	}
-
-	var content Response
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-
-	if len(content.Results) == 0 {
-		return "", fmt.Errorf("tag list is empty")
-	}
-
-	return content.Results[0].Name, nil
-}
-
 func main() {
-	latest, err := getLatestVersion()
+	tags, err := update.ImageTagsFromDockerHub("kindest/kindnetd")
 	if err != nil {
-		klog.Fatalf("failed to get latest version: %v", err)
+		klog.Fatal(err)
 	}
-	data := Data{LatestVersion: latest}
+	data := Data{LatestVersion: tags[0]}
 
 	update.Apply(schema, data)
 }
