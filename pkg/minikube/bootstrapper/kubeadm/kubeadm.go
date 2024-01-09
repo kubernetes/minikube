@@ -951,7 +951,15 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		}
 		// deploy kube-vip for ha cluster
 		if config.HA(cfg) {
-			kubevipCfg, err := kubevip.Configure(cfg)
+			// workaround for kube-vip
+			// only applicable for k8s v1.29+ during primary control-plane node's kubeadm init (ie, first boot)
+			// TODO (prezha): remove when fixed upstream - ref: https://github.com/kube-vip/kube-vip/issues/684#issuecomment-1864855405
+			kv, err := semver.ParseTolerant(cfg.KubernetesConfig.KubernetesVersion)
+			if err != nil {
+				return errors.Wrapf(err, "parsing kubernetes version %q", cfg.KubernetesConfig.KubernetesVersion)
+			}
+			workaround := kv.GTE(semver.Version{Major: 1, Minor: 29}) && config.IsPrimaryControlPlane(n) && len(config.ControlPlanes(cfg)) == 1
+			kubevipCfg, err := kubevip.Configure(cfg, workaround)
 			if err != nil {
 				klog.Errorf("couldn't generate kube-vip config, this might cause issues (will continue): %v", err)
 			} else {

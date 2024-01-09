@@ -91,21 +91,26 @@ spec:
   hostNetwork: true
   volumes:
   - hostPath:
-      path: /etc/kubernetes/admin.conf
+      path: "{{ .AdminConf }}"
     name: kubeconfig
 status: {}
 `))
 
 // Configure takes last client ip address in cluster nodes network subnet as vip address and generates kube-vip.yaml file.
-func Configure(cc config.ClusterConfig) ([]byte, error) {
+func Configure(cc config.ClusterConfig, workaround bool) ([]byte, error) {
 	klog.Info("generating kube-vip config ...")
 
 	params := struct {
-		VIP  string
-		Port int
+		VIP       string
+		Port      int
+		AdminConf string
 	}{
-		VIP:  cc.KubernetesConfig.APIServerHAVIP,
-		Port: cc.APIServerPort,
+		VIP:       cc.KubernetesConfig.APIServerHAVIP,
+		Port:      cc.APIServerPort,
+		AdminConf: "/etc/kubernetes/admin.conf",
+	}
+	if workaround {
+		params.AdminConf = "/etc/kubernetes/super-admin.conf"
 	}
 
 	b := bytes.Buffer{}
