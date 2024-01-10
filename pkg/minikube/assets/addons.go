@@ -135,7 +135,7 @@ var Addons = map[string]*Addon{
 
 		// GuestPersistentDir
 	}, false, "auto-pause", "minikube", "", "", map[string]string{
-		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.4@sha256:c1792e370216fcdfd8c4540a87e3fa867da204dd5521623796e2d28498a894ff",
+		"AutoPauseHook": "k8s-minikube/auto-pause-hook:v0.0.5@sha256:d613ed2c891882b602b5aca668e92d4606a1b3832d96750ab25804de15929522",
 	}, map[string]string{
 		"AutoPauseHook": "gcr.io",
 	}),
