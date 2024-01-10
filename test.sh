@@ -53,7 +53,7 @@ then
     else
         echo "ok"
     fi
-    popd >/dev/null~
+    popd >/dev/null
 fi
 
 
