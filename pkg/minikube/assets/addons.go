@@ -554,9 +554,9 @@ var Addons = map[string]*Addon{
 			"ingress-dns-pod.yaml",
 			"0640"),
 	}, false, "ingress-dns", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
-		"IngressDNS": "k8s-minikube/minikube-ingress-dns:0.0.2@sha256:4abe27f9fc03fedab1d655e2020e6b165faf3bf6de1088ce6cf215a75b78f05f",
+		"IngressDNS": "cirix/minikube-ingress-dns:1.0.0@sha256:3cda52a6b926a5b110de71bcc3f4b223ff957e5de1edc288be3a52960209a432",
 	}, map[string]string{
-		"IngressDNS": "gcr.io",
+		"IngressDNS": "docker.io",
 	}),
 	"metallb": NewAddon([]*BinAsset{
 		MustBinAsset(addons.MetallbAssets,
