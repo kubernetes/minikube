@@ -15,7 +15,7 @@ defaultContentLanguageInSubdir = false
 # Useful when translating.
 enableMissingTranslationPlaceholders = true
 
-disableKinds = ["taxonomy", "taxonomyTerm"]
+disableKinds = ["taxonomy"]
 
 # Highlighting config
 pygmentsCodeFences = true
@@ -65,9 +65,10 @@ id = "G-JPP6RFM2BP"
 [languages]
 [languages.en]
 title = "minikube"
-description = "minikube is local Kubernetes"
 languageName = "English"
 weight = 1
+[languages.en.params]
+description = "minikube is local Kubernetes"
 
 [params]
 copyright = "The Kubernetes Authors -- "

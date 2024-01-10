@@ -54,6 +54,7 @@ var dependencies = map[string]dependency{
 	"kindnetd":                {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"kong":                    {addonsFile, `kong:(.*)@`},
 	"kong-ingress-controller": {addonsFile, `kong/kubernetes-ingress-controller:(.*)@`},
+	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":                 {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
 	"nerdctld":                {"deploy/kicbase/Dockerfile", `NERDCTLD_VERSION="(.*)"`},
