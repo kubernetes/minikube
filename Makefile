@@ -1208,6 +1208,11 @@ update-kubectl-version:
 	(cd hack/update/kubectl_version && \
 	 go run update_kubectl_version.go)
 
+.PHONY: update-site-node-version
+update-site-node-version:
+	(cd hack/update/site_node_version && \
+	 go run update_site_node_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
