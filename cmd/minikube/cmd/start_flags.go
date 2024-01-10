@@ -605,7 +605,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			CNI:                    getCNIConfig(cmd),
 		},
 		MultiNodeRequested: viper.GetInt(nodes) > 1 || viper.GetBool(ha),
-		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 		GPUs:               viper.GetString(gpus),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
