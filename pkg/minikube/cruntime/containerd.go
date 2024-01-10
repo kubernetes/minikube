@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const (
@@ -568,13 +569,20 @@ func (r *Containerd) Restart() error {
 
 // containerdImagesPreloaded returns true if all images have been preloaded
 func containerdImagesPreloaded(runner command.Runner, images []string) bool {
-	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
-	if err != nil {
+	var rr *command.RunResult
+
+	imageList := func() (err error) {
+		rr, err = runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
+		return err
+	}
+
+	if err := retry.Expo(imageList, 250*time.Millisecond, 5*time.Second); err != nil {
+		klog.Warningf("failed to get image list: %v", err)
 		return false
 	}
 
 	var jsonImages crictlImages
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	err := json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
 		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
 		return false
