@@ -67,7 +67,7 @@ func generateSchema() map[string]update.Item {
 		"hack/update/ingress_version/update_ingress_version.go",
 		"hack/update/kubeadm_constants/update_kubeadm_constants.go",
 		"hack/update/kubernetes_versions_list/update_kubernetes_versions_list.go",
-		"hack/update/node_version/update_node_version.go",
+		"hack/update/site_node_version/update_site_node_version.go",
 		"pkg/perf/monitor/github.go",
 	}
 
