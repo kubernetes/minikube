@@ -24,10 +24,13 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	// WARNING: use path for kic/iso and path/filepath for user os
+	"path"
+	"path/filepath"
 
 	"github.com/juju/mutex/v2"
 	"github.com/otiai10/copy"
@@ -95,6 +98,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 	}()
 
 	for _, c := range xfer {
+		// note: src(c) is user os' path, dst is kic/iso (linux) path
 		certFile, err := assets.NewFileAsset(c, vmpath.GuestKubernetesCertsDir, filepath.Base(c), properPerms(c))
 		if err != nil {
 			return errors.Wrapf(err, "create cert file asset for %s", c)
@@ -109,7 +113,8 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 
 	for src, dst := range caCerts {
 		// note: these are all public certs, so should be world-readeable
-		certFile, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0644")
+		// note: src is user os' path, dst is kic/iso (linux) path
+		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
 			return errors.Wrapf(err, "create ca cert file asset for %s", src)
 		}
@@ -147,9 +152,9 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 		kcs := &kubeconfig.Settings{
 			ClusterName:          n.Name,
 			ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(n.Port))),
-			ClientCertificate:    filepath.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
-			ClientKey:            filepath.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
-			CertificateAuthority: filepath.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
+			ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
+			ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
+			CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
 			ExtensionContext:     kubeconfig.NewExtension(),
 			ExtensionCluster:     kubeconfig.NewExtension(),
 			KeepContext:          false,
@@ -390,7 +395,7 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, shared shared
 // renewExpiredKubeadmCerts checks if kubeadm certs already exists and are still valid, then renews them if needed.
 // if certs don't exist already (eg, kubeadm hasn't run yet), then checks are skipped.
 func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error {
-	if _, err := cmd.RunCmd(exec.Command("stat", filepath.Join(vmpath.GuestPersistentDir, "certs", "apiserver-kubelet-client.crt"))); err != nil {
+	if _, err := cmd.RunCmd(exec.Command("stat", path.Join(vmpath.GuestPersistentDir, "certs", "apiserver-kubelet-client.crt"))); err != nil {
 		klog.Infof("'apiserver-kubelet-client' cert doesn't exist, likely first start: %v", err)
 		return nil
 	}
@@ -405,7 +410,7 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 			certPath = append(certPath, "etcd")
 		}
 		certPath = append(certPath, strings.TrimPrefix(cert, "etcd-")+".crt")
-		if !isKubeadmCertValid(cmd, filepath.Join(certPath...)) {
+		if !isKubeadmCertValid(cmd, path.Join(certPath...)) {
 			expiredCerts = true
 		}
 	}
@@ -413,7 +418,7 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 		return nil
 	}
 	out.WarningT("kubeadm certificates have expired. Generating new ones...")
-	kubeadmPath := filepath.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion)
+	kubeadmPath := path.Join(vmpath.GuestPersistentDir, "binaries", cc.KubernetesConfig.KubernetesVersion)
 	bashCmd := fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm certs renew all --config %s", kubeadmPath, constants.KubeadmYamlPath)
 	if _, err := cmd.RunCmd(exec.Command("/bin/bash", "-c", bashCmd)); err != nil {
 		return errors.Wrap(err, "kubeadm certs renew")
@@ -450,6 +455,7 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 // minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
 func collectCACerts() (map[string]string, error) {
 	localPath := localpath.MiniPath()
+	// note: certFiles map's key is user os' path, whereas map's value is kic/iso (linux) path
 	certFiles := map[string]string{}
 
 	dirs := []string{filepath.Join(localPath, "certs"), filepath.Join(localPath, "files", "etc", "ssl", "certs")}
@@ -485,7 +491,7 @@ func collectCACerts() (map[string]string, error) {
 				if validPem {
 					filename := filepath.Base(hostpath)
 					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-					certFiles[hostpath] = filepath.Join(vmpath.GuestCertAuthDir, dst)
+					certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
 				}
 			}
 			return nil
@@ -502,7 +508,7 @@ func collectCACerts() (map[string]string, error) {
 	}
 
 	// include minikube CA
-	certFiles[localpath.CACert()] = filepath.Join(vmpath.GuestCertAuthDir, "minikubeCA.pem")
+	certFiles[localpath.CACert()] = path.Join(vmpath.GuestCertAuthDir, "minikubeCA.pem")
 
 	filtered := map[string]string{}
 	for k, v := range certFiles {
@@ -544,8 +550,8 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	}
 
 	for _, caCertFile := range caCerts {
-		dstFilename := filepath.Base(caCertFile)
-		certStorePath := filepath.Join(vmpath.GuestCertStoreDir, dstFilename)
+		dstFilename := path.Base(caCertFile)
+		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
 
 		cmd := fmt.Sprintf("test -s %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
 		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
@@ -560,7 +566,7 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 		if err != nil {
 			return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
 		}
-		subjectHashLink := filepath.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+		subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
 		// NOTE: This symlink may exist, but point to a missing file
 		cmd = fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
@@ -614,7 +620,7 @@ func isValid(certPath, keyPath string) bool {
 	}
 
 	if cert.NotAfter.Before(time.Now()) {
-		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": filepath.Base(certPath)})
+		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": path.Base(certPath)})
 		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		os.Remove(certPath)
 		os.Remove(keyPath)
@@ -636,7 +642,7 @@ func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
 func properPerms(cert string) string {
 	perms := "0644"
 
-	ext := strings.ToLower(filepath.Ext(cert))
+	ext := strings.ToLower(path.Ext(cert))
 	if ext == ".key" || ext == ".pem" {
 		perms = "0600"
 	}

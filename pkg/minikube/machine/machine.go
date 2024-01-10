@@ -19,7 +19,7 @@ package machine
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -202,7 +202,7 @@ func restore(h host.Host) error {
 		if len(dst) == 0 {
 			continue
 		}
-		src := filepath.Join(vmpath.GuestBackupDir, dst)
+		src := path.Join(vmpath.GuestBackupDir, dst)
 		if _, err := r.RunCmd(exec.Command("sudo", "cp", "--archive", "--update", "--force", src, "/")); err != nil {
 			errs = append(errs, errors.Errorf("failed to copy %q to %q (will continue): %v", src, dst, err))
 		}
