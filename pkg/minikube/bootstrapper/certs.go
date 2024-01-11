@@ -620,7 +620,7 @@ func isValid(certPath, keyPath string) bool {
 	}
 
 	if cert.NotAfter.Before(time.Now()) {
-		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": path.Base(certPath)})
+		out.WarningT("Certificate {{.certPath}} has expired. Generating a new one...", out.V{"certPath": filepath.Base(certPath)})
 		klog.Infof("cert expired %s: expiration: %s, now: %s", certPath, cert.NotAfter, time.Now())
 		os.Remove(certPath)
 		os.Remove(keyPath)
@@ -642,7 +642,7 @@ func isKubeadmCertValid(cmd command.Runner, certPath string) bool {
 func properPerms(cert string) string {
 	perms := "0644"
 
-	ext := strings.ToLower(path.Ext(cert))
+	ext := strings.ToLower(filepath.Ext(cert))
 	if ext == ".key" || ext == ".pem" {
 		perms = "0600"
 	}
