@@ -191,8 +191,6 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 
 			// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 			t.Run("DeleteAll", func(t *testing.T) {
-				defer PostMortemLogs(t, profile)
-
 				if !CanCleanup() {
 					t.Skip("skipping, as cleanup is disabled")
 				}
@@ -204,8 +202,6 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 
 			// Delete should always succeed, even if previously partially or fully deleted.
 			t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
-				defer PostMortemLogs(t, profile)
-
 				if !CanCleanup() {
 					t.Skip("skipping, as cleanup is disabled")
 				}
