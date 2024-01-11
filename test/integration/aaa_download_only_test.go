@@ -42,10 +42,20 @@ import (
 )
 
 // TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
-func TestDownloadOnly(t *testing.T) {
-	profile := UniqueProfileName("download-only")
+func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
-	defer Cleanup(t, profile, cancel)
+
+	// separate each k8s version testrun into individual profiles to avoid ending up with subsequently mixed up configs like:
+	// {Name:download-only-062906 ... KubernetesConfig:{KubernetesVersion:v1.28.4 ...} Nodes:[{Name: IP: Port:8443 KubernetesVersion:v1.16.0 ...}] ...}
+	// that will then get artifacts for node's not cluster's KubernetesVersion and fail checks thereafter
+	// at the end, cleanup all profiles
+	profiles := []string{}
+	defer func() {
+		for _, profile := range profiles {
+			Cleanup(t, profile, cancel)
+		}
+	}()
+
 	containerRuntime := ContainerRuntime()
 
 	versions := []string{
@@ -61,6 +71,8 @@ func TestDownloadOnly(t *testing.T) {
 
 	for _, v := range versions {
 		t.Run(v, func(t *testing.T) {
+			profile := UniqueProfileName("download-only")
+			profiles = append(profiles, profile)
 			defer PostMortemLogs(t, profile)
 
 			t.Run("json-events", func(t *testing.T) {
@@ -122,7 +134,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 
 				for _, img := range imgs {
-					pathToImage := []string{localpath.MiniPath(), "cache", "images", runtime.GOOS}
+					pathToImage := []string{localpath.MiniPath(), "cache", "images", runtime.GOARCH}
 					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
 					imagePath := strings.Split(img, "/")    // changes "gcr.io/k8s-minikube/storage-provisioner_v5" into ["gcr.io", "k8s-minikube", "storage-provisioner_v5"] to match cache folder structure
 					pathToImage = append(pathToImage, imagePath...)
@@ -177,34 +189,33 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 
+			// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
+			t.Run("DeleteAll", func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
+
+				if !CanCleanup() {
+					t.Skip("skipping, as cleanup is disabled")
+				}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
+				if err != nil {
+					t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
+				}
+			})
+
+			// Delete should always succeed, even if previously partially or fully deleted.
+			t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+				defer PostMortemLogs(t, profile)
+
+				if !CanCleanup() {
+					t.Skip("skipping, as cleanup is disabled")
+				}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+				if err != nil {
+					t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
+				}
+			})
 		})
 	}
-
-	// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
-	t.Run("DeleteAll", func(t *testing.T) {
-		defer PostMortemLogs(t, profile)
-
-		if !CanCleanup() {
-			t.Skip("skipping, as cleanup is disabled")
-		}
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
-		if err != nil {
-			t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
-		}
-	})
-	// Delete should always succeed, even if previously partially or fully deleted.
-	t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
-		defer PostMortemLogs(t, profile)
-
-		if !CanCleanup() {
-			t.Skip("skipping, as cleanup is disabled")
-		}
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
-		if err != nil {
-			t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
-		}
-	})
-
 }
 
 // TestDownloadOnlyKic makes sure --download-only caches the docker driver images as well.
