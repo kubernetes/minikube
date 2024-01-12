@@ -428,7 +428,7 @@
 	"Group ID:     {{.groupID}}": "组 ID：{{.groupID}}",
 	"Headlamp can display more detailed information when metrics-server is installed. To install it, run:\n\nminikube{{.profileArg}} addons enable metrics-server\t\n\n": "安装metrics-server后，Headlamp可以显示更详细的信息。 要安装它，请运行\n\nminikube{{.profileArg}} 插件启用指标服务器\t\n\n",
 	"Hide the hypervisor signature from the guest in minikube (kvm2 driver only)": "向 minikube 中的访客隐藏管理程序签名（仅限 kvm2 驱动程序）",
-	"Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`": "Hyper-V 要求内存的 MB 值是偶数，",
+	"Hyper-V requires that memory MB be an even number, {{.memory}}MB was specified, try passing `--memory {{.suggestMemory}}`": "Hyper-V 要求内存的 MB 值是偶数，{{.memory}}MB 被指定，尝试传递 `--memory {{.suggestMemory}}`",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver": "Hyperkit 已损坏。升级到最新的 hyperkit 版本以及/或者 Docker 桌面版。或者，你可以通过 --driver 切换其他选项",
 	"Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --vm-driver": "Hyperkit 已损坏。升级到最新的 hyperkit 版本以及/或者 Docker 桌面版。或者，你可以通过 --vm-driver 切换其他选项",
 	"Hyperkit networking is broken. Try disabling Internet Sharing: System Preference \u003e Sharing \u003e Internet Sharing. \nAlternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.": "Hyperkit 网络已损坏。 尝试禁用 Internet 共享：系统偏好设置 \u003e 共享 \u003e Internet 共享。\n 或者，您可以尝试升级到最新的 hyperkit 版本，或使用备用驱动程序。",
