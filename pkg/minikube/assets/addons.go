@@ -21,6 +21,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	semver "github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -937,6 +938,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		Environment             map[string]string
 		LegacyPodSecurityPolicy bool
 		LegacyRuntimeClass      bool
+		AutoPauseInterval       time.Duration
 	}{
 		KubernetesVersion:      make(map[string]uint64),
 		PreOneTwentyKubernetes: false,
@@ -958,6 +960,7 @@ func GenerateTemplateData(addon *Addon, cc *config.ClusterConfig, netInfo Networ
 		},
 		LegacyPodSecurityPolicy: v.LT(semver.Version{Major: 1, Minor: 25}),
 		LegacyRuntimeClass:      v.LT(semver.Version{Major: 1, Minor: 25}),
+		AutoPauseInterval:       cc.AutoPauseInterval,
 	}
 	if opts.ImageRepository != "" && !strings.HasSuffix(opts.ImageRepository, "/") {
 		opts.ImageRepository += "/"
