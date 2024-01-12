@@ -1250,7 +1250,7 @@ func validateCPUCount(drvName string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) {
+func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
