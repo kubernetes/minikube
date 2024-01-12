@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
@@ -1315,6 +1316,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		}
 	}
 
+	if cmd.Flags().Changed(autoPauseInterval) {
+		if err := validateAutoPauseInterval(viper.GetDuration(autoPauseInterval)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
 	if driver.IsSSH(drvName) {
 		sshIPAddress := viper.GetString(sshIPAddress)
 		if sshIPAddress == "" {
@@ -1474,6 +1481,13 @@ func validateGPUsArch() error {
 		return nil
 	}
 	return errors.Errorf("The GPUs flag is only supported on amd64, arm64 & ppc64le, currently using %s", runtime.GOARCH)
+}
+
+func validateAutoPauseInterval(interval time.Duration) error {
+	if interval != interval.Abs() || interval.String() == "0s" {
+		return errors.New("auto-pause-interval must be greater than 0s")
+	}
+	return nil
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
