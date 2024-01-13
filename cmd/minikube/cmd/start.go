@@ -334,8 +334,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	rtime := getContainerRuntime(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {
-		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
+		return node.Starter{}, errors.Wrap(err, "Failed to generate cluster config")
 	}
+	klog.Infof("cluster config:\n%+v", cc)
 
 	if firewall.IsBootpdBlocked(cc) {
 		if err := firewall.UnblockBootpd(); err != nil {
@@ -1699,6 +1700,8 @@ func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (co
 	if err != nil {
 		return cc, config.Node{}, errors.Wrapf(err, "failed getting control-plane node")
 	}
+	pcp.KubernetesVersion = kv
+	pcp.ContainerRuntime = cr
 
 	return cc, pcp, nil
 }

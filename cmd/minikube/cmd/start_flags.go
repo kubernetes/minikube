@@ -319,8 +319,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	}
 
-	klog.Infof("config:\n%+v", cc)
-
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
 		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
