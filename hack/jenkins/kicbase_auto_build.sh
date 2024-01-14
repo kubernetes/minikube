@@ -39,8 +39,8 @@ export PATH=$PATH:$GOBIN
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
 # if it doesn't exist, it will just return VERSION, which is covered in the if statement below
-HEAD_KIC_TIMESTAMP=$(egrep "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
-CURRENT_KIC_TS=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
+HEAD_KIC_TIMESTAMP=$(grep -E "Version =" types-head.go | cut -d \" -f 2 | cut -d "-" -f 2)
+CURRENT_KIC_TS=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 2)
 if [[ $HEAD_KIC_TIMESTAMP != v* ]]; then
 	diff=$((CURRENT_KIC_TS-HEAD_KIC_TIMESTAMP))
 	if [[ $CURRENT_KIC_TS == v* ]] || [ $diff -lt 0 ]; then
@@ -55,7 +55,7 @@ if [[ -z $KIC_VERSION ]]; then
 	# Testing PRs here
 	release=false
 	now=$(date +%s)
-	KV=$(egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
+	KV=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
 	GCR_REPO=gcr.io/k8s-minikube/kicbase-builds
 	DH_REPO=docker.io/kicbase/build
 	export KIC_VERSION=$KV-$now-$ghprbPullId

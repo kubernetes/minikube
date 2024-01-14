@@ -1,7 +1,7 @@
 To use VM drivers, verify that your system has virtualization support enabled:
 
 ```shell
-egrep -q 'vmx|svm' /proc/cpuinfo && echo yes || echo no
+grep -E -q 'vmx|svm' /proc/cpuinfo && echo yes || echo no
 ```
 
 If the above command outputs "no":

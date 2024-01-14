@@ -19,9 +19,9 @@ VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
-KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
-KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-HUGO_VERSION ?= $(shell egrep "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
+KUBERNETES_VERSION ?= $(shell grep -E "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v1.32.1-1703784139-17866
