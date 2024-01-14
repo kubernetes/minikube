@@ -1086,6 +1086,11 @@ update-cri-o-version:
 	(cd hack/update/cri-o_version && \
 	 go run update_cri-o_version.go)
 
+.PHONY: update-crun-version
+update-crun-version:
+	(cd hack/update/crun_version && \
+	 go run update_crun_version.go)
+
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
 	(cd hack/update/metrics_server_version && \
