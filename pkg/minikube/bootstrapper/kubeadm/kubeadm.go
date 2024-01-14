@@ -619,14 +619,18 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	conf := constants.KubeadmYamlPath
 
 	// check whether or not the cluster needs to be reconfigured
-	// except for vm driver in non-ha cluster - fallback to old behaviour
-	if config.HA(cfg) || !driver.IsVM(cfg.Driver) {
-		rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new"))
-		if err == nil {
-			// DANGER: This log message is hard-coded in an integration test!
-			klog.Infof("The running cluster does not require reconfiguration: %s", host)
+	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err == nil {
+		// DANGER: This log message is hard-coded in an integration test!
+		klog.Infof("The running cluster does not require reconfiguration: %s", host)
+		// taking a shortcut, as the cluster seems to be properly configured
+		// except for vm driver in non-ha cluster - fallback to old behaviour
+		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha cluster with vm driver
+		// where such cluster needs to be reconfigured b/c of (currently) ephemeral config, but then also,
+		// starting already started such cluster (hard to know w/o investing that time) will fallthrough the same path and reconfigure cluster
+		if config.HA(cfg) || !driver.IsVM(cfg.Driver) {
 			return nil
 		}
+	} else {
 		klog.Infof("detected kubeadm config drift (will reconfigure cluster from new %s):\n%s", conf, rr.Output())
 	}
 
