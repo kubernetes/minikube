@@ -80,65 +80,82 @@ func Partial(name string, miniHome ...string) (libmachine.API, *config.ClusterCo
 	return api, cc
 }
 
-// Running is a cmd-friendly way to load a running cluster
+// Running is a cmd-friendly way to load a running cluster.
 func Running(name string) ClusterController {
-	ctrls, err := running(name, true)
-	if err != nil {
-		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-		exit.Message(reason.GuestCpConfig, "Unable to get running control-plane nodes")
+	if r := running(name, true); r != nil {
+		return r[0]
 	}
-
-	if len(ctrls) == 0 {
-		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-		exit.Message(reason.GuestCpConfig, "Unable to find any running control-plane nodes")
-	}
-	return ctrls[0]
+	return ClusterController{}
 }
 
-// running returns first or all running ClusterControllers found or an error.
-func running(name string, first bool) ([]ClusterController, error) {
+// running returns first or all running ClusterControllers found or exits with specific error if none found.
+func running(name string, first bool) []ClusterController {
 	api, cc := Partial(name)
 
 	cps := config.ControlPlanes(*cc)
 	if len(cps) == 0 {
-		return nil, fmt.Errorf("unable to find any control-plane nodes")
+		out.Styled(style.Shrug, "Unable to find any control-plane nodes")
+		exitTip("delete", name, reason.ExControlPlaneNotFound)
 	}
 
 	running := []ClusterController{}
-	for _, cp := range cps {
+	for i, cp := range cps {
+		// control flow depending on if we have any other control-plane nodes to try in case of an error
+		last := i == len(cps)-1
+
 		machineName := config.MachineName(*cc, cp)
 
 		status, err := machine.Status(api, machineName)
 		if err != nil {
-			out.Styled(style.Shrug, `Unable to get control-plane node {{.name}} status (will continue): {{.err}}`, out.V{"name": machineName, "err": err})
+			if last {
+				exit.Message(reason.GuestStatus, `Unable to get control-plane node {{.name}} host status: {{.err}}`, out.V{"name": machineName, "err": err})
+			}
+			out.WarningT(`Unable to get control-plane node {{.name}} host status (will try others): {{.err}}`, out.V{"name": machineName, "err": err})
 			continue
 		}
 
 		if status == state.None.String() {
-			out.Styled(style.Shrug, `The control-plane node {{.name}} does not exist (will continue)`, out.V{"name": machineName})
+			if last {
+				out.Styled(style.Shrug, `The control-plane node {{.name}} host does not exist`, out.V{"name": machineName})
+				exitTip("start", name, reason.ExGuestNotFound)
+			}
+			out.WarningT(`The control-plane node {{.name}} host does not exist (will try others)`, out.V{"name": machineName})
 			continue
 		}
 
 		if status != state.Running.String() {
-			out.Styled(style.Shrug, `The control-plane node {{.name}} is not running (will continue): state={{.state}}`, out.V{"name": machineName, "state": status})
+			if last {
+				out.Styled(style.Shrug, `The control-plane node {{.name}} host is not running: state={{.state}}`, out.V{"name": machineName, "state": status})
+				exitTip("start", name, reason.ExGuestNotRunning)
+			}
+			out.WarningT(`The control-plane node {{.name}} host is not running (will try others): state={{.state}}`, out.V{"name": machineName, "state": status})
 			continue
 		}
 
 		host, err := machine.LoadHost(api, machineName)
 		if err != nil {
-			out.Styled(style.Shrug, `Unable to load control-plane node {{.name}} host (will continue): {{.err}}`, out.V{"name": machineName, "err": err})
+			if last {
+				exit.Message(reason.GuestLoadHost, `Unable to load control-plane node {{.name}} host: {{.err}}`, out.V{"name": machineName, "err": err})
+			}
+			out.WarningT(`Unable to load control-plane node {{.name}} host (will try others): {{.err}}`, out.V{"name": machineName, "err": err})
 			continue
 		}
 
 		cr, err := machine.CommandRunner(host)
 		if err != nil {
-			out.Styled(style.Shrug, `Unable to get control-plane node {{.name}} command runner (will continue): {{.err}}`, out.V{"name": machineName, "err": err})
+			if last {
+				exit.Message(reason.InternalCommandRunner, `Unable to get control-plane node {{.name}} host command runner: {{.err}}`, out.V{"name": machineName, "err": err})
+			}
+			out.WarningT(`Unable to get control-plane node {{.name}} host command runner (will try others): {{.err}}`, out.V{"name": machineName, "err": err})
 			continue
 		}
 
 		hostname, ip, port, err := driver.ControlPlaneEndpoint(cc, &cp, host.DriverName)
 		if err != nil {
-			out.Styled(style.Shrug, `Unable to get control-plane node {{.name}} endpoint (will continue): {{.err}}`, out.V{"name": machineName, "err": err})
+			if last {
+				exit.Message(reason.DrvCPEndpoint, `Unable to get control-plane node {{.name}} endpoint: {{.err}}`, out.V{"name": machineName, "err": err})
+			}
+			out.WarningT(`Unable to get control-plane node {{.name}} endpoint (will try others): {{.err}}`, out.V{"name": machineName, "err": err})
 			continue
 		}
 
@@ -153,50 +170,62 @@ func running(name string, first bool) ([]ClusterController, error) {
 				IP:       ip,
 				Port:     port,
 			}})
+
 		if first {
-			return running, nil
+			break
 		}
 	}
-	return running, nil
+	return running
 }
 
-// Healthy is a cmd-friendly way to load a healthy cluster
+// Healthy is a cmd-friendly way to load a healthy cluster.
 func Healthy(name string) ClusterController {
-	ctrls, err := running(name, false)
-	if err != nil {
-		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-		exit.Message(reason.GuestCpConfig, "Unable to get running control-plane nodes")
-	}
+	ctrls := running(name, false)
 
-	if len(ctrls) == 0 {
-		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-		exit.Message(reason.GuestCpConfig, "Unable to find any running control-plane nodes")
-	}
+	for i, ctrl := range ctrls {
+		// control flow depending on if we have any other cluster controllers to try in case of an error
+		last := i == len(ctrls)-1
 
-	for _, ctrl := range ctrls {
 		machineName := config.MachineName(*ctrl.Config, *ctrl.CP.Node)
 
 		as, err := kverify.APIServerStatus(ctrl.CP.Runner, ctrl.CP.Hostname, ctrl.CP.Port)
 		if err != nil {
-			out.Styled(style.Shrug, `Unable to get control-plane node {{.name}} apiserver status: {{.error}}`, out.V{"name": machineName, "error": err})
+			if last {
+				out.Styled(style.Shrug, `Unable to get control-plane node {{.name}} apiserver status: {{.error}}`, out.V{"name": machineName, "error": err})
+				exitTip("delete", name, reason.ExControlPlaneError)
+			}
+			out.WarningT(`Unable to get control-plane node {{.name}} apiserver status (will try others): {{.error}}`, out.V{"name": machineName, "error": err})
 			continue
 		}
 
 		if as == state.Paused {
-			out.Styled(style.Shrug, `The control-plane node {{.name}} apiserver is paused (will continue)`, out.V{"name": machineName})
+			if last {
+				out.Styled(style.Shrug, `The control-plane node {{.name}} apiserver is paused`, out.V{"name": machineName})
+				exitTip("unpause", name, reason.ExControlPlaneNotRunning)
+			}
+			out.WarningT(`The control-plane node {{.name}} apiserver is paused (will try others)`, out.V{"name": machineName})
 			continue
 		}
 
 		if as != state.Running {
-			out.Styled(style.Shrug, `The control-plane node {{.name}} apiserver is not running (will continue): (state={{.state}})`, out.V{"name": machineName, "state": as.String()})
+			if last {
+				out.Styled(style.Shrug, `The control-plane node {{.name}} apiserver is not running: (state={{.state}})`, out.V{"name": machineName, "state": as.String()})
+				exitTip("start", name, reason.ExControlPlaneNotRunning)
+			}
+			out.WarningT(`The control-plane node {{.name}} apiserver is not running (will try others): (state={{.state}})`, out.V{"name": machineName, "state": as.String()})
 			continue
 		}
 
 		return ctrl
 	}
-	out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
-	exit.Message(reason.GuestCpConfig, "Unable to find any healthy control-plane nodes")
 	return ClusterController{}
+}
+
+// exitTip returns an action tip and exits
+func exitTip(action string, profile string, code int) {
+	command := ExampleCmd(profile, action)
+	out.Styled(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
+	exit.Code(code)
 }
 
 // ExampleCmd Return a minikube command containing the current profile name
@@ -205,11 +234,4 @@ func ExampleCmd(cname string, action string) string {
 		return fmt.Sprintf("minikube %s -p %s", action, cname)
 	}
 	return fmt.Sprintf("minikube %s", action)
-}
-
-// exitTip returns an action tip and exits
-func exitTip(action string, profile string, code int) {
-	command := ExampleCmd(profile, action)
-	out.Styled(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
-	exit.Code(code)
 }
