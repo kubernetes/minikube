@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -49,7 +51,8 @@ var nodeStopCmd = &cobra.Command{
 
 		err = machine.StopHost(api, machineName)
 		if err != nil {
-			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
+			out.FatalT("Failed to stop node {{.name}}: {{.error}}", out.V{"name": name, "error": err})
+			os.Exit(reason.ExHostError)
 		}
 		out.Step(style.Stopped, "Successfully stopped node {{.name}}", out.V{"name": machineName})
 	},
