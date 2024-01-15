@@ -50,7 +50,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	defer api.Close()
 
 	pcp, err := config.ControlPlane(*cc)
-	if err != nil || !config.IsPrimaryControlPlane(pcp) {
+	if err != nil || !config.IsPrimaryControlPlane(*cc, pcp) {
 		return errors.Wrap(err, "get primary control-plane node")
 	}
 	if !machine.IsRunning(api, config.MachineName(*cc, pcp)) {

@@ -124,7 +124,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 	if n.ControlPlane {
 		// copy essential certs from primary control-plane node to secondaries
 		// ref: https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/#manual-certs
-		if !config.IsPrimaryControlPlane(n) {
+		if !config.IsPrimaryControlPlane(k8s, n) {
 			pcpCerts := []struct {
 				srcDir  string
 				srcFile string

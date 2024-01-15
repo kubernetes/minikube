@@ -596,7 +596,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	}
 
 	pcp, err := config.ControlPlane(cfg)
-	if err != nil || !config.IsPrimaryControlPlane(pcp) {
+	if err != nil || !config.IsPrimaryControlPlane(cfg, pcp) {
 		return errors.Wrap(err, "get primary control-plane node")
 	}
 
@@ -911,7 +911,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	pcp, err := config.ControlPlane(cfg)
-	if err != nil || !config.IsPrimaryControlPlane(pcp) {
+	if err != nil || !config.IsPrimaryControlPlane(cfg, pcp) {
 		return errors.Wrap(err, "get primary control-plane node")
 	}
 
@@ -947,7 +947,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	if n.ControlPlane {
 		// for primary control-plane node only, generate kubeadm config based on current params
 		// on node restart, it will be checked against later if anything needs changing
-		if config.IsPrimaryControlPlane(n) {
+		if config.IsPrimaryControlPlane(cfg, n) {
 			kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 			if err != nil {
 				return errors.Wrap(err, "generating kubeadm cfg")
@@ -963,7 +963,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 			if err != nil {
 				return errors.Wrapf(err, "parsing kubernetes version %q", cfg.KubernetesConfig.KubernetesVersion)
 			}
-			workaround := kv.GTE(semver.Version{Major: 1, Minor: 29}) && config.IsPrimaryControlPlane(n) && len(config.ControlPlanes(cfg)) == 1
+			workaround := kv.GTE(semver.Version{Major: 1, Minor: 29}) && config.IsPrimaryControlPlane(cfg, n) && len(config.ControlPlanes(cfg)) == 1
 			kubevipCfg, err := kubevip.Configure(cfg, workaround)
 			if err != nil {
 				klog.Errorf("couldn't generate kube-vip config, this might cause issues (will continue): %v", err)
@@ -1056,7 +1056,7 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 	// ensure that "primary" label is applied only to the 1st node in the cluster (used eg for placing ingress there)
 	// this is used to uniquely distinguish that from other nodes in multi-master/multi-control-plane cluster config
 	primaryLbl := "minikube.k8s.io/primary=false"
-	if config.IsPrimaryControlPlane(n) {
+	if config.IsPrimaryControlPlane(cfg, n) {
 		primaryLbl = "minikube.k8s.io/primary=true"
 	}
 
@@ -1083,7 +1083,7 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 	}
 
 	// primary control-plane and worker nodes should be untainted by default
-	if n.ControlPlane && !config.IsPrimaryControlPlane(n) {
+	if n.ControlPlane && !config.IsPrimaryControlPlane(cfg, n) {
 		// example:
 		// sudo /var/lib/minikube/binaries/<version>/kubectl --kubeconfig=/var/lib/minikube/kubeconfig taint nodes test-357 node-role.kubernetes.io/control-plane:NoSchedule-
 		cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),

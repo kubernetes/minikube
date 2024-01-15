@@ -135,7 +135,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 
 	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
-	if config.IsPrimaryControlPlane(*starter.Node) {
+	if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
 		// [re]start primary control-plane node
 		kcs, bs, err = startPrimaryControlPlane(starter, cr)
 		if err != nil {
@@ -228,7 +228,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	}
 
 	// for ha cluster, primary control-plane node will not come up alone until secondary joins
-	if config.HA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Node) {
+	if config.HA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
 		klog.Infof("HA cluster: will skip waiting for primary control-plane node %+v", starter.Node)
 	} else {
 		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
@@ -274,7 +274,7 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 
 // startPrimaryControlPlane starts control-plane node.
 func startPrimaryControlPlane(starter Starter, cr cruntime.Manager) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
-	if !config.IsPrimaryControlPlane(*starter.Node) {
+	if !config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
 		return nil, nil, fmt.Errorf("node not marked as primary control-plane")
 	}
 
@@ -378,7 +378,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (comman
 		if n.ControlPlane {
 			role = "control-plane"
 		}
-		if config.IsPrimaryControlPlane(*n) {
+		if config.IsPrimaryControlPlane(*cc, *n) {
 			role = "primary control-plane"
 		}
 		out.Step(style.ThumbsUp, "Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster", out.V{"node": name, "role": role, "cluster": cc.Name})
