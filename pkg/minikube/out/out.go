@@ -255,7 +255,7 @@ func SuccessT(format string, a ...V) {
 	Step(style.Success, format, a...)
 }
 
-// FatalT is a shortcut for writing a templated fatal message to stderr
+// FatalT does Not Exit - it is only a shortcut for writing a templated fatal message to stderr.
 func FatalT(format string, a ...V) {
 	ErrT(style.Fatal, format, a...)
 }
