@@ -111,19 +111,18 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 
 	args = append(args, "list", "-f", "json")
 
-	// retry only on "no such file or directory" error returned by runc
-	// TODO (prezha): remove this workaround when #17976 is addressed upstream and we've updated to that runc version
+	// avoid "no such file or directory" runc list error by retrying
+	// TODO (prezha): consider removing this retry workaround when #17976 is addressed upstream and we've updated to that runc version
 	list := func() error {
 		rr, err = cr.RunCmd(exec.Command("sudo", args...))
-		if errors.Is(err, os.ErrNotExist) {
+		if err != nil {
 			klog.Infof("temporary error listing containers using runc (will retry): %v", err)
 			return err
 		}
-		// don't retry on non-error or any error other than os.ErrNotExist, but retain the underlying error and check thereafter
+		// bail out
 		return nil
 	}
-	// return any underlying error
-	if rerr := retry.Expo(list, time.Millisecond*100, time.Second); rerr != nil || err != nil {
+	if err := retry.Expo(list, 100*time.Millisecond, 5*time.Second); err != nil {
 		return nil, errors.Wrap(err, "runc")
 	}
 
