@@ -25,11 +25,13 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // container maps to 'runc list -f json'
@@ -108,10 +110,23 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 	}
 
 	args = append(args, "list", "-f", "json")
-	rr, err = cr.RunCmd(exec.Command("sudo", args...))
-	if err != nil {
+
+	// retry only on "no such file or directory" error returned by runc
+	// TODO (prezha): remove this workaround when #17976 is addressed upstream and we've updated to that runc version
+	list := func() error {
+		rr, err = cr.RunCmd(exec.Command("sudo", args...))
+		if errors.Is(err, os.ErrNotExist) {
+			klog.Infof("temporary error listing containers using runc (will retry): %v", err)
+			return err
+		}
+		// don't retry on non-error or any error other than os.ErrNotExist, but retain the underlying error and check thereafter
+		return nil
+	}
+	// return any underlying error
+	if rerr := retry.Expo(list, time.Millisecond*100, time.Second); rerr != nil || err != nil {
 		return nil, errors.Wrap(err, "runc")
 	}
+
 	content := rr.Stdout.Bytes()
 	klog.Infof("JSON = %s", content)
 	d := json.NewDecoder(bytes.NewReader(content))
