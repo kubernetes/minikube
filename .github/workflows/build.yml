@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.5'
+  GO_VERSION: '1.21.6'
 permissions:
   contents: read
 
@@ -40,7 +40,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
         with:
           name: minikube_binaries
           path: out

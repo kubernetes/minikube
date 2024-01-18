@@ -293,7 +293,7 @@ var Addons = map[string]*Addon{
 			"istio-operator.yaml",
 			"0640"),
 	}, false, "istio-provisioner", "3rd party (Istio)", "", "https://istio.io/latest/docs/setup/platform-setup/minikube/", map[string]string{
-		"IstioOperator": "istio/operator:1.20.1@sha256:de69c424e4d6672cf1360c7f36ee85e33dc8c4612490a83a102022557836e745",
+		"IstioOperator": "istio/operator:1.20.2@sha256:8b75914b747eb19d27e49f0916d84e7ce5f4280c202eebf731627a551f7cdd2b",
 	}, map[string]string{
 		"IstioOperator": "docker.io",
 	}),
@@ -315,7 +315,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-daemonset.yaml.tmpl", vmpath.GuestAddonsDir, "ig-daemonset.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.23.1@sha256:c77d8eb2b3dc6e9d60767f824b296e42d6d4fdc2f17f507492a2c981933db931",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.24.0@sha256:2752323358af0f4c4277cce104a5eb07e4d2f695c8571df560165cda6da11b88",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}),
