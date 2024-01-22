@@ -21,6 +21,7 @@ package constants
 // ValidKubernetesVersions is a list of Kubernetes versions in order from newest to oldest
 // This is used when outputting Kubernetes versions and to select the latest patch version when unspecified
 var ValidKubernetesVersions = []string{
+	"v1.29.1",
 	"v1.29.0",
 	"v1.29.0-rc.2",
 	"v1.29.0-rc.1",
@@ -28,6 +29,7 @@ var ValidKubernetesVersions = []string{
 	"v1.29.0-alpha.3",
 	"v1.29.0-alpha.2",
 	"v1.29.0-alpha.1",
+	"v1.28.6",
 	"v1.28.5",
 	"v1.28.4",
 	"v1.28.3",
@@ -41,6 +43,7 @@ var ValidKubernetesVersions = []string{
 	"v1.28.0-alpha.3",
 	"v1.28.0-alpha.2",
 	"v1.28.0-alpha.1",
+	"v1.27.10",
 	"v1.27.9",
 	"v1.27.8",
 	"v1.27.7",
@@ -57,6 +60,7 @@ var ValidKubernetesVersions = []string{
 	"v1.27.0-alpha.3",
 	"v1.27.0-alpha.2",
 	"v1.27.0-alpha.1",
+	"v1.26.13",
 	"v1.26.12",
 	"v1.26.11",
 	"v1.26.10",
