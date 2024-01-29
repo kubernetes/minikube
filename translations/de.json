@@ -430,6 +430,7 @@
 	"Locations to fetch the minikube ISO from.": "Ort von dem das Minikube ISO geladen werden soll.",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "Einloggen oder einen Befehl auf der Maschine mit SSH ausführen; vergleichbar mit 'docker-machine ssh'.",
 	"Log into the minikube environment (for debugging)": "In die Minikube Umgebung einloggen (fürs Debugging)",
+	"Logs file created ({{.logPath}}), remember to include it when reporting issues!": "",
 	"Manage cache for images": "Cache für Images verwalten",
 	"Manage images": "Images verwalten",
 	"Message Size: {{.size}}": "Message Größe: {{.size}}",

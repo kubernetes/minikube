@@ -433,6 +433,7 @@
 	"Locations to fetch the minikube ISO from.": "",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "",
 	"Log into the minikube environment (for debugging)": "",
+	"Logs file created ({{.logPath}}), remember to include it when reporting issues!": "",
 	"Manage cache for images": "",
 	"Manage images": "",
 	"Message Size: {{.size}}": "",
