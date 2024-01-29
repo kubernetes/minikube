@@ -514,6 +514,7 @@
 	"Locations to fetch the minikube ISO from.": "minikube ISO镜像源。",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "使用SSH登录或在机器上运行命令；类似于 'docker-machine ssh'。",
 	"Log into the minikube environment (for debugging)": "登录到 minikube 环境（用于调试）",
+	"Logs file created ({{.logPath}}), remember to include it when reporting issues!": "",
 	"Manage cache for images": "管理 images 缓存",
 	"Manage images": "管理 images",
 	"Message Size: {{.size}}": "消息大小：{{.size}}",
