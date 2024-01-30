@@ -18,14 +18,12 @@ package addons
 
 import (
 	"fmt"
-	"runtime"
 	"strconv"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -94,16 +92,4 @@ func contains(slice []string, val string) bool {
 		}
 	}
 	return false
-}
-
-// SupportsAmd64 ensures that the cluster supports running amd64 images
-func SupportsAmd64(cc *config.ClusterConfig, name, _ string) error {
-	// KIC can run amd64 images on a non-amd64 environment
-	if driver.IsKIC(cc.Driver) {
-		return nil
-	}
-	if runtime.GOARCH == "amd64" {
-		return nil
-	}
-	return fmt.Errorf("the %q addon requires a cluster that supports running amd64 images", name)
 }
