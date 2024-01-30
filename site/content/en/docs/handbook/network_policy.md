@@ -67,6 +67,6 @@ spec:
 
 ## Further reading
 
-This [Advanced Kubernetes policy tutorial](https://projectcalico.docs.tigera.io/security/tutorials/kubernetes-policy-advanced) gives an example of what can be achieved with Kubernetes network policy. It walks through using Kubernetes NetworkPolicy to define more complex network policies.
+This [Advanced Kubernetes policy tutorial](https://docs.tigera.io/calico/latest/network-policy/get-started/kubernetes-policy/kubernetes-policy-advanced) gives an example of what can be achieved with Kubernetes network policy. It walks through using Kubernetes NetworkPolicy to define more complex network policies.
 
 This [Calico policy tutorial](https://projectcalico.docs.tigera.io/security/tutorials/calico-policy) demonstrates the extended functionalities Calico network policy offers over and above vanilla Kubernetes network policies. To demonstrate this, this tutorial follows a similar approach to the tutorial above, but instead uses Calico network policies and highlights differences between the two policy types, making use of features that are not available in Kubernetes network policies. 
