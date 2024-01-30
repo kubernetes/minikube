@@ -133,11 +133,10 @@ func TestAddons(t *testing.T) {
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"Headlamp", validateHeadlampAddon},
 			{"CloudSpanner", validateCloudSpannerAddon},
-			{"Volcano", validateVolcanoAddon},
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
-      {"Volcano", validateVolcanoAddon},
+      			{"Volcano", validateVolcanoAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
