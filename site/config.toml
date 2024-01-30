@@ -71,7 +71,7 @@ weight = 1
 description = "minikube is local Kubernetes"
 
 [params]
-copyright = "The Kubernetes Authors -- "
+copyright = "The Kubernetes Authors."
 
 privacy_policy = ""
 
