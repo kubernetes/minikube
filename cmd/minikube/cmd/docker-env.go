@@ -14,12 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
-
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
+	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	pkgnetwork "k8s.io/minikube/pkg/network"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
@@ -73,6 +73,12 @@ var dockerEnvTCPTmpl = fmt.Sprintf(
 		"{{ if .NoProxyVar }}"+
 		"{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}"+
 		"{{ end }}"+
+		"{{ if .SSHAuthSock }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAuthSock }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .SSHAgentPID }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAgentPID }}{{ .Suffix }}"+
+		"{{ end }}"+
 		"{{ .UsageHint }}",
 	constants.DockerTLSVerifyEnv,
 	constants.DockerHostEnv,
@@ -80,13 +86,23 @@ var dockerEnvTCPTmpl = fmt.Sprintf(
 	constants.ExistingDockerTLSVerifyEnv,
 	constants.ExistingDockerHostEnv,
 	constants.ExistingDockerCertPathEnv,
-	constants.MinikubeActiveDockerdEnv)
+	constants.MinikubeActiveDockerdEnv,
+	constants.SSHAuthSock,
+	constants.SSHAgentPID)
 var dockerEnvSSHTmpl = fmt.Sprintf(
 	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}"+
+		"{{ if .SSHAuthSock }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAuthSock }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .SSHAgentPID }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .SSHAgentPID }}{{ .Suffix }}"+
+		"{{ end }}"+
 		"{{ .UsageHint }}",
 	constants.DockerHostEnv,
-	constants.MinikubeActiveDockerdEnv)
+	constants.MinikubeActiveDockerdEnv,
+	constants.SSHAuthSock,
+	constants.SSHAgentPID)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -101,6 +117,9 @@ type DockerShellConfig struct {
 	ExistingDockerCertPath  string
 	ExistingDockerHost      string
 	ExistingDockerTLSVerify string
+
+	SSHAuthSock string
+	SSHAgentPID string
 }
 
 var (
@@ -143,6 +162,9 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	s.ExistingDockerTLSVerify = envMap[constants.ExistingDockerTLSVerifyEnv]
 
 	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
+
+	s.SSHAuthSock = envMap[constants.SSHAuthSock]
+	s.SSHAgentPID = envMap[constants.SSHAgentPID]
 
 	if ec.noProxy {
 		noProxyVar, noProxyValue := defaultNoProxyGetter.GetNoProxyVar()
@@ -215,7 +237,7 @@ func mustRestartDockerd(name string, runner command.Runner) {
 
 func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
-	err := apiWait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
+	err := apiWait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
@@ -275,6 +297,7 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		}
 
 		cname := ClusterFlagValue()
+
 		co := mustload.Running(cname)
 
 		driverName := co.CP.Host.DriverName
@@ -286,14 +309,42 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 		if len(co.Config.Nodes) > 1 {
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
+		cr := co.Config.KubernetesConfig.ContainerRuntime
+		// nerdctld supports amd64 and arm64
+		if err := dockerEnvSupported(cr, driverName); err != nil {
+			exit.Message(reason.Usage, err.Error())
+		}
 
-		if co.Config.KubernetesConfig.ContainerRuntime != constants.Docker {
-			exit.Message(reason.Usage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
-				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
+		// for the sake of docker-env command, start nerdctl and nerdctld
+		if cr == constants.Containerd {
+			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
+
+			startNerdctld()
+
+			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
+			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
+			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
+			sshAdd = true
+			sshHost = true
+
+			// start the ssh-agent
+			if err := sshagent.Start(cname); err != nil {
+				exit.Message(reason.SSHAgentStart, err.Error())
+			}
+			// cluster config must be reloaded
+			// otherwise we won't be able to get SSH_AUTH_SOCK and SSH_AGENT_PID from cluster config.
+			co = mustload.Running(cname)
+
+			// set the ssh-agent envs for current process
+			os.Setenv("SSH_AUTH_SOCK", co.Config.SSHAuthSock)
+			os.Setenv("SSH_AGENT_PID", strconv.Itoa(co.Config.SSHAgentPID))
 		}
 
 		r := co.CP.Runner
-		ensureDockerd(cname, r)
+
+		if cr == constants.Docker {
+			ensureDockerd(cname, r)
+		}
 
 		d := co.CP.Host.Driver
 		port := constants.DockerDaemonPort
@@ -318,18 +369,20 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		hostIP := co.CP.IP.String()
 		ec := DockerEnvConfig{
-			EnvConfig: sh,
-			profile:   cname,
-			driver:    driverName,
-			ssh:       sshHost,
-			hostIP:    hostIP,
-			port:      port,
-			certsDir:  localpath.MakeMiniPath("certs"),
-			noProxy:   noProxy,
-			username:  d.GetSSHUsername(),
-			hostname:  hostname,
-			sshport:   sshport,
-			keypath:   d.GetSSHKeyPath(),
+			EnvConfig:   sh,
+			profile:     cname,
+			driver:      driverName,
+			ssh:         sshHost,
+			hostIP:      hostIP,
+			port:        port,
+			certsDir:    localpath.MakeMiniPath("certs"),
+			noProxy:     noProxy,
+			username:    d.GetSSHUsername(),
+			hostname:    hostname,
+			sshport:     sshport,
+			keypath:     d.GetSSHKeyPath(),
+			sshAuthSock: co.Config.SSHAuthSock,
+			sshAgentPID: co.Config.SSHAgentPID,
 		}
 
 		dockerPath, err := exec.LookPath("docker")
@@ -359,12 +412,23 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
 			}
-
 			cmd := exec.Command(path, d.GetSSHKeyPath())
 			cmd.Stderr = os.Stderr
+
+			// TODO: refactor to work with docker, temp fix to resolve regression
+			if cr == constants.Containerd {
+				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AUTH_SOCK=%s", co.Config.SSHAuthSock))
+				cmd.Env = append(cmd.Env, fmt.Sprintf("SSH_AGENT_PID=%d", co.Config.SSHAgentPID))
+			}
 			err = cmd.Run()
 			if err != nil {
 				exit.Error(reason.IfSSHClient, "Error with ssh-add", err)
+			}
+
+			// TODO: refactor to work with docker, temp fix to resolve regression
+			if cr == constants.Containerd {
+				// eventually, run something similar to ssh --append-known
+				appendKnownHelper(nodeName, true)
 			}
 		}
 	},
@@ -373,17 +437,19 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 // DockerEnvConfig encapsulates all external inputs into shell generation for Docker
 type DockerEnvConfig struct {
 	shell.EnvConfig
-	profile  string
-	driver   string
-	ssh      bool
-	hostIP   string
-	port     int
-	certsDir string
-	noProxy  bool
-	username string
-	hostname string
-	sshport  int
-	keypath  string
+	profile     string
+	driver      string
+	ssh         bool
+	hostIP      string
+	port        int
+	certsDir    string
+	noProxy     bool
+	username    string
+	hostname    string
+	sshport     int
+	keypath     string
+	sshAuthSock string
+	sshAgentPID int
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
@@ -439,7 +505,7 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	return shell.SetScript(w, dockerSetEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
-// dockerSetScript writes out a shell-compatible 'docker-env unset' script
+// dockerUnsetScript writes out a shell-compatible 'docker-env unset' script
 func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := dockerEnvNames(ec)
 	if ec.Shell == "none" {
@@ -499,15 +565,24 @@ func sshURL(username string, hostname string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) map[string]string {
+	agentPID := strconv.Itoa(ec.sshAgentPID)
+	// set agentPID to nil value if not set
+	if agentPID == "0" {
+		agentPID = ""
+	}
 	envTCP := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
+		constants.SSHAuthSock:              ec.sshAuthSock,
+		constants.SSHAgentPID:              agentPID,
 	}
 	envSSH := map[string]string{
 		constants.DockerHostEnv:            sshURL(ec.username, ec.hostname, ec.sshport),
 		constants.MinikubeActiveDockerdEnv: ec.profile,
+		constants.SSHAuthSock:              ec.sshAuthSock,
+		constants.SSHAgentPID:              agentPID,
 	}
 
 	var rt map[string]string
@@ -534,6 +609,8 @@ func dockerEnvNames(ec DockerEnvConfig) []string {
 		constants.DockerHostEnv,
 		constants.DockerCertPathEnv,
 		constants.MinikubeActiveDockerdEnv,
+		constants.SSHAuthSock,
+		constants.SSHAgentPID,
 	}
 
 	if ec.noProxy {
@@ -552,6 +629,8 @@ func dockerEnvVarsList(ec DockerEnvConfig) []string {
 		fmt.Sprintf("%s=%s", constants.DockerHostEnv, dockerURL(ec.hostIP, ec.port)),
 		fmt.Sprintf("%s=%s", constants.DockerCertPathEnv, ec.certsDir),
 		fmt.Sprintf("%s=%s", constants.MinikubeActiveDockerdEnv, ec.profile),
+		fmt.Sprintf("%s=%s", constants.SSHAuthSock, ec.sshAuthSock),
+		fmt.Sprintf("%s=%d", constants.SSHAgentPID, ec.sshAgentPID),
 	}
 }
 
@@ -593,6 +672,20 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 	c.Env = append(os.Environ(), dockerEnvVarsList(ec)...)
 	klog.Infof("Testing Docker connectivity with: %v", c)
 	return c.CombinedOutput()
+}
+
+func dockerEnvSupported(containerRuntime, driverName string) error {
+	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
+		return fmt.Errorf("the docker-env command only supports amd64 & arm64 architectures")
+	}
+	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
+		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
+	}
+	// we only support containerd-env on the Docker driver
+	if containerRuntime == constants.Containerd && driverName != driver.Docker {
+		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
+	}
+	return nil
 }
 
 func init() {

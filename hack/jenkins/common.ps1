@@ -68,8 +68,8 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check
 ./out/check_install_golang.ps1
 
 # Download gopogh and gotestsum
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.16.0
-go install gotest.tools/gotestsum@v1.10.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
+go install gotest.tools/gotestsum@v1.11.0
 # temporary: remove the old install of gopogh & gotestsum as it's taking priority over our current install, preventing updating
 if (Test-Path "C:\Go") {
     Remove-Item "C:\Go" -Recurse -Force
@@ -120,7 +120,7 @@ If($env:EXTERNAL -eq "yes"){
 	cp testout.txt test_reports/out.txt
 	cp testout.json test_reports/out.json
 	cp testout.html test_reports/out.html
-	cp testout_summary.json test_reports/summary.txt
+	cp testout_summary.json test_reports/summary.json
 } Else {
 	gsutil -qm cp testout.txt gs://$gcs_bucket/${env:JOB_NAME}out.txt
 	gsutil -qm cp testout.json gs://$gcs_bucket/${env:JOB_NAME}.json

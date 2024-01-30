@@ -139,6 +139,9 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 				problems = append(problems, l)
 			}
 		}
+		if err := scanner.Err(); err != nil {
+			klog.Warningf("failed to read output: %v", err)
+		}
 		if len(problems) > 0 {
 			pMap[name] = problems
 		}
@@ -163,7 +166,7 @@ func OutputProblems(problems map[string][]string, maxLines int, logOutput *os.Fi
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) {
 	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
@@ -178,19 +181,17 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	defer out.SetErrFile(os.Stderr)
 
 	sort.Strings(names)
-	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			out.Styled(style.Empty, "")
+			out.Styled(style.None, "")
 		}
-		out.Styled(style.Empty, "==> {{.name}} <==", out.V{"name": name})
+		out.Styled(style.None, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdout = &b
 		c.Stderr = &b
 		if rr, err := runner.RunCmd(c); err != nil {
-			klog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
-			failed = append(failed, name)
+			out.Styled(style.None, fmt.Sprintf("command %s failed with error: %v", rr.Command(), err))
 			continue
 		}
 		l := ""
@@ -198,36 +199,34 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		for scanner.Scan() {
 			l += scanner.Text() + "\n"
 		}
-		out.Styled(style.Empty, l)
+		if err := scanner.Err(); err != nil {
+			l += fmt.Sprintf("failed to read output: %v", err)
+		}
+		out.Styled(style.None, l)
 	}
-
-	if len(failed) > 0 {
-		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
-	}
-	return nil
 }
 
 // outputAudit displays the audit logs.
 func OutputAudit(lines int) error {
-	out.Styled(style.Empty, "")
-	out.Styled(style.Empty, "==> Audit <==")
+	out.Styled(style.None, "")
+	out.Styled(style.None, "==> Audit <==")
 	r, err := audit.Report(lines)
 	if err != nil {
 		return fmt.Errorf("failed to create audit report: %v", err)
 	}
-	out.Styled(style.Empty, r.ASCIITable())
+	out.Styled(style.None, r.ASCIITable())
 	return nil
 }
 
 // outputLastStart outputs the last start logs.
 func OutputLastStart() error {
-	out.Styled(style.Empty, "")
-	out.Styled(style.Empty, "==> Last Start <==")
+	out.Styled(style.None, "")
+	out.Styled(style.None, "==> Last Start <==")
 	fp := localpath.LastStartLog()
 	f, err := os.Open(fp)
 	if os.IsNotExist(err) {
 		msg := fmt.Sprintf("Last start log file not found at %s", fp)
-		out.Styled(style.Empty, msg)
+		out.Styled(style.None, msg)
 		return nil
 	}
 	if err != nil {
@@ -239,7 +238,7 @@ func OutputLastStart() error {
 	for s.Scan() {
 		l += s.Text() + "\n"
 	}
-	out.Styled(style.Empty, l)
+	out.Styled(style.None, l)
 	if err := s.Err(); err != nil {
 		return fmt.Errorf("failed to read file %s: %v", fp, err)
 	}
@@ -259,7 +258,7 @@ func OutputOffline(lines int, logOutput *os.File) {
 		klog.Errorf("failed to output last start logs: %v", err)
 	}
 
-	out.Styled(style.Empty, "")
+	out.Styled(style.None, "")
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs

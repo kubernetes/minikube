@@ -76,7 +76,7 @@ var tunnelCmd = &cobra.Command{
 			}
 		}
 
-		mustLockOrExit()
+		mustLockOrExit(cname)
 		defer cleanupLock()
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
@@ -131,8 +131,8 @@ func cleanupLock() {
 	}
 }
 
-func mustLockOrExit() {
-	tunnelLockPath := filepath.Join(localpath.MiniPath(), ".tunnel_lock")
+func mustLockOrExit(profile string) {
+	tunnelLockPath := filepath.Join(localpath.Profile(profile), ".tunnel_lock")
 
 	lockHandle = fslock.New(tunnelLockPath)
 	err := lockHandle.TryLock()

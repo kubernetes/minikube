@@ -63,6 +63,8 @@ export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 `,
 			nil,
 		},
@@ -81,6 +83,8 @@ export MINIKUBE_ACTIVE_DOCKERD="dockerdriver"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 `,
 			nil,
 		},
@@ -101,6 +105,8 @@ export MINIKUBE_ACTIVE_DOCKERD="bash"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 `,
 			nil,
 		},
@@ -121,6 +127,8 @@ export MINIKUBE_ACTIVE_DOCKERD="ipv6"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 `,
 			nil,
 		},
@@ -141,6 +149,8 @@ set -gx MINIKUBE_ACTIVE_DOCKERD "fish";
 set -e DOCKER_HOST;
 set -e DOCKER_CERT_PATH;
 set -e MINIKUBE_ACTIVE_DOCKERD;
+set -e SSH_AUTH_SOCK;
+set -e SSH_AGENT_PID;
 `,
 			nil,
 		},
@@ -161,6 +171,8 @@ $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
 Remove-Item Env:\\DOCKER_HOST
 Remove-Item Env:\\DOCKER_CERT_PATH
 Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
+Remove-Item Env:\\SSH_AUTH_SOCK
+Remove-Item Env:\\SSH_AGENT_PID
 `,
 			nil,
 		},
@@ -181,6 +193,8 @@ REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env --shell cmd') DO @%i
 SET DOCKER_HOST=
 SET DOCKER_CERT_PATH=
 SET MINIKUBE_ACTIVE_DOCKERD=
+SET SSH_AUTH_SOCK=
+SET SSH_AGENT_PID=
 `,
 			nil,
 		},
@@ -200,6 +214,8 @@ SET MINIKUBE_ACTIVE_DOCKERD=
 (setenv "DOCKER_HOST" nil)
 (setenv "DOCKER_CERT_PATH" nil)
 (setenv "MINIKUBE_ACTIVE_DOCKERD" nil)
+(setenv "SSH_AUTH_SOCK" nil)
+(setenv "SSH_AGENT_PID" nil)
 `,
 			nil,
 		},
@@ -222,6 +238,8 @@ export NO_PROXY="127.0.0.1"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 unset NO_PROXY;
 `,
 			nil,
@@ -245,6 +263,8 @@ export no_proxy="127.0.0.1"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 unset no_proxy;
 `,
 			nil,
@@ -267,6 +287,8 @@ $Env:no_proxy = "192.168.0.1"
 Remove-Item Env:\\DOCKER_HOST
 Remove-Item Env:\\DOCKER_CERT_PATH
 Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
+Remove-Item Env:\\SSH_AUTH_SOCK
+Remove-Item Env:\\SSH_AGENT_PID
 Remove-Item Env:\\no_proxy
 `,
 			nil,
@@ -290,6 +312,8 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 unset DOCKER_HOST;
 unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_DOCKERD;
+unset SSH_AUTH_SOCK;
+unset SSH_AGENT_PID;
 unset NO_PROXY;
 `,
 			nil,
@@ -308,23 +332,29 @@ MINIKUBE_ACTIVE_DOCKERD=noneshell
 DOCKER_HOST
 DOCKER_CERT_PATH
 MINIKUBE_ACTIVE_DOCKERD
+SSH_AUTH_SOCK
+SSH_AGENT_PID
 `,
 			nil,
 		},
 		{
 			"none",
 			"text",
-			DockerEnvConfig{profile: "nonetext", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "nonetext", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`DOCKER_TLS_VERIFY=1
 DOCKER_HOST=tcp://127.0.0.1:32842
 DOCKER_CERT_PATH=/certs
 MINIKUBE_ACTIVE_DOCKERD=nonetext
+SSH_AUTH_SOCK=/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227
+SSH_AGENT_PID=29228
 `,
 			`DOCKER_TLS_VERIFY
 DOCKER_HOST
 DOCKER_CERT_PATH
 MINIKUBE_ACTIVE_DOCKERD
+SSH_AUTH_SOCK
+SSH_AGENT_PID
 `,
 			[]cmp.Option{
 				cmpopts.AcyclicTransformer("SplitLines", func(s string) []string {
@@ -338,19 +368,23 @@ MINIKUBE_ACTIVE_DOCKERD
 		{
 			"none",
 			"json",
-			DockerEnvConfig{profile: "nonejson", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "nonejson", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`{
 				"DOCKER_TLS_VERIFY": "1",
 				"DOCKER_HOST": "tcp://127.0.0.1:32842",
 				"DOCKER_CERT_PATH": "/certs",
-				"MINIKUBE_ACTIVE_DOCKERD": "nonejson"
+				"MINIKUBE_ACTIVE_DOCKERD": "nonejson",
+				"SSH_AUTH_SOCK": "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227",
+				"SSH_AGENT_PID": "29228"
 			}`,
 			`[
 				"DOCKER_TLS_VERIFY",
 				"DOCKER_HOST",
 				"DOCKER_CERT_PATH",
-				"MINIKUBE_ACTIVE_DOCKERD"
+				"MINIKUBE_ACTIVE_DOCKERD",
+				"SSH_AUTH_SOCK",
+				"SSH_AGENT_PID"
 			]`,
 			[]cmp.Option{
 				cmp.FilterValues(func(x, y string) bool {
@@ -367,17 +401,21 @@ MINIKUBE_ACTIVE_DOCKERD
 		{
 			"none",
 			"yaml",
-			DockerEnvConfig{profile: "noneyaml", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"},
+			DockerEnvConfig{profile: "noneyaml", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs", sshAuthSock: "/var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227", sshAgentPID: 29228},
 			nil,
 			`DOCKER_TLS_VERIFY: "1"
 DOCKER_HOST: tcp://127.0.0.1:32842
 DOCKER_CERT_PATH: /certs
 MINIKUBE_ACTIVE_DOCKERD: noneyaml
+SSH_AUTH_SOCK: /var/folders/9l/6wpxv6wd1b901m1146r579wc00rqw3/T//ssh-KCQt1sNqrCPI/agent.29227
+SSH_AGENT_PID: "29228"
 `,
 			`- DOCKER_TLS_VERIFY
 - DOCKER_HOST
 - DOCKER_CERT_PATH
 - MINIKUBE_ACTIVE_DOCKERD
+- SSH_AUTH_SOCK
+- SSH_AGENT_PID
 `,
 			[]cmp.Option{
 				cmpopts.AcyclicTransformer("ParseYAML", func(in string) (out interface{}) {

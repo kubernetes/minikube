@@ -1,0 +1,17 @@
+name: Publish to WinGet
+on:
+  release:
+    types: [released]
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: windows-latest # action can only be run on windows
+    steps:
+      - uses: vedantmgoyal2009/winget-releaser@5c9d4d2ec5d014b83840f3719c90e747692d3e0d
+        with:
+          identifier: Kubernetes.minikube
+          installers-regex: 'minikube-installer.exe'
+          token: ${{ secrets.WINGET_TOKEN }}
+          fork-user: minikube-bot

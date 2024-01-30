@@ -47,11 +47,28 @@ tests the GCP Auth addon with either phony or real credentials and makes sure th
 
 #### validateHeadlampAddon
 
+#### validateInspektorGadgetAddon
+tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
+
 #### validateCloudSpannerAddon
 tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
 #### validateVolcanoAddon
 tests the Volcano addon, makes sure the Volcano is installed into cluster.
+
+#### validateLocalPathAddon
+tests the functionality of the storage-provisioner-rancher addon
+
+#### validateEnablingAddonOnNonExistingCluster
+tests enabling an addon on a non-existing cluster
+
+#### validateDisablingAddonOnNonExistingCluster
+tests disabling an addon on a non-existing cluster
+
+#### validateNvidiaDevicePlugin
+tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
+
+#### validateYakdAddon
 
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
@@ -78,6 +95,9 @@ makes sure the --force-systemd flag worked with the cri-o container runtime
 
 ## TestForceSystemdEnv
 makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the --force-systemd flag
+
+## TestDockerEnvContainerd
+makes sure that minikube docker-env command works when the runtime is containerd
 
 ## TestKVMDriverInstallOrUpdate
 makes sure our docker-machine-driver-kvm2 binary can be installed properly
@@ -400,8 +420,15 @@ Steps:
 asserts that the `minikube license` command downloads and untars the licenses
 Note: This test will fail on release PRs as the licenses file for the new version won't be uploaded at that point
 
+#### validateInvalidService
+makes sure minikube will not start a tunnel for an unavailable service that has no running pods
+
 #### validateMountCmd
 verifies the minikube mount command works properly
+for the platforms that support it, we're testing:
+- a generic 9p mount
+- a 9p mount on a specific port
+- cleaning-mechanism for profile-specific mounts
 
 #### validatePersistentVolumeClaim
 makes sure PVCs work properly
@@ -444,6 +471,9 @@ tests the functionality of the gVisor addon
 
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
+
+#### validateSetupImageBuild
+starts a cluster for the image builds
 
 #### validateNormalImageBuild
 is normal test case for minikube image build, with -t parameter
@@ -527,6 +557,13 @@ make sure minikube profile list outputs correct with multinode clusters
 
 #### validateCopyFileWithMultiNode
 validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+
+#### validateMultiNodeLabels
+check if all node labels were configured correctly
+
+Steps:
+- Get the node labels from the cluster with `kubectl get nodes`
+- check if all node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
 
 #### validateStopRunningNode
 tests the minikube node stop command
@@ -614,7 +651,7 @@ validates that profile list works with --no-kubernetes
 validates that minikube start with no args works.
 
 ## TestChangeNoneUser
-tests to make sure the CHANGE_MINIKUBE_NONE_USER environemt variable is respected
+tests to make sure the CHANGE_MINIKUBE_NONE_USER environment variable is respected
 and changes the minikube file permissions from root to the correct user.
 
 ## TestPause

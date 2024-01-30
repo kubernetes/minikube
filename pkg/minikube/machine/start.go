@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
@@ -307,21 +307,22 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		return nil
 	}
 
-	// If none driver with docker container-runtime, require cri-dockerd and dockerd.
-	if driver.IsNone(h.DriverName) && mc.KubernetesConfig.ContainerRuntime == constants.Docker {
-		// If Kubernetes version >= 1.24, require both cri-dockerd and dockerd.
-		k8sVer, err := semver.ParseTolerant(mc.KubernetesConfig.KubernetesVersion)
-		if err != nil {
-			klog.Errorf("unable to parse Kubernetes version: %s", mc.KubernetesConfig.KubernetesVersion)
-			return err
-		}
-		if k8sVer.GTE(semver.Version{Major: 1, Minor: 24}) {
+	k8sVer, err := semver.ParseTolerant(mc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		klog.Errorf("unable to parse Kubernetes version: %s", mc.KubernetesConfig.KubernetesVersion)
+		return err
+	}
+	if driver.IsNone(h.DriverName) && k8sVer.GTE(semver.Version{Major: 1, Minor: 24}) {
+		if mc.KubernetesConfig.ContainerRuntime == constants.Docker {
 			if _, err := exec.LookPath("cri-dockerd"); err != nil {
 				exit.Message(reason.NotFoundCriDockerd, "\n\n")
 			}
 			if _, err := exec.LookPath("dockerd"); err != nil {
 				exit.Message(reason.NotFoundDockerd, "\n\n")
 			}
+		}
+		if _, err := os.Stat("/opt/cni/bin"); err != nil {
+			exit.Message(reason.NotFoundCNIPlugins, "\n\n")
 		}
 	}
 
@@ -396,7 +397,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
 		register.Reg.SetStep(register.CreatingContainer)
-		out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
+		out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{if not .number_of_cpus}}no-limit{{else}}{{.number_of_cpus}}{{end}}, Memory={{if not .memory_size}}no-limit{{else}}{{.memory_size}}MB{{end}}) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	register.Reg.SetStep(register.CreatingVM)

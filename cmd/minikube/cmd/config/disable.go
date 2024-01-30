@@ -35,18 +35,21 @@ var addonsDisableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons disable ADDON_NAME")
 		}
-
+		_, cc := mustload.Partial(ClusterFlagValue())
+		err := addons.VerifyNotPaused(ClusterFlagValue(), false)
+		if err != nil {
+			exit.Error(reason.InternalAddonDisablePaused, "disable failed", err)
+		}
 		addon := args[0]
 		if addon == "heapster" {
 			exit.Message(reason.AddonUnsupported, "The heapster addon is depreciated. please try to disable metrics-server instead")
 		}
-		_, cc := mustload.Partial(ClusterFlagValue())
 		validAddon, ok := assets.Addons[addon]
 		if !ok {
 			exit.Message(reason.AddonUnsupported, `"'{{.minikube_addon}}' is not a valid minikube addon`, out.V{"minikube_addon": addon})
 		}
 		if validAddon.IsEnabled(cc) {
-			err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
+			err = addons.SetAndSave(ClusterFlagValue(), addon, "false")
 			if err != nil {
 				exit.Error(reason.InternalAddonDisable, "disable failed", err)
 			}

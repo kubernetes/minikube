@@ -6,7 +6,7 @@ on:
     - cron: "0 0 2 * *"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.20.3'
+  GO_VERSION: '1.21.6'
 permissions:
   contents: read
 
@@ -19,8 +19,8 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
-      - uses: actions/checkout@8f4b7f84864484a7bf31766abe9204da3cbe65b3
-      - uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
           cache-dependency-path: ./go.sum
@@ -29,14 +29,14 @@ jobs:
         run: |
           make update-yearly-leaderboard
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.yearlyLeaderboard.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@5b4a9f6a9e2af26e5f02351490b90d01eb8ec1e5
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: Update yearly leaderboard

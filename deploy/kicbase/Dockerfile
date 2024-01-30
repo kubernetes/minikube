@@ -18,8 +18,10 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
+# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20231211.1"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.20.3 as auto-pause
+FROM golang:1.21.6 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -35,17 +37,18 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 20.04, this image is reasonably small as a starting point
+# start from ubuntu 22.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ubuntu:focal-20230308 as kicbase
+FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.11.4"
-ARG FUSE_OVERLAYFS_VERSION="v1.7.1"
-ARG CONTAINERD_FUSE_OVERLAYFS_VERSION="1.0.3"
+ARG BUILDKIT_VERSION="v0.12.4"
 ARG CRIO_VERSION="1.24"
-ARG CRI_DOCKERD_VERSION="v0.3.1"
-ARG CRI_DOCKERD_COMMIT="9a87d6ae274ecf0f23776920964d6484bd679282"
+ARG CRI_DOCKERD_VERSION="v0.3.3"
+ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
+ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
+ARG NERDCTL_VERSION="1.7.2"
+ARG NERDCTLD_VERSION="0.5.1"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -56,6 +59,8 @@ COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/dock
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY deploy/kicbase/CHANGELOG ./CHANGELOG
+COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
+COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
@@ -109,14 +114,8 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
-# tell systemd that it is in docker (it will check for the container env)
-# https://systemd.io/CONTAINER_INTERFACE/
-ENV container docker
-# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
-# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
-STOPSIGNAL SIGRTMIN+3
-# NOTE: this is *only* for documentation, the entrypoint is overridden later
-ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]
+# delete this file due to https://github.com/kubernetes/minikube/issues/17700
+RUN rm -f /usr/lib/binfmt.d/python3.10.conf
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile
@@ -141,14 +140,23 @@ RUN clean-install \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
 
+# Install nerdctl and nerdctld
+RUN export ARCH=$(dpkg --print-architecture) \
+    && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
+        echo "Installing nerdctl and nerdctld ..." && \
+        curl -L --retry 5 --output /tmp/nerdctl.tgz "https://github.com/containerd/nerdctl/releases/download/v${NERDCTL_VERSION}/nerdctl-${NERDCTL_VERSION}-linux-$ARCH.tar.gz" &&\
+        tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
+        curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
+        tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
+        chmod 777  /usr/local/bin/nerdctl &&\
+        chmod 777 /usr/local/bin/nerdctld; \
+    fi
+
 # install docker
-# use the bionic packages for arm32
-RUN export ARCH=$(dpkg --print-architecture | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" == "arm-v7" ]; then export DIST="bionic"; else export DIST="focal"; fi && \
-    sh -c "echo 'deb https://download.docker.com/linux/ubuntu ${DIST} stable' > /etc/apt/sources.list.d/docker.list" && \
+RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu jammy stable' > /etc/apt/sources.list.d/docker.list" && \
     curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
     apt-key add - < docker.key && \
-    clean-install docker-ce docker-ce-cli containerd.io
+    clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
@@ -169,37 +177,49 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && chmod 755 /usr/local/bin/buildkitd \
     && systemctl enable buildkit.socket
 
-# Install cri-o/podman dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install containers-common catatonit conmon containernetworking-plugins cri-tools podman-plugins crun; \
-    else \
-       	clean-install containers-common conmon containernetworking-plugins crun; \
-    fi
-
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
-
 # install podman
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    if [ "$ARCH" != "ppc64le" ]; then sh -c "echo 'deb http://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_20.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install podman && \
+RUN clean-install podman && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
            > /etc/systemd/system/podman.socket.d/override.conf && \
     mkdir -p /etc/tmpfiles.d && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
-    systemd-tmpfiles --create; fi
+    systemd-tmpfiles --create
+
+# install cri-o dependencies:
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
+    apt-key add - < Release.key && \
+    if [ "$ARCH" != "ppc64le" ]; then \
+        clean-install catatonit conmon cri-tools crun; \
+    else \
+        clean-install conmon crun; \
+    fi
+
+# install containernetworking-plugins
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
+    curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
+    mkdir -p /opt/cni/bin && \
+    tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
+    rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
+
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
+    apt-key add - < Release.key && \
+    clean-install cri-o cri-o-runc; fi
+
+# install NVIDIA container toolkit
+RUN export ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ] || [ "$ARCH" = 'ppc64el' ]; then \
+    curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg && \
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list && \
+    clean-install nvidia-container-toolkit; fi
 
 # install version.json
 ARG VERSION_JSON
@@ -232,10 +252,6 @@ RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
-# metacopy breaks crio on certain OS and isn't necessary for minikube
-# https://github.com/kubernetes/minikube/issues/10520
-RUN sed -ri 's/mountopt = "nodev,metacopy=on"/mountopt = "nodev"/g' /etc/containers/storage.conf
-
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 RUN adduser --ingroup docker --disabled-password --gecos '' docker
@@ -255,3 +271,16 @@ RUN rm -rf \
   /usr/share/man/* \
   /usr/share/local/*
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+
+# squash all layers into one
+FROM scratch
+COPY --from=kicbase / /
+EXPOSE 22
+# tell systemd that it is in docker (it will check for the container env)
+# https://systemd.io/CONTAINER_INTERFACE/
+ENV container docker
+# systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
+# https://bugzilla.redhat.com/show_bug.cgi?id=1201657
+STOPSIGNAL SIGRTMIN+3
+# NOTE: this is *only* for documentation, the entrypoint is overridden later
+ENTRYPOINT [ "/usr/local/bin/entrypoint", "/sbin/init" ]

@@ -451,8 +451,8 @@ choco install minikube
     _Make sure to run PowerShell as Administrator._
     ```powershell
     $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
-    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
-      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
     }
     ```
     <span style="color:blue">
@@ -476,8 +476,8 @@ choco install minikube
     _Make sure to run PowerShell as Administrator._
     ```powershell
     $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
-    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){ `
-      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine) `
+    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
     }
     ```
     _If you used a CLI to perform the installation, you will need to close that CLI and open a new one before proceeding._
@@ -510,7 +510,7 @@ If minikube fails to start, see the [drivers page]({{<ref "/docs/drivers">}}) fo
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">3</strong></span>Interact with your cluster</h2>
 
-If you already have kubectl installed, you can now use it to access your shiny new cluster:
+If you already have kubectl installed (see [documentation](https://kubernetes.io/docs/tasks/tools/install-kubectl/)), you can now use it to access your shiny new cluster:
 
 ```shell
 kubectl get po -A
@@ -521,7 +521,7 @@ Alternatively, minikube can download the appropriate version of kubectl and you 
 ```shell
 minikube kubectl -- get po -A
 ```
-You can also make your life easier by adding the following to your shell config:
+You can also make your life easier by adding the following to your shell config: (for more details see: [kubectl]({{<ref "/docs/handbook/kubectl">}}))
 ```shell
 alias kubectl="minikube kubectl --"
 ```

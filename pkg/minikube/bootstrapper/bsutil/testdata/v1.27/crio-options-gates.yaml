@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: unix:///var/run/crio/crio.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1
@@ -44,7 +44,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.27.0-rc.1
+kubernetesVersion: v1.27.0
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"

@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	docker "k8s.io/minikube/third_party/go-dockerclient"
 )
@@ -310,6 +311,12 @@ var buildImageCmd = &cobra.Command{
 				// Otherwise, assume it's a tar
 			}
 		}
+		if runtime.GOOS == "windows" && strings.Contains(dockerFile, "\\") {
+			// if dockerFile is a DOS path, translate it into UNIX path
+			// because we are going to build this image in UNIX environment
+			out.String("minikube detects that you are using DOS-style path %s. minikube will convert it to UNIX-style by replacing all \\ to /", dockerFile)
+			dockerFile = strings.ReplaceAll(dockerFile, "\\", "/")
+		}
 		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {
 			exit.Error(reason.GuestImageBuild, "Failed to build image", err)
 		}
@@ -379,7 +386,7 @@ $ minikube image push busybox
 }
 
 func init() {
-	loadImageCmd.Flags().BoolVarP(&pull, "pull", "", false, "Pull the remote image (no caching)")
+	loadImageCmd.Flags().BoolVar(&pull, "pull", false, "Pull the remote image (no caching)")
 	loadImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image from docker daemon")
 	loadImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image from remote registry")
 	loadImageCmd.Flags().BoolVar(&overwrite, "overwrite", true, "Overwrite image even if same image:tag name exists")
@@ -387,12 +394,12 @@ func init() {
 	imageCmd.AddCommand(removeImageCmd)
 	imageCmd.AddCommand(pullImageCmd)
 	buildImageCmd.Flags().StringVarP(&tag, "tag", "t", "", "Tag to apply to the new image (optional)")
-	buildImageCmd.Flags().BoolVarP(&push, "push", "", false, "Push the new image (requires tag)")
+	buildImageCmd.Flags().BoolVar(&push, "push", false, "Push the new image (requires tag)")
 	buildImageCmd.Flags().StringVarP(&dockerFile, "file", "f", "", "Path to the Dockerfile to use (optional)")
 	buildImageCmd.Flags().StringArrayVar(&buildEnv, "build-env", nil, "Environment variables to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringArrayVar(&buildOpt, "build-opt", nil, "Specify arbitrary flags to pass to the build. (format: key=value)")
 	buildImageCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to build on. Defaults to the primary control plane.")
-	buildImageCmd.Flags().BoolVarP(&allNodes, "all", "", false, "Build image on all nodes.")
+	buildImageCmd.Flags().BoolVar(&allNodes, "all", false, "Build image on all nodes.")
 	imageCmd.AddCommand(buildImageCmd)
 	saveImageCmd.Flags().BoolVar(&imgDaemon, "daemon", false, "Cache image to docker daemon")
 	saveImageCmd.Flags().BoolVar(&imgRemote, "remote", false, "Cache image to remote registry")

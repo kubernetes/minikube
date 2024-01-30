@@ -43,8 +43,8 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 }
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
-func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, excludeBinaries []string, binariesURL string) error {
-	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
+func CacheBinariesForBootstrapper(version string, excludeBinaries []string, binariesURL string) error {
+	binaries := bootstrapper.GetCachedBinaryList()
 
 	var g errgroup.Group
 	for _, bin := range binaries {

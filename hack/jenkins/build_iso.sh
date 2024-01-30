@@ -38,6 +38,21 @@ source ./hack/jenkins/installers/check_install_linux_crons.sh
 sudo apt-get update
 sudo apt-get -y install build-essential unzip rsync bc python3 p7zip-full
 
+# Let's make sure we have the newest ISO reference
+curl -L https://github.com/kubernetes/minikube/raw/master/Makefile --output Makefile-head
+# ISO tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
+# if it doesn't exist, it will just return VERSION, which is covered in the if statement below
+HEAD_ISO_TIMESTAMP=$(egrep "ISO_VERSION \?= " Makefile-head | cut -d \" -f 2 | cut -d "-" -f 2)
+CURRENT_ISO_TS=$(egrep "ISO_VERSION \?= " Makefile | cut -d \" -f 2 | cut -d "-" -f 2)
+if [[ $HEAD_ISO_TIMESTAMP != v* ]]; then
+	diff=$((CURRENT_ISO_TS-HEAD_ISO_TIMESTAMP))
+	if [[ $CURRENT_ISO_TS == v* ]] || [ $diff -lt 0 ]; then
+		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, your ISO info is out of date. Please rebase."
+		exit 1
+	fi
+fi
+rm Makefile-head
+
 if [[ -z $ISO_VERSION ]]; then
 	release=false
 	IV=$(egrep "ISO_VERSION \?=" Makefile | cut -d " " -f 3 | cut -d "-" -f 1)

@@ -1,5 +1,5 @@
 ---
-title: "Using Cloud Spanner Addon"
+title: "Using the Cloud Spanner Addon"
 linkTitle: "Cloud Spanner"
 weight: 1
 date: 2022-10-14

@@ -14,16 +14,17 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 30
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 32
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+HUGO_VERSION ?= $(shell egrep "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.30.1
+ISO_VERSION ?= v1.32.1-1703784139-17866
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -34,9 +35,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.20.3
+GO_VERSION ?= 1.21.6
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.27.0
+GO_K8S_VERSION_PREFIX ?= v1.30.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -44,8 +45,8 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2021.02.12
-# the go version on the line below is for the ISO and does not need to be updated often
-GOLANG_OPTIONS = GO_VERSION=1.19.6 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+# the go version on the line below is for the ISO
+GOLANG_OPTIONS = GO_VERSION=1.19.9 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -61,7 +62,7 @@ HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.19.5
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
 #
 
-BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
+BUILD_IMAGE 	?= registry.k8s.io/build-image/kube-cross:$(GO_K8S_VERSION_PREFIX)-go$(GO_VERSION)-bullseye.0
 
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
@@ -78,7 +79,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.57
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.52.2
+GOLINT_VERSION ?= v1.55.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -110,10 +111,10 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.4
+AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.3
+PROW_TEST_TAG ?= v0.0.6
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
@@ -367,7 +368,7 @@ integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test, logs to ./out/testout_COMMIT.txt
-	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
@@ -698,26 +699,20 @@ storage-provisioner-image-%: out/storage-provisioner-%
 	docker build -t $(REGISTRY)/storage-provisioner-$*:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$* .
 
 
-X_DOCKER_BUILDER ?= minikube-builder
-X_BUILD_ENV ?= DOCKER_CLI_EXPERIMENTAL=enabled
-
-.PHONY: docker-multi-arch-builder
-docker-multi-arch-builder:
-	env $(X_BUILD_ENV) docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-	env $(X_BUILD_ENV) docker buildx rm --builder $(X_DOCKER_BUILDER) || true
-	env $(X_BUILD_ENV) docker buildx create --name $(X_DOCKER_BUILDER) --buildkitd-flags '--debug' || true
+.PHONY: docker-multi-arch-build
+docker-multi-arch-build:
+	# installs QEMU static binaries to allow docker multi-arch build, see: https://github.com/docker/setup-qemu-action
+	docker run --rm --privileged tonistiigi/binfmt:latest --install all
 
 KICBASE_ARCH ?= linux/amd64,linux/arm64,linux/s390x,linux/arm,linux/ppc64le
 KICBASE_IMAGE_GCR ?= $(REGISTRY)/kicbase:$(KIC_VERSION)
 KICBASE_IMAGE_HUB ?= kicbase/stable:$(KIC_VERSION)
 KICBASE_IMAGE_REGISTRIES ?= $(KICBASE_IMAGE_GCR) $(KICBASE_IMAGE_HUB)
 
-CRI_DOCKERD_VERSION ?= $(shell egrep "CRI_DOCKERD_VERSION=" deploy/kicbase/Dockerfile | cut -d \" -f2)
-CRI_DOCKERD_COMMIT ?= $(shell egrep "CRI_DOCKERD_COMMIT=" deploy/kicbase/Dockerfile | cut -d \" -f2)
-.PHONY: update-cri-dockerd
-update-cri-dockerd:
+.PHONY: build-and-upload-cri-dockerd-binaries
+build-and-upload-cri-dockerd-binaries:
 	(cd hack/update/cri_dockerd_version && \
-	 go run update_cri_dockerd_version.go $(CRI_DOCKERD_VERSION) $(CRI_DOCKERD_COMMIT) $(KICBASE_ARCH))
+	 ./build_and_upload_cri_dockerd_binaries.sh $(KICBASE_ARCH))
 
 .PHONY: local-kicbase
 local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
@@ -736,11 +731,11 @@ local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches 
 	$(SED) 's|Version = .*|Version = \"$(KIC_VERSION)-$(COMMIT_SHORT)\"|;s|baseImageSHA = .*|baseImageSHA = \"\"|;s|gcrRepo = .*|gcrRepo = \"local/kicbase\"|;s|dockerhubRepo = .*|dockerhubRepo = \"local/kicbase\"|' pkg/drivers/kic/types.go
 
 .PHONY: build-kic-base-image
-build-kic-base-image: docker-multi-arch-builder ## Build multi-arch local/kicbase:latest
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --load --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
+build-kic-base-image: docker-multi-arch-build ## Build multi-arch local/kicbase:latest
+	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) .
 
 .PHONY: push-kic-base-image
-push-kic-base-image: docker-multi-arch-builder ## Push multi-arch local/kicbase:latest to all remote registries
+push-kic-base-image: docker-multi-arch-build ## Push multi-arch local/kicbase:latest to all remote registries
 ifdef AUTOPUSH
 	docker login gcr.io/k8s-minikube
 	docker login docker.pkg.github.com
@@ -752,7 +747,7 @@ ifndef CIBUILD
 	$(call user_confirm, 'Are you sure you want to push $(KICBASE_IMAGE_REGISTRIES) ?')
 endif
 	./deploy/kicbase/build_auto_pause.sh $(KICBASE_ARCH)
-	env $(X_BUILD_ENV) docker buildx build -f ./deploy/kicbase/Dockerfile --builder $(X_DOCKER_BUILDER) --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
+	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
 out/preload-tool:
 	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
@@ -775,9 +770,9 @@ ifndef CIBUILD
 	docker login gcr.io/k8s-minikube
 endif
 	set -x; for arch in $(ALL_ARCH); do docker push ${IMAGE}-$${arch}:${TAG}; done
-	$(X_BUILD_ENV) docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
-	set -x; for arch in $(ALL_ARCH); do $(X_BUILD_ENV) docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
-	$(X_BUILD_ENV) docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
+	docker manifest create --amend $(IMAGE):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(IMAGE)\-&:$(TAG)~g")
+	set -x; for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${IMAGE}:${TAG} ${IMAGE}-$${arch}:${TAG}; done
+	docker manifest push $(STORAGE_PROVISIONER_MANIFEST)
 
 .PHONY: push-docker
 push-docker: # Push docker image base on to IMAGE variable (used internally by other targets)
@@ -790,11 +785,11 @@ endif
 .PHONY: out/gvisor-addon
 out/gvisor-addon: ## Build gvisor addon
 	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
-	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+	docker build --platform=linux/amd64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
@@ -876,8 +871,8 @@ kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to b
 	@echo "$(@) successfully built"
 
 .PHONY: kvm-image-arm64
-kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
+kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64 docker-multi-arch-build  ## Convenient alias to build the docker container
+	docker buildx build --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
@@ -934,7 +929,7 @@ out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	(cd out/hugo && go build --tags extended)
+	(cd out/hugo && git fetch origin && git checkout $(HUGO_VERSION) && go build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
@@ -965,18 +960,18 @@ auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker 
 	docker build -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
 
 .PHONY: push-auto-pause-hook-image
-push-auto-pause-hook-image: auto-pause-hook-image
+push-auto-pause-hook-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
-
-.PHONY: prow-test-image
-prow-test-image:
-	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: push-prow-test-image
-push-prow-test-image: prow-test-image
+push-prow-test-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/prow-test:$(PROW_TEST_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) -t $(REGISTRY)/prow-test:latest ./deploy/prow
+	docker buildx rm multiarch
 
 .PHONY: out/performance-bot
 out/performance-bot:
@@ -1102,10 +1097,125 @@ update-runc-version:
 	(cd hack/update/runc_version && \
 	 go run update_runc_version.go)
 
+.PHONY: update-docker-version
+update-docker-version:
+	(cd hack/update/docker_version && \
+	 go run update_docker_version.go)
+
+.PHONY: update-ubuntu-version
+update-ubuntu-version:
+	(cd hack/update/ubuntu_version && \
+	 go run update_ubuntu_version.go)
+
+.PHONY: update-cni-plugins-version
+update-cni-plugins-version:
+	(cd hack/update/cni_plugins_version && \
+	 go run update_cni_plugins_version.go)
+
+.PHONY: update-gcp-auth-version
+update-gcp-auth-version:
+	(cd hack/update/gcp_auth_version && \
+	 go run update_gcp_auth_version.go)
+
+.PHONY: update-kubernetes-versions-list
+update-kubernetes-versions-list:
+	(cd hack/update/kubernetes_versions_list && \
+	 go run update_kubernetes_versions_list.go)
+
+.PHONY: update-ingress-version
+update-ingress-version:
+	(cd hack/update/ingress_version && \
+	 go run update_ingress_version.go)
+
+.PHONY: update-flannel-version
+update-flannel-version:
+	(cd hack/update/flannel_version && \
+	 go run update_flannel_version.go)
+
+.PHONY: update-inspektor-gadget-version
+update-inspektor-gadget-version:
+	(cd hack/update/inspektor_gadget_version && \
+	 go run update_inspektor_gadget_version.go)
+
+.PHONY: update-calico-version
+update-calico-version:
+	(cd hack/update/calico_version && \
+	 go run update_calico_version.go)
+
+.PHONY: update-cri-dockerd-version
+update-cri-dockerd-version:
+	(cd hack/update/cri_dockerd_version && \
+	 go run update_cri_dockerd_version.go)
+
+.PHONY: update-go-github-version
+update-go-github-version:
+	(cd hack/update/go_github_version && \
+	 go run update_go_github_version.go)
+
+.PHONY: update-docker-buildx-version
+update-docker-buildx-version:
+	(cd hack/update/docker_buildx_version && \
+	 go run update_docker_buildx_version.go)
+
+.PHONY: update-nerdctl-version
+update-nerdctl-version:
+	(cd hack/update/nerdctl_version && \
+	 go run update_nerdctl_version.go)
+
+.PHONY: update-crictl-version
+update-crictl-version:
+	(cd hack/update/crictl_version && \
+	 go run update_crictl_version.go)
+
+.PHONY: update-kindnetd-version
+update-kindnetd-version:
+	(cd hack/update/kindnetd_version && \
+	 go run update_kindnetd_version.go)
+
+.PHONY: update-istio-operator-version
+update-istio-operator-version:
+	(cd hack/update/istio_operator_version && \
+	 go run update_istio_operator_version.go)
+
+.PHONY: update-registry-version
+update-registry-version:
+	(cd hack/update/registry_version && \
+	 go run update_registry_version.go)
+
+.PHONY: update-kong-version
+update-kong-version:
+	(cd hack/update/kong_version && \
+	 go run update_kong_version.go)
+
+.PHONY: update-kong-ingress-controller-version
+update-kong-ingress-controller-version:
+	(cd hack/update/kong_ingress_controller_version && \
+	 go run update_kong_ingress_controller_version.go)
+
+.PHONY: update-nvidia-device-plugin-version
+update-nvidia-device-plugin-version:
+	(cd hack/update/nvidia_device_plugin_version && \
+	 go run update_nvidia_device_plugin_version.go)
+
+.PHONY: update-nerctld-version
+update-nerdctld-version:
+	(cd hack/update/nerdctld_version && \
+	 go run update_nerdctld_version.go)
+
+.PHONY: update-kubectl-version
+update-kubectl-version:
+	(cd hack/update/kubectl_version && \
+	 go run update_kubectl_version.go)
+
+.PHONY: update-site-node-version
+update-site-node-version:
+	(cd hack/update/site_node_version && \
+	 go run update_site_node_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
-	 go run get_version.go)
+	  go run get_version.go)
 
 .PHONY: generate-licenses
 generate-licenses:

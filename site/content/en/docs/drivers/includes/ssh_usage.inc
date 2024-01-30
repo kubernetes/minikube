@@ -13,6 +13,7 @@ This VM must also meet the [kubeadm requirements](https://kubernetes.io/docs/set
 * iptables (in legacy mode)
 * conntrack
 * crictl
+* cni-plugins
 * SELinux permissive
 * cgroups v1 (v2 is not yet supported by Kubernetes)
 

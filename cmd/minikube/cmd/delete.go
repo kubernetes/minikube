@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/sshagent"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -92,6 +93,9 @@ func (error DeletionError) Error() string {
 var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
 	if err := killMountProcess(); err != nil {
 		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+	if err := sshagent.Stop(profileName); err != nil {
+		out.FailureT("Failed to stop ssh-agent process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)
@@ -403,7 +407,7 @@ func unpauseIfNeeded(profile *config.Profile) error {
 
 	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: r})
 	if err != nil {
-		exit.Error(reason.InternalNewRuntime, "Failed to create runtime", err)
+		return err
 	}
 
 	paused, err := cluster.CheckIfPaused(cr, nil)
@@ -584,9 +588,10 @@ func deleteMachineDirectories(cc *config.ClusterConfig) {
 	}
 }
 
-// killMountProcess kills the mount process, if it is running
+// killMountProcess looks for the legacy path and for profile path for a pidfile,
+// it then tries to kill all the pids listed in the pidfile (one or more)
 func killMountProcess() error {
-	profile := viper.GetString("profile")
+	profile := ClusterFlagValue()
 	paths := []string{
 		localpath.MiniPath(), // legacy mount-process path for backwards compatibility
 		localpath.Profile(profile),
@@ -601,49 +606,120 @@ func killMountProcess() error {
 	return nil
 }
 
+// killProcess takes a path to look for a pidfile (space-separated),
+// it reads the file and converts it to a bunch of pid ints,
+// then it tries to kill each one of them.
+// If no errors were encountered, it cleans the pidfile
 func killProcess(path string) error {
 	pidPath := filepath.Join(path, constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 		return nil
 	}
-
 	klog.Infof("Found %s ...", pidPath)
-	out, err := os.ReadFile(pidPath)
+
+	ppp, err := getPids(pidPath)
 	if err != nil {
-		return errors.Wrap(err, "ReadFile")
-	}
-	klog.Infof("pidfile contents: %s", out)
-	pid, err := strconv.Atoi(string(out))
-	if err != nil {
-		return errors.Wrap(err, "error parsing pid")
-	}
-	// os.FindProcess does not check if pid is running :(
-	entry, err := ps.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "ps.FindProcess")
-	}
-	if entry == nil {
-		klog.Infof("Stale pid: %d", pid)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing stale pid")
-		}
-		return nil
+		return err
 	}
 
-	// We found a process, but it still may not be ours.
-	klog.Infof("Found process %d: %s", pid, entry.Executable())
+	// we're trying to kill each process, without stopping at first error encountered
+	// error handling is done below
+	var errs []error
+	for _, pp := range ppp {
+		err := trySigKillProcess(pp)
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+	}
+
+	if len(errs) == 1 {
+		// if we've encountered only one error, we're returning it:
+		return errs[0]
+	} else if len(errs) != 0 {
+		// if multiple errors were encountered, combine them into a single error
+		out.Styled(style.Failure, "Multiple errors encountered:")
+		for _, e := range errs {
+			out.Err("%v\n", e)
+		}
+		return errors.New("multiple errors encountered while closing mount processes")
+	}
+
+	// if no errors were encoutered, it's safe to delete pidFile
+	if err := os.Remove(pidPath); err != nil {
+		return errors.Wrap(err, "while closing mount-pids file")
+	}
+
+	return nil
+}
+
+// trySigKillProcess takes a PID as argument and tries to SIGKILL it.
+// It performs an ownership check of the pid,
+// before trying to send a sigkill signal to it
+func trySigKillProcess(pid int) error {
+	itDoes, err := isMinikubeProcess(pid)
+	if err != nil {
+		return err
+	}
+
+	if !itDoes {
+		return fmt.Errorf("stale pid: %d", pid)
+	}
+
 	proc, err := os.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, "os.FindProcess")
+		return errors.Wrapf(err, "os.FindProcess: %d", pid)
 	}
 
 	klog.Infof("Killing pid %d ...", pid)
 	if err := proc.Kill(); err != nil {
 		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing likely stale unkillable pid")
-		}
-		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+		return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
 	}
+
 	return nil
+}
+
+// doesPIDBelongToMinikube tries to find the process with that PID
+// and checks if the executable name contains the string "minikube"
+var isMinikubeProcess = func(pid int) (bool, error) {
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return false, errors.Wrapf(err, "ps.FindProcess for %d", pid)
+	}
+	if entry == nil {
+		klog.Infof("Process not found. pid %d", pid)
+		return false, nil
+	}
+
+	klog.Infof("Found process %d", pid)
+	if !strings.Contains(entry.Executable(), "minikube") {
+		klog.Infof("process %d was not started by minikube", pid)
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// getPids opens the file at PATH and tries to read
+// one or more space separated pids
+func getPids(path string) ([]int, error) {
+	out, err := os.ReadFile(path)
+	if err != nil {
+		return nil, errors.Wrap(err, "ReadFile")
+	}
+	klog.Infof("pidfile contents: %s", out)
+
+	pids := []int{}
+	strPids := strings.Fields(string(out))
+	for _, p := range strPids {
+		intPid, err := strconv.Atoi(p)
+		if err != nil {
+			return nil, err
+		}
+
+		pids = append(pids, intPid)
+	}
+
+	return pids, nil
 }

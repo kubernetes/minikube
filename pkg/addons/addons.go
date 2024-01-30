@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -36,9 +37,11 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -117,14 +120,13 @@ func postStartMessages(cc *config.ClusterConfig, name, value string) {
 	case "dashboard":
 		out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
-	minikube{{.profileArg}} addons enable metrics-server	
-
+	minikube{{.profileArg}} addons enable metrics-server
 `, out.V{"profileArg": tipProfileArg})
 	case "headlamp":
 		out.Styled(style.Tip, `To access Headlamp, use the following command:
-minikube service headlamp -n headlamp
 
-`)
+	minikube{{.profileArg}} service headlamp -n headlamp
+`, out.V{"profileArg": tipProfileArg})
 		tokenGenerationTip := "To authenticate in Headlamp, fetch the Authentication Token using the following command:"
 		createSvcAccountToken := "kubectl create token headlamp --duration 24h -n headlamp"
 		getSvcAccountToken := `export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
@@ -136,16 +138,20 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 			tokenGenerationTip = fmt.Sprintf("%s\nIf Kubernetes Version is <1.24:\n%s\n\nIf Kubernetes Version is >=1.24:\n%s\n", tokenGenerationTip, createSvcAccountToken, getSvcAccountToken)
 		} else {
 			if parsedClusterVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
-				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, createSvcAccountToken)
+				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, createSvcAccountToken)
 			} else {
-				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, getSvcAccountToken)
+				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, getSvcAccountToken)
 			}
 		}
 		out.Styled(style.Tip, fmt.Sprintf("%s\n", tokenGenerationTip))
 		out.Styled(style.Tip, `Headlamp can display more detailed information when metrics-server is installed. To install it, run:
 
-minikube{{.profileArg}} addons enable metrics-server	
+	minikube{{.profileArg}} addons enable metrics-server
+`, out.V{"profileArg": tipProfileArg})
+	case "yakd":
+		out.Styled(style.Tip, `To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:
 
+	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
 	}
 }
@@ -439,7 +445,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 
 	// Retry, because sometimes we race against an apiserver restart
 	apply := func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
 		_, err := runner.RunCmd(kubectlCommand(ctx, cc, deployFiles, enable, force))
 		if err != nil {
@@ -584,4 +590,64 @@ func UpdateConfigToDisable(cc *config.ClusterConfig) {
 			klog.Errorf("store failed: %v", err)
 		}
 	}
+}
+
+// VerifyNotPaused verifies the cluster is not paused before enable/disable an addon.
+func VerifyNotPaused(profile string, enable bool) error {
+	klog.Info("checking whether the cluster is paused")
+
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		return errors.Wrap(err, "control plane")
+	}
+
+	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
+	if err != nil {
+		return errors.Wrap(err, "get host")
+	}
+
+	s, err := host.Driver.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get state")
+	}
+	if s != state.Running {
+		// can't check the status of pods on a non-running cluster
+		return nil
+	}
+
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		return errors.Wrap(err, "command runner")
+	}
+
+	crName := cc.KubernetesConfig.ContainerRuntime
+	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "container runtime")
+	}
+	runtimePaused, err := cluster.CheckIfPaused(cr, []string{"kube-system"})
+	if err != nil {
+		return errors.Wrap(err, "check paused")
+	}
+	if !runtimePaused {
+		return nil
+	}
+	action := "disable"
+	if enable {
+		action = "enable"
+	}
+	msg := fmt.Sprintf("Can't %s addon on a paused cluster, please unpause the cluster first.", action)
+	out.Styled(style.Shrug, msg)
+	return errors.New(msg)
 }

@@ -140,7 +140,7 @@ func Execute() {
 		}
 	}
 
-	for _, c := range RootCmd.Commands() {
+	applyToAllCommands(RootCmd, func(c *cobra.Command) {
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(f *pflag.Flag) {
@@ -148,7 +148,8 @@ func Execute() {
 		})
 
 		c.SetUsageTemplate(usageTemplate())
-	}
+	})
+
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
 	RootCmd.Flags().VisitAll(func(f *pflag.Flag) {
@@ -225,6 +226,8 @@ func init() {
 	RootCmd.PersistentFlags().Bool(config.SkipAuditFlag, false, "Skip recording the current command in the audit logs.")
 	RootCmd.PersistentFlags().Bool(config.Rootless, false, "Force to use rootless driver (docker and podman driver only)")
 
+	translate.DetermineLocale()
+
 	groups := templates.CommandGroups{
 		{
 			Message: translate.T("Basic Commands:"),
@@ -297,7 +300,6 @@ func init() {
 		exit.Error(reason.InternalBindFlags, "Unable to bind flags", err)
 	}
 
-	translate.DetermineLocale()
 	cobra.OnInitialize(initConfig)
 }
 
@@ -339,4 +341,14 @@ func addToPath(dir string) {
 
 func validateUsername(name string) bool {
 	return len(name) <= 60
+}
+
+// applyToAllCommands applies the provided func to all commands including sub commands
+func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
+	for _, c := range cmd.Commands() {
+		f(c)
+		if c.HasSubCommands() {
+			applyToAllCommands(c, f)
+		}
+	}
 }

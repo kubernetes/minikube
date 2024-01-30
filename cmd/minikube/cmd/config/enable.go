@@ -24,7 +24,9 @@ import (
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -39,6 +41,15 @@ var addonsEnableCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons enable ADDON_NAME")
 		}
+		_, cc := mustload.Partial(ClusterFlagValue())
+		if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
+			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
+		}
+
+		err := addons.VerifyNotPaused(ClusterFlagValue(), true)
+		if err != nil {
+			exit.Error(reason.InternalAddonEnablePaused, "enabled failed", err)
+		}
 		addon := args[0]
 		isDeprecated, replacement, msg := addons.Deprecations(addon)
 		if isDeprecated && replacement == "" {
@@ -50,7 +61,7 @@ var addonsEnableCmd = &cobra.Command{
 		addonBundle, ok := assets.Addons[addon]
 		if ok {
 			maintainer := addonBundle.Maintainer
-			if maintainer == "Google" || maintainer == "Kubernetes" {
+			if isOfficialMaintainer(maintainer) {
 				out.Styled(style.Tip, `{{.addon}} is an addon maintained by {{.maintainer}}. For any concerns contact minikube on GitHub.
 You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS`,
 					out.V{"addon": addon, "maintainer": maintainer})
@@ -72,7 +83,7 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 		if registries != "" {
 			viper.Set(config.AddonRegistries, registries)
 		}
-		err := addons.SetAndSave(ClusterFlagValue(), addon, "true")
+		err = addons.SetAndSave(ClusterFlagValue(), addon, "true")
 		if err != nil && !errors.Is(err, addons.ErrSkipThisAddon) {
 			exit.Error(reason.InternalAddonEnable, "enable failed", err)
 		}
@@ -80,6 +91,13 @@ You can view the list of minikube maintainers at: https://github.com/kubernetes/
 			out.Step(style.AddonEnable, "The '{{.addonName}}' addon is enabled", out.V{"addonName": addon})
 		}
 	},
+}
+
+func isOfficialMaintainer(maintainer string) bool {
+	// using map[string]struct{} as an empty struct occupies 0 bytes in memory
+	officialMaintainers := map[string]struct{}{"Google": {}, "Kubernetes": {}, "minikube": {}}
+	_, ok := officialMaintainers[maintainer]
+	return ok
 }
 
 var (

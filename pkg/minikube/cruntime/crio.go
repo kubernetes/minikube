@@ -130,7 +130,7 @@ func (r *CRIO) Available() error {
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available")
 	}
-	return nil
+	return checkCNIPlugins(r.KubernetesVersion)
 }
 
 // Active returns if CRIO is active on the host
@@ -306,6 +306,7 @@ func (r *CRIO) BuildImage(src string, file string, tag string, push bool, env []
 	for _, opt := range opts {
 		args = append(args, "--"+opt)
 	}
+	args = append(args, "--cgroup-manager=cgroupfs")
 	c := exec.Command("sudo", args...)
 	e := os.Environ()
 	e = append(e, env...)
@@ -358,13 +359,7 @@ func (r *CRIO) CGroupDriver() (string, error) {
 
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
-	opts := map[string]string{
-		"container-runtime-endpoint": fmt.Sprintf("unix://%s", r.SocketPath()),
-	}
-	if r.KubernetesVersion.LT(semver.MustParse("1.24.0-alpha.0")) {
-		opts["container-runtime"] = "remote"
-	}
-	return opts
+	return kubeletCRIOptions(r, r.KubernetesVersion)
 }
 
 // ListContainers returns a list of managed by this container runtime
@@ -450,7 +445,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 
 	t = time.Now()
 	// extract the tarball to /var in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
 	klog.Infof("Took %f seconds to extract the tarball", time.Since(t).Seconds())

@@ -7,6 +7,9 @@ description: >
 
 ## Error Strings
 
+"MK_PATCH_NOT_FOUND" (Exit code ExProgramUsage)  
+minikube could not find a patch for the provided major.minor version  
+
 "MK_USAGE" (Exit code ExProgramUsage)  
 minikube has been passed an incorrect parameter  
 
@@ -31,6 +34,12 @@ minikube could not disable an addon, e.g. dashboard addon
 "MK_ADDON_ENABLE" (Exit code ExProgramError)  
 minikube could not enable an addon, e.g. dashboard addon  
 
+"MK_ADDON_ENABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not enable an addon on a paused cluster  
+
+"MK_ADDON_DISABLE_PAUSED" (Exit code ExProgramConflict)  
+minikube could not disable an addon on a paused cluster  
+
 "MK_ADD_CONFIG" (Exit code ExProgramError)  
 minikube failed to update internal configuration, such as the cached images config map  
 
@@ -45,6 +54,9 @@ minkube failed to cache and load cached images
 
 "MK_COMMAND_RUNNER" (Exit code ExProgramError)  
 minikube failed to load a Docker Machine CommandRunner  
+
+"MK_START_NERDCTLD" (Exit code ExProgramError)  
+minikube failed to start nerdctld  
 
 "MK_COMPLETION" (Exit code ExProgramError)  
 minikube failed to generate shell command completion for a supported shell  
@@ -153,6 +165,9 @@ insufficient memory available to Docker Desktop on Windows
 
 "RSRC_DOCKER_MEMORY" (Exit code ExInsufficientMemory)  
 insufficient memory available to Docker Desktop on Mac  
+
+"RSRC_INVALID_HYPERV_MEMORY" (Exit code ExResourceError)  
+invalid memory value for Hyper-V  
 
 "RSRC_DOCKER_STORAGE" (Exit code ExInsufficientStorage)  
 insufficient disk storage available to the docker driver  
@@ -367,6 +382,9 @@ minikube failed to access an ssh client on the host machine
 "IF_DEDICATED_NETWORK" (Exit code ExLocalNetworkError)  
 minikube failed to create a dedicated network  
 
+"IF_BOOTPD_FIREWALL" (Exit code ExLocalNetworkError)  
+minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall  
+
 "INET_CACHE_BINARIES" (Exit code ExInternetError)  
 minikube failed to cache kubernetes binaries for the current runtime  
 
@@ -397,11 +415,17 @@ minikube failed to enable the current container runtime
 "RUNTIME_CACHE" (Exit code ExRuntimeError)  
 minikube failed to cache images for the current container runtime  
 
+"SSH_AGENT_START" (Exit code ExRuntimeError)  
+minikube failed to start an ssh-agent when executing docker-env  
+
 "SVC_CHECK_TIMEOUT" (Exit code ExSvcTimeout)  
 service check timed out while starting minikube dashboard  
 
 "SVC_TIMEOUT" (Exit code ExSvcTimeout)  
 minikube was unable to access a service  
+
+"SVC_UNREACHABLE" (Exit code ExSvcNotFound)  
+minikube found that the service has no available pods  
 
 "SVC_LIST" (Exit code ExSvcError)  
 minikube failed to list services for the specified namespace  
@@ -448,12 +472,17 @@ an outdated Kubernetes version was specified for minikube to use
 "K8S_NEW_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 a too new Kubernetes version was specified for minikube to use  
 
+"K8S_FAIL_CONNECT" (Exit code ExInternetError)  
+error fetching GitHub Kubernetes version list  
+
 "K8S_DOWNGRADE_UNSUPPORTED" (Exit code ExControlPlaneUnsupported)  
 minikube was unable to safely downgrade installed Kubernetes version  
 
 "NOT_FOUND_CRI_DOCKERD" (Exit code ExProgramNotFound)  
 
 "NOT_FOUND_DOCKERD" (Exit code ExProgramNotFound)  
+
+"NOT_FOUND_CNI_PLUGINS" (Exit code ExProgramNotFound)  
 
 "NOT_FOUND_SOCKET_VMNET" (Exit code ExProgramNotFound)  
 

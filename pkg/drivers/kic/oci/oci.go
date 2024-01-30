@@ -147,7 +147,7 @@ func checkRunning(p CreateParams) func() error {
 }
 
 // CreateContainerNode creates a new container node
-func CreateContainerNode(p CreateParams) error {
+func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic complexity
 	// on windows os, if docker desktop is using Windows Containers. Exit early with error
 	if p.OCIBinary == Docker && runtime.GOOS == "windows" {
 		info, err := DaemonInfo(p.OCIBinary)
@@ -190,6 +190,9 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--network", p.Network)
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
+	if p.GPUs != "" {
+		runArgs = append(runArgs, "--gpus", "all")
+	}
 
 	memcgSwap := hasMemorySwapCgroup()
 	memcg := HasMemoryCgroup()
@@ -200,11 +203,11 @@ func CreateContainerNode(p CreateParams) error {
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 
-		if memcgSwap {
+		if memcgSwap && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 		}
 
-		if memcg {
+		if memcg && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
 
@@ -215,10 +218,10 @@ func CreateContainerNode(p CreateParams) error {
 		// ignore apparmore github actions docker: https://github.com/kubernetes/minikube/issues/7624
 		runArgs = append(runArgs, "--security-opt", "apparmor=unconfined")
 
-		if memcg {
+		if memcg && p.Memory != NoLimit {
 			runArgs = append(runArgs, fmt.Sprintf("--memory=%s", p.Memory))
 		}
-		if memcgSwap {
+		if memcgSwap && p.Memory != NoLimit {
 			// Disable swap by setting the value to match
 			runArgs = append(runArgs, fmt.Sprintf("--memory-swap=%s", p.Memory))
 		}
@@ -241,7 +244,7 @@ func CreateContainerNode(p CreateParams) error {
 		}
 	}
 
-	if cpuCfsPeriod && cpuCfsQuota {
+	if cpuCfsPeriod && cpuCfsQuota && p.CPUs != NoLimit {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs))
 	}
 
@@ -407,6 +410,12 @@ func inspect(ociBin string, containerNameOrID, format string) ([]string, error) 
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+	if scanErr := scanner.Err(); scanErr != nil {
+		klog.Warningf("failed to read output: %v", scanErr)
+		if err == nil {
+			err = scanErr
+		}
+	}
 	return lines, err
 }
 
@@ -473,6 +482,9 @@ func isUsernsRemapEnabled(ociBin string) bool {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read output: %v", err)
+	}
 
 	if len(lines) > 0 {
 		if strings.Contains(lines[0], "name=userns") {
@@ -533,7 +545,7 @@ func ListContainersByLabel(ctx context.Context, ociBin string, label string, war
 			names = append(names, n)
 		}
 	}
-	return names, err
+	return names, s.Err()
 }
 
 // ListImagesRepository returns all the images names
@@ -554,10 +566,7 @@ func ListImagesRepository(ctx context.Context, ociBin string) ([]string, error) 
 			names = append(names, n)
 		}
 	}
-	if err := s.Err(); err != nil {
-		return nil, err
-	}
-	return names, nil
+	return names, s.Err()
 }
 
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube

@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
@@ -235,15 +234,6 @@ func machineExistsState(s state.State, err error) (bool, error) {
 	return true, err
 }
 
-func machineExistsError(s state.State, err error, drverr error) (bool, error) {
-	_ = s // not used
-	if err == drverr {
-		// if the error matches driver error
-		return false, constants.ErrMachineMissing
-	}
-	return true, err
-}
-
 func machineExistsMessage(s state.State, err error, msg string) (bool, error) {
 	if s == state.None || (err != nil && err.Error() == msg) {
 		// if the error contains the message
@@ -281,10 +271,8 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 	case driver.Parallels:
 		return machineExistsMessage(s, err, "connection is shut down")
 	case driver.VirtualBox:
-		return machineExistsError(s, err, virtualbox.ErrMachineNotExist)
+		return machineExistsMessage(s, err, "machine does not exist")
 	case driver.VMware:
-		return machineExistsState(s, err)
-	case driver.VMwareFusion:
 		return machineExistsState(s, err)
 	case driver.Docker:
 		return machineExistsDocker(s, err)

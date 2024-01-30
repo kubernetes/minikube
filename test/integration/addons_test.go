@@ -38,6 +38,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	core "k8s.io/api/core/v1"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -49,6 +50,26 @@ func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer Cleanup(t, profile, cancel)
+
+	t.Run("PreSetup", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"EnablingAddonOnNonExistingCluster", validateEnablingAddonOnNonExistingCluster},
+			{"DisablingAddonOnNonExistingCluster", validateDisablingAddonOnNonExistingCluster},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				MaybeParallel(t)
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
 
 	setupSucceeded := t.Run("Setup", func(t *testing.T) {
 		// Set an env var to point to our dummy credentials file
@@ -79,7 +100,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=volcano"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -105,6 +126,7 @@ func TestAddons(t *testing.T) {
 		}{
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
+			{"InspektorGadget", validateInspektorGadgetAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
@@ -112,6 +134,10 @@ func TestAddons(t *testing.T) {
 			{"Headlamp", validateHeadlampAddon},
 			{"CloudSpanner", validateCloudSpannerAddon},
 			{"Volcano", validateVolcanoAddon},
+			{"LocalPath", validateLocalPathAddon},
+			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
+			{"Yakd", validateYakdAddon},
+      {"Volcano", validateVolcanoAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -447,7 +473,7 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 	// Test from inside the cluster (`helm version` use pod.list permission.)
 	checkHelmTiller := func() error {
 
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=docker.io/alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
 		if err != nil {
 			return err
 		}
@@ -808,6 +834,18 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateInspektorGadgetAddon tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
+func validateInspektorGadgetAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "gadget", "k8s-app=gadget", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for inspektor-gadget pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "inspektor-gadget", "-p", profile)); err != nil {
+		t.Errorf("failed to disable inspektor-gadget addon: args %q : %v", rr.Command(), err)
+	}
+}
+
 // validateCloudSpannerAddon tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
@@ -915,5 +953,108 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volcano", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable volcano addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+// validateLocalPathAddon tests the functionality of the storage-provisioner-rancher addon
+func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
+
+	if NoneDriver() {
+		t.Skipf("skip local-path test on none driver")
+	}
+
+	// Create a test PVC
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pvc.yaml")))
+	if err != nil {
+		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
+	}
+
+	// Deploy a simple pod with PVC
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pod.yaml")))
+	if err != nil {
+		t.Fatalf("kubectl apply pod.yaml failed: args %q: %v", rr.Command(), err)
+	}
+	if err := PVCWait(ctx, t, profile, "default", "test-pvc", Minutes(5)); err != nil {
+		t.Fatalf("failed waiting for PVC test-pvc: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "default", "run=test-local-path", Minutes(3)); err != nil {
+		t.Fatalf("failed waiting for test-local-path pod: %v", err)
+	}
+
+	// Get info about PVC
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "test-pvc", "-o=json"))
+	if err != nil {
+		t.Fatalf("kubectl get pvc with %s failed: %v", rr.Command(), err)
+	}
+	pvc := core.PersistentVolumeClaim{}
+	if err := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes())).Decode(&pvc); err != nil {
+		t.Fatalf("failed decoding json to pvc: %v", err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat /opt/local-path-provisioner/%s_default_test-pvc/file1", pvc.Spec.VolumeName)))
+	if err != nil {
+		t.Fatalf("ssh error: %v", err)
+	}
+
+	got := rr.Stdout.String()
+	want := "local-path-provisioner"
+	if !strings.Contains(got, want) {
+		t.Fatalf("%v stdout = %q, want %q", rr.Command(), got, want)
+	}
+
+	// Cleanup
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pod", "test-local-path"))
+	if err != nil {
+		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "pvc", "test-pvc"))
+	if err != nil {
+		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "storage-provisioner-rancher", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable storage-provisioner-rancher addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+// validateEnablingAddonOnNonExistingCluster tests enabling an addon on a non-existing cluster
+func validateEnablingAddonOnNonExistingCluster(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err == nil {
+		t.Fatalf("enabling addon succeeded when it shouldn't have: %s", rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
+		t.Fatalf("unexpected error was returned: %v", err)
+	}
+}
+
+// validateDisablingAddonOnNonExistingCluster tests disabling an addon on a non-existing cluster
+func validateDisablingAddonOnNonExistingCluster(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+	if err == nil {
+		t.Fatalf("disabling addon succeeded when it shouldn't have: %s", rr.Output())
+	}
+	if !strings.Contains(rr.Output(), "To start a cluster, run") {
+		t.Fatalf("unexpected error was returned: %v", err)
+	}
+}
+
+// validateNvidiaDevicePlugin tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
+func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "name=nvidia-device-plugin-ds", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for nvidia-device-plugin-ds pod: %v", err)
+	}
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
+		t.Errorf("failed to disable nvidia-device-plugin: args %q : %v", rr.Command(), err)
+	}
+}
+
+func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
+		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
 	}
 }

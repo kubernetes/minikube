@@ -2,6 +2,110 @@
     {
         "checksums": {
             "amd64": {
+                "darwin": "8ca4b2cce6208f102b851d0ea8292c1324e8358b7ac208dd1079e41af558def8",
+                "linux": "1acbb6e0358264a3acd5e1dc081de8d31c697d5b4309be21cba5587cd59eabb3",
+                "windows": "d4060da824524df744ba85fa91394cabfab15f110c03b1d8b7f1d309116fed15"
+            },
+            "arm": {
+                "linux": "fc181cb6f1bcda786001e7f7f46f810e8b430abc7d16bbe257c0526f23f90f00"
+            },
+            "arm64": {
+                "darwin": "f5bf38603b01cc3eb88f21d5550068fd592486c08c0f3272aee544e0bc2e4e64",
+                "linux": "77ca98722819e2e9d94925f662f348c3d41c1831c3cd3a77732093d7f509f172"
+            },
+            "ppc64le": {
+                "linux": "3072cce0952628187511748b4b8fc2080e80327384b30e8c6df465f02c8f35ce"
+            },
+            "s390x": {
+                "linux": "0eb342fe581afb106b6013401b33429607ab40f57f5e48a15f2b2e04726edc57"
+            },
+            "darwin": "8ca4b2cce6208f102b851d0ea8292c1324e8358b7ac208dd1079e41af558def8",
+            "linux": "1acbb6e0358264a3acd5e1dc081de8d31c697d5b4309be21cba5587cd59eabb3",
+            "windows": "d4060da824524df744ba85fa91394cabfab15f110c03b1d8b7f1d309116fed15"
+        },
+        "name": "v1.32.0"
+    },
+    {
+        "checksums": {
+            "amd64": {
+                "darwin": "c655de8bf27557f706f196a08a0afb8730e98c4976207542e05b73c11bcc0b38",
+                "linux": "88a80c051696adaa1a2a0c6aba5fde18176fd5afa87be10617ecaab9cd3a719b",
+                "windows": "5754e4b86ee66f111f4460f45730f32592701283ac79e1d9c07b217aab236dae"
+            },
+            "arm": {
+                "linux": "306fe167b874bde8bdab2cbc223bcd4bed9f389762701973e09ac458a322a3a5"
+            },
+            "arm64": {
+                "darwin": "c00ca6685e2f7b159d9348d2d20b8dc91884c3341e814155a1cb311c26e4cf94",
+                "linux": "09f450f753fe15da7e84a955f6b62c05856cef2facf564f8e609445036c8cb22"
+            },
+            "ppc64le": {
+                "linux": "11f2f9382cb1f1c1f934dff3df9e2038f7b74df32f28641f53f89b3ff95316c3"
+            },
+            "s390x": {
+                "linux": "b6185c709a9768551c79f9340b1d9ae179804aa0bd9dac6e654aa17e4d0acf73"
+            },
+            "darwin": "c655de8bf27557f706f196a08a0afb8730e98c4976207542e05b73c11bcc0b38",
+            "linux": "88a80c051696adaa1a2a0c6aba5fde18176fd5afa87be10617ecaab9cd3a719b",
+            "windows": "5754e4b86ee66f111f4460f45730f32592701283ac79e1d9c07b217aab236dae"
+        },
+        "name": "v1.31.2"
+    },
+    {
+        "checksums": {
+            "amd64": {
+                "darwin": "a465e5b537b63ac8e6624396f490dd79516fd625c1110cbf1f49e7b55c1dfcf6",
+                "linux": "ebcdfb0a520e9e746360a9dd954a9006ca75770e53fcdae493b6ac9a20026733",
+                "windows": "a08699d25fede796e6fdc56d8630380bd5864fb291592fc2be24fe881656d064"
+            },
+            "arm": {
+                "linux": "372414001ac449f6b33d7189b7fad68980169136221b94dca5cf5e1a9d90259f"
+            },
+            "arm64": {
+                "darwin": "b58bfb3eaa9f5ab04ced7f6e23184c04fdaadb4ac06cf982e2c50c37466e465a",
+                "linux": "1bc6dd8bb2f7f0eaae49a3f5685cda0472abdc6e870f5105681e877017826281"
+            },
+            "ppc64le": {
+                "linux": "ce979d3698c573eb39ec6fe4d013a714aafcb15331d6c0fed2e38b5f91000162"
+            },
+            "s390x": {
+                "linux": "5d9a2cedfa79fbcbfd85a3034eed747da1baf8d1d4004fc4cd18bcafdfe3f6f5"
+            },
+            "darwin": "a465e5b537b63ac8e6624396f490dd79516fd625c1110cbf1f49e7b55c1dfcf6",
+            "linux": "ebcdfb0a520e9e746360a9dd954a9006ca75770e53fcdae493b6ac9a20026733",
+            "windows": "a08699d25fede796e6fdc56d8630380bd5864fb291592fc2be24fe881656d064"
+        },
+        "name": "v1.31.1"
+    },
+    {
+        "checksums": {
+            "amd64": {
+                "darwin": "38e6b4d5b4bc33aaa3f18a5f02d5eb68a9ad3afc997a7fb0eb3d3ac9c5967139",
+                "linux": "0bcf12e4f72a2f2c9250bd85948166134a292c456e76224f517c4a8a52a948ac",
+                "windows": "cc40ddbad68457e78651e47e63493a5a409ced511fef494d3c536173b53f59bc"
+            },
+            "arm": {
+                "linux": "5278e7fc2db05670262fe28a83af8ed52e553bf63b8c303255dcfea30bb83bec"
+            },
+            "arm64": {
+                "darwin": "56760d95aff6e7f35952977e5fe586968110bdcc342bba68effdb1d70324e4e8",
+                "linux": "d6d63f62c2a66fa9f5a82b212bcc412dfa8741ed25f89048cf098883d9dd82b3"
+            },
+            "ppc64le": {
+                "linux": "10bb3461ff3340175f2e722154a455c349743aa69af500c026fe5203945f8f9d"
+            },
+            "s390x": {
+                "linux": "2a486c63f3986ee1341a7a6a06288aff573c45271aed7e25e64ffe44a382fa04"
+            },
+            "darwin": "38e6b4d5b4bc33aaa3f18a5f02d5eb68a9ad3afc997a7fb0eb3d3ac9c5967139",
+            "linux": "0bcf12e4f72a2f2c9250bd85948166134a292c456e76224f517c4a8a52a948ac",
+            "windows": "cc40ddbad68457e78651e47e63493a5a409ced511fef494d3c536173b53f59bc"
+        },
+        "name": "v1.31.0"
+    },
+    {
+        "checksums": {
+            "amd64": {
                 "darwin": "b5938a8772c5565b5d0b795938c367c5190bf65bb51fc55fb2417cb4e1d04ef1",
                 "linux": "e53d9e8c31f4c5f683182f5323d3527aa0725f713945c6d081cf71aa548ab388",
                 "windows": "cb3cf94860bd7a6ccb514fb1fed6641c51bcd9de1ea1a823cf862e632852af4a"

@@ -238,7 +238,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
@@ -341,6 +341,9 @@ func outputKubeadmInitSteps(logs io.Reader, wg *sync.WaitGroup) {
 
 		nextStepIndex++
 	}
+	if err := scanner.Err(); err != nil {
+		klog.Warningf("failed to read logs: %v", err)
+	}
 	wg.Done()
 }
 
@@ -426,7 +429,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		// Fall-through to init
 	}
 
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
 	}
@@ -584,7 +587,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	return nil
 }
 
-// ensureKubeletStarted will start a systemd or init.d service if it is not running.
+// ensureServiceStarted will start a systemd or init.d service if it is not running.
 func (k *Bootstrapper) ensureServiceStarted(svc string) error {
 	if st := kverify.ServiceStatus(k.c, svc); st != state.Running {
 		klog.Warningf("surprisingly %q service status was %s!. will try to start it, could be related to this issue https://github.com/kubernetes/minikube/issues/9458", svc, st)
@@ -675,7 +678,7 @@ func (k *Bootstrapper) restartControlPlane(cfg config.ClusterConfig) error {
 	}
 
 	// If the cluster is running, check if we have any work to do.
-	conf := bsutil.KubeadmYamlPath
+	conf := constants.KubeadmYamlPath
 
 	if !k.needsReconfigure(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		klog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
@@ -926,7 +929,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := r.Preload(cfg); err != nil {
-		klog.Infof("preload failed, will try to load cached images: %v", err)
+		switch err.(type) {
+		case *cruntime.ErrISOFeature:
+			out.ErrT(style.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+		default:
+			klog.Infof("preload failed, will try to load cached images: %v", err)
+		}
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
@@ -979,7 +987,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	if n.ControlPlane {
-		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"))
+		files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, constants.KubeadmYamlPath+".new", "0640"))
 	}
 
 	// Installs compatibility shims for non-systemd environments
@@ -1032,8 +1040,11 @@ func kubectlPath(cfg config.ClusterConfig) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
 }
 
+func (k *Bootstrapper) ApplyNodeLabels(cfg config.ClusterConfig) error {
+	return k.applyNodeLabels(cfg)
+}
+
 // applyNodeLabels applies minikube labels to all the nodes
-// but it's currently called only from kubeadm.StartCluster (via kubeadm.init) where there's only one - first node
 func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
 	// converting - and : to _ because of Kubernetes label restriction
@@ -1045,8 +1056,12 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// ensure that "primary" label is applied only to the 1st node in the cluster (used eg for placing ingress there)
 	// this is used to uniquely distinguish that from other nodes in multi-master/multi-control-plane cluster config
 	primaryLbl := "minikube.k8s.io/primary=false"
+
+	// ensure that "primary" label is not removed when apply label to all others nodes
+	applyToNodes := "-l minikube.k8s.io/primary!=true"
 	if len(cfg.Nodes) <= 1 {
 		primaryLbl = "minikube.k8s.io/primary=true"
+		applyToNodes = "--all"
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), applyTimeoutSeconds*time.Second)
@@ -1054,7 +1069,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
 	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
-		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, primaryLbl, "--all", "--overwrite",
+		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, primaryLbl, applyToNodes, "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
 	if _, err := k.c.RunCmd(cmd); err != nil {
@@ -1097,7 +1112,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		// double checking default sa was created.
 		// good for ensuring using minikube in CI is robust.
-		checkSA := func() (bool, error) {
+		checkSA := func(_ context.Context) (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
 				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 			rr, err = k.c.RunCmd(cmd)
@@ -1108,7 +1123,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 
 		// retry up to make sure SA is created
-		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
+		if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, time.Minute, true, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
 		}
 	}

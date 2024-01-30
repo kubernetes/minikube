@@ -25,6 +25,9 @@ spec:
           - sleep
           - "3600"
         imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            add: ["NET_RAW"]
       restartPolicy: Always
       affinity:
         # ⬇⬇⬇ This ensures pods will land on separate hosts

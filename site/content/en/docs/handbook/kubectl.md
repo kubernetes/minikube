@@ -10,6 +10,10 @@ aliases:
 By default, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) gets configured to access the kubernetes cluster control plane
 inside minikube when the `minikube start` command is executed.
 
+```shell
+kubectl <kubectl commands>
+```
+
 However if `kubectl` is not installed locally, minikube already includes kubectl which can be used like this:
 
 ```shell
@@ -91,6 +95,10 @@ For more help
 ```shell
 minikube kubectl -- --help
 ```
+
+Documentation
+
+<https://kubernetes.io/docs/reference/kubectl/>
 
 ### Shell autocompletion
 

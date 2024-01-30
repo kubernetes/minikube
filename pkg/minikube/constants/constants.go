@@ -18,11 +18,13 @@ package constants
 
 import (
 	"errors"
+	"path"
 	"path/filepath"
 	"time"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -32,10 +34,10 @@ var (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.26.3"
+	DefaultKubernetesVersion = "v1.28.4"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.27.0-rc.1"
+	NewestKubernetesVersion = "v1.29.0-rc.2"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.16.0"
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
@@ -90,6 +92,10 @@ const (
 	// MinikubeActiveDockerdEnv holds the docker daemon which user's shell is pointing at
 	// value would be profile or empty if pointing to the user's host daemon.
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
+	// SSHAuthSock is used for docker-env
+	SSHAuthSock = "SSH_AUTH_SOCK"
+	// SSHAgentPID is used for docker-env
+	SSHAgentPID = "SSH_AGENT_PID"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
 	// PodmanContainerHostEnv is used for podman settings
@@ -132,6 +138,8 @@ const (
 	TimeFormat = time.RFC822
 	// MaxResources is the value that can be passed into the memory and cpus flags to specify to use maximum resources
 	MaxResources = "max"
+	// NoLimit is the value that can be passed into the memory and cpus flags to specify to not set the resource limit on the container (Docker & Podman only)
+	NoLimit = "no-limit"
 
 	// DefaultCertExpiration is the amount of time in the future a certificate will expire in by default, which is 3 years
 	DefaultCertExpiration = time.Hour * 24 * 365 * 3
@@ -160,8 +168,6 @@ const (
 var (
 	// IsMinikubeChildProcess is the name of "is minikube child process" variable
 	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
-	GvisorConfigTomlTargetName = "gvisor-config.toml"
 	// MountProcessFileName is the filename of the mount process
 	MountProcessFileName = ".mount-process"
 
@@ -203,4 +209,7 @@ var (
 
 	// ErrMachineMissing is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
 	ErrMachineMissing = errors.New("machine does not exist")
+
+	// KubeadmYamlPath is the path to the kubeadm configuration
+	KubeadmYamlPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 )

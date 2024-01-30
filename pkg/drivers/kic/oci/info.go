@@ -272,7 +272,7 @@ var podmanInfoGetter = func() (string, error) {
 	return rr.Stdout.String(), err
 }
 
-// podmanSysInfo returns podman system info --format '{{json .}}'
+// podmanSystemInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
 	rawJSON, err := podmanInfoGetter()

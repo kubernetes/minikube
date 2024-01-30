@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  criSocket: unix:///var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
     node-ip: 1.1.1.1

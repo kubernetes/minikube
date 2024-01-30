@@ -14,9 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Part of this code is heavily inspired/copied by the following file:
-// github.com/docker/machine/commands/env.go
-
 package cmd
 
 import (

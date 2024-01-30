@@ -1,5 +1,5 @@
 ---
-title: "Using Kong Ingress Controller Addon"
+title: "Using the Kong Ingress Controller Addon"
 linkTitle: "Kong Ingress"
 weight: 1
 date: 2022-01-25
@@ -61,17 +61,17 @@ $ curl -v localhost
 * Connected to localhost (127.0.0.1) port 80 (#0)
 > GET / HTTP/1.1
 > Host: localhost
-> User-Agent: curl/7.77.0
+> User-Agent: curl/7.86.0
 > Accept: */*
 >
 * Mark bundle as not supporting multiuse
 < HTTP/1.1 404 Not Found
-< Date: Tue, 25 Jan 2022 22:35:27 GMT
+< Date: Wed, 03 May 2023 01:34:31 GMT
 < Content-Type: application/json; charset=utf-8
 < Connection: keep-alive
 < Content-Length: 48
 < X-Kong-Response-Latency: 0
-< Server: kong/2.7.0
+< Server: kong/3.2.2
 <
 * Connection #0 to host localhost left intact
 {"message":"no Route matched with those values"}%
@@ -79,70 +79,125 @@ $ curl -v localhost
 
 ## Creating Ingress object
 
-Let's create a service.
-As an example, we use `type=ExternalName` to point to https://httpbin.org
+To proxy requests, you need an upstream application to proxy to. 
+Deploying this echo server provides a simple application that returns information about the Pod it’s running in:
 
 ```bash
 echo "
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  name: proxy-to-httpbin
+  labels:
+    app: echo
+  name: echo
 spec:
   ports:
-  - protocol: TCP
-    port: 80
-  type: ExternalName
-  externalName: httpbin.org
-" | kubectl create -f -
+  - port: 1025
+    name: tcp
+    protocol: TCP
+    targetPort: 1025
+  - port: 1026
+    name: udp
+    protocol: TCP
+    targetPort: 1026
+  - port: 1027
+    name: http
+    protocol: TCP
+    targetPort: 1027
+  selector:
+    app: echo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: echo
+  name: echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: echo
+    spec:
+      containers:
+      - image: kong/go-echo:latest
+        name: echo
+        ports:
+        - containerPort: 1027
+        env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        resources: {}
+" | kubectl apply -f -
 ```
 
-Next, we will create the ingress object points to httpbin service.
+Next, we will create routing configuration to proxy `/echo` requests to the echo server:
 
 ```bash
-echo '
+echo "
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: proxy-from-k8s-to-httpbin
+  name: echo
   annotations:
-    konghq.com/strip-path: "true"
+    konghq.com/strip-path: 'true'
 spec:
   ingressClassName: kong
   rules:
-  - http:
+  - host: kong.example
+    http:
       paths:
-      - path: /foo
+      - path: /echo
         pathType: ImplementationSpecific
         backend:
           service:
-            name: proxy-to-httpbin
+            name: echo
             port:
-              number: 80
-' | kubectl create -f -
+              number: 1027
+" | kubectl apply -f -
 ```
 
 Let's test our ingress object.
 
 ```bash
-$ curl -i localhost/foo -H "Host: httpbin.org"
-
+$ curl -i localhost/echo -H "Host: kong.example"
 
 HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
-Content-Length: 4
+Content-Length: 133
 Connection: keep-alive
-X-App-Name:
-X-App-Version: 0.2.4
-Date: Tue, 25 Jan 2022 22:44:57 GMT
+Date: Wed, 03 May 2023 01:59:25 GMT
 X-Kong-Upstream-Latency: 1
 X-Kong-Proxy-Latency: 1
-Via: kong/2.7.0
+Via: kong/3.2.2
 
-foo
+Welcome, you are connected to node minikube.
+Running on Pod echo-f4fdf987c-qdv7s.
+In namespace default.
+With IP address 10.244.0.6.
 ```
 
 ## Next
 
 **Note:** Read more about KIC and different use cases in official
-[documentation](https://docs.konghq.com/kubernetes-ingress-controller/2.1.x/guides/overview/).
+[documentation](https://docs.konghq.com/kubernetes-ingress-controller/latest/guides/overview/).
