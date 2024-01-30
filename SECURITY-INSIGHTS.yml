@@ -21,17 +21,17 @@ contribution-policy:
   accepts-automated-pull-requests: true
   automated-tools-list:
   - automated-tool: dependabot
-      action: allowed
-      path:
-        - /
+    action: allowed
+    path:
+      - /
   - automated-tool:  minikube-bot
     action: allowed
     path:
-        - /
+      - /
   - automated-tool:  k8s-ci-robot
     action: allowed
     path:
-        - /
+      - /
   contributing-policy: https://minikube.sigs.k8s.io/docs/contrib/guide/
   code-of-conduct: https://github.com/kubernetes/minikube/blob/master/code-of-conduct.md
 documentation:
