@@ -541,14 +541,14 @@ func handleSingleDeletionError(err error) {
 	if ok {
 		switch deletionError.Errtype {
 		case Fatal:
-			out.FatalT("Failed to delete profile(s): {{.error}}", out.V{"error": deletionError.Error()})
+			out.ErrT(style.Fatal, "Failed to delete profile(s): {{.error}}", out.V{"error": deletionError.Error()})
 			os.Exit(reason.ExGuestError)
 		case MissingProfile:
 			out.ErrT(style.Sad, deletionError.Error())
 		case MissingCluster:
 			out.ErrT(style.Meh, deletionError.Error())
 		default:
-			out.FatalT("Unable to delete profile(s): {{.error}}", out.V{"error": deletionError.Error()})
+			out.ErrT(style.Fatal, "Unable to delete profile(s): {{.error}}", out.V{"error": deletionError.Error()})
 			os.Exit(reason.ExGuestError)
 		}
 	} else {
