@@ -255,11 +255,6 @@ func SuccessT(format string, a ...V) {
 	Step(style.Success, format, a...)
 }
 
-// FatalT is a shortcut for writing a templated fatal message to stderr
-func FatalT(format string, a ...V) {
-	ErrT(style.Fatal, format, a...)
-}
-
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
 	if JSON {
@@ -368,12 +363,12 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 func displayError(msg string, err error) {
 	klog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	if JSON {
-		FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
+		ErrT(style.Fatal, "{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 		return
 	}
 	// use Warning because Error will display a duplicate message to stderr
 	ErrT(style.Empty, "")
-	FatalT("{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
+	ErrT(style.Fatal, "{{.msg}}: {{.err}}", V{"msg": translate.T(msg), "err": err})
 	ErrT(style.Empty, "")
 	displayGitHubIssueMessage()
 }

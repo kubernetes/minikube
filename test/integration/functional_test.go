@@ -1247,9 +1247,6 @@ func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
-	if rr.Stdout.String() != "" {
-		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
-	}
 
 	logs, err := os.ReadFile(logFileName)
 	if err != nil {

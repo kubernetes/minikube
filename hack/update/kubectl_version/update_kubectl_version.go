@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
@@ -42,10 +43,7 @@ func main() {
 	if err != nil {
 		klog.Fatal(err)
 	}
-	tag, err := latestStableSemverTag(tags)
-	if err != nil {
-		klog.Fatal(err)
-	}
+	tag := latestStableSemverTag(tags)
 	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/bitnami/kubectl:%s", tag))
 	if err != nil {
 		klog.Fatalf("failed to get image SHA: %v", err)
@@ -56,12 +54,13 @@ func main() {
 	update.Apply(schema, data)
 }
 
-func latestStableSemverTag(tags []string) (string, error) {
+func latestStableSemverTag(tags []string) string {
+	latest := "v0.0.0"
 	for _, tag := range tags {
 		vTag := fmt.Sprintf("v%s", tag)
-		if semver.IsValid(vTag) && semver.Prerelease(vTag) == "" {
-			return tag, nil
+		if semver.IsValid(vTag) && semver.Prerelease(vTag) == "" && semver.Compare(vTag, latest) == 1 {
+			latest = vTag
 		}
 	}
-	return "", fmt.Errorf("no stable semver tag found")
+	return strings.TrimPrefix(latest, "v")
 }

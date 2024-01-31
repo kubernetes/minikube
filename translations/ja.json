@@ -405,6 +405,7 @@
 	"Locations to fetch the minikube ISO from.": "minikube ISO の取得元。",
 	"Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.": "SSH を使ってマシンにログインしたりコマンドを実行します ('docker-machine ssh' と同様です)。",
 	"Log into the minikube environment (for debugging)": "minikube の環境にログインします (デバッグ用)",
+	"Logs file created ({{.logPath}}), remember to include it when reporting issues!": "",
 	"Manage cache for images": "イメージキャッシュを管理します",
 	"Manage images": "イメージを管理します",
 	"Message Size: {{.size}}": "メッセージのサイズ: {{.size}}",
