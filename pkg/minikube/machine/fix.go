@@ -94,7 +94,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	// we deliberately aim to restore backed up machine config early,
 	// so that remaining code logic can amend files as needed,
 	// it's intentionally non-fatal in case of any error
-	if driver.IsVM(h.DriverName) && config.HA(*cc) {
+	if driver.IsVM(h.DriverName) && config.IsHA(*cc) {
 		if err := restore(*h); err != nil {
 			klog.Warningf("cannot read backup folder, skipping restore: %v", err)
 		}

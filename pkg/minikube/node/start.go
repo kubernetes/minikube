@@ -154,7 +154,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 					}
 				}
 				// scale down CoreDNS from default 2 to 1 replica only for non-ha cluster and if optimisation is not disabled
-				if !starter.Cfg.DisableOptimizations && !config.HA(*starter.Cfg) {
+				if !starter.Cfg.DisableOptimizations && !config.IsHA(*starter.Cfg) {
 					if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 						klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
 					}
@@ -179,7 +179,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 
 		// join cluster only on first node start
 		// except for vm driver in non-ha cluster - fallback to old behaviour
-		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.HA(*starter.Cfg)) {
+		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.IsHA(*starter.Cfg)) {
 			// make sure to use the command runner for the primary control plane to generate the join token
 			pcpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
@@ -228,7 +228,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	}
 
 	// for ha cluster, primary control-plane node will not come up alone until secondary joins
-	if config.HA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+	if config.IsHA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
 		klog.Infof("HA cluster: will skip waiting for primary control-plane node %+v", starter.Node)
 	} else {
 		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
@@ -278,7 +278,7 @@ func startPrimaryControlPlane(starter Starter, cr cruntime.Manager) (*kubeconfig
 		return nil, nil, fmt.Errorf("node not marked as primary control-plane")
 	}
 
-	if config.HA(*starter.Cfg) {
+	if config.IsHA(*starter.Cfg) {
 		n, err := network.Inspect(starter.Node.IP)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "inspect network")
@@ -625,7 +625,7 @@ func setupKubeadm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, clusterName string) *kubeconfig.Settings {
 	host := cc.KubernetesConfig.APIServerHAVIP
 	port := cc.APIServerPort
-	if !config.HA(cc) {
+	if !config.IsHA(cc) {
 		var err error
 		if host, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})

@@ -50,7 +50,7 @@ var nodeAddCmd = &cobra.Command{
 			out.FailureT("none driver does not support multi-node clusters")
 		}
 
-		if cpNode && !config.HA(*cc) {
+		if cpNode && !config.IsHA(*cc) {
 			out.FailureT("Adding a control-plane node to a non-HA cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
 		}
 

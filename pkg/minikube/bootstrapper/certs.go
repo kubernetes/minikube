@@ -268,7 +268,7 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, shared shared
 	for _, n := range config.ControlPlanes(cfg) {
 		apiServerIPs = append(apiServerIPs, net.ParseIP(n.IP))
 	}
-	if config.HA(cfg) {
+	if config.IsHA(cfg) {
 		apiServerIPs = append(apiServerIPs, net.ParseIP(cfg.KubernetesConfig.APIServerHAVIP))
 	}
 

@@ -627,7 +627,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha cluster with vm driver
 		// where such cluster needs to be reconfigured b/c of (currently) ephemeral config, but then also,
 		// starting already started such cluster (hard to know w/o investing that time) will fallthrough the same path and reconfigure cluster
-		if config.HA(cfg) || !driver.IsVM(cfg.Driver) {
+		if config.IsHA(cfg) || !driver.IsVM(cfg.Driver) {
 			return nil
 		}
 	} else {
@@ -955,7 +955,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 			files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, constants.KubeadmYamlPath+".new", "0640"))
 		}
 		// deploy kube-vip for ha cluster
-		if config.HA(cfg) {
+		if config.IsHA(cfg) {
 			// workaround for kube-vip
 			// only applicable for k8s v1.29+ during primary control-plane node's kubeadm init (ie, first boot)
 			// TODO (prezha): remove when fixed upstream - ref: https://github.com/kube-vip/kube-vip/issues/684#issuecomment-1864855405
@@ -998,7 +998,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	// add "control-plane.minikube.internal" dns alias
 	// note: needs to be called after APIServerHAVIP is set (in startPrimaryControlPlane()) and before kubeadm kicks off
 	cpIP := cfg.KubernetesConfig.APIServerHAVIP
-	if !config.HA(cfg) {
+	if !config.IsHA(cfg) {
 		cp, err := config.ControlPlane(cfg)
 		if err != nil {
 			return errors.Wrap(err, "get control-plane node")

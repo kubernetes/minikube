@@ -175,7 +175,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 		healthyCPs++
 	}
 
-	if config.HA(*p.Config) {
+	if config.IsHA(*p.Config) {
 		switch {
 		case healthyCPs < 2:
 			return state.Stopped.String()
@@ -204,7 +204,7 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 	for _, p := range profiles {
 		cpIP := p.Config.KubernetesConfig.APIServerHAVIP
 		cpPort := p.Config.APIServerPort
-		if !config.HA(*p.Config) {
+		if !config.IsHA(*p.Config) {
 			cp, err := config.ControlPlane(*p.Config)
 			if err != nil {
 				exit.Error(reason.GuestCpConfig, "error getting control-plane node", err)

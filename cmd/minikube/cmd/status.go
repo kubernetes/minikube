@@ -403,10 +403,9 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	if cc.Addons["auto-pause"] {
 		hostname, _, port, err = driver.AutoPauseProxyEndpoint(&cc, &n, host.DriverName)
 	} else {
-		if config.HA(cc) {
+		if config.IsHA(cc) {
 			hostname = cc.KubernetesConfig.APIServerHAVIP
 			port = cc.APIServerPort
-			err = nil // checked below
 		} else {
 			hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
 		}
