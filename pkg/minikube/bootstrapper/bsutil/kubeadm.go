@@ -89,10 +89,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	// ref: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/#options
 	// ref: https://github.com/kubernetes/kubernetes/issues/118787
 	if version.GTE(semver.MustParse("1.27.0")) {
-		kubeletConfigOpts["containerRuntimeEndpoint"] = k8s.ExtraOptions.Get("container-runtime-endpoint", Kubelet)
-		if kubeletConfigOpts["containerRuntimeEndpoint"] == "" {
-			kubeletConfigOpts["containerRuntimeEndpoint"] = r.KubeletOptions()["container-runtime-endpoint"]
+		runtimeEndpoint := k8s.ExtraOptions.Get("container-runtime-endpoint", Kubelet)
+		if runtimeEndpoint == "" {
+			runtimeEndpoint = r.KubeletOptions()["container-runtime-endpoint"]
 		}
+		kubeletConfigOpts["containerRuntimeEndpoint"] = runtimeEndpoint
 	}
 	// set hairpin mode to hairpin-veth to achieve hairpin NAT, because promiscuous-bridge assumes the existence of a container bridge named cbr0
 	// ref: https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/#a-pod-fails-to-reach-itself-via-the-service-ip
