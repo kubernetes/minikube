@@ -1,5 +1,5 @@
-config BR2_PACKAGE_CRUN
-	bool "crun"
+config BR2_PACKAGE_CRUN_LATEST
+	bool "crun-latest"
 	select BR2_PACKAGE_YAJL
 	help
 	  A fast and low-memory footprint OCI Container Runtime
