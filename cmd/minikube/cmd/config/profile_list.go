@@ -166,13 +166,12 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 			klog.Warningf("error loading profile (will continue): apiserver status for %s: %v", machineName, err)
 			continue
 		}
+		status = as.String()
 		if as != state.Running {
 			klog.Warningf("error loading profile (will continue): apiserver %s is not running: %q", machineName, hs)
-			status = as.String()
 			continue
 		}
 
-		status = state.Running.String()
 		healthyCPs++
 	}
 
