@@ -53,8 +53,9 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if err != nil || !config.IsPrimaryControlPlane(*cc, pcp) {
 		return errors.Wrap(err, "get primary control-plane node")
 	}
-	if !machine.IsRunning(api, config.MachineName(*cc, pcp)) {
-		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", config.MachineName(*cc, pcp), name, val)
+	machineName := config.MachineName(*cc, pcp)
+	if !machine.IsRunning(api, machineName) {
+		klog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", machineName, name, val)
 		return EnableOrDisableAddon(cc, name, val)
 	}
 
