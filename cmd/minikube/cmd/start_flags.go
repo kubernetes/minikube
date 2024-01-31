@@ -747,7 +747,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		out.WarningT("Changing the HA mode of an existing minikube cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
 	}
 
-	if cmd.Flags().Changed(apiServerPort) && viper.GetBool(ha) {
+	if cmd.Flags().Changed(apiServerPort) && config.IsHA(*existing) {
 		out.WarningT("Changing the apiserver port of an existing minikube ha cluster is not currently supported. Please first delete the cluster.")
 	} else {
 		updateIntFromFlag(cmd, &cc.APIServerPort, apiServerPort)
