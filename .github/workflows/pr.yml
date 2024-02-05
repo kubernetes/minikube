@@ -645,8 +645,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
-          CRI_DOCKERD_VERSION="v0.3.3"
-          CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
+          CRI_DOCKERD_VERSION="v0.3.9"
+          CRI_DOCKERD_COMMIT="c50b98dec130cd9e7a7ab45cbd60e1087c10aa67"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
