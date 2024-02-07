@@ -625,7 +625,7 @@ func setupKubeadm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, clusterName string) *kubeconfig.Settings {
 	host := cc.KubernetesConfig.APIServerHAVIP
 	port := cc.APIServerPort
-	if !config.IsHA(cc) {
+	if !config.IsHA(cc) || driver.NeedsPortForward(cc.Driver) {
 		var err error
 		if host, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
