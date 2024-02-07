@@ -345,7 +345,7 @@ if [ "$(uname)" != "Darwin" ]; then
   docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
+readonly LOAD=$(uptime | grep -E -o "load average.*: [0-9]+" | cut -d" " -f3)
 if [[ "${LOAD}" -gt 2 ]]; then
   echo ""
   echo "********************** LOAD WARNING ********************************"

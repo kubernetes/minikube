@@ -21,7 +21,7 @@ function check_jenkins() {
           return
   fi
   pstree "${jenkins_pid}" \
-        | egrep -i 'bash|integration|e2e|minikube' \
+        | grep -E -i 'bash|integration|e2e|minikube' \
         && echo "tests are running on pid ${jenkins_pid} ..." \
         && exit 1
 }

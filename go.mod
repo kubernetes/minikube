@@ -16,8 +16,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/cloudevents/sdk-go/v2 v2.15.0
-	github.com/docker/cli v25.0.1+incompatible
-	github.com/docker/docker v25.0.1+incompatible
+	github.com/docker/cli v25.0.2+incompatible
+	github.com/docker/docker v25.0.2+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.5.0
 	github.com/docker/machine v0.16.2
@@ -46,24 +46,23 @@ require (
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/opencontainers/runc v1.1.11
+	github.com/opencontainers/runc v1.1.12
 	github.com/otiai10/copy v1.14.0
-	github.com/pborman/uuid v1.2.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/shirou/gopsutil/v3 v3.23.12
+	github.com/shirou/gopsutil/v3 v3.24.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/otel v1.22.0
-	go.opentelemetry.io/otel/sdk v1.22.0
-	go.opentelemetry.io/otel/trace v1.22.0
+	go.opentelemetry.io/otel v1.23.0
+	go.opentelemetry.io/otel/sdk v1.23.0
+	go.opentelemetry.io/otel/trace v1.23.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.18.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
@@ -74,7 +73,7 @@ require (
 	golang.org/x/term v0.16.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/plot v0.14.0
-	google.golang.org/api v0.160.0
+	google.golang.org/api v0.162.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
@@ -84,7 +83,7 @@ require (
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/kubectl v0.29.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	libvirt.org/go/libvirt v1.9008.0
+	libvirt.org/go/libvirt v1.10000.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
@@ -215,7 +214,8 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
-	go.opentelemetry.io/otel/metric v1.22.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
+	go.opentelemetry.io/otel/metric v1.23.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
@@ -225,8 +225,8 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240122161410-6c6643bf1457 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240116215550-a9fa1716bcac // indirect
-	google.golang.org/grpc v1.60.1 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe // indirect
+	google.golang.org/grpc v1.61.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
