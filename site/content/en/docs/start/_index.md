@@ -139,7 +139,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% quiz_instruction id="/Linux/x86-64/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm -rf minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 {{% /quiz_instruction %}}
 
@@ -147,7 +147,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm -rf minikube-lin
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-amd64' | head -n1)
-sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm -rf minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 {{% /quiz_instruction %}}
 
