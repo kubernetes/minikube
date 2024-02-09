@@ -72,10 +72,10 @@ func TestCopyBinary(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			err := CopyBinary(test.runner, test.src, test.dst)
 			if err != nil && !test.err {
-				t.Fatalf("Error %v expected but not occurred", err)
+				t.Fatalf("Got unexpected error %v", err)
 			}
 			if err == nil && test.err {
-				t.Fatal("Unexpected error")
+				t.Fatal("Expected error but got nil")
 			}
 		})
 	}

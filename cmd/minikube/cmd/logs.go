@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -120,10 +121,9 @@ var logsCmd = &cobra.Command{
 			logs.OutputProblems(problems, numberOfProblems, logOutput)
 			return
 		}
-		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
-		if err != nil {
-			out.Ln("")
-			out.WarningT("{{.error}}", out.V{"error": err})
+		logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
+		if fileOutput != "" {
+			out.Styled(style.Success, "Logs file created ({{.logPath}}), remember to include it when reporting issues!", out.V{"logPath": fileOutput})
 		}
 	},
 }

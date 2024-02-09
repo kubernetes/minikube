@@ -23,7 +23,7 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/google/go-github/v56/github"
+	"github.com/google/go-github/v58/github"
 )
 
 const (

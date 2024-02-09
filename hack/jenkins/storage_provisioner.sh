@@ -44,7 +44,7 @@ if [ $ec -gt 0 ]; then
 fi
 
 # Bump the preload version
-PLV=$(egrep "PreloadVersion =" pkg/minikube/download/preload.go | cut -d \" -f 2)
+PLV=$(grep -E "PreloadVersion =" pkg/minikube/download/preload.go | cut -d \" -f 2)
 RAW=${PLV:1}
 RAW=$((RAW+1))
 PLV=v${RAW}

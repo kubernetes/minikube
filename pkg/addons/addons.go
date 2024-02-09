@@ -120,14 +120,13 @@ func postStartMessages(cc *config.ClusterConfig, name, value string) {
 	case "dashboard":
 		out.Styled(style.Tip, `Some dashboard features require the metrics-server addon. To enable all features please run:
 
-	minikube{{.profileArg}} addons enable metrics-server	
-
+	minikube{{.profileArg}} addons enable metrics-server
 `, out.V{"profileArg": tipProfileArg})
 	case "headlamp":
 		out.Styled(style.Tip, `To access Headlamp, use the following command:
-minikube service headlamp -n headlamp
 
-`)
+	minikube{{.profileArg}} service headlamp -n headlamp
+`, out.V{"profileArg": tipProfileArg})
 		tokenGenerationTip := "To authenticate in Headlamp, fetch the Authentication Token using the following command:"
 		createSvcAccountToken := "kubectl create token headlamp --duration 24h -n headlamp"
 		getSvcAccountToken := `export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
@@ -139,16 +138,20 @@ kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} |
 			tokenGenerationTip = fmt.Sprintf("%s\nIf Kubernetes Version is <1.24:\n%s\n\nIf Kubernetes Version is >=1.24:\n%s\n", tokenGenerationTip, createSvcAccountToken, getSvcAccountToken)
 		} else {
 			if parsedClusterVersion.GTE(semver.Version{Major: 1, Minor: 24}) {
-				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, createSvcAccountToken)
+				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, createSvcAccountToken)
 			} else {
-				tokenGenerationTip = fmt.Sprintf("%s\n%s", tokenGenerationTip, getSvcAccountToken)
+				tokenGenerationTip = fmt.Sprintf("%s\n\n        %s", tokenGenerationTip, getSvcAccountToken)
 			}
 		}
 		out.Styled(style.Tip, fmt.Sprintf("%s\n", tokenGenerationTip))
 		out.Styled(style.Tip, `Headlamp can display more detailed information when metrics-server is installed. To install it, run:
 
-minikube{{.profileArg}} addons enable metrics-server	
+	minikube{{.profileArg}} addons enable metrics-server
+`, out.V{"profileArg": tipProfileArg})
+	case "yakd":
+		out.Styled(style.Tip, `To access YAKD - Kubernetes Dashboard, wait for Pod to be ready and run the following command:
 
+	minikube{{.profileArg}} service yakd-dashboard -n yakd-dashboard
 `, out.V{"profileArg": tipProfileArg})
 	}
 }

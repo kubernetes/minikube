@@ -19,11 +19,12 @@ VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
-KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
-KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+KUBERNETES_VERSION ?= $(shell grep -E "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.32.1-1699485311-17565
+ISO_VERSION ?= v1.32.1-1703784139-17866
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -34,9 +35,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.21.3
+GO_VERSION ?= 1.21.6
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.29.0
+GO_K8S_VERSION_PREFIX ?= v1.30.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -110,10 +111,10 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.4
+AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.5
+PROW_TEST_TAG ?= v0.0.6
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
@@ -928,7 +929,7 @@ out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	(cd out/hugo && go build --tags extended)
+	(cd out/hugo && git fetch origin && git checkout $(HUGO_VERSION) && go build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
@@ -959,16 +960,17 @@ auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker 
 	docker build -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
 
 .PHONY: push-auto-pause-hook-image
-push-auto-pause-hook-image: auto-pause-hook-image
+push-auto-pause-hook-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: push-prow-test-image
 push-prow-test-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
 	docker buildx create --name multiarch --bootstrap
-	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
-	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:latest ./deploy/prow
+	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) -t $(REGISTRY)/prow-test:latest ./deploy/prow
 	docker buildx rm multiarch
 
 .PHONY: out/performance-bot
@@ -1194,6 +1196,21 @@ update-kong-ingress-controller-version:
 update-nvidia-device-plugin-version:
 	(cd hack/update/nvidia_device_plugin_version && \
 	 go run update_nvidia_device_plugin_version.go)
+
+.PHONY: update-nerctld-version
+update-nerdctld-version:
+	(cd hack/update/nerdctld_version && \
+	 go run update_nerdctld_version.go)
+
+.PHONY: update-kubectl-version
+update-kubectl-version:
+	(cd hack/update/kubectl_version && \
+	 go run update_kubectl_version.go)
+
+.PHONY: update-site-node-version
+update-site-node-version:
+	(cd hack/update/site_node_version && \
+	 go run update_site_node_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

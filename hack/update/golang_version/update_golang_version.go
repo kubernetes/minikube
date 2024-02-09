@@ -67,7 +67,7 @@ var (
 		},
 		"deploy/addons/auto-pause/Dockerfile": {
 			Replace: map[string]string{
-				`golang:.*`: `golang:{{.StableVersion}}`,
+				`golang:.* AS`: `golang:{{.StableVersion}} AS`,
 			},
 		},
 	}

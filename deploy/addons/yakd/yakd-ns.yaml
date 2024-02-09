@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: yakd-dashboard
+  labels:
+    kubernetes.io/minikube-addons: yakd-dashboard
+    addonmanager.kubernetes.io/mode: Reconcile

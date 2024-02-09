@@ -4,6 +4,8 @@
 [![GoReport Widget]][GoReport Status]
 [![GitHub All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
 [![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/5015/badge)](https://www.bestpractices.dev/en/projects/5015)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube/badge)](https://api.securityscorecards.dev/projects/github.com/kubernetes/minikube)
  
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
@@ -32,7 +34,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 As well as developer-friendly features:
 
 * [Addons](https://minikube.sigs.k8s.io/docs/handbook/deploying/#addons) - a marketplace for developers to share configurations for running services on minikube
-* [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/handbook/addons/nvidia/) - for machine learning
+* [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia/) - for machine learning
 * [Filesystem mounts](https://minikube.sigs.k8s.io/docs/handbook/mount/)
 
 **For more information, see the official [minikube website](https://minikube.sigs.k8s.io)**

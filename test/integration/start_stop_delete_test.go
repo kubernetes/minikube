@@ -352,29 +352,33 @@ func testPulledImages(ctx context.Context, t *testing.T, profile, version string
 	t.Helper()
 	defer PostMortemLogs(t, profile)
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+	// TODO(prezha): once we bump the minimum supported k8s version to v1.24+
+	// (where dockershim is deprecated, while cri-tools we use support cri v1 api),
+	// we can revert back to the "crictl" to check images here - eg:
+	// rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "list", "--format=json"))
 	if err != nil {
 		t.Errorf("failed to get images inside minikube. args %q: %v", rr.Command(), err)
 	}
-	jv := map[string][]struct {
+	jv := []struct {
 		Tags []string `json:"repoTags"`
 	}{}
 
 	stdout := rr.Stdout.String()
 
-	err = json.Unmarshal([]byte(stdout), &jv)
-	if err != nil {
+	if err := json.Unmarshal([]byte(stdout), &jv); err != nil {
 		t.Errorf("failed to decode images json %v. output:\n%s", err, stdout)
 	}
+
 	found := map[string]bool{}
-	for _, img := range jv["images"] {
+	for _, img := range jv {
 		for _, i := range img.Tags {
 			i = trimImageName(i)
 			if defaultImage(i) {
 				found[i] = true
-			} else {
-				t.Logf("Found non-minikube image: %s", i)
+				continue
 			}
+			t.Logf("Found non-minikube image: %s", i)
 		}
 	}
 

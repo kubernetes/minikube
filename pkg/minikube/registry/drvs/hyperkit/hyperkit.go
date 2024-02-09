@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -62,7 +62,7 @@ func init() {
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	u := cfg.UUID
 	if u == "" {
-		u = uuid.NewUUID().String()
+		u = uuid.NewString()
 	}
 
 	return &hyperkit.Driver{

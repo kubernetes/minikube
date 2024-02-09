@@ -23,7 +23,7 @@ data:
     curl -Ls "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml" -o /manifests/kubevirt-operator.yaml
     kubectl create -f /manifests/kubevirt-operator.yaml
 
-    HARDWARE_EMULATION=$(egrep 'svm|vmx' /proc/cpuinfo)
+    HARDWARE_EMULATION=$(grep -E 'svm|vmx' /proc/cpuinfo)
     if [ -z "$HARDWARE_EMULATION" ]; then
       echo "Using software emulation"
 

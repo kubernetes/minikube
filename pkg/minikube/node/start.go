@@ -342,6 +342,9 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		return fmt.Errorf("error joining worker node to cluster: %w", err)
 	}
 
+	if err := cpBs.ApplyNodeLabels(*starter.Cfg); err != nil {
+		return fmt.Errorf("error applying node label: %w", err)
+	}
 	return nil
 }
 

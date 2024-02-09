@@ -499,6 +499,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
+		c = append(c, '\n')
 		err = os.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
