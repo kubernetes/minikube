@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/network"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const (
@@ -196,8 +197,14 @@ func (d *Driver) GetState() (state.State, error) {
 			return state.Stopped, nil
 		}
 	}
-	ret, err := d.RunQMPCommand("query-status")
-	if err != nil {
+	var ret map[string]interface{}
+	queryStatus := func() (err error) {
+		ret, err = d.RunQMPCommand("query-status")
+		return err
+	}
+	// on arm64 Macs the monitor may refuse connection for a second after creating the cluster, resulting in addons
+	// not being enabled, a simple retry resolves this, see: https://github.com/kubernetes/minikube/issues/17396
+	if err := retry.Expo(queryStatus, 1*time.Second, 10*time.Second); err != nil {
 		return state.Error, err
 	}
 
@@ -510,7 +517,7 @@ func (d *Driver) Start() error {
 			return nil
 		}
 		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-		for i := 0; i < 30; i++ {
+		for i := 0; i < 60; i++ {
 			log.Debugf("Attempt %d", i)
 			err = getIP()
 			if err == nil {

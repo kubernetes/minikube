@@ -139,6 +139,7 @@ var Config = map[Enum]Options{
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Verifying:        {Prefix: "🤔  "},
 	CNI:              {Prefix: "🔗  "},
+	Toolkit:          {Prefix: "🛠️   "},
 }
 
 // LowPrefix returns a 7-bit compatible prefix for a style

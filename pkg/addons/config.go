@@ -167,6 +167,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 	{
+		name:      "storage-provisioner-rancher",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableStorageClasses},
+	},
+	{
 		name:      "metallb",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
@@ -214,6 +219,16 @@ var Addons = []*Addon{
 	},
 	{
 		name:      "cloud-spanner",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "kubeflow",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "nvidia-device-plugin",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},

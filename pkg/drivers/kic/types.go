@@ -24,10 +24,10 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.40-1693218425-17145"
+	Version = "v0.0.42-1701974066-17719"
 
 	// SHA of the kic base image
-	baseImageSHA = "b79ac53e13f1f04e9fd9bdd5eb7d937a6931d86b3cdddf46e6e66227aea180ad"
+	baseImageSHA = "cec630e7d143790c46e2dc54dbb8f39a22d8ede3e3c25e34638082e2c107a85c"
 	// The name of the GCR kicbase repository
 	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
 	// The name of the Dockerhub kicbase repository
@@ -69,4 +69,5 @@ type Config struct {
 	StaticIP          string            // static IP for the kic cluster
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress     string            // IP Address to listen to
+	GPUs              string            // add NVIDIA GPU devices to the container
 }

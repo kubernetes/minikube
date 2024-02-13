@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.20.7'
+  GO_VERSION: '1.21.4'
 permissions:
   contents: read
 
@@ -14,7 +14,7 @@ jobs:
   bump-calico-version:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
           go-version: ${{env.GO_VERSION}}
@@ -22,13 +22,13 @@ jobs:
       - name: Bump calico version
         id: bumpCalico
         run: |
-          echo "OLD_VERSION=$(DEP=calico make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "OLD_VERSION=$(DEP=calico make get-dependency-version)" >> "$GITHUB_OUTPUT"
           make update-calico-version
-          echo "NEW_VERSION=$(DEP=calico make get-dependency-version)" >> $GITHUB_OUTPUT
+          echo "NEW_VERSION=$(DEP=calico make get-dependency-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-          echo "changes<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git status --porcelain)" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpCalico.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38

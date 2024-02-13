@@ -75,6 +75,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
+	GPUs              bool
 }
 
 // Name is a human readable name for Docker
@@ -132,9 +133,15 @@ func (r *Docker) Active() bool {
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
-		return errors.New("inUserNamespace must not be true for docker")
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
 	}
-
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -156,7 +163,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
 
-	if err := r.setCGroup(cgroupDriver); err != nil {
+	if err := r.configureDocker(cgroupDriver); err != nil {
 		return err
 	}
 
@@ -525,24 +532,52 @@ func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", len)
 }
 
-// setCGroup configures the docker daemon to use driver as cgroup manager
+type dockerDaemonConfig struct {
+	ExecOpts       []string              `json:"exec-opts"`
+	LogDriver      string                `json:"log-driver"`
+	LogOpts        dockerDaemonLogOpts   `json:"log-opts"`
+	StorageDriver  string                `json:"storage-driver"`
+	DefaultRuntime string                `json:"default-runtime,omitempty"`
+	Runtimes       *dockerDaemonRuntimes `json:"runtimes,omitempty"`
+}
+type dockerDaemonLogOpts struct {
+	MaxSize string `json:"max-size"`
+}
+type dockerDaemonRuntimes struct {
+	Nvidia struct {
+		Path        string        `json:"path"`
+		RuntimeArgs []interface{} `json:"runtimeArgs"`
+	} `json:"nvidia"`
+}
+
+// configureDocker configures the docker daemon to use driver as cgroup manager
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
-func (r *Docker) setCGroup(driver string) error {
+func (r *Docker) configureDocker(driver string) error {
 	if driver == constants.UnknownCgroupDriver {
 		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
-	daemonConfig := fmt.Sprintf(`{
-"exec-opts": ["native.cgroupdriver=%s"],
-"log-driver": "json-file",
-"log-opts": {
-	"max-size": "100m"
-},
-"storage-driver": "overlay2"
-}
-`, driver)
-	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	daemonConfig := dockerDaemonConfig{
+		ExecOpts:  []string{"native.cgroupdriver=" + driver},
+		LogDriver: "json-file",
+		LogOpts: dockerDaemonLogOpts{
+			MaxSize: "100m",
+		},
+		StorageDriver: "overlay2",
+	}
+	if r.GPUs {
+		assets.Addons["nvidia-device-plugin"].EnableByDefault()
+		daemonConfig.DefaultRuntime = "nvidia"
+		runtimes := &dockerDaemonRuntimes{}
+		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
+		daemonConfig.Runtimes = runtimes
+	}
+	daemonConfigBytes, err := json.Marshal(daemonConfig)
+	if err != nil {
+		return err
+	}
+	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
 }
 

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -207,8 +208,7 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 	rr, err := dockerInspectGetter(name)
 	if err != nil {
 		logDockerNetworkInspect(Docker, name)
-		if strings.Contains(rr.Output(), "No such network") {
-
+		if isNetworkNotFound(rr.Output()) {
 			return info, ErrNetworkNotFound
 		}
 		return info, err
@@ -293,7 +293,7 @@ func RemoveNetwork(ociBin string, name string) error {
 	}
 	rr, err := runCmd(exec.Command(ociBin, "network", "rm", name))
 	if err != nil {
-		if strings.Contains(rr.Output(), "No such network") {
+		if isNetworkNotFound(rr.Output()) {
 			return ErrNetworkNotFound
 		}
 		// Error response from daemon: error while removing network: network mynet123 id f9e1c50b89feb0b8f4b687f3501a81b618252c9907bc20666e386d0928322387 has active endpoints
@@ -346,4 +346,10 @@ func DeleteKICNetworksByLabel(ociBin string, label string) []error {
 		return errs
 	}
 	return nil
+}
+
+func isNetworkNotFound(output string) bool {
+	// "No such network" on Docker 20.X.X and before, "network %s not found" on Docker 23.X.X and later
+	re := regexp.MustCompile(`(No such network)|(network .+ not found)`)
+	return re.MatchString(output)
 }

@@ -407,7 +407,7 @@ func unpauseIfNeeded(profile *config.Profile) error {
 
 	cr, err := cruntime.New(cruntime.Config{Type: crName, Runner: r})
 	if err != nil {
-		exit.Error(reason.InternalNewRuntime, "Failed to create runtime", err)
+		return err
 	}
 
 	paused, err := cluster.CheckIfPaused(cr, nil)

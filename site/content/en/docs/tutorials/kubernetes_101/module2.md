@@ -85,7 +85,7 @@ echo Name of the Pod: $POD_NAME
 
 You can access the Pod through the API by running:
 ```shell
-curl http://localhost:8001/api/v1/namespaces/default/pods/$PODNAME
+curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME
 ```
 
 In order for the new deployment to be accessible without using the Proxy, a Service is required which will be explained in the next modules.

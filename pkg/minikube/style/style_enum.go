@@ -105,4 +105,5 @@ const (
 	Warning
 	Workaround
 	CNI
+	Toolkit
 )

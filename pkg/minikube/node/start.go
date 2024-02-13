@@ -271,7 +271,10 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 	}
 
 	// Setup kubeadm (must come after setupKubeconfig).
-	bs := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	bs, err := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to setup kubeadm")
+	}
 	err = bs.StartCluster(*starter.Cfg)
 	if err != nil {
 		ExitIfFatal(err, false)
@@ -339,6 +342,9 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		return fmt.Errorf("error joining worker node to cluster: %w", err)
 	}
 
+	if err := cpBs.ApplyNodeLabels(*starter.Cfg); err != nil {
+		return fmt.Errorf("error applying node label: %w", err)
+	}
 	return nil
 }
 
@@ -391,6 +397,9 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 		InsecureRegistry:  cc.InsecureRegistry,
+	}
+	if cc.GPUs != "" {
+		co.GPUs = true
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {
@@ -554,10 +563,15 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) (bootstrapper.Bootstrapper, error) {
+	deleteOnFailure := viper.GetBool("delete-on-failure")
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
-		exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
+		klog.Errorf("Failed to get bootstrapper: %v", err)
+		if !deleteOnFailure {
+			exit.Error(reason.InternalBootstrapper, "Failed to get bootstrapper", err)
+		}
+		return nil, err
 	}
 	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
@@ -566,17 +580,25 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	// update cluster and set up certs
 
 	if err := bs.UpdateCluster(cfg); err != nil {
-		if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
-			exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+		if !deleteOnFailure {
+			if errors.Is(err, cruntime.ErrContainerRuntimeNotRunning) {
+				exit.Error(reason.KubernetesInstallFailedRuntimeNotRunning, "Failed to update cluster", err)
+			}
+			exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
 		}
-		exit.Error(reason.KubernetesInstallFailed, "Failed to update cluster", err)
+		klog.Errorf("Failed to update cluster: %v", err)
+		return nil, err
 	}
 
 	if err := bs.SetupCerts(cfg, n); err != nil {
-		exit.Error(reason.GuestCert, "Failed to setup certs", err)
+		if !deleteOnFailure {
+			exit.Error(reason.GuestCert, "Failed to setup certs", err)
+		}
+		klog.Errorf("Failed to setup certs: %v", err)
+		return nil, err
 	}
 
-	return bs
+	return bs, nil
 }
 
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
@@ -723,9 +745,15 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 				out.Styled(style.Internet, "Found network options:")
 				optSeen = true
 			}
+			k = strings.ToUpper(k) // let's get the key right away to mask password from output
+			// If http(s)_proxy contains password, let's not splatter on the screen
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				pattern := `//(\w+):\w+@`
+				regexpPattern := regexp.MustCompile(pattern)
+				v = regexpPattern.ReplaceAllString(v, "//$1:*****@")
+			}
 			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
-			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
 				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}).", out.V{"ip_address": ip})
 				out.Styled(style.Documentation, "Please see {{.documentation_url}} for more details", out.V{"documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})

@@ -122,8 +122,11 @@ func TestDownloadOnly(t *testing.T) {
 				}
 
 				for _, img := range imgs {
+					pathToImage := []string{localpath.MiniPath(), "cache", "images", runtime.GOOS}
 					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+					imagePath := strings.Split(img, "/")    // changes "gcr.io/k8s-minikube/storage-provisioner_v5" into ["gcr.io", "k8s-minikube", "storage-provisioner_v5"] to match cache folder structure
+					pathToImage = append(pathToImage, imagePath...)
+					fp := filepath.Join(pathToImage...)
 					_, err := os.Stat(fp)
 					if err != nil {
 						t.Errorf("expected image file exist at %q but got error: %v", fp, err)

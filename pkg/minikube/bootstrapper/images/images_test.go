@@ -180,3 +180,28 @@ func TestCNI(t *testing.T) {
 		})
 	}
 }
+
+func TestTagFromLastMinor(t *testing.T) {
+	tests := []struct {
+		verString   string
+		imageName   string
+		expectedTag string
+	}{
+		{"1.16.50", "coredns", "1.6.2"},
+		{"1.16.50", "etcd", "3.3.15-0"},
+		{"1.16.50", "pause", "3.1"},
+		{"1.16.50", "fake", "default"},
+	}
+
+	for _, tc := range tests {
+		v, err := semver.Parse(tc.verString)
+		if err != nil {
+			t.Errorf("failed to parse version to semver: %v", err)
+			continue
+		}
+		got := tagFromLastMinor(v, tc.imageName, "default")
+		if tc.expectedTag != got {
+			t.Errorf("tagFromLastMinor(%s, %s, default) = %s; want = %s", tc.verString, tc.imageName, got, tc.expectedTag)
+		}
+	}
+}

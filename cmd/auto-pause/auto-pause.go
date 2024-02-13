@@ -24,10 +24,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -45,14 +48,10 @@ var runtime = flag.String("container-runtime", "docker", "Container runtime to u
 func main() {
 	flag.Parse()
 
-	// TODO: #10595 make this configurable
-	const interval = time.Minute * 1
+	profile := viper.GetString(config.ProfileName)
+	_, cfg := mustload.Partial(profile)
+	interval := cfg.AutoPauseInterval
 
-	// Check if interval is greater than 0 so NewTicker does not panic.
-	if interval <= 0 {
-		exit.Message(reason.Usage, "Auto-pause interval must be greater than 0,"+
-			" not current value of {{.interval}}", out.V{"interval": interval.String()})
-	}
 	tickerChannel := time.NewTicker(interval)
 
 	// Check current state

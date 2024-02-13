@@ -1,0 +1,117 @@
+name: "update-iso-image-versions"
+on:
+  workflow_dispatch:
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.21.4'
+permissions:
+  contents: read
+jobs:
+  update-all:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
+        with:
+          go-version: ${{env.GO_VERSION}}
+          cache-dependency-path: ./go.sum
+      - name: Bump versions
+        id: bumpVersions
+        run: |
+          OLD_BUILDKIT=$(DEP=buildkit make get-dependency-version)
+          OLD_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
+          OLD_CONTAINERD=$(DEP=containerd make get-dependency-version)
+          OLD_CRICTL=$(DEP=crictl make get-dependency-version)
+          OLD_DOCKER=$(DEP=docker make get-dependency-version)
+          OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
+          OLD_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
+          OLD_RUNC=$(DEP=runc make get-dependency-version)
+          OLD_UBUNTU=$(DEP=ubuntu make get-dependency-version)
+          make update-buildkit-version
+          make update-cni-plugins-version
+          make update-containerd-version
+          make update-crictl-version
+          make update-docker-version
+          make update-nerdctl-version
+          make update-nerdctld-version
+          make update-runc-version
+          make update-ubuntu-version
+          NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
+          NEW_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
+          NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
+          NEW_CRICTL=$(DEP=crictl make get-dependency-version)
+          NEW_DOCKER=$(DEP=docker make get-dependency-version)
+          NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
+          NEW_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
+          NEW_RUNC=$(DEP=runc make get-dependency-version)
+          NEW_UBUNTU=$(DEP=ubuntu make get-dependency-version)
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          if [ "$OLD_BUILDKIT" != "$NEW_BUILDKIT" ]; then
+            echo "https://github.com/moby/buildkit/releases/tag/$NEW_BUILDKIT" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CNI_PLUGINS" != "$NEW_CNI_PLUGINS" ]; then
+            echo "https://github.com/containernetworking/plugins/releases/tag/$NEW_CNI_PLUGINS" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CONTAINERD" != "$NEW_CONTAINERD" ]; then
+            echo "https://github.com/containerd/containerd/releases/tag/$NEW_CONTAINERD" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CRICTL" != "$NEW_CRICTL" ]; then
+            echo "https://github.com/kubernetes-sigs/cri-tools/releases/tag/$NEW_CRICTL" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_DOCKER" != "$NEW_DOCKER" ]; then
+            echo "https://github.com/moby/moby/releases/tag/v$NEW_DOCKER" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_NERDCTL" != "$NEW_NERDCTL" ]; then
+            echo "https://github.com/containerd/nerdctl/releases/tag/v$NEW_NERDCTL" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_NERDCTLD" != "$NEW_NERDCTLD" ]; then
+            echo "https://github.com/afbjorklund/nerdctld/releases/tag/v$NEW_NERDCTL" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_RUNC" != "$NEW_RUNC" ]; then
+            echo "https://github.com/opencontainers/runc/releases/tag/$NEW_RUNC" >> "$GITHUB_OUTPUT"
+          fi
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      - name: Create PR
+        id: createPR
+        if: ${{ steps.bumpVersions.outputs.changes != '' }}
+        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          commit-message: 'Kicbase/ISO: Update dependency versions'
+          committer: minikube-bot <minikube-bot@google.com>
+          author: minikube-bot <minikube-bot@google.com>
+          branch: bump_iso_image_versions
+          branch-suffix: short-commit-hash
+          push-to-fork: minikube-bot/minikube
+          base: master
+          delete-branch: true
+          title: 'Kicbase/ISO: Update dependency versions'
+          body: |
+            Changelog:
+            ${{ steps.bumpVersions.outputs.changelog }}
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        if: ${{ steps.bumpVersions.outputs.changes != '' }}
+        with:
+          github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.createPR.outputs.pull-request-number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'ok-to-build-image'
+            })
+      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        if: ${{ steps.bumpVersions.outputs.changes != '' }}
+        with:
+          github-token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.createPR.outputs.pull-request-number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'ok-to-build-iso'
+            })
