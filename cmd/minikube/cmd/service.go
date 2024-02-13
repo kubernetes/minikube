@@ -74,7 +74,7 @@ var serviceCmd = &cobra.Command{
 
 		RootCmd.PersistentPreRun(cmd, args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 && !all || (len(args) > 0 && all) {
 			exit.Message(reason.Usage, "You must specify service name(s) or --all")
 		}

@@ -27,8 +27,6 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-const defaultReservationPeriod = 1 * time.Minute
-
 // Parameters contains main network parameters.
 type Parameters struct {
 	IP        string // IP address of network
@@ -204,7 +202,7 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 				return nil, err
 			}
 			if !taken {
-				if reservation, err := reserveSubnet(subnet, defaultReservationPeriod); err == nil {
+				if reservation, err := reserveSubnet(subnet); err == nil {
 					n.reservation = reservation
 					klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
 					return n, nil
@@ -241,8 +239,8 @@ func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
 	return ip, network, err
 }
 
-// reserveSubnet returns releaser if subnet was successfully reserved for given period, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
-var reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) {
+// reserveSubnet returns releaser if subnet was successfully reserved, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
+var reserveSubnet = func(subnet string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(subnet)
 	spec.Timeout = 1 * time.Millisecond // practically: just check, don't wait
 	reservation, err := mutex.Acquire(spec)

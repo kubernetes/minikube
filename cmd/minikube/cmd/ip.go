@@ -30,7 +30,7 @@ var ipCmd = &cobra.Command{
 	Use:   "ip",
 	Short: "Retrieves the IP address of the specified node",
 	Long:  `Retrieves the IP address of the specified node, and writes it to STDOUT.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		co := mustload.Running(ClusterFlagValue())
 		n, _, err := node.Retrieve(*co.Config, nodeName)
 		if err != nil {

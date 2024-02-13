@@ -379,7 +379,7 @@ func validateAccessDNS(_ context.Context, t *testing.T, profile string) {
 	dnsIP := fmt.Sprintf("%s:53", ip)
 
 	// Set kube-dns dial
-	kubeDNSDial := func(ctx context.Context, network, address string) (net.Conn, error) {
+	kubeDNSDial := func(ctx context.Context, _, _ string) (net.Conn, error) {
 		d := net.Dialer{}
 		return d.DialContext(ctx, "udp", dnsIP)
 	}

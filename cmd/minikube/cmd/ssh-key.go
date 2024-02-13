@@ -34,7 +34,7 @@ var sshKeyCmd = &cobra.Command{
 	Use:   "ssh-key",
 	Short: "Retrieve the ssh identity key path of the specified node",
 	Long:  "Retrieve the ssh identity key path of the specified node, and writes it to STDOUT.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		_, cc := mustload.Partial(ClusterFlagValue())
 		n, _, err := node.Retrieve(*cc, nodeName)
 		if err != nil {

@@ -780,8 +780,8 @@ func imageID(image string) string {
 		},
 	}
 
-	if imgIds, ok := ids[image]; ok {
-		if id, ok := imgIds[runtime.GOARCH]; ok {
+	if imgIDs, ok := ids[image]; ok {
+		if id, ok := imgIDs[runtime.GOARCH]; ok {
 			return id
 		}
 		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))

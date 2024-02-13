@@ -116,9 +116,7 @@ func TestGetKubernetesVersion(t *testing.T) {
 	}
 }
 
-var checkRepoMock = func(v semver.Version, repo string) error {
-	return nil
-}
+var checkRepoMock = func(_ semver.Version, _ string) error { return nil }
 
 func TestMirrorCountry(t *testing.T) {
 	// Set default disk size value in lieu of flag init

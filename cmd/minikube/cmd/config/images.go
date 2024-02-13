@@ -32,7 +32,7 @@ var addonsImagesCmd = &cobra.Command{
 	Short:   "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
 	Long:    "List image names the addon w/ADDON_NAME used. For a list of available addons use: minikube addons list",
 	Example: "minikube addons images ingress",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons images ADDON_NAME")
 		}

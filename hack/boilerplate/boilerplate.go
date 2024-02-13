@@ -135,7 +135,7 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 // filesToCheck returns the list of the filers that will be checked for the boilerplate.
 func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error) {
 	var outFiles []string
-	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, _ error) error {
 		// remove current workdir from the beginning of the path in case it matches the skipped path
 		cwd, _ := os.Getwd()
 		// replace "\" with "\\" for windows style path
