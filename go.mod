@@ -73,7 +73,7 @@ require (
 	golang.org/x/term v0.17.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/plot v0.14.0
-	google.golang.org/api v0.163.0
+	google.golang.org/api v0.164.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
@@ -225,7 +225,7 @@ require (
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240125205218-1f4bbc51befe // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240205150955-31a09d347014 // indirect
 	google.golang.org/grpc v1.61.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
