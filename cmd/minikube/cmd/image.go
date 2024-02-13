@@ -80,7 +80,7 @@ var loadImageCmd = &cobra.Command{
 	Short:   "Load an image into minikube",
 	Long:    "Load an image into minikube",
 	Example: "minikube image load image\nminikube image load image.tar",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in your local daemon to load into minikube via <minikube image load IMAGE_NAME>")
 		}
@@ -171,7 +171,7 @@ var saveImageCmd = &cobra.Command{
 	Short:   "Save a image from minikube",
 	Long:    "Save a image from minikube",
 	Example: "minikube image save image\nminikube image save image image.tar",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 {
 			exit.Message(reason.Usage, "Please provide an image in the container runtime to save from minikube via <minikube image save IMAGE_NAME>")
 		}
@@ -230,7 +230,7 @@ $ minikube image unload image busybox
 `,
 	Args:    cobra.MinimumNArgs(1),
 	Aliases: []string{"remove", "unload"},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
@@ -247,7 +247,7 @@ var pullImageCmd = &cobra.Command{
 	Example: `
 $ minikube image pull busybox
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
@@ -273,7 +273,7 @@ var buildImageCmd = &cobra.Command{
 	Short:   "Build a container image in minikube",
 	Long:    "Build a container image, using the container runtime.",
 	Example: `minikube image build .`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) < 1 {
 			exit.Message(reason.Usage, "Please provide a path or url to build")
 		}
@@ -333,7 +333,7 @@ var listImageCmd = &cobra.Command{
 $ minikube image ls
 `,
 	Aliases: []string{"list"},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)
@@ -352,7 +352,7 @@ var tagImageCmd = &cobra.Command{
 $ minikube image tag source target
 `,
 	Aliases: []string{"list"},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 2 {
 			exit.Message(reason.Usage, "Please provide source and target image")
 		}
@@ -373,7 +373,7 @@ var pushImageCmd = &cobra.Command{
 	Example: `
 $ minikube image push busybox
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		profile, err := config.LoadProfile(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.Error(reason.Usage, "loading profile", err)

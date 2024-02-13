@@ -46,14 +46,14 @@ var addonsOpenCmd = &cobra.Command{
 	Use:   "open ADDON_NAME",
 	Short: "Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list ",
 	Long:  "Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list ",
-	PreRun: func(cmd *cobra.Command, args []string) {
+	PreRun: func(_ *cobra.Command, _ []string) {
 		t, err := template.New("addonsURL").Parse(addonsURLFormat)
 		if err != nil {
 			exit.Message(reason.Usage, "The value passed to --format is invalid: {{.error}}", out.V{"error": err})
 		}
 		addonsURLTemplate = t
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons open ADDON_NAME")
 		}

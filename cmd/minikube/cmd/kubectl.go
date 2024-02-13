@@ -53,7 +53,7 @@ but optionally you can also run it directly on the control plane over the ssh co
 This can be useful if you cannot run kubectl locally for some reason, like unsupported
 host. Please be aware that when using --ssh all paths will apply to the remote machine.`,
 	Example: "minikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		cc, err := config.Load(ClusterFlagValue())
 
 		version := constants.DefaultKubernetesVersion

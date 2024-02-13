@@ -40,7 +40,7 @@ var nodeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		co := mustload.Healthy(ClusterFlagValue())
 		cc := co.Config
 
