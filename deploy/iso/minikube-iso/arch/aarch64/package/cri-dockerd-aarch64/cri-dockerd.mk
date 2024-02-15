@@ -26,6 +26,8 @@ CRI_DOCKERD_AARCH64_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/v
 define CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
 	# Set -buildvcs=false to disable VCS stamping (fails in buildroot)
 	sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/packaging/static/Makefile
+	# Use the GOARCH environment variable that we set
+	sed -i 's|GOARCH=$(ARCH) go build|GOARCH=$(GOARCH) go build|' -i $(@D)/packaging/static/Makefile
 endef
 
 CRI_DOCKERD_AARCH64_POST_EXTRACT_HOOKS += CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
