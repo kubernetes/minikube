@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Delta456/box-cli-maker/v2"
 	"github.com/blang/semver/v4"
@@ -1249,7 +1250,7 @@ func validateCPUCount(drvName string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) {
+func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 	if cmd.Flags().Changed(humanReadableDiskSize) {
 		err := validateDiskSize(viper.GetString(humanReadableDiskSize))
 		if err != nil {
@@ -1311,6 +1312,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	if cmd.Flags().Changed(gpus) {
 		if err := validateGPUs(viper.GetString(gpus), drvName, viper.GetString(containerRuntime)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
+	if cmd.Flags().Changed(autoPauseInterval) {
+		if err := validateAutoPauseInterval(viper.GetDuration(autoPauseInterval)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
 		}
 	}
@@ -1474,6 +1481,13 @@ func validateGPUsArch() error {
 		return nil
 	}
 	return errors.Errorf("The GPUs flag is only supported on amd64, arm64 & ppc64le, currently using %s", runtime.GOARCH)
+}
+
+func validateAutoPauseInterval(interval time.Duration) error {
+	if interval != interval.Abs() || interval.String() == "0s" {
+		return errors.New("auto-pause-interval must be greater than 0s")
+	}
+	return nil
 }
 
 func getContainerRuntime(old *config.ClusterConfig) string {
