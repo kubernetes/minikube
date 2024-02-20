@@ -32,7 +32,7 @@ var nodeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List nodes.",
 	Long:  "List existing minikube nodes.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 0 {
 			exit.Message(reason.Usage, "Usage: minikube node list")
 		}

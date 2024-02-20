@@ -213,7 +213,7 @@ var statusCmd = &cobra.Command{
 	Long: `Gets the status of a local Kubernetes cluster.
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		output = strings.ToLower(output)
 		if output != "text" && statusFormat != defaultStatusFormat {
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")

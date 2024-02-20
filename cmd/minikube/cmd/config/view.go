@@ -41,7 +41,7 @@ var configViewCmd = &cobra.Command{
 	Use:   "view",
 	Short: "Display values currently set in the minikube config file",
 	Long:  "Display values currently set in the minikube config file.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		err := View()
 		if err != nil {
 			exit.Error(reason.InternalConfigView, "config view failed", err)

@@ -154,7 +154,7 @@ func processCommitFolder(commitSha string, logger *log.Logger, gp string) error 
 
 	dbPath := fmt.Sprintf(dbPathPattern, os.Getenv("DB_PASS"))
 	// Iterate over the JSON files in the local directory
-	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(dirPath, func(path string, info os.FileInfo, _ error) error {
 		filename := filepath.Base(path[:len(path)-len(".json")])
 		if !info.IsDir() && strings.HasSuffix(path, ".json") && !strings.HasSuffix(path, "summary.json") && notInDB(commitSha, filename) {
 			gopoghCmd := fmt.Sprintf(gopoghCommand, gp, filename, mkRepo, path, commitSha, host, dbPath, dbBackend)

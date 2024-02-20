@@ -42,7 +42,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
-	Run: func(command *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		minikubeVersion := version.GetVersion()
 		gitCommitID := version.GetGitCommitID()
 		data := map[string]interface{}{

@@ -41,7 +41,7 @@ var serviceListCmd = &cobra.Command{
 	Use:   "list [flags]",
 	Short: "Lists the URLs for the services in your local cluster",
 	Long:  `Lists the URLs for the services in your local cluster`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		co := mustload.Healthy(ClusterFlagValue())
 		output := strings.ToLower(profileOutput)
 
