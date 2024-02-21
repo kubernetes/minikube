@@ -112,7 +112,7 @@ func qemuVersion() (semver.Version, error) {
 	}
 	versionPattern :=`(\d+\.\d+\.\d+)`
 	re := regexp.MustCompile(versionPattern)
-    matches := re.FindStringSubmatch(string(rr))
+	matches := re.FindStringSubmatch(string(rr))
 	if len(matches) > 1 {
 		v := matches[1]
 		return semver.Make(v)
