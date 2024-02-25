@@ -35,10 +35,10 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// TestHA tests all ha cluster functionality
+// TestHA tests all ha (multi-control plane) cluster functionality
 func TestHA(t *testing.T) {
 	if NoneDriver() {
-		t.Skip("none driver does not support multinode/ha")
+		t.Skip("none driver does not support multinode/ha(multi-control plane) cluster")
 	}
 
 	if DockerDriver() {
@@ -94,13 +94,13 @@ func TestHA(t *testing.T) {
 	})
 }
 
-// validateHAStartCluster ensures ha cluster can start.
+// validateHAStartCluster ensures ha (multi-control plane) cluster can start.
 func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
-	// start ha cluster
+	// start ha (multi-control plane) cluster
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--ha", "-v=7", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("failed to fresh-start ha cluster. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to fresh-start ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes
@@ -122,17 +122,17 @@ func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateHADeployApp deploys an app to ha cluster and ensures all nodes can serve traffic.
+// validateHADeployApp deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.
 func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 	// Create a deployment for app
 	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/ha/ha-pod-dns-test.yaml"))
 	if err != nil {
-		t.Errorf("failed to create busybox deployment to ha cluster")
+		t.Errorf("failed to create busybox deployment to ha (multi-control plane) cluster")
 	}
 
 	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
-		t.Errorf("failed to deploy busybox to ha cluster")
+		t.Errorf("failed to deploy busybox to ha (multi-control plane) cluster")
 	}
 
 	// resolve Pod IPs
@@ -221,13 +221,13 @@ func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile strin
 	}
 }
 
-// validateHAAddWorkerNode uses the minikube node add command to add a worker node to an existing ha cluster.
+// validateHAAddWorkerNode uses the minikube node add command to add a worker node to an existing ha (multi-control plane) cluster.
 func validateHAAddWorkerNode(ctx context.Context, t *testing.T, profile string) {
-	// add a node to the current ha cluster
+	// add a node to the current ha (multi-control plane) cluster
 	addArgs := []string{"node", "add", "-p", profile, "-v=7", "--alsologtostderr"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
-		t.Fatalf("failed to add worker node to current ha cluster. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to add worker node to current ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes and 1 worker node
@@ -276,7 +276,7 @@ func validateHANodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateHAStatusHAppy ensures minikube profile list outputs correct with ha clusters.
+// validateHAStatusHAppy ensures minikube profile list outputs correct with ha (multi-control plane) clusters.
 func validateHAStatusHAppy(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
@@ -317,7 +317,7 @@ func validateHAStatusHAppy(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateHACopyFile ensures minikube cp works with ha clusters.
+// validateHACopyFile ensures minikube cp works with ha (multi-control plane) clusters.
 func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cp is unsupported by none driver")
@@ -357,7 +357,7 @@ func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateHAStopSecondaryNode tests ha cluster by stopping a secondary control-plane node using minikube node stop command.
+// validateHAStopSecondaryNode tests ha (multi-control plane) cluster by stopping a secondary control-plane node using minikube node stop command.
 func validateHAStopSecondaryNode(ctx context.Context, t *testing.T, profile string) {
 	// run minikube node stop on secondary control-plane node
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "stop", SecondNodeName, "-v=7", "--alsologtostderr"))
@@ -385,7 +385,7 @@ func validateHAStopSecondaryNode(ctx context.Context, t *testing.T, profile stri
 	}
 }
 
-// validateHAStatusDegraded ensures minikube profile list outputs correct with ha clusters.
+// validateHAStatusDegraded ensures minikube profile list outputs correct with ha (multi-control plane) clusters.
 func validateHAStatusDegraded(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
@@ -423,7 +423,7 @@ func validateHARestartSecondaryNode(ctx context.Context, t *testing.T, profile s
 		t.Errorf("secondary control-plane node start returned an error. args %q: %v", rr.Command(), err)
 	}
 
-	// ensure minikube status shows all 4 nodes running, waiting for ha cluster/apiservers to stabilise
+	// ensure minikube status shows all 4 nodes running, waiting for ha (multi-control plane) cluster/apiservers to stabilise
 	minikubeStatus := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
 		return err
@@ -525,7 +525,7 @@ func validateHADeleteSecondaryNode(ctx context.Context, t *testing.T, profile st
 	}
 }
 
-// validateHAStopCluster runs minikube stop on a ha cluster.
+// validateHAStopCluster runs minikube stop on a ha (multi-control plane) cluster.
 func validateHAStopCluster(ctx context.Context, t *testing.T, profile string) {
 	// Run minikube stop on the cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop", "-v=7", "--alsologtostderr"))
@@ -553,7 +553,7 @@ func validateHAStopCluster(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateHARestartCluster verifies a soft restart on a ha cluster works.
+// validateHARestartCluster verifies a soft restart on a ha (multi-control plane) cluster works.
 func validateHARestartCluster(ctx context.Context, t *testing.T, profile string) {
 	// restart cluster with minikube start
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=7", "--alsologtostderr"}, StartArgs()...)
@@ -598,13 +598,13 @@ func validateHARestartCluster(ctx context.Context, t *testing.T, profile string)
 	}
 }
 
-// validateHAAddSecondaryNode uses the minikube node add command to add a secondary control-plane node to an existing ha cluster.
+// validateHAAddSecondaryNode uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
 func validateHAAddSecondaryNode(ctx context.Context, t *testing.T, profile string) {
-	// add a node to the current ha cluster
+	// add a node to the current ha (multi-control plane) cluster
 	addArgs := []string{"node", "add", "-p", profile, "--control-plane", "-v=7", "--alsologtostderr"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
-		t.Fatalf("failed to add control-plane node to current ha cluster. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to add control-plane node to current ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes and 1 worker node

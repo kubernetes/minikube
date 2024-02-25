@@ -190,7 +190,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
-	startCmd.Flags().Bool(ha, false, "Create Highly Available Cluster with a minimum of three control-plane nodes that will also be marked for work.")
+	startCmd.Flags().Bool(ha, false, "Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The total number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
@@ -666,20 +666,20 @@ func addFeatureGate(featureGates, s string) string {
 	return strings.Join(split, ",")
 }
 
-// validateHANodeCount ensures correct total number of nodes in HA cluster.
+// validateHANodeCount ensures correct total number of nodes in ha (multi-control plane) cluster.
 func validateHANodeCount(cmd *cobra.Command) {
 	if !viper.GetBool(ha) {
 		return
 	}
 
-	// set total number of nodes in ha cluster to 3, if not otherwise defined by user
+	// set total number of nodes in ha (multi-control plane) cluster to 3, if not otherwise defined by user
 	if !cmd.Flags().Changed(nodes) {
 		viper.Set(nodes, 3)
 	}
 
 	// respect user preference, if correct
 	if cmd.Flags().Changed(nodes) && viper.GetInt(nodes) < 3 {
-		exit.Message(reason.Usage, "HA clusters require 3 or more control-plane nodes")
+		exit.Message(reason.Usage, "HA (multi-control plane) clusters require 3 or more control-plane nodes")
 	}
 }
 
@@ -744,11 +744,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(ha) {
-		out.WarningT("Changing the HA mode of an existing minikube cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
+		out.WarningT("Changing the HA (multi-control plane) mode of an existing minikube cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
 	}
 
 	if cmd.Flags().Changed(apiServerPort) && config.IsHA(*existing) {
-		out.WarningT("Changing the apiserver port of an existing minikube ha cluster is not currently supported. Please first delete the cluster.")
+		out.WarningT("Changing the API server port of an existing minikube HA (multi-control plane) cluster is not currently supported. Please first delete the cluster.")
 	} else {
 		updateIntFromFlag(cmd, &cc.APIServerPort, apiServerPort)
 	}

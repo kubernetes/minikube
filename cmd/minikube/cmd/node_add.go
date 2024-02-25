@@ -51,7 +51,7 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if cpNode && !config.IsHA(*cc) {
-			out.FailureT("Adding a control-plane node to a non-HA cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
+			out.FailureT("Adding a control-plane node to a non-HA (non-multi-control plane) cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
 		}
 
 		roles := []string{}
@@ -106,7 +106,7 @@ var nodeAddCmd = &cobra.Command{
 }
 
 func init() {
-	nodeAddCmd.Flags().BoolVar(&cpNode, "control-plane", false, "If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA clusters.")
+	nodeAddCmd.Flags().BoolVar(&cpNode, "control-plane", false, "If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.")
 	nodeAddCmd.Flags().BoolVar(&workerNode, "worker", true, "If set, added node will be available as worker. Defaults to true.")
 	nodeAddCmd.Flags().BoolVar(&deleteNodeOnFailure, "delete-on-failure", false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 

@@ -153,7 +153,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 						out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
 					}
 				}
-				// scale down CoreDNS from default 2 to 1 replica only for non-ha cluster and if optimisation is not disabled
+				// scale down CoreDNS from default 2 to 1 replica only for non-ha (non-multi-control plane) cluster and if optimisation is not disabled
 				if !starter.Cfg.DisableOptimizations && !config.IsHA(*starter.Cfg) {
 					if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
 						klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
@@ -167,7 +167,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		// for ha, use already running control-plane node to copy over certs to this secondary control-plane node
+		// for ha (multi-control plane) cluster, use already running control-plane node to copy over certs to this secondary control-plane node
 		cpr := mustload.Running(starter.Cfg.Name).CP.Runner
 		if err = bs.SetupCerts(*starter.Cfg, *starter.Node, cpr); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
@@ -178,7 +178,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 		}
 
 		// join cluster only on first node start
-		// except for vm driver in non-ha cluster - fallback to old behaviour
+		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
 		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.IsHA(*starter.Cfg)) {
 			// make sure to use the command runner for the primary control plane to generate the join token
 			pcpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
@@ -227,9 +227,9 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 		prepareNone()
 	}
 
-	// for ha cluster, primary control-plane node will not come up alone until secondary joins
+	// for ha (multi-control plane) cluster, primary control-plane node will not come up alone until secondary joins
 	if config.IsHA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
-		klog.Infof("HA cluster: will skip waiting for primary control-plane node %+v", starter.Node)
+		klog.Infof("HA (multi-control plane) cluster: will skip waiting for primary control-plane node %+v", starter.Node)
 	} else {
 		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
 		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {

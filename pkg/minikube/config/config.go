@@ -247,7 +247,7 @@ func MultiNode(cc ClusterConfig) bool {
 	return viper.GetInt("nodes") > 1
 }
 
-// IsHA returns true if HA is requested.
+// IsHA returns true if ha (multi-control plane) cluster is requested.
 func IsHA(cc ClusterConfig) bool {
 	if len(ControlPlanes(cc)) > 1 {
 		return true

@@ -623,8 +623,8 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		// DANGER: This log message is hard-coded in an integration test!
 		klog.Infof("The running cluster does not require reconfiguration: %s", host)
 		// taking a shortcut, as the cluster seems to be properly configured
-		// except for vm driver in non-ha cluster - fallback to old behaviour
-		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha cluster with vm driver
+		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
+		// here we're making a tradeoff to avoid significant (10sec) waiting on restarting stopped non-ha (non-multi-control plane) cluster with vm driver
 		// where such cluster needs to be reconfigured b/c of (currently) ephemeral config, but then also,
 		// starting already started such cluster (hard to know w/o investing that time) will fallthrough the same path and reconfigure cluster
 		if config.IsHA(cfg) || !driver.IsVM(cfg.Driver) {
@@ -954,7 +954,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 			}
 			files = append(files, assets.NewMemoryAssetTarget(kubeadmCfg, constants.KubeadmYamlPath+".new", "0640"))
 		}
-		// deploy kube-vip for ha cluster
+		// deploy kube-vip for ha (multi-control plane) cluster
 		if config.IsHA(cfg) {
 			// workaround for kube-vip
 			// only applicable for k8s v1.29+ during primary control-plane node's kubeadm init (ie, first boot)
@@ -1043,7 +1043,7 @@ func (k *Bootstrapper) LabelAndUntaintNode(cfg config.ClusterConfig, n config.No
 	return k.labelAndUntaintNode(cfg, n)
 }
 
-// labelAndUntaintNode applies minikube labels to node and removes NoSchedule taints that might be set to secondary control-plane nodes by default in ha cluster.
+// labelAndUntaintNode applies minikube labels to node and removes NoSchedule taints that might be set to secondary control-plane nodes by default in ha (multi-control plane) cluster.
 func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.Node) error {
 	// time node was created. time format is based on ISO 8601 (RFC 3339)
 	// converting - and : to _ because of Kubernetes label restriction
