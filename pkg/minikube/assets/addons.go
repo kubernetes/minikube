@@ -327,7 +327,7 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3.5.0@sha256:78ffb665f6dd7f7a2c83b818ffe9cf8d21cf3c446126a317f4560d58fdefc2c4",
+		"Kong":        "kong:3.6.0@sha256:2f2832a751eee25b4cb643a9b8b14df602a88c249c2baba46e3e7b51df2bb78b",
 		"KongIngress": "kong/kubernetes-ingress-controller:2.12.0@sha256:ef450cd85f4237aa5acf3bfaebd064accdc6a445419bec20a5a68067c55c6809",
 	}, map[string]string{
 		"Kong":        "docker.io",
