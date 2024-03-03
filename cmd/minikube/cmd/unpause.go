@@ -42,7 +42,7 @@ var unpauseCmd = &cobra.Command{
 	Use:     "unpause",
 	Aliases: []string{"resume"},
 	Short:   "unpause Kubernetes",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		cname := ClusterFlagValue()
 		register.SetEventLogPath(localpath.EventLog(cname))
 

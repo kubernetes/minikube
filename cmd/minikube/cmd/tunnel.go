@@ -56,7 +56,7 @@ var tunnelCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		RootCmd.PersistentPreRun(cmd, args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		manager := tunnel.NewManager()
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)

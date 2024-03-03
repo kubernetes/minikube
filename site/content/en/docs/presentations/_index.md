@@ -9,6 +9,11 @@ Presentations about the minikube project, mostly from the Kubernetes blog and th
 
 ## Conferences
 
+### KubeCon NA 2023 (Chicago, Illinois)
+
+* [Minikube Project Update - YouTube](https://youtu.be/QTAijBeS5ys?si=OOyxOXnKkhiq-b1N) (30:43)
+  * Medya Ghazizadeh, Google
+
 ### KubeCon EU 2023 (Amsterdam, Netherlands)
 
 * [Minikube from CLI to GUI! - YouTube](https://youtu.be/74X1RmqfUzs) (38:35)

@@ -43,7 +43,7 @@ func TestDocs(docPath string, pathToCheck string) error {
 		return err
 	}
 
-	err = filepath.Walk(pathToCheck, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(pathToCheck, func(path string, info os.FileInfo, _ error) error {
 		if info.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}

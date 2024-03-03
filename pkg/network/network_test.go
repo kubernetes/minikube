@@ -19,13 +19,12 @@ package network
 import (
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/juju/mutex/v2"
 )
 
 func TestFreeSubnet(t *testing.T) {
-	reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) { return nil, nil }
+	reserveSubnet = func(_ string) (mutex.Releaser, error) { return nil, nil }
 
 	t.Run("NoRetriesSuccess", func(t *testing.T) {
 		startingSubnet := "192.168.0.0"
@@ -46,7 +45,7 @@ func TestFreeSubnet(t *testing.T) {
 			isSubnetTaken = originalIsSubnetTaken
 		}()
 
-		isSubnetTaken = func(subnet string) (bool, error) {
+		isSubnetTaken = func(_ string) (bool, error) {
 			count++
 			return count == 1, nil
 		}

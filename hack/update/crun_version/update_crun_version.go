@@ -1,5 +1,5 @@
 /*
-Copyright 2023 The Kubernetes Authors All rights reserved.
+Copyright 2024 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,19 +34,10 @@ const cxTimeout = 5 * time.Minute
 
 var (
 	schema = map[string]update.Item{
-		"deploy/iso/minikube-iso/arch/aarch64/package/cni-plugins-latest-aarch64/cni-plugins-latest.mk": {
+		"deploy/iso/minikube-iso/package/crun-latest/crun-latest.mk": {
 			Replace: map[string]string{
-				`CNI_PLUGINS_LATEST_AARCH64_VERSION = .*`: `CNI_PLUGINS_LATEST_AARCH64_VERSION = {{.Version}}`,
-			},
-		},
-		"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins-latest/cni-plugins-latest.mk": {
-			Replace: map[string]string{
-				`CNI_PLUGINS_LATEST_VERSION = .*`: `CNI_PLUGINS_LATEST_VERSION = {{.Version}}`,
-			},
-		},
-		"deploy/kicbase/Dockerfile": {
-			Replace: map[string]string{
-				`CNI_PLUGINS_LATEST_VERSION=.*`: `CNI_PLUGINS_LATEST_VERSION="{{.Version}}"`,
+				`CRUN_LATEST_VERSION = .*`: `CRUN_LATEST_VERSION = {{.Version}}`,
+				`CRUN_LATEST_COMMIT = .*`:  `CRUN_LATEST_COMMIT = {{.Commit}}`,
 			},
 		},
 	}
@@ -54,31 +45,30 @@ var (
 
 type Data struct {
 	Version string
+	Commit  string
 }
 
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "containernetworking", "plugins")
+	stable, _, _, err := update.GHReleases(ctx, "containers", "crun")
 	if err != nil {
-		klog.Fatalf("Unable to get stable version: %v", err)
+		klog.Fatalf("Unable to get crun stable version: %v", err)
 	}
 
-	data := Data{Version: stable.Tag}
+	// Hack: Strip 'v' prefix added in 'update.GHReleases' for this package
+	data := Data{Version: strings.Trim(stable.Tag, "v"), Commit: stable.Commit}
 
 	update.Apply(schema, data)
 
-	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-latest-aarch64"); err != nil {
-		klog.Fatalf("failed to update hash files: %v", err)
-	}
-	if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins-latest"); err != nil {
+	if err := updateHashFiles(data.Version); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)
 	}
 }
 
-func updateHashFile(version, arch, packagePath string) error {
-	r, err := http.Get(fmt.Sprintf("https://github.com/containernetworking/plugins/releases/download/%s/cni-plugins-linux-%s-%s.tgz", version, arch, version))
+func updateHashFiles(version string) error {
+	r, err := http.Get(fmt.Sprintf("https://github.com/containers/crun/releases/download/%s/crun-%s.tar.gz", version, version))
 	if err != nil {
 		return fmt.Errorf("failed to download source code: %v", err)
 	}
@@ -88,7 +78,7 @@ func updateHashFile(version, arch, packagePath string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/cni-plugins-latest.hash", packagePath)
+	filePath := "../../../deploy/iso/minikube-iso/package/crun-latest/crun-latest.hash"
 	b, err = os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
@@ -102,7 +92,7 @@ func updateHashFile(version, arch, packagePath string) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x  cni-plugins-linux-%s-%s.tgz\n", sum, arch, version)); err != nil {
+	if _, err := f.WriteString(fmt.Sprintf("sha256 %x crun-%s.tar.gz\n", sum, version)); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
