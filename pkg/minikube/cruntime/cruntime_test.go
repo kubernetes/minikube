@@ -616,6 +616,7 @@ func TestVersion(t *testing.T) {
 // defaultServices reflects the default boot state for the minikube VM
 var defaultServices = map[string]serviceState{
 	"docker":        SvcRunning,
+	"docker.socket": SvcRunning,
 	"crio":          SvcExited,
 	"crio-shutdown": SvcExited,
 	"containerd":    SvcExited,
@@ -624,6 +625,7 @@ var defaultServices = map[string]serviceState{
 // allServices reflects the state of all actual services running at once
 var allServices = map[string]serviceState{
 	"docker":        SvcRunning,
+	"docker.socket": SvcRunning,
 	"crio":          SvcRunning,
 	"crio-shutdown": SvcExited,
 	"containerd":    SvcRunning,
@@ -662,41 +664,46 @@ func TestDisable(t *testing.T) {
 
 func TestEnable(t *testing.T) {
 	var tests = []struct {
-		runtime  string
-		services map[string]serviceState
-		want     map[string]serviceState
+		description string
+		runtime     string
+		services    map[string]serviceState
+		want        map[string]serviceState
 	}{
-		{"docker", defaultServices,
+		{"DockerDefaultServices", "docker", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcRestarted,
+				"docker.socket": SvcRunning,
 				"containerd":    SvcExited,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
 			}},
-		{"docker", allServices,
+		{"DockerAllServices", "docker", allServices,
 			map[string]serviceState{
 				"docker":        SvcRestarted,
+				"docker.socket": SvcRunning,
 				"containerd":    SvcExited,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
 			}},
-		{"containerd", defaultServices,
+		{"ContainerdDefaultServices", "containerd", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcExited,
+				"docker.socket": SvcExited,
 				"containerd":    SvcRestarted,
 				"crio":          SvcExited,
 				"crio-shutdown": SvcExited,
 			}},
-		{"crio", defaultServices,
+		{"CrioServices", "crio", defaultServices,
 			map[string]serviceState{
 				"docker":        SvcExited,
+				"docker.socket": SvcExited,
 				"containerd":    SvcExited,
 				"crio":          SvcRestarted,
 				"crio-shutdown": SvcExited,
 			}},
 	}
 	for _, tc := range tests {
-		t.Run(tc.runtime, func(t *testing.T) {
+		t.Run(tc.description, func(t *testing.T) {
 			runner := NewFakeRunner(t)
 			for k, v := range tc.services {
 				runner.services[k] = v

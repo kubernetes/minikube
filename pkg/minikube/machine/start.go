@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
@@ -397,7 +397,7 @@ func showHostInfo(h *host.Host, cfg config.ClusterConfig) {
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
 		register.Reg.SetStep(register.CreatingContainer)
-		out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
+		out.Step(style.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{if not .number_of_cpus}}no-limit{{else}}{{.number_of_cpus}}{{end}}, Memory={{if not .memory_size}}no-limit{{else}}{{.memory_size}}MB{{end}}) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	register.Reg.SetStep(register.CreatingVM)

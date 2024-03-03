@@ -1092,7 +1092,7 @@ var guestIssues = []match{
 		Kind: Kind{
 			ID:       "GUEST_INCORRECT_ARCH",
 			ExitCode: ExGuestUnsupported,
-			Advice:   "You might be using an amd64 version of minikube on a M1 Mac, use the arm64 version of minikube instead",
+			Advice:   "You might be using an amd64 version of minikube on a Apple Silicon Mac, use the arm64 version of minikube instead",
 			Issues:   []int{10243},
 		},
 		Regexp: re(`qemu: uncaught target signal 11 (Segmentation fault) - core dumped`),

@@ -5,10 +5,13 @@ PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
 PODMAN_LICENSE_FILES = LICENSE
 
+PODMAN_BUILDTAGS = exclude_graphdriver_btrfs btrfs_noversion exclude_graphdriver_devicemapper seccomp
+
 PODMAN_DEPENDENCIES = host-go
 ifeq ($(BR2_INIT_SYSTEMD),y)
 # need libsystemd for journal
 PODMAN_DEPENDENCIES += systemd
+PODMAN_BUILDTAGS += systemd
 endif
 
 PODMAN_GOARCH=amd64
@@ -46,7 +49,7 @@ endef
 
 define PODMAN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(PODMAN_BIN_ENV) CIRRUS_TAG=$(PODMAN_VERSION) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) GIT_COMMIT=$(PODMAN_COMMIT) PREFIX=/usr podman
+	$(PODMAN_BIN_ENV) CIRRUS_TAG=$(PODMAN_VERSION) $(MAKE) $(TARGET_CONFIGURE_OPTS) BUILDFLAGS="-buildvcs=false" BUILDTAGS="$(PODMAN_BUILDTAGS)" -C $(@D) GIT_COMMIT=$(PODMAN_COMMIT) PREFIX=/usr podman
 endef
 
 define PODMAN_INSTALL_TARGET_CMDS

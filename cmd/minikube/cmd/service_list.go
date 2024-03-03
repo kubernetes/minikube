@@ -41,14 +41,13 @@ var serviceListCmd = &cobra.Command{
 	Use:   "list [flags]",
 	Short: "Lists the URLs for the services in your local cluster",
 	Long:  `Lists the URLs for the services in your local cluster`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		co := mustload.Healthy(ClusterFlagValue())
 		output := strings.ToLower(profileOutput)
 
 		serviceURLs, err := service.GetServiceURLs(co.API, co.Config.Name, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
-			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
-			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			out.ErrT(style.Fatal, "Failed to get service URL - check that minikube is running and that you have specified the correct namespace (-n flag) if required: {{.error}}", out.V{"error": err})
 			os.Exit(reason.ExSvcUnavailable)
 		}
 		serviceURLs = updatePortsAndURLs(serviceURLs, co)

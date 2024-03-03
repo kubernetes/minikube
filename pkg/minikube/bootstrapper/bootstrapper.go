@@ -35,6 +35,7 @@ type LogOptions struct {
 
 // Bootstrapper contains all the methods needed to bootstrap a Kubernetes cluster
 type Bootstrapper interface {
+	ApplyNodeLabels(config.ClusterConfig) error
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
@@ -54,11 +55,11 @@ const (
 )
 
 // GetCachedBinaryList returns the list of binaries
-func GetCachedBinaryList(_ string) []string {
+func GetCachedBinaryList() []string {
 	return constants.KubernetesReleaseBinaries
 }
 
 // GetCachedImageList returns the list of images for a version
-func GetCachedImageList(imageRepository, version, _ string) ([]string, error) {
+func GetCachedImageList(imageRepository, version string) ([]string, error) {
 	return images.Kubeadm(imageRepository, version)
 }

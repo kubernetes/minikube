@@ -134,7 +134,7 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 		f := e.fs.Pop().(funcType)
 		e.currentFunc = f
 		for _, root := range paths {
-			err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			err := filepath.Walk(root, func(path string, _ os.FileInfo, _ error) error {
 				if shouldCheckFile(path) {
 					e.filename = path
 					return inspectFile(e)
@@ -499,6 +499,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
+		c = append(c, '\n')
 		err = os.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")

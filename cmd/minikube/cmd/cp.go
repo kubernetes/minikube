@@ -52,7 +52,7 @@ Default target node controlplane and If <source node name> is omitted, It will t
 Example Command : "minikube cp a.txt /home/docker/b.txt" +
                   "minikube cp a.txt minikube-m02:/home/docker/b.txt"
                   "minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt"`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 2 {
 			exit.Message(reason.Usage, `Please specify the path to copy: 
 	minikube cp <source file path> <target file absolute path> (example: "minikube cp a/b.txt /copied.txt")`)

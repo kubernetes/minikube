@@ -25,6 +25,7 @@
 set -x
 
 gcloud cloud-shell ssh --authorize-session << EOF
+ sudo rm -rf .cache .kube out testdata go
  OS="linux"
  ARCH="amd64"
  DRIVER="docker"

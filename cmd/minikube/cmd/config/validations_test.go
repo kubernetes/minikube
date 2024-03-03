@@ -146,3 +146,31 @@ func TestIsURLExists(t *testing.T) {
 
 	runValidations(t, tests, "url", IsURLExists)
 }
+
+func TestIsValidCPUs(t *testing.T) {
+	tests := []validationTest{
+		{"2", false},
+		{"16", false},
+		{"max", false},
+		{"no-limit", false},
+		{"abc", true},
+		{"-2", true},
+		{"", true},
+	}
+
+	runValidations(t, tests, "cpus", IsValidCPUs)
+}
+
+func TestIsValidMemory(t *testing.T) {
+	tests := []validationTest{
+		{"4000mb", false},
+		{"8gb", false},
+		{"max", false},
+		{"no-limit", false},
+		{"-4000", true},
+		{"abc", true},
+		{"", true},
+	}
+
+	runValidations(t, tests, "memory", IsValidMemory)
+}

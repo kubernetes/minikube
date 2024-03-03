@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/qemu"
@@ -125,7 +125,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	switch runtime.GOARCH {
 	case "amd64":
 		qemuMachine = "" // default
-		qemuCPU = ""     // default
+		// set cpu type to max to enable higher microarchitecture levels
+		// see https://lists.gnu.org/archive/html/qemu-devel/2022-08/msg04066.html for details
+		qemuCPU = "max"
 	case "arm64":
 		qemuMachine = "virt"
 		qemuCPU = "cortex-a72"

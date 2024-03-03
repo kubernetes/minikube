@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/spf13/cobra"
@@ -116,9 +117,7 @@ func TestGetKubernetesVersion(t *testing.T) {
 	}
 }
 
-var checkRepoMock = func(v semver.Version, repo string) error {
-	return nil
-}
+var checkRepoMock = func(_ semver.Version, _ string) error { return nil }
 
 func TestMirrorCountry(t *testing.T) {
 	// Set default disk size value in lieu of flag init
@@ -444,7 +443,6 @@ func TestValidateRuntime(t *testing.T) {
 			runtime:  "docker",
 			errorMsg: "",
 		},
-
 		{
 			runtime:  "test",
 			errorMsg: fmt.Sprintf("Invalid Container Runtime: test. Valid runtimes are: %v", cruntime.ValidRuntimes()),
@@ -738,7 +736,7 @@ func TestValidatePorts(t *testing.T) {
 			if got != nil {
 				gotError = got.Error()
 			}
-			if gotError != test.errorMsg {
+			if !strings.EqualFold(gotError, test.errorMsg) {
 				t.Errorf("validatePorts(ports=%v): got %v, expected %v", test.ports, got, test.errorMsg)
 			}
 		})
@@ -857,6 +855,61 @@ func TestImageMatchesBinaryVersion(t *testing.T) {
 		got := imageMatchesBinaryVersion(tc.imageVersion, tc.binaryVersion)
 		if got != tc.versionMatch {
 			t.Errorf("imageMatchesBinaryVersion(%s, %s) = %t; want = %t", tc.imageVersion, tc.binaryVersion, got, tc.versionMatch)
+		}
+	}
+}
+
+func TestValidateGPUs(t *testing.T) {
+	tests := []struct {
+		gpus     string
+		drvName  string
+		runtime  string
+		errorMsg string
+	}{
+		{"", "kvm", "containerd", ""},
+		{"all", "docker", "docker", ""},
+		{"nvidia", "docker", "docker", ""},
+		{"all", "docker", "", ""},
+		{"nvidia", "docker", "", ""},
+		{"all", "kvm", "docker", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"nvidia", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
+		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia" or "all"`},
+	}
+
+	for _, tc := range tests {
+		gotError := ""
+		got := validateGPUs(tc.gpus, tc.drvName, tc.runtime)
+		if got != nil {
+			gotError = got.Error()
+		}
+		if gotError != tc.errorMsg {
+			t.Errorf("validateGPUs(%s, %s, %s) = %q; want = %q", tc.gpus, tc.drvName, tc.runtime, got, tc.errorMsg)
+		}
+	}
+}
+
+func TestValidateAutoPause(t *testing.T) {
+	tests := []struct {
+		interval    string
+		shouldError bool
+	}{
+		{"1m0s", false},
+		{"5m", false},
+		{"1s", false},
+		{"0s", true},
+		{"-2m", true},
+	}
+	for _, tc := range tests {
+		input, err := time.ParseDuration(tc.interval)
+		if err != nil {
+			t.Fatalf("test has an invalid input duration of %q", tc.interval)
+		}
+		err = validateAutoPauseInterval(input)
+		if err != nil && !tc.shouldError {
+			t.Errorf("interval of %q failed validation; expected it to pass: %v", input, err)
+		}
+		if err == nil && tc.shouldError {
+			t.Errorf("interval of %q passed validataion; expected it to fail: %v", input, err)
 		}
 	}
 }

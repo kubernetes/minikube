@@ -71,7 +71,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{SupportsAmd64, IsRuntimeContainerd},
+		validations: []setFn{IsRuntimeContainerd},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
@@ -167,6 +167,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 	{
+		name:      "storage-provisioner-rancher",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableStorageClasses},
+	},
+	{
 		name:      "metallb",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
@@ -214,6 +219,21 @@ var Addons = []*Addon{
 	},
 	{
 		name:      "cloud-spanner",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "kubeflow",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "nvidia-device-plugin",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "yakd",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},

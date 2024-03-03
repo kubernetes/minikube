@@ -21,7 +21,7 @@ function check_jenkins() {
           return
   fi
   pstree "${jenkins_pid}" \
-        | egrep -i 'bash|integration|e2e|minikube' \
+        | grep -E -i 'bash|integration|e2e|minikube' \
         && echo "tests are running on pid ${jenkins_pid} ..." \
         && exit 1
 }
@@ -54,6 +54,7 @@ function cleanup() {
 		# clear the known_host file (~/.ssh/known_hosts)
 		if test -f /home/${user}/.ssh/known_hosts; then
 			sudo echo "" > /home/${user}/.ssh/known_hosts
+			ssh-keyscan github.com >> /home/${user}/.ssh/known_hosts
 		fi
 	done
 	# clean docker left overs

@@ -75,6 +75,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
+	GPUs              bool
 }
 
 // Name is a human readable name for Docker
@@ -132,9 +133,15 @@ func (r *Docker) Active() bool {
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
 	if inUserNamespace {
-		return errors.New("inUserNamespace must not be true for docker")
+		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
+			// For using overlayfs
+			return fmt.Errorf("kernel >= 5.11 is required for rootless mode: %w", err)
+		}
+		if err := CheckKernelCompatibility(r.Runner, 5, 13); err != nil {
+			// For avoiding SELinux error with overlayfs
+			klog.Warningf("kernel >= 5.13 is recommended for rootless mode %v", err)
+		}
 	}
-
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -156,7 +163,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		klog.ErrorS(err, "Failed to enable", "service", "docker.socket")
 	}
 
-	if err := r.setCGroup(cgroupDriver); err != nil {
+	if err := r.configureDocker(cgroupDriver); err != nil {
 		return err
 	}
 
@@ -164,21 +171,35 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		return err
 	}
 
+	// restart cri-docker
+	// avoid error: "Exiting due to RUNTIME_ENABLE: Failed to enable container runtime: sudo systemctl restart cri-docker: exit status 1"
+	// => journalctl: "cri-docker.socket: Socket service cri-docker.service already active, refusing."
 	if r.CRIService != "" {
-		if err := r.Init.Enable("cri-docker.socket"); err != nil {
+		socket := "cri-docker.socket"
+		service := "cri-docker.service"
+		// allow "native" socket activation:
+		// prevent active socket to reactivate service, that we're going to stop next - 'systemctl status cri-docker.socket': "Triggers: cri-docker.service"
+		// intentionally continue on any error
+		if r.Init.Active(socket) {
+			_ = r.Init.Stop(socket)
+		}
+		if r.Init.Active(service) {
+			_ = r.Init.Stop(service)
+		}
+
+		if err := r.Init.Unmask(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Unmask(r.CRIService); err != nil {
+		if err := r.Init.Enable(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Enable(r.CRIService); err != nil {
+		if err := r.Init.Restart(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Restart(r.CRIService); err != nil {
-			return err
-		}
-		if err := r.Init.Restart("cri-docker"); err != nil {
-			return err
+
+		// try to restart service if stopped, intentionally continue on any error
+		if !r.Init.Active(service) {
+			_ = r.Init.Restart(service)
 		}
 	}
 
@@ -525,24 +546,52 @@ func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", len)
 }
 
-// setCGroup configures the docker daemon to use driver as cgroup manager
+type dockerDaemonConfig struct {
+	ExecOpts       []string              `json:"exec-opts"`
+	LogDriver      string                `json:"log-driver"`
+	LogOpts        dockerDaemonLogOpts   `json:"log-opts"`
+	StorageDriver  string                `json:"storage-driver"`
+	DefaultRuntime string                `json:"default-runtime,omitempty"`
+	Runtimes       *dockerDaemonRuntimes `json:"runtimes,omitempty"`
+}
+type dockerDaemonLogOpts struct {
+	MaxSize string `json:"max-size"`
+}
+type dockerDaemonRuntimes struct {
+	Nvidia struct {
+		Path        string        `json:"path"`
+		RuntimeArgs []interface{} `json:"runtimeArgs"`
+	} `json:"nvidia"`
+}
+
+// configureDocker configures the docker daemon to use driver as cgroup manager
 // ref: https://docs.docker.com/engine/reference/commandline/dockerd/#options-for-the-runtime
-func (r *Docker) setCGroup(driver string) error {
+func (r *Docker) configureDocker(driver string) error {
 	if driver == constants.UnknownCgroupDriver {
 		return fmt.Errorf("unable to configure docker to use unknown cgroup driver")
 	}
 
 	klog.Infof("configuring docker to use %q as cgroup driver...", driver)
-	daemonConfig := fmt.Sprintf(`{
-"exec-opts": ["native.cgroupdriver=%s"],
-"log-driver": "json-file",
-"log-opts": {
-	"max-size": "100m"
-},
-"storage-driver": "overlay2"
-}
-`, driver)
-	ma := assets.NewMemoryAsset([]byte(daemonConfig), "/etc/docker", "daemon.json", "0644")
+	daemonConfig := dockerDaemonConfig{
+		ExecOpts:  []string{"native.cgroupdriver=" + driver},
+		LogDriver: "json-file",
+		LogOpts: dockerDaemonLogOpts{
+			MaxSize: "100m",
+		},
+		StorageDriver: "overlay2",
+	}
+	if r.GPUs {
+		assets.Addons["nvidia-device-plugin"].EnableByDefault()
+		daemonConfig.DefaultRuntime = "nvidia"
+		runtimes := &dockerDaemonRuntimes{}
+		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
+		daemonConfig.Runtimes = runtimes
+	}
+	daemonConfigBytes, err := json.Marshal(daemonConfig)
+	if err != nil {
+		return err
+	}
+	ma := assets.NewMemoryAsset(daemonConfigBytes, "/etc/docker", "daemon.json", "0644")
 	return r.Runner.Copy(ma)
 }
 
@@ -600,7 +649,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
 
 	// extract the tarball to /var in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
 

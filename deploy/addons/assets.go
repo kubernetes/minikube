@@ -20,8 +20,7 @@ import "embed"
 
 var (
 	// AutoPauseAssets assets for auto-pause addon
-	//go:embed auto-pause/*.tmpl
-	//go:embed auto-pause/unpause.lua
+	//go:embed auto-pause/*.tmpl auto-pause/*.yaml auto-pause/unpause.lua
 	AutoPauseAssets embed.FS
 
 	// DashboardAssets assets for dashboard addon
@@ -29,11 +28,11 @@ var (
 	DashboardAssets embed.FS
 
 	// DefaultStorageClassAssets assets for default-storageclass addon
-	//go:embed storageclass/storageclass.yaml.tmpl
+	//go:embed storageclass/storageclass.yaml
 	DefaultStorageClassAssets embed.FS
 
 	// PodSecurityPolicyAssets assets for pod-security-policy addon
-	//go:embed pod-security-policy/pod-security-policy.yaml.tmpl
+	//go:embed pod-security-policy/pod-security-policy.yaml
 	PodSecurityPolicyAssets embed.FS
 
 	// StorageProvisionerAssets assets for storage-provisioner addon
@@ -41,11 +40,15 @@ var (
 	StorageProvisionerAssets embed.FS
 
 	// StorageProvisionerGlusterAssets assets for storage-provisioner-gluster addon
-	//go:embed storage-provisioner-gluster/*.tmpl
+	//go:embed storage-provisioner-gluster/*.tmpl storage-provisioner-gluster/*.yaml
 	StorageProvisionerGlusterAssets embed.FS
 
+	// StorageProvisionerRancherAssets assets for storage-provisioner-rancher addon
+	//go:embed storage-provisioner-rancher/*.tmpl
+	StorageProvisionerRancherAssets embed.FS
+
 	// EfkAssets assets for efk addon
-	//go:embed efk/*.tmpl
+	//go:embed efk/*.tmpl efk/*.yaml
 	EfkAssets embed.FS
 
 	// IngressAssets assets for ingress addon
@@ -57,7 +60,7 @@ var (
 	IstioProvisionerAssets embed.FS
 
 	// IstioAssets assets for istio addon
-	//go:embed istio/istio-default-profile.yaml.tmpl
+	//go:embed istio/istio-default-profile.yaml
 	IstioAssets embed.FS
 
 	// InspektorGadgetAssets assets for inspektor-gadget addon
@@ -73,15 +76,15 @@ var (
 	KubevirtAssets embed.FS
 
 	// MetricsServerAssets assets for metrics-server addon
-	//go:embed metrics-server/*.tmpl
+	//go:embed metrics-server/*.tmpl metrics-server/*.yaml
 	MetricsServerAssets embed.FS
 
 	// OlmAssets assets for olm addon
-	//go:embed olm/*.tmpl
+	//go:embed olm/*.tmpl olm/*.yaml
 	OlmAssets embed.FS
 
 	// RegistryAssets assets for registry addon
-	//go:embed registry/*.tmpl
+	//go:embed registry/*.tmpl registry/*.yaml
 	RegistryAssets embed.FS
 
 	// RegistryCredsAssets assets for registry-creds addon
@@ -89,7 +92,7 @@ var (
 	RegistryCredsAssets embed.FS
 
 	// RegistryAliasesAssets assets for registry-aliases addon
-	//go:embed registry-aliases/*.tmpl
+	//go:embed registry-aliases/*.tmpl registry-aliases/*.yaml
 	RegistryAliasesAssets embed.FS
 
 	// FreshpodAssets assets for freshpod addon
@@ -105,7 +108,7 @@ var (
 	NvidiaGpuDevicePluginAssets embed.FS
 
 	// LogviewerAssets assets for logviewer addon
-	//go:embed logviewer/*.tmpl
+	//go:embed logviewer/*.tmpl logviewer/*.yaml
 	LogviewerAssets embed.FS
 
 	// GvisorAssets assets for gvisor addon
@@ -113,7 +116,7 @@ var (
 	GvisorAssets embed.FS
 
 	// HelmTillerAssets assets for helm-tiller addon
-	//go:embed helm-tiller/*.tmpl
+	//go:embed helm-tiller/*.tmpl helm-tiller/*.yaml
 	HelmTillerAssets embed.FS
 
 	// IngressDNSAssets assets for ingress-dns addon
@@ -125,19 +128,19 @@ var (
 	MetallbAssets embed.FS
 
 	// AmbassadorAssets assets for ambassador addon
-	//go:embed ambassador/*.tmpl
+	//go:embed ambassador/*.tmpl ambassador/*.yaml
 	AmbassadorAssets embed.FS
 
 	// GcpAuthAssets assets for gcp-auth addon
-	//go:embed gcp-auth/*.tmpl
+	//go:embed gcp-auth/*.tmpl gcp-auth/*.yaml
 	GcpAuthAssets embed.FS
 
 	// VolumeSnapshotsAssets assets for volumesnapshots addon
-	//go:embed volumesnapshots/*.tmpl
+	//go:embed volumesnapshots/*.tmpl volumesnapshots/*.yaml
 	VolumeSnapshotsAssets embed.FS
 
 	// CsiHostpathDriverAssets assets for csi-hostpath-driver addon
-	//go:embed csi-hostpath-driver/deploy/*.tmpl csi-hostpath-driver/rbac/*.tmpl
+	//go:embed csi-hostpath-driver/deploy/*.tmpl csi-hostpath-driver/deploy/*.yaml csi-hostpath-driver/rbac/*.yaml
 	CsiHostpathDriverAssets embed.FS
 
 	// PortainerAssets assets for portainer addon
@@ -157,6 +160,18 @@ var (
 	HeadlampAssets embed.FS
 
 	// CloudSpanner assets for cloud-spanner addon
-	//go:embed cloud-spanner/*.yaml
+	//go:embed cloud-spanner/*.tmpl
 	CloudSpanner embed.FS
+
+	// Kubeflow assets for kubeflow addon
+	//go:embed kubeflow/*.yaml
+	Kubeflow embed.FS
+
+	// NvidiaDevicePlugin assets for nvidia-device-plugin addon
+	//go:embed nvidia-device-plugin/*.tmpl
+	NvidiaDevicePlugin embed.FS
+
+	// YakdAssets assets for yakd addon
+	//go:embed yakd/*.yaml yakd/*.tmpl
+	YakdAssets embed.FS
 )

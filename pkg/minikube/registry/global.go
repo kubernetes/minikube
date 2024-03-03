@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"time"
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -118,7 +119,17 @@ func Available(vm bool) []DriverState {
 			klog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
-		s := d.Status()
+		stateChannel := make(chan State)
+		timeoutChannel := time.After(20 * time.Second)
+		go func() {
+			stateChannel <- d.Status()
+		}()
+		s := State{}
+		select {
+		case <-timeoutChannel:
+			klog.Infof("%s status check timeout!", d.Name)
+		case s = <-stateChannel:
+		}
 		klog.Infof("%s default: %v priority: %d, state: %+v", d.Name, d.Default, d.Priority, s)
 
 		preference := d.Priority

@@ -23,7 +23,7 @@ import (
 )
 
 var dockerResponse string
-var dockerInspectGetterMock = func(name string) (*RunResult, error) {
+var dockerInspectGetterMock = func(_ string) (*RunResult, error) {
 	var responseInBytes bytes.Buffer
 	responseInBytes.WriteString(dockerResponse)
 	response := &RunResult{Stdout: responseInBytes}
@@ -84,7 +84,7 @@ func TestDockerInspect(t *testing.T) {
 }
 
 var podmanResponse string
-var podmanInspectGetterMock = func(name string) (*RunResult, error) {
+var podmanInspectGetterMock = func(_ string) (*RunResult, error) {
 	var responseInBytes bytes.Buffer
 	responseInBytes.WriteString(podmanResponse)
 	response := &RunResult{Stdout: responseInBytes}
@@ -141,5 +141,67 @@ func TestPodmanInspect(t *testing.T) {
 				t.Errorf("Expected subnet to be %v but got %v", tc.subnetIP, netInfo.subnet)
 			}
 		})
+	}
+}
+
+func TestIsNetworkNotFound(t *testing.T) {
+	tests := []struct {
+		output     string
+		isNotFound bool
+	}{
+		{"Error: No such network: cat", true},
+		{"Error response from daemon: network cat not found", true},
+		{`[
+    {
+        "Name": "abcde123",
+        "Id": "4683c88eb412f2744e9763a4bebcb5e3b73a11dbcc79d6d9ab64ab2f10e08faa",
+        "Created": "2023-09-29T17:12:11.774716834Z",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "192.168.49.0/24",
+                    "Gateway": "192.168.49.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "b6954f226ccfdb7d190e3792be8d569e4bc5e3c44833d9e274835212fca4f4d2": {
+                "Name": "p2",
+                "EndpointID": "30fd6525dab2b0a4f1953a3c8cae7485be272e09938dffe3d6de81e84c574826",
+                "MacAddress": "02:42:c0:a8:31:02",
+                "IPv4Address": "192.168.49.2/24",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "--icc": "",
+            "--ip-masq": "",
+            "com.docker.network.driver.mtu": "65535"
+        },
+        "Labels": {
+            "created_by.minikube.sigs.k8s.io": "true",
+            "name.minikube.sigs.k8s.io": "minikube"
+        }
+    }
+]`, false},
+	}
+
+	for _, tc := range tests {
+		got := isNetworkNotFound(tc.output)
+		if got != tc.isNotFound {
+			t.Errorf("isNetworkNotFound(%s) = %t; want = %t", tc.output, got, tc.isNotFound)
+		}
 	}
 }

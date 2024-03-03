@@ -53,6 +53,20 @@ tests the inspektor-gadget addon by ensuring the pod has come up and addon disab
 #### validateCloudSpannerAddon
 tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 
+#### validateLocalPathAddon
+tests the functionality of the storage-provisioner-rancher addon
+
+#### validateEnablingAddonOnNonExistingCluster
+tests enabling an addon on a non-existing cluster
+
+#### validateDisablingAddonOnNonExistingCluster
+tests disabling an addon on a non-existing cluster
+
+#### validateNvidiaDevicePlugin
+tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
+
+#### validateYakdAddon
+
 ## TestCertOptions
 makes sure minikube certs respect the --apiserver-ips and --apiserver-names parameters
 
@@ -540,6 +554,13 @@ make sure minikube profile list outputs correct with multinode clusters
 
 #### validateCopyFileWithMultiNode
 validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+
+#### validateMultiNodeLabels
+check if all node labels were configured correctly
+
+Steps:
+- Get the node labels from the cluster with `kubectl get nodes`
+- check if all node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
 
 #### validateStopRunningNode
 tests the minikube node stop command

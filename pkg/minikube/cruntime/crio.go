@@ -445,7 +445,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 
 	t = time.Now()
 	// extract the tarball to /var in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
 	klog.Infof("Took %f seconds to extract the tarball", time.Since(t).Seconds())

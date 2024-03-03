@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
@@ -36,19 +37,16 @@ var addonsEnableCmd = &cobra.Command{
 	Short:   "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
 	Long:    "Enables the addon w/ADDON_NAME within minikube. For a list of available addons use: minikube addons list ",
 	Example: "minikube addons enable dashboard",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons enable ADDON_NAME")
 		}
-		cc, err := config.Load(ClusterFlagValue())
-		if err != nil && !config.IsNotExist(err) {
-			out.ErrT(style.Sad, `Unable to load config: {{.error}}`, out.V{"error": err})
-		}
+		_, cc := mustload.Partial(ClusterFlagValue())
 		if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 			exit.Message(reason.Usage, "You cannot enable addons on a cluster without Kubernetes, to enable Kubernetes on your cluster, run: minikube start --kubernetes-version=stable")
 		}
 
-		err = addons.VerifyNotPaused(ClusterFlagValue(), true)
+		err := addons.VerifyNotPaused(ClusterFlagValue(), true)
 		if err != nil {
 			exit.Error(reason.InternalAddonEnablePaused, "enabled failed", err)
 		}

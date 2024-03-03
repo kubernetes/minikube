@@ -18,6 +18,201 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.29.2": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.28.7": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.27.11": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.26.14": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.30.0-alpha.2": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.12-0",
+			"pause":           "3.9",
+		},
+		"v1.30.0-alpha.1": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.11-0",
+			"pause":           "3.9",
+		},
+		"v1.29.1": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.28.6": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.27.10": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.26.13": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.28.5": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.27.9": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.26.12": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.29.0": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.29.0-rc.2": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.29.0-rc.1": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.29.0-rc.0": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.28.4": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.27.8": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.26.11": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.25.16": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.8",
+		},
+		"v1.29.0-alpha.3": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.10-0",
+			"pause":           "3.9",
+		},
+		"v1.28.3": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.27.7": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.26.10": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.25.15": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.8",
+		},
+		"v1.29.0-alpha.2": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.29.0-alpha.1": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.28.2": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.27.6": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.7-0",
+			"pause":           "3.9",
+		},
+		"v1.26.9": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.6-0",
+			"pause":           "3.9",
+		},
+		"v1.25.14": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.6-0",
+			"pause":           "3.8",
+		},
+		"v1.28.1": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.27.5": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.7-0",
+			"pause":           "3.9",
+		},
+		"v1.26.8": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.6-0",
+			"pause":           "3.9",
+		},
+		"v1.25.13": {
+			"coredns/coredns": "v1.9.3",
+			"etcd":            "3.5.6-0",
+			"pause":           "3.8",
+		},
+		"v1.24.17": {
+			"coredns/coredns": "v1.8.6",
+			"etcd":            "3.5.6-0",
+			"pause":           "3.7",
+		},
+		"v1.28.0": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
+		"v1.28.0-rc.1": {
+			"coredns/coredns": "v1.10.1",
+			"etcd":            "3.5.9-0",
+			"pause":           "3.9",
+		},
 		"v1.28.0-rc.0": {
 			"coredns/coredns": "v1.10.1",
 			"etcd":            "3.5.9-0",

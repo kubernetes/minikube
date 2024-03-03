@@ -36,7 +36,12 @@ import (
 )
 
 func installRelease(version string) (f *os.File, err error) {
-	tf, err := os.CreateTemp("", fmt.Sprintf("minikube-%s.*.exe", version))
+	ext := ""
+	if runtime.GOOS == "windows" {
+		ext = ".exe"
+	}
+
+	tf, err := os.CreateTemp("", fmt.Sprintf("minikube-%s.*%s", version, ext))
 	if err != nil {
 		return tf, err
 	}
@@ -59,26 +64,9 @@ func installRelease(version string) (f *os.File, err error) {
 
 func legacyVersion() string {
 	// Should be a version from the last 6 months
-	version := "v1.6.2"
-	if KicDriver() {
-		if arm64Platform() {
-			// arm64 KIC driver is supported starting from v1.17.0
-			version = "v1.17.0"
-		} else {
-			// v1.8.0 would be selected, but: https://github.com/kubernetes/minikube/issues/8740
-			version = "v1.9.0"
-		}
-	}
-	if NoneDriver() {
-		// oldest version where none driver doesn't have to be run as root
-		version = "v1.16.0"
-	}
-	// the version containerd in ISO was upgraded to 1.4.2
-	// we need it to use runc.v2 plugin
 	// note: Test*BinaryUpgrade require minikube v1.22+ to satisfy newer containerd config structure
-	if ContainerRuntime() == "containerd" {
-		version = "v1.22.0"
-	}
+	// note: TestMissingContainerUpgrade requires minikube v1.26.0+ where we copy over initial containerd config in kicbase via deploy/kicbase/Dockerfile
+	version := "v1.26.0" // 2022-06-23
 	return version
 }
 
@@ -89,7 +77,7 @@ func legacyStartArgs() []string {
 
 // TestRunningBinaryUpgrade upgrades a running legacy cluster to minikube at HEAD
 func TestRunningBinaryUpgrade(t *testing.T) {
-	// not supported till v1.10, and passing new images to old releases isn't supported anyways
+	// passing new images to old releases isn't supported anyways
 	if TestingKicBaseImage() {
 		t.Skipf("Skipping, test does not make sense with --base-image")
 	}

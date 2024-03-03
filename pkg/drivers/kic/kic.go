@@ -83,11 +83,15 @@ func (d *Driver) Create() error {
 		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
 		NodeLabel:     oci.NodeLabelKey + "=" + d.NodeConfig.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
-		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
+		Memory:        strconv.Itoa(d.NodeConfig.Memory),
 		Envs:          d.NodeConfig.Envs,
 		ExtraArgs:     append([]string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)}, d.NodeConfig.ExtraArgs...),
 		OCIBinary:     d.NodeConfig.OCIBinary,
 		APIServerPort: d.NodeConfig.APIServerPort,
+		GPUs:          d.NodeConfig.GPUs,
+	}
+	if params.Memory != "0" {
+		params.Memory += "mb"
 	}
 
 	networkName := d.NodeConfig.Network

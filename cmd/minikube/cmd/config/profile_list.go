@@ -49,7 +49,7 @@ var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all minikube profiles.",
 	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
 		go notify.MaybePrintUpdateTextFromGithub()

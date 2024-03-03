@@ -104,7 +104,7 @@ Configure dnsmasq to handle .test domain
 
 ```bash
 sudo mkdir /etc/NetworkManager/dnsmasq.d/
-echo "server=/test/$(minikube ip)" >/etc/NetworkManager/dnsmasq.d/minikube.conf
+echo "server=/test/$(minikube ip)" | sudo tee /etc/NetworkManager/dnsmasq.d/minikube.conf
 ```
 
 Restart Network Manager

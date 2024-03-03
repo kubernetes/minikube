@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -61,7 +62,7 @@ var logsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "Returns logs to debug a local Kubernetes cluster",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var logOutput *os.File = os.Stdout
 		var err error
 
@@ -70,7 +71,7 @@ var logsCmd = &cobra.Command{
 			defer func() {
 				err := logOutput.Close()
 				if err != nil {
-					klog.Warning("Failed to close file: %v", err)
+					klog.Warningf("Failed to close file: %v", err)
 				}
 			}()
 			if err != nil {
@@ -120,10 +121,9 @@ var logsCmd = &cobra.Command{
 			logs.OutputProblems(problems, numberOfProblems, logOutput)
 			return
 		}
-		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
-		if err != nil {
-			out.Ln("")
-			out.WarningT("{{.error}}", out.V{"error": err})
+		logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines, logOutput)
+		if fileOutput != "" {
+			out.Styled(style.Success, "Logs file created ({{.logPath}}), remember to include it when reporting issues!", out.V{"logPath": fileOutput})
 		}
 	},
 }

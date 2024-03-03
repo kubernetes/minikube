@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const (
@@ -248,12 +249,12 @@ func (r *Containerd) Disable() error {
 
 // ImageExists checks if image exists based on image name and optionally image sha
 func (r *Containerd) ImageExists(name string, sha string) bool {
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s", name))
-	rr, err := r.Runner.RunCmd(c)
-	if err != nil {
-		return false
-	}
-	if sha != "" && !strings.Contains(rr.Output(), sha) {
+	klog.Infof("Checking existence of image with name %q and sha %q", name, sha)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "check")
+	// note: image name and image id's sha can be on different lines in ctr output
+	if rr, err := r.Runner.RunCmd(c); err != nil ||
+		!strings.Contains(rr.Output(), name) ||
+		(sha != "" && !strings.Contains(rr.Output(), sha)) {
 		return false
 	}
 	return true
@@ -409,7 +410,7 @@ func (r *Containerd) BuildImage(src string, file string, tag string, push bool, 
 
 // PushImage pushes an image
 func (r *Containerd) PushImage(name string) error {
-	klog.Infof("Pushing image %s: %s", name)
+	klog.Infof("Pushing image %s", name)
 	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "push", name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images push")
@@ -548,7 +549,7 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 
 	t = time.Now()
 	// extract the tarball to /var in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
 	klog.Infof("Took %f seconds to extract the tarball", time.Since(t).Seconds())
@@ -568,13 +569,20 @@ func (r *Containerd) Restart() error {
 
 // containerdImagesPreloaded returns true if all images have been preloaded
 func containerdImagesPreloaded(runner command.Runner, images []string) bool {
-	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
-	if err != nil {
+	var rr *command.RunResult
+
+	imageList := func() (err error) {
+		rr, err = runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
+		return err
+	}
+
+	if err := retry.Expo(imageList, 250*time.Millisecond, 5*time.Second); err != nil {
+		klog.Warningf("failed to get image list: %v", err)
 		return false
 	}
 
 	var jsonImages crictlImages
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
+	err := json.Unmarshal(rr.Stdout.Bytes(), &jsonImages)
 	if err != nil {
 		klog.Errorf("failed to unmarshal images, will assume images are not preloaded")
 		return false

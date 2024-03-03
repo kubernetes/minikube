@@ -90,6 +90,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		Subnet:            cc.Subnet,
 		StaticIP:          cc.StaticIP,
 		ListenAddress:     cc.ListenAddress,
+		GPUs:              cc.GPUs,
 	}), nil
 }
 

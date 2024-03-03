@@ -14,16 +14,17 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 31
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 32
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
-KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
-KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+KUBERNETES_VERSION ?= $(shell grep -E "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.31.0-1690838458-16971
+ISO_VERSION ?= v1.32.1-1708638130-18020
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -34,18 +35,18 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.20.6
+GO_VERSION ?= 1.22.0
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.27.0
+GO_K8S_VERSION_PREFIX ?= v1.30.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2021.02.12
+BUILDROOT_BRANCH ?= 2023.02.9
 # the go version on the line below is for the ISO
-GOLANG_OPTIONS = GO_VERSION=1.19.9 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.21.6 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -75,10 +76,10 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 5.10.57
+KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.53.3
+GOLINT_VERSION ?= v1.56.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -110,10 +111,10 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 GVISOR_TAG ?= latest
 
 # auto-pause-hook tag to push changes to
-AUTOPAUSE_HOOK_TAG ?= v0.0.4
+AUTOPAUSE_HOOK_TAG ?= v0.0.5
 
 # prow-test tag to push changes to
-PROW_TEST_TAG ?= v0.0.3
+PROW_TEST_TAG ?= v0.0.7
 
 # storage provisioner tag to push changes to
 # NOTE: you will need to bump the PreloadVersion if you change this
@@ -302,10 +303,9 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git --work-tree=$(BUILD_DIR)/buildroot am ../../deploy/iso/minikube-iso/0001-linux-add-BR2_LINUX_KERNEL_NEEDS_HOST_PAHOLE.patch; \
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
@@ -865,13 +865,13 @@ out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver
 
 .PHONY: kvm-image-amd64
 kvm-image-amd64: installers/linux/kvm/Dockerfile.amd64  ## Convenient alias to build the docker container
-	docker build --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $(KVM_BUILD_IMAGE_AMD64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
 .PHONY: kvm-image-arm64
 kvm-image-arm64: installers/linux/kvm/Dockerfile.arm64 docker-multi-arch-build  ## Convenient alias to build the docker container
-	docker buildx build --platform linux/arm64 --build-arg "GO_VERSION=$(KVM_GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
+	docker buildx build --platform linux/arm64 --build-arg "GO_VERSION=$(GO_VERSION)" -t $(KVM_BUILD_IMAGE_ARM64) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
@@ -928,7 +928,7 @@ out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
-	(cd out/hugo && go build --tags extended)
+	(cd out/hugo && git fetch origin && git checkout $(HUGO_VERSION) && go build --tags extended)
 
 .PHONY: site
 site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
@@ -959,18 +959,18 @@ auto-pause-hook-image: deploy/addons/auto-pause/auto-pause-hook ## Build docker 
 	docker build -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) ./deploy/addons/auto-pause
 
 .PHONY: push-auto-pause-hook-image
-push-auto-pause-hook-image: auto-pause-hook-image
+push-auto-pause-hook-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG)
-
-.PHONY: prow-test-image
-prow-test-image:
-	docker build --build-arg "GO_VERSION=$(GO_VERSION)"  -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) ./deploy/prow
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform $(KICBASE_ARCH) -t $(REGISTRY)/auto-pause-hook:$(AUTOPAUSE_HOOK_TAG) -f ./deploy/addons/auto-pause/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: push-prow-test-image
-push-prow-test-image: prow-test-image
+push-prow-test-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/prow-test:$(PROW_TEST_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --build-arg "GO_VERSION=$(GO_VERSION)" --platform linux/amd64,linux/arm64 -t $(REGISTRY)/prow-test:$(PROW_TEST_TAG) -t $(REGISTRY)/prow-test:latest ./deploy/prow
+	docker buildx rm multiarch
 
 .PHONY: out/performance-bot
 out/performance-bot:
@@ -1086,6 +1086,11 @@ update-cri-o-version:
 	(cd hack/update/cri-o_version && \
 	 go run update_cri-o_version.go)
 
+.PHONY: update-crun-version
+update-crun-version:
+	(cd hack/update/crun_version && \
+	 go run update_crun_version.go)
+
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
 	(cd hack/update/metrics_server_version && \
@@ -1160,6 +1165,56 @@ update-docker-buildx-version:
 update-nerdctl-version:
 	(cd hack/update/nerdctl_version && \
 	 go run update_nerdctl_version.go)
+
+.PHONY: update-crictl-version
+update-crictl-version:
+	(cd hack/update/crictl_version && \
+	 go run update_crictl_version.go)
+
+.PHONY: update-kindnetd-version
+update-kindnetd-version:
+	(cd hack/update/kindnetd_version && \
+	 go run update_kindnetd_version.go)
+
+.PHONY: update-istio-operator-version
+update-istio-operator-version:
+	(cd hack/update/istio_operator_version && \
+	 go run update_istio_operator_version.go)
+
+.PHONY: update-registry-version
+update-registry-version:
+	(cd hack/update/registry_version && \
+	 go run update_registry_version.go)
+
+.PHONY: update-kong-version
+update-kong-version:
+	(cd hack/update/kong_version && \
+	 go run update_kong_version.go)
+
+.PHONY: update-kong-ingress-controller-version
+update-kong-ingress-controller-version:
+	(cd hack/update/kong_ingress_controller_version && \
+	 go run update_kong_ingress_controller_version.go)
+
+.PHONY: update-nvidia-device-plugin-version
+update-nvidia-device-plugin-version:
+	(cd hack/update/nvidia_device_plugin_version && \
+	 go run update_nvidia_device_plugin_version.go)
+
+.PHONY: update-nerctld-version
+update-nerdctld-version:
+	(cd hack/update/nerdctld_version && \
+	 go run update_nerdctld_version.go)
+
+.PHONY: update-kubectl-version
+update-kubectl-version:
+	(cd hack/update/kubectl_version && \
+	 go run update_kubectl_version.go)
+
+.PHONY: update-site-node-version
+update-site-node-version:
+	(cd hack/update/site_node_version && \
+	 go run update_site_node_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

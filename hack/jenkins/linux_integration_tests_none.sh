@@ -87,7 +87,7 @@ if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
 fi
 
 # crictl is required for Kubernetes v1.24+ with none driver
-CRICTL_VERSION="v1.17.0"
+CRICTL_VERSION="v1.28.0"
 if [[ $(crictl --version) != *"$CRICTL_VERSION"* ]]; then
   echo "WARNING: expected version of crictl is not installed. will try to install."
   curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz

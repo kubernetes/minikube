@@ -1,0 +1,5 @@
+config BR2_PACKAGE_CNI_PLUGINS_LATEST
+	bool "cni-plugins-latest"
+	default y
+	depends on BR2_x86_64
+	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS

@@ -220,7 +220,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
 	}
 	// docs: check if the node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
-	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
+	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name", "minikube.k8s.io/primary"}
 	for _, el := range expectedLabels {
 		if !strings.Contains(rr.Output(), el) {
 			t.Errorf("expected to have label %q in node labels but got : %s", el, rr.Output())
@@ -780,8 +780,8 @@ func imageID(image string) string {
 		},
 	}
 
-	if imgIds, ok := ids[image]; ok {
-		if id, ok := imgIds[runtime.GOARCH]; ok {
+	if imgIDs, ok := ids[image]; ok {
+		if id, ok := imgIDs[runtime.GOARCH]; ok {
 			return id
 		}
 		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
@@ -1246,9 +1246,6 @@ func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs", "--file", logFileName))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
-	}
-	if rr.Stdout.String() != "" {
-		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
 	}
 
 	logs, err := os.ReadFile(logFileName)
@@ -1774,6 +1771,9 @@ func validateCpCmd(ctx context.Context, t *testing.T, profile string) {
 
 	tmpPath := filepath.Join(tmpDir, "cp-test.txt")
 	testCpCmd(ctx, t, profile, profile, dstPath, "", tmpPath)
+
+	// copy to nonexistent directory structure
+	testCpCmd(ctx, t, profile, "", srcPath, "", "/tmp/does/not/exist/cp-test.txt")
 }
 
 // validateMySQL validates a minimalist MySQL deployment

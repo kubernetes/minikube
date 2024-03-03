@@ -17,6 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"context"
+	"net/http"
+
+	"github.com/google/go-github/v59/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -33,4 +37,18 @@ func supportedKubernetesVersions() (releases []string) {
 		releases = append(releases, ver)
 	}
 	return releases
+}
+
+// IsInGitHubKubernetesVersions checks whether ver is in the GitHub list of K8s versions
+func IsInGitHubKubernetesVersions(ver string) (bool, error) {
+	ghc := github.NewClient(nil)
+
+	_, resp, err := ghc.Repositories.GetReleaseByTag(context.Background(), "kubernetes", "kubernetes", ver)
+	if err != nil {
+		if resp != nil && resp.StatusCode == http.StatusNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
