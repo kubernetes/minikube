@@ -52,12 +52,12 @@ spec:
       value: eth0
     - name: vip_cidr
       value: "32"
+    - name: dns_mode
+      value: first
     - name: cp_enable
       value: "true"
     - name: cp_namespace
       value: kube-system
-    - name: vip_ddns
-      value: "false"
     - name: vip_leaderelection
       value: "true"
     - name: vip_leasename
@@ -72,7 +72,7 @@ spec:
       value: {{ .VIP }}
     - name: prometheus_server
       value: :2112
-    image: ghcr.io/kube-vip/kube-vip:v0.7.0
+    image: ghcr.io/kube-vip/kube-vip:v0.7.1
     imagePullPolicy: IfNotPresent
     name: kube-vip
     resources: {}
