@@ -270,7 +270,7 @@ For example, you can do all docker operations such as docker build, docker run, 
 
 Note: You need the docker-cli to be installed on your machine.
 docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var err error
 
 		shl := shell.ForceShell

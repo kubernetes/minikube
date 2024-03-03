@@ -21,8 +21,8 @@ if [ "$#" -ne 1 ]; then
   exit 1
 fi
 
-readonly version=$(egrep "CRI_DOCKERD_VERSION=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
-readonly commit=$(egrep "CRI_DOCKERD_COMMIT=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
+readonly version=$(grep -E "CRI_DOCKERD_VERSION=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
+readonly commit=$(grep -E "CRI_DOCKERD_COMMIT=" ../../../deploy/kicbase/Dockerfile | cut -d \" -f2)
 archlist=$1
 
 IFS=, read -a archarray <<< "$archlist"

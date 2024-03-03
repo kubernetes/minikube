@@ -31,7 +31,7 @@ func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 
 	if runtime.GOOS != "windows" {
 		// Replace to fake func.
-		getWindowsVolumeName = func(d string) (string, error) {
+		getWindowsVolumeName = func(_ string) (string, error) {
 			return `/`, nil
 		}
 		// Add dummy Windows drive letter.

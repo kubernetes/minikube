@@ -63,7 +63,7 @@ var RootCmd = &cobra.Command{
 	Use:   "minikube",
 	Short: "minikube quickly sets up a local Kubernetes cluster",
 	Long:  `minikube provisions and manages local Kubernetes clusters optimized for development workflows.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.Error(reason.HostHomeMkdir, "Error creating minikube directory", err)
@@ -86,7 +86,7 @@ var RootCmd = &cobra.Command{
 			os.Setenv(constants.MinikubeRootlessEnv, "true")
 		}
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+	PersistentPostRun: func(_ *cobra.Command, _ []string) {
 		if err := audit.LogCommandEnd(auditID); err != nil {
 			klog.Warningf("failed to log command end to audit: %v", err)
 		}

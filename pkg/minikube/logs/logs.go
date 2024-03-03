@@ -166,7 +166,7 @@ func OutputProblems(problems map[string][]string, maxLines int, logOutput *os.Fi
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int, logOutput *os.File) {
 	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
@@ -181,7 +181,6 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	defer out.SetErrFile(os.Stderr)
 
 	sort.Strings(names)
-	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
 			out.Styled(style.None, "")
@@ -192,8 +191,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 		c.Stdout = &b
 		c.Stderr = &b
 		if rr, err := runner.RunCmd(c); err != nil {
-			klog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
-			failed = append(failed, name)
+			out.Styled(style.None, fmt.Sprintf("command %s failed with error: %v", rr.Command(), err))
 			continue
 		}
 		l := ""
@@ -202,16 +200,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 			l += scanner.Text() + "\n"
 		}
 		if err := scanner.Err(); err != nil {
-			klog.Errorf("failed to read output: %v", err)
-			failed = append(failed, name)
+			l += fmt.Sprintf("failed to read output: %v", err)
 		}
 		out.Styled(style.None, l)
 	}
-
-	if len(failed) > 0 {
-		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
-	}
-	return nil
 }
 
 // outputAudit displays the audit logs.

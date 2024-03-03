@@ -193,10 +193,11 @@ func TestExcludeIP(t *testing.T) {
 
 func TestUpdateTransport(t *testing.T) {
 	t.Run("new", func(t *testing.T) {
-		rc := rest.Config{}
-		UpdateTransport(&rc)
-		tr := &http.Transport{}
-		tr.RegisterProtocol("file", http.NewFileTransport(http.Dir("/tmp")))
+		rcBefore := rest.Config{}
+		rcAfter := UpdateTransport(&rcBefore)
+		if rcAfter.WrapTransport == nil {
+			t.Errorf("UpdateTransport(%v) = %v, WrapTransport was unexpectedly nil", rcBefore, rcAfter)
+		}
 	})
 	t.Run("existing", func(t *testing.T) {
 		// rest config initialized with WrapTransport function

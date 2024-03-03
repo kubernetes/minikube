@@ -1,0 +1,80 @@
+header:
+  schema-version: 1.0.0
+  expiration-date: '2024-12-17T01:00:00.000Z'
+  last-updated: '2023-12-17'
+  last-reviewed: '2023-12-17'
+  commit-hash: 8220a6eb95f0a4d75f7f2d7b14cef975f050512d
+  project-url: https://github.com/kubernetes/minikube
+  project-release: '1.32.0'
+  changelog: https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md
+  license: https://github.com/kubernetes/minikube/blob/master/LICENSE
+project-lifecycle:
+  status: active
+  roadmap: https://minikube.sigs.k8s.io/docs/contrib/roadmap/
+  bug-fixes-only: false
+  core-maintainers:
+    - https://github.com/kubernetes/minikube/blob/master/OWNERS
+  release-cycle: https://minikube.sigs.k8s.io/docs/contrib/release_schedule/
+  release-process: https://minikube.sigs.k8s.io/docs/contrib/releasing/
+contribution-policy:
+  accepts-pull-requests: true
+  accepts-automated-pull-requests: true
+  automated-tools-list:
+  - automated-tool: dependabot
+    action: allowed
+    path:
+      - /
+  - automated-tool:  minikube-bot
+    action: allowed
+    path:
+      - /
+  - automated-tool:  k8s-ci-robot
+    action: allowed
+    path:
+      - /
+  contributing-policy: https://minikube.sigs.k8s.io/docs/contrib/guide/
+  code-of-conduct: https://github.com/kubernetes/minikube/blob/master/code-of-conduct.md
+documentation:
+  - https://minikube.sigs.k8s.io/docs/
+distribution-points:
+  - https://github.com/kubernetes/minikube/releases
+security-artifacts:
+  threat-model:
+    threat-model-created: false
+  self-assessment:
+    self-assessment-created: false
+security-testing:
+  - tool-type: sca
+    tool-name: Dependabot
+    tool-version: "2"
+    tool-url: https://github.com/dependabot
+    integration:
+      ad-hoc: false
+      ci: true
+      before-release: true
+    tool-rulesets:
+      - https://github.com/kubernetes/minikube/blob/master/.github/dependabot.yml
+  - tool-type: sca
+    tool-name: minikube-bot
+    tool-version: latest
+    tool-url: https://github.com/minikube-bot
+    tool-rulesets:
+    - built-in
+    integration:
+      ad-hoc: false
+      ci: true
+      before-release: true
+security-contacts:
+  - type: email
+    value: security@kubernetes.io
+    primary: true
+vulnerability-reporting:
+  accepts-vulnerability-reports: true
+  email-contact: security@kubernetes.io
+  security-policy: https://github.com/kubernetes/minikube/blob/master/SECURITY.md
+  bug-bounty-available: true
+  bug-bounty-url: https://hackerone.com/kubernetes
+dependencies:
+  third-party-packages: true
+  dependencies-lists:
+    - https://github.com/kubernetes/minikube/blob/master/go.mod

@@ -780,8 +780,8 @@ func imageID(image string) string {
 		},
 	}
 
-	if imgIds, ok := ids[image]; ok {
-		if id, ok := imgIds[runtime.GOARCH]; ok {
+	if imgIDs, ok := ids[image]; ok {
+		if id, ok := imgIDs[runtime.GOARCH]; ok {
 			return id
 		}
 		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
@@ -1246,9 +1246,6 @@ func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs", "--file", logFileName))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
-	}
-	if rr.Stdout.String() != "" {
-		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
 	}
 
 	logs, err := os.ReadFile(logFileName)

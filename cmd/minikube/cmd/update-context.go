@@ -32,7 +32,7 @@ var updateContextCmd = &cobra.Command{
 	Short: "Update kubeconfig in case of an IP or port change",
 	Long: `Retrieves the IP address of the running cluster, checks it
 			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		//	cluster extension metada for kubeconfig

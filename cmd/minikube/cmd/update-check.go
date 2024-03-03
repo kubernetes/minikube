@@ -29,7 +29,7 @@ var updateCheckCmd = &cobra.Command{
 	Use:   "update-check",
 	Short: "Print current and latest version number",
 	Long:  `Print current and latest version number`,
-	Run: func(command *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		url := notify.GithubMinikubeReleasesURL
 		r, err := notify.AllVersionsFromURL(url)
 		if err != nil {

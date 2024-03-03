@@ -44,11 +44,11 @@ func dir2Qid(d os.FileInfo) *Qid {
 func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	if r := recover(); r != nil {
 		fmt.Print("stat failed: ", r)
-		return nil, &os.PathError{"dir2Dir", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir", Path: path, Err: nil}
 	}
 	sysif := d.Sys()
 	if sysif == nil {
-		return nil, &os.PathError{"dir2Dir: sysif is nil", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir: sysif is nil", Path: path, Err: nil}
 	}
 	sysMode := sysif.(*syscall.Stat_t)
 

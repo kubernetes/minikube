@@ -23,6 +23,15 @@ CRI_DOCKERD_ENV = \
 CRI_DOCKERD_COMPILE_SRC = $(CRI_DOCKERD_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_REV)'"
 
+define CRI_DOCKERD_POST_EXTRACT_WORKAROUNDS
+	# Set -buildvcs=false to disable VCS stamping (fails in buildroot)
+	sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/packaging/static/Makefile
+	# Use the GOARCH environment variable that we set
+	sed -i 's|GOARCH=$(ARCH) go build|GOARCH=$(GOARCH) go build|' -i $(@D)/packaging/static/Makefile
+endef
+
+CRI_DOCKERD_POST_EXTRACT_HOOKS += CRI_DOCKERD_POST_EXTRACT_WORKAROUNDS
+
 define CRI_DOCKERD_BUILD_CMDS
 	$(CRI_DOCKERD_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) LDFLAGS=$(CRI_DOCKERD_BUILDFLAGS) GO_VERSION=$(GO_VERSION) -C $(@D) VERSION=$(CRI_DOCKERD_VER) REVISION=$(CRI_DOCKERD_REV) static-linux
 endef

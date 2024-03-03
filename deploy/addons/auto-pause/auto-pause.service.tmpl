@@ -3,7 +3,7 @@ Description=Auto Pause Service
 
 [Service]
 Type=simple
-ExecStart=/bin/auto-pause --container-runtime={{.ContainerRuntime}}
+ExecStart=/bin/auto-pause --container-runtime={{.ContainerRuntime}} --interval={{.AutoPauseInterval}}
 Restart=always
 
 [Install]

@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 5"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.21.6'
+  GO_VERSION: '1.22.0'
 permissions:
   contents: read
 
@@ -32,7 +32,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpCrio.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@153407881ec5c347639a548ade7d8ad1d6740e38
+        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update cri-o from ${{ steps.bumpCrio.outputs.OLD_VERSION }} to ${{ steps.bumpCrio.outputs.NEW_VERSION }}'

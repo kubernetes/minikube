@@ -25,7 +25,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v58/github"
+	"github.com/google/go-github/v59/github"
+	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
 	"k8s.io/minikube/hack/update"
@@ -84,7 +85,9 @@ func main() {
 }
 
 func LatestControllerTag(ctx context.Context) (string, error) {
+	latest := "v0.0.0"
 	ghc := github.NewClient(nil)
+	re := regexp.MustCompile(`controller-(.*)`)
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
@@ -95,8 +98,16 @@ func LatestControllerTag(ctx context.Context) (string, error) {
 		}
 		for _, rl := range rls {
 			ver := rl.GetTagName()
-			if strings.HasPrefix(ver, "controller-") {
-				return ver, nil
+			if !strings.HasPrefix(ver, "controller-") {
+				continue
+			}
+			s := re.FindStringSubmatch(ver)
+			if len(s) < 2 {
+				continue
+			}
+			vTag := s[1]
+			if semver.Compare(vTag, latest) == 1 {
+				latest = vTag
 			}
 		}
 		if resp.NextPage == 0 {
@@ -104,5 +115,5 @@ func LatestControllerTag(ctx context.Context) (string, error) {
 		}
 		opts.Page = resp.NextPage
 	}
-	return "", fmt.Errorf("no version found")
+	return fmt.Sprintf("controller-%s", latest), nil
 }
