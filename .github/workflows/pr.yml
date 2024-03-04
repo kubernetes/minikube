@@ -138,7 +138,7 @@ jobs:
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -237,7 +237,7 @@ jobs:
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -354,7 +354,7 @@ jobs:
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -457,7 +457,7 @@ jobs:
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -558,7 +558,7 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -664,7 +664,7 @@ jobs:
         run: |
           sudo sysctl fs.protected_regular=0
       - name: Download Binaries
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -740,7 +740,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all reports
-        uses: actions/download-artifact@87c55149d96e628cc2ef7e6fc2aab372015aec85
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
       - name: upload all reports
         shell: bash {0}
         continue-on-error: true
