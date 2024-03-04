@@ -860,8 +860,8 @@ github.com/google/go-containerregistry v0.5.1/go.mod h1:Ct15B4yir3PLOP5jsy0GNeYV
 github.com/google/go-containerregistry v0.19.0 h1:uIsMRBV7m/HDkDxE/nXMnv1q+lOOSPlQ/ywc5JbB8Ic=
 github.com/google/go-containerregistry v0.19.0/go.mod h1:u0qB2l7mvtWVR5kNcbFIhFY1hLbf8eeGapA+vbFDCtQ=
 github.com/google/go-github v17.0.0+incompatible/go.mod h1:zLgOLi98H3fifZn+44m+umXrS52loVEgC2AApnigrVQ=
-github.com/google/go-github/v59 v59.0.0 h1:7h6bgpF5as0YQLLkEiVqpgtJqjimMYhBkD4jT5aN3VA=
-github.com/google/go-github/v59 v59.0.0/go.mod h1:rJU4R0rQHFVFDOkqGWxfLNo6vEk4dv40oDjhV/gH6wM=
+github.com/google/go-github/v60 v60.0.0 h1:oLG98PsLauFvvu4D/YPxq374jhSxFYdzQGNCyONLfn8=
+github.com/google/go-github/v60 v60.0.0/go.mod h1:ByhX2dP9XT9o/ll2yXAu2VD8l5eNVg8hD4Cr0S/LmQk=
 github.com/google/go-querystring v1.0.0/go.mod h1:odCYkC5MyYFN7vkCjXpyrEuKhc/BUO6wN/zVPAxq5ck=
 github.com/google/go-querystring v1.1.0 h1:AnCroh3fv4ZBgVIf1Iwtovgjaw/GiKJo8M8yD/fhyJ8=
 github.com/google/go-querystring v1.1.0/go.mod h1:Kcdr2DB4koayq7X8pmAG4sNG59So17icRSOU623lUBU=
