@@ -168,7 +168,7 @@ func backup(h host.Host, files []string) error {
 
 	errs := []error{}
 	for _, src := range []string{"/etc/cni", "/etc/kubernetes"} {
-		if _, err := r.RunCmd(exec.Command("sudo", "cp", "--archive", "--parents", "--force", src, vmpath.GuestBackupDir)); err != nil {
+		if _, err := r.RunCmd(exec.Command("sudo", "rsync", "--archive", "--relative", src, vmpath.GuestBackupDir)); err != nil {
 			errs = append(errs, errors.Errorf("failed to copy %q to %q (will continue): %v", src, vmpath.GuestBackupDir, err))
 		}
 	}
@@ -203,7 +203,7 @@ func restore(h host.Host) error {
 			continue
 		}
 		src := path.Join(vmpath.GuestBackupDir, dst)
-		if _, err := r.RunCmd(exec.Command("sudo", "cp", "--archive", "--update", "--force", src, "/")); err != nil {
+		if _, err := r.RunCmd(exec.Command("sudo", "rsync", "--archive", "--update", src, "/")); err != nil {
 			errs = append(errs, errors.Errorf("failed to copy %q to %q (will continue): %v", src, dst, err))
 		}
 	}
