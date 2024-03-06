@@ -187,6 +187,15 @@ RUN clean-install podman && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create
 
+# install crictl
+RUN export ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" != "ppc64el" ]; then \
+        sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+        curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
+        apt-key add - < Release.key && \
+        clean-install cri-tools; \
+    fi
+
 # install containernetworking-plugins
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
