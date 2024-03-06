@@ -31,7 +31,7 @@ func TestGetServiceClusterIP(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		ip, err := GetServiceClusterIP(tt.serviceCIRD)
+		ip, err := ServiceClusterIP(tt.serviceCIRD)
 		if err != nil && !tt.err {
 			t.Fatalf("GetServiceClusterIP() err = %v", err)
 		}
@@ -57,7 +57,7 @@ func TestGetDNSIP(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		ip, err := GetDNSIP(tt.serviceCIRD)
+		ip, err := DNSIP(tt.serviceCIRD)
 		if err != nil && !tt.err {
 			t.Fatalf("GetDNSIP() err = %v", err)
 		}

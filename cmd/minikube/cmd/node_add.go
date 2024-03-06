@@ -19,6 +19,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"k8s.io/minikube/pkg/minikube/cni"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -32,8 +33,9 @@ import (
 )
 
 var (
-	cp     bool
-	worker bool
+	cpNode              bool
+	workerNode          bool
+	deleteNodeOnFailure bool
 )
 
 var nodeAddCmd = &cobra.Command{
@@ -48,20 +50,31 @@ var nodeAddCmd = &cobra.Command{
 			out.FailureT("none driver does not support multi-node clusters")
 		}
 
-		name := node.Name(len(cc.Nodes) + 1)
-
-		// for now control-plane feature is not supported
-		if cp {
-			out.Step(style.Unsupported, "Adding a control-plane node is not yet supported, setting control-plane flag to false")
-			cp = false
+		if cpNode && !config.IsHA(*cc) {
+			out.FailureT("Adding a control-plane node to a non-HA (non-multi-control plane) cluster is not currently supported. Please first delete the cluster and use 'minikube start --ha' to create new one.")
 		}
 
-		out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
-		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
+		roles := []string{}
+		if workerNode {
+			roles = append(roles, "worker")
+		}
+		if cpNode {
+			roles = append(roles, "control-plane")
+		}
+
+		// calculate appropriate new node name with id following the last existing one
+		lastID, err := node.ID(cc.Nodes[len(cc.Nodes)-1].Name)
+		if err != nil {
+			lastID = len(cc.Nodes)
+			out.ErrLn("determining last node index (will assume %d): %v", lastID, err)
+		}
+		name := node.Name(lastID + 1)
+
+		out.Step(style.Happy, "Adding node {{.name}} to cluster {{.cluster}} as {{.roles}}", out.V{"name": name, "cluster": cc.Name, "roles": roles})
 		n := config.Node{
 			Name:              name,
-			Worker:            worker,
-			ControlPlane:      cp,
+			Worker:            workerNode,
+			ControlPlane:      cpNode,
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		}
 
@@ -77,7 +90,7 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		if err := node.Add(cc, n, false); err != nil {
+		if err := node.Add(cc, n, deleteNodeOnFailure); err != nil {
 			_, err := maybeDeleteAndRetry(cmd, *cc, n, nil, err)
 			if err != nil {
 				exit.Error(reason.GuestNodeAdd, "failed to add node", err)
@@ -93,10 +106,9 @@ var nodeAddCmd = &cobra.Command{
 }
 
 func init() {
-	// TODO(https://github.com/kubernetes/minikube/issues/7366): We should figure out which minikube start flags to actually import
-	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "This flag is currently unsupported.")
-	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
-	nodeAddCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
+	nodeAddCmd.Flags().BoolVar(&cpNode, "control-plane", false, "If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.")
+	nodeAddCmd.Flags().BoolVar(&workerNode, "worker", true, "If set, added node will be available as worker. Defaults to true.")
+	nodeAddCmd.Flags().BoolVar(&deleteNodeOnFailure, "delete-on-failure", false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 
 	nodeCmd.AddCommand(nodeAddCmd)
 }

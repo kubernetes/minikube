@@ -49,6 +49,13 @@ func StopHost(api libmachine.API, machineName string) error {
 // stop forcibly stops a host without needing to load
 func stop(h *host.Host) error {
 	start := time.Now()
+
+	if driver.IsVM(h.DriverName) {
+		if err := backup(*h, []string{"/etc/cni", "/etc/kubernetes"}); err != nil {
+			klog.Warningf("failed to complete vm config backup (will continue): %v", err)
+		}
+	}
+
 	if driver.NeedsShutdown(h.DriverName) {
 		if err := trySSHPowerOff(h); err != nil {
 			return errors.Wrap(err, "ssh power off")
@@ -64,7 +71,8 @@ func stop(h *host.Host) error {
 		}
 		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
-	klog.Infof("duration metric: stop complete within %s", time.Since(start))
+
+	klog.Infof("duration metric: took %s to stop", time.Since(start))
 	return nil
 }
 

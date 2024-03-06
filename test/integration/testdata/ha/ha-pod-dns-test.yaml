@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox
+  labels:
+    app: busybox
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: busybox
+  template:
+    metadata:
+      labels:
+        app: busybox
+    spec:
+      containers:
+      - name: busybox
+        # flaky nslookup in busybox versions newer than 1.28:
+        # https://github.com/docker-library/busybox/issues/48
+        # note: registry.k8s.io/e2e-test-images/agnhost:2.32
+        # has similar issues (ie, resolves but returns exit code 1)
+        image: gcr.io/k8s-minikube/busybox:1.28
+        command:
+          - sleep
+          - "3600"
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          capabilities:
+            add: ["NET_RAW"]
+      restartPolicy: Always
+      affinity:
+        # ⬇⬇⬇ This ensures pods will land on separate hosts
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app, operator: In, values: [busybox] }]
+            topologyKey: "kubernetes.io/hostname"

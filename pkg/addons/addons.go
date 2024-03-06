@@ -252,9 +252,9 @@ func EnableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 	defer api.Close()
 
-	cp, err := config.PrimaryControlPlane(cc)
+	cp, err := config.ControlPlane(*cc)
 	if err != nil {
-		exit.Error(reason.GuestCpConfig, "Error getting primary control plane", err)
+		exit.Error(reason.GuestCpConfig, "Error getting control-plane node", err)
 	}
 
 	// maintain backwards compatibility for ingress and ingress-dns addons with k8s < v1.19
@@ -502,7 +502,7 @@ func Enable(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bo
 	klog.Infof("enable addons start: toEnable=%v", toEnable)
 	var enabledAddons []string
 	defer func() {
-		klog.Infof("enable addons completed in %s: enabled=%v", time.Since(start), enabledAddons)
+		klog.Infof("duration metric: took %s for enable addons: enabled=%v", time.Since(start), enabledAddons)
 	}()
 
 	toEnableList := []string{}
@@ -607,9 +607,9 @@ func VerifyNotPaused(profile string, enable bool) error {
 	}
 	defer api.Close()
 
-	cp, err := config.PrimaryControlPlane(cc)
+	cp, err := config.ControlPlane(*cc)
 	if err != nil {
-		return errors.Wrap(err, "control plane")
+		return errors.Wrap(err, "get control-plane node")
 	}
 
 	host, err := machine.LoadHost(api, config.MachineName(*cc, cp))
