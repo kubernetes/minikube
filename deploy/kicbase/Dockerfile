@@ -229,9 +229,13 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 
 # disable non-docker runtimes by default
 RUN systemctl disable containerd
+
 # disable crio for archs that support it
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm /etc/crictl.yaml; fi
+RUN export ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" != "armhf" ] && [ "$ARCH" != "s390x" ]; then \
+        systemctl disable crio && rm /etc/crictl.yaml; \
+    fi
+
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
