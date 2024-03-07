@@ -207,7 +207,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
 # install cri-o based on https://github.com/cri-o/packaging#distributions-using-deb-packages
 RUN export ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" != "armhf" ] && [ "$ARCH" != "s390x" ]; then \
-        && curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg \
+        curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg \
         && echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/${CRIO_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-o.list \
         && clean-install cri-o; \
     fi
