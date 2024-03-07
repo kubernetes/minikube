@@ -97,7 +97,6 @@ RUN echo "Ensuring scripts are executable ..." \
       bash ca-certificates curl rsync \
       nfs-common \
       iputils-ping netcat-openbsd vim-tiny \
-      software-properties-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -192,7 +191,8 @@ RUN clean-install podman && \
 # install crictl
 RUN export ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" != "armhf" ]; then \
-        curl -fsSL https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-tools-apt-keyring.gpg \
+        clean-install software-properties-common \
+        && curl -fsSL https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-tools-apt-keyring.gpg \
         && echo "deb [signed-by=/etc/apt/keyrings/cri-tools-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-tools.list \
         && clean-install cri-tools; \
     fi
