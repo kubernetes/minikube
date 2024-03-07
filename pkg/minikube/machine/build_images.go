@@ -66,7 +66,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 		if err != nil {
 			return errors.Wrapf(err, "couldn't parse image reference %q", tag)
 		}
-		tag = named.Name()
+		tag = named.String()
 	}
 
 	for _, p := range profiles { // building images to all running profiles
