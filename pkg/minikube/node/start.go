@@ -154,10 +154,10 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 				}
 				// scale down CoreDNS from default 2 to 1 replica only for non-ha (non-multi-control plane) cluster and if optimisation is not disabled
 				if !starter.Cfg.DisableOptimizations && !config.IsHA(*starter.Cfg) {
-    			// deploy our custom CoreDNS addon
-  				if err := dns.DeployCoreDNS(*starter.Cfg, starter.Runner, hostIP.String(), constants.HostAlias); err != nil {
-	  				out.FailureT("Unable to deploy CoreDNS: {{.error}}", out.V{"error": err})
-		  		}
+					// deploy our custom CoreDNS addon
+					if err := dns.DeployCoreDNS(*starter.Cfg, starter.Runner, hostIP.String(), constants.HostAlias); err != nil {
+						out.FailureT("Unable to deploy CoreDNS: {{.error}}", out.V{"error": err})
+					}
 				}
 			}()
 		}

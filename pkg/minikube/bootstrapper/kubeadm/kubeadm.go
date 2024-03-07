@@ -587,7 +587,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 }
 
 // restartPrimaryControlPlane restarts the kubernetes cluster configured by kubeadm.
-func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error { //nolint:gocyclo
 	klog.Infof("restartPrimaryControlPlane start ...")
 
 	start := time.Now()
