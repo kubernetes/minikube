@@ -125,7 +125,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	hostname, port, err := kubeconfig.Endpoint(d.BaseDriver.MachineName)
+	hostname, port, err := kubeconfig.Endpoint(d.BaseDriver.MachineName, "")
 	if err != nil {
 		klog.Warningf("unable to get port: %v", err)
 		port = constants.APIServerPort

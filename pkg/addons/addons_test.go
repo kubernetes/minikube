@@ -45,6 +45,7 @@ func createTestProfile(t *testing.T) string {
 		CPUs:             2,
 		Memory:           2500,
 		KubernetesConfig: config.KubernetesConfig{},
+		Nodes:            []config.Node{{ControlPlane: true}},
 	}
 
 	if err := config.DefaultLoader.WriteConfigToFile(name, cc); err != nil {
@@ -54,7 +55,10 @@ func createTestProfile(t *testing.T) string {
 }
 
 func TestIsAddonAlreadySet(t *testing.T) {
-	cc := &config.ClusterConfig{Name: "test"}
+	cc := &config.ClusterConfig{
+		Name:  "test",
+		Nodes: []config.Node{{ControlPlane: true}},
+	}
 
 	if err := Set(cc, "registry", "true"); err != nil {
 		t.Errorf("unable to set registry true: %v", err)
@@ -70,7 +74,10 @@ func TestIsAddonAlreadySet(t *testing.T) {
 }
 
 func TestDisableUnknownAddon(t *testing.T) {
-	cc := &config.ClusterConfig{Name: "test"}
+	cc := &config.ClusterConfig{
+		Name:  "test",
+		Nodes: []config.Node{{ControlPlane: true}},
+	}
 
 	if err := Set(cc, "InvalidAddon", "false"); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
@@ -78,7 +85,10 @@ func TestDisableUnknownAddon(t *testing.T) {
 }
 
 func TestEnableUnknownAddon(t *testing.T) {
-	cc := &config.ClusterConfig{Name: "test"}
+	cc := &config.ClusterConfig{
+		Name:  "test",
+		Nodes: []config.Node{{ControlPlane: true}},
+	}
 
 	if err := Set(cc, "InvalidAddon", "true"); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
@@ -124,6 +134,7 @@ func TestStartWithAddonsEnabled(t *testing.T) {
 		CPUs:             2,
 		Memory:           2500,
 		KubernetesConfig: config.KubernetesConfig{},
+		Nodes:            []config.Node{{ControlPlane: true}},
 	}
 
 	toEnable := ToEnable(cc, map[string]bool{}, []string{"dashboard"})
@@ -150,6 +161,7 @@ func TestStartWithAllAddonsDisabled(t *testing.T) {
 		CPUs:             2,
 		Memory:           2500,
 		KubernetesConfig: config.KubernetesConfig{},
+		Nodes:            []config.Node{{ControlPlane: true}},
 	}
 
 	UpdateConfigToDisable(cc)

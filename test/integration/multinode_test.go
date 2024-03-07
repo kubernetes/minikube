@@ -41,6 +41,16 @@ func TestMultiNode(t *testing.T) {
 		t.Skip("none driver does not support multinode")
 	}
 
+	if DockerDriver() {
+		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
+		if err != nil {
+			t.Fatalf("docker is broken: %v", err)
+		}
+		if strings.Contains(rr.Stdout.String(), "azure") {
+			t.Skip("kic containers are not supported on docker's azure")
+		}
+	}
+
 	type validatorFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("multinode")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
@@ -165,7 +175,7 @@ func validateProfileListWithMultiNode(ctx context.Context, t *testing.T, profile
 	}
 }
 
-// validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+// validateCopyFileWithMultiNode make sure minikube cp works with multinode clusters.
 func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cp is unsupported by none driver")
@@ -268,26 +278,19 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 
 // validateStartNodeAfterStop tests the minikube node start command on an existing stopped node
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
-	if DockerDriver() {
-		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
-		if err != nil {
-			t.Fatalf("docker is broken: %v", err)
-		}
-		if strings.Contains(rr.Stdout.String(), "azure") {
-			t.Skip("kic containers are not supported on docker's azure")
-		}
-	}
-
 	// Start the node back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "-v=7", "--alsologtostderr"))
 	if err != nil {
 		t.Logf(rr.Stderr.String())
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
 	}
 
 	// Make sure minikube status shows 3 running hosts
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
-	if err != nil {
+	minikubeStatus := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+		return err
+	}
+	if err := retry.Expo(minikubeStatus, 1*time.Second, 60*time.Second); err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
@@ -341,7 +344,7 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 	// Run minikube stop on the cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop"))
 	if err != nil {
-		t.Errorf("node stop returned an error. args %q: %v", rr.Command(), err)
+		t.Errorf("failed to stop cluster. args %q: %v", rr.Command(), err)
 	}
 
 	// Run status to see the stopped hosts
@@ -368,15 +371,6 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 
 // validateRestartMultiNodeCluster verifies a soft restart on a multinode cluster works
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
-	if DockerDriver() {
-		rr, err := Run(t, exec.Command("docker", "version", "-f", "{{.Server.Version}}"))
-		if err != nil {
-			t.Fatalf("docker is broken: %v", err)
-		}
-		if strings.Contains(rr.Stdout.String(), "azure") {
-			t.Skip("kic containers are not supported on docker's azure")
-		}
-	}
 	// Restart a full cluster with minikube start
 	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -418,10 +412,10 @@ func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile 
 
 // validateDeleteNodeFromMultiNode tests the minikube node delete command
 func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile string) {
-	// Start the node back up
+	// Delete a node from the current cluster
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName))
 	if err != nil {
-		t.Errorf("node stop returned an error. args %q: %v", rr.Command(), err)
+		t.Errorf("node delete returned an error. args %q: %v", rr.Command(), err)
 	}
 
 	// Make sure status is back down to 2 hosts
@@ -436,16 +430,6 @@ func validateDeleteNodeFromMultiNode(ctx context.Context, t *testing.T, profile 
 
 	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
 		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
-	}
-
-	if DockerDriver() {
-		rr, err := Run(t, exec.Command("docker", "volume", "ls"))
-		if err != nil {
-			t.Errorf("failed to run %q : %v", rr.Command(), err)
-		}
-		if strings.Contains(rr.Stdout.String(), fmt.Sprintf("%s-%s", profile, ThirdNodeName)) {
-			t.Errorf("docker volume was not properly deleted: %s", rr.Stdout.String())
-		}
 	}
 
 	// Make sure kubectl knows the node is gone

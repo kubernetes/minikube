@@ -267,19 +267,17 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	validateBuiltImageVersion(starter.Runner, ds.Name)
 
-	if existing != nil && driver.IsKIC(existing.Driver) {
-		if viper.GetBool(createMount) {
-			old := ""
-			if len(existing.ContainerVolumeMounts) > 0 {
-				old = existing.ContainerVolumeMounts[0]
-			}
-			if mount := viper.GetString(mountString); old != mount {
-				exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
-					"driver": existing.Driver,
-					"new":    mount,
-					"old":    old,
-				})
-			}
+	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetBool(createMount) {
+		old := ""
+		if len(existing.ContainerVolumeMounts) > 0 {
+			old = existing.ContainerVolumeMounts[0]
+		}
+		if mount := viper.GetString(mountString); old != mount {
+			exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
+				"driver": existing.Driver,
+				"new":    mount,
+				"old":    old,
+			})
 		}
 	}
 
@@ -337,8 +335,9 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	rtime := getContainerRuntime(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, rtime, driverName)
 	if err != nil {
-		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
+		return node.Starter{}, errors.Wrap(err, "Failed to generate cluster config")
 	}
+	klog.Infof("cluster config:\n%+v", cc)
 
 	if firewall.IsBootpdBlocked(cc) {
 		if err := firewall.UnblockBootpd(); err != nil {
@@ -378,7 +377,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, true, viper.GetBool(deleteOnFailure))
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, viper.GetBool(deleteOnFailure))
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -455,7 +454,8 @@ func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
-	kubeconfig, err := node.Start(starter, true)
+	// start primary control-plane node
+	kubeconfig, err := node.Start(starter)
 	if err != nil {
 		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
@@ -463,44 +463,43 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 	}
 
+	// target total and number of control-plane nodes
+	numCPNodes := 1
 	numNodes := viper.GetInt(nodes)
 	if existing != nil {
-		if numNodes > 1 {
-			// We ignore the --nodes parameter if we're restarting an existing cluster
-			out.WarningT(`The cluster {{.cluster}} already exists which means the --nodes parameter will be ignored. Use "minikube node add" to add nodes to an existing cluster.`, out.V{"cluster": existing.Name})
+		numCPNodes = 0
+		for _, n := range existing.Nodes {
+			if n.ControlPlane {
+				numCPNodes++
+			}
 		}
 		numNodes = len(existing.Nodes)
+	} else if viper.GetBool(ha) {
+		numCPNodes = 3
 	}
-	if numNodes > 1 {
-		if driver.BareMetal(starter.Cfg.Driver) {
-			exit.Message(reason.DrvUnsupportedMulti, "The none driver is not compatible with multi-node clusters.")
+
+	// apart from starter, add any additional existing or new nodes
+	for i := 1; i < numNodes; i++ {
+		var n config.Node
+		if existing != nil {
+			n = existing.Nodes[i]
 		} else {
-			if existing == nil {
-				for i := 1; i < numNodes; i++ {
-					nodeName := node.Name(i + 1)
-					n := config.Node{
-						Name:              nodeName,
-						Worker:            true,
-						ControlPlane:      false,
-						KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
-						ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
-					}
-					out.Ln("") // extra newline for clarity on the command line
-					err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
-					if err != nil {
-						return nil, errors.Wrap(err, "adding node")
-					}
-				}
-			} else {
-				for _, n := range existing.Nodes {
-					if !n.ControlPlane {
-						err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure))
-						if err != nil {
-							return nil, errors.Wrap(err, "adding node")
-						}
-					}
-				}
+			nodeName := node.Name(i + 1)
+			n = config.Node{
+				Name:              nodeName,
+				Port:              starter.Cfg.APIServerPort,
+				KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
+				ContainerRuntime:  starter.Cfg.KubernetesConfig.ContainerRuntime,
+				Worker:            true,
 			}
+			if i < numCPNodes { // starter node is also counted as (primary) cp node
+				n.ControlPlane = true
+			}
+		}
+
+		out.Ln("") // extra newline for clarity on the command line
+		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure)); err != nil {
+			return nil, errors.Wrap(err, "adding node")
 		}
 	}
 
@@ -627,7 +626,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var kubeconfig *kubeconfig.Settings
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, n.ControlPlane, false)
+			r, p, m, h, err := node.Provision(&cc, &n, false)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
@@ -642,7 +641,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 				return nil, err
 			}
 
-			k, err := node.Start(s, n.ControlPlane)
+			k, err := node.Start(s)
 			if n.ControlPlane {
 				kubeconfig = k
 			}
@@ -794,24 +793,23 @@ func hostDriver(existing *config.ClusterConfig) string {
 	if existing == nil {
 		return ""
 	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		klog.Warningf("selectDriver NewAPIClient: %v", err)
 		return existing.Driver
 	}
 
-	cp, err := config.PrimaryControlPlane(existing)
+	cp, err := config.ControlPlane(*existing)
 	if err != nil {
-		klog.Warningf("Unable to get control plane from existing config: %v", err)
+		klog.Errorf("Unable to get primary control-plane node from existing config: %v", err)
 		return existing.Driver
 	}
+
 	machineName := config.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
-		klog.Warningf("api.Load failed for %s: %v", machineName, err)
-		if existing.VMDriver != "" {
-			return existing.VMDriver
-		}
+		klog.Errorf("api.Load failed for %s: %v", machineName, err)
 		return existing.Driver
 	}
 
@@ -1281,6 +1279,7 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 	if cmd.Flags().Changed(imageRepository) {
 		viper.Set(imageRepository, validateImageRepository(viper.GetString(imageRepository)))
 	}
+
 	if cmd.Flags().Changed(ports) {
 		err := validatePorts(viper.GetStringSlice(ports))
 		if err != nil {
@@ -1679,48 +1678,46 @@ func validateInsecureRegistry() {
 	}
 }
 
-func createNode(cc config.ClusterConfig, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
-	// Create the initial node, which will necessarily be a control plane
-	if existing != nil {
-		cp, err := config.PrimaryControlPlane(existing)
-		if err != nil {
-			return cc, config.Node{}, err
-		}
-		cp.KubernetesVersion, err = getKubernetesVersion(&cc)
-		if err != nil {
-			klog.Warningf("failed getting Kubernetes version: %v", err)
-		}
-		cp.ContainerRuntime = getContainerRuntime(&cc)
-
-		// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
-		// KubernetesVersion is the only attribute that the user can override in the Node object
-		nodes := []config.Node{}
-		for _, n := range existing.Nodes {
-			n.KubernetesVersion, err = getKubernetesVersion(&cc)
-			if err != nil {
-				klog.Warningf("failed getting Kubernetes version: %v", err)
-			}
-			n.ContainerRuntime = getContainerRuntime(&cc)
-			nodes = append(nodes, n)
-		}
-		cc.Nodes = nodes
-
-		return cc, cp, nil
-	}
-
-	kubeVer, err := getKubernetesVersion(&cc)
+// configureNodes creates primary control-plane node config on first cluster start or updates existing cluster nodes configs on restart.
+// It will return updated cluster config and primary control-plane node or any error occurred.
+func configureNodes(cc config.ClusterConfig, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+	kv, err := getKubernetesVersion(&cc)
 	if err != nil {
-		klog.Warningf("failed getting Kubernetes version: %v", err)
+		return cc, config.Node{}, errors.Wrapf(err, "failed getting kubernetes version")
 	}
-	cp := config.Node{
-		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: kubeVer,
-		ContainerRuntime:  getContainerRuntime(&cc),
-		ControlPlane:      true,
-		Worker:            true,
+	cr := getContainerRuntime(&cc)
+
+	// create the initial node, which will necessarily be primary control-plane node
+	if existing == nil {
+		pcp := config.Node{
+			Port:              cc.APIServerPort,
+			KubernetesVersion: kv,
+			ContainerRuntime:  cr,
+			ControlPlane:      true,
+			Worker:            true,
+		}
+		cc.Nodes = []config.Node{pcp}
+		return cc, pcp, nil
 	}
-	cc.Nodes = []config.Node{cp}
-	return cc, cp, nil
+
+	// Make sure that existing nodes honor if KubernetesVersion gets specified on restart
+	// KubernetesVersion is the only attribute that the user can override in the Node object
+	nodes := []config.Node{}
+	for _, n := range existing.Nodes {
+		n.KubernetesVersion = kv
+		n.ContainerRuntime = cr
+		nodes = append(nodes, n)
+	}
+	cc.Nodes = nodes
+
+	pcp, err := config.ControlPlane(*existing)
+	if err != nil {
+		return cc, config.Node{}, errors.Wrapf(err, "failed getting control-plane node")
+	}
+	pcp.KubernetesVersion = kv
+	pcp.ContainerRuntime = cr
+
+	return cc, pcp, nil
 }
 
 // autoSetDriverOptions sets the options needed for specific driver automatically.
@@ -1982,6 +1979,10 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 func validateBareMetal(drvName string) {
 	if !driver.BareMetal(drvName) {
 		return
+	}
+
+	if viper.GetInt(nodes) > 1 || viper.GetBool(ha) {
+		exit.Message(reason.DrvUnsupportedMulti, "The none driver is not compatible with multi-node clusters.")
 	}
 
 	if ClusterFlagValue() != constants.DefaultClusterName {

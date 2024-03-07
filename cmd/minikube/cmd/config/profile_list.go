@@ -83,7 +83,7 @@ func printProfilesTable() {
 	}
 
 	if len(validProfiles) == 0 {
-		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found. ")
+		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found.")
 	}
 
 	updateProfilesStatus(validProfiles)
@@ -111,45 +111,81 @@ func updateProfilesStatus(profiles []*config.Profile) {
 }
 
 func profileStatus(p *config.Profile, api libmachine.API) string {
-	cp, err := config.PrimaryControlPlane(p.Config)
-	if err != nil {
-		exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
+	cps := config.ControlPlanes(*p.Config)
+	if len(cps) == 0 {
+		exit.Message(reason.GuestCpConfig, "No control-plane nodes found.")
 	}
 
-	host, err := machine.LoadHost(api, config.MachineName(*p.Config, cp))
-	if err != nil {
-		klog.Warningf("error loading profiles: %v", err)
-		return "Unknown"
+	status := "Unknown"
+	healthyCPs := 0
+	for _, cp := range cps {
+		machineName := config.MachineName(*p.Config, cp)
+
+		ms, err := machine.Status(api, machineName)
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): machine status for %s: %v", machineName, err)
+			continue
+		}
+		if ms != state.Running.String() {
+			klog.Warningf("error loading profile (will continue): machine %s is not running: %q", machineName, ms)
+			status = ms
+			continue
+		}
+
+		host, err := machine.LoadHost(api, machineName)
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): load host for %s: %v", machineName, err)
+			continue
+		}
+
+		hs, err := host.Driver.GetState()
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): host state for %s: %v", machineName, err)
+			continue
+		}
+		if hs != state.Running {
+			klog.Warningf("error loading profile (will continue): host %s is not running: %q", machineName, hs)
+			status = hs.String()
+			continue
+		}
+
+		cr, err := machine.CommandRunner(host)
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): command runner for %s: %v", machineName, err)
+			continue
+		}
+
+		hostname, _, port, err := driver.ControlPlaneEndpoint(p.Config, &cp, host.DriverName)
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): control-plane endpoint for %s: %v", machineName, err)
+			continue
+		}
+
+		as, err := kverify.APIServerStatus(cr, hostname, port)
+		if err != nil {
+			klog.Warningf("error loading profile (will continue): apiserver status for %s: %v", machineName, err)
+			continue
+		}
+		status = as.String()
+		if as != state.Running {
+			klog.Warningf("error loading profile (will continue): apiserver %s is not running: %q", machineName, hs)
+			continue
+		}
+
+		healthyCPs++
 	}
 
-	// The machine isn't running, no need to check inside
-	s, err := host.Driver.GetState()
-	if err != nil {
-		klog.Warningf("error getting host state: %v", err)
-		return "Unknown"
+	if config.IsHA(*p.Config) {
+		switch {
+		case healthyCPs < 2:
+			return state.Stopped.String()
+		case healthyCPs == 2:
+			return "Degraded"
+		default:
+			return "HAppy"
+		}
 	}
-	if s != state.Running {
-		return s.String()
-	}
-
-	cr, err := machine.CommandRunner(host)
-	if err != nil {
-		klog.Warningf("error loading profiles: %v", err)
-		return "Unknown"
-	}
-
-	hostname, _, port, err := driver.ControlPlaneEndpoint(p.Config, &cp, host.DriverName)
-	if err != nil {
-		klog.Warningf("error loading profiles: %v", err)
-		return "Unknown"
-	}
-
-	status, err := kverify.APIServerStatus(cr, hostname, port)
-	if err != nil {
-		klog.Warningf("error getting apiserver status for %s: %v", p.Name, err)
-		return "Unknown"
-	}
-	return status.String()
+	return status
 }
 
 func renderProfilesTable(ps [][]string) {
@@ -166,9 +202,15 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 	var data [][]string
 	currentProfile := ClusterFlagValue()
 	for _, p := range profiles {
-		cp, err := config.PrimaryControlPlane(p.Config)
-		if err != nil {
-			exit.Error(reason.GuestCpConfig, "error getting primary control plane", err)
+		cpIP := p.Config.KubernetesConfig.APIServerHAVIP
+		cpPort := p.Config.APIServerPort
+		if !config.IsHA(*p.Config) {
+			cp, err := config.ControlPlane(*p.Config)
+			if err != nil {
+				exit.Error(reason.GuestCpConfig, "error getting control-plane node", err)
+			}
+			cpIP = cp.IP
+			cpPort = cp.Port
 		}
 
 		k8sVersion := p.Config.KubernetesConfig.KubernetesVersion
@@ -179,7 +221,7 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if p.Name == currentProfile {
 			c = "*"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
 	}
 	return data
 }

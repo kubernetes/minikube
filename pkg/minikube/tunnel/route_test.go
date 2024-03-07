@@ -132,7 +132,7 @@ got
 func unsafeParseRoute(gatewayIP string, destCIDR string) *Route {
 	ip := net.ParseIP(gatewayIP)
 	_, ipNet, _ := net.ParseCIDR(destCIDR)
-	dnsIP, _ := util.GetDNSIP(ipNet.String())
+	dnsIP, _ := util.DNSIP(ipNet.String())
 
 	expectedRoute := &Route{
 		Gateway:      ip,

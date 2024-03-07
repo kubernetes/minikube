@@ -125,7 +125,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	klog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
-		klog.Infof("duration metric: createHost completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to createHost", time.Since(start))
 	}()
 
 	if cfg.Driver != driver.SSH {
@@ -164,7 +164,7 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 	if err := timedCreateHost(h, api, cfg.StartHostTimeout); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
-	klog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
+	klog.Infof("duration metric: took %s to libmachine.API.Create %q", time.Since(cstart), cfg.Name)
 	if cfg.Driver == driver.SSH {
 		showHostInfo(h, *cfg)
 	}
@@ -180,28 +180,21 @@ func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (
 }
 
 func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
-	timeout := make(chan bool, 1)
+	create := make(chan error, 1)
 	go func() {
-		time.Sleep(t)
-		timeout <- true
-	}()
-
-	createFinished := make(chan bool, 1)
-	var err error
-	go func() {
-		err = api.Create(h)
-		createFinished <- true
+		defer close(create)
+		create <- api.Create(h)
 	}()
 
 	select {
-	case <-createFinished:
+	case err := <-create:
 		if err != nil {
 			// Wait for all the logs to reach the client
 			time.Sleep(2 * time.Second)
 			return errors.Wrap(err, "create")
 		}
 		return nil
-	case <-timeout:
+	case <-time.After(t):
 		return fmt.Errorf("create host timed out in %f seconds", t.Seconds())
 	}
 }
@@ -297,10 +290,10 @@ func DiskAvailable(cr command.Runner, dir string) (int, error) {
 
 // postStartSetup are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
-	klog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
+	klog.Infof("postStartSetup for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()
 	defer func() {
-		klog.Infof("post-start completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s for postStartSetup", time.Since(start))
 	}()
 
 	if driver.IsMock(h.DriverName) {
@@ -341,9 +334,11 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	if driver.BareMetal(mc.Driver) {
 		showLocalOsRelease()
 	}
+
 	if driver.IsVM(mc.Driver) || driver.IsKIC(mc.Driver) || driver.IsSSH(mc.Driver) {
 		logRemoteOsRelease(r)
 	}
+
 	return syncLocalAssets(r)
 }
 
@@ -362,11 +357,11 @@ func acquireMachinesLock(name string, drv string) (mutex.Releaser, error) {
 		spec.Timeout = 10 * time.Minute
 	}
 
-	klog.Infof("acquiring machines lock for %s: %+v", name, spec)
+	klog.Infof("acquireMachinesLock for %s: %+v", name, spec)
 	start := time.Now()
 	r, err := mutex.Acquire(spec)
 	if err == nil {
-		klog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
+		klog.Infof("duration metric: took %s to acquireMachinesLock for %q", time.Since(start), name)
 	}
 	return r, err
 }

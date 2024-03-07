@@ -646,7 +646,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")
 	}
-	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+	klog.Infof("duration metric: took %s to copy over tarball", time.Since(t))
 
 	// extract the tarball to /var in the VM
 	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {

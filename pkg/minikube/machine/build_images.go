@@ -70,7 +70,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 			continue
 		}
 
-		cp, err := config.PrimaryControlPlane(p.Config)
+		cp, err := config.ControlPlane(*p.Config)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 			m := config.MachineName(*c, n)
 
 			if !allNodes {
-				// build images on the primary control plane node by default
+				// build images on the control-plane node by default
 				if nodeName == "" && n != cp {
 					continue
 				} else if nodeName != n.Name && nodeName != m {
