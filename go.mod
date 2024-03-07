@@ -3,7 +3,7 @@ module k8s.io/minikube
 go 1.22
 
 require (
-	cloud.google.com/go/storage v1.38.0
+	cloud.google.com/go/storage v1.39.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.34.0
@@ -25,7 +25,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.19.0
-	github.com/google/go-github/v59 v59.0.0
+	github.com/google/go-github/v60 v60.0.0
 	github.com/google/slowjam v1.1.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.3
@@ -54,7 +54,7 @@ require (
 	github.com/pkg/profile v1.7.0
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
-	github.com/shirou/gopsutil/v3 v3.24.1
+	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.2
@@ -66,11 +66,11 @@ require (
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.20.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/mod v0.15.0
+	golang.org/x/mod v0.16.0
 	golang.org/x/oauth2 v0.17.0
 	golang.org/x/sync v0.6.0
-	golang.org/x/sys v0.17.0
-	golang.org/x/term v0.17.0
+	golang.org/x/sys v0.18.0
+	golang.org/x/term v0.18.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/plot v0.14.0
 	google.golang.org/api v0.167.0
@@ -83,16 +83,16 @@ require (
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/kubectl v0.29.2
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	libvirt.org/go/libvirt v1.10000.0
+	libvirt.org/go/libvirt v1.10001.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
 require (
 	cloud.google.com/go v0.112.0 // indirect
-	cloud.google.com/go/compute v1.23.4 // indirect
+	cloud.google.com/go/compute v1.24.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
-	cloud.google.com/go/monitoring v1.17.1 // indirect
+	cloud.google.com/go/monitoring v1.18.0 // indirect
 	cloud.google.com/go/trace v1.10.5 // indirect
 	git.sr.ht/~sbinet/gg v0.5.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
@@ -211,7 +211,7 @@ require (
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	github.com/yusufpapurcu/wmi v1.2.3 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.48.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
@@ -223,8 +223,8 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240205150955-31a09d347014 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
+	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240221002015-b0ce06bbee7c // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240213162025-012b6fc9bca9 // indirect
 	google.golang.org/grpc v1.61.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect

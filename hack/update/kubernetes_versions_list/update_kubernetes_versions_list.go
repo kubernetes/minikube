@@ -23,7 +23,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v60/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"

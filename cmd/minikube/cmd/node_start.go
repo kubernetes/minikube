@@ -56,7 +56,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		register.Reg.SetStep(register.InitialSetup)
-		r, p, m, h, err := node.Provision(cc, n, n.ControlPlane, viper.GetBool(deleteOnFailure))
+		r, p, m, h, err := node.Provision(cc, n, viper.GetBool(deleteOnFailure))
 		if err != nil {
 			exit.Error(reason.GuestNodeProvision, "provisioning host for node", err)
 		}
@@ -71,10 +71,8 @@ var nodeStartCmd = &cobra.Command{
 			ExistingAddons: cc.Addons,
 		}
 
-		_, err = node.Start(s, n.ControlPlane)
-		if err != nil {
-			_, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err)
-			if err != nil {
+		if _, err = node.Start(s); err != nil {
+			if _, err := maybeDeleteAndRetry(cmd, *cc, *n, nil, err); err != nil {
 				node.ExitIfFatal(err, false)
 				exit.Error(reason.GuestNodeStart, "failed to start node", err)
 			}

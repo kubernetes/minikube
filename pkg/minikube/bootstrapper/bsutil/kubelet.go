@@ -85,6 +85,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = nc.IP
 	}
+
 	if _, ok := extraOpts["hostname-override"]; !ok {
 		nodeName := KubeNodeName(mc, nc)
 		extraOpts["hostname-override"] = nodeName
@@ -96,6 +97,13 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 			extraOpts["pod-infra-container-image"] = pauseImage
 		}
+	}
+
+	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" and supported from k8s v1.27
+	// ref: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/#options
+	// ref: https://github.com/kubernetes/kubernetes/issues/118787
+	if version.GTE(semver.MustParse("1.27.0")) {
+		kubeletConfigParams = append(kubeletConfigParams, "container-runtime-endpoint")
 	}
 
 	// parses a map of the feature gates for kubelet

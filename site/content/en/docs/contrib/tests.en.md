@@ -466,6 +466,59 @@ verifies files and packages installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
+## TestMutliControlPlane
+tests all ha (multi-control plane) cluster functionality
+
+#### validateHAStartCluster
+ensures ha (multi-control plane) cluster can start.
+
+#### validateHADeployApp
+deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.
+
+#### validateHAPingHostFromPods
+uses app previously deplyed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+
+#### validateHAAddWorkerNode
+uses the minikube node add command to add a worker node to an existing ha (multi-control plane) cluster.
+
+#### validateHANodeLabels
+check if all node labels were configured correctly.
+
+Steps:
+- Get the node labels from the cluster with `kubectl get nodes`
+- check if all node labels matches with the expected Minikube labels: `minikube.k8s.io/*`
+
+#### validateHAStatusHAppy
+ensures minikube profile list outputs correct with ha (multi-control plane) clusters.
+
+#### validateHACopyFile
+ensures minikube cp works with ha (multi-control plane) clusters.
+
+#### validateHAStopSecondaryNode
+tests ha (multi-control plane) cluster by stopping a secondary control-plane node using minikube node stop command.
+
+#### validateHAStatusDegraded
+ensures minikube profile list outputs correct with ha (multi-control plane) clusters.
+
+#### validateHARestartSecondaryNode
+tests the minikube node start command on existing stopped secondary node.
+
+#### validateHARestartClusterKeepsNodes
+restarts minikube cluster and checks if the reported node list is unchanged.
+
+#### validateHADeleteSecondaryNode
+tests the minikube node delete command on secondary control-plane.
+note: currently, 'minikube status' subcommand relies on primary control-plane node and storage-provisioner only runs on a primary control-plane node.
+
+#### validateHAStopCluster
+runs minikube stop on a ha (multi-control plane) cluster.
+
+#### validateHARestartCluster
+verifies a soft restart on a ha (multi-control plane) cluster works.
+
+#### validateHAAddSecondaryNode
+uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
+
 ## TestImageBuild
 makes sure the 'minikube image build' command works fine
 
@@ -486,15 +539,6 @@ is a test case building with --build-env
 
 #### validateImageBuildWithDockerIgnore
 is a test case building with .dockerignore
-
-## TestIngressAddonLegacy
-tests ingress and ingress-dns addons with legacy k8s version <1.19
-
-#### validateIngressAddonActivation
-tests ingress addon activation
-
-#### validateIngressDNSAddonActivation
-tests ingress-dns addon activation
 
 ## TestJSONOutput
 makes sure json output works properly for the start, pause, unpause, and stop commands
@@ -553,7 +597,7 @@ uses the minikube node add command to add a node to an existing cluster
 make sure minikube profile list outputs correct with multinode clusters
 
 #### validateCopyFileWithMultiNode
-validateProfileListWithMultiNode make sure minikube profile list outputs correct with multinode clusters
+make sure minikube cp works with multinode clusters.
 
 #### validateMultiNodeLabels
 check if all node labels were configured correctly

@@ -84,7 +84,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 
 	ip := net.ParseIP("1.2.3.4")
 	_, ipNet, _ := net.ParseCIDR("96.0.0.0/12")
-	dnsIP, err := util.GetDNSIP(ipNet.String())
+	dnsIP, err := util.DNSIP(ipNet.String())
 	if err != nil {
 		t.Errorf("getdnsIP: %v", err)
 	}

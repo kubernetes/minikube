@@ -91,7 +91,7 @@ type Starter struct {
 }
 
 // Start spins up a guest and starts the Kubernetes node.
-func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
+func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 	var wg sync.WaitGroup
 	stopk8s, err := handleNoKubernetes(starter)
 	if err != nil {
@@ -125,20 +125,41 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
-	// Add "host.minikube.internal" DNS alias (intentionally non-fatal)
+	// add "host.minikube.internal" dns alias (intentionally non-fatal)
 	hostIP, err := cluster.HostIP(starter.Host, starter.Cfg.Name)
 	if err != nil {
 		klog.Errorf("Unable to get host IP: %v", err)
 	} else if err := machine.AddHostAlias(starter.Runner, constants.HostAlias, hostIP); err != nil {
-		klog.Errorf("Unable to add host alias: %v", err)
+		klog.Errorf("Unable to add minikube host alias: %v", err)
 	}
 
 	var kcs *kubeconfig.Settings
 	var bs bootstrapper.Bootstrapper
-	if apiServer {
-		kcs, bs, err = handleAPIServer(starter, cr, hostIP)
+	if config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+		// [re]start primary control-plane node
+		kcs, bs, err = startPrimaryControlPlane(starter, cr)
 		if err != nil {
 			return nil, err
+		}
+		// configure CoreDNS concurently from primary control-plane node only and only on first node start
+		if !starter.PreExists {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				// inject {"host.minikube.internal": hostIP} record into coredns for primary control-plane node host ip
+				if hostIP != nil {
+					if err := addCoreDNSEntry(starter.Runner, constants.HostAlias, hostIP.String(), *starter.Cfg); err != nil {
+						klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", constants.HostAlias, hostIP.String(), err)
+						out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
+					}
+				}
+				// scale down CoreDNS from default 2 to 1 replica only for non-ha (non-multi-control plane) cluster and if optimisation is not disabled
+				if !starter.Cfg.DisableOptimizations && !config.IsHA(*starter.Cfg) {
+					if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
+						klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
+					}
+				}
+			}()
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
@@ -146,12 +167,27 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(*starter.Cfg, *starter.Node); err != nil {
+		// for ha (multi-control plane) cluster, use already running control-plane node to copy over certs to this secondary control-plane node
+		cpr := mustload.Running(starter.Cfg.Name).CP.Runner
+		if err = bs.SetupCerts(*starter.Cfg, *starter.Node, cpr); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 
 		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "update node")
+		}
+
+		// join cluster only on first node start
+		// except for vm driver in non-ha (non-multi-control plane) cluster - fallback to old behaviour
+		if !starter.PreExists || (driver.IsVM(starter.Cfg.Driver) && !config.IsHA(*starter.Cfg)) {
+			// make sure to use the command runner for the primary control plane to generate the join token
+			pcpBs, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
+			if err != nil {
+				return nil, errors.Wrap(err, "get primary control-plane bootstrapper")
+			}
+			if err := joinCluster(starter, pcpBs, bs); err != nil {
+				return nil, errors.Wrap(err, "join node to cluster")
+			}
 		}
 	}
 
@@ -186,43 +222,19 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		warnVirtualBox()
 	}
 
-	if apiServer {
-		// special ops for none , like change minikube directory.
-		// multinode super doesn't work on the none driver
-		if starter.Cfg.Driver == driver.None && len(starter.Cfg.Nodes) == 1 {
-			prepareNone()
-		}
+	// special ops for "none" driver on control-plane node, like change minikube directory
+	if starter.Node.ControlPlane && driver.IsNone(starter.Cfg.Driver) {
+		prepareNone()
+	}
+
+	// for ha (multi-control plane) cluster, primary control-plane node will not come up alone until secondary joins
+	if config.IsHA(*starter.Cfg) && config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+		klog.Infof("HA (multi-control plane) cluster: will skip waiting for primary control-plane node %+v", starter.Node)
 	} else {
-		// Make sure to use the command runner for the control plane to generate the join token
-		cpBs, cpr, err := cluster.ControlPlaneBootstrapper(starter.MachineAPI, starter.Cfg, viper.GetString(cmdcfg.Bootstrapper))
-		if err != nil {
-			return nil, errors.Wrap(err, "getting control plane bootstrapper")
+		klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
+		if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+			return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 		}
-
-		if err := joinCluster(starter, cpBs, bs); err != nil {
-			return nil, errors.Wrap(err, "joining cp")
-		}
-
-		cnm, err := cni.New(starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "cni")
-		}
-
-		if err := cnm.Apply(cpr); err != nil {
-			return nil, errors.Wrap(err, "cni apply")
-		}
-	}
-
-	if !starter.Cfg.DisableOptimizations {
-		// Scale down CoreDNS from default 2 to 1 replica.
-		if err := kapi.ScaleDeployment(starter.Cfg.Name, meta.NamespaceSystem, kconst.CoreDNSDeploymentName, 1); err != nil {
-			klog.Errorf("Unable to scale down deployment %q in namespace %q to 1 replica: %v", kconst.CoreDNSDeploymentName, meta.NamespaceSystem, err)
-		}
-	}
-
-	klog.Infof("Will wait %s for node %+v", viper.GetDuration(waitTimeout), starter.Node)
-	if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
-		return nil, errors.Wrapf(err, "wait %s for node", viper.GetDuration(waitTimeout))
 	}
 
 	klog.Infof("waiting for startup goroutines ...")
@@ -260,23 +272,31 @@ func handleNoKubernetes(starter Starter) (bool, error) {
 	return false, nil
 }
 
-// handleAPIServer handles starting the API server.
-func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
-	var err error
-
-	// Must be written before bootstrap, otherwise health checks may flake due to stale IP.
-	kcs := setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to setup kubeconfig")
+// startPrimaryControlPlane starts control-plane node.
+func startPrimaryControlPlane(starter Starter, cr cruntime.Manager) (*kubeconfig.Settings, bootstrapper.Bootstrapper, error) {
+	if !config.IsPrimaryControlPlane(*starter.Cfg, *starter.Node) {
+		return nil, nil, fmt.Errorf("node not marked as primary control-plane")
 	}
 
-	// Setup kubeadm (must come after setupKubeconfig).
-	bs, err := setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
+	if config.IsHA(*starter.Cfg) {
+		n, err := network.Inspect(starter.Node.IP)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "inspect network")
+		}
+		// update cluster config
+		starter.Cfg.KubernetesConfig.APIServerHAVIP = n.ClientMax // last available ip from node's subnet, should've been reserved already
+	}
+
+	// must be written before bootstrap, otherwise health checks may flake due to stale IP
+	kcs := setupKubeconfig(*starter.Host, *starter.Cfg, *starter.Node, starter.Cfg.Name)
+
+	// setup kubeadm (must come after setupKubeconfig)
+	bs, err := setupKubeadm(starter.MachineAPI, *starter.Cfg, *starter.Node, starter.Runner)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Failed to setup kubeadm")
 	}
-	err = bs.StartCluster(*starter.Cfg)
-	if err != nil {
+
+	if err := bs.StartCluster(*starter.Cfg); err != nil {
 		ExitIfFatal(err, false)
 		out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 		return nil, bs, err
@@ -287,51 +307,48 @@ func handleAPIServer(starter Starter, cr cruntime.Manager, hostIP net.IP) (*kube
 		return nil, bs, errors.Wrap(err, "Failed kubeconfig update")
 	}
 
-	// Not running this in a Go func can result in DNS answering taking up to 38 seconds, with the Go func it takes 6-10 seconds.
-	go func() {
-		// Inject {"host.minikube.internal": hostIP} record into CoreDNS.
-		if err := addCoreDNSEntry(starter.Runner, "host.minikube.internal", hostIP.String(), *starter.Cfg); err != nil {
-			klog.Warningf("Unable to inject {%q: %s} record into CoreDNS: %v", "host.minikube.internal", hostIP.String(), err)
-			out.Err("Failed to inject host.minikube.internal into CoreDNS, this will limit the pods access to the host IP")
-		}
-	}()
 	return kcs, bs, nil
 }
 
 // joinCluster adds new or prepares and then adds existing node to the cluster.
 func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrapper.Bootstrapper) error {
 	start := time.Now()
-	klog.Infof("JoinCluster: %+v", starter.Cfg)
+	klog.Infof("joinCluster: %+v", starter.Cfg)
 	defer func() {
-		klog.Infof("JoinCluster complete in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to joinCluster", time.Since(start))
 	}()
+
+	role := "worker"
+	if starter.Node.ControlPlane {
+		role = "control-plane"
+	}
+
+	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
+	// You must delete the existing Node or change the name of this new joining Node"
+	if starter.PreExists {
+		klog.Infof("removing existing %s node %q before attempting to rejoin cluster: %+v", role, starter.Node.Name, starter.Node)
+		if _, err := teardown(*starter.Cfg, starter.Node.Name); err != nil {
+			klog.Errorf("error removing existing %s node %q before rejoining cluster, will continue anyway: %v", role, starter.Node.Name, err)
+		}
+		klog.Infof("successfully removed existing %s node %q from cluster: %+v", role, starter.Node.Name, starter.Node)
+	}
 
 	joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 	if err != nil {
 		return fmt.Errorf("error generating join token: %w", err)
 	}
 
-	// avoid "error execution phase kubelet-start: a Node with name "<name>" and status "Ready" already exists in the cluster.
-	// You must delete the existing Node or change the name of this new joining Node"
-	if starter.PreExists {
-		klog.Infof("removing existing worker node %q before attempting to rejoin cluster: %+v", starter.Node.Name, starter.Node)
-		if _, err := drainNode(*starter.Cfg, starter.Node.Name); err != nil {
-			klog.Errorf("error removing existing worker node before rejoining cluster, will continue anyway: %v", err)
-		}
-		klog.Infof("successfully removed existing worker node %q from cluster: %+v", starter.Node.Name, starter.Node)
-	}
-
 	join := func() error {
-		klog.Infof("trying to join worker node %q to cluster: %+v", starter.Node.Name, starter.Node)
+		klog.Infof("trying to join %s node %q to cluster: %+v", role, starter.Node.Name, starter.Node)
 		if err := bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
-			klog.Errorf("worker node failed to join cluster, will retry: %v", err)
+			klog.Errorf("%s node failed to join cluster, will retry: %v", role, err)
 
-			// reset worker node to revert any changes made by previous kubeadm init/join
-			klog.Infof("resetting worker node %q before attempting to rejoin cluster...", starter.Node.Name)
+			// reset node to revert any changes made by previous kubeadm init/join
+			klog.Infof("resetting %s node %q before attempting to rejoin cluster...", role, starter.Node.Name)
 			if _, err := starter.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
 				klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 			} else {
-				klog.Infof("successfully reset worker node %q", starter.Node.Name)
+				klog.Infof("successfully reset %s node %q", role, starter.Node.Name)
 			}
 
 			return err
@@ -339,17 +356,17 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 		return nil
 	}
 	if err := retry.Expo(join, 10*time.Second, 3*time.Minute); err != nil {
-		return fmt.Errorf("error joining worker node to cluster: %w", err)
+		return fmt.Errorf("error joining %s node %q to cluster: %w", role, starter.Node.Name, err)
 	}
 
-	if err := cpBs.ApplyNodeLabels(*starter.Cfg); err != nil {
-		return fmt.Errorf("error applying node label: %w", err)
+	if err := cpBs.LabelAndUntaintNode(*starter.Cfg, *starter.Node); err != nil {
+		return fmt.Errorf("error applying %s node %q label: %w", role, starter.Node.Name, err)
 	}
 	return nil
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	register.Reg.SetStep(register.StartingNode)
 	name := config.MachineName(*cc, *n)
 
@@ -357,12 +374,14 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool, delOnFa
 	if cc.KubernetesConfig.KubernetesVersion == constants.NoKubernetesVersion {
 		out.Step(style.ThumbsUp, "Starting minikube without Kubernetes in cluster {{.cluster}}", out.V{"cluster": cc.Name})
 	} else {
-		if apiServer {
-			out.Step(style.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
-		} else {
-			out.Step(style.ThumbsUp, "Starting worker node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+		role := "worker"
+		if n.ControlPlane {
+			role = "control-plane"
 		}
-
+		if config.IsPrimaryControlPlane(*cc, *n) {
+			role = "primary control-plane"
+		}
+		out.Step(style.ThumbsUp, "Starting \"{{.node}}\" {{.role}} node in \"{{.cluster}}\" cluster", out.V{"node": name, "role": role, "cluster": cc.Name})
 	}
 
 	if driver.IsKIC(cc.Driver) {
@@ -562,8 +581,8 @@ func waitForCRIVersion(runner cruntime.CommandRunner, socket string, wait int, i
 	return retry.Expo(chkInfo, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second)
 }
 
-// setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) (bootstrapper.Bootstrapper, error) {
+// setupKubeadm adds any requested files into the VM before Kubernetes is started.
+func setupKubeadm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, r command.Runner) (bootstrapper.Bootstrapper, error) {
 	deleteOnFailure := viper.GetBool("delete-on-failure")
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, r)
 	if err != nil {
@@ -576,6 +595,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	for _, eo := range cfg.KubernetesConfig.ExtraOptions {
 		out.Infof("{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
+
 	// Loads cached images, generates config files, download binaries
 	// update cluster and set up certs
 
@@ -590,7 +610,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		return nil, err
 	}
 
-	if err := bs.SetupCerts(cfg, n); err != nil {
+	if err := bs.SetupCerts(cfg, n, r); err != nil {
 		if !deleteOnFailure {
 			exit.Error(reason.GuestCert, "Failed to setup certs", err)
 		}
@@ -601,15 +621,22 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 	return bs, nil
 }
 
-func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
-	addr, err := apiServerURL(*h, *cc, *n)
-	if err != nil {
-		exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to get API Server URL: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
+// setupKubeconfig generates kubeconfig.
+func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, clusterName string) *kubeconfig.Settings {
+	host := cc.KubernetesConfig.APIServerHAVIP
+	port := cc.APIServerPort
+	if !config.IsHA(cc) || driver.NeedsPortForward(cc.Driver) {
+		var err error
+		if host, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
+			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
+		}
 	}
+	addr := fmt.Sprintf("https://" + net.JoinHostPort(host, strconv.Itoa(port)))
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.ReplaceAll(addr, n.IP, cc.KubernetesConfig.APIServerName)
+		addr = strings.ReplaceAll(addr, host, cc.KubernetesConfig.APIServerName)
 	}
+
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		Namespace:            cc.KubernetesConfig.Namespace,
@@ -623,14 +650,6 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
 	return kcs
-}
-
-func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
-	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, h.DriverName)
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 }
 
 // StartMachine starts a VM

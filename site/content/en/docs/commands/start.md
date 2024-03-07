@@ -58,6 +58,7 @@ minikube start [flags]
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
   -g, --gpus string                       Allow pods to use your NVIDIA GPUs. Options include: [all,nvidia] (Docker driver with Docker container-runtime only)
+      --ha                                Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
       --host-only-nic-type string         NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
@@ -100,7 +101,7 @@ minikube start [flags]
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
       --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)
-  -n, --nodes int                         The number of nodes to spin up. Defaults to 1. (default 1)
+  -n, --nodes int                         The total number of nodes to spin up. Defaults to 1. (default 1)
   -o, --output string                     Format to print stdout in. Options include: [text,json] (default "text")
       --ports strings                     List of ports that should be exposed (docker and podman driver only)
       --preload                           If set, download tarball of preloaded images if available to improve start time. Defaults to true. (default true)

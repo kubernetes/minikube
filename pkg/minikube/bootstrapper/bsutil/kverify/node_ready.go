@@ -35,7 +35,7 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 	klog.Infof("waiting up to %v for node %q to be %q ...", timeout, name, condition)
 	start := time.Now()
 	defer func() {
-		klog.Infof("duration metric: took %v waiting for node %q to be %q ...", time.Since(start), name, condition)
+		klog.Infof("duration metric: took %s for node %q to be %q ...", time.Since(start), name, condition)
 	}()
 
 	lap := time.Now()
@@ -49,11 +49,6 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 			klog.Info(reason)
 			return true, nil
 		}
-		if status == core.ConditionUnknown {
-			klog.Info(reason)
-			return false, fmt.Errorf(reason)
-		}
-		// reduce log spam
 		if time.Since(lap) > (2 * time.Second) {
 			klog.Info(reason)
 			lap = time.Now()

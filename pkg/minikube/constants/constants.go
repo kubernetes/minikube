@@ -39,7 +39,7 @@ const (
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
 	NewestKubernetesVersion = "v1.29.0-rc.2"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
-	OldestKubernetesVersion = "v1.16.0"
+	OldestKubernetesVersion = "v1.20.0"
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
 	NoKubernetesVersion = "v0.0.0"
 

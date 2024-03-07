@@ -85,11 +85,11 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 		return nil
 	}
 
-	klog.Infof("LoadImages start: %s", images)
+	klog.Infof("LoadCachedImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		klog.Infof("LoadImages completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to LoadCachedImages", time.Since(start))
 	}()
 
 	var g errgroup.Group
@@ -338,11 +338,11 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 
 // SaveCachedImages saves from the container runtime to the cache
 func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
-	klog.Infof("SaveImages start: %s", images)
+	klog.Infof("SaveCachedImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		klog.Infof("SaveImages completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to SaveCachedImages", time.Since(start))
 	}()
 
 	var g errgroup.Group
@@ -509,11 +509,11 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 
 // pullImages pulls images to the container run time
 func pullImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("PullImages start: %s", images)
+	klog.Infof("pullImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		klog.Infof("PullImages completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to pullImages", time.Since(start))
 	}()
 
 	var g errgroup.Group
@@ -590,11 +590,11 @@ func PullImages(images []string, profile *config.Profile) error {
 
 // removeImages removes images from the container run time
 func removeImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("RemovingImages start: %s", images)
+	klog.Infof("removeImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		klog.Infof("RemovingImages completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to removeImages", time.Since(start))
 	}()
 
 	var g errgroup.Group
@@ -894,11 +894,11 @@ func TagImage(profile *config.Profile, source string, target string) error {
 
 // pushImages pushes images from the container run time
 func pushImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("PushImages start: %s", images)
+	klog.Infof("pushImages start: %s", images)
 	start := time.Now()
 
 	defer func() {
-		klog.Infof("PushImages completed in %s", time.Since(start))
+		klog.Infof("duration metric: took %s to pushImages", time.Since(start))
 	}()
 
 	var g errgroup.Group
