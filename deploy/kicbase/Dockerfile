@@ -42,7 +42,8 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.12.4"
-ARG CRIO_VERSION="1.29"
+ARG CRICTL_VERSION="v1.29"
+ARG CRIO_VERSION="v1.29"
 ARG CRI_DOCKERD_VERSION="v0.3.3"
 ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -96,6 +97,7 @@ RUN echo "Ensuring scripts are executable ..." \
       bash ca-certificates curl rsync \
       nfs-common \
       iputils-ping netcat-openbsd vim-tiny \
+      software-properties-common \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
@@ -189,11 +191,10 @@ RUN clean-install podman && \
 
 # install crictl
 RUN export ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" != "ppc64el" ]; then \
-        sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-        curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
-        apt-key add - < Release.key && \
-        clean-install cri-tools; \
+    if [ "$ARCH" != "armhf" ]; then \
+        curl -fsSL https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-tools-apt-keyring.gpg \
+        && echo "deb [signed-by=/etc/apt/keyrings/cri-tools-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-tools.list \
+        && clean-install cri-tools; \
     fi
 
 # install containernetworking-plugins
@@ -206,9 +207,8 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
 # install cri-o based on https://github.com/cri-o/packaging#distributions-using-deb-packages
 RUN export ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" != "armhf" ] && [ "$ARCH" != "s390x" ]; then \
-        clean-install software-properties-common \
-        && curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/v${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg \
-        && echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/v${CRIO_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-o.list \
+        && curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg \
+        && echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/${CRIO_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-o.list \
         && clean-install cri-o; \
     fi
 

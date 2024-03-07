@@ -63,7 +63,7 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Unable to get cri-o stable version: %v", err)
 	}
-	mmVersion := strings.TrimPrefix(semver.MajorMinor(stable.Tag), "v")
+	mmVersion := semver.MajorMinor(stable.Tag)
 
 	data := Data{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}
 
