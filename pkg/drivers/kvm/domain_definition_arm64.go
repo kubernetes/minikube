@@ -48,7 +48,7 @@ const domainTmpl = `
   <devices>
     <disk type='file' device='cdrom'>
       <source file='{{.ISO}}'/>
-      <target dev='sdc' bus='sata'/>
+      <target dev='sdc' bus='scsi'/>
       <readonly/>
     </disk>
     <disk type='file' device='disk'>
@@ -56,6 +56,8 @@ const domainTmpl = `
       <source file='{{.DiskPath}}'/>
       <target dev='hda' bus='virtio'/>
     </disk>
+    <controller type='scsi' index='0' model='virtio-scsi'>
+    </controller>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
       <model type='virtio'/>
