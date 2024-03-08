@@ -1925,7 +1925,7 @@ func validateDockerStorageDriver(drvName string) {
 		viper.Set(preload, false)
 		return
 	}
-	if si.StorageDriver == "overlay2" {
+	if si.StorageDriver == "overlay2" || si.StorageDriver == "overlayfs" {
 		return
 	}
 	out.WarningT("{{.Driver}} is currently using the {{.StorageDriver}} storage driver, setting preload=false", out.V{"StorageDriver": si.StorageDriver, "Driver": drvName})
