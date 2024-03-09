@@ -72,6 +72,10 @@ spec:
       value: {{ .VIP }}
     - name: prometheus_server
       value: :2112
+    - name : lb_enable
+      value: "true"
+    - name: lb_port
+      value: "{{ .Port }}"
     image: ghcr.io/kube-vip/kube-vip:v0.7.1
     imagePullPolicy: IfNotPresent
     name: kube-vip
