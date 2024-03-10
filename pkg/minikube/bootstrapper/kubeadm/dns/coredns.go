@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
@@ -79,18 +81,13 @@ spec:
 	// CoreDNSDeployment is the CoreDNS Deployment manifest
 	CoreDNSDeployment = `
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: {{ .DeploymentName }}
   namespace: kube-system
   labels:
     k8s-app: kube-dns
 spec:
-  replicas: {{ .Replicas }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
   selector:
     matchLabels:
       k8s-app: kube-dns
@@ -102,16 +99,13 @@ spec:
       priorityClassName: system-cluster-critical
       serviceAccountName: coredns
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 100
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: k8s-app
-                  operator: In
-                  values: ["kube-dns"]
-              topologyKey: kubernetes.io/hostname
+        # nodeAffinity is used instead of podAntiAffinity to have the daemonset runnable only on control plane nodes
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: {{ .ControlPlaneTaintKey }}
+                operator: Exists
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
@@ -164,7 +158,7 @@ spec:
             add:
             - NET_BIND_SERVICE
             drop:
-            - all
+            - ALL
           readOnlyRootFilesystem: true
       dnsPolicy: Default
       volumes:
@@ -318,12 +312,9 @@ func coreDNSManifests(cc config.ClusterConfig, hostIP, hostFQDN string) ([]byte,
 		return nil, fmt.Errorf("coredns image not found")
 	}
 
-	var replicas int32 = 1
-
 	params := struct {
 		DNSDomain, MinikubeHostIP, MinikubeHostFQDN string
 		DeploymentName, ControlPlaneTaintKey, Image string
-		Replicas                                    *int32
 		DNSIP                                       string
 	}{
 		DNSDomain:            cc.KubernetesConfig.DNSDomain,
@@ -332,8 +323,18 @@ func coreDNSManifests(cc config.ClusterConfig, hostIP, hostFQDN string) ([]byte,
 		DeploymentName:       kconst.CoreDNSDeploymentName,
 		ControlPlaneTaintKey: kconst.LabelNodeRoleControlPlane,
 		Image:                image,
-		Replicas:             &replicas,
 		DNSIP:                dnsip.String(),
+	}
+
+	// in k8s v1.20 "node-role.kubernetes.io/control-plane" label was introduced and "node-role.kubernetes.io/master" was deprecated
+	// ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.20.md#no-really-you-must-read-this-before-you-upgrade
+	k8sVersion, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, fmt.Errorf("parsing Kubernetes version %q: %v", cc.KubernetesConfig.KubernetesVersion, err)
+	}
+
+	if k8sVersion.LT(semver.Version{Major: 1, Minor: 20}) {
+		params.ControlPlaneTaintKey = kconst.LabelNodeRoleOldControlPlane
 	}
 
 	t := template.Must(template.New("coredns").Parse(toml))
