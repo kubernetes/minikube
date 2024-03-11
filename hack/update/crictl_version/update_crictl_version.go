@@ -26,7 +26,6 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
@@ -58,17 +57,12 @@ var (
 				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
 			},
 		},
-		"deploy/kicbase/Dockerfile": {
-			Replace: map[string]string{
-				`ARG CRICTL_VERSION=.*`: `ARG CRICTL_VERSION="{{.MMVersion}}"`,
-			},
-		},
 	}
 )
 
 type Data struct {
-	Version   string
-	MMVersion string
+	Version string
+	Commit  string
 }
 
 func main() {
@@ -79,9 +73,8 @@ func main() {
 	if err != nil {
 		klog.Fatalf("Unable to get stable version: %v", err)
 	}
-	mmVersion := semver.MajorMinor(stable.Tag)
 
-	data := Data{Version: stable.Tag, MMVersion: mmVersion}
+	data := Data{Version: stable.Tag}
 
 	update.Apply(schema, data)
 

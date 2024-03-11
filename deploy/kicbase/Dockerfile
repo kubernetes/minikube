@@ -42,7 +42,6 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.12.4"
-ARG CRICTL_VERSION="v1.29"
 ARG CRIO_VERSION="v1.29"
 ARG CRI_DOCKERD_VERSION="v0.3.3"
 ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
@@ -188,13 +187,15 @@ RUN clean-install podman && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create
 
-# install crictl
-RUN export ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" != "armhf" ]; then \
-        clean-install software-properties-common \
-        && curl -fsSL https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-tools-apt-keyring.gpg \
-        && echo "deb [signed-by=/etc/apt/keyrings/cri-tools-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${CRICTL_VERSION}/deb/ /" | tee /etc/apt/sources.list.d/cri-tools.list \
-        && clean-install cri-tools; \
+# install cri-o dependencies:
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
+    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
+    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
+    apt-key add - < Release.key && \
+    if [ "$ARCH" != "ppc64le" ]; then \
+        clean-install catatonit conmon cri-tools crun; \
+    else \
+        clean-install conmon crun; \
     fi
 
 # install containernetworking-plugins
