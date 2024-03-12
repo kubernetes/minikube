@@ -22,6 +22,7 @@ import (
 	"path"
 	"runtime"
 
+	"k8s.io/minikube/pkg/util"
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -85,4 +86,28 @@ func Binary(binary, version, osName, archName, binaryURL string) (string, error)
 		}
 	}
 	return targetFilepath, nil
+}
+
+// DownloadCrictlBinary download the crictl tar archive to the cache folder and untar it
+func DownloadCrictlBinary(k8sversion string) (string, error) {
+	// first we check whether crictl exists
+	targetDir := localpath.MakeMiniPath("cache", "linux", runtime.GOARCH, k8sversion)
+	targetPath := path.Join(targetDir, "crictl")
+	if _, err := checkCache(targetPath); err == nil {
+		klog.Infof("crictl found in cache: %s", targetPath)
+		return targetPath, nil
+	}
+	v, err := util.ParseKubernetesVersion(k8sversion)
+	if err != nil {
+		return "", err
+	}
+	crictlVersion := fmt.Sprintf("v%d.%d.0", v.Major, v.Minor)
+	url := fmt.Sprintf(
+		"https://github.com/kubernetes-sigs/cri-tools/releases/download/%s/crictl-%s-linux-%s.tar.gz",
+		crictlVersion, crictlVersion, runtime.GOARCH)
+	if err := download(url, targetPath); err != nil {
+		return "", errors.Wrapf(err, "download failed: %s", url)
+	}
+
+	return targetPath, nil
 }
