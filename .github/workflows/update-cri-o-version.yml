@@ -1,9 +1,10 @@
 name: "update-cri-o-version"
 on:
   workflow_dispatch:
-  schedule:
+  # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
+  # schedule:
     # every Friday at around 3 am pacific/10 am UTC
-    - cron: "0 10 * * 5"
+    # - cron: "0 10 * * 5"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.22.0'
