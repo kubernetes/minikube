@@ -32,7 +32,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpCrictl.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc
+        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update crictl from ${{ steps.bumpCrictl.outputs.OLD_VERSION }} to ${{ steps.bumpCrictl.outputs.NEW_VERSION }}'
