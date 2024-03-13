@@ -35,8 +35,8 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// TestMutliControlPlane tests all ha (multi-control plane) cluster functionality
-func TestMutliControlPlane(t *testing.T) {
+// TestMultiControlPlane tests all ha (multi-control plane) cluster functionality
+func TestMultiControlPlane(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver does not support multinode/ha(multi-control plane) cluster")
 	}
