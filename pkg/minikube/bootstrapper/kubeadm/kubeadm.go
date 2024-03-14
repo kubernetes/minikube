@@ -947,8 +947,9 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	if n.ControlPlane {
 		// for primary control-plane node only, generate kubeadm config based on current params
 		// on node restart, it will be checked against later if anything needs changing
+		var kubeadmCfg []byte
 		if config.IsPrimaryControlPlane(cfg, n) {
-			kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
+			kubeadmCfg, err = bsutil.GenerateKubeadmYAML(cfg, n, r)
 			if err != nil {
 				return errors.Wrap(err, "generating kubeadm cfg")
 			}
@@ -964,7 +965,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 				return errors.Wrapf(err, "parsing kubernetes version %q", cfg.KubernetesConfig.KubernetesVersion)
 			}
 			workaround := kv.GTE(semver.Version{Major: 1, Minor: 29}) && config.IsPrimaryControlPlane(cfg, n) && len(config.ControlPlanes(cfg)) == 1
-			kubevipCfg, err := kubevip.Configure(cfg, workaround)
+			kubevipCfg, err := kubevip.Configure(cfg, k.c, kubeadmCfg, workaround)
 			if err != nil {
 				klog.Errorf("couldn't generate kube-vip config, this might cause issues (will continue): %v", err)
 			} else {

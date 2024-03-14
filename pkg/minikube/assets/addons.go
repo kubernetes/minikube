@@ -316,7 +316,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-daemonset.yaml.tmpl", vmpath.GuestAddonsDir, "ig-daemonset.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.25.1@sha256:efddd4f0a8b51a7c406c67894203bc475198f54809105ce0c2df904a44180e75",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.26.0@sha256:c6db0381372939368364efb98d8c90f4b0e3d86a5637682b85a01195937d9eff",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}),
@@ -327,7 +327,7 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3.6.0@sha256:2f2832a751eee25b4cb643a9b8b14df602a88c249c2baba46e3e7b51df2bb78b",
+		"Kong":        "kong:3.6.1@sha256:ea92ee61b0a70171a8ded9e8c96be56ca3325847ac32cf32f61964b58acb8166",
 		"KongIngress": "kong/kubernetes-ingress-controller:2.12.0@sha256:ef450cd85f4237aa5acf3bfaebd064accdc6a445419bec20a5a68067c55c6809",
 	}, map[string]string{
 		"Kong":        "docker.io",
@@ -764,7 +764,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.22.0@sha256:3c6da859a989f285b2fd2ac2f4763d1884d54a51e4405301e5324e0b2b70bd67",
+			"Headlamp": "headlamp-k8s/headlamp:v0.23.0@sha256:94e00732e1b43057a9135dafc7483781aea4a73a26cec449ed19f4d8794308d5",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",

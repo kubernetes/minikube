@@ -19,10 +19,14 @@ package kubevip
 import (
 	"bytes"
 	"html/template"
+	"os/exec"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 const Manifest = "kube-vip.yaml"
@@ -72,6 +76,12 @@ spec:
       value: {{ .VIP }}
     - name: prometheus_server
       value: :2112
+    {{- if .EnableLB }}
+    - name : lb_enable
+      value: "true"
+    - name: lb_port
+      value: "{{ .Port }}"
+    {{- end}}
     image: ghcr.io/kube-vip/kube-vip:v0.7.1
     imagePullPolicy: IfNotPresent
     name: kube-vip
@@ -97,17 +107,19 @@ status: {}
 `))
 
 // Configure takes last client ip address in cluster nodes network subnet as vip address and generates kube-vip.yaml file.
-func Configure(cc config.ClusterConfig, workaround bool) ([]byte, error) {
+func Configure(cc config.ClusterConfig, r command.Runner, kubeadmCfg []byte, workaround bool) ([]byte, error) {
 	klog.Info("generating kube-vip config ...")
 
 	params := struct {
 		VIP       string
 		Port      int
 		AdminConf string
+		EnableLB  bool
 	}{
 		VIP:       cc.KubernetesConfig.APIServerHAVIP,
 		Port:      cc.APIServerPort,
 		AdminConf: "/etc/kubernetes/admin.conf",
+		EnableLB:  enableCPLB(cc, r, kubeadmCfg),
 	}
 	if workaround {
 		params.AdminConf = "/etc/kubernetes/super-admin.conf"
@@ -121,4 +133,33 @@ func Configure(cc config.ClusterConfig, workaround bool) ([]byte, error) {
 	klog.Infof("kube-vip config:\n%s", b.String())
 
 	return b.Bytes(), nil
+}
+
+// enableCPLB auto-enables control-plane load-balancing, if possible - currently only possible with ipvs.
+// ref: https://kube-vip.io/docs/about/architecture/?query=ipvs#control-plane-load-balancing
+func enableCPLB(cc config.ClusterConfig, r command.Runner, kubeadmCfg []byte) bool {
+	// note known issue: "service lb with ipvs mode won't work with kubeproxy that is configured with ipvs mode"
+	// ref: https://kube-vip.io/docs/about/architecture/?query=ipvs#known-issues
+	// so we only want to enable control-plane load-balancing if kube-proxy mode is not set to ipvs
+	// ref: https://kubernetes.io/docs/reference/networking/virtual-ips/#proxy-mode-ipvs
+	if ipvs := strings.EqualFold(string(kubeadmCfg), "mode: ipvs"); ipvs {
+		klog.Info("giving up enabling control-plane load-balancing as kube-proxy mode appears to be set to ipvs")
+		return false
+	}
+
+	// for vm driver, ensure required ipvs kernel modules are loaded to enable kube-vip's control-plane load-balancing feature
+	// ref: https://github.com/kubernetes/kubernetes/blob/f90461c43e881d320b78d48793db10c110d488d1/pkg/proxy/ipvs/README.md?plain=1#L257-L269
+	if driver.IsVM(cc.Driver) {
+		if _, err := r.RunCmd(exec.Command("sudo", "sh", "-c", "modprobe --all ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack")); err != nil {
+			klog.Errorf("unable to load ipvs kernel modules: %v", err)
+			return false
+		}
+		// for non-vm driver, only try to check if required ipvs kernel modules are already loaded
+	} else if _, err := r.RunCmd(exec.Command("sudo", "sh", "-c", "lsmod | grep ip_vs")); err != nil {
+		klog.Errorf("giving up enabling control-plane load-balancing as ipvs kernel modules appears not to be present: %v", err)
+		return false
+	}
+
+	klog.Info("auto-enabling control-plane load-balancing in kube-vip")
+	return true
 }
