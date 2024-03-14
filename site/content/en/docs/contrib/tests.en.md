@@ -466,7 +466,7 @@ verifies files and packages installed inside minikube ISO/Base image
 ## TestGvisorAddon
 tests the functionality of the gVisor addon
 
-## TestMutliControlPlane
+## TestMultiControlPlane
 tests all ha (multi-control plane) cluster functionality
 
 #### validateHAStartCluster
