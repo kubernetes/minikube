@@ -3,14 +3,14 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.0'
+  GO_VERSION: '1.22.1'
 permissions:
   contents: read
 jobs:
   update-all:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
@@ -21,8 +21,10 @@ jobs:
           OLD_BUILDKIT=$(DEP=buildkit make get-dependency-version)
           OLD_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           OLD_CONTAINERD=$(DEP=containerd make get-dependency-version)
+          OLD_CRIO=$(DEP=cri-o make get-dependency-version)
           OLD_CRICTL=$(DEP=crictl make get-dependency-version)
           OLD_DOCKER=$(DEP=docker make get-dependency-version)
+          OLD_GO=$(DEP=go make get-dependency-version)
           OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
           OLD_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
           OLD_RUNC=$(DEP=runc make get-dependency-version)
@@ -30,8 +32,11 @@ jobs:
           make update-buildkit-version
           make update-cni-plugins-version
           make update-containerd-version
-          make update-crictl-version
+          # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
+          # make update-cri-o-version
+          # make update-crictl-version
           make update-docker-version
+          make update-golang-version
           make update-nerdctl-version
           make update-nerdctld-version
           make update-runc-version
@@ -39,36 +44,56 @@ jobs:
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
           NEW_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
+          NEW_CRIO=$(DEP=cri-o make get-dependency-version)
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
+          NEW_GO=$(DEP=go make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
           NEW_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
           NEW_RUNC=$(DEP=runc make get-dependency-version)
           NEW_UBUNTU=$(DEP=ubuntu make get-dependency-version)
           echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
           if [ "$OLD_BUILDKIT" != "$NEW_BUILDKIT" ]; then
-            echo "https://github.com/moby/buildkit/releases/tag/$NEW_BUILDKIT" >> "$GITHUB_OUTPUT"
+            echo "### Update BuildKit from $OLD_BUILDKIT to $NEW_BUILDKIT" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/moby/buildkit/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_CNI_PLUGINS" != "$NEW_CNI_PLUGINS" ]; then
-            echo "https://github.com/containernetworking/plugins/releases/tag/$NEW_CNI_PLUGINS" >> "$GITHUB_OUTPUT"
+            echo "### Update CNI Plugins from $OLD_CNI_PLUGINS to $NEW_CNI_PLUGINS" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/containernetworking/plugins/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_CONTAINERD" != "$NEW_CONTAINERD" ]; then
-            echo "https://github.com/containerd/containerd/releases/tag/$NEW_CONTAINERD" >> "$GITHUB_OUTPUT"
+            echo "### Update containerd from $OLD_CONTAINERD to $NEW_CONTAINERD" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/containerd/containerd/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CRIO" != "$NEW_CRIO" ]; then
+            echo "### Update CRI-O from $OLD_CRIO to $NEW_CRIO" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/cri-o/cri-o/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_CRICTL" != "$NEW_CRICTL" ]; then
-            echo "https://github.com/kubernetes-sigs/cri-tools/releases/tag/$NEW_CRICTL" >> "$GITHUB_OUTPUT"
+            echo "### Update crictl from $OLD_CRICTL to $NEW_CRICTL" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/kubernetes-sigs/cri-tools/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_DOCKER" != "$NEW_DOCKER" ]; then
-            echo "https://github.com/moby/moby/releases/tag/v$NEW_DOCKER" >> "$GITHUB_OUTPUT"
+            echo "### Update Docker from $OLD_DOCKER to $NEW_DOCKER" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/moby/moby/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_GO" != "$NEW_GO" ]; then
+            echo "### Update Go from $OLD_GO to $NEW_GO" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_NERDCTL" != "$NEW_NERDCTL" ]; then
-            echo "https://github.com/containerd/nerdctl/releases/tag/v$NEW_NERDCTL" >> "$GITHUB_OUTPUT"
+            echo "### Update nerdctl from $OLD_NERDCTL to $NEW_NERDCTL" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/containerd/nerdctl/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_NERDCTLD" != "$NEW_NERDCTLD" ]; then
-            echo "https://github.com/afbjorklund/nerdctld/releases/tag/v$NEW_NERDCTL" >> "$GITHUB_OUTPUT"
+            echo "### Update nerdctld from $OLD_NERDCTLD to $NEW_NERDCTLD" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/afbjorklund/nerdctld/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_RUNC" != "$NEW_RUNC" ]; then
-            echo "https://github.com/opencontainers/runc/releases/tag/$NEW_RUNC" >> "$GITHUB_OUTPUT"
+            echo "### Update runc from $OLD_RUNC to $NEW_RUNC" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/opencontainers/runc/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_UBUNTU" != "$NEW_UBUNTU" ]; then
+            echo "### Update Ubuntu from $OLD_UBUNTU to $NEW_UBUNTU" >> "$GITHUB_OUTPUT"
           fi
           echo "EOF" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
@@ -78,7 +103,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc
+        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update dependency versions'

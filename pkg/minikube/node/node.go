@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -36,6 +37,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 // Add adds a new node config to an existing cluster.
@@ -165,7 +168,11 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 
 	// set 'GracePeriodSeconds: 0' option to delete node immediately (ie, w/o waiting)
 	var grace *int64
-	err = client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{GracePeriodSeconds: grace})
+	// for ha clusters, in case we're deleting control-plane node that's current leader, we retry to allow leader re-election process to complete
+	deleteNode := func() error {
+		return client.CoreV1().Nodes().Delete(context.Background(), m, v1.DeleteOptions{GracePeriodSeconds: grace})
+	}
+	err = retry.Expo(deleteNode, kconst.APICallRetryInterval, 2*time.Minute)
 	if err != nil {
 		klog.Errorf("kubectl delete node %q failed: %v", m, err)
 		return n, err
