@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	dockerref "github.com/docker/distribution/reference"
+	dockerref "github.com/distribution/reference"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
