@@ -23,6 +23,7 @@ RUN apt-get update \
 		git \
 		wget \
 		cpio \
+		python2 \
 		python3 \
 		unzip \
 		bc \
