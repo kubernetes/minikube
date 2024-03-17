@@ -236,11 +236,28 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	case "crio", "cri-o":
 		return setCrioOptions(p)
 	case "containerd":
-		return nil
+		return setContainerdOptions(p)
 	default:
 		_, err := p.GenerateDockerOptions(engine.DefaultPort)
 		return err
 	}
+}
+
+func setContainerdOptions(p provision.SSHCommander) error {
+   var (containerdOptsTmpl=`CONTAINERD_MINIKUBE_OPTIONS='{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}'`
+   containerdConfigFile = "/etc/containerd/config.toml")
+   t,err := template.New("containerdOpts").Parse(containerdOptsTmpl)
+   if err!=nil {
+	return err
+   }
+   var containerdOptsBuf bytes.Buffer
+   if err := t.Execute(&containerdOptsBuf,p); err!=nil {
+	return err
+   }
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart containerd", path.Dir(containerdConfigFile), containerdOptsBuf.String(), containerdConfigFile)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func setCrioOptions(p provision.SSHCommander) error {
