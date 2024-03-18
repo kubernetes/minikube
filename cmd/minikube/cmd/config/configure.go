@@ -20,7 +20,6 @@ import (
 	"net"
 	"os"
 	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -42,10 +41,12 @@ var addonsConfigureCmd = &cobra.Command{
 	Use:   "configure ADDON_NAME",
 	Short: "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list",
 	Long:  "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "usage: minikube addons configure ADDON_NAME")
 		}
+
+		profile := ClusterFlagValue()
 
 		addon := args[0]
 		// allows for additional prompting of information when enabling addons
@@ -111,12 +112,11 @@ var addonsConfigureCmd = &cobra.Command{
 				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 			}
 
-			cname := ClusterFlagValue()
 			namespace := "kube-system"
 
 			// Create ECR Secret
 			err := service.CreateSecret(
-				cname,
+				profile,
 				namespace,
 				"registry-creds-ecr",
 				map[string]string{
@@ -138,7 +138,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create GCR Secret
 			err = service.CreateSecret(
-				cname,
+				profile,
 				namespace,
 				"registry-creds-gcr",
 				map[string]string{
@@ -157,7 +157,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Docker Secret
 			err = service.CreateSecret(
-				cname,
+				profile,
 				namespace,
 				"registry-creds-dpr",
 				map[string]string{
@@ -177,7 +177,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Azure Container Registry Secret
 			err = service.CreateSecret(
-				cname,
+				profile,
 				namespace,
 				"registry-creds-acr",
 				map[string]string{
@@ -196,7 +196,6 @@ var addonsConfigureCmd = &cobra.Command{
 			}
 
 		case "metallb":
-			profile := ClusterFlagValue()
 			_, cfg := mustload.Partial(profile)
 
 			validator := func(s string) bool {
@@ -216,7 +215,6 @@ var addonsConfigureCmd = &cobra.Command{
 				out.ErrT(style.Fatal, "Failed to configure metallb IP {{.profile}}", out.V{"profile": profile})
 			}
 		case "ingress":
-			profile := ClusterFlagValue()
 			_, cfg := mustload.Partial(profile)
 
 			validator := func(s string) bool {
@@ -238,7 +236,6 @@ var addonsConfigureCmd = &cobra.Command{
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
 		case "registry-aliases":
-			profile := ClusterFlagValue()
 			_, cfg := mustload.Partial(profile)
 			validator := func(s string) bool {
 				format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
@@ -257,26 +254,27 @@ var addonsConfigureCmd = &cobra.Command{
 					out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
 				}
 			}
-		case "auto-pause-interval":
-			profile := ClusterFlagValue()
+		case "auto-pause":
 			_, cfg := mustload.Partial(profile)
-
-			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (in minutes): ")
-			intervalTime, err := strconv.Atoi(intervalInput)
+			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
+			intervalTime, err := time.ParseDuration(intervalInput)
 			if err != nil {
-				out.ErrT(style.Fatal, "Failed to extract integer in minutes to pause.")
+				out.ErrT(style.Fatal, "Interval is an invalid duration: {{.error}}", out.V{"error": err})
 			}
-
-			if intervalTime <= 0 {
-				out.ErrT(style.Fatal, "Auto-pause interval must be greater than 0,"+
-					" not current value of {{.interval}}", out.V{"interval": intervalTime})
+			if intervalTime != intervalTime.Abs() || intervalTime.String() == "0s" {
+				out.ErrT(style.Fatal, "Interval must be greater than 0s")
 			}
-
-			cfg.AutoPauseInterval = time.Minute * time.Duration(intervalTime)
+			cfg.AutoPauseInterval = intervalTime
 			if err := config.SaveProfile(profile, cfg); err != nil {
 				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
 			}
-
+			addon := assets.Addons["auto-pause"]
+			if addon.IsEnabled(cfg) {
+				// Re-enable auto-pause addon in order to update interval time
+				if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
+					out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
+				}
+			}
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
 			return

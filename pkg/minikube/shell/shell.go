@@ -140,7 +140,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s --shell cmd') DO @%%i
 		unsetPrefix:    "",
 		unsetSuffix:    "\n",
 		unsetDelimiter: "",
-		usageHint: func(s ...interface{}) string {
+		usageHint: func(_ ...interface{}) string {
 			return ""
 		},
 	},

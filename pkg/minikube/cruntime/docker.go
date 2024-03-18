@@ -171,21 +171,35 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		return err
 	}
 
+	// restart cri-docker
+	// avoid error: "Exiting due to RUNTIME_ENABLE: Failed to enable container runtime: sudo systemctl restart cri-docker: exit status 1"
+	// => journalctl: "cri-docker.socket: Socket service cri-docker.service already active, refusing."
 	if r.CRIService != "" {
-		if err := r.Init.Enable("cri-docker.socket"); err != nil {
+		socket := "cri-docker.socket"
+		service := "cri-docker.service"
+		// allow "native" socket activation:
+		// prevent active socket to reactivate service, that we're going to stop next - 'systemctl status cri-docker.socket': "Triggers: cri-docker.service"
+		// intentionally continue on any error
+		if r.Init.Active(socket) {
+			_ = r.Init.Stop(socket)
+		}
+		if r.Init.Active(service) {
+			_ = r.Init.Stop(service)
+		}
+
+		if err := r.Init.Unmask(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Unmask(r.CRIService); err != nil {
+		if err := r.Init.Enable(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Enable(r.CRIService); err != nil {
+		if err := r.Init.Restart(socket); err != nil {
 			return err
 		}
-		if err := r.Init.Restart(r.CRIService); err != nil {
-			return err
-		}
-		if err := r.Init.Restart("cri-docker"); err != nil {
-			return err
+
+		// try to restart service if stopped, intentionally continue on any error
+		if !r.Init.Active(service) {
+			_ = r.Init.Restart(service)
 		}
 	}
 
@@ -632,10 +646,10 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	if err := r.Runner.Copy(fa); err != nil {
 		return errors.Wrap(err, "copying file")
 	}
-	klog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+	klog.Infof("duration metric: took %s to copy over tarball", time.Since(t))
 
 	// extract the tarball to /var in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "--xattrs", "--xattrs-include", "security.capability", "-I", "lz4", "-C", "/var", "-xf", dest)); err != nil {
 		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
 	}
 

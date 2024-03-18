@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20231004"
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240227"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.21.4 as auto-pause
+FROM golang:1.22.1 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -41,14 +41,14 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.12.3"
+ARG BUILDKIT_VERSION="v0.13.0"
 ARG CRIO_VERSION="1.24"
 ARG CRI_DOCKERD_VERSION="v0.3.3"
 ARG CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
-ARG CNI_PLUGINS_VERSION="v1.3.0"
+ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.0"
-ARG NERDCTLD_VERSION="0.2.0"
+ARG NERDCTL_VERSION="1.7.4"
+ARG NERDCTLD_VERSION="0.5.1"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -114,6 +114,8 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
     && sed -i /etc/nsswitch.conf -re 's#^(hosts:\s*).*#\1dns files#'
 
+# delete this file due to https://github.com/kubernetes/minikube/issues/17700
+RUN rm -f /usr/lib/binfmt.d/python3.10.conf
 
 ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/b6bc1125/images/base/Dockerfile

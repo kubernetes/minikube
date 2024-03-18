@@ -1,5 +1,0 @@
-config BR2_PACKAGE_CNI_PLUGINS_AARCH64
-	bool "cni-plugins"
-	default y
-	depends on BR2_aarch64
-	depends on BR2_PACKAGE_HOST_GO_TARGET_ARCH_SUPPORTS

@@ -30,7 +30,7 @@ var licenseCmd = &cobra.Command{
 	Use:   "license",
 	Short: "Outputs the licenses of dependencies to a directory",
 	Long:  "Outputs the licenses of dependencies to a directory",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		if err := download.Licenses(dir); err != nil {
 			exit.Error(reason.InetLicenses, "Failed to download licenses", err)
 		}

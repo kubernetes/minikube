@@ -41,7 +41,7 @@ etcd:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
       proxy-refresh-interval: "70000"
-kubernetesVersion: v1.29.0-rc.1
+kubernetesVersion: v1.29.0-rc.2
 networking:
   dnsDomain: cluster.local
   podSubnet: "10.244.0.0/16"
@@ -53,6 +53,7 @@ authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
+containerRuntimeEndpoint: unix:///var/run/dockershim.sock
 hairpinMode: hairpin-veth
 runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"

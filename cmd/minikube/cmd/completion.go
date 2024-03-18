@@ -81,7 +81,7 @@ var completionCmd = &cobra.Command{
 	Use:   "completion SHELL",
 	Short: "Generate command completion for a shell",
 	Long:  longDescription,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 1 {
 			exit.Message(reason.Usage, "Usage: minikube completion SHELL")
 		}
@@ -95,7 +95,7 @@ var bashCmd = &cobra.Command{
 	Use:   "bash",
 	Short: "bash completion.",
 	Long:  "Generate command completion for bash.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		err := GenerateBashCompletion(os.Stdout, cmd.Root())
 		if err != nil {
 			exit.Error(reason.InternalCompletion, "bash completion failed", err)
@@ -107,7 +107,7 @@ var zshCmd = &cobra.Command{
 	Use:   "zsh",
 	Short: "zsh completion.",
 	Long:  "Generate command completion for zsh.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		err := GenerateZshCompletion(os.Stdout, cmd.Root())
 		if err != nil {
 			exit.Error(reason.InternalCompletion, "zsh completion failed", err)
@@ -119,7 +119,7 @@ var fishCmd = &cobra.Command{
 	Use:   "fish",
 	Short: "fish completion.",
 	Long:  "Generate command completion for fish .",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		err := GenerateFishCompletion(os.Stdout, cmd.Root())
 		if err != nil {
 			exit.Error(reason.InternalCompletion, "fish completion failed", err)
@@ -131,7 +131,7 @@ var powershellCmd = &cobra.Command{
 	Use:   "powershell",
 	Short: "powershell completion.",
 	Long:  "Generate command completion for PowerShell.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		err := GeneratePowerShellCompletion(os.Stdout, cmd.Root())
 		if err != nil {
 			exit.Error(reason.InternalCompletion, "powershell completion failed", err)

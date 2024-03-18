@@ -41,7 +41,6 @@ const domainTmpl = `
   <os>
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
     <loader readonly='yes' type='pflash'>/usr/share/AAVMF/AAVMF_CODE.fd</loader>
-    <nvram>/usr/share/AAVMF/AAVMF_VARS.fd</nvram>
     <boot dev='cdrom'/>
     <boot dev='hd'/>
     <bootmenu enable='no'/>
@@ -49,7 +48,7 @@ const domainTmpl = `
   <devices>
     <disk type='file' device='cdrom'>
       <source file='{{.ISO}}'/>
-      <target dev='sdc' bus='sata'/>
+      <target dev='sdc' bus='scsi'/>
       <readonly/>
     </disk>
     <disk type='file' device='disk'>
@@ -57,6 +56,8 @@ const domainTmpl = `
       <source file='{{.DiskPath}}'/>
       <target dev='hda' bus='virtio'/>
     </disk>
+    <controller type='scsi' index='0' model='virtio-scsi'>
+    </controller>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
       <model type='virtio'/>

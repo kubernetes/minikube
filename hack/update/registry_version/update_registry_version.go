@@ -17,17 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strings"
 
+	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 )
-
-const dockerHubRegistryURL = "https://hub.docker.com/v2/repositories/library/registry/tags"
 
 var schema = map[string]update.Item{
 	"pkg/minikube/assets/addons.go": {
@@ -42,52 +37,31 @@ type Data struct {
 	SHA     string
 }
 
-// Response is used to unmarshal the response from Docker Hub
-type Response struct {
-	Results []struct {
-		Name string `json:"name"`
-	}
-}
-
 func main() {
-	version, err := getLatestVersion()
+	tags, err := update.ImageTagsFromDockerHub("library/registry")
 	if err != nil {
-		klog.Fatalf("failed to get latest version: %v", err)
+		klog.Fatal(err)
 	}
-	version = strings.TrimPrefix(version, "v")
-	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/registry:%s", version))
+	tag, err := latestStableSemverTag(tags)
+	if err != nil {
+		klog.Fatal(err)
+	}
+	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/registry:%s", tag))
 	if err != nil {
 		klog.Fatalf("failed to get image SHA: %v", err)
 	}
 
-	data := Data{Version: version, SHA: sha}
+	data := Data{Version: tag, SHA: sha}
 
 	update.Apply(schema, data)
 }
 
-func getLatestVersion() (string, error) {
-	resp, err := http.Get(dockerHubRegistryURL)
-	if err != nil {
-		return "", fmt.Errorf("failed to get tags: %v", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %v", err)
-	}
-
-	var content Response
-	err = json.Unmarshal(body, &content)
-	if err != nil {
-		return "", fmt.Errorf("failed to unmarshal response: %v", err)
-	}
-
-	for _, i := range content.Results {
-		if !strings.Contains(i.Name, "latest") {
-			return i.Name, nil
+func latestStableSemverTag(tags []string) (string, error) {
+	for _, tag := range tags {
+		vTag := fmt.Sprintf("v%s", tag)
+		if semver.IsValid(vTag) && semver.Prerelease(vTag) == "" {
+			return tag, nil
 		}
 	}
-
-	return "", fmt.Errorf("didn't find a non-latest image")
+	return "", fmt.Errorf("no stable semver tag found")
 }

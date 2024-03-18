@@ -23,7 +23,7 @@ import (
 )
 
 var dockerResponse string
-var dockerInspectGetterMock = func(name string) (*RunResult, error) {
+var dockerInspectGetterMock = func(_ string) (*RunResult, error) {
 	var responseInBytes bytes.Buffer
 	responseInBytes.WriteString(dockerResponse)
 	response := &RunResult{Stdout: responseInBytes}
@@ -84,7 +84,7 @@ func TestDockerInspect(t *testing.T) {
 }
 
 var podmanResponse string
-var podmanInspectGetterMock = func(name string) (*RunResult, error) {
+var podmanInspectGetterMock = func(_ string) (*RunResult, error) {
 	var responseInBytes bytes.Buffer
 	responseInBytes.WriteString(podmanResponse)
 	response := &RunResult{Stdout: responseInBytes}

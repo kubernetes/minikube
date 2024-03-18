@@ -35,7 +35,8 @@ type LogOptions struct {
 
 // Bootstrapper contains all the methods needed to bootstrap a Kubernetes cluster
 type Bootstrapper interface {
-	ApplyNodeLabels(config.ClusterConfig) error
+	// LabelAndUntaintNode applies minikube labels to node and removes NoSchedule taints from control-plane nodes.
+	LabelAndUntaintNode(config.ClusterConfig, config.Node) error
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
@@ -45,7 +46,8 @@ type Bootstrapper interface {
 	GenerateToken(config.ClusterConfig) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
-	SetupCerts(config.ClusterConfig, config.Node) error
+	// SetupCerts gets the generated credentials required to talk to the APIServer.
+	SetupCerts(config.ClusterConfig, config.Node, cruntime.CommandRunner) error
 	GetAPIServerStatus(string, int) (string, error)
 }
 

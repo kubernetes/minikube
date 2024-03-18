@@ -38,7 +38,7 @@ readonly UNIT_PATH=$1
 
 while true; do
   if [[ -f "${UNIT_PATH}" ]]; then
-	eval $(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
+	eval $(grep -E "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
   fi
   sleep 1
 done

@@ -38,7 +38,7 @@ var sshCmd = &cobra.Command{
 	Use:   "ssh",
 	Short: "Log into the minikube environment (for debugging)",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
 		if co.CP.Host.DriverName == driver.None {

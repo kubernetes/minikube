@@ -74,7 +74,7 @@ var serviceCmd = &cobra.Command{
 
 		RootCmd.PersistentPreRun(cmd, args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 && !all || (len(args) > 0 && all) {
 			exit.Message(reason.Usage, "You must specify service name(s) or --all")
 		}
@@ -98,8 +98,7 @@ var serviceCmd = &cobra.Command{
 		var services service.URLs
 		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
-			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
-			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			out.ErrT(style.Fatal, "Failed to get service URL - check that minikube is running and that you have specified the correct namespace (-n flag) if required: {{.error}}", out.V{"error": err})
 			os.Exit(reason.ExSvcUnavailable)
 		}
 

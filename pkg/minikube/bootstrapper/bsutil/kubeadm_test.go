@@ -146,7 +146,18 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr})
+			socket := ""
+			switch tc.runtime {
+			case constants.Docker:
+				socket = "/var/run/dockershim.sock"
+			case constants.CRIO:
+				socket = "/var/run/crio/crio.sock"
+			case constants.Containerd:
+				socket = "/run/containerd/containerd.sock"
+			default:
+				socket = "/var/run/dockershim.sock"
+			}
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr, Socket: socket})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}
@@ -232,7 +243,18 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr})
+			socket := ""
+			switch tc.runtime {
+			case constants.Docker:
+				socket = "/var/run/dockershim.sock"
+			case constants.CRIO:
+				socket = "/var/run/crio/crio.sock"
+			case constants.Containerd:
+				socket = "/run/containerd/containerd.sock"
+			default:
+				socket = "/var/run/dockershim.sock"
+			}
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime, Runner: fcr, Socket: socket})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}

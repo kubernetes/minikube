@@ -71,7 +71,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{SupportsAmd64, IsRuntimeContainerd},
+		validations: []setFn{IsRuntimeContainerd},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
@@ -229,6 +229,11 @@ var Addons = []*Addon{
 	},
 	{
 		name:      "nvidia-device-plugin",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "yakd",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},

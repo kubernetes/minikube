@@ -107,6 +107,9 @@ Verify release checksums by running `make check-release`
 
 If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/learning-environment/minikube/>
 
+## Update SECURITY-INSIGHTS.yml
+Make appropriate changes to [SECURITY-INSIGHTS.yml](https://github.com/kubernetes/minikube/SECURITY-INSIGHTS.yml). Check [OPENSSF Security Insights Specification](https://github.com/ossf/security-insights-spec/blob/main/specification.md) for reference.
+
 ## Announce
 
 Please mention the new release https://github.com/kubernetes/minikube/blob/master/README.md

@@ -179,8 +179,7 @@ func (c KindNet) manifest() (assets.CopyableFile, error) {
 // Apply enables the CNI
 func (c KindNet) Apply(r Runner) error {
 	// This is mostly applicable to the 'none' driver
-	_, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap"))
-	if err != nil {
+	if _, err := r.RunCmd(exec.Command("stat", "/opt/cni/bin/portmap")); err != nil {
 		return errors.Wrap(err, "required 'portmap' CNI plug-in not found")
 	}
 
