@@ -90,7 +90,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 	}
 
 	// add 'net.ipv4.ip_unprivileged_port_start=0' sysctl so that containers that run with non-root user can bind to otherwise privilege ports (like coredns v1.11.0+)
-	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
+	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since Kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
 	// note: cri-o supports 'default_sysctls' option since v1.12.0 (Oct 19, 2018) (ref: https://github.com/cri-o/cri-o/releases/tag/v1.12.0; https://github.com/cri-o/cri-o/pull/1721)
 	if kv.GTE(semver.Version{Major: 1, Minor: 22}) {
 		// remove any existing 'net.ipv4.ip_unprivileged_port_start' settings
