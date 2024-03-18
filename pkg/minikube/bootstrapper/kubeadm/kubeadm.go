@@ -952,7 +952,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "downloading binaries")
 	}
 	// download crictl if needed.
-	// since kubernetes v1.29 we need to have matching crictl and kubernetes version.
+	// since Kubernetes v1.29 we need to have matching crictl and Kubernetes version.
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
