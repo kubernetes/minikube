@@ -23,6 +23,7 @@ jobs:
           OLD_CONTAINERD=$(DEP=containerd make get-dependency-version)
           OLD_CRIO=$(DEP=cri-o make get-dependency-version)
           OLD_CRICTL=$(DEP=crictl make get-dependency-version)
+          OLD_CRUN=$(DEP=crun make get-dependency-version)
           OLD_DOCKER=$(DEP=docker make get-dependency-version)
           OLD_GO=$(DEP=go make get-dependency-version)
           OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
@@ -35,6 +36,7 @@ jobs:
           # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
           # make update-cri-o-version
           # make update-crictl-version
+          make update-crun-version
           make update-docker-version
           make update-golang-version
           make update-nerdctl-version
@@ -46,6 +48,7 @@ jobs:
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
           NEW_CRIO=$(DEP=cri-o make get-dependency-version)
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
+          NEW_CRUN=$(DEP=crun make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
           NEW_GO=$(DEP=go make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
@@ -72,6 +75,10 @@ jobs:
           if [ "$OLD_CRICTL" != "$NEW_CRICTL" ]; then
             echo "### Update crictl from $OLD_CRICTL to $NEW_CRICTL" >> "$GITHUB_OUTPUT"
             echo "[Release notes](https://github.com/kubernetes-sigs/cri-tools/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CRUN" != "$NEW_CRUN" ]; then
+            echo "### Update crun from $OLD_CRUN to $NEW_CRUN" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/containers/crun/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_DOCKER" != "$NEW_DOCKER" ]; then
             echo "### Update Docker from $OLD_DOCKER to $NEW_DOCKER" >> "$GITHUB_OUTPUT"
