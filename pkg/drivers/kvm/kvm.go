@@ -175,27 +175,26 @@ func (d *Driver) GetState() (st state.State, err error) {
 
 // machineState converts libvirt state to libmachine state
 func machineState(lvs libvirt.DomainState) state.State {
-	// Possible States:
-	//
-	// VIR_DOMAIN_NOSTATE no state
-	// VIR_DOMAIN_RUNNING the domain is running
-	// VIR_DOMAIN_BLOCKED the domain is blocked on resource
-	// VIR_DOMAIN_PAUSED the domain is paused by user
-	// VIR_DOMAIN_SHUTDOWN the domain is being shut down
-	// VIR_DOMAIN_SHUTOFF the domain is shut off
-	// VIR_DOMAIN_CRASHED the domain is crashed
-	// VIR_DOMAIN_PMSUSPENDED the domain is suspended by guest power management
-	// VIR_DOMAIN_LAST this enum value will increase over time as new events are added to the libvirt API. It reflects the last state supported by this version of the libvirt API.
+	// Possible States (ref: https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainState):
+	// - VIR_DOMAIN_NOSTATE no state
+	// - VIR_DOMAIN_RUNNING the domain is running
+	// - VIR_DOMAIN_BLOCKED the domain is blocked on resource
+	// - VIR_DOMAIN_PAUSED the domain is paused by user
+	// - VIR_DOMAIN_SHUTDOWN the domain is being shut down
+	// - VIR_DOMAIN_SHUTOFF the domain is shut off
+	// - VIR_DOMAIN_CRASHED the domain is crashed
+	// - VIR_DOMAIN_PMSUSPENDED the domain is suspended by guest power management
+	// - VIR_DOMAIN_LAST this enum value will increase over time as new events are added to the libvirt API. It reflects the last state supported by this version of the libvirt API.
 
 	switch lvs {
-	// DOMAIN_SHUTDOWN technically means the VM is still running, but in the
-	// process of being shutdown, so we return state.Running
-	case libvirt.DOMAIN_RUNNING, libvirt.DOMAIN_SHUTDOWN:
+	case libvirt.DOMAIN_RUNNING:
 		return state.Running
 	case libvirt.DOMAIN_BLOCKED, libvirt.DOMAIN_CRASHED:
 		return state.Error
 	case libvirt.DOMAIN_PAUSED:
 		return state.Paused
+	case libvirt.DOMAIN_SHUTDOWN:
+		return state.Stopping
 	case libvirt.DOMAIN_SHUTOFF:
 		return state.Stopped
 	case libvirt.DOMAIN_PMSUSPENDED:
@@ -451,7 +450,8 @@ func (d *Driver) Stop() (err error) {
 			return errors.Wrap(err, "stopping vm")
 		}
 
-		for i := 0; i < 60; i++ {
+		maxsec := 120
+		for i := 0; i < maxsec; i++ {
 			s, err := d.GetState()
 			if err != nil {
 				return errors.Wrap(err, "error getting state of VM")
@@ -459,8 +459,8 @@ func (d *Driver) Stop() (err error) {
 			if s == state.Stopped {
 				return nil
 			}
-			log.Infof("Waiting for machine to stop %d/%d", i, 60)
-			time.Sleep(1 * time.Second)
+			log.Infof("Waiting for machine to stop %d/%d", i, maxsec)
+			time.Sleep(time.Second)
 		}
 
 	}

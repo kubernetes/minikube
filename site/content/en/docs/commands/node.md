@@ -56,9 +56,9 @@ minikube node add [flags]
 ### Options
 
 ```
-      --control-plane       This flag is currently unsupported.
+      --control-plane       If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.
       --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
-      --worker              If true, the added node will be marked for work. Defaults to true. (default true)
+      --worker              If set, added node will be available as worker. Defaults to true. (default true)
 ```
 
 ### Options inherited from parent commands

@@ -170,4 +170,8 @@ var (
 	// NvidiaDevicePlugin assets for nvidia-device-plugin addon
 	//go:embed nvidia-device-plugin/*.tmpl
 	NvidiaDevicePlugin embed.FS
+
+	// YakdAssets assets for yakd addon
+	//go:embed yakd/*.yaml yakd/*.tmpl
+	YakdAssets embed.FS
 )

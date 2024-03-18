@@ -145,9 +145,7 @@ func TestDeleteProfile(t *testing.T) {
 	}
 }
 
-var hostAndDirsDeleterMock = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
-	return deleteContextTest()
-}
+var hostAndDirsDeleterMock = func(_ libmachine.API, _ *config.ClusterConfig, _ string) error { return deleteContextTest() }
 
 func deleteContextTest() error {
 	if err := cmdcfg.Unset(config.ProfileName); err != nil {

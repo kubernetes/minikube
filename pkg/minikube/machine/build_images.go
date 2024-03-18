@@ -25,6 +25,8 @@ import (
 	"runtime"
 	"strings"
 
+	dockerref "github.com/distribution/reference"
+
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -59,6 +61,14 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 		remote = false
 	}
 
+	if tag != "" {
+		named, err := dockerref.ParseNormalizedNamed(tag)
+		if err != nil {
+			return errors.Wrapf(err, "couldn't parse image reference %q", tag)
+		}
+		tag = named.String()
+	}
+
 	for _, p := range profiles { // building images to all running profiles
 		pName := p.Name // capture the loop variable
 
@@ -70,7 +80,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 			continue
 		}
 
-		cp, err := config.PrimaryControlPlane(p.Config)
+		cp, err := config.ControlPlane(*p.Config)
 		if err != nil {
 			return err
 		}
@@ -79,7 +89,7 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 			m := config.MachineName(*c, n)
 
 			if !allNodes {
-				// build images on the primary control plane node by default
+				// build images on the control-plane node by default
 				if nodeName == "" && n != cp {
 					continue
 				} else if nodeName != n.Name && nodeName != m {

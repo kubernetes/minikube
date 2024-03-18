@@ -74,7 +74,7 @@ func GetBinaryDownloadURL(version, platform, arch string) string {
 
 // ChownR does a recursive os.Chown
 func ChownR(path string, uid, gid int) error {
-	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
+	return filepath.Walk(path, func(name string, _ os.FileInfo, err error) error {
 		if err == nil {
 			err = os.Chown(name, uid, gid)
 		}

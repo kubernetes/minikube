@@ -32,10 +32,10 @@ var rootCmd = &cobra.Command{
 	Short:         "mkcmp is used to compare performance of two minikube binaries",
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(_ *cobra.Command, args []string) error {
 		return validateArgs(args)
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, args []string) error {
 		binaries, err := retrieveBinaries(args)
 		if err != nil {
 			return err

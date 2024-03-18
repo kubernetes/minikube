@@ -383,8 +383,6 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
 	var g errgroup.Group
-	var copied int64
-
 	g.Go(func() error {
 		defer w.Close()
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
@@ -395,7 +393,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 			return nil
 		}
 
-		copied, err = io.Copy(w, f)
+		copied, err := io.Copy(w, f)
 		if err != nil {
 			return errors.Wrap(err, "io.Copy")
 		}
@@ -406,7 +404,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo test -d %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
 	mtime, err := f.GetModTime()
 	if err != nil {
 		klog.Infof("error getting modtime for %s: %v", dst, err)

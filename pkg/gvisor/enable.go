@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -36,16 +37,28 @@ const (
 	containerdConfigPath       = "/etc/containerd/config.toml"
 	containerdConfigBackupPath = "/tmp/containerd-config.toml.bak"
 
-	releaseURL = "https://storage.googleapis.com/gvisor/releases/release/latest/x86_64/"
-	shimURL    = releaseURL + "containerd-shim-runsc-v1"
-	gvisorURL  = releaseURL + "runsc"
-
 	configFragment = `
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runsc]
   runtime_type = "io.containerd.runsc.v1"
   pod_annotations = [ "dev.gvisor.*" ]
 `
 )
+
+var (
+	shimURL   = releaseURL() + "containerd-shim-runsc-v1"
+	gvisorURL = releaseURL() + "runsc"
+)
+
+func releaseURL() string {
+	arch := runtime.GOARCH
+	switch arch {
+	case "amd64":
+		arch = "x86_64"
+	case "arm64":
+		arch = "aarch64"
+	}
+	return fmt.Sprintf("https://storage.googleapis.com/gvisor/releases/release/latest/%s/", arch)
+}
 
 // Enable follows these steps for enabling gvisor in minikube:
 //  1. creates necessary directories for storing binaries and runsc logs

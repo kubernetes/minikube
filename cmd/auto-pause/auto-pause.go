@@ -24,35 +24,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/style"
 )
 
-var unpauseRequests = make(chan struct{})
-var done = make(chan struct{})
-var mu sync.Mutex
+var (
+	unpauseRequests = make(chan struct{})
+	done            = make(chan struct{})
+	mu              sync.Mutex
+	runtimePaused   bool
+	version         = "0.0.1"
 
-var runtimePaused bool
-var version = "0.0.1"
-
-var runtime = flag.String("container-runtime", "docker", "Container runtime to use for (un)pausing")
+	runtime  = flag.String("container-runtime", "docker", "Container runtime to use for (un)pausing")
+	interval = flag.Duration("interval", time.Minute*1, "Interval of inactivity for pause to occur")
+)
 
 func main() {
 	flag.Parse()
 
-	profile := viper.GetString(config.ProfileName)
-	_, cfg := mustload.Partial(profile)
-	interval := cfg.AutoPauseInterval
-
-	tickerChannel := time.NewTicker(interval)
+	tickerChannel := time.NewTicker(*interval)
 
 	// Check current state
 	alreadyPaused()
@@ -62,24 +55,13 @@ func main() {
 		for {
 			select {
 			case <-tickerChannel.C:
+				tickerChannel.Stop()
 				runPause()
 			case <-unpauseRequests:
-				fmt.Printf("Got request\n")
-				if runtimePaused {
-					runUnpause()
-
-					// Reset once cluster has been unpaused.
-					tickerChannel.Reset(interval)
-
-					// Avoid race where tick happens before Reset call and after unPause.
-					for {
-						select {
-						case <-tickerChannel.C:
-						default:
-							break
-						}
-					}
-				}
+				tickerChannel.Stop()
+				log.Println("Got request")
+				runUnpause()
+				tickerChannel.Reset(*interval)
 
 				done <- struct{}{}
 			}
@@ -102,9 +84,10 @@ func runPause() {
 	mu.Lock()
 	defer mu.Unlock()
 	if runtimePaused {
-		out.Styled(style.AddonEnable, "Auto-pause is already enabled.")
+		log.Println("Already paused, skipping")
 		return
 	}
+	log.Println("Pausing...")
 
 	r := command.NewExecRunner(true)
 
@@ -120,13 +103,17 @@ func runPause() {
 
 	runtimePaused = true
 
-	out.Step(style.Unpause, "Paused {{.count}} containers", out.V{"count": len(uids)})
+	log.Printf("Paused %d containers", len(uids))
 }
 
 func runUnpause() {
-	fmt.Println("unpausing...")
 	mu.Lock()
 	defer mu.Unlock()
+	if !runtimePaused {
+		log.Println("Already unpaused, skipping")
+		return
+	}
+	log.Println("Unpausing...")
 
 	r := command.NewExecRunner(true)
 
@@ -141,7 +128,7 @@ func runUnpause() {
 	}
 	runtimePaused = false
 
-	out.Step(style.Unpause, "Unpaused {{.count}} containers", out.V{"count": len(uids)})
+	log.Printf("Unpaused %d containers", len(uids))
 }
 
 func alreadyPaused() {
@@ -158,5 +145,5 @@ func alreadyPaused() {
 	if err != nil {
 		exit.Error(reason.GuestCheckPaused, "Fail check if container paused", err)
 	}
-	out.Step(style.Check, "containers paused status: {{.paused}}", out.V{"paused": runtimePaused})
+	log.Printf("containers paused status: %t", runtimePaused)
 }

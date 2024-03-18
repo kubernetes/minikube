@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -279,46 +278,19 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		expectedPort int
 		expectedName string
 	}{
-		{"old style", "p1", "192.168.64.75", 8443, "minikube"},
 		{"new style", "p2_newformat", "192.168.59.136", 8443, "m01"},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			// To save converted config file from old style config at ./testdata/.minikube,
-			// rather than at env(MINIKUBE_HOME) which depends on test environment
-			t.Setenv("MINIKUBE_HOME", miniDir)
-
 			cc, err := DefaultLoader.LoadConfigFromFile(tc.profile, miniDir)
 			if err != nil {
 				t.Fatalf("Failed to load config for %s", tc.description)
 			}
 
-			// temporarily copy the original profile config
-			originalFilePath := profileFilePath(tc.profile, miniDir)
-			tempFilePath := filepath.Join(miniDir, "profiles", tc.profile, "config_temp.json")
-			t.Cleanup(func() {
-				// reset profile config
-				err = os.Rename(tempFilePath, originalFilePath)
-				if err != nil {
-					t.Fatalf("Failed to move temporal config file (%s) to original file path (%s)",
-						tempFilePath, originalFilePath)
-				}
-			})
-
-			d, err := os.ReadFile(originalFilePath)
-			if err != nil {
-				t.Fatalf("Failed to read config file : %s", originalFilePath)
-			}
-
-			err = os.WriteFile(tempFilePath, d, 0644)
-			if err != nil {
-				t.Fatalf("Failed to write temporal config file : %s", tempFilePath)
-			}
-
-			// get primary control plane
+			// get control-plane node
 			viper.Set(ProfileName, tc.profile)
-			n, err := PrimaryControlPlane(cc)
+			n, err := ControlPlane(*cc)
 			if err != nil {
 				t.Fatalf("Unexpected error getting primary control plane: %v", err)
 			}

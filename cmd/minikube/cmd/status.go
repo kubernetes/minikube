@@ -213,7 +213,7 @@ var statusCmd = &cobra.Command{
 	Long: `Gets the status of a local Kubernetes cluster.
 	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		output = strings.ToLower(output)
 		if output != "text" && statusFormat != defaultStatusFormat {
 			exit.Message(reason.Usage, "Cannot use both --output and --format options")
@@ -403,18 +403,19 @@ func nodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 	if cc.Addons["auto-pause"] {
 		hostname, _, port, err = driver.AutoPauseProxyEndpoint(&cc, &n, host.DriverName)
 	} else {
-		hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+		hostname = cc.KubernetesConfig.APIServerHAVIP
+		port = cc.APIServerPort
+		if !config.IsHA(cc) || driver.NeedsPortForward(cc.Driver) {
+			hostname, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
+		}
 	}
 
 	if err != nil {
 		klog.Errorf("forwarded endpoint: %v", err)
 		st.Kubeconfig = Misconfigured
-	} else {
-		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
-		if err != nil && st.Host != state.Starting.String() {
-			klog.Errorf("kubeconfig endpoint: %v", err)
-			st.Kubeconfig = Misconfigured
-		}
+	} else if err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port, ""); err != nil && st.Host != state.Starting.String() {
+		klog.Errorf("kubeconfig endpoint: %v", err)
+		st.Kubeconfig = Misconfigured
 	}
 
 	sta, err := kverify.APIServerStatus(cr, hostname, port)

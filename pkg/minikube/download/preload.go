@@ -137,8 +137,7 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 	}
 
 	// If the preload existence is cached, just return that value.
-	preloadState, ok := preloadStates[k8sVersion][containerRuntime]
-	if ok {
+	if preloadState, ok := preloadStates[k8sVersion][containerRuntime]; ok {
 		return preloadState
 	}
 
