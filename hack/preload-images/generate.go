@@ -128,7 +128,6 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// download crictl if needed
-
 	if err := bsutil.TransferCrictl(kcfg, runner); err != nil {
 		return errors.Wrap(err, "transferring crictl")
 	}
