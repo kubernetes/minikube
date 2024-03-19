@@ -108,7 +108,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= latest
+GVISOR_TAG ?= v0.0.1
 
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
@@ -787,13 +787,15 @@ out/gvisor-addon: ## Build gvisor addon
 	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
-	docker build --platform=linux/amd64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+gvisor-addon-image:
+	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
-push-gvisor-addon-image: gvisor-addon-image
+push-gvisor-addon-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform linux/amd64,linux/arm64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: release-iso
 release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files

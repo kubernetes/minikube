@@ -69,6 +69,11 @@ var (
 				`golang:.* AS`: `golang:{{.StableVersion}} AS`,
 			},
 		},
+		"deploy/gvisor/Dockerfile": {
+			Replace: map[string]string{
+				`golang:.* AS`: `golang:{{.StableVersion}} AS`,
+			},
+		},
 	}
 )
 
