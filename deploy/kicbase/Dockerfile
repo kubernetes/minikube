@@ -97,6 +97,7 @@ RUN echo "Ensuring scripts are executable ..." \
       nfs-common \
       iputils-ping netcat-openbsd vim-tiny \
     && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-tmpfiles-setup.service" -delete \
+    && find /lib/systemd/system/sysinit.target.wants/ -name "systemd-binfmt.service" -delete \
     && rm -f /lib/systemd/system/multi-user.target.wants/* \
     && rm -f /etc/systemd/system/*.wants/* \
     && rm -f /lib/systemd/system/local-fs.target.wants/* \
