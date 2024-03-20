@@ -39,7 +39,7 @@ import (
 
 // TransferCrictl transfers the crictl binary to the machine to replace /usr/bin/crictl
 func TransferCrictl(cfg config.KubernetesConfig, c command.Runner) error {
-	src, err := download.DownloadCrictlBinary(cfg.KubernetesVersion)
+	src, err := download.CrictlBinary(cfg.KubernetesVersion)
 	if err != nil {
 		return errors.Wrapf(err, "downloading crictl")
 	}
