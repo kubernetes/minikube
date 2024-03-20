@@ -58,11 +58,11 @@ func CrictlVersion(c CommandRunner) (*semver.Version, error) {
 	}
 	stdout := rr.Stdout.String()
 	reg := regexp.MustCompile(`crictl\s*version\s*(v\d*\.\d*.\d*)`)
-	subMatches := reg.FindSubmatch([]byte(stdout))
+	subMatches := reg.FindStringSubmatch(stdout)
 	if len(subMatches) < 2 {
 		return nil, fmt.Errorf("failed to find the crictl version")
 	}
-	version, err := util.ParseKubernetesVersion(string(subMatches[1]))
+	version, err := util.ParseKubernetesVersion(subMatches[1])
 	if err != nil {
 		return nil, err
 	}
