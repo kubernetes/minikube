@@ -88,8 +88,8 @@ func Binary(binary, version, osName, archName, binaryURL string) (string, error)
 	return targetFilepath, nil
 }
 
-// DownloadCrictlBinary download the crictl tar archive to the cache folder and untar it
-func DownloadCrictlBinary(k8sversion string) (string, error) {
+// CrictlBinary download the crictl tar archive to the cache folder and untar it
+func CrictlBinary(k8sversion string) (string, error) {
 	// first we check whether crictl exists
 	targetDir := localpath.MakeMiniPath("cache", "linux", runtime.GOARCH, k8sversion)
 	targetPath := path.Join(targetDir, "crictl")
