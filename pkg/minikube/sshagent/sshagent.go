@@ -106,7 +106,7 @@ func isRunning(cc *config.ClusterConfig) (bool, error) {
 func Stop(profile string) error {
 	cc, err := config.Load(profile)
 	if err != nil {
-		if strings.Contains(fmt.Sprint(err), fmt.Sprintf("cluster %q does not exist", profile)) {
+		if config.IsNotExist(err) {
 			return nil
 		}
 		return fmt.Errorf("failed loading config: %v", err)
