@@ -4,8 +4,8 @@
 #   
 ################################################################################
 
-DOCKER_BUILDX_VERSION = v0.11.2
-DOCKER_BUILDX_COMMIT = 9872040b6626fb7d87ef7296fd5b832e8cc2ad17
+DOCKER_BUILDX_VERSION = v0.13.1
+DOCKER_BUILDX_COMMIT = 788433953af10f2a698f5c07611dddce2e08c7a0
 
 define DOCKER_BUILDX_CONFIGURE_CMDS
         mkdir -p $(TARGET_DIR)/usr/libexec/docker/cli-plugins
