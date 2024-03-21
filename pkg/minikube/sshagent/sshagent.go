@@ -106,7 +106,7 @@ func isRunning(cc *config.ClusterConfig) (bool, error) {
 func Stop(profile string) error {
 	cc, err := config.Load(profile)
 	if err != nil {
-		return fmt.Errorf("failed loading config: %v", err)
+		return err
 	}
 	running, err := isRunning(cc)
 	if err != nil {
