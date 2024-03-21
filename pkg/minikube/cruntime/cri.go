@@ -259,7 +259,7 @@ func populateCRIConfig(cr CommandRunner, socket string) error {
 	if err := t.Execute(&b, opts); err != nil {
 		return err
 	}
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s %q | sudo tee %s", path.Dir(cPath), b.String(), cPath))
 	if rr, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "Run: %q", rr.Command())
 	}

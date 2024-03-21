@@ -409,7 +409,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	if err != nil {
 		klog.Infof("error getting modtime for %s: %v", dst, err)
 	} else if mtime != (time.Time{}) {
-		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
+		scp += fmt.Sprintf(" && sudo touch -d %q %s", mtime.Format(layout), dst)
 	}
 	out, err := sess.CombinedOutput(scp)
 	if err != nil {

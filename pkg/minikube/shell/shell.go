@@ -130,7 +130,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s --shell cmd') DO @%%i
 		unsetSuffix:    ";\n",
 		unsetDelimiter: "",
 		usageHint: func(s ...interface{}) string {
-			return fmt.Sprintf("\n: \"%s\"\n: eval `%s`\n", s...)
+			return fmt.Sprintf("\n: %q\n: eval `%s`\n", s...)
 		},
 	},
 	"none": {

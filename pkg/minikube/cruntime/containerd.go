@@ -216,7 +216,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		}
 		regRootPath := path.Join(containerdMirrorsRoot, addr)
 
-		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", regRootPath, base64.StdEncoding.EncodeToString(b.Bytes()), path.Join(regRootPath, "hosts.toml")))
+		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s %q | base64 -d | sudo tee %s", regRootPath, base64.StdEncoding.EncodeToString(b.Bytes()), path.Join(regRootPath, "hosts.toml")))
 		if _, err := cr.RunCmd(c); err != nil {
 			return errors.Wrap(err, "unable to generate insecure registry cfg")
 		}

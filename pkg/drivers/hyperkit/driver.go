@@ -494,7 +494,7 @@ func (d *Driver) setupNFSShare() error {
 		return err
 	}
 
-	writeScriptCmd := fmt.Sprintf("echo -e \"%s\" | sh", mountCommands)
+	writeScriptCmd := fmt.Sprintf("echo -e %q | sh", mountCommands)
 
 	if _, err := drivers.RunSSHCommandFromDriver(d, writeScriptCmd); err != nil {
 		return err

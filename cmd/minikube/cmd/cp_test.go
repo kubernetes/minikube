@@ -56,7 +56,7 @@ func TestParsePath(t *testing.T) {
 			path: c.expectedPath,
 		}
 		if *rp != expected {
-			t.Errorf("parsePath \"%s\" expected: %q, got: %q", c.path, expected, *rp)
+			t.Errorf("parsePath %q expected: %q, got: %q", c.path, expected, *rp)
 		}
 	}
 }

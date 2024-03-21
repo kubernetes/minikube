@@ -112,12 +112,12 @@ func TestDeleteProfile(t *testing.T) {
 			}
 			pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
 			if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
-				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+				t.Errorf("Profile folder of profile %q was not deleted", profile.Name)
 			}
 
 			pathToMachine := localpath.MachinePath(profile.Name, localpath.MiniPath())
 			if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
-				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+				t.Errorf("Profile folder of profile %q was not deleted", profile.Name)
 			}
 
 			afterProfiles, err := fileNames(filepath.Join(localpath.MiniPath(), "profiles"))

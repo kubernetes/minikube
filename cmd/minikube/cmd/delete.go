@@ -446,7 +446,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 func deleteConfig(cname string) error {
 	if err := config.DeleteProfile(cname); err != nil {
 		if config.IsNotExist(err) {
-			delErr := profileDeletionErr(cname, fmt.Sprintf("\"%s\" profile does not exist", cname))
+			delErr := profileDeletionErr(cname, fmt.Sprintf("%q profile does not exist", cname))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
 		}
 		delErr := profileDeletionErr(cname, fmt.Sprintf("failed to remove profile %v", err))
@@ -489,7 +489,7 @@ func deleteInvalidProfile(profile *config.Profile) []error {
 }
 
 func profileDeletionErr(cname string, additionalInfo string) error {
-	return fmt.Errorf("error deleting profile \"%s\": %s", cname, additionalInfo)
+	return fmt.Errorf("error deleting profile %q: %s", cname, additionalInfo)
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {

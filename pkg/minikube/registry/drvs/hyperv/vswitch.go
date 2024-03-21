@@ -84,7 +84,7 @@ func getVMSwitch(condition string) ([]vmSwitch, error) {
 
 // returns Hyper-V switches which connects to the adapter of the given GUID
 func findConnectedVMSwitch(adapterGUID string) (string, error) {
-	foundSwitches, err := getVMSwitch(fmt.Sprintf("($_.SwitchType -eq 2) -And ($_.NetAdapterInterfaceGuid -contains \"%s\")", adapterGUID))
+	foundSwitches, err := getVMSwitch(fmt.Sprintf("($_.SwitchType -eq 2) -And ($_.NetAdapterInterfaceGuid -contains %q)", adapterGUID))
 	if err != nil {
 		return "", err
 	}
@@ -134,7 +134,7 @@ func getOrderedAdapters() ([]netAdapter, error) {
 
 // create a new VM switch of the given name and network adapter
 func createVMSwitch(switchName string, adapter netAdapter) error {
-	err := cmd(fmt.Sprintf("Hyper-V\\New-VMSwitch -Name \"%s\" -NetAdapterInterfaceDescription \"%s\"", switchName, adapter.InterfaceDescription))
+	err := cmd(fmt.Sprintf("Hyper-V\\New-VMSwitch -Name %q -NetAdapterInterfaceDescription %q", switchName, adapter.InterfaceDescription))
 	if err != nil {
 		return errors.Wrapf(err, "failed to create VM switch %s with adapter %s", switchName, adapter.InterfaceGUID)
 	}
@@ -147,7 +147,7 @@ func createVMSwitch(switchName string, adapter netAdapter) error {
 func chooseSwitch(adapterName string) (string, netAdapter, error) {
 	var adapter netAdapter
 	if adapterName != "" {
-		foundAdapters, err := getNetAdapters(false, fmt.Sprintf("($_.InterfaceDescription -eq \"%s\")", adapterName))
+		foundAdapters, err := getNetAdapters(false, fmt.Sprintf("($_.InterfaceDescription -eq %q)", adapterName))
 		if err != nil {
 			return "", netAdapter{}, err
 		}

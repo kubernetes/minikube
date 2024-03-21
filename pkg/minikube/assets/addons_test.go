@@ -52,7 +52,7 @@ func TestParseMapString(t *testing.T) {
 	}
 	for actual, expected := range cases {
 		if parsedMap := parseMapString(actual); !mapsEqual(parsedMap, expected) {
-			t.Errorf("Parsed map from string \"%s\" differs from expected map: Actual: %v Expected: %v", actual, parsedMap, expected)
+			t.Errorf("Parsed map from string %q differs from expected map: Actual: %v Expected: %v", actual, parsedMap, expected)
 		}
 	}
 }

@@ -326,7 +326,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 				if err != nil {
 					// if something weird has happened from previous tests..
 					// this could at least spare us some waiting
-					if strings.Contains(rr.Stdout.String(), fmt.Sprintf("Profile \"%s\" not found.", profile)) {
+					if strings.Contains(rr.Stdout.String(), fmt.Sprintf("Profile %q not found.", profile)) {
 						t.Fatalf("profile was deleted, cancelling the test")
 					}
 					return err

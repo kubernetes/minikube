@@ -260,7 +260,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 		return err
 	}
 
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s %q | sudo tee %s && sudo systemctl restart crio", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 
@@ -313,7 +313,7 @@ func concatStrings(src []string, prefix string, postfix string) []string {
 func updateUnit(p provision.SSHCommander, name string, content string, dst string) error {
 	klog.Infof("Updating %s unit: %s ...", name, dst)
 
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s %q | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
 		return err
 	}
 	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo systemctl -f enable %s && sudo systemctl -f restart %s; }", dst, dst, dst, dst, name, name)); err != nil {

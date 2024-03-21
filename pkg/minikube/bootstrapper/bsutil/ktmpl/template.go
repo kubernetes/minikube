@@ -35,7 +35,7 @@ func printMapInOrder(m map[string]string, sep string) []string {
 	}
 	sort.Strings(keys)
 	for i, k := range keys {
-		keys[i] = fmt.Sprintf("%s%s\"%s\"", k, sep, m[k])
+		keys[i] = fmt.Sprintf("%s%s%q", k, sep, m[k])
 	}
 	return keys
 }

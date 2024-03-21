@@ -115,13 +115,13 @@ func TestParseMountString(t *testing.T) {
 	for _, tc := range testCases {
 		mount, err := ParseMountString(tc.MountString)
 		if err != nil && !tc.ExpectErr {
-			t.Errorf("Unexpected error for \"%s\": %v", tc.Name, err)
+			t.Errorf("Unexpected error for %q: %v", tc.Name, err)
 		}
 		if err == nil && tc.ExpectErr {
-			t.Errorf("Expected error for \"%s\" but didn't get any: %v %v", tc.Name, mount, err)
+			t.Errorf("Expected error for %q but didn't get any: %v %v", tc.Name, mount, err)
 		}
 		if mount != tc.ExpectedMount {
-			t.Errorf("Unexpected mount for \"%s\":\n expected %+v\ngot %+v", tc.Name, tc.ExpectedMount, mount)
+			t.Errorf("Unexpected mount for %q:\n expected %+v\ngot %+v", tc.Name, tc.ExpectedMount, mount)
 		}
 	}
 }

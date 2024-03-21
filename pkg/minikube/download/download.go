@@ -134,7 +134,7 @@ func lockDownload(file string) (mutex.Releaser, error) {
 		spec.Timeout = 5 * time.Minute
 		releaser, err := mutex.Acquire(spec)
 		if err != nil {
-			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock \"%s\": %+v", file, spec)}
+			lockChannel <- retPair{nil, errors.Wrapf(err, "failed to acquire lock %q: %+v", file, spec)}
 			return
 		}
 		lockChannel <- retPair{releaser, err}

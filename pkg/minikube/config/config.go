@@ -179,7 +179,7 @@ func encode(w io.Writer, m MinikubeConfig) error {
 func Load(profile string, miniHome ...string) (*ClusterConfig, error) {
 	cc, err := DefaultLoader.LoadConfigFromFile(profile, miniHome...)
 	if err == nil {
-		klog.Infof("Loaded profile config \"%s\": Driver=%s, ContainerRuntime=%s, KubernetesVersion=%s",
+		klog.Infof("Loaded profile config %q: Driver=%s, ContainerRuntime=%s, KubernetesVersion=%s",
 			profile,
 			cc.Driver,
 			cc.KubernetesConfig.ContainerRuntime,
