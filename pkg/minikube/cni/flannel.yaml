@@ -150,7 +150,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: docker.io/flannel/flannel:v0.24.3
+        image: docker.io/flannel/flannel:v0.24.4
         command:
         - cp
         args:
@@ -164,7 +164,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: docker.io/flannel/flannel:v0.24.3
+        image: docker.io/flannel/flannel:v0.24.4
         command:
         - /opt/bin/flanneld
         args:
