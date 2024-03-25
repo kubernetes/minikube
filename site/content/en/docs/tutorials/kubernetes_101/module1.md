@@ -48,6 +48,6 @@ During this tutorial, we'll be focusing on the command line for deploying and ex
 kubectl get nodes
 ```
 
-This command shows all nodes that can be used to host our applications. Now we have only one node, and we can see that its status it ready (it is ready to accept applications for deployment).
+This command shows all nodes that can be used to host our applications. Now we have only one node, and we can see that its status is ready (it is ready to accept applications for deployment).
 
 {{% button link="/docs/tutorials/kubernetes_101/module2" %}}
