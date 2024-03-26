@@ -1,11 +1,11 @@
 # Release Notes
 
-## Version 1.33.0-beta.0 - 2024-03-25
+## Version 1.33.0-beta.0 - 2024-03-26
 
 Features:
 * Support multi-control plane - HA clusters `--ha` [#17909](https://github.com/kubernetes/minikube/pull/17909)
 * Addon gvisor: Add arm64 support [#18063](https://github.com/kubernetes/minikube/pull/18063) [#18453](https://github.com/kubernetes/minikube/pull/18453)
-* Add YAKD - Kubernetes Dashboard addon [#17775](https://github.com/kubernetes/minikube/pull/17775)
+* New Addon: YAKD - Kubernetes Dashboard addon [#17775](https://github.com/kubernetes/minikube/pull/17775)
 
 Minor Improvements:
 * Addon auto-pause: Remove memory leak & add configurable interval [#17936](https://github.com/kubernetes/minikube/pull/17936)
@@ -15,7 +15,7 @@ Minor Improvements:
 * Add default sysctls to allow privileged ports with no capabilities [#18421](https://github.com/kubernetes/minikube/pull/18421)
 * Include extended attributes in preload tarballs [#17829](https://github.com/kubernetes/minikube/pull/17829)
 * Apply `kubeadm.applyNodeLabels` label to all nodes [#16416](https://github.com/kubernetes/minikube/pull/16416)
-* Add 20s timeout to driver status check [#17553](https://github.com/kubernetes/minikube/pull/17553)
+* Limit driver status check to 20s [#17553](https://github.com/kubernetes/minikube/pull/17553)
 * Include journalctl logs if systemd service fails to start [#17659](https://github.com/kubernetes/minikube/pull/17659)
 * ISO: Add CONFIG_DM_MULTIPATH [#18277](https://github.com/kubernetes/minikube/pull/18277)
 * ISO: Add CONFIG_QFMT_V2 for arm64 [#17991](https://github.com/kubernetes/minikube/pull/17991)
