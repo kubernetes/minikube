@@ -13,7 +13,7 @@ require (
 	github.com/Xuanwo/go-locale v1.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/briandowns/spinner v1.11.1
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/distribution/reference v0.5.0
