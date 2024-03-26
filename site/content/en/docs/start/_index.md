@@ -20,6 +20,47 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
+<script language="javascript">
+  const architectures = [
+    "Linux/x86-64",
+    "Linux/ARM64",
+    "Linux/ppc64",
+    "Linux/S390x",
+    "Linux/ARMv7",
+    "macOS/x86-64",
+    "macOS/ARM64",
+    "Windows/x86-64"
+  ];
+
+  fetch('https://api.github.com/repos/kubernetes/minikube/releases')
+    .then((response) => response.json())
+    .then((releases) => {
+      if (releases && releases.length > 0 && releases[0] && releases[0].tag_name) {
+        const isBetaMostRecent = releases[0].tag_name.includes("-beta");
+
+        if (isBetaMostRecent) {
+          for (architecture of architectures) {
+            const betaElement = document.querySelector(`button[data-quiz-id="/${architecture}/Beta"]`);
+            const stableElement = document.querySelector(`button[data-quiz-id="/${architecture}/Stable"]`);
+            if (betaElement) {
+              betaElement.disabled = true;
+
+              if (betaElement.classList.contains("active")) {
+                const stableElement = document.querySelector(`button[data-quiz-id="/${architecture}/Stable"]`);
+                if (stableElement) {
+                  stableElement.click();
+                  stableElement.classList.add("active");
+                }
+                betaElement.classList.remove("active");
+              }
+            }
+          }
+        }
+      }
+    })
+    .catch(console.error);
+</script>
+
 {{% card %}}
 
 Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
