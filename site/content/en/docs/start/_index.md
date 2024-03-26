@@ -38,7 +38,7 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
       if (releases && releases.length > 0 && releases[0] && releases[0].tag_name) {
         const isBetaMostRecent = releases[0].tag_name.includes("-beta");
 
-        if (isBetaMostRecent) {
+        if (!isBetaMostRecent) {
           for (architecture of architectures) {
             const betaElement = document.querySelector(`button[data-quiz-id="/${architecture}/Beta"]`);
             const stableElement = document.querySelector(`button[data-quiz-id="/${architecture}/Stable"]`);
