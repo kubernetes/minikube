@@ -20,7 +20,7 @@ Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volume
 
 ## Tutorial
 
-- Start a cluster with 2 nodes in the driver of your choice:
+- Start a cluster with profile `multinode-demo` consisting of 2 nodes in the driver of your choice:
 
 ```shell
 minikube start --nodes 2 -p multinode-demo
@@ -78,6 +78,21 @@ multinode-demo-m02
 type: Worker
 host: Running
 kubelet: Running
+```
+
+- A list of profiles can be obtained with (_note: The output assumes a second minikube instance with default profile name `minikube`):
+
+```shell
+minikube profile list
+``` 
+
+```
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
+|    Profile     | VM Driver | Runtime |      IP      | Port | Version | Status  | Nodes | Active |
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
+| minikube       | docker    | docker  | 192.168.49.2 | 8443 | v1.20.2 | Running |     1 |        |
+| multinode-demo | docker    | docker  | 192.168.58.2 | 8443 | v1.20.2 | Running |     2 | *      |
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
 ```
 
 - Deploy our hello world deployment:

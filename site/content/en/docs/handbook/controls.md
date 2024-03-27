@@ -52,6 +52,21 @@ Start a second local cluster (_note: This will not work if minikube is using the
 minikube start -p cluster2
 ```
 
+Obtain the available minikube profiles:
+
+```shell
+minikube profile list
+```
+
+```
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
+|    Profile     | VM Driver | Runtime |      IP      | Port | Version | Status  | Nodes | Active |
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
+| minikube       | docker    | docker  | 192.168.49.2 | 8443 | v1.28.3 | Running |     1 |        |
+| cluster2       | docker    | docker  | 192.168.58.2 | 8443 | v1.28.3 | Running |     2 | *      |
+|----------------|-----------|---------|--------------|------|---------|---------|-------|--------|
+```
+
 Stop your local cluster:
 
 ```shell
