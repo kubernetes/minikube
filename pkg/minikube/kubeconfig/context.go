@@ -45,6 +45,20 @@ func UnsetCurrentContext(machineName string, configPath ...string) error {
 	return nil
 }
 
+// GetCurrentContext gets the kubectl's current-context
+func GetCurrentContext(configPath ...string) (string, error) {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+	kcfg, err := readOrNew(fPath)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting kubeconfig status")
+	}
+
+	return kcfg.CurrentContext, err
+}
+
 // SetCurrentContext sets the kubectl's current-context
 func SetCurrentContext(name string, configPath ...string) error {
 	fPath := PathFromEnv()
