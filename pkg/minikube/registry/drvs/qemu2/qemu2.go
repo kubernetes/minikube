@@ -22,8 +22,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
-	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
@@ -110,8 +110,15 @@ func qemuVersion() (semver.Version, error) {
 	if err != nil {
 		return semver.Version{}, err
 	}
-	v := strings.Split(strings.TrimPrefix(string(rr), "QEMU emulator version "), "\n")[0]
-	return semver.Make(v)
+	versionPattern :=`(\d+\.\d+\.\d+)`
+	re := regexp.MustCompile(versionPattern)
+	matches := re.FindStringSubmatch(string(rr))
+	if len(matches) > 1 {
+		v := matches[1]
+		return semver.Make(v)
+	} else {
+		panic(fmt.Sprintf("Failed to detect semantic version of %s -version output.", qemuSystem))
+	}
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
