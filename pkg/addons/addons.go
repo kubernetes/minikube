@@ -32,7 +32,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
@@ -394,7 +393,7 @@ func supportLegacyIngress(addon *assets.Addon, cc config.ClusterConfig) error {
 		}
 		if addon.Name() == "ingress-dns" {
 			addon.Images = map[string]string{
-				"IngressDNS": "cryptexlabs/minikube-ingress-dns:0.3.0@sha256:e252d2a4c704027342b303cc563e95d2e71d2a0f1404f55d676390e28d5093ab",
+				"IngressDNS": "cirix/minikube-ingress-dns:1.0.0@sha256:3cda52a6b926a5b110de71bcc3f4b223ff957e5de1edc288be3a52960209a432",
 			}
 			addon.Registries = nil
 			return nil
