@@ -24,12 +24,14 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/util"
 )
 
 // container maps to 'runc list -f json'
@@ -47,6 +49,24 @@ type crictlImages struct {
 		UID         interface{} `json:"uid"`
 		Username    string      `json:"username"`
 	} `json:"images"`
+}
+
+func CrictlVersion(c CommandRunner) (*semver.Version, error) {
+	rr, err := c.RunCmd(exec.Command("sudo", "crictl", "--version"))
+	if err != nil {
+		return nil, err
+	}
+	stdout := rr.Stdout.String()
+	reg := regexp.MustCompile(`crictl\s*version\s*(v\d*\.\d*.\d*)`)
+	subMatches := reg.FindStringSubmatch(stdout)
+	if len(subMatches) < 2 {
+		return nil, fmt.Errorf("failed to find the crictl version")
+	}
+	version, err := util.ParseKubernetesVersion(subMatches[1])
+	if err != nil {
+		return nil, err
+	}
+	return &version, nil
 }
 
 // crictlList returns the output of 'crictl ps' in an efficient manner
