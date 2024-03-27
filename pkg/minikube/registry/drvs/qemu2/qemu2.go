@@ -24,10 +24,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/blang/semver/v4"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -37,18 +39,105 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+const (
+	defaultSSHUser     = "docker"
+	docURL             = "https://minikube.sigs.k8s.io/docs/reference/drivers/qemu/"
+	privateNetworkName = "docker-machines"
+)
+
+func extractConfigData(chan registry.Configurator) func() (interface{}, error) {
+	return func() (interface{}, error) {
+		rc := make(chan registry.Configurator, 1)
+		rc <- configure
+
+		var c chan func() registry.Configurator
+		// errChan := make(chan error, 1)
+		c <- func() registry.Configurator {
+			return func(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+
+				machineName := cc.Name
+				return machineName, nil
+			}
+		}
+		return "", nil
+	}
+}
+
+type HostMachineData struct {
+	name, clusterName string
+}
+
+func extractHMD(wg *sync.WaitGroup, sender chan<- *HostMachineData) func(config.ClusterConfig, config.Node) interface{} {
+	return func(cc config.ClusterConfig, n config.Node) interface{} {
+
+		sender <- &HostMachineData{
+			name:        n.Name,
+			clusterName: cc.Name,
+		}
+
+		close(sender)
+		return &HostMachineData{}
+	}
+}
+
+func newHostMachineData(wg *sync.WaitGroup, hmd *HostMachineData, receiver <-chan *HostMachineData) *HostMachineData {
+	defer wg.Done()
+
+	data, ok := <-receiver
+	if !ok {
+		panic(fmt.Sprintf("failed to receive channel data from %v", receiver))
+	}
+	hmd = &HostMachineData{
+		name:        data.name,
+		clusterName: data.clusterName,
+	}
+
+	return hmd
+}
+
+func getFromChannel(hmdChan chan *HostMachineData) (cn string, name string) {
+	for i := range hmdChan {
+		cn := i.clusterName
+		name := i.name
+		return name, cn
+	}
+
+	return
+}
 
 func init() {
 	priority := registry.Default
 	if runtime.GOOS == "windows" {
 		priority = registry.Experimental
 	}
+
+	configChanFunc := make(chan registry.Configurator, 1)
+	_ = extractConfigData(configChanFunc)
+	if err := extractConfigData(configChanFunc); err != nil {
+		panic(err)
+	}
+
+	storePath := localpath.MiniPath()
+	hmdChan := make(chan *HostMachineData, 1)
+	name, cn := getFromChannel(hmdChan)
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+	go newHostMachineData(wg, &HostMachineData{}, hmdChan)
+	go extractHMD(wg, hmdChan)
+	wg.Wait()
+
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.QEMU2,
-		Alias:    []string{driver.AliasQEMU},
-		Init:     func() drivers.Driver { return qemu.NewDriver("", "") },
-		Config:   configure,
+		Name:  driver.QEMU2,
+		Alias: []string{driver.AliasQEMU},
+		Init: func() drivers.Driver {
+			return qemu.NewDriver(
+				"hostmachine01", storePath,
+				kic.Config{
+					ClusterName: cn,
+					MachineName: name,
+				})
+		},
+		Config:   <-configChanFunc,
 		Status:   status,
 		Default:  true,
 		Priority: priority,
@@ -159,12 +248,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		return nil, fmt.Errorf("generating MAC address: %v", err)
 	}
 
-	return qemu.Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: name,
-			StorePath:   localpath.MiniPath(),
-			SSHUser:     "docker",
-		},
+	storePath := localpath.MiniPath()
+
+	return &qemu.Driver{
+		BaseDriver:            getBaseDriver(name, storePath),
+		PrivateNetwork:        privateNetworkName,
 		Boot2DockerURL:        download.LocalISOResource(cc.MinikubeISO),
 		DiskSize:              cc.DiskSize,
 		Memory:                cc.Memory,
@@ -186,6 +274,20 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		SocketVMNetClientPath: cc.SocketVMnetClientPath,
 		ExtraDisks:            cc.ExtraDisks,
 	}, nil
+}
+
+func getBaseDriver(hostName, storePath string) *drivers.BaseDriver {
+	return &drivers.BaseDriver{
+		// IPAddress:      "",
+		MachineName: hostName,
+		SSHUser:     qemu.GetSSHUsername(),
+		SSHPort:     qemu.GetSSHPort(qemu.RenderColimaSSHConfig()),
+		SSHKeyPath:  qemu.GetLimaSSHConfigPath(),
+		StorePath:   localpath.MiniPath(),
+		// SwarmMaster:    false,
+		// SwarmHost:      "",
+		// SwarmDiscovery: "",
+	}
 }
 
 func status() registry.State {
