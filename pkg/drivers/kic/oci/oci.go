@@ -701,7 +701,7 @@ func DaemonHost(driver string) string {
 	if driver == Docker {
 		if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
 			if u, err := url.Parse(dh); err == nil {
-				if u.Host != "" {
+				if u.Hostname() != "" {
 					return u.Hostname()
 				}
 			}
@@ -717,14 +717,14 @@ func IsExternalDaemonHost(driver string) bool {
 	if driver == Podman {
 		if dh := os.Getenv(constants.PodmanContainerHostEnv); dh != "" {
 			if u, err := url.Parse(dh); err == nil {
-				return u.Host != ""
+				return u.Hostname() != ""
 			}
 		}
 	}
 	if driver == Docker {
 		if dh := os.Getenv(constants.DockerHostEnv); dh != "" {
 			if u, err := url.Parse(dh); err == nil {
-				return u.Host != ""
+				return u.Hostname() != ""
 			}
 		}
 	}
