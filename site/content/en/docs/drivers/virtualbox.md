@@ -26,3 +26,8 @@ minikube start supports some VirtualBox specific flags:
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
+* If you experience slow network performance with the VirtualBox driver, changing the Network Interface Card (NIC) type may improve speed. Use the following command to start minikube with the AMD PCNet FAST III (Am79C973) for both NAT and host-only network interfaces:
+
+    ```shell
+    minikube start --vm-driver=virtualbox --nat-nic-type=Am79C973 --host-only-nic-type=Am79C973
+    ```
