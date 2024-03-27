@@ -236,11 +236,36 @@ func setContainerRuntimeOptions(name string, p miniProvisioner) error {
 	case "crio", "cri-o":
 		return setCrioOptions(p)
 	case "containerd":
-		return nil
+		return setContainerdOptions(p)
 	default:
 		_, err := p.GenerateDockerOptions(engine.DefaultPort)
 		return err
 	}
+}
+
+func setContainerdOptions(p provision.SSHCommander) error {
+   var (containerdOptsTmpl=`CONTAINERD_MINIKUBE_OPTIONS='{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}'`
+   containerdConfigDir = "/etc/containerd/certs.d" 
+   containerdConfigFile = path.Join(containerdConfigDir, "minikube.conf"))
+   t,err := template.New("containerdOpts").Parse(containerdOptsTmpl)
+   if err!=nil {
+	return err
+   }
+   var containerdOptsBuf bytes.Buffer
+   if err := t.Execute(&containerdOptsBuf,p); err!=nil {
+	return err
+   }
+   if _, err = os.Stat(containerdConfigDir); os.IsNotExist(err) {
+	   // Create directory if it doesn't exist
+	   if _,err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s", containerdConfigDir)); err != nil {
+		   return err
+	   }
+   }
+   command := fmt.Sprintf("printf %%s \"%s\" | sudo tee %s && sudo systemctl restart containerd", containerdOptsBuf.String(), containerdConfigFile)
+    if _, err := p.SSHCommand(command); err != nil {
+        return err
+    }
+	return nil
 }
 
 func setCrioOptions(p provision.SSHCommander) error {
