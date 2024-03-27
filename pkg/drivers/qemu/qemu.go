@@ -18,6 +18,7 @@ package qemu
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -175,7 +177,11 @@ func checkPid(pid int) error {
 	if err != nil {
 		return err
 	}
-	return process.Signal(syscall.Signal(0))
+	// when user sends a signal to an existing privileged process, "operation not permitted" error is returned, but the process exists, which is all we care about here
+	if err = process.Signal(syscall.Signal(0)); err == nil || strings.Contains(err.Error(), "operation not permitted") {
+		return nil
+	}
+	return err
 }
 
 func (d *Driver) GetState() (state.State, error) {
@@ -253,7 +259,7 @@ func (d *Driver) Create() error {
 			}
 			break
 		}
-	case "socket_vmnet":
+	case "socket_vmnet", "vmnet-host", "vmnet-shared", "vmnet-bridged":
 		d.SSHPort, err = d.GetSSHPort()
 		if err != nil {
 			return err
@@ -365,7 +371,7 @@ func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
 	return 0, fmt.Errorf("unable to allocate tcp port")
 }
 
-func (d *Driver) Start() error {
+func (d *Driver) Start() error { //nolint to suppress cyclomatic complexity 31 is high (> 30) (gocyclo)
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
@@ -448,6 +454,10 @@ func (d *Driver) Start() error {
 		startCmd = append(startCmd,
 			"-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress), "-netdev", "socket,id=net0,fd=3",
 		)
+	case "vmnet-host", "vmnet-shared", "vmnet-bridged":
+		startCmd = append(startCmd,
+			"-netdev", fmt.Sprintf("%s,id=net0,isolated=off", d.Network), "-device", fmt.Sprintf("virtio-net-pci,netdev=net0,mac=%s", d.MACAddress),
+		)
 	default:
 		return fmt.Errorf("unknown network: %s", d.Network)
 	}
@@ -484,11 +494,18 @@ func (d *Driver) Start() error {
 			d.diskPath())
 	}
 
-	// If socket network, start with socket_vmnet.
+	// for socket_vmnet network, start with socket_vmnet
 	startProgram := d.Program
 	if d.Network == "socket_vmnet" {
 		startProgram = d.SocketVMNetClientPath
 		startCmd = append([]string{d.SocketVMNetPath, d.Program}, startCmd...)
+	}
+
+	// vmnet network requires elevated privileges
+	if strings.HasPrefix(d.Network, "vmnet-") {
+		//TODO: handle windows
+		startProgram = "sudo"
+		startCmd = append([]string{"--stdin", "env", fmt.Sprintf("PATH=%q", os.Getenv("PATH")), d.Program}, startCmd...)
 	}
 
 	startFunc := cmdOutErr
@@ -504,7 +521,17 @@ func (d *Driver) Start() error {
 	switch d.Network {
 	case "builtin", "user":
 		d.IPAddress = "127.0.0.1"
-	case "socket_vmnet":
+	case "socket_vmnet", "vmnet-host", "vmnet-shared", "vmnet-bridged":
+		// for vmnet network, we need to restore user's access to qemu.pid and monitor in minikube's home dir
+		if strings.HasPrefix(d.Network, "vmnet-") {
+			if user, err := user.Current(); err != nil {
+				log.Errorf("cannot get current user and thus cannot take ownership of %s and %s (continuing anyway, but will likely fail): %v", d.pidfilePath(), d.monitorPath(), err)
+			} else if stdout, stderr, err := startFunc("sudo", "-S", "chown", user.Username, d.pidfilePath(), d.monitorPath()); err != nil {
+				fmt.Printf("OUTPUT: %s\n", stdout)
+				fmt.Printf("ERROR: %s\n", stderr)
+			}
+		}
+
 		var err error
 		getIP := func() error {
 			// QEMU requires MAC address with leading 0s
@@ -556,11 +583,61 @@ func isBootpdError(err error) bool {
 func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	cmd := exec.Command(cmdStr, args...)
 	log.Debugf("executing: %s %s", cmdStr, strings.Join(args, " "))
+
+	var err error
+
+	// allow using SUDO_PASSWORD env var for ci/cd automation, if present
+	// otherwise, prompt user to enter sudo password without echoing it using os.Stdin
+	var stdin io.WriteCloser
+	cmd.Stdin = os.Stdin
+	secret, found := os.LookupEnv("SUDO_PASSWORD")
+	if found {
+		cmd.Stdin = nil // unset to avoid "Stdin already set" error
+		if stdin, err = cmd.StdinPipe(); err != nil {
+			return "", "", fmt.Errorf("cannont create StdinPipe: %v", err)
+		}
+	}
+
 	var stdout bytes.Buffer
-	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+
+	// try detecting password prompt for sudo in StdErr (sudo has to be run with '-S' flag for this to work),
+	// while preserving original StdErr content by using tee reader
+	var stderr bytes.Buffer
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", "", fmt.Errorf("cannont create StderrPipe: %v", err)
+	}
+	errTee := io.TeeReader(errPipe, &stderr)
+
+	go func() {
+		var buf []byte
+		r := bufio.NewReader(errTee)
+		for {
+			b, err := r.ReadByte()
+			if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, os.ErrClosed) {
+				log.Errorf("reading from stderr failed: %v", err)
+				break
+			}
+			buf = append(buf, b)
+
+			// macOS has "Password:" and Linux has "[sudo] password for root:" prompt
+			if strings.Contains(string(buf), "assword") && strings.HasSuffix(string(buf), ":") {
+				// try SUDO_PASSWORD first, if one exists
+				if stdin != nil {
+					if _, err := io.WriteString(stdin, fmt.Sprintf("%s\n", secret)); err != nil {
+						log.Errorf("writing to stdin failed: %v", err)
+						break
+					}
+					continue
+				}
+				// alternatively, use os.Stdin for prompt
+				fmt.Printf("\nsudo password:  ")
+			}
+		}
+	}()
+
+	err = cmd.Run()
 	stdoutStr := stdout.String()
 	stderrStr := stderr.String()
 	log.Debugf("STDOUT: %s", stdoutStr)
