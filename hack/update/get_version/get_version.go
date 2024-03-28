@@ -51,6 +51,7 @@ var dependencies = map[string]dependency{
 	"golint":                  {"Makefile", `GOLINT_VERSION \?= (.*)`},
 	"gopogh":                  {"hack/jenkins/installers/check_install_gopogh.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
 	"gotestsum":               {"hack/jenkins/installers/check_install_gotestsum.sh", `gotest\.tools/gotestsum@(.*)`},
+	"headlamp":                {addonsFile, `headlamp-k8s/headlamp:(.*)@`},
 	"hugo":                    {"netlify.toml", `HUGO_VERSION = "(.*)"`},
 	"ingress":                 {addonsFile, `ingress-nginx/controller:(.*)@`},
 	"inspektor-gadget":        {addonsFile, `inspektor-gadget/inspektor-gadget:(.*)@`},
