@@ -725,7 +725,7 @@ jobs:
   functional_qemu_macos:
     permissions:
       contents: none
-    needs: [build_minikube]
+    needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "functional_qemu_macos"
@@ -752,10 +752,11 @@ jobs:
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.13.0/gopogh-darwin-amd64
           sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
-      - name: Setup QEMU
+      - name: Install QEMU
         shell: bash
         run: |
-          brew install --overwrite qemu 
+          brew update || true
+          brew install --overwrite qemu || true
       - name: Install and run socket_vmnet
         shell: bash
         run: |
@@ -774,7 +775,7 @@ jobs:
           sysctl hw.physicalcpu hw.logicalcpu
           qemu-system-x86_64 --version
       - name: Download Binaries
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
         with:
           name: minikube_binaries
           path: minikube_binaries
