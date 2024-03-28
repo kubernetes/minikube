@@ -550,9 +550,12 @@ jobs:
       - name: Install vbox
         shell: bash
         run: |
+          brew update
+          brew search virtualbox
           sudo spctl --master-disable
-          brew install --cask virtualbox 
-          brew install --cask virtualbox-extension-pack          
+          brew install --cask virtualbox || true
+          curl -O -L "https://download.virtualbox.org/virtualbox/7.0.14/Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack"
+          sudo VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack
       - name: Info
         shell: bash
         run: |
