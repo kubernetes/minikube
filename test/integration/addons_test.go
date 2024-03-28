@@ -32,6 +32,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -99,7 +100,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin", "--addons=yakd"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=storage-provisioner-rancher", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano"}, StartArgs()...)
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
@@ -135,6 +136,7 @@ func TestAddons(t *testing.T) {
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
+      			{"Volcano", validateVolcanoAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -859,6 +861,97 @@ func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string
 	}
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
 		t.Errorf("failed to disable cloud-spanner addon: args %q : %v", rr.Command(), err)
+	}
+}
+
+// validateVolcanoAddon tests the Volcano addon, makes sure the Volcano is installed into cluster.
+func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	volcanoNamespace := "volcano-system"
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
+	}
+
+	// Wait for the volcano component installation to complete
+	start := time.Now()
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() {
+		if err := kapi.WaitForDeploymentToStabilize(client, volcanoNamespace, "volcano-scheduler", Minutes(6)); err != nil {
+			t.Errorf("failed waiting for volcano-scheduler deployment to stabilize: %v", err)
+		} else {
+			t.Logf("volcano-scheduler stabilized in %s", time.Since(start))
+		}
+		wg.Done()
+	}()
+	go func() {
+		if err := kapi.WaitForDeploymentToStabilize(client, volcanoNamespace, "volcano-admission", Minutes(6)); err != nil {
+			t.Errorf("failed waiting for volcano-admission deployment to stabilize: %v", err)
+		} else {
+			t.Logf("volcano-admission stabilized in %s", time.Since(start))
+		}
+		wg.Done()
+	}()
+	go func() {
+		if err := kapi.WaitForDeploymentToStabilize(client, volcanoNamespace, "volcano-controller", Minutes(6)); err != nil {
+			t.Errorf("failed waiting for volcano-controller deployment to stabilize: %v", err)
+		} else {
+			t.Logf("volcano-controller stabilized in %s", time.Since(start))
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+
+	if _, err := PodWait(ctx, t, profile, volcanoNamespace, "app=volcano-scheduler", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for app=volcano-scheduler pod: %v", err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, volcanoNamespace, "app=volcano-admission", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for app=volcano-admission pod: %v", err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, volcanoNamespace, "app=volcano-controller", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for app=volcano-controller pod: %v", err)
+	}
+
+	// When the volcano deployment is complete, delete the volcano-admission-init job, it will affect the tests
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "-n", volcanoNamespace, "job", "volcano-admission-init"))
+	if err != nil {
+		t.Logf("vcjob creation with %s failed: %v", rr.Command(), err)
+	}
+
+	// Create a vcjob
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "vcjob.yaml")))
+	if err != nil {
+		t.Logf("vcjob creation with %s failed: %v", rr.Command(), err)
+	}
+
+	want := "test-job"
+	checkVolcano := func() error {
+		// check the vcjob
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "vcjob", "-n", "my-volcano"))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
+		}
+		if !strings.Contains(rr.Stdout.String(), want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(checkVolcano, time.Second*3, Minutes(6)); err != nil {
+		t.Errorf("failed checking volcano: %v", err.Error())
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volcano", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable volcano addon: args %q: %v", rr.Command(), err)
 	}
 }
 
