@@ -21,9 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/spf13/viper"
@@ -38,46 +36,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 )
-
-func maskProxyPassword(v string) string {
-	parts := strings.Split(v, "=")
-	// Is it an attribution variable?
-	if len(parts) == 2 {
-		key := strings.ToUpper(parts[0])
-		// Is it a proxy setting?
-		if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
-			proxyValue := parts[1]
-			// Proxy variable values SHOULD have a value like
-			// https(s)://<whatever>
-			proxyAddressParts := strings.Split(proxyValue, "://")
-			if len(proxyAddressParts) == 2 {
-				proxyURL := ""
-				proxyURL = proxyAddressParts[1]
-				// Let's store the username, the URL and and optional port address
-				pattern := `([^:]+):.+(@[\w\.]+)(:\d+)?`
-				regexpPattern := regexp.MustCompile(pattern)
-				matches := regexpPattern.FindStringSubmatch(proxyURL)
-				mask := "*****"
-				if len(matches) == 4 {
-					proxyValue = fmt.Sprintf("%s://%s:%s%s%s", proxyAddressParts[0], matches[1], mask, matches[2], matches[3])
-				} else if len(matches) == 3 {
-					proxyValue = fmt.Sprintf("%s//%s:%s@%s", proxyAddressParts[0], matches[1], mask, matches[2])
-				}
-			}
-			v = key + "=" + proxyValue
-		}
-	}
-	return v
-}
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	register.Reg.SetStep(register.PreparingKubernetes)
 	out.Step(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range config.DockerOpt {
-		v = maskProxyPassword(v)
+		v = util.MaskProxyPasswordWithKey(v)
 		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
 	for _, v := range config.DockerEnv {
