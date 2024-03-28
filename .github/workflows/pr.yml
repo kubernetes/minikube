@@ -755,8 +755,9 @@ jobs:
       - name: Setup QEMU
         shell: bash
         run: |
-          brew install qemu
-      - name: Install socket_vmnet
+          brew udpate
+          brew install -f --overwrite qemu 
+      - name: Install and run socket_vmnet
         shell: bash
         run: |
           brew install socket_vmnet
