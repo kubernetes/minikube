@@ -100,7 +100,7 @@ Notice that the output doesn't list the desired number of available Pods. Run th
 kubectl get pods
 ```
 
-Notice that some of the Pods have a status of `ImagePullBackOff`.
+Notice that some of the Pods have a status of `ErrImagePull` or `ImagePullBackOff`.
 
 To get more insight into the problem, run the `describe pods` command:
 
