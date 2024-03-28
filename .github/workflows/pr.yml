@@ -731,12 +731,13 @@ jobs:
       JOB_NAME: "functional_qemu_macos"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: macos-12
+    runs-on: macos-13
     steps:
-      - name: Disable firewall
+      - name: Disable firewall & security
         run: |
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd
+          sudo spctl --master-disable
       - name: Install kubectl
         shell: bash
         run: |
@@ -755,14 +756,12 @@ jobs:
         shell: bash
         run: |
           brew install qemu
-      - name: Checkout socket_vmnet
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
-        with:
-          repository: lima-vm/socket_vmnet
       - name: Install socket_vmnet
         shell: bash
         run: |
-          sudo make install
+          brew install socket_vmnet
+          brew tap homebrew/services
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Install docker
         shell: bash
         run: |
@@ -772,8 +771,8 @@ jobs:
         shell: bash
         run: |
           hostname
-          VBoxManage --version
           sysctl hw.physicalcpu hw.logicalcpu
+          qemu-system-x86_64 --version
       - name: Download Binaries
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
         with:
