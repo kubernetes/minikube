@@ -432,9 +432,9 @@ jobs:
       - name: Install vbox
         shell: bash
         run: |
+          sudo spctl --master-disable
           brew install --cask virtualbox 
           brew install --cask virtualbox-extension-pack
-          sudo spctl --master-disable
       - name: Info
         shell: bash
         run: |
