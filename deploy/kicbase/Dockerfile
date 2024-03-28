@@ -59,8 +59,8 @@ COPY deploy/kicbase/containerd_docker_io_hosts.toml /etc/containerd/certs.d/dock
 COPY deploy/kicbase/clean-install /usr/local/bin/clean-install
 COPY deploy/kicbase/entrypoint /usr/local/bin/entrypoint
 COPY deploy/kicbase/CHANGELOG ./CHANGELOG
-COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socket
-COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
+COPY deploy/kicbase/nerdctld/nerdctl.socket /usr/local/lib/systemd/system/nerdctl.socket
+COPY deploy/kicbase/nerdctld/nerdctl.service /usr/local/lib/systemd/system/nerdctl.service
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
 # Install dependencies, first from apt, then from release tarballs.
@@ -148,8 +148,8 @@ RUN export ARCH=$(dpkg --print-architecture) \
         tar -C /usr/local/bin -xzvf /tmp/nerdctl.tgz &&\
         curl -L --retry 5 --output /tmp/nerdctld.tgz "https://github.com/afbjorklund/nerdctld/releases/download/v${NERDCTLD_VERSION}/nerdctld-${NERDCTLD_VERSION}-linux-$ARCH.tar.gz" &&\
         tar -C /usr/local/bin -xzvf /tmp/nerdctld.tgz &&\
-        chmod 777  /usr/local/bin/nerdctl &&\
-        chmod 777 /usr/local/bin/nerdctld; \
+        chmod 755 /usr/local/bin/nerdctl &&\
+        chmod 755 /usr/local/bin/nerdctld; \
     fi
 
 # install docker

@@ -1,0 +1,13 @@
+[Unit]
+Description=nerdctl
+Requires=nerdctl.socket containerd.service
+After=nerdctl.socket containerd.service
+Documentation=https://github.com/containerd/nerdctl
+
+[Service]
+Type=notify
+Environment=CONTAINERD_NAMESPACE=k8s.io
+ExecStart=nerdctld --addr fd://
+
+[Install]
+WantedBy=multi-user.target
