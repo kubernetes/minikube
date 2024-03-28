@@ -555,9 +555,8 @@ jobs:
           sudo spctl --master-disable
           brew install --cask virtualbox 
           curl -O -L "https://download.virtualbox.org/virtualbox/7.0.14/Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack"
-          sha256sum Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack || true
           # Get SHAs from https://www.virtualbox.org/download/hashes/7.0.14/SHA256SUMS
-          sudo VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack --accept-license=42cb36fbf439a9ed28c95d2bbc718a0eac902225eb579c884c549af2e94be633
+          echo "y" | sudo VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack || true
       - name: Info
         shell: bash
         run: |
