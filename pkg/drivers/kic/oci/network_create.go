@@ -157,6 +157,9 @@ func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, 
 		if strings.Contains(rr.Output(), "is being used by a network interface") {
 			return nil, ErrNetworkGatewayTaken
 		}
+		if strings.Contains(rr.Output(), "is already used on the host or by another config") {
+			return nil, ErrNetworkGatewayTaken
+		}
 		return nil, fmt.Errorf("create %s network %s %s with gateway %s and MTU of %d: %w", ociBin, name, subnet.CIDR, subnet.Gateway, mtu, err)
 	}
 	return gateway, nil
