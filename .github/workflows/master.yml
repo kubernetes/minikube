@@ -429,6 +429,12 @@ jobs:
         run: |
           brew install docker-machine docker
           sudo docker --version
+      - name: Install vbox
+        shell: bash
+        run: |
+          brew install --cask virtualbox 
+          brew install --cask virtualbox-extension-pack
+          sudo spctl --master-disable
       - name: Info
         shell: bash
         run: |
