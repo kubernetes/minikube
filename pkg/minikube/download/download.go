@@ -111,7 +111,7 @@ func download(src, dst string) error {
 	return os.Rename(tmpDst, dst)
 }
 
-// withinUnitTset detects if we are in running within a unit-test
+// withinUnitTest detects if we are in running within a unit-test
 func withinUnitTest() bool {
 	// Nope, it's the integration test
 	if flag.Lookup("minikube-start-args") != nil || strings.HasPrefix(filepath.Base(os.Args[0]), "e2e-") {

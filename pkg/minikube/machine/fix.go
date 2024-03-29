@@ -186,7 +186,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	}
 }
 
-// ensureGuestClockSync ensures that the guest system clock is relatively in-sync
+// ensureSyncedGuestClock ensures that the guest system clock is relatively in-sync
 func ensureSyncedGuestClock(h hostRunner, drv string) error {
 	if !driver.IsVM(drv) {
 		return nil
@@ -230,7 +230,7 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	return d, nil
 }
 
-// adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
+// adjustGuestClock adjusts the guest system clock to be nearer to the host system clock
 func adjustGuestClock(h hostRunner, t time.Time) error {
 	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
 	klog.Infof("clock set: %s (err=%v)", out, err)
