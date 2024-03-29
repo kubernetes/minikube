@@ -1060,8 +1060,8 @@ update-gh-version:
 
 .PHONY: update-docsy-version
 update-docsy-version:
-	(cd hack/update/docsy_version && \
-	 go run update_docsy_version.go)
+	@(cd hack/update/docsy_version && \
+	  go run update_docsy_version.go)
 
 .PHONY: update-hugo-version
 update-hugo-version:
