@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.43-1711559786-18485@sha256:2dcab64da240d825290a528fa79ad3c32db45fe5f8be5150468234a7114eff82")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.43-1712102843-18552@sha256:310c51dd7ed60aa006c4c3e3dd92782d313cb194c9e3d586ef3237b63d679e9f")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
