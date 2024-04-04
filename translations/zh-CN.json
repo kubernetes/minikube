@@ -725,7 +725,7 @@
 	"Send trace events. Options include: [gcp]": "发送跟踪事件。包含的选项：[gcp]",
 	"Service '{{.service}}' was not found in '{{.namespace}}' namespace.\nYou may select another namespace by using 'minikube service {{.service}} -n \u003cnamespace\u003e'. Or list out all the services using 'minikube service list'": "在 '{{.namespace}}' 命名空间中未找到服务 '{{.service}}'。\n您可以通过使用 'minikube service {{.service}} -n \u003cnamespace\u003e' 选择另一个命名空间。或使用 'minikube service list' 列出所有服务",
 	"Services {{.svc_names}} have type \"ClusterIP\" . Minikube allows you to access them only for testing": "{{.svc_names}} 均为ClusterIP类型,正常情况仅供集群内访问。Minikube提供的外部访问手段仅可供测试使用",
-	"Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local developement minikube allows you to access this !": "",
+	"Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local development minikube allows you to access this !": "",
 	"Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)": "为 minikube 集群设置静态IP，该IP必须是私有IPv4地址，最后一位必须介于2和254之间，例如：192.168.200.200（仅适用于 Docker 和 Podman 驱动程序）",
 	"Set failed": "设置失败",
 	"Set flag to delete all profiles": "设置标志以删除所有配置文件",

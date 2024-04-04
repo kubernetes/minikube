@@ -161,7 +161,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 			noNodePortSvcNames = append(noNodePortSvcNames, fmt.Sprintf("%s/%s", svc.Namespace, svc.Name))
 		}
 		if len(noNodePortServices) != 0 {
-			out.WarningT("Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local developement minikube allows you to access this !", out.V{"svc_names": noNodePortSvcNames})
+			out.WarningT("Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local development minikube allows you to access this !", out.V{"svc_names": noNodePortSvcNames})
 		}
 
 		if driver.NeedsPortForward(co.Config.Driver) && services != nil {
