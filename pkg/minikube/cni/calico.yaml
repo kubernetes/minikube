@@ -1057,6 +1057,13 @@ spec:
                   Loose]'
                 pattern: ^(?i)(Disabled|Strict|Loose)?$
                 type: string
+              bpfExcludeCIDRsFromNAT:
+                description: BPFExcludeCIDRsFromNAT is a list of CIDRs that are to
+                  be excluded from NAT resolution so that host can handle them. A
+                  typical usecase is node local DNS cache.
+                items:
+                  type: string
+                type: array
               bpfExtToServiceConnmark:
                 description: 'BPFExtToServiceConnmark in BPF mode, control a 32bit
                   mark that is set on connections from an external client to a local
