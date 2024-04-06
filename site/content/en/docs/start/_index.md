@@ -32,9 +32,11 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
     "Windows/x86-64"
   ];
 
+  console.time("timerReleaseFetch");
   fetch('https://api.github.com/repos/kubernetes/minikube/releases')
     .then((response) => response.json())
     .then((releases) => {
+      console.timeEnd("timerReleaseFetch");
       if (releases && releases.length > 0 && releases[0] && releases[0].tag_name) {
         const isBetaMostRecent = releases[0].tag_name.includes("-beta");
 
