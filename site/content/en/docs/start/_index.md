@@ -74,7 +74,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64/Stable" name="Installer type" %}}
