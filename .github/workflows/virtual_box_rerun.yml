@@ -1,0 +1,39 @@
+# In "PR" workflow, the functional test for virtual box needs to be run on x86_64 arch,
+# however, when we use macos13 runner, sometimes we get an arm64 one, which makes the test fail.
+# This workflow is the solution for this problem. It will be triggered by PR workflow
+# and it will use gh tool to check whether there are any arch error according to the test log.
+# If there is, then rerun the PR test
+
+name: virtual-box-functional-test-rerun
+
+
+on:
+  workflow_run:
+    workflows: ["PR"]
+    branches: ["**"]
+    types: 
+      - completed
+
+env:
+  GH_TOKEN: ${{ github.token }}
+jobs:
+  check-and-rerun:
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: CheckArm64AndRerun
+        run: | 
+          set +e
+          gh run view ${{ github.event.workflow_run.id }} --log | grep ':type=>:arm'
+          RET=$?
+          echo "grep returns $RET"
+          set -e
+          if [ $RET == 0 ] 
+          then
+              JOBID=`gh run view ${{ github.event.workflow_run.id }} --json jobs | jq '.jobs[] | select ( .name == "functional_virtualbox_macos") | .databaseId'`
+              echo "rerun workflow ${{ github.event.workflow_run.id }} job $JOBID"
+              gh run rerun --job $JOBID
+          fi
+          exit 0
