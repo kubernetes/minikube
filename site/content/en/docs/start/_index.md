@@ -20,6 +20,39 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
+<script language="javascript">
+  const architectures = [
+    "Linux/x86-64",
+    "Linux/ARM64",
+    "Linux/ppc64",
+    "Linux/S390x",
+    "Linux/ARMv7",
+    "macOS/x86-64",
+    "macOS/ARM64",
+    "Windows/x86-64"
+  ];
+
+  console.time("timerReleaseFetch");
+  fetch('https://api.github.com/repos/kubernetes/minikube/releases')
+    .then((response) => response.json())
+    .then((releases) => {
+      console.timeEnd("timerReleaseFetch");
+      if (releases && releases.length > 0 && releases[0] && releases[0].tag_name) {
+        const isBetaMostRecent = releases[0].tag_name.includes("-beta");
+
+        if (isBetaMostRecent) {
+          for (architecture of architectures) {
+            const betaElement = document.querySelector(`button[data-quiz-id="/${architecture}/Beta"]`);
+            if (betaElement) {
+              betaElement.classList.remove("hide");
+            }
+          }
+        }
+      }
+    })
+    .catch(console.error);
+</script>
+
 {{% card %}}
 
 Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
@@ -33,7 +66,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64/Stable" name="Installer type" %}}
@@ -45,7 +78,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARM64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARM64/Stable" name="Installer type" %}}
@@ -57,7 +90,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ppc64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ppc64/Stable" name="Installer type" %}}
@@ -69,7 +102,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/S390x" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/S390x/Stable" name="Installer type" %}}
@@ -81,7 +114,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARMv7" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARMv7/Stable" name="Installer type" %}}
@@ -97,7 +130,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/x86-64/Stable" name="Installer type" %}}
@@ -109,7 +142,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Stable" name="Installer type" %}}
@@ -125,7 +158,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64/Stable" name="Installer type" %}}
