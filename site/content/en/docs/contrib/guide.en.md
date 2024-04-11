@@ -9,7 +9,7 @@ description: >
 
 ### Code of Conduct
 
-Be excellent to each another. Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md).
+Be excellent to each other. Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md).
 
 ### License Agreement
 
