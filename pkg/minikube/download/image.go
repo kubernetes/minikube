@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
@@ -125,7 +126,7 @@ func ImageToCache(img string) error {
 		return errors.Wrap(err, "parsing tag")
 	}
 	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
+	i, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(defaultPlatform))
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
 			ErrGithubNeedsLogin := errors.New(err.Error())
