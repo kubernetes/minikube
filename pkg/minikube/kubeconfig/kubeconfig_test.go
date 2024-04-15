@@ -456,7 +456,7 @@ func TestUpdateIP(t *testing.T) {
 		},
 	}
 
-	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
+	t.Setenv(localpath.MinikubeHome, "/home/la-croix/.minikube")
 
 	for _, test := range tests {
 		test := test
@@ -492,7 +492,7 @@ func TestUpdateIP(t *testing.T) {
 }
 
 func TestMissingContext(t *testing.T) {
-	t.Setenv(localpath.MinikubeHome, "/home/la-croix")
+	t.Setenv(localpath.MinikubeHome, "/home/la-croix/.minikube")
 	configFilename := tempFile(t, kubeConfigMissingContext)
 	defer os.Remove(configFilename)
 	if _, err := UpdateEndpoint("minikube", "192.168.10.100", 8080, configFilename, nil); err != nil {
