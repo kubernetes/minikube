@@ -29,7 +29,7 @@ require (
 	github.com/google/go-github/v61 v61.0.0
 	github.com/google/slowjam v1.1.0
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-getter v1.7.3
+	github.com/hashicorp/go-getter v1.7.4
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/jmoiron/sqlx v1.3.5
