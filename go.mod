@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.40.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.34.1
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.35.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.22.0
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
@@ -90,8 +90,7 @@ require (
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/compute v1.24.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.7 // indirect
 	cloud.google.com/go/monitoring v1.18.0 // indirect
 	cloud.google.com/go/trace v1.10.5 // indirect
@@ -220,7 +219,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.16.1 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
