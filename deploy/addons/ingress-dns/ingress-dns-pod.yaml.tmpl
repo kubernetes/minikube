@@ -75,7 +75,6 @@ spec:
   serviceAccountName: minikube-ingress-dns
   hostNetwork: true
   nodeSelector:
-    kubernetes.io/os: linux
     minikube.k8s.io/primary: 'true'
   tolerations:
       - effect: NoSchedule
