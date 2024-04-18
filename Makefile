@@ -668,6 +668,13 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
+.PHONY: build-and-push-hyperkit-build-image
+build-and-push-hyperkit-build-image:
+	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
+	(cd out/xcgo && sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile)
+	(cd out/xcgo && docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
+	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
+
 .PHONY: check-release
 check-release: ## Execute go test
 	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
