@@ -28,7 +28,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -54,7 +53,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -68,7 +66,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -87,7 +84,6 @@ jobs:
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -134,6 +130,7 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -232,6 +229,7 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -334,6 +332,7 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -419,6 +418,7 @@ jobs:
           kubectl version --client=true
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -516,6 +516,7 @@ jobs:
           kubectl version --client=true
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
