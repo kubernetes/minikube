@@ -926,6 +926,7 @@ endif
 site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init
 
+.PHONY: out/hugo/hugo
 out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
