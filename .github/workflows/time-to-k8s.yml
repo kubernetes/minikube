@@ -36,5 +36,5 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: Post-release: Add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}
+          title: "Post-release: Add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}"
           body: Updating time-to-k8s benchmark as part of the release process
