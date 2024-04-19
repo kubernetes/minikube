@@ -1,5 +1,74 @@
 # Release Notes
 
+## Version 1.33.0 - 2024-04-19
+
+Features:
+* Support exposing clusterIP services via `minikube service` [#17877](https://github.com/kubernetes/minikube/pull/17877)
+
+Minor Improvements:
+* Add active kubecontext to `minikube profile list` output [#17735](https://github.com/kubernetes/minikube/pull/17735)
+* CNI calico: support kubeadm.pod-network-cidr [#18233](https://github.com/kubernetes/minikube/pull/18233)
+* CNI bridge: Ensure pod communications are allowed [#16143](https://github.com/kubernetes/minikube/pull/16143)
+
+Bugs:
+* Fix unescaped local host regex [#18617](https://github.com/kubernetes/minikube/pull/18617)
+* Fix regex on validateNetwork to support special characters [#18158](https://github.com/kubernetes/minikube/pull/18158)
+
+Version Upgrades:
+* Bump Kubernetes version default: v1.30.0 and latest: v1.30.0 [#18669](https://github.com/kubernetes/minikube/pull/18669)
+* Addon headlamp: Update headlamp-k8s/headlamp image from v0.23.0 to 0.23.1 [#18517](https://github.com/kubernetes/minikube/pull/18517)
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.26.0 to v0.27.0 [#18588](https://github.com/kubernetes/minikube/pull/18588)
+* Addon istio-provisioner: Update istio/operator image from 1.21.0 to 1.21.1 [#18644](https://github.com/kubernetes/minikube/pull/18644)
+* Addon metrics-server: Update metrics-server/metrics-server image from v0.7.0 to v0.7.1 [#18551](https://github.com/kubernetes/minikube/pull/18551)
+* CNI: Update calico from v3.27.0 to v3.27.3 [#18206](https://github.com/kubernetes/minikube/pull/18206)
+* CNI: Update flannel from v0.24.4 to v0.25.1 [#18641](https://github.com/kubernetes/minikube/pull/18641)
+* Kicbase/ISO: Update buildkit from v0.13.0 to v0.13.1 [#18566](https://github.com/kubernetes/minikube/pull/18566)
+* Kicbase/ISO: Update containerd from v1.7.14 to v1.7.15 [#18621](https://github.com/kubernetes/minikube/pull/18621)
+* Kicbase/ISO: Update cri-dockerd from v0.3.3 to v0.3.12 [#18585](https://github.com/kubernetes/minikube/pull/18585)
+* Kicbase/ISO: Update crun from 1.14 to 1.14.4 [#18610](https://github.com/kubernetes/minikube/pull/18610)
+* Kicbase/ISO: Update docker from 25.0.4 to 26.0.1 [#18485](https://github.com/kubernetes/minikube/pull/18485) [#18649](https://github.com/kubernetes/minikube/pull/18649)
+* Kicbase/ISO: Update nerdctl from 1.7.4 to 1.7.5 [#18634](https://github.com/kubernetes/minikube/pull/18634)
+* Kicbase: Update nerdctld from 0.5.1 to 0.6.0 [#18647](https://github.com/kubernetes/minikube/pull/18647)
+
+For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Jan Klippel
+- Jeff MAURY
+- Jesse Hathaway
+- Maxime Brunet
+- Medya Ghazizadeh
+- Paul Rey
+- Predrag Rogic
+- Skalador
+- Steven Powell
+- alessandrocapanna
+- depthlending
+- guangwu
+- joaquimrocha
+- nikitakurakin
+- racequite
+- shixiuguo
+- skoenig
+- sunyuxuan
+- syxunion
+- Товарищ программист
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (5 comments)
+- spowelljr (4 comments)
+- Shubham82 (2 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (21 comments)
+- T-Lakshmi (15 comments)
+- Ritikaa96 (12 comments)
+- kundan2707 (8 comments)
+- medyagh (7 comments)
+
 ## Version 1.33.0-beta.0 - 2024-03-26
 
 Features:
