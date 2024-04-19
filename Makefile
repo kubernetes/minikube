@@ -671,8 +671,9 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 .PHONY: build-and-push-hyperkit-build-image
 build-and-push-hyperkit-build-image:
 	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
-	(cd out/xcgo && sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile)
-	(cd out/xcgo && docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
+	(cd out/xcgo && git restore . && git pull && \
+	 sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile && \
+	 docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
 	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
 
 .PHONY: check-release
