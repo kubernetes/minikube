@@ -219,7 +219,7 @@ func readInPastTestResults(pastTestRecordPath string) Records {
 	return record
 }
 
-// updateRunsFile overwrites the run file with the updated benchmarks list
+// updatePastTestResults overwrites the run file with the updated benchmarks list
 func updatePastTestResults(h Records, pastTestRecordPath string) {
 	b, err := json.Marshal(h)
 	if err != nil {
