@@ -3,6 +3,7 @@
 ## Version 1.33.0 - 2024-04-19
 
 Features:
+* Add support for Kubernetes v1.30 [#18669](https://github.com/kubernetes/minikube/pull/18669)
 * Support exposing clusterIP services via `minikube service` [#17877](https://github.com/kubernetes/minikube/pull/17877)
 
 Minor Improvements:
