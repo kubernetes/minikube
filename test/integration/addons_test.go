@@ -867,6 +867,9 @@ func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string
 // validateVolcanoAddon tests the Volcano addon, makes sure the Volcano is installed into cluster.
 func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
+	if ContainerRuntime() == "crio" {
+		t.Skipf("skipping: crio not supported")
+	}
 
 	volcanoNamespace := "volcano-system"
 
