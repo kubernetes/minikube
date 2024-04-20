@@ -58,6 +58,7 @@ var dependencies = map[string]dependency{
 	"istio-operator":          {addonsFile, `istio/operator:(.*)@`},
 	"kindnetd":                {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"kong":                    {addonsFile, `kong:(.*)@`},
+	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"kong-ingress-controller": {addonsFile, `kong/kubernetes-ingress-controller:(.*)@`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
