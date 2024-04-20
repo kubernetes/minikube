@@ -38,8 +38,8 @@ import (
 )
 
 // TransferCrictl transfers the crictl binary to the machine to replace /usr/bin/crictl
-func TransferCrictl(cfg config.KubernetesConfig, c command.Runner) error {
-	src, err := download.CrictlBinary(cfg.KubernetesVersion)
+func TransferCrictl(cfg config.KubernetesConfig, c command.Runner, crictlVersion string) error {
+	src, err := download.CrictlBinary(cfg.KubernetesVersion, crictlVersion)
 	if err != nil {
 		if strings.Contains(err.Error(), "response code: 404") {
 			klog.Info("Failed to download crictl with matching version. Using whatever version is already on the image")

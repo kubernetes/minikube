@@ -89,7 +89,7 @@ func Binary(binary, version, osName, archName, binaryURL string) (string, error)
 }
 
 // CrictlBinary download the crictl tar archive to the cache folder and untar it
-func CrictlBinary(k8sversion string) (string, error) {
+func CrictlBinary(k8sversion string, crictlVersion string) (string, error) {
 	// first we check whether crictl exists
 	targetDir := localpath.MakeMiniPath("cache", "linux", runtime.GOARCH, k8sversion)
 	targetPath := path.Join(targetDir, "crictl")
@@ -101,7 +101,11 @@ func CrictlBinary(k8sversion string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	crictlVersion := fmt.Sprintf("v%d.%d.0", v.Major, v.Minor)
+	// if we don't know the exact patch number of crictl then use 0.
+	// This definitely exists
+	if crictlVersion == "" {
+		crictlVersion = fmt.Sprintf("v%d.%d.%s", v.Major, v.Minor, crictlVersion)
+	}
 	url := fmt.Sprintf(
 		"https://github.com/kubernetes-sigs/cri-tools/releases/download/%s/crictl-%s-linux-%s.tar.gz",
 		crictlVersion, crictlVersion, runtime.GOARCH)

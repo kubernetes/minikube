@@ -43,6 +43,12 @@ type Release struct {
 // GHReleases returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository, and any error occurred.
 // If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
 func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge Release, err error) {
+	return GHReleasesWithCondition(ctx, owner, repo, nil)
+}
+
+// GHReleasesWithCondition returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository whose version number satisfy the condition given in the parameter, and any error occurred.
+// If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
+func GHReleasesWithCondition(ctx context.Context, owner, repo string, condition func(string) bool) (stable, latest, edge Release, err error) {
 	ghc := github.NewClient(nil)
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
@@ -60,6 +66,9 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge R
 				if !semver.IsValid(ver) {
 					continue
 				}
+			}
+			if condition != nil && !condition(ver) {
+				continue
 			}
 			// check if ver version is release (ie, 'v1.19.2') or pre-release (ie, 'v1.19.3-rc.0' or 'v1.19.0-beta.2')
 			prerls := semver.Prerelease(ver)
