@@ -72,9 +72,6 @@ func updateYAML(version string) {
 		`docker\.io\/calico\/cni:.*`:              "{{ .BinaryImageName }}",
 		`docker\.io\/calico\/node:.*`:             "{{ .DaemonSetImageName }}",
 		`docker\.io\/calico\/kube-controllers:.*`: "{{ .DeploymentImageName }}",
-		`192\.168\.0\.0\/16"`: `192.168.0.0/16"
-            - name: CALICO_IPV4POOL_CIDR
-              value: {{ .PodCIDR }}`,
 	}
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))

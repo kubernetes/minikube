@@ -49,7 +49,7 @@ var (
 	dashboardExposedPort int
 	// Matches: "127.0.0.1:8001" or "127.0.0.1 40012" etc.
 	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
-	hostPortRe = regexp.MustCompile(`127.0.0.1(:| )\d{4,}`)
+	hostPortRe = regexp.MustCompile(`127\.0\.0\.1(:| )\d{4,}`)
 )
 
 // dashboardCmd represents the dashboard command
@@ -57,7 +57,7 @@ var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
 	Short: "Access the Kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the Kubernetes dashboard running within the minikube cluster`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 

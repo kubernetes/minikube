@@ -34,19 +34,19 @@ const cxTimeout = 5 * time.Minute
 
 var (
 	schema = map[string]update.Item{
-		"deploy/iso/minikube-iso/arch/aarch64/package/cni-plugins-aarch64/cni-plugins.mk": {
+		"deploy/iso/minikube-iso/arch/aarch64/package/cni-plugins-latest-aarch64/cni-plugins-latest.mk": {
 			Replace: map[string]string{
-				`CNI_PLUGINS_AARCH64_VERSION = .*`: `CNI_PLUGINS_AARCH64_VERSION = {{.Version}}`,
+				`CNI_PLUGINS_LATEST_AARCH64_VERSION = .*`: `CNI_PLUGINS_LATEST_AARCH64_VERSION = {{.Version}}`,
 			},
 		},
-		"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins/cni-plugins.mk": {
+		"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins-latest/cni-plugins-latest.mk": {
 			Replace: map[string]string{
-				`CNI_PLUGINS_VERSION = .*`: `CNI_PLUGINS_VERSION = {{.Version}}`,
+				`CNI_PLUGINS_LATEST_VERSION = .*`: `CNI_PLUGINS_LATEST_VERSION = {{.Version}}`,
 			},
 		},
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`CNI_PLUGINS_VERSION=.*`: `CNI_PLUGINS_VERSION="{{.Version}}"`,
+				`CNI_PLUGINS_LATEST_VERSION=.*`: `CNI_PLUGINS_LATEST_VERSION="{{.Version}}"`,
 			},
 		},
 	}
@@ -69,10 +69,10 @@ func main() {
 
 	update.Apply(schema, data)
 
-	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-aarch64"); err != nil {
+	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-latest-aarch64"); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)
 	}
-	if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins"); err != nil {
+	if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins-latest"); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)
 	}
 }
@@ -88,7 +88,7 @@ func updateHashFile(version, arch, packagePath string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/cni-plugins.hash", packagePath)
+	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/cni-plugins-latest.hash", packagePath)
 	b, err = os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)

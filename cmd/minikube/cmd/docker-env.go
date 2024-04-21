@@ -228,8 +228,7 @@ func mustRestartDockerd(name string, runner command.Runner) {
 		// will need to wait for apisever container to come up, this usually takes 5 seconds
 		// verifying apisever using kverify would add code complexity for a rare case.
 		klog.Warningf("waiting to ensure apisever container is up...")
-		startTime := time.Now()
-		if err = waitForAPIServerProcess(runner, startTime, time.Second*30); err != nil {
+		if err = waitForAPIServerProcess(runner, time.Now(), time.Second*30); err != nil {
 			klog.Warningf("apiserver container isn't up, error: %v", err)
 		}
 	}
@@ -270,7 +269,7 @@ For example, you can do all docker operations such as docker build, docker run, 
 
 Note: You need the docker-cli to be installed on your machine.
 docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/docker_desktop_replacement/#steps`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var err error
 
 		shl := shell.ForceShell

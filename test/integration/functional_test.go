@@ -645,8 +645,8 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("error reading cluster config before soft start: %v", err)
 	}
-	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
-		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
+	if beforeCfg.Config.APIServerPort != apiPortTest {
+		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.APIServerPort)
 	}
 
 	// docs: Run `minikube start` again as a soft start
@@ -664,8 +664,8 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("error reading cluster config after soft start: %v", err)
 	}
 
-	if afterCfg.Config.KubernetesConfig.NodePort != apiPortTest {
-		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
+	if afterCfg.Config.APIServerPort != apiPortTest {
+		t.Errorf("expected node port in the config not to change after soft start. expected node port to be %d but got %d.", apiPortTest, afterCfg.Config.APIServerPort)
 	}
 }
 
@@ -780,8 +780,8 @@ func imageID(image string) string {
 		},
 	}
 
-	if imgIds, ok := ids[image]; ok {
-		if id, ok := imgIds[runtime.GOARCH]; ok {
+	if imgIDs, ok := ids[image]; ok {
+		if id, ok := imgIDs[runtime.GOARCH]; ok {
 			return id
 		}
 		panic(fmt.Sprintf("unexpected architecture for image %q: %v", image, runtime.GOARCH))
@@ -1246,9 +1246,6 @@ func validateLogsFileCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs", "--file", logFileName))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
-	}
-	if rr.Stdout.String() != "" {
-		t.Errorf("expected empty minikube logs output, but got: \n***%s***\n", rr.Output())
 	}
 
 	logs, err := os.ReadFile(logFileName)

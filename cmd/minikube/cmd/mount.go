@@ -91,7 +91,7 @@ var mountCmd = &cobra.Command{
 	Use:   "mount [flags] <source directory>:<target directory>",
 	Short: "Mounts the specified directory into minikube",
 	Long:  `Mounts the specified directory into minikube.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if isKill {
 			if err := killMountProcess(); err != nil {
 				exit.Error(reason.HostKillMountProc, "Error killing mount process", err)

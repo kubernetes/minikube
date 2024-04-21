@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-CRI_DOCKERD_AARCH64_VER = 0.3.3
-CRI_DOCKERD_AARCH64_REV = b58acf8
-CRI_DOCKERD_AARCH64_VERSION = b58acf8f78f9d7bce1241d1cddb0932e7101f278
+CRI_DOCKERD_AARCH64_VER = 0.3.12
+CRI_DOCKERD_AARCH64_REV = c2e3805
+CRI_DOCKERD_AARCH64_VERSION = c2e3805c946c16ec7e3a6d35ec5d72d72dc0c742
 CRI_DOCKERD_AARCH64_SITE = https://github.com/Mirantis/cri-dockerd/archive
 CRI_DOCKERD_AARCH64_SOURCE = $(CRI_DOCKERD_AARCH64_VERSION).tar.gz
 
@@ -22,6 +22,15 @@ CRI_DOCKERD_AARCH64_ENV = \
 
 CRI_DOCKERD_AARCH64_COMPILE_SRC = $(CRI_DOCKERD_AARCH64_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_AARCH64_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_AARCH64_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_AARCH64_REV)'"
+
+define CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
+	# Set -buildvcs=false to disable VCS stamping (fails in buildroot)
+	sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/packaging/static/Makefile
+	# Use the GOARCH environment variable that we set
+	sed -i 's|GOARCH=$(ARCH) go build|GOARCH=$(GOARCH) go build|' -i $(@D)/packaging/static/Makefile
+endef
+
+CRI_DOCKERD_AARCH64_POST_EXTRACT_HOOKS += CRI_DOCKERD_AARCH64_POST_EXTRACT_WORKAROUNDS
 
 # If https://github.com/Mirantis/cri-dockerd/blob/master/packaging/Makefile changes, then this will almost certainly need to change
 # This uses the static make target at the top level Makefile, since that builds everything, then picks out the arm64 binary

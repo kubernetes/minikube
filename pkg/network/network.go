@@ -27,8 +27,6 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-const defaultReservationPeriod = 1 * time.Minute
-
 // Parameters contains main network parameters.
 type Parameters struct {
 	IP        string // IP address of network
@@ -36,9 +34,9 @@ type Parameters struct {
 	Prefix    int    // network prefix length (number of leading ones in network mask)
 	CIDR      string // CIDR format ('a.b.c.d/n')
 	Gateway   string // taken from network interface address or assumed as first network IP address from given addr
-	ClientMin string // second IP address
-	ClientMax string // last IP address before broadcast
-	Broadcast string // last IP address
+	ClientMin string // first available client IP address after gateway
+	ClientMax string // last available client IP address before broadcast
+	Broadcast string // last network IP address
 	IsPrivate bool   // whether the IP is private or not
 	Interface
 	reservation mutex.Releaser // subnet reservation has lifespan of the process: "If a process dies while the mutex is held, the mutex is automatically released."
@@ -95,11 +93,10 @@ func lookupInInterfaces(ip net.IP) (*Parameters, *net.IPNet, error) {
 	return nil, nil, nil
 }
 
-// inspect initialises IPv4 network parameters struct from given address addr.
+// Inspect initialises IPv4 network parameters struct from given address addr.
 // addr can be single address (like "192.168.17.42"), network address (like "192.168.17.0") or in CIDR form (like "192.168.17.42/24 or "192.168.17.0/24").
 // If addr belongs to network of local network interface, parameters will also contain info about that network interface.
-var inspect = func(addr string) (*Parameters, error) {
-
+var Inspect = func(addr string) (*Parameters, error) {
 	// extract ip from addr
 	ip, network, err := ParseAddr(addr)
 	if err != nil {
@@ -156,7 +153,7 @@ var inspect = func(addr string) (*Parameters, error) {
 	n.ClientMin = min.String()
 
 	max := make(net.IP, 4)
-	binary.BigEndian.PutUint32(max, broadcastIP-1) // clients-from: last network IP address before broadcast
+	binary.BigEndian.PutUint32(max, broadcastIP-1) // clients-to: last network IP address before broadcast
 	n.ClientMax = max.String()
 
 	return n, nil
@@ -193,7 +190,7 @@ func IsBuiltinQEMU(network string) bool {
 func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 	currSubnet := startSubnet
 	for try := 0; try < tries; try++ {
-		n, err := inspect(currSubnet)
+		n, err := Inspect(currSubnet)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +201,7 @@ func FreeSubnet(startSubnet string, step, tries int) (*Parameters, error) {
 				return nil, err
 			}
 			if !taken {
-				if reservation, err := reserveSubnet(subnet, defaultReservationPeriod); err == nil {
+				if reservation, err := reserveSubnet(subnet); err == nil {
 					n.reservation = reservation
 					klog.Infof("using free private subnet %s: %+v", n.CIDR, n)
 					return n, nil
@@ -241,8 +238,8 @@ func ParseAddr(addr string) (net.IP, *net.IPNet, error) {
 	return ip, network, err
 }
 
-// reserveSubnet returns releaser if subnet was successfully reserved for given period, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
-var reserveSubnet = func(subnet string, period time.Duration) (mutex.Releaser, error) {
+// reserveSubnet returns releaser if subnet was successfully reserved, creating lock for subnet to avoid race condition between multiple minikube instances (especially while testing in parallel).
+var reserveSubnet = func(subnet string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(subnet)
 	spec.Timeout = 1 * time.Millisecond // practically: just check, don't wait
 	reservation, err := mutex.Acquire(spec)

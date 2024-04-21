@@ -34,13 +34,6 @@ rules:
   - nodes/status
   verbs:
   - patch
-- apiGroups:
-  - networking.k8s.io
-  resources:
-  - clustercidrs
-  verbs:
-  - list
-  - watch
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -98,6 +91,7 @@ data:
   net-conf.json: |
     {
       "Network": "{{ .PodCIDR }}",
+      "EnableNFTables": false,
       "Backend": {
         "Type": "vxlan"
       }
@@ -139,7 +133,7 @@ spec:
       serviceAccountName: flannel
       initContainers:
       - name: install-cni-plugin
-        image: docker.io/flannel/flannel-cni-plugin:v1.2.0
+        image: docker.io/flannel/flannel-cni-plugin:v1.4.0-flannel1
         command:
         - cp
         args:
@@ -150,7 +144,7 @@ spec:
         - name: cni-plugin
           mountPath: /opt/cni/bin
       - name: install-cni
-        image: docker.io/flannel/flannel:v0.24.0
+        image: docker.io/flannel/flannel:v0.25.1
         command:
         - cp
         args:
@@ -164,7 +158,7 @@ spec:
           mountPath: /etc/kube-flannel/
       containers:
       - name: kube-flannel
-        image: docker.io/flannel/flannel:v0.24.0
+        image: docker.io/flannel/flannel:v0.25.1
         command:
         - /opt/bin/flanneld
         args:

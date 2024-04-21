@@ -74,7 +74,7 @@ var serviceCmd = &cobra.Command{
 
 		RootCmd.PersistentPreRun(cmd, args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		if len(args) == 0 && !all || (len(args) > 0 && all) {
 			exit.Message(reason.Usage, "You must specify service name(s) or --all")
 		}
@@ -98,8 +98,7 @@ var serviceCmd = &cobra.Command{
 		var services service.URLs
 		services, err := service.GetServiceURLs(co.API, co.Config.Name, namespace, serviceURLTemplate)
 		if err != nil {
-			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
-			out.ErrT(style.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			out.ErrT(style.Fatal, "Failed to get service URL - check that minikube is running and that you have specified the correct namespace (-n flag) if required: {{.error}}", out.V{"error": err})
 			os.Exit(reason.ExSvcUnavailable)
 		}
 
@@ -119,6 +118,8 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 		}
 
 		var data [][]string
+		var noNodePortServices service.URLs
+
 		for _, svc := range services {
 			openUrls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc.Name, serviceURLTemplate, serviceURLMode, https, wait, interval)
 
@@ -133,6 +134,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 
 			if len(openUrls) == 0 {
 				data = append(data, []string{svc.Namespace, svc.Name, "No node port"})
+				noNodePortServices = append(noNodePortServices, svc)
 			} else {
 				servicePortNames := strings.Join(svc.PortNames, "\n")
 				serviceURLs := strings.Join(openUrls, "\n")
@@ -154,10 +156,22 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 			}
 		}
 
+		noNodePortSvcNames := []string{}
+		for _, svc := range noNodePortServices {
+			noNodePortSvcNames = append(noNodePortSvcNames, fmt.Sprintf("%s/%s", svc.Namespace, svc.Name))
+		}
+		if len(noNodePortServices) != 0 {
+			out.WarningT("Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local development minikube allows you to access this !", out.V{"svc_names": noNodePortSvcNames})
+		}
+
 		if driver.NeedsPortForward(co.Config.Driver) && services != nil {
 			startKicServiceTunnel(services, cname, co.Config.Driver)
 		} else if !serviceURLMode {
 			openURLs(data)
+			if len(noNodePortServices) != 0 {
+				startKicServiceTunnel(noNodePortServices, cname, co.Config.Driver)
+			}
+
 		}
 	},
 }

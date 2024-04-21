@@ -44,7 +44,7 @@ var sshHostCmd = &cobra.Command{
 	Use:   "ssh-host",
 	Short: "Retrieve the ssh host key of the specified node",
 	Long:  "Retrieve the ssh host key of the specified node.",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		appendKnownHelper(nodeName, appendKnown)
 	},
 }

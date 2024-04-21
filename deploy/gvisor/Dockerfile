@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+FROM golang:1.22.1 AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY ./ ./
+RUN GOOS=linux CGO_ENABLED=0 go build -o gvisor-addon cmd/gvisor/gvisor.go
+
 # Need an image with chroot
 FROM alpine:3
 RUN apk -U add ca-certificates
-COPY out/gvisor-addon /gvisor-addon
+COPY --from=builder /app/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]
