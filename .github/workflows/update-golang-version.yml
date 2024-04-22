@@ -55,5 +55,5 @@ jobs:
               issue_number: ${{ steps.createPR.outputs.pull-request-number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'ok-to-build-iso'
+              body: 'ok-to-build-image'
             })

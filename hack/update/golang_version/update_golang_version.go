@@ -36,11 +36,6 @@ var (
 	}
 
 	schema = map[string]update.Item{
-		"go.mod": {
-			Replace: map[string]string{
-				`(?m)^go .*`: `go {{.StableVersionMM}}`,
-			},
-		},
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
