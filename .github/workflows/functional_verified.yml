@@ -118,7 +118,7 @@ jobs:
           hostname || true
           echo "--------------------------"
       - name: Download Binaries
-        uses: actions/download-artifact@8caf195ad4b1dee92908e23f56eeb0696f1dd42d
+        uses: actions/download-artifact@9c19ed7fe5d278cd354c7dfd5d3b88589c7e2395
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all extra reports
-        uses: actions/download-artifact@8caf195ad4b1dee92908e23f56eeb0696f1dd42d
+        uses: actions/download-artifact@9c19ed7fe5d278cd354c7dfd5d3b88589c7e2395
       - name: upload all extra reports
         shell: bash {0}
         continue-on-error: true
