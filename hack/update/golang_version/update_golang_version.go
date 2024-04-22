@@ -83,7 +83,7 @@ func main() {
 
 	// get Golang stable version
 	stable, _, k8sVersion, err := goVersions()
-	if err != nil || stable == "" || stableMM == "" {
+	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
 	// skip rc versions
