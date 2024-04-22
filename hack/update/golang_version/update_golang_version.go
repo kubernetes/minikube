@@ -73,9 +73,8 @@ var (
 
 // Data holds stable Golang version - in full and in <major>.<minor> format
 type Data struct {
-	StableVersion   string
-	StableVersionMM string // go.mod wants go version in <major>.<minor> format
-	K8SVersion      string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
+	StableVersion string
+	K8SVersion    string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
 
 }
 
@@ -83,7 +82,7 @@ func main() {
 	addGitHubWorkflowFiles()
 
 	// get Golang stable version
-	stable, stableMM, k8sVersion, err := goVersions()
+	stable, _, k8sVersion, err := goVersions()
 	if err != nil || stable == "" || stableMM == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
@@ -92,7 +91,7 @@ func main() {
 		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
 		return
 	}
-	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
+	data := Data{StableVersion: stable, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
