@@ -1,0 +1,29 @@
+diff --git a/package/systemd/systemd.mk b/package/systemd/systemd.mk
+index d235256867..03bab5c175 100644
+--- a/package/systemd/systemd.mk
++++ b/package/systemd/systemd.mk
+@@ -245,9 +245,9 @@ endif
+ 
+ ifeq ($(BR2_PACKAGE_LIBGCRYPT),y)
+ SYSTEMD_DEPENDENCIES += libgcrypt
+-SYSTEMD_CONF_OPTS += -Dgcrypt=true
++SYSTEMD_CONF_OPTS += -Ddefault-dnssec=allow-downgrade -Dgcrypt=true
+ else
+-SYSTEMD_CONF_OPTS += -Dgcrypt=false
++SYSTEMD_CONF_OPTS += -Ddefault-dnssec=no -Dgcrypt=false
+ endif
+ 
+ ifeq ($(BR2_PACKAGE_P11_KIT),y)
+@@ -317,12 +317,6 @@ else
+ SYSTEMD_CONF_OPTS += -Dselinux=false
+ endif
+ 
+-ifneq ($(BR2_PACKAGE_LIBGCRYPT)$(BR2_PACKAGE_LIBOPENSSL),)
+-SYSTEMD_CONF_OPTS += -Ddefault-dnssec=allow-downgrade
+-else
+-SYSTEMD_CONF_OPTS += -Ddefault-dnssec=no
+-endif
+-
+ ifeq ($(BR2_PACKAGE_SYSTEMD_HWDB),y)
+ SYSTEMD_CONF_OPTS += -Dhwdb=true
+ define SYSTEMD_BUILD_HWDB
