@@ -554,7 +554,7 @@ var Addons = map[string]*Addon{
 			vmpath.GuestAddonsDir,
 			"ingress-dns-pod.yaml",
 			"0640"),
-	}, false, "ingress-dns", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
+	}, false, "ingress-dns", "3rd pary(Nikolaos 'cirix' Ballas)", "Nikolaos Ballas", "https://minikube.sigs.k8s.io/docs/handbook/addons/ingress-dns/", map[string]string{
 		"IngressDNS": "cirix/minikube-ingress-dns:1.0.0@sha256:3cda52a6b926a5b110de71bcc3f4b223ff957e5de1edc288be3a52960209a432",
 	}, map[string]string{
 		"IngressDNS": "docker.io",
