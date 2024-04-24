@@ -24,7 +24,7 @@ jobs:
   build_minikube_test_binaries:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
@@ -49,7 +49,7 @@ jobs:
   build_minikube:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
@@ -62,7 +62,7 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
@@ -80,7 +80,7 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
