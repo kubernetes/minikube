@@ -34,7 +34,7 @@ require (
 	github.com/hashicorp/go-getter v1.7.4
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hooklift/iso9660 v1.0.0
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
