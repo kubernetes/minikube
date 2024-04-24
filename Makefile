@@ -303,7 +303,7 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git --work-tree=$(BUILD_DIR)/buildroot am ../../deploy/iso/minikube-iso/0001-revert-default-dnssec.patch; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git --work-tree=$(BUILD_DIR)/buildroot apply ../../deploy/iso/minikube-iso/0001-revert-default-dnssec.patch; \
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
