@@ -34,7 +34,7 @@ require (
 	github.com/hashicorp/go-getter v1.7.4
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hooklift/iso9660 v1.0.0
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/juju/clock v1.0.3
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
@@ -63,9 +63,9 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/otel v1.25.0
-	go.opentelemetry.io/otel/sdk v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/otel v1.26.0
+	go.opentelemetry.io/otel/sdk v1.26.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.22.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
@@ -76,7 +76,7 @@ require (
 	golang.org/x/term v0.19.0
 	golang.org/x/text v0.14.0
 	gonum.org/v1/plot v0.14.0
-	google.golang.org/api v0.176.0
+	google.golang.org/api v0.176.1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.0
 	k8s.io/apimachinery v0.30.0
@@ -92,8 +92,8 @@ require (
 
 require (
 	cloud.google.com/go v0.112.1 // indirect
-	cloud.google.com/go/auth v0.2.2 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.1 // indirect
+	cloud.google.com/go/auth v0.3.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.7 // indirect
 	cloud.google.com/go/monitoring v1.18.0 // indirect
@@ -219,7 +219,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
-	go.opentelemetry.io/otel/metric v1.25.0 // indirect
+	go.opentelemetry.io/otel/metric v1.26.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/image v0.11.0 // indirect
