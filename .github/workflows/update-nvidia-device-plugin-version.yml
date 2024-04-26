@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpNvidiaDevicePlugin.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from ${{ steps.bumpNvidiaDevicePlugin.outputs.OLD_VERSION }} to ${{ steps.bumpNvidiaDevicePlugin.outputs.NEW_VERSION }}'
