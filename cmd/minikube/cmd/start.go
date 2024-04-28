@@ -1596,7 +1596,7 @@ func validateRegistryMirror() {
 // args match the format of registry.cn-hangzhou.aliyuncs.com/google_containers
 // also "<hostname>[:<port>]"
 func validateImageRepository(imageRepo string) (validImageRepo string) {
-	expression := regexp.MustCompile(`^(?:(\w+)\:\/\/)?([-a-zA-Z0-9]{1,}(?:\.[-a-zA-Z]{1,}){0,})(?:\:(\d+))?(\/.*)?$`)
+	expression := regexp.MustCompile(`^(?:(\w+)\:\/\/)?([-a-zA-Z0-9]{1,}(?:\.[-a-zA-Z0-9]{1,}){0,})(?:\:(\d+))?(\/.*)?$`)
 
 	if strings.ToLower(imageRepo) == "auto" {
 		imageRepo = "auto"

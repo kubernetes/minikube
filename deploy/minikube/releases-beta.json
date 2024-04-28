@@ -1,6 +1,14 @@
 [
     {
         "checksums": {
+            "darwin": "ba00e508d6694f8e792bf5f238f5609407f1862f4fd8c0e08d1de9319b7131d5",
+            "linux": "e1c32fb33b4fe35f719b52309f8d981392ad7672f9fef3307d188f004aee5a2d",
+            "windows": "74fbadfb00a7a1ecfa2a24ea2ee77997a41a6cb61e797b6c62a1d28558c61260"
+        },
+        "name": "v1.33.0-beta.0"
+    },
+    {
+        "checksums": {
             "darwin": "964b216dc4156b87cc570ee8f8ee5d0a90815fd100b11dcff6884fee2a945101",
             "linux": "820ead833eab8b3a589846df7543ad1104d3f7149b19c81d641a918d8232e025",
             "windows": "dbe833b8a9f25c9f3bcc4c71109ecae146d3d66ea475ced8d2794de0c101ceab"

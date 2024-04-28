@@ -34,7 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// except returns a list of strings, minus the excluded ones
+// exclude returns a list of strings, minus the excluded ones
 func exclude(vals []string, exclude []string) []string {
 	result := []string{}
 	for _, v := range vals {

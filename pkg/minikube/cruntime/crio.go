@@ -89,6 +89,24 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Vers
 		klog.Warningf("unable to remove /etc/cni/net.mk directory: %v", err)
 	}
 
+	// add 'net.ipv4.ip_unprivileged_port_start=0' sysctl so that containers that run with non-root user can bind to otherwise privilege ports (like coredns v1.11.0+)
+	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since Kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
+	// note: cri-o supports 'default_sysctls' option since v1.12.0 (Oct 19, 2018) (ref: https://github.com/cri-o/cri-o/releases/tag/v1.12.0; https://github.com/cri-o/cri-o/pull/1721)
+	if kv.GTE(semver.Version{Major: 1, Minor: 22}) {
+		// remove any existing 'net.ipv4.ip_unprivileged_port_start' settings
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^ *"net.ipv4.ip_unprivileged_port_start=.*"/d' %s`, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "removing net.ipv4.ip_unprivileged_port_start")
+		}
+		// insert 'default_sysctls' list, if not already present
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo grep -q "^ *default_sysctls" %s || sudo sed -i '/conmon_cgroup = .*/a default_sysctls = \[\n\]' %s`, crioConfigFile, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "inserting default_sysctls")
+		}
+		// add 'net.ipv4.ip_unprivileged_port_start' to 'default_sysctls' list
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^default_sysctls *= *\[|&\n  "net.ipv4.ip_unprivileged_port_start=0",|' %s`, crioConfigFile))); err != nil {
+			return errors.Wrap(err, "configuring net.ipv4.ip_unprivileged_port_start")
+		}
+	}
+
 	return nil
 }
 

@@ -31,7 +31,7 @@ AddToPathIfMissing -pathToAdd "C:\Program Files\Go\bin" -scope "Machine"
 AddToPathIfMissing -pathToAdd "$HOME\go\bin" -scope "User"
 
 # Download Go
-$GoVersion = "1.22.0"
+$GoVersion = "1.22.1"
 $CurrentGo = go version
 if ((!$?) -or ($CurrentGo -NotLike "*$GoVersion*")) {
     (New-Object Net.WebClient).DownloadFile("https://go.dev/dl/go$GoVersion.windows-amd64.zip", "$env:TEMP\golang.zip")

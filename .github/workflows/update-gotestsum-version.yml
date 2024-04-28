@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.0'
+  GO_VERSION: '1.22.1'
 permissions:
   contents: read
 
@@ -14,11 +14,10 @@ jobs:
   bump-gotestsum-version:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Bump Gotestsum Versions
         id: bumpGotestsum
         run: |
@@ -31,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpGotestsum.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@a4f52f8033a6168103c2538976c07b467e8163bc
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'CI: Update gotestsum from ${{ steps.bumpGotestsum.outputs.OLD_VERSION }} to ${{ steps.bumpGotestsum.outputs.NEW_VERSION }}'

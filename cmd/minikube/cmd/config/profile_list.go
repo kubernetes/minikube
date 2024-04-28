@@ -190,7 +190,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active Profile", "Active Kubecontext"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -217,11 +217,14 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
-		var c string
+		var c, k string
 		if p.Name == currentProfile {
 			c = "*"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c})
+		if p.ActiveKubeContext {
+			k = "*"
+		}
+		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
 	}
 	return data
 }

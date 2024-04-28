@@ -140,7 +140,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListContainersOptions) (
 	return fids, nil
 }
 
-// pauseContainers pauses a list of containers
+// pauseCRIContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 	baseArgs := []string{"runc"}
 	if root != "" {

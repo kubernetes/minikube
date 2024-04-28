@@ -1057,6 +1057,13 @@ spec:
                   Loose]'
                 pattern: ^(?i)(Disabled|Strict|Loose)?$
                 type: string
+              bpfExcludeCIDRsFromNAT:
+                description: BPFExcludeCIDRsFromNAT is a list of CIDRs that are to
+                  be excluded from NAT resolution so that host can handle them. A
+                  typical usecase is node local DNS cache.
+                items:
+                  type: string
+                type: array
               bpfExtToServiceConnmark:
                 description: 'BPFExtToServiceConnmark in BPF mode, control a 32bit
                   mark that is set on connections from an external client to a local
@@ -4930,8 +4937,6 @@ spec:
             # no effect. This should fall within `--cluster-cidr`.
             # - name: CALICO_IPV4POOL_CIDR
             #   value: "192.168.0.0/16"
-            - name: CALICO_IPV4POOL_CIDR
-              value: {{ .PodCIDR }}
             # Disable file logging so `kubectl logs` works.
             - name: CALICO_DISABLE_FILE_LOGGING
               value: "true"

@@ -753,9 +753,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 			k = strings.ToUpper(k) // let's get the key right away to mask password from output
 			// If http(s)_proxy contains password, let's not splatter on the screen
 			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-				pattern := `//(\w+):\w+@`
-				regexpPattern := regexp.MustCompile(pattern)
-				v = regexpPattern.ReplaceAllString(v, "//$1:*****@")
+				v = util.MaskProxyPassword(v)
 			}
 			out.Infof("{{.key}}={{.value}}", out.V{"key": k, "value": v})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
