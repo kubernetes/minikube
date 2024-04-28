@@ -199,6 +199,7 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	if err != nil {
 		return errors.Wrap(err, "creating temporary file")
 	}
+	defer tf.Close()
 	defer os.Remove(tf.Name())
 
 	if err := writeFile(tf.Name(), f, os.FileMode(perms)); err != nil {

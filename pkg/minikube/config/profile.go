@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -200,6 +201,10 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		pDirs = append(pDirs, cs...)
 	}
 
+	activeKubeContext, err := kubeconfig.GetCurrentContext(kubeconfig.PathFromEnv())
+	if err != nil {
+		return nil, nil, err
+	}
 	nodeNames := map[string]bool{}
 	for _, n := range removeDupes(pDirs) {
 		p, err := LoadProfile(n, miniHome...)
@@ -214,6 +219,9 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		validPs = append(validPs, p)
 		if p.Name == activeP {
 			p.Active = true
+		}
+		if p.Name == activeKubeContext {
+			p.ActiveKubeContext = true
 		}
 		for _, child := range p.Config.Nodes {
 			nodeNames[MachineName(*p.Config, child)] = true

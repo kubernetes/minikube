@@ -594,6 +594,7 @@
 	"Select a valid value for --dnsdomain": "--dnsdomain に有効な値を選択してください",
 	"Send trace events. Options include: [gcp]": "トレースイベントを送信します。含まれるオプション: [gcp]",
 	"Service '{{.service}}' was not found in '{{.namespace}}' namespace.\nYou may select another namespace by using 'minikube service {{.service}} -n \u003cnamespace\u003e'. Or list out all the services using 'minikube service list'": "'{{.namespace}}' ネームスペース中に '{{.service}}' サービスが見つかりませんでした。\n'minikube service {{.service}} -n \u003cnamespace\u003e' を使って別のネームスペースを選択できます。または、'minikube service list' を使って全サービスを一覧表示してください",
+	"Services {{.svc_names}} have type \"ClusterIP\" not meant to be exposed, however for local development minikube allows you to access this !": "",
 	"Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)": "minikube クラスターの静的 IP を設定します。IP はプライベート、IPv4 である必要があり、最後のオクテットは 2 から 254 の間である必要があります (例: 192.168.200.200) (Docker および Podman ドライバーのみ)",
 	"Set failed": "設定に失敗しました",
 	"Set flag to delete all profiles": "全プロファイルを削除します",

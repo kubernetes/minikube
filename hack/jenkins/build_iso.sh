@@ -114,9 +114,9 @@ else
 	make generate-docs
 
 	git add Makefile pkg/minikube/download/iso.go site/content/en/docs/commands/start.md
-	git commit -m "Update ISO to ${ISO_VERSION}"
+	git commit -m "Release: Update ISO to ${ISO_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
-	gh pr create --fill --base master --head minikube-bot:${branch}
+	gh pr create --fill --base master --head minikube-bot:${branch} -l "ok-to-test"
 fi

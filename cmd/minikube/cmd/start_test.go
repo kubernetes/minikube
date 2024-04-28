@@ -384,6 +384,22 @@ func TestValidateImageRepository(t *testing.T) {
 			imageRepository:      "registry.test.com:6666/google_containers",
 			validImageRepository: "registry.test.com:6666/google_containers",
 		},
+		{
+			imageRepository:      "registry.1test.com:6666/google_containers",
+			validImageRepository: "registry.1test.com:6666/google_containers",
+		},
+		{
+			imageRepository:      "registry.t1est.com:6666/google_containers",
+			validImageRepository: "registry.t1est.com:6666/google_containers",
+		},
+		{
+			imageRepository:      "registry.test1.com:6666/google_containers",
+			validImageRepository: "registry.test1.com:6666/google_containers",
+		},
+		{
+			imageRepository:      "abc.xyz1.example.com",
+			validImageRepository: "abc.xyz1.example.com",
+		},
 	}
 
 	for _, test := range tests {
@@ -395,7 +411,6 @@ func TestValidateImageRepository(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestValidateDiskSize(t *testing.T) {

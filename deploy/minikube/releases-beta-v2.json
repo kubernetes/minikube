@@ -2,6 +2,32 @@
     {
         "checksums": {
             "amd64": {
+                "darwin": "ba00e508d6694f8e792bf5f238f5609407f1862f4fd8c0e08d1de9319b7131d5",
+                "linux": "e1c32fb33b4fe35f719b52309f8d981392ad7672f9fef3307d188f004aee5a2d",
+                "windows": "74fbadfb00a7a1ecfa2a24ea2ee77997a41a6cb61e797b6c62a1d28558c61260"
+            },
+            "arm": {
+                "linux": "7724724767ba1f144605d4289c098e5fcd4fcc55be0876d77591d05f43f22876"
+            },
+            "arm64": {
+                "darwin": "7a672fa0a266d0c649d114b2135ee6222d8366bc0ac87e2fafb4c714e20b26a3",
+                "linux": "fa09cb8e228711e557a0f933e819c2cea98bc96749a4c77635a341d0ed530163"
+            },
+            "ppc64le": {
+                "linux": "6f013e03419d8c5149e1998a1f492e1693d780e883aeb37325f0cc42854cccd5"
+            },
+            "s390x": {
+                "linux": "1ec274865030a0b13d191d41e53c66be3f047a34e30c8fa637e74aa7cff31c71"
+            },
+            "darwin": "ba00e508d6694f8e792bf5f238f5609407f1862f4fd8c0e08d1de9319b7131d5",
+            "linux": "e1c32fb33b4fe35f719b52309f8d981392ad7672f9fef3307d188f004aee5a2d",
+            "windows": "74fbadfb00a7a1ecfa2a24ea2ee77997a41a6cb61e797b6c62a1d28558c61260"
+        },
+        "name": "v1.33.0-beta.0"
+    },
+    {
+        "checksums": {
+            "amd64": {
                 "darwin": "964b216dc4156b87cc570ee8f8ee5d0a90815fd100b11dcff6884fee2a945101",
                 "linux": "820ead833eab8b3a589846df7543ad1104d3f7149b19c81d641a918d8232e025",
                 "windows": "dbe833b8a9f25c9f3bcc4c71109ecae146d3d66ea475ced8d2794de0c101ceab"

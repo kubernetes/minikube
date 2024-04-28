@@ -22,11 +22,10 @@ jobs:
   build_minikube_test_binaries:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -41,18 +40,17 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: minikube_binaries
           path: out
   build_minikube:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Download Dependencies
         run: go mod download
       - name: Build Binaries
@@ -62,11 +60,10 @@ jobs:
   lint:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -81,11 +78,10 @@ jobs:
   unit_test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Install libvirt
         run: |
           sudo apt-get update
@@ -132,13 +128,14 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -178,7 +175,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -231,13 +228,14 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -277,7 +275,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -348,13 +346,14 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -394,7 +393,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_docker_rootless_containerd_ubuntu
           path: minikube_binaries/report
@@ -451,13 +450,14 @@ jobs:
           echo "--------------------------"
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
           go install github.com/medyagh/gopogh/cmd/gopogh@v0.26.0
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -497,7 +497,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_podman_ubuntu
           path: minikube_binaries/report
@@ -537,6 +537,7 @@ jobs:
           kubectl version --client=true
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -558,7 +559,7 @@ jobs:
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
           sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -596,7 +597,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_virtualbox_macos
           path: minikube_binaries/report
@@ -635,6 +636,7 @@ jobs:
           kubectl version --client=true
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
+          cache: false
           go-version: ${{env.GO_VERSION}}
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
@@ -645,8 +647,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
-          CRI_DOCKERD_VERSION="v0.3.3"
-          CRI_DOCKERD_COMMIT="b58acf8f78f9d7bce1241d1cddb0932e7101f278"
+          CRI_DOCKERD_VERSION="v0.3.12"
+          CRI_DOCKERD_COMMIT="c2e3805c946c16ec7e3a6d35ec5d72d72dc0c742"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
@@ -664,7 +666,7 @@ jobs:
         run: |
           sudo sysctl fs.protected_regular=0
       - name: Download Binaries
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
         with:
           name: minikube_binaries
           path: minikube_binaries
@@ -702,7 +704,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: functional_baremetal_ubuntu20_04
           path: minikube_binaries/report
@@ -740,7 +742,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: download all reports
-        uses: actions/download-artifact@c850b930e6ba138125429b7e5c93fc707a7f8427
+        uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e
       - name: upload all reports
         shell: bash {0}
         continue-on-error: true
@@ -754,7 +756,7 @@ jobs:
           cp -r ./functional_virtualbox_macos ./all_reports/
           cp -r ./functional_baremetal_ubuntu20_04 ./all_reports/
 
-      - uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
+      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: all_reports
           path: all_reports

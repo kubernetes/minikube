@@ -177,6 +177,21 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 		return errors.Wrap(err, "update conf_dir")
 	}
 
+	// enable 'enable_unprivileged_ports' so that containers that run with non-root user can bind to otherwise privilege ports (like coredns v1.11.0+)
+	// note: 'net.ipv4.ip_unprivileged_port_start' sysctl was marked as safe since kubernetes v1.22 (Aug 4, 2021) (ref: https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.22.md#feature-9)
+	// note: containerd supports 'enable_unprivileged_ports' option since v1.6.0-beta.3 (Nov 19, 2021) (ref: https://github.com/containerd/containerd/releases/tag/v1.6.0-beta.3; https://github.com/containerd/containerd/pull/6170)
+	// note: minikube bumped containerd version to greater than v1.6.0 on May 19, 2022 (ref: https://github.com/kubernetes/minikube/pull/14152)
+	if kv.GTE(semver.Version{Major: 1, Minor: 22}) {
+		// remove any existing 'enable_unprivileged_ports' settings
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i '/^ *enable_unprivileged_ports = .*/d' %s`, containerdConfigFile))); err != nil {
+			return errors.Wrap(err, "removing enable_unprivileged_ports")
+		}
+		// add 'enable_unprivileged_ports' with value 'true'
+		if _, err := cr.RunCmd(exec.Command("sh", "-c", fmt.Sprintf(`sudo sed -i -r 's|^( *)\[plugins."io.containerd.grpc.v1.cri"\]|&\n\1  enable_unprivileged_ports = true|' %s`, containerdConfigFile))); err != nil {
+			return errors.Wrap(err, "configuring enable_unprivileged_ports")
+		}
+	}
+
 	for _, registry := range insecureRegistry {
 		addr := registry
 		if strings.HasPrefix(strings.ToLower(registry), "http://") || strings.HasPrefix(strings.ToLower(registry), "https://") {

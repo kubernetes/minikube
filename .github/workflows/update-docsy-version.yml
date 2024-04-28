@@ -14,32 +14,31 @@ jobs:
   bump-docsy-version:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Bump Docsy version
         id: bumpDocsy
         run: |
-          make update-docsy-version
+          echo "NEW_VERSION=$(make update-docsy-version)" >> "$GITHUB_OUTPUT"
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
           echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpDocsy.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
-          commit-message: bump docsy version
+          commit-message: 'site: Update docsy version to ${{ steps.bumpDocsy.outputs.NEW_VERSION }}'
           committer: minikube-bot <minikube-bot@google.com>
           author: minikube-bot <minikube-bot@google.com>
           branch: auto_bump_docsy_version
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'bump docsy version'
+          title: 'site: Update docsy version to ${{ steps.bumpDocsy.outputs.NEW_VERSION }}'
           body: |
             Docsy project released a [new version](https://github.com/google/docsy/releases),
 

@@ -10,11 +10,10 @@ jobs:
   update-all:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
           go-version: ${{env.GO_VERSION}}
-          cache-dependency-path: ./go.sum
       - name: Bump versions
         id: bumpVersions
         run: |
@@ -23,6 +22,7 @@ jobs:
           OLD_CONTAINERD=$(DEP=containerd make get-dependency-version)
           OLD_CRIO=$(DEP=cri-o make get-dependency-version)
           OLD_CRICTL=$(DEP=crictl make get-dependency-version)
+          OLD_CRUN=$(DEP=crun make get-dependency-version)
           OLD_DOCKER=$(DEP=docker make get-dependency-version)
           OLD_GO=$(DEP=go make get-dependency-version)
           OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
@@ -35,6 +35,7 @@ jobs:
           # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
           # make update-cri-o-version
           # make update-crictl-version
+          make update-crun-version
           make update-docker-version
           make update-golang-version
           make update-nerdctl-version
@@ -46,6 +47,7 @@ jobs:
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
           NEW_CRIO=$(DEP=cri-o make get-dependency-version)
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
+          NEW_CRUN=$(DEP=crun make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
           NEW_GO=$(DEP=go make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
@@ -72,6 +74,10 @@ jobs:
           if [ "$OLD_CRICTL" != "$NEW_CRICTL" ]; then
             echo "### Update crictl from $OLD_CRICTL to $NEW_CRICTL" >> "$GITHUB_OUTPUT"
             echo "[Release notes](https://github.com/kubernetes-sigs/cri-tools/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CRUN" != "$NEW_CRUN" ]; then
+            echo "### Update crun from $OLD_CRUN to $NEW_CRUN" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/containers/crun/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_DOCKER" != "$NEW_DOCKER" ]; then
             echo "### Update Docker from $OLD_DOCKER to $NEW_DOCKER" >> "$GITHUB_OUTPUT"
@@ -103,7 +109,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update dependency versions'

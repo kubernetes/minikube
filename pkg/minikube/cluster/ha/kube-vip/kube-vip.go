@@ -151,12 +151,12 @@ func enableCPLB(cc config.ClusterConfig, r command.Runner, kubeadmCfg []byte) bo
 	// ref: https://github.com/kubernetes/kubernetes/blob/f90461c43e881d320b78d48793db10c110d488d1/pkg/proxy/ipvs/README.md?plain=1#L257-L269
 	if driver.IsVM(cc.Driver) {
 		if _, err := r.RunCmd(exec.Command("sudo", "sh", "-c", "modprobe --all ip_vs ip_vs_rr ip_vs_wrr ip_vs_sh nf_conntrack")); err != nil {
-			klog.Errorf("unable to load ipvs kernel modules: %v", err)
+			klog.Warningf("unable to load ipvs kernel modules: %v", err)
 			return false
 		}
 		// for non-vm driver, only try to check if required ipvs kernel modules are already loaded
 	} else if _, err := r.RunCmd(exec.Command("sudo", "sh", "-c", "lsmod | grep ip_vs")); err != nil {
-		klog.Errorf("giving up enabling control-plane load-balancing as ipvs kernel modules appears not to be present: %v", err)
+		klog.Infof("giving up enabling control-plane load-balancing as ipvs kernel modules appears not to be available: %v", err)
 		return false
 	}
 

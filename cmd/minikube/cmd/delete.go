@@ -94,7 +94,7 @@ var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, prof
 	if err := killMountProcess(); err != nil {
 		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
-	if err := sshagent.Stop(profileName); err != nil {
+	if err := sshagent.Stop(profileName); err != nil && !config.IsNotExist(err) {
 		out.FailureT("Failed to stop ssh-agent process: {{.error}}", out.V{"error": err})
 	}
 
