@@ -82,7 +82,7 @@ func main() {
 	addGitHubWorkflowFiles()
 
 	// get Golang stable version
-	stable, _, k8sVersion, err := goVersions()
+	stable, k8sVersion, err := goVersions()
 	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
@@ -102,24 +102,22 @@ func main() {
 }
 
 // goVersions returns Golang stable version.
-func goVersions() (stable, stableMM, k8sVersion string, err error) {
+func goVersions() (stable, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 	// example response: v1.23.0-go1.17-buster.0
 	stable = string(body)
 	k8sVersion = strings.Split(stable, "-")[0]
 	stable = strings.Split(stable, "-")[1]
 	stable = strings.Replace(stable, "go", "", 1)
-	mmp := strings.SplitN(stable, ".", 3)
-	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
-	return stable, stableMM, k8sVersion, nil
+	return stable, k8sVersion, nil
 }
 
 func updateGoHashFile(version string) error {
