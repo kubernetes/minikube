@@ -239,11 +239,14 @@ var mountCmd = &cobra.Command{
 		}()
 
 		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, pid)
+
 		if err != nil {
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
 			}
-			exit.Error(reason.GuestMount, "mount failed", err)
+			out.ErrT(style.Failure, "Failed mount: {{.error}}", out.V{"error": err})
+			exit.Message(reason.GuestMount, "mount failed, does host support filesystem type 9p?")
+
 		}
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
