@@ -121,10 +121,10 @@ nameserver 127.0.0.1
 
 Your Linux OS likely uses `systemd-resolved` if the first line of `/etc/resolv.conf` contains `This is /run/systemd/resolve/stub-resolv.conf managed by man:systemd-resolved(8)`.
 
-Run the following commands to add the Minikube DNS for `.test` domains:
+Run the following commands to add the minikube DNS for `.test` domains:
 
 ```bash
-sudo mkdir /etc/systemd/resolved.conf.d
+sudo mkdir -p /etc/systemd/resolved.conf.d
 sudo tee /etc/systemd/resolved.conf.d/minikube.conf << EOF
 [Resolve]
 DNS=$(minikube ip)
