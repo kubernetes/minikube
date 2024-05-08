@@ -86,7 +86,7 @@ require (
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/kubectl v0.30.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	libvirt.org/go/libvirt v1.10002.0
+	libvirt.org/go/libvirt v1.10003.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner/v6 v6.3.0
 )
 
