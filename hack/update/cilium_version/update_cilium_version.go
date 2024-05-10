@@ -63,10 +63,6 @@ func main() {
 	re = regexp.MustCompile(`# Source: cilium\/templates\/hubble\/tls-helm\/server-secret\.yaml(\n.*?)+---\n`)
 	yaml = re.ReplaceAllString(yaml, "")
 
-	// Replace backticks with single-quotes as the entire YAML is enclosed in backticks and will break
-	re = regexp.MustCompile("`")
-	yaml = re.ReplaceAllString(yaml, "'")
-
 	// Replace `cluster-pool-ipv4-cidr` with PodSubnet template
 	re = regexp.MustCompile(`10\.0\.0\.0\/8`)
 	yaml = re.ReplaceAllString(yaml, "{{ .PodSubnet }}")

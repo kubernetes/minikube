@@ -409,7 +409,7 @@ rules:
 - apiGroups:
   - ""
   resources:
-  # to perform the translation of a CNP that contains 'ToGroup' to its endpoints
+  # to perform the translation of a CNP that contains `ToGroup` to its endpoints
   - services
   - endpoints
   verbs:
