@@ -200,4 +200,4 @@ With IP address 10.244.0.6.
 ## Next
 
 **Note:** Read more about KIC and different use cases in official
-[documentation](https://docs.konghq.com/kubernetes-ingress-controller/latest/guides/overview/).
+[documentation](https://docs.konghq.com/kubernetes-ingress-controller/latest/).
