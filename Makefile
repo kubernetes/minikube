@@ -1227,6 +1227,11 @@ update-site-node-version:
 	(cd hack/update/site_node_version && \
 	 go run update_site_node_version.go)
 
+.PHONY: update-cilium-version
+update-cilium-version:
+	(cd hack/update/cilium_version && \
+	 go run update_cilium_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
