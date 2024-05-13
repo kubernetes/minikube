@@ -35,9 +35,9 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.22.1
+GO_VERSION ?= 1.22.3
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.30.0
+GO_K8S_VERSION_PREFIX ?= v1.31.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
