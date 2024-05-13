@@ -1,3 +1,5 @@
+%define debug_package %{nil}
+%define __strip /bin/true
 Name: minikube
 Version: --VERSION--
 Release: --REVISION--
