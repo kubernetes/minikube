@@ -29,6 +29,7 @@ jobs:
           echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
+        id: createPR
         if: ${{ steps.bumpGolang.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
