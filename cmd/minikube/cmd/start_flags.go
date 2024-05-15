@@ -144,6 +144,9 @@ const (
 	staticIP                = "static-ip"
 	gpus                    = "gpus"
 	autoPauseInterval       = "auto-pause-interval"
+	qemuProgram             = "qemu-program"
+	qemuCPUType             = "qemu-cpu-type"
+	qemuMachineType         = "qemu-machine-type"
 )
 
 var (
@@ -208,6 +211,9 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your NVIDIA GPUs. Options include: [all,nvidia] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
+	startCmd.Flags().String(qemuProgram, "", "The program used to start QEMU. If left empty automatically decides.")
+	startCmd.Flags().String(qemuCPUType, "", "The CPU type to start QEMU with. If left empty automatically decides.")
+	startCmd.Flags().String(qemuMachineType, "", "The machine type to start QEMU with. If left empty automatically decides.")
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
@@ -607,6 +613,9 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		MultiNodeRequested: viper.GetInt(nodes) > 1 || viper.GetBool(ha),
 		GPUs:               viper.GetString(gpus),
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
+		QEMUProgram:        viper.GetString(qemuProgram),
+		QEMUCPUType:        viper.GetString(qemuCPUType),
+		QEMUMachineType:    viper.GetString(qemuMachineType),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
@@ -780,6 +789,14 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		out.WarningT("You cannot change the static IP of an existing minikube cluster. Please first delete the cluster.")
 	}
 
+	if cmd.Flags().Changed(qemuCPUType) && viper.GetString(qemuCPUType) != existing.QEMUCPUType {
+		out.WarningT("You cannot change the QEMU CPU type of an existing minikube cluster. Please first delete the cluster.")
+	}
+
+	if cmd.Flags().Changed(qemuMachineType) && viper.GetString(qemuMachineType) != existing.QEMUMachineType {
+		out.WarningT("You cannot change the QEMU machine type of an existing minikube cluster. Please first delete the cluster.")
+	}
+
 	updateBoolFromFlag(cmd, &cc.KeepContext, keepContext)
 	updateBoolFromFlag(cmd, &cc.EmbedCerts, embedCerts)
 	updateStringFromFlag(cmd, &cc.MinikubeISO, isoURL)
@@ -837,6 +854,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.SocketVMnetClientPath, socketVMnetClientPath)
 	updateStringFromFlag(cmd, &cc.SocketVMnetPath, socketVMnetPath)
 	updateDurationFromFlag(cmd, &cc.AutoPauseInterval, autoPauseInterval)
+	updateStringFromFlag(cmd, &cc.QEMUProgram, qemuProgram)
 
 	if cmd.Flags().Changed(kubernetesVersion) {
 		kubeVer, err := getKubernetesVersion(existing)
