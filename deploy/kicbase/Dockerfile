@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240416"
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240427"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.22.1 as auto-pause
+FROM golang:1.22.3 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -47,7 +47,7 @@ ARG CRI_DOCKERD_VERSION="v0.3.12"
 ARG CRI_DOCKERD_COMMIT="c2e3805c946c16ec7e3a6d35ec5d72d72dc0c742"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.5"
+ARG NERDCTL_VERSION="1.7.6"
 ARG NERDCTLD_VERSION="0.6.0"
 
 # copy in static files (configs, scripts)

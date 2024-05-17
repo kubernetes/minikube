@@ -6,7 +6,7 @@ on:
     - cron: "0 9 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.1'
+  GO_VERSION: '1.22.3'
 permissions:
   contents: read
 
@@ -14,8 +14,8 @@ jobs:
   bump-golang-version:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump Golang Versions
@@ -29,6 +29,7 @@ jobs:
           echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
+        id: createPR
         if: ${{ steps.bumpGolang.outputs.changes != '' }}
         uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
@@ -55,5 +56,5 @@ jobs:
               issue_number: ${{ steps.createPR.outputs.pull-request-number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'ok-to-build-iso'
+              body: 'ok-to-build-image'
             })
