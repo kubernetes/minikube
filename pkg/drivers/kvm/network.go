@@ -244,6 +244,10 @@ func (d *Driver) deleteNetwork() error {
 
 	// network: default
 	// It is assumed that the OS manages this network
+	if d.PrivateNetwork == defaultNetworkName {
+		log.Debugf("Using the default network, skipping deletion")
+		return nil
+	}
 
 	// network: private
 	log.Debugf("Checking if network %s exists...", d.PrivateNetwork)
