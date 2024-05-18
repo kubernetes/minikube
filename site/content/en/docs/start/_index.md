@@ -490,6 +490,20 @@ choco install minikube
     ```
     <span style="color:blue">
     If you used a terminal (like powershell) for the installation, please close the terminal and reopen it before running minikube.</span>
+<br>
+  Alternative Solution to "Add the minikube.exe binary to your PATH." below:
+
+  1.Add Minikube to the PATH environment variable: To make it easier to use Minikube, add it to your PATH environment variable. To do this, follow these steps:
+  2.Right-click on the Start menu and select “System”
+  3.Click on “Advanced system settings”
+  4.Click on the “Environment Variables” button
+  5.Under “System Variables”, scroll down and find the “Path” variable
+  6.Click on “Edit”
+  7.Click on “New” and add the location of the Minikube executable file (e.g., C:\Program Files\Minikube)
+  8.Click “OK” to close all windows.
+  
+  Verify Minikube Installation: Open the Command Prompt and type minikube version. This should display the version of Minikube that you have installed.
+  
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Beta/.exe download" %}}
@@ -527,6 +541,21 @@ choco install minikube
       el.href = "https://github.com/kubernetes/minikube/releases";
     });
 </script>
+
+<br>
+  Alternative Solution to "Add the minikube.exe binary to your PATH." below:
+
+  1.Add Minikube to the PATH environment variable: To make it easier to use Minikube, add it to your PATH environment variable. To do this, follow these steps:
+  2.Right-click on the Start menu and select “System”
+  3.Click on “Advanced system settings”
+  4.Click on the “Environment Variables” button
+  5.Under “System Variables”, scroll down and find the “Path” variable
+  6.Click on “Edit”
+  7.Click on “New” and add the location of the Minikube executable file (e.g., C:\Program Files\Minikube)
+  8.Click “OK” to close all windows.
+  
+  Verify Minikube Installation: Open the Command Prompt and type minikube version. This should display the version of Minikube that you have installed.
+
 {{% /quiz_instruction %}}
 
 {{% /card %}}
