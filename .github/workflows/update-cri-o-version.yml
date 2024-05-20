@@ -7,7 +7,7 @@ on:
     # - cron: "0 10 * * 5"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.1'
+  GO_VERSION: '1.22.3'
 permissions:
   contents: read
 
@@ -15,7 +15,7 @@ jobs:
   bump-cri-o-version:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
         with:
           go-version: ${{env.GO_VERSION}}
