@@ -24,8 +24,9 @@ Struggling with comprehensive testing for applications across Linux and Windows 
 
 ## Non-Goals
 
-*   _A bulleted list of what is out of scope for this proposal_
-*   _Listing non-goals helps to focus the discussion_
+*   _Support for non-hyper-v drivers on Windows_
+*  _Advanced CNI configurations_
+*  _Support for older Windows versions_
 
 ## Design Details
 
@@ -45,4 +46,5 @@ minikube start –windows-22-node=1 or minikube start -windows-19-node=1 {window
 
 ## Alternatives Considered
 
-_Alternative ideas that you are leaning against._
+
+* _[Minikube on Windows and KVM driver](https://docs.google.com/document/d/1kCmZxvwAUmfc7SVqqigC_V8L3IaOki5TXX3fX7kEUgI/edit#heading=h.9r6udsnl0rp8) There are efforts by sig-windows to implement the same idea but on Linux environment using KVM driver_
