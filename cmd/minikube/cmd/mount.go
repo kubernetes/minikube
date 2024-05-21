@@ -186,11 +186,12 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
-		// check if host supports file system 9p
-		if !detect.IsNinePSupported() {
-			exit.Message(reason.HostUnsupported, "The host does not support filesystem 9p")
+		// check if linux host supports file system 9p
+		if runtime.GOOS == "linux" {
+			if !detect.IsNinePSupported() {
+				exit.Message(reason.HostUnsupported, "The host does not support filesystem 9p")
+			}
 		}
-
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
 			out.WarningT("{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
