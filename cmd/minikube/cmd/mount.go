@@ -188,7 +188,7 @@ var mountCmd = &cobra.Command{
 
 		// check if host supports file system 9p
 		if !detect.IsNinePSupported() {
-			exit.Message(reason.HostUnsupportedFs, "The host does not support filsystem 9p")
+			exit.Message(reason.HostUnsupported, "The host does not support filesystem 9p")
 		}
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.

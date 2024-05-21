@@ -289,7 +289,7 @@ var (
 	// minikube failed to persist profile config
 	HostSaveProfile = Kind{ID: "HOST_SAVE_PROFILE", ExitCode: ExHostConfig}
 	// Host doesn't support 9p
-	HostUnsupportedFs = Kind{ID: "HOST_UNSUPPORTED_FS", ExitCode: ExHostUnsupported}
+	HostUnsupported = Kind{ID: "HOST_UNSUPPORTED", ExitCode: ExHostUnsupported}
 
 	// minikube could not find a provider for the selected driver
 	ProviderNotFound = Kind{ID: "PROVIDER_NOT_FOUND", ExitCode: ExProviderNotFound}
