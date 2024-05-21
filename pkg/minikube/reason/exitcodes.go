@@ -78,7 +78,7 @@ const (
 	ExHostNotFound    = 35
 	ExHostUnsupported = 38
 	ExHostPermission  = 37
-	ExHostConfig      = 38
+	ExHostConfig      = 39
 
 	// Error codes specific to remote networking
 	ExInternetError       = 40

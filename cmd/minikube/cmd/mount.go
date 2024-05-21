@@ -186,6 +186,11 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
+		// check if host supports file system 9p
+		if !detect.IsNinePSupported() {
+			exit.Message(reason.HostUnsupportedFs, "The host does not support filsystem 9p")
+		}
+
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
 			out.WarningT("{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
@@ -244,10 +249,9 @@ var mountCmd = &cobra.Command{
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
 			}
-			out.ErrT(style.Failure, "Failed mount: {{.error}}", out.V{"error": err})
-			exit.Message(reason.GuestMount, "mount failed, does host support filesystem type 9p?")
-
+			exit.Error(reason.GuestMount, "mount failed", err)
 		}
+
 		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.Ln("")
 		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
