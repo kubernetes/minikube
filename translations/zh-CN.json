@@ -989,7 +989,7 @@
 	"Unable to pick a default driver. Here is what was considered, in preference order:": "",
 	"Unable to pull images, which may be OK: {{.error}}": "无法拉取镜像，有可能是正常状况：{{.error}}",
 	"Unable to push cached images: {{.error}}": "",
-	"Unable to remove machine directory": "无法删除计算机目录",
+	"Unable to remove machine directory": "无法删除machine目录",
 	"Unable to restart cluster, will reset it: {{.error}}": "无法重启集群，将进行重置：{{.error}}",
 	"Unable to restart control-plane node(s), will reset cluster: {{.error}}": "无法重启 control-plane 节点，将重置集群: {{.error}}",
 	"Unable to safely downgrade existing Kubernetes v{{.old}} cluster to v{{.new}}": "无法安全地将现有的 Kubernetes v{{.old}} 集群降级为 v{{.new}}",
