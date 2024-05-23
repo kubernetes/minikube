@@ -8,10 +8,10 @@ description: >
 
 ## Prerequisites
 
-* Go distribution
-  * Specific version depends on minikube version.
-  * The current dependency version can be found here : [master branch's go.mod file](https://github.com/kubernetes/minikube/blob/master/go.mod).
-* If you are on Linux, you will need to install `libvirt-dev`, since unit tests need kvm2 driver:
+- Go distribution
+  - Specific version depends on minikube version.
+  - The current dependency version can be found here : [master branch's go.mod file](https://github.com/kubernetes/minikube/blob/master/go.mod).
+- If you are on Linux, you will need to install `libvirt-dev`, since unit tests need kvm2 driver:
 
 ```shell
 # For Debian based
@@ -46,7 +46,7 @@ You may find it useful to set various options to test only a particular test aga
 
 ```shell
  env TEST_ARGS="-minikube-start-args=--driver=hyperkit -test.run TestStartStop" make integration
- ```
+```
 
 ### Quickly iterating on a single test
 
@@ -86,6 +86,7 @@ Install [kubectl](https://v1-18.docs.kubernetes.io/docs/tasks/tools/install-kube
 Clone the [minikube repo](https://github.com/kubernetes/minikube)
 
 ## Compile the latest minikube binary
+
 ```console
 % cd <minikube dir>
 % make
@@ -95,7 +96,7 @@ Clone the [minikube repo](https://github.com/kubernetes/minikube)
 
 ```console
 % cd <minikube dir>
-./hack/conformance_tests.sh out/minikube --driver=docker --container-runtimer=docker --kubernetes-version=stable
+./hack/conformance_tests.sh out/minikube --driver=docker --container-runtime=docker --kubernetes-version=stable
 ```
 
 This script will run the latest sonobuoy against a minikube cluster with two nodes and the provided parameters.

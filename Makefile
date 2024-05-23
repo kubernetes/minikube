@@ -1197,6 +1197,11 @@ update-registry-version:
 	(cd hack/update/registry_version && \
 	 go run update_registry_version.go)
 
+.PHONY: update-volcano-version
+update-volcano-version:
+	(cd hack/update/volcano_version && \
+	 go run update_volcano_version.go)
+
 .PHONY: update-kong-version
 update-kong-version:
 	(cd hack/update/kong_version && \

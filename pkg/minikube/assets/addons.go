@@ -621,6 +621,21 @@ var Addons = map[string]*Addon{
 		"GCPAuthWebhook":     "gcr.io",
 		"KubeWebhookCertgen": "registry.k8s.io",
 	}),
+	"volcano": NewAddon([]*BinAsset{
+		MustBinAsset(addons.VolcanoAssets,
+			"volcano/volcano-development.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"volcano-deployment.yaml",
+			"0640"),
+	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.7.0@sha256:082b6a3b7b8b69d98541a8ea56958ef427fdba54ea555870799f8c9ec2754c1b",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.7.0@sha256:1dd0973f67becc3336f009cce4eac8677d857aaf4ba766cfff371ad34dfc34cf",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.7.0@sha256:64d6efcf1a48366201aafcaf1bd4cb6d66246ec1c395ddb0deefe11350bcebba",
+	}, map[string]string{
+		"vc_webhook_manager":    "docker.io",
+		"vc_controller_manager": "docker.io",
+		"vc_scheduler":          "docker.io",
+	}),
 	"volumesnapshots": NewAddon([]*BinAsset{
 		// make sure the order of apply. `csi-hostpath-snapshotclass` must be the first position, because it depends on `snapshot.storage.k8s.io_volumesnapshotclasses`
 		// if user disable volumesnapshots addon and delete `csi-hostpath-snapshotclass` after `snapshot.storage.k8s.io_volumesnapshotclasses`, kubernetes will return the error
