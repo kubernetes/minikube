@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.41.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.35.2
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.35.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
