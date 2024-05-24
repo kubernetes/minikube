@@ -16,17 +16,18 @@ Please leave the above text in your proposal as instructions to the reader.
 
 ## Summary
 
-Struggling with comprehensive testing for applications across Linux and Windows environments? We are proposing to enhance Minikube's capabilities by introducing Windows node support. Minikube start should have the option of setting up a multi-OS cluster with both Linux and Windows node. This is [one of the most requested features](https://github.com/kubernetes/minikube/issues/2015) among the issues opened in the minikube repository. Developers will experience a significant boost in testing capabilities, streamlined workflows, and faster deployment, contributing to a more user-friendly and developer-focused environment 
+Struggling with comprehensive testing for applications across Linux and Windows environments? We are proposing to enhance Minikube's capabilities by introducing Windows node support. Minikube start should have the option of setting up a multi-OS cluster with a Linux control plane and both Linux and Windows worker nodes. This is [one of the most requested features](https://github.com/kubernetes/minikube/issues/2015) among the issues opened in the minikube repository. Developers will experience a significant boost in testing capabilities, streamlined workflows, and faster deployment, contributing to a more user-friendly and developer-focused environment 
 
 ## Goals
 
-*   Launching a cluster with both Windows and Linux nodes using the hyper-v driver. 
+*   Launching a cluster with both Windows and Linux nodes using the Hyper-V driver.
+*   Provide the ability to add Windows nodes to an existing Minikube cluster. 
 
 ## Non-Goals
 
-*   _Support for non-hyper-v drivers on Windows_
-*  _Advanced CNI configurations_
-*  _Support for older Windows versions_
+*   Support for non-hyper-v drivers on Windows
+*  Advanced CNI configurations
+*  Simultaneous Multi-OS Node Addition
 
 ## Design Details
 
@@ -42,7 +43,11 @@ It is also worth noting that SIG Windows group exploring to bring Windows nodes 
 
  Users will be able to start multi-os clusters by specifying a windows flag as in the example below, 
 
-minikube start –windows-22-node=1 or minikube start -windows-19-node=1 {windows-osversion-numberofwindowsnode} 
+minikube start –windows-node-version=2022 or minikube start -windows-node-version=2019 {windows-osversion}
+
+Users will be able to add multiple versions of Windows node through seperate `node add` commands, e.g.
+
+minikube node add --os=windows –windows-node-version=2022 --nodes=2
 
 ## Alternatives Considered
 
