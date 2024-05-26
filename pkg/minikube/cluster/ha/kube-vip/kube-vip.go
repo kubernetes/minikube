@@ -52,6 +52,10 @@ spec:
       value: "true"
     - name: port
       value: "{{ .Port }}"
+    - name: vip_nodename
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
     - name: vip_interface
       value: eth0
     - name: vip_cidr
@@ -82,7 +86,7 @@ spec:
     - name: lb_port
       value: "{{ .Port }}"
     {{- end}}
-    image: ghcr.io/kube-vip/kube-vip:v0.7.1
+    image: ghcr.io/kube-vip/kube-vip:v0.8.0
     imagePullPolicy: IfNotPresent
     name: kube-vip
     resources: {}

@@ -26,6 +26,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -358,12 +359,14 @@ func (m *BinAsset) loadData() error {
 		return err
 	}
 
-	tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
-	if err != nil {
-		return err
-	}
+	if strings.HasSuffix(m.BaseAsset.SourcePath, ".tmpl") {
+		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		if err != nil {
+			return err
+		}
 
-	m.template = tpl
+		m.template = tpl
+	}
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)

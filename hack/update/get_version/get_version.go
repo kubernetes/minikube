@@ -35,6 +35,7 @@ type dependency struct {
 var dependencies = map[string]dependency{
 	"buildkit":                {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
 	"calico":                  {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
+	"cilium":                  {"pkg/minikube/cni/cilium.yaml", `quay.io/cilium/cilium:(.*)@`},
 	"cloud-spanner":           {addonsFile, `cloud-spanner-emulator/emulator:(.*)@`},
 	"cni-plugins":             {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins-latest/cni-plugins-latest.mk", `CNI_PLUGINS_LATEST_VERSION = (.*)`},
 	"containerd":              {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
@@ -58,6 +59,7 @@ var dependencies = map[string]dependency{
 	"istio-operator":          {addonsFile, `istio/operator:(.*)@`},
 	"kindnetd":                {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"kong":                    {addonsFile, `kong:(.*)@`},
+	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"kong-ingress-controller": {addonsFile, `kong/kubernetes-ingress-controller:(.*)@`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},

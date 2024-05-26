@@ -1,5 +1,55 @@
 # Release Notes
 
+## Version 1.33.1 - 2024-05-13
+
+Bugs:
+* Fix `DNSSEC validation failed` errors [#18830](https://github.com/kubernetes/minikube/pull/18830)
+* Fix `too many open files` errors [#18832](https://github.com/kubernetes/minikube/pull/18832)
+* CNI cilium: Fix cilium pods failing to start-up [#18846](https://github.com/kubernetes/minikube/pull/18846)
+* Addon ingress: Fix enable failing on arm64 machines using VM driver [#18779](https://github.com/kubernetes/minikube/pull/18779)
+* Addon kubeflow: Fix some components missing arm64 images [#18765](https://github.com/kubernetes/minikube/pull/18765)
+
+Version Upgrades:
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.15 to 1.5.17 [#18773](https://github.com/kubernetes/minikube/pull/18773) [#18811](https://github.com/kubernetes/minikube/pull/18811)
+* Addon headlamp: Update headlamp-k8s/headlamp image from v0.23.1 to v0.23.2 [#18793](https://github.com/kubernetes/minikube/pull/18793)
+* Addon ingress: Update ingress-nginx/controller image from v1.10.0 to v1.10.1 [#18756](https://github.com/kubernetes/minikube/pull/18756)
+* Addon istio-provisioner: Update istio/operator image from 1.21.1 to 1.21.2 [#18757](https://github.com/kubernetes/minikube/pull/18757)
+* Addon kubevirt: Update bitnami/kubectl image from 1.29.3 to 1.30.0 [#18711](https://github.com/kubernetes/minikube/pull/18711) [#18771](https://github.com/kubernetes/minikube/pull/18771)
+* Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.14.5 to v0.15.0 [#18703](https://github.com/kubernetes/minikube/pull/18703)
+* CNI cilium: Update from v1.15.1 to v1.15.3 [#18846](https://github.com/kubernetes/minikube/pull/18846)
+* High Availability: Update kube-vip from 0.7.1 to v0.8.0 [#18774](https://github.com/kubernetes/minikube/pull/18774)
+* Kicbase/ISO: Update docker from 26.0.1 to 26.0.2 [#18706](https://github.com/kubernetes/minikube/pull/18706)
+* Kicbase: Bump ubuntu:jammy from 20240227 to 20240427 [#18702](https://github.com/kubernetes/minikube/pull/18702) [#18769](https://github.com/kubernetes/minikube/pull/18769) [#18804](https://github.com/kubernetes/minikube/pull/18804)
+
+For a more detailed changelog, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
+
+Thank you to our contributors for this release!
+
+- Bodhi Hu
+- Jérémie Tarot
+- Nir Soffer
+- Predrag Rogic
+- Steven Powell
+- cuiyourong
+- joaquimrocha
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (9 comments)
+- nirs (3 comments)
+- llegolas (1 comments)
+- spowelljr (1 comments)
+
+Thank you to our triage members for this release!
+
+- medyagh (6 comments)
+- afbjorklund (5 comments)
+- xcarolan (4 comments)
+- nevotheless (3 comments)
+- dasumner (2 comments)
+
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.33.1/) for this release!
+
 ## Version 1.33.0 - 2024-04-19
 
 Features:
