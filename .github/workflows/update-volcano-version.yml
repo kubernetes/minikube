@@ -31,7 +31,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpVolcano.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon Volcano: Update volcano images from ${{ steps.bumpVolcano.outputs.OLD_VERSION }} to ${{ steps.bumpVolcano.outputs.NEW_VERSION }}'
