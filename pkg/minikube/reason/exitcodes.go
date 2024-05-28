@@ -76,7 +76,7 @@ const (
 	ExHostTimeout     = 32
 	ExHostUsage       = 34
 	ExHostNotFound    = 35
-	ExHostUnsupported = 38
+	ExHostUnsupported = 36
 	ExHostPermission  = 37
 	ExHostConfig      = 38
 
