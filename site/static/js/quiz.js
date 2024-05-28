@@ -24,19 +24,17 @@ function selectQuizOption(selectedId, autoselect = true) {
     ".option-button"
   );
   // auto-select the first option for the user, to reduce the number of clicks
-  if (buttons.length > 0) {
-    if (autoselect) {
-      const btn = buttons.first();
-      const dataContainerId = btn.attr("data-quiz-id");
-      btn.addClass("active");
-      const url = new URL(window.location);
-      url.searchParams.set("arch", dataContainerId); // Add selectedId as query parameter
+  if (buttons.length > 0 && autoselect) {
+    const btn = buttons.first();
+    const dataContainerId = btn.attr("data-quiz-id");
+    btn.addClass("active");
+    const url = new URL(window.location);
+    url.searchParams.set("arch", dataContainerId); // Add selectedId as query parameter
 
-      // Update the browser's location with the new URL
-      window.history.replaceState({}, document.title, url);
+    // Update the browser's location with the new URL
+    window.history.replaceState({}, document.title, url);
 
-      selectQuizOption(dataContainerId);
-    }
+    selectQuizOption(dataContainerId);
   }
 }
 
