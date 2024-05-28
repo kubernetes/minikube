@@ -23,7 +23,7 @@ function selectQuizOption(selectedId, autoselect = true) {
   const buttons = $(".option-row[data-quiz-id='" + selectedId + "']").find(
     ".option-button"
   );
-  //auto-select the first option for the user, to reduce the number of clicks
+  // auto-select the first option for the user, to reduce the number of clicks
   if (buttons.length > 0) {
     if (autoselect) {
       const btn = buttons.first();
