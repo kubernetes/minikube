@@ -65,7 +65,7 @@ function initQuiz() {
     const urlParams = new URLSearchParams(window.location.search);
     const archParam = urlParams.get("arch");
 
-    //checks for query params and process each option one by one
+    // checks for query params and process each option one by one
 
     if (archParam) {
       const options = archParam.split("/").filter(Boolean);
