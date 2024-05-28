@@ -56,7 +56,7 @@ function initQuiz() {
       selectQuizOption(dataContainerId);
     });
     let userOS = getUserOS().toLowerCase();
-    if (userOS === "Mac") {
+    if (userOS === "mac") {
       // use the name "macos" to match the button
       userOS = "macos";
     }
