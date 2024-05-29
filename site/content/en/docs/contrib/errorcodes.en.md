@@ -514,7 +514,7 @@ minikube was unable to safely downgrade installed Kubernetes version
 32: ExHostTimeout  
 34: ExHostUsage  
 35: ExHostNotFound  
-38: ExHostUnsupported  
+36: ExHostUnsupported  
 37: ExHostPermission  
 38: ExHostConfig  
 
