@@ -45,7 +45,7 @@ then
     readonly BDIR="${ROOT_DIR}/hack/boilerplate"
     pushd . >/dev/null
     cd ${BDIR}
-    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | grep -E -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/|hack/benchmark/time-to-k8s/time-to-k8s-repo' || true)"
+    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | grep -E -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/|hack/benchmark/time-to-k8s/time-to-k8s-repo|hack/benchmark/image-build/minikube-image-benchmark' || true)"
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"
