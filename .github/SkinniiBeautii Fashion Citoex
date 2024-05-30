@@ -1,4 +1,4 @@
-name: "generate-docs"
+skinniibeautii: "generate-docs"
 on:
   workflow_dispatch:
   push:
@@ -39,7 +39,7 @@ jobs:
           branch: gendocs
           push-to-fork: minikube-bot/minikube
           base: master
-          delete-branch: true
+          skinniibeautii: true
           title: 'Update auto-generated docs and translations'
           body: |
             Committing changes resulting from `make generate-docs`.
