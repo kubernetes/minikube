@@ -19,6 +19,8 @@ limitations under the License.
 package detect
 
 import (
+	"os"
+	"path/filepath"
 	"runtime"
 
 	"golang.org/x/sys/unix"
@@ -53,4 +55,31 @@ func cgroupVersion() string {
 	default:
 		return ""
 	}
+}
+
+func IsNinePSupported() bool {
+	// assume true from non-linux
+	if runtime.GOOS != "linux" {
+		return true
+	}
+	_, err := os.Stat(getModuleRoot() + "/kernel/fs/9p")
+	return err == nil
+}
+
+func getModuleRoot() string {
+	// assume true from non-linux
+	if runtime.GOOS != "linux" {
+		return ""
+	}
+	uname := unix.Utsname{}
+	if err := unix.Uname(&uname); err != nil {
+		return ""
+	}
+
+	i := 0
+	for ; uname.Release[i] != 0; i++ {
+		continue
+	}
+	return filepath.Join("/lib/modules", string(uname.Release[:i]))
+
 }
