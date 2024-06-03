@@ -749,6 +749,7 @@
 	"The existing \"{{.name}}\" cluster was created using the \"{{.old}}\" driver, which is incompatible with requested \"{{.new}}\" driver.": "Le cluster \"{{.name}}\" existant a été créé à l'aide du pilote \"{{.old}}\", qui est incompatible avec le pilote \"{{.new}}\" demandé.",
 	"The existing node configuration appears to be corrupt. Run 'minikube delete'": "La configuration de nœud existante semble être corrompue. Exécutez 'minikube delete'",
 	"The heapster addon is depreciated. please try to disable metrics-server instead": "Le module heapster est déprécié. s'il vous plaît essayez de désactiver metrics-server à la place",
+	"The host does not support filesystem 9p.": "",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "Nom du commutateur virtuel hyperv. La valeur par défaut affiche le premier commutateur trouvé (pilote hyperv uniquement).",
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "L'hyperviseur ne semble pas être configuré correctement. Exécutez 'minikube start --alsologtostderr -v=1' et inspectez le code d'erreur",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "L'image '{{.imageName}}' n'a pas été trouvée ; impossible de l'ajouter au cache.",

@@ -717,6 +717,7 @@
 	"The existing \"{{.name}}\" cluster was created using the \"{{.old}}\" driver, which is incompatible with requested \"{{.new}}\" driver.": "既存の「{{.name}}」クラスターは、(要求された「{{.new}}」ドライバーとは互換性のない)「{{.old}}」ドライバーを使用して作成されました。 ",
 	"The existing node configuration appears to be corrupt. Run 'minikube delete'": "既存のノード設定が破損しているようです。'minikube delete' を実行してください",
 	"The heapster addon is depreciated. please try to disable metrics-server instead": "heapster アドオンは廃止予定です。代わりに metrics-server を無効化してみてください",
+	"The host does not support filesystem 9p.": "",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "hyperv 仮想スイッチ名。デフォルト値は最初に見つかったスイッチ名です。 (hyperv ドライバーのみ)",
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "ハイパーバイザーが適切に設定されていないようです。'minikube start --alsologtostderr -v=1' を実行してエラーコードを確認してください",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "'{{.imageName}}' イメージは見つかりませんでした (キャッシュに追加できません)。",
