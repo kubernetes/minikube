@@ -862,6 +862,7 @@
 	"The existing node configuration appears to be corrupt. Run 'minikube delete'": "",
 	"The following services are clusterIP services: {{.svc_names}}, which are supposed to be accessable inside the cluster only. Minikube allows you to access them by opening an SSH tunnel, which is only for test purpose and must not be used in production environment": "以下服务为ClusterIP类型:{{.svc_names}}. 这些服务正常情况下只能从集群内部访问。Minikube通过ssh隧道的方式使你可以从本机访问这些服务,但此功能仅供测试用途严禁生产环境中使用",
 	"The heapster addon is depreciated. please try to disable metrics-server instead": "",
+	"The host does not support filesystem 9p.": "",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "hyperv 虚拟交换机名称。默认为找到的第一个 hyperv 虚拟交换机。（仅限 hyperv 驱动程序）",
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "管理程序似乎配置的不正确。执行 'minikube start --alsologtostderr -v=1' 并且检查错误代码",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "",
