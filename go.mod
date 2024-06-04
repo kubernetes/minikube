@@ -32,7 +32,7 @@ require (
 	github.com/google/slowjam v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.4
-	github.com/hashicorp/go-retryablehttp v0.7.6
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
