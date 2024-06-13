@@ -69,7 +69,7 @@ jobs:
         shell: bash
         run: |
           sudo apt update
-          sudo apt upgrade -y
+          sudo DEBIAN_FRONTEND=noninteractive apt upgrade -y || true
           sudo apt install -y jq docker git cron
           sudo usermod -aG docker $USER
 
