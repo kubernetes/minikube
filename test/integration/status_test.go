@@ -65,22 +65,6 @@ func TestInsufficientStorage(t *testing.T) {
 	verifyClusterState(t, stdout)
 }
 
-// runStatusCmd runs the status command and returns stdout
-func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv bool) []byte {
-	// make sure minikube status shows insufficient storage
-	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
-	// artificially set /var to 100% capacity
-	if increaseEnv {
-		c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
-	}
-	rr, err := Run(t, c)
-	// status exits non-0 if status isn't Running
-	if err == nil {
-		t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
-	}
-	return rr.Stdout.Bytes()
-}
-
 func verifyClusterState(t *testing.T, contents []byte) {
 	var cs cmd.ClusterState
 	if err := json.Unmarshal(contents, &cs); err != nil {

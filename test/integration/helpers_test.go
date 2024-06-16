@@ -44,6 +44,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -687,3 +688,20 @@ func CopyDir(src, dst string) error {
 
 	return nil
 }
+
+// runStatusCmd runs the status command and returns stdout
+func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv bool) []byte {
+	// make sure minikube status shows insufficient storage
+	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
+	// artificially set /var to 100% capacity
+	if increaseEnv {
+			c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
+	}
+	rr, err := Run(t, c)
+	// status exits non-0 if status isn't Running
+	if err == nil {
+			t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
+	}
+	return rr.Stdout.Bytes()
+}
+
