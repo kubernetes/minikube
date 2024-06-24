@@ -59,8 +59,9 @@ to expose GPUs with `--driver=kvm`. Please don't mix these instructions.
 
 - Install NVIDIA's device plugin:
   ```shell
-  minikube addons enable nvidia-device-plugin
+  minikube addons enable kvm-nvidia-gpu
   ```
+  NOTE: `nvidia-gpu-device-plugin` has been deprecated in favor of `kvm-nvidia-gpu`.
 {{% /tab %}}
 {{% tab kvm %}}
 ## Using the kvm driver
@@ -102,9 +103,10 @@ host to the minikube VM. Doing so has a few prerequisites:
 
   If this succeeded, run the following commands:
   ```shell
-  minikube addons enable nvidia-gpu-device-plugin
+  minikube addons enable kvm-nvidia-gpu
   minikube addons enable nvidia-driver-installer
   ```
+  NOTE: `nvidia-gpu-device-plugin` has been deprecated in favor of `kvm-nvidia-gpu`.
 
   This will install the NVIDIA driver (that works for GeForce/Quadro cards)
   on the VM.

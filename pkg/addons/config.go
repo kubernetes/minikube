@@ -130,7 +130,13 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
+		// Deprecated, will be removed in a future release in favor of kvm-nvidia-gpu
 		name:      "nvidia-gpu-device-plugin",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:      "kvm-nvidia-gpu",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
