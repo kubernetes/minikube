@@ -170,6 +170,9 @@ const (
 
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
+
+	// DefaultWindowsNodeVersion is the default version of Windows node
+	DefaultWindowsNodeVersion = "2022"
 )
 
 var (

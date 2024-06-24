@@ -46,6 +46,7 @@ import (
 	gopshost "github.com/shirou/gopsutil/v4/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"k8s.io/klog/v2"
@@ -1332,6 +1333,12 @@ func validateFlags(cmd *cobra.Command, drvName string) { //nolint:gocyclo
 		validateCNI(cmd, viper.GetString(containerRuntime))
 	}
 
+	if cmd.Flags().Changed(windowsNodeVersion) {
+		if err := validateWindowsOSVersion(viper.GetString(windowsNodeVersion)); err != nil {
+			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
+		}
+	}
+
 	if cmd.Flags().Changed(staticIP) {
 		if err := validateStaticIP(viper.GetString(staticIP), drvName, viper.GetString(subnet)); err != nil {
 			exit.Message(reason.Usage, "{{.err}}", out.V{"err": err})
@@ -1448,6 +1455,17 @@ func validateDiskSize(diskSize string) error {
 		return errors.Errorf("Requested disk size %v is less than minimum of %v", diskSizeMB, minimumDiskSize)
 	}
 	return nil
+}
+
+// validateWindowsOSVersion validates the supplied window server os version
+func validateWindowsOSVersion(osVersion string) error {
+	validOptions := node.ValidWindowsOSVersions()
+
+	if validOptions[osVersion] {
+		return nil
+	}
+
+	return errors.Errorf("Invalid Windows Server OS Version: %s. Valid OS version are: %s", osVersion, maps.Keys(validOptions))
 }
 
 // validateRuntime validates the supplied runtime

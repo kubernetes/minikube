@@ -148,6 +148,7 @@ const (
 	autoPauseInterval       = "auto-pause-interval"
 	preloadSrc              = "preload-source"
 	rosetta                 = "rosetta"
+	windowsNodeVersion      = "windows-node-version"
 )
 
 var (
@@ -214,6 +215,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
 	startCmd.Flags().String(preloadSrc, "auto", "Which source to download the preload from (valid options: gcs, github, auto). Defaults to auto (try both).")
+	startCmd.Flags().String(windowsNodeVersion, constants.DefaultWindowsNodeVersion, "The version of Windows to use for the Windows node on a multi-node cluster (e.g., 2019, 2022). Defaults to Windows Server 2022")
+
 }
 
 // initKubernetesFlags inits the commandline flags for Kubernetes related options
