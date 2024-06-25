@@ -33,7 +33,7 @@ const (
 // $2 is the ROOT_JOB
 // $3 is the file containing a list of finished environments, one item per line
 func main() {
-	client, err := storage.NewClient(context.TODO())
+	client, err := storage.NewClient(context.Background())
 	if err != nil {
 		fmt.Printf("failed to connect to gcp: %v\n", err)
 		os.Exit(1)
