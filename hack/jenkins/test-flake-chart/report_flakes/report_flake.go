@@ -228,14 +228,15 @@ func generateMarkdownTable(table [][]string) string {
 		}
 		builder.WriteString("\n")
 
-		if i == 0 {
-			// generate the hyphens seperator
-			builder.WriteString("|")
-			for j := 0; j < len(group); j++ {
-				builder.WriteString(" ---- |")
-			}
-			builder.WriteString("\n")
+		if i != 0 {
+			continue
 		}
+		// generate the hyphens seperator
+		builder.WriteString("|")
+		for j := 0; j < len(group); j++ {
+			builder.WriteString(" ---- |")
+		}
+		builder.WriteString("\n")
 	}
 	builder.WriteString("\n\n")
 	return builder.String()
