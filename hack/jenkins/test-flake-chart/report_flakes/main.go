@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	MAX_ITEM_ENV = 10
+	MaxItemEnv = 10
 )
 
 // This program requires three arguments
@@ -33,6 +33,7 @@ const (
 // $2 is the ROOT_JOB
 // $3 is the file containing a list of finished environments, one item per line
 func main() {
+	ctx := context.Background()
 	client, err := storage.NewClient(context.Background())
 	if err != nil {
 		fmt.Printf("failed to connect to gcp: %v\n", err)
@@ -53,15 +54,15 @@ func main() {
 		os.Exit(1)
 	}
 	// fetch the test results
-	testSummaries, err := GetTestSummariesFromGcp(pr, rootJob, envList, client)
+	testSummaries, err := TestSummariesFromGCP(ctx, pr, rootJob, envList, client)
 	if err != nil {
 		fmt.Printf("failed to load summaries: %v\n", err)
 		os.Exit(1)
 	}
 	// fetch the pre-calculated flake rates
-	flakeRates, err := GetFlakeRate(client)
+	flakeRates, err := GetFlakeRate(ctx, client)
 	if err != nil {
-		fmt.Println("failed to load flake rates: %v", err)
+		fmt.Printf("failed to load flake rates: %v\n", err)
 		os.Exit(1)
 	}
 	// generate and send the message
