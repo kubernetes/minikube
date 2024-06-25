@@ -43,7 +43,6 @@ func main() {
 		fmt.Println("Wrong number of arguments. Usage: go run report_flakes.go  <PR number> <Root job id> <environment list file>")
 
 		os.Exit(1)
-
 	}
 	pr := os.Args[1]
 	rootJob := os.Args[2]
