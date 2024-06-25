@@ -34,7 +34,6 @@ const (
 // $3 is the file containing a list of finished environments, one item per line
 func main() {
 	client, err := storage.NewClient(context.TODO())
-
 	if err != nil {
 		fmt.Printf("failed to connect to gcp: %v\n", err)
 		os.Exit(1)
