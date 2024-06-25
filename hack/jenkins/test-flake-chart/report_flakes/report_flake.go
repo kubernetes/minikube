@@ -59,7 +59,7 @@ func ParseEnvironmentList(listFile string) ([]string, error) {
 	return strings.Split(strings.TrimSpace(string(data)), "\n"), nil
 }
 
-func GetTestSummariesFromGcp(pr, rootJob string, envList []string, client *storage.Client) (map[string]*ShortSummary, error) {
+func TestSummariesFromGCP(pr, rootJob string, envList []string, client *storage.Client) (map[string]*ShortSummary, error) {
 	envToSummaries := map[string]*ShortSummary{}
 	for _, env := range envList {
 		if summary, err := getTestSummaryFromGCP(pr, rootJob, env, client); err == nil {
