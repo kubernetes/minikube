@@ -146,7 +146,7 @@ func GenerateCommentMessage(summaries map[string]*ShortSummary, flakeRates map[s
 		failedTestList := []failedTest{}
 		for _, test := range summary.FailedTests {
 			// if we cannot find the test, we assign the flake rate as -1, meaning N/A
-			var flakerate float64 = -1.0
+			flakerate := -1.0
 			if _, ok := flakeRates[env]; ok {
 				if v, ok := flakeRates[env][test]; ok {
 					flakerate = v
