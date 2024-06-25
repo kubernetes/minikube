@@ -58,7 +58,6 @@ func main() {
 	if err != nil {
 		fmt.Printf("failed to load summaries: %v\n", err)
 		os.Exit(1)
-
 	}
 	// fetch the pre-calculated flake rates
 	flakeRates, err := GetFlakeRate(client)
