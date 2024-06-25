@@ -107,7 +107,7 @@ func getTestSummaryFromGCP(pr, rootJob, env string, client *storage.Client) (*Sh
 func GetFlakeRate(client *storage.Client) (map[string]map[string]float64, error) {
 	btk := client.Bucket("minikube-flake-rate")
 	obj := btk.Object("flake_rates.csv")
-	reader, err := obj.NewReader(context.TODO())
+	reader, err := obj.NewReader(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the flake rate file: %v", err)
 	}
