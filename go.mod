@@ -76,7 +76,7 @@ require (
 	golang.org/x/term v0.21.0
 	golang.org/x/text v0.16.0
 	gonum.org/v1/plot v0.14.0
-	google.golang.org/api v0.185.0
+	google.golang.org/api v0.186.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.2
 	k8s.io/apimachinery v0.30.2
@@ -92,7 +92,7 @@ require (
 
 require (
 	cloud.google.com/go v0.115.0 // indirect
-	cloud.google.com/go/auth v0.5.1 // indirect
+	cloud.google.com/go/auth v0.6.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.8 // indirect
@@ -148,7 +148,7 @@ require (
 	github.com/google/pprof v0.0.0-20220318212150-b2ab0324ddda // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.5 // indirect
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
