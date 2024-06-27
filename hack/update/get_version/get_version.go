@@ -70,6 +70,7 @@ var dependencies = map[string]dependency{
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"ubuntu":                  {dockerfile, `ubuntu:jammy-(.*)"`},
+	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
 }
 
 func main() {

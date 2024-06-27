@@ -1237,6 +1237,11 @@ update-cilium-version:
 	(cd hack/update/cilium_version && \
 	 go run update_cilium_version.go)
 
+.PHONY: update-yakd-version
+update-yakd-version:
+	(cd hack/update/yakd_version && \
+	 go run update_yakd_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
