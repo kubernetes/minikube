@@ -33,7 +33,7 @@ Here we see the available nodes (1 in our case). Kubernetes will choose where to
 Let's deploy our first app on Kubernetes with the `kubectl create deployment` command. We need to provide the deployment name and app image location (include the full repository url for images hosted outside Docker Hub).
 
 ```shell
-kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1
+kubectl create deployment kubernetes-bootcamp --image=gcr.io/k8s-minikube/kubernetes-bootcamp:v1
 ```
 
 Great! You just deployed your first application by creating a deployment. This performed a few things for you:

@@ -226,6 +226,9 @@ minikube failed to purge minikube config directories
 "HOST_SAVE_PROFILE" (Exit code ExHostConfig)  
 minikube failed to persist profile config  
 
+"HOST_UNSUPPORTED" (Exit code ExHostUnsupported)  
+Host doesn't support 9p  
+
 "PROVIDER_NOT_FOUND" (Exit code ExProviderNotFound)  
 minikube could not find a provider for the selected driver  
 
@@ -514,7 +517,7 @@ minikube was unable to safely downgrade installed Kubernetes version
 32: ExHostTimeout  
 34: ExHostUsage  
 35: ExHostNotFound  
-38: ExHostUnsupported  
+36: ExHostUnsupported  
 37: ExHostPermission  
 38: ExHostConfig  
 

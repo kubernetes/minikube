@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.33.1-1715968808-18896
+ISO_VERSION ?= v1.33.1-1719412936-19142
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.22.3
+GO_VERSION ?= 1.22.4
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.31.0
 
@@ -79,7 +79,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.58.2
+GOLINT_VERSION ?= v1.59.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -1236,6 +1236,11 @@ update-site-node-version:
 update-cilium-version:
 	(cd hack/update/cilium_version && \
 	 go run update_cilium_version.go)
+
+.PHONY: update-yakd-version
+update-yakd-version:
+	(cd hack/update/yakd_version && \
+	 go run update_yakd_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

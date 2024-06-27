@@ -5,7 +5,7 @@ on:
     types: [released]
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.3'
+  GO_VERSION: '1.22.4'
 permissions:
   contents: read
 
@@ -13,7 +13,7 @@ jobs:
   benchmark:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - name: Checkout submodules
         run: git submodule update --init
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -25,7 +25,7 @@ jobs:
           ./hack/benchmark/time-to-k8s/time-to-k8s.sh
           echo "version=$(minikube version --short)" >> "$GITHUB_OUTPUT"
       - name: Create PR
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}

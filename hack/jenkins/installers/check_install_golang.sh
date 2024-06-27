@@ -22,7 +22,7 @@ if (($# < 1)); then
   exit 1
 fi
 
-VERSION_TO_INSTALL=1.22.3
+VERSION_TO_INSTALL=1.22.4
 INSTALL_PATH=${1}
 
 function current_arch() {
