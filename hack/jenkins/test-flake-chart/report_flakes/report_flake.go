@@ -31,28 +31,30 @@ import (
 	"cloud.google.com/go/storage"
 )
 
-type ShortSummary struct {
-	NumberOfTests int
-	NumberOfFail  int
-	NumberOfPass  int
-	NumberOfSkip  int
-	FailedTests   []string
-	PassedTests   []string
-	SkippedTests  []string
-	Durations     map[string]float64
-	TotalDuration float64
-	GopoghVersion string
-	GopoghBuild   string
+const unknown float64 = -1.0
+
+type shortSummary struct {
+	NumberOfTests int                `json:"NumberOfTests"`
+	NumberOfFail  int                `json:"NumberOfFail"`
+	NumberOfPass  int                `json:"NumberOfPass"`
+	NumberOfSkip  int                `json:"NumberOfSkip"`
+	FailedTests   []string           `json:"FailedTests"`
+	PassedTests   []string           `json:"PassedTests"`
+	SkippedTests  []string           `json:"SkippedTests"`
+	Durations     map[string]float64 `json:"Durations"`
+	TotalDuration float64            `json:"TotalDuration"`
+	GopoghVersion string             `json:"GopoghVersion"`
+	GopoghBuild   string             `json:"GopoghBuild"`
 	Detail        struct {
-		Name     string
-		Details  string
-		PR       string
-		RepoName string
-	}
+		Name     string `json:"Name"`
+		Details  string `json:"Details"`
+		PR       string `json:"PR"`
+		RepoName string `json:"RepoName"`
+	} `json:"Detail"`
 }
 
-// ParseEnvironmentList read the existing environments from the file
-func ParseEnvironmentList(listFile string) ([]string, error) {
+// parseEnvironmentList reads the existing environments from the file
+func parseEnvironmentList(listFile string) ([]string, error) {
 	data, err := os.ReadFile(listFile)
 	if err != nil {
 		return nil, err
@@ -60,23 +62,23 @@ func ParseEnvironmentList(listFile string) ([]string, error) {
 	return strings.Split(strings.TrimSpace(string(data)), "\n"), nil
 }
 
-func TestSummariesFromGCP(ctx context.Context, pr, rootJob string, envList []string, client *storage.Client) (map[string]*ShortSummary, error) {
-	envToSummaries := map[string]*ShortSummary{}
+func testSummariesFromGCP(ctx context.Context, pr, rootJob string, envList []string, client *storage.Client) (map[string]*shortSummary, error) {
+	envToSummaries := map[string]*shortSummary{}
 	for _, env := range envList {
-		if summary, err := testSummaryFromGCP(ctx, pr, rootJob, env, client); err == nil {
-			if summary != nil {
-				// if the summary is nil(missing) we just skip it
-				envToSummaries[env] = summary
-			}
-		} else {
+		summary, err := testSummaryFromGCP(ctx, pr, rootJob, env, client)
+		if err != nil {
 			return nil, fmt.Errorf("failed to fetch %s test summary from gcp, err: %v", env, err)
+		}
+		if summary != nil {
+			// if the summary is nil(missing) we just skip it
+			envToSummaries[env] = summary
 		}
 	}
 	return envToSummaries, nil
 }
 
-// testFromSummary get the summary of a test on the specified env from the specified summary.
-func testSummaryFromGCP(ctx context.Context, pr, rootJob, env string, client *storage.Client) (*ShortSummary, error) {
+// testSummaryFromGCP gets the summary of a test for the specified env.
+func testSummaryFromGCP(ctx context.Context, pr, rootJob, env string, client *storage.Client) (*shortSummary, error) {
 
 	btk := client.Bucket("minikube-builds")
 	obj := btk.Object(fmt.Sprintf("logs/%s/%s/%s_summary.json", pr, rootJob, env))
@@ -95,7 +97,7 @@ func testSummaryFromGCP(ctx context.Context, pr, rootJob, env string, client *st
 		return nil, err
 	}
 
-	var summary ShortSummary
+	var summary shortSummary
 	if err = json.Unmarshal(data, &summary); err != nil {
 		return nil, fmt.Errorf("failed to deserialize the file: %v", err)
 	}
@@ -103,8 +105,8 @@ func testSummaryFromGCP(ctx context.Context, pr, rootJob, env string, client *st
 
 }
 
-// GetFlakeRate downloaded recent flake rate from gcs, and return the map{env->map{testname->flake rate}}
-func GetFlakeRate(ctx context.Context, client *storage.Client) (map[string]map[string]float64, error) {
+// flakeRate downloads recent flake rates from GCS, and returns a map{env->map{testname->flake rate}}
+func flakeRate(ctx context.Context, client *storage.Client) (map[string]map[string]float64, error) {
 	btk := client.Bucket("minikube-flake-rate")
 	obj := btk.Object("flake_rates.csv")
 	reader, err := obj.NewReader(ctx)
@@ -119,7 +121,7 @@ func GetFlakeRate(ctx context.Context, client *storage.Client) (map[string]map[s
 	result := map[string]map[string]float64{}
 	for i := 1; i < len(records); i++ {
 		// for each line in csv we extract env, test name and flake rate
-		if len(records[i]) < 2 {
+		if len(records[i]) < 3 {
 			// the csv must have at least 2 columns
 			continue
 		}
@@ -137,7 +139,7 @@ func GetFlakeRate(ctx context.Context, client *storage.Client) (map[string]map[s
 	return result, nil
 }
 
-func GenerateCommentMessage(summaries map[string]*ShortSummary, flakeRates map[string]map[string]float64, pr, rootJob string) string {
+func generateCommentMessage(summaries map[string]*shortSummary, flakeRates map[string]map[string]float64, pr, rootJob string) string {
 	type failedTest struct {
 		flakeRate float64
 		env       string
@@ -149,11 +151,9 @@ func GenerateCommentMessage(summaries map[string]*ShortSummary, flakeRates map[s
 		failedTestList := []failedTest{}
 		for _, test := range summary.FailedTests {
 			// if we cannot find the test, we assign the flake rate as -1, meaning N/A
-			flakerate := -1.0
-			if _, ok := flakeRates[env]; ok {
-				if v, ok := flakeRates[env][test]; ok {
-					flakerate = v
-				}
+			flakerate := unknown
+			if v, ok := flakeRates[env][test]; ok {
+				flakerate = v
 			}
 			failedTestList = append(failedTestList,
 				failedTest{
@@ -175,15 +175,26 @@ func GenerateCommentMessage(summaries map[string]*ShortSummary, flakeRates map[s
 		{"Environment", "Test Name", "Flake Rate"},
 	}
 	// if an env has too much failures we will just skip it and print a message in the end
-	tooManyFailures := []string{}
+	// if the failed tests have high flake rates(over 50% for all), it will also be skipped in the table
+	foldedFailures := []string{}
 	for env, list := range envFailedTestList {
-		if len(list) > MaxItemEnv {
-			tooManyFailures = append(tooManyFailures, env)
+		if len(list) > maxItemEnv {
+			foldedFailures = append(foldedFailures, env)
 			continue
 		}
-		for _, item := range list {
+		for i, item := range list {
+			if item.flakeRate > 50 {
+				if i == 0 {
+					// if this is the first failed test
+					// that means each tests in this env
+					// has a flakerate>50% and all of them will
+					// not be shown in the table
+					foldedFailures = append(foldedFailures, env)
+				}
+				break
+			}
 			flakeRateString := fmt.Sprintf("%.2f%% %s", item.flakeRate, testFlakeChartMDLink(env, item.testName))
-			if item.flakeRate < 0 {
+			if item.flakeRate == unknown {
 				flakeRateString = "Unknown"
 			}
 			table = append(table, []string{
@@ -196,12 +207,12 @@ func GenerateCommentMessage(summaries map[string]*ShortSummary, flakeRates map[s
 
 	builder := strings.Builder{}
 	builder.WriteString(
-		fmt.Sprintf("Here are the number of top %d failed tests in each environments with lowest flake rate.\n\n", MaxItemEnv))
+		fmt.Sprintf("Here are the number of top %d failed tests in each environments with lowest flake rate.\n\n", maxItemEnv))
 	builder.WriteString(generateMarkdownTable(table))
-	if len(tooManyFailures) > 0 {
+	if len(foldedFailures) > 0 {
 
-		builder.WriteString("\n\n Besides the following environments have too much failed tests:")
-		for _, env := range tooManyFailures {
+		builder.WriteString("\n\n Besides the following environments also have failed tests:")
+		for _, env := range foldedFailures {
 			builder.WriteString(fmt.Sprintf("\n\n - %s: %d failed %s ", env, len(envFailedTestList[env]), gopoghMDLink(pr, rootJob, env, "")))
 		}
 	}
