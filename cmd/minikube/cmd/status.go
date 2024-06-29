@@ -47,18 +47,6 @@ var (
 	watch        time.Duration
 )
 
-// Additional legacy states
-const (
-	// Configured means configured
-	Configured = "Configured" // ~state.Saved
-	// Misconfigured means misconfigured
-	Misconfigured = "Misconfigured" // ~state.Error
-	// Nonexistent means the resource does not exist
-	Nonexistent = "Nonexistent" // ~state.None
-	// Irrelevant is used for statuses that aren't meaningful for worker nodes
-	Irrelevant = "Irrelevant"
-)
-
 const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
@@ -175,10 +163,10 @@ func exitCode(statuses []*cluster.Status) int {
 		if st.Host != state.Running.String() {
 			c |= minikubeNotRunningStatusFlag
 		}
-		if (st.APIServer != state.Running.String() && st.APIServer != Irrelevant) || st.Kubelet != state.Running.String() {
+		if (st.APIServer != state.Running.String() && st.APIServer != cluster.Irrelevant) || st.Kubelet != state.Running.String() {
 			c |= clusterNotRunningStatusFlag
 		}
-		if st.Kubeconfig != Configured && st.Kubeconfig != Irrelevant {
+		if st.Kubeconfig != cluster.Configured && st.Kubeconfig != cluster.Irrelevant {
 			c |= k8sNotRunningStatusFlag
 		}
 	}
@@ -209,7 +197,7 @@ func statusText(st *cluster.Status, w io.Writer) error {
 	if err := tmpl.Execute(w, st); err != nil {
 		return err
 	}
-	if st.Kubeconfig == Misconfigured {
+	if st.Kubeconfig == cluster.Misconfigured {
 		_, err := w.Write([]byte("\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n"))
 		return err
 	}
@@ -233,7 +221,7 @@ func statusJSON(st []*cluster.Status, w io.Writer) error {
 }
 
 func clusterStatusJSON(statuses []*cluster.Status, w io.Writer, cc *config.ClusterConfig) error {
-	cs := cluster.GetClusterState(statuses, ClusterFlagValue(), cc)
+	cs := cluster.GetState(statuses, ClusterFlagValue(), cc)
 
 	bs, err := json.Marshal(cs)
 	if err != nil {

@@ -82,7 +82,7 @@ func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv
 }
 
 func verifyClusterState(t *testing.T, contents []byte) {
-	var cs cluster.ClusterState
+	var cs cluster.State
 	if err := json.Unmarshal(contents, &cs); err != nil {
 		t.Fatalf("unmarshalling: %v", err)
 	}

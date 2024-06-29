@@ -30,9 +30,9 @@ func TestExitCode(t *testing.T) {
 		want  int
 		state *cluster.Status
 	}{
-		{"ok", 0, &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured}},
-		{"paused", 2, &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
-		{"down", 7, &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
+		{"ok", 0, &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured}},
+		{"paused", 2, &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}},
+		{"down", 7, &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}},
 		{"missing", 7, &cluster.Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}},
 	}
 	for _, tc := range tests {
@@ -53,17 +53,17 @@ func TestStatusText(t *testing.T) {
 	}{
 		{
 			name:  "ok",
-			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"},
+			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured, TimeToStop: "10m"},
 			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\ntimeToStop: 10m\n\n",
 		},
 		{
 			name:  "paused",
-			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
+			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured},
 			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "down",
-			state: &cluster.Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
+			state: &cluster.Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured},
 			want:  "minikube\ntype: Control Plane\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
 		},
 	}
@@ -88,9 +88,9 @@ func TestStatusJSON(t *testing.T) {
 		name  string
 		state *cluster.Status
 	}{
-		{"ok", &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"}},
-		{"paused", &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
-		{"down", &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
+		{"ok", &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured, TimeToStop: "10m"}},
+		{"paused", &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}},
+		{"down", &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
