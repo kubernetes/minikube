@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	MaxItemEnv = 10
+	maxItemEnv = 10
 )
 
 // This program requires three arguments
@@ -41,31 +41,31 @@ func main() {
 	}
 	// parse the command line arguments
 	if len(os.Args) != 4 {
-		fmt.Println("Wrong number of arguments. Usage: go run report_flakes.go  <PR number> <Root job id> <environment list file>")
+		fmt.Println("Wrong number of arguments. Usage: go run . <PR number> <Root job id> <environment list file>")
 
 		os.Exit(1)
 	}
 	pr := os.Args[1]
 	rootJob := os.Args[2]
 	// read the environment names
-	envList, err := ParseEnvironmentList(os.Args[3])
+	envList, err := parseEnvironmentList(os.Args[3])
 	if err != nil {
 		fmt.Printf("failed to read %s, err: %v\n", os.Args[3], err)
 		os.Exit(1)
 	}
 	// fetch the test results
-	testSummaries, err := TestSummariesFromGCP(ctx, pr, rootJob, envList, client)
+	testSummaries, err := testSummariesFromGCP(ctx, pr, rootJob, envList, client)
 	if err != nil {
 		fmt.Printf("failed to load summaries: %v\n", err)
 		os.Exit(1)
 	}
 	// fetch the pre-calculated flake rates
-	flakeRates, err := GetFlakeRate(ctx, client)
+	flakeRates, err := flakeRate(ctx, client)
 	if err != nil {
 		fmt.Printf("failed to load flake rates: %v\n", err)
 		os.Exit(1)
 	}
 	// generate and send the message
-	msg := GenerateCommentMessage(testSummaries, flakeRates, pr, rootJob)
+	msg := generateCommentMessage(testSummaries, flakeRates, pr, rootJob)
 	fmt.Println(msg)
 }
