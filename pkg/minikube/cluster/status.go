@@ -180,7 +180,7 @@ func GetStatus(api libmachine.API, cc *config.ClusterConfig) ([]*Status, error) 
 		}
 		if st.Host == Nonexistent {
 			err := fmt.Errorf("the %q host does not exist", machineName)
-			klog.Errorf("%v", err)
+			klog.Error(err)
 			return nil, err
 		}
 		statuses = append(statuses, st)
