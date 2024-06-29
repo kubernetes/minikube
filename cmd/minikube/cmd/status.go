@@ -233,7 +233,7 @@ func statusJSON(st []*cluster.Status, w io.Writer) error {
 }
 
 func clusterStatusJSON(statuses []*cluster.Status, w io.Writer, cc *config.ClusterConfig) error {
-	cs := cluster.GetClusterState(statuses, ClusterFlagValue(), cc)
+	cs := cluster.GetState(statuses, ClusterFlagValue(), cc)
 
 	bs, err := json.Marshal(cs)
 	if err != nil {

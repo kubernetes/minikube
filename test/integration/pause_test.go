@@ -191,7 +191,7 @@ func validateStatus(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	statusOutput := runStatusCmd(ctx, t, profile, false)
-	var cs cluster.ClusterState
+	var cs cluster.State
 	if err := json.Unmarshal(statusOutput, &cs); err != nil {
 		t.Fatalf("unmarshalling: %v", err)
 	}

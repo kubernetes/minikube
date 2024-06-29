@@ -130,10 +130,10 @@ type Status struct {
 	PodManEnv  string `json:",omitempty"`
 }
 
-// ClusterState holds a cluster state representation
+// State holds a cluster state representation
 //
 //nolint:revive
-type ClusterState struct {
+type State struct {
 	BaseState
 
 	BinaryVersion string
@@ -166,6 +166,7 @@ type BaseState struct {
 	StepDetail string `json:",omitempty"`
 }
 
+// GetStatus returns the statuses of each node
 func GetStatus(api libmachine.API, cc *config.ClusterConfig) ([]*Status, error) {
 	var statuses []*Status
 	for _, n := range cc.Nodes {
@@ -188,17 +189,20 @@ func GetStatus(api libmachine.API, cc *config.ClusterConfig) ([]*Status, error) 
 	return statuses, nil
 }
 
-// clusterState converts Status structs into a ClusterState struct
+// GetState converts Status structs into a State struct
 //
 //nolint:gocyclo
-func GetClusterState(sts []*Status, profile string, cc *config.ClusterConfig) ClusterState {
-	statusName := sts[0].APIServer
-	if sts[0].Host == codeNames[InsufficientStorage] {
-		statusName = sts[0].Host
+func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
+	statusName := ""
+	if len(sts) > 0 {
+		statusName = sts[0].APIServer
+		if sts[0].Host == codeNames[InsufficientStorage] {
+			statusName = sts[0].Host
+		}
 	}
 	sc := statusCode(statusName)
 
-	cs := ClusterState{
+	cs := State{
 		BinaryVersion: version.GetVersion(),
 
 		BaseState: BaseState{
@@ -344,7 +348,7 @@ func GetClusterState(sts []*Status, profile string, cc *config.ClusterConfig) Cl
 	return cs
 }
 
-// nodeStatus looks up the status of a node
+// NodeStatus looks up the status of a node
 func NodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
 	name := config.MachineName(cc, n)

@@ -118,7 +118,7 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 		klog.Errorf("error getting statuses: %v", err)
 		return "Unknown"
 	}
-	clusterStatus := cluster.GetClusterState(statuses, ClusterFlagValue(), p.Config)
+	clusterStatus := cluster.GetState(statuses, ClusterFlagValue(), p.Config)
 
 	return clusterStatus.StatusName
 }
