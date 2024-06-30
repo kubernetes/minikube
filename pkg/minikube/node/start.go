@@ -856,14 +856,14 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		imageRepository = images.DefaultKubernetesRepo
 	}
 
-	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))
+	curlTarget := fmt.Sprintf("https://%s/", imageRepository)
+	opts = append(opts, curlTarget)
 	exe := "curl"
 	if runtime.GOOS == "windows" {
 		exe = "curl.exe"
 	}
 	cmd := exec.Command(exe, opts...)
 	if rr, err := r.RunCmd(cmd); err != nil {
-		outside := true
 		klog.Warningf("%s failed: %v", rr.Args, err)
 
 		// using QEMU with the user network
@@ -872,13 +872,22 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		}
 		// now we shall also try whether this registry is reachable outside the machine
 		// so that we can tell in the logs that if the user's computer had any network issue or could it be related to a network module config change in minikbue ISO
-		if err := cmd.Run(); err != nil {
-			// both inside and outside failed
-			out.WarningT("Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
-		} else {
-			// only inside the minikube failed
+
+		//We should skip the second check if the user is using the none or ssh driver since there is no different
+		// between an "inside" and "outside" check on the none driver, and checking the host on the ssh driver is not helpful.
+		if driver.IsNone(driverName) || driver.IsSSH(driverName) {
 			out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
+
+		} else {
+			if err := cmd.Run(); err != nil {
+				// both inside and outside failed
+				out.WarningT("Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
+			} else {
+				// only inside the minikube failed
+				out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
+			}
 		}
+
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
