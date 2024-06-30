@@ -873,14 +873,11 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		// now we shall also try whether this registry is reachable outside the machine
 		// so that we can tell in the logs that if the user's computer had any network issue or could it be related to a network module config change in minikbue ISO
 		if err := cmd.Run(); err != nil {
-			outside = false
-		}
-		if !outside {
 			// both inside and outside failed
-			out.WarningT("This {{.type}} is also having trouble accessing https://{{.repository}} both inside and outside the minikube ", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
+			out.WarningT("Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
 		} else {
 			// only inside the minikube failed
-			out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}} only inside the minikube", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
+			out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
 		}
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
