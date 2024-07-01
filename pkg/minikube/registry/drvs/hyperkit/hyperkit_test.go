@@ -25,6 +25,7 @@ import (
 var (
 	versionOutputType1 = "hyperkit: v0.20190201-11-gc0dd46\n\nHomepage: https://github.com/docker/hyperkit\nLicense: BSD\n\n"
 	versionOutputType2 = "hyperkit: 0.20190201\n\nHomepage: https://github.com/docker/hyperkit\nLicense: BSD\n\n"
+	versionOutputType3 = "hyperkit: 40cbd5\n\nHomepage: https://github.com/docker/hyperkit\nLicense: BSD"
 )
 
 func TestSplitHyperKitVersion(t *testing.T) {
@@ -40,6 +41,11 @@ func TestSplitHyperKitVersion(t *testing.T) {
 			desc:    "split type2 output to YYYYMMDD format",
 			version: "0.20190201",
 			expect:  "20190201",
+		},
+		{
+			desc:    "split type3 output to YYYYMMDD format",
+			version: "40cdb5",
+			expect:  "0",
 		},
 		{
 			desc:    "non split YYYYMMDD output to YYYYMMDD format",
@@ -75,6 +81,11 @@ func TestConvertVersionToDate(t *testing.T) {
 			desc:          "split type2 output to YYYYMMDD format",
 			versionOutput: versionOutputType2,
 			expect:        "20190201",
+		},
+		{
+			desc:          "split type3 output to YYYYMMDD format",
+			versionOutput: versionOutputType3,
+			expect:        "0",
 		},
 		{
 			desc:          "split semver output to YYYYMMDD format",
