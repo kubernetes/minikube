@@ -527,8 +527,17 @@ jobs:
       JOB_NAME: "functional_virtualbox_macos"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: macos-12
+    runs-on: macos-13
     steps:
+      - name: Check architecture
+        shell: bash
+        run: |
+          if [ $(uname -m) != "x86_64" ] 
+          then 
+              echo "$(uname -m) detected. This test must be run on x86_64"
+              exit -1
+          fi
+          exit 0
       - name: Install kubectl
         shell: bash
         run: |
@@ -548,6 +557,16 @@ jobs:
         run: |
           brew install docker-machine docker
           sudo docker --version
+      - name: Install vbox
+        shell: bash
+        run: |
+          brew update
+          brew search virtualbox
+          sudo spctl --master-disable
+          brew install --cask virtualbox 
+          curl -O -L "https://download.virtualbox.org/virtualbox/7.0.14/Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack"
+          # Get SHAs from installing it manually once and then it will spit out the SHA for batch installation
+          echo "y" | sudo VBoxManage extpack install Oracle_VM_VirtualBox_Extension_Pack-7.0.14.vbox-extpack --accept-license=33d7284dc4a0ece381196fda3cfe2ed0e1e8e7ed7f27b9a9ebc4ee22e24bd23c
       - name: Info
         shell: bash
         run: |
@@ -575,7 +594,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "TestFunctional" -test.timeout=35m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "TestFunctional" -test.timeout=35m -test.v -timeout-multiplier=1.8 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
