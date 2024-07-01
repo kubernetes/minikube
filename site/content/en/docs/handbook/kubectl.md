@@ -64,7 +64,7 @@ function kubectl { minikube kubectl -- $args }
 Command Prompt.
 
 ```shell
-doskey kubectl=minikube kubectl $*
+doskey kubectl=minikube kubectl -- $*
 ```
 
 
