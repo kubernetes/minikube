@@ -473,6 +473,11 @@ func getNetwork(driverName string) string {
 		return n
 	}
 	switch n {
+	case "vmnet-host", "vmnet-shared", "vmnet-bridged":
+		//TODO: check if QEMU v7.1+ version is installed
+		if runtime.GOOS != "Darwin" {
+			exit.Message(reason.Usage, "The vmnet-* network is only supported on macOS")
+		}
 	case "socket_vmnet":
 		if runtime.GOOS != "darwin" {
 			exit.Message(reason.Usage, "The socket_vmnet network is only supported on macOS")
@@ -491,7 +496,7 @@ func getNetwork(driverName string) string {
 		n = "builtin"
 	case "builtin":
 	default:
-		exit.Message(reason.Usage, "--network with QEMU must be 'builtin' or 'socket_vmnet'")
+		exit.Message(reason.Usage, "--network with QEMU must be 'builtin' (aka 'user') or 'socket_vmnet', and for QEMU v7.1+, it can also be 'vmnet-host', 'vmnet-shared' or 'vmnet-bridged'")
 	}
 	if n == "builtin" {
 		msg := "You are using the QEMU driver without a dedicated network, which doesn't support `minikube service` & `minikube tunnel` commands."
