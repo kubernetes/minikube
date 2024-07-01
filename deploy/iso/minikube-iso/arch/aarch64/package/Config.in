@@ -1,9 +1,10 @@
 menu "System tools aarch64"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/buildkit-bin-aarch64/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/cni-plugins-latest-aarch64/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/containerd-bin-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/cri-dockerd-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/crictl-bin-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/docker-bin-aarch64/Config.in"
-    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/cni-plugins-latest-aarch64/Config.in"
-    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/containerd-bin-aarch64/Config.in"
+    source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/docker-buildx-aarch64/Config.in"
     source "$BR2_EXTERNAL_MINIKUBE_PATH/arch/aarch64/package/nerdctl-bin-aarch64/Config.in"
 endmenu
