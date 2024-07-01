@@ -427,7 +427,9 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			// TODO: refactor to work with docker, temp fix to resolve regression
 			if cr == constants.Containerd {
 				// eventually, run something similar to ssh --append-known
-				appendKnownHelper(nodeName, true)
+				if err := appendKnownHelper(nodeName, appendKnown); err != nil {
+					exit.Error(reason.AppendKnownError, "failed to apppen keys to known_hosts", err)
+				}
 			}
 		}
 	},

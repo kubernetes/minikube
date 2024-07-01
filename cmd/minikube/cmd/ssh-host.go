@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
@@ -45,11 +46,13 @@ var sshHostCmd = &cobra.Command{
 	Short: "Retrieve the ssh host key of the specified node",
 	Long:  "Retrieve the ssh host key of the specified node.",
 	Run: func(_ *cobra.Command, _ []string) {
-		appendKnownHelper(nodeName, appendKnown)
+		if err := appendKnownHelper(nodeName, appendKnown); err != nil {
+			exit.Error(reason.AppendKnownError, "failed to apppen keys to known_hosts", err)
+		}
 	},
 }
 
-func appendKnownHelper(nodeName string, appendKnown bool) {
+func appendKnownHelper(nodeName string, appendKnown bool) error {
 	cname := ClusterFlagValue()
 	co := mustload.Running(cname)
 	if co.CP.Host.DriverName == driver.None {
@@ -99,7 +102,7 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 		knownHosts := filepath.Join(sshDir, "known_hosts")
 
 		if sshutil.KnownHost(host, knownHosts) {
-			return
+			return nil
 		}
 
 		f, err := os.OpenFile(knownHosts, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
@@ -122,8 +125,16 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 
 		fmt.Fprintf(os.Stderr, "Host added: %s (%s)\n", knownHosts, host)
 
-		return
+		// then store it into minikube home folder
+		// so that when we execute `minikube delete`
+		// these keys can be removed properly
+		_, cc := mustload.Partial(ClusterFlagValue())
+		knownHostPath := filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "known_host")
+		if err := os.WriteFile(knownHostPath, []byte(keys), 0666); err != nil {
+			return fmt.Errorf("WriteString to %s: %v", knownHostPath, err)
+		}
 	}
+	return nil
 }
 
 func init() {
