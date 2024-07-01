@@ -303,6 +303,10 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 	}
 	pRootDir := filepath.Join(miniPath, "profiles")
 	items, err := os.ReadDir(pRootDir)
+	if os.IsNotExist(err) {
+		return dirs, &ErrNotExist{fmt.Sprintf("profiles dir %s does not exist", pRootDir)}
+	}
+
 	for _, f := range items {
 		if f.IsDir() {
 			dirs = append(dirs, f.Name())
