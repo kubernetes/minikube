@@ -77,6 +77,7 @@
   "registry.k8s.io/mongodb-install": "registry.cn-hangzhou.aliyuncs.com/google_containers/mongodb-install",
   "registry.k8s.io/nginx-slim": "registry.cn-hangzhou.aliyuncs.com/google_containers/nginx-slim",
   "registry.k8s.io/nvidia-gpu-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/nvidia-gpu-device-plugin",
+  "registry.k8s.io/kvm-nvidia-gpu": "registry.cn-hangzhou.aliyuncs.com/google_containers/nvidia-gpu-device-plugin",
   "registry.k8s.io/pause": "registry.cn-hangzhou.aliyuncs.com/google_containers/pause",
   "registry.k8s.io/pause-amd64": "registry.cn-hangzhou.aliyuncs.com/google_containers/pause-amd64",
   "registry.k8s.io/spark": "registry.cn-hangzhou.aliyuncs.com/google_containers/spark",

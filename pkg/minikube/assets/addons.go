@@ -493,6 +493,17 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"NvidiaDevicePlugin": "registry.k8s.io",
 	}),
+	"kvm-nvidia-gpu": NewAddon([]*BinAsset{
+		MustBinAsset(addons.KvmNvidiaGpuAssets,
+			"gpu/kvm-nvidia-gpu.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"kvm-nvidia-gpu.yaml",
+			"0640"),
+	}, false, "kvm-nvidia-gpu", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/", map[string]string{
+		"NvidiaDevicePlugin": "nvidia-gpu-device-plugin@sha256:4b036e8844920336fa48f36edeb7d4398f426d6a934ba022848deed2edbf09aa",
+	}, map[string]string{
+		"NvidiaDevicePlugin": "registry.k8s.io",
+	}),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.LogviewerAssets,
 			"logviewer/logviewer-dp-and-svc.yaml.tmpl",
