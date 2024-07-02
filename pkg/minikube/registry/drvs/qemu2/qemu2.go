@@ -57,7 +57,10 @@ func init() {
 	}
 }
 
-func qemuSystemProgram() (string, error) {
+func qemuSystemProgram(customProgram string) (string, error) {
+	if customProgram != "" {
+		return customProgram, nil
+	}
 	arch := runtime.GOARCH
 	switch arch {
 	case "amd64":
@@ -99,8 +102,8 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	}
 }
 
-func qemuVersion() (semver.Version, error) {
-	qemuSystem, err := qemuSystemProgram()
+func qemuVersion(cc config.ClusterConfig) (semver.Version, error) {
+	qemuSystem, err := qemuSystemProgram(cc.QEMUProgram)
 	if err != nil {
 		return semver.Version{}, err
 	}
@@ -116,7 +119,7 @@ func qemuVersion() (semver.Version, error) {
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	name := config.MachineName(cc, n)
-	qemuSystem, err := qemuSystemProgram()
+	qemuSystem, err := qemuSystemProgram(cc.QEMUProgram)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +137,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		// highmem=off needed for qemu 6.2.0 and lower, see https://patchwork.kernel.org/project/qemu-devel/patch/20201126215017.41156-9-agraf@csgraf.de/#23800615 for details
 		if runtime.GOOS == "darwin" {
 			qemu7 := semver.MustParse("7.0.0")
-			v, err := qemuVersion()
+			v, err := qemuVersion(cc)
 			if err != nil {
 				return nil, err
 			}
@@ -149,6 +152,12 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		}
 	default:
 		return nil, fmt.Errorf("unknown arch: %s", runtime.GOARCH)
+	}
+	if cc.QEMUCPUType != "" {
+		qemuCPU = cc.QEMUCPUType
+	}
+	if cc.QEMUMachineType != "" {
+		qemuMachine = cc.QEMUMachineType
 	}
 	qemuFirmware, err := qemuFirmwarePath(cc.CustomQemuFirmwarePath)
 	if err != nil {
@@ -189,7 +198,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	qemuSystem, err := qemuSystemProgram()
+	qemuSystem, err := qemuSystemProgram(viper.GetString("qemu-program"))
 	if err != nil {
 		return registry.State{Error: err, Doc: docURL}
 	}
