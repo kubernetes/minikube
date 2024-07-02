@@ -5,6 +5,18 @@ metadata:
 
 ---
 
+apiVersion: scheduling.volcano.sh/v1beta1
+kind: Queue
+metadata:
+  name: test
+  namespace: my-volcano
+spec:
+  weight: 1
+  reclaimable: false
+  capability:
+    cpu: 2
+--- 
+
 apiVersion: batch.volcano.sh/v1alpha1
 kind: Job
 metadata:
@@ -13,7 +25,7 @@ metadata:
 spec:
   minAvailable: 1
   schedulerName: volcano
-  queue: default
+  queue: test
   tasks:
     - replicas: 1
       name: nginx

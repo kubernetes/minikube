@@ -899,7 +899,7 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 		wg.Done()
 	}()
 	go func() {
-		if err := kapi.WaitForDeploymentToStabilize(client, volcanoNamespace, "volcano-controller", Minutes(6)); err != nil {
+		if err := kapi.WaitForDeploymentToStabilize(client, volcanoNamespace, "volcano-controllers", Minutes(6)); err != nil {
 			t.Errorf("failed waiting for volcano-controller deployment to stabilize: %v", err)
 		} else {
 			t.Logf("volcano-controller stabilized in %s", time.Since(start))
