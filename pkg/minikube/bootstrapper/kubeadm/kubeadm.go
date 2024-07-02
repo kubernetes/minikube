@@ -227,8 +227,12 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
-		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
+	flags := fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ","))
+	if !cfg.DisableOptimizations {
+		flags += " --skip-phases=addon/coredns"
+	}
+	c := exec.CommandContext(ctx, "/bin/bash", "-c", flags)
 	c.Stdout = kw
 	c.Stderr = kw
 	var wg sync.WaitGroup
@@ -583,7 +587,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 }
 
 // restartPrimaryControlPlane restarts the kubernetes cluster configured by kubeadm.
-func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error { //nolint:gocyclo
 	klog.Infof("restartPrimaryControlPlane start ...")
 
 	start := time.Now()
@@ -696,11 +700,28 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	}
 
 	// This can fail during upgrades if the old pods have not shut down yet
+	// ref: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/#cmd-phase-addon
 	addonPhase := func() error {
-		addons := "all"
-		if cfg.KubernetesConfig.ExtraOptions.Exists("kubeadm.skip-phases=addon/kube-proxy") {
+		addons := ""
+
+		kubeproxy := !cfg.KubernetesConfig.ExtraOptions.Exists("kubeadm.skip-phases=addon/kube-proxy")
+		coredns := cfg.DisableOptimizations // disabling optimisations will use default kubeadm's coredns addon instead of our custom one
+
+		if kubeproxy {
+			addons = "kube-proxy"
+		}
+		if coredns {
 			addons = "coredns"
 		}
+		if kubeproxy && coredns {
+			addons = "all"
+		}
+
+		if addons == "" {
+			// skip phase addon
+			return nil
+		}
+
 		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
 		return err
 	}
