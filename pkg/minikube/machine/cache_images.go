@@ -329,6 +329,11 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 	}
 
 	errStr := strings.ToLower(err.Error())
+	if strings.Contains(errStr, "is using its referenced image") {
+		klog.Warningf("Image %s is being used by a running container, skipping deletion, it would be replaced later", imgName)
+		return nil
+	}
+
 	if !strings.Contains(errStr, "no such image") {
 		return errors.Wrap(err, "removing image")
 	}
