@@ -19,6 +19,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"regexp"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -74,4 +78,29 @@ func main() {
 	}
 
 	update.Apply(schema, data)
+
+	updateYAML(version)
+}
+
+func updateYAML(version string) {
+	res, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/volcano-sh/volcano/%s/installer/volcano-development.yaml", version))
+	if err != nil {
+		klog.Fatalf("failed to get yaml file: %v", err)
+	}
+	defer res.Body.Close()
+	yaml, err := io.ReadAll(res.Body)
+	if err != nil {
+		klog.Fatalf("failed to read body: %v", err)
+	}
+	replacements := map[string]string{
+		`volcanosh\/vc-webhook-manager:.*`:    "{{.CustomRegistries.vc_webhook_manager | default .ImageRepository | default .Registries.vc_webhook_manager}}{{.Images.vc_webhook_manager}}",
+		`volcanosh\/vc-controller-manager:.*`: "{{.CustomRegistries.vc_controller_manager | default .ImageRepository | default .Registries.vc_controller_manager}}{{.Images.vc_controller_manager}}",
+		`volcanosh\/vc-scheduler:.*`:          "{{.CustomRegistries.vc_scheduler | default .ImageRepository | default .Registries.vc_scheduler}}{{.Images.vc_scheduler}}",
+	}
+	for re, repl := range replacements {
+		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
+	}
+	if err := os.WriteFile("../../../deploy/addons/volcano/volcano-development.yaml.tmpl", yaml, 0644); err != nil {
+		klog.Fatalf("failed to write to YAML file: %v", err)
+	}
 }
