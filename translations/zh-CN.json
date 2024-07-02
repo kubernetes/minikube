@@ -581,7 +581,7 @@
 	"Only alphanumeric and dashes '-' are permitted. Minimum 2 characters, starting with alphanumeric.": "仅允许字母数字和破折号'-'。最少2个字符，以字母数字开头。",
 	"Open the addons URL with https instead of http": "使用 https 替代 http 打开插件的 URL",
 	"Open the service URL with https instead of http (defaults to \"false\")": "使用 https 替代 http 打开服务的 URL（默认为 \"false\"）。",
-	"Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...": "在默认浏览器中打开 Kubernetes 服务 {{.namespace_name}}/{{.service_name}}...",
+	"Opening Kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...": "正通过默认浏览器打开 Kubernetes 服务 {{.namespace_name}}/{{.service_name}}...",
 	"Opening service {{.namespace_name}}/{{.service_name}} in default browser...": "正通过默认浏览器打开服务 {{.namespace_name}}/{{.service_name}}...",
 	"Opening {{.url}} in your default browser...": "正在使用默认浏览器打开 {{.url}} ...",
 	"Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list ": "在 minikube 中打开带有 ADDON_NAME 的插件（例如：minikube addons open dashboard）。要获取可用插件的列表，请使用：minikube addons list",
