@@ -37,6 +37,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+// TransferCrictl transfers the crictl binary to the machine to replace /usr/bin/crictl
+func TransferCrictl(cfg config.KubernetesConfig, c command.Runner, crictlVersion string) error {
+	src, err := download.CrictlBinary(cfg.KubernetesVersion, crictlVersion)
+	if err != nil {
+		if strings.Contains(err.Error(), "response code: 404") {
+			klog.Info("Failed to download crictl with matching version. Using whatever version is already on the image")
+			return nil
+		}
+		return errors.Wrapf(err, "downloading crictl")
+	}
+	dst := "/usr/bin/crictl"
+	if err := machine.CopyBinary(c, src, dst); err != nil {
+		return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
+	}
+	return nil
+}
+
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager, binariesURL string) error {
 	ok, err := binariesExist(cfg, c)

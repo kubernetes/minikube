@@ -37,6 +37,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -939,6 +940,27 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	klog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
+	sm := sysinit.New(k.c)
+
+	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c, sm, cfg.BinaryMirror); err != nil {
+		return errors.Wrap(err, "downloading binaries")
+	}
+	// download crictl if needed.
+	// since Kubernetes v1.29 we need to have matching crictl and Kubernetes version.
+	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing Kubernetes version")
+	}
+	crictlVersion, err := cruntime.CrictlVersion(k.c)
+	// when preload is enabled
+	// if we failed to get the crictl version or the version does not match the k8s version
+	// then we download it
+	if !viper.GetBool("preload") && (err != nil || crictlVersion.Major != version.Major || crictlVersion.Minor != version.Minor) {
+		if err := bsutil.TransferCrictl(cfg.KubernetesConfig, k.c, ""); err != nil {
+			return errors.Wrap(err, "transferring crictl")
+		}
+	}
+
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile, "0644"),
@@ -974,8 +996,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		}
 	}
 
-	sm := sysinit.New(k.c)
-
+	sm = sysinit.New(k.c)
 	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c, sm, cfg.BinaryMirror); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
