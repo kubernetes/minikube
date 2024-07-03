@@ -873,7 +873,7 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		// now we shall also try whether this registry is reachable outside the machine
 		// so that we can tell in the logs that if the user's computer had any network issue or could it be related to a network module config change in minikbue ISO
 
-		//We should skip the second check if the user is using the none or ssh driver since there is no different
+		// We should skip the second check if the user is using the none or ssh driver since there is no difference
 		// between an "inside" and "outside" check on the none driver, and checking the host on the ssh driver is not helpful.
 		if driver.IsNone(driverName) || driver.IsSSH(driverName) {
 			out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
