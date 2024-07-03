@@ -440,7 +440,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 // tunnelToAPIServer creates ssh tunnel between apiserver:port inside control-plane node and host on port 8443.
 func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
-	if cfg.APIServerPort != 0 {
+	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
 	}
 
