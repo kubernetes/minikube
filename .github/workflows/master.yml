@@ -410,6 +410,15 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: macos-12
     steps:
+      - name: Verify x86_64 architecture 
+        shell: bash
+        run: |
+          if [ $(uname -m) != "x86_64" ] 
+          then 
+              echo "$(uname -m) detected. This test must be run on x86_64"
+              exit -1
+          fi
+          exit 0
       - name: Install kubectl
         shell: bash
         run: |
