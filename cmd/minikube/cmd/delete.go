@@ -739,8 +739,8 @@ func getPids(path string) ([]int, error) {
 	return pids, nil
 }
 
-// deleKnownHost read minikube nodes' keys from the minikube home folder
-// and remove them from the known_hosts file
+// deleteKnownHosts reads minikube nodes' keys from the minikube home folder
+// and removes them from the known_hosts file
 // This is the long term solution for issue https://github.com/kubernetes/minikube/issues/16868
 func deleteKnownHosts() {
 	// remove this line from known_hosts file if it exists
@@ -756,25 +756,27 @@ func deleteKnownHosts() {
 		return
 	}
 	for _, file := range fileInfo {
-		if file.IsDir() {
-			nodeName := file.Name()
+		if !file.IsDir() {
+			continue
+		}
+		nodeName := file.Name()
 
-			knowHostPath := filepath.Join(localpath.MiniPath(), "machines", nodeName, "known_host")
-			if _, err := os.Stat(knowHostPath); err == nil {
-				// if this file exists, remove this line from known_hosts
-				key, err := os.ReadFile(knowHostPath)
-				if err != nil {
-					klog.Warningf("error reading keys from %s: %v", knowHostPath, err)
-					continue
-				}
-				if err := util.RemoveLineFromFile(string(key), knownHosts); err != nil {
-					klog.Warningf("failed to remove key: %v", err)
-				}
-				// and, remove the file which stores this key
-				if err := os.Remove(knowHostPath); err != nil {
-					klog.Warningf("failed to remove key: %v", err)
-				}
-			}
+		knowHostPath := filepath.Join(localpath.MiniPath(), "machines", nodeName, "known_host")
+		if _, err := os.Stat(knowHostPath); err != nil {
+			continue
+		}
+		// if this file exists, remove this line from known_hosts
+		key, err := os.ReadFile(knowHostPath)
+		if err != nil {
+			klog.Warningf("error reading keys from %s: %v", knowHostPath, err)
+			continue
+		}
+		if err := util.RemoveLineFromFile(string(key), knownHosts); err != nil {
+			klog.Warningf("failed to remove key: %v", err)
+		}
+		// and, remove the file which stores this key
+		if err := os.Remove(knowHostPath); err != nil {
+			klog.Warningf("failed to remove key: %v", err)
 		}
 	}
 

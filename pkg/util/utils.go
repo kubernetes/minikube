@@ -165,7 +165,7 @@ func MaskProxyPasswordWithKey(v string) string {
 	return v
 }
 
-// remove the specified line from the given file
+// RemoveLineFromFile removes the specified line from the given file
 func RemoveLineFromFile(knownHostLine string, filePath string) error {
 	fd, err := os.OpenFile(filePath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
@@ -173,7 +173,7 @@ func RemoveLineFromFile(knownHostLine string, filePath string) error {
 	}
 	defer fd.Close()
 
-	// read each line from known_hosts and find theline we want to delete
+	// read each line from known_hosts and find the line we want to delete
 	scanner := bufio.NewScanner(fd)
 	newLines := make([]string, 0)
 	for scanner.Scan() {

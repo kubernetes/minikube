@@ -47,7 +47,7 @@ var sshHostCmd = &cobra.Command{
 	Long:  "Retrieve the ssh host key of the specified node.",
 	Run: func(_ *cobra.Command, _ []string) {
 		if err := appendKnownHelper(nodeName, appendKnown); err != nil {
-			exit.Error(reason.AppendKnownError, "failed to apppen keys to known_hosts", err)
+			exit.Error(reason.AppendKnownError, "failed to append keys to known_hosts", err)
 		}
 	},
 }
