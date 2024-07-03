@@ -36,7 +36,7 @@ require (
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
-	github.com/juju/clock v1.0.3
+	github.com/juju/clock v1.1.1
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/juju/mutex/v2 v2.0.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
