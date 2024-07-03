@@ -64,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
@@ -442,6 +443,9 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
 	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
+	}
+	if !driver.IsQEMU(cfg.Driver) || !network.IsBuiltinQEMU(cfg.Network) {
+		return nil
 	}
 
 	m, err := machine.NewAPIClient()
