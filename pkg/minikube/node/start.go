@@ -875,18 +875,14 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 
 		// We should skip the second check if the user is using the none or ssh driver since there is no difference
 		// between an "inside" and "outside" check on the none driver, and checking the host on the ssh driver is not helpful.
-		if driver.IsNone(driverName) || driver.IsSSH(driverName) {
-			out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
-
-		} else {
+		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
+		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
 			if err := cmd.Run(); err != nil {
 				// both inside and outside failed
-				out.WarningT("Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
-			} else {
-				// only inside the minikube failed
-				out.WarningT("Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}", out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
+				warning = "Failing to connect to {{.curlTarget}} from both inside the minikube {{.type}} and host machine"
 			}
 		}
+		out.WarningT(warning, out.V{"curlTarget": curlTarget, "type": driver.MachineType(driverName)})
 
 		out.ErrT(style.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
