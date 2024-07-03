@@ -79,7 +79,7 @@ func TestFunctional(t *testing.T) {
 
 // TestFunctionalNewestKubernetes are functionality run functional tests using NewestKubernetesVersion
 func TestFunctionalNewestKubernetes(t *testing.T) {
-	if strings.Contains(*startArgs, "--kubernetes-version") {
+	if strings.Contains(*startArgs, "--kubernetes-version") || constants.NewestKubernetesVersion == constants.DefaultKubernetesVersion {
 		t.Skip()
 	}
 	k8sVersionString := constants.NewestKubernetesVersion
@@ -91,7 +91,7 @@ func TestFunctionalNewestKubernetes(t *testing.T) {
 
 func testFunctional(t *testing.T, k8sVersion string) {
 	profile := UniqueProfileName("functional")
-	ctx := context.WithValue(context.Background(), "k8sVersion", k8sVersion)
+	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
 	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
 	defer func() {
 		if !*cleanup {
