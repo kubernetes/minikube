@@ -444,6 +444,8 @@ func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
 	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
 	}
+	// An API server tunnel is only needed for QEMU w/ builtin network, for
+	// everything else return
 	if !driver.IsQEMU(cfg.Driver) || !network.IsBuiltinQEMU(cfg.Network) {
 		return nil
 	}
