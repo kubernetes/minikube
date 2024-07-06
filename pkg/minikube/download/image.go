@@ -78,14 +78,35 @@ func ImageExistsInDaemon(img string) bool {
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local docker daemon", img)
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), image.TrimDockerIO(img)) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
+	output, err := cmd.Output()
+	if err != nil {
+		klog.Warningf("failed to list docker images: %v", err)
+		return false
 	}
-	// Else, pull it
-	return false
+	if !strings.Contains(string(output), image.TrimDockerIO(img)) {
+		return false
+	}
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		klog.Warningf("failed to parse reference: %v", err)
+		return false
+	}
+	dImg, err := daemon.Image(ref)
+	if err != nil {
+		klog.Warningf("failed to get image from daemon: %v", err)
+		return false
+	}
+	cfg, err := dImg.ConfigFile()
+	if err != nil {
+		klog.Warningf("failed to get config for %s: %v", img, err)
+		return false
+	}
+	if cfg.Architecture != runtime.GOOS {
+		klog.Warningf("image %s is of wrong architecture", img)
+		return false
+	}
+	klog.Infof("Found %s in local docker daemon, skipping pull", img)
+	return true
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
