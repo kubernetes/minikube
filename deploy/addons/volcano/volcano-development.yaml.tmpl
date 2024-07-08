@@ -72,6 +72,9 @@ rules:
   - apiGroups: ["certificates.k8s.io"]
     resources: ["certificatesigningrequests/approval"]
     verbs: ["create", "update"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "patch"]
   - apiGroups: ["scheduling.incubator.k8s.io", "scheduling.volcano.sh"]
     resources: ["queues"]
     verbs: ["get", "list"]
@@ -165,68 +168,19 @@ spec:
           configMap:
             name: volcano-admission-configmap
 ---
-# Source: volcano/templates/admission-init.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: volcano-admission-init
-  namespace: volcano-system
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "helm.sh/hook-weight": "0"
----
-# Source: volcano/templates/admission-init.yaml
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: volcano-admission-init
-  namespace: volcano-system
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "helm.sh/hook-weight": "0"
-rules:
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["create", "get"]
----
-# Source: volcano/templates/admission-init.yaml
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: volcano-admission-init-role
-  namespace: volcano-system
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "helm.sh/hook-weight": "0"
-subjects:
-  - kind: ServiceAccount
-    name: volcano-admission-init
-    namespace: volcano-system
-roleRef:
-  kind: Role
-  name: volcano-admission-init
-  apiGroup: rbac.authorization.k8s.io
----
-# Source: volcano/templates/admission-init.yaml
+# Source: volcano/templates/admission.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: volcano-admission-init
   namespace: volcano-system
-  annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
-    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "helm.sh/hook-weight": "5" # set a higher weight to reserve buffers.
   labels:
     app: volcano-admission-init
 spec:
   backoffLimit: 3
   template:
     spec:
-      serviceAccountName: volcano-admission-init
+      serviceAccountName: volcano-admission
       priorityClassName: system-cluster-critical
       restartPolicy: Never
       containers:
@@ -241,7 +195,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: jobs.batch.volcano.sh
 spec:
   group: batch.volcano.sh
@@ -435,7 +390,6 @@ spec:
                                                   type: object
                                                 type: array
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           weight:
                                             format: int32
                                             type: integer
@@ -482,12 +436,10 @@ spec:
                                                   type: object
                                                 type: array
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           type: array
                                       required:
                                       - nodeSelectorTerms
                                       type: object
-                                      x-kubernetes-map-type: atomic
                                   type: object
                                 podAffinity:
                                   properties:
@@ -519,7 +471,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               matchLabelKeys:
                                                 items:
                                                   type: string
@@ -553,7 +504,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               namespaces:
                                                 items:
                                                   type: string
@@ -597,7 +547,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           matchLabelKeys:
                                             items:
                                               type: string
@@ -631,7 +580,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           namespaces:
                                             items:
                                               type: string
@@ -673,7 +621,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               matchLabelKeys:
                                                 items:
                                                   type: string
@@ -707,7 +654,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               namespaces:
                                                 items:
                                                   type: string
@@ -751,7 +697,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           matchLabelKeys:
                                             items:
                                               type: string
@@ -785,7 +730,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           namespaces:
                                             items:
                                               type: string
@@ -831,7 +775,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -841,7 +784,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -857,7 +799,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -869,7 +810,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -885,7 +825,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -895,7 +834,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -1491,7 +1429,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -1501,7 +1438,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -1517,7 +1453,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -1529,7 +1464,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -1545,7 +1479,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -1555,7 +1488,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -2125,7 +2057,6 @@ spec:
                                   name:
                                     type: string
                                 type: object
-                                x-kubernetes-map-type: atomic
                               type: array
                             initContainers:
                               items:
@@ -2158,7 +2089,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -2168,7 +2098,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -2184,7 +2113,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -2196,7 +2124,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -2212,7 +2139,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -2222,7 +2148,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -2957,7 +2882,6 @@ spec:
                                           type: string
                                         type: object
                                     type: object
-                                    x-kubernetes-map-type: atomic
                                   matchLabelKeys:
                                     items:
                                       type: string
@@ -3051,7 +2975,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       user:
                                         type: string
                                     required:
@@ -3068,7 +2991,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       volumeID:
                                         type: string
                                     required:
@@ -3099,7 +3021,6 @@ spec:
                                       optional:
                                         type: boolean
                                     type: object
-                                    x-kubernetes-map-type: atomic
                                   csi:
                                     properties:
                                       driver:
@@ -3111,7 +3032,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       readOnly:
                                         type: boolean
                                       volumeAttributes:
@@ -3138,7 +3058,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             mode:
                                               format: int32
                                               type: integer
@@ -3159,7 +3078,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           required:
                                           - path
                                           type: object
@@ -3217,7 +3135,6 @@ spec:
                                                 - kind
                                                 - name
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               dataSourceRef:
                                                 properties:
                                                   apiGroup:
@@ -3274,7 +3191,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               storageClassName:
                                                 type: string
                                               volumeAttributesClassName:
@@ -3323,7 +3239,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                     required:
                                     - driver
                                     type: object
@@ -3408,7 +3323,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       targetPortal:
                                         type: string
                                     required:
@@ -3492,7 +3406,6 @@ spec:
                                                         type: string
                                                       type: object
                                                   type: object
-                                                  x-kubernetes-map-type: atomic
                                                 name:
                                                   type: string
                                                 optional:
@@ -3526,7 +3439,6 @@ spec:
                                                 optional:
                                                   type: boolean
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             downwardAPI:
                                               properties:
                                                 items:
@@ -3541,7 +3453,6 @@ spec:
                                                         required:
                                                         - fieldPath
                                                         type: object
-                                                        x-kubernetes-map-type: atomic
                                                       mode:
                                                         format: int32
                                                         type: integer
@@ -3562,7 +3473,6 @@ spec:
                                                         required:
                                                         - resource
                                                         type: object
-                                                        x-kubernetes-map-type: atomic
                                                     required:
                                                     - path
                                                     type: object
@@ -3590,7 +3500,6 @@ spec:
                                                 optional:
                                                   type: boolean
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             serviceAccountToken:
                                               properties:
                                                 audience:
@@ -3645,7 +3554,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       user:
                                         type: string
                                     required:
@@ -3667,7 +3575,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       sslEnabled:
                                         type: boolean
                                       storageMode:
@@ -3719,7 +3626,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       volumeName:
                                         type: string
                                       volumeNamespace:
@@ -3776,7 +3682,6 @@ spec:
                           - kind
                           - name
                           type: object
-                          x-kubernetes-map-type: atomic
                         dataSourceRef:
                           properties:
                             apiGroup:
@@ -3833,7 +3738,6 @@ spec:
                                 type: string
                               type: object
                           type: object
-                          x-kubernetes-map-type: atomic
                         storageClassName:
                           type: string
                         volumeAttributesClassName:
@@ -3925,13 +3829,20 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: volcano/templates/bus_v1alpha1_command.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: commands.bus.volcano.sh
 spec:
   group: bus.volcano.sh
@@ -3952,19 +3863,14 @@ spec:
               object.
             type: string
           apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           message:
             description: Human-readable message indicating details of this command.
@@ -3981,33 +3887,25 @@ spec:
                 description: API version of the referent.
                 type: string
               blockOwnerDeletion:
-                description: |-
-                  If true, AND if the owner has the "foregroundDeletion" finalizer, then
-                  the owner cannot be deleted from the key-value store until this
-                  reference is removed.
-                  See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion
-                  for how the garbage collector interacts with this field and enforces the foreground deletion.
-                  Defaults to false.
-                  To set this field, a user needs "delete" permission of the owner,
-                  otherwise 422 (Unprocessable Entity) will be returned.
+                description: If true, AND if the owner has the "foregroundDeletion"
+                  finalizer, then the owner cannot be deleted from the key-value store
+                  until this reference is removed. See https://kubernetes.io/docs/concepts/architecture/garbage-collection/#foreground-deletion
+                  for how the garbage collector interacts with this field and enforces
+                  the foreground deletion. Defaults to false. To set this field, a
+                  user needs "delete" permission of the owner, otherwise 422 (Unprocessable
+                  Entity) will be returned.
                 type: boolean
               controller:
                 description: If true, this reference points to the managing controller.
                 type: boolean
               kind:
-                description: |-
-                  Kind of the referent.
-                  More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
                 type: string
               name:
-                description: |-
-                  Name of the referent.
-                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names
+                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#names'
                 type: string
               uid:
-                description: |-
-                  UID of the referent.
-                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids
+                description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names#uids'
                 type: string
             required:
             - apiVersion
@@ -4015,10 +3913,15 @@ spec:
             - name
             - uid
             type: object
-            x-kubernetes-map-type: atomic
         type: object
     served: true
     storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: volcano/templates/controllers.yaml
 apiVersion: v1
@@ -4329,7 +4232,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: podgroups.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -4366,32 +4270,25 @@ spec:
         description: PodGroup is a collection of Pod; used for batch workload.
         properties:
           apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
           spec:
-            description: |-
-              Specification of the desired behavior of the pod group.
-              More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+            description: 'Specification of the desired behavior of the pod group.
+              More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status'
             properties:
               minMember:
-                description: |-
-                  MinMember defines the minimal number of members/tasks to run the pod group;
-                  if there's not enough resources to start all tasks, the scheduler
-                  will not start anyone.
+                description: MinMember defines the minimal number of members/tasks
+                  to run the pod group; if there's not enough resources to start all
+                  tasks, the scheduler will not start anyone.
                 format: int32
                 type: integer
               minResources:
@@ -4401,38 +4298,34 @@ spec:
                   - type: string
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
-                description: |-
-                  MinResources defines the minimal resource of members/tasks to run the pod group;
-                  if there's not enough resources to start all tasks, the scheduler
-                  will not start anyone.
+                description: MinResources defines the minimal resource of members/tasks
+                  to run the pod group; if there's not enough resources to start all
+                  tasks, the scheduler will not start anyone.
                 type: object
               minTaskMember:
                 additionalProperties:
                   format: int32
                   type: integer
-                description: |-
-                  MinTaskMember defines the minimal number of pods to run each task in the pod group;
-                  if there's not enough resources to start each task, the scheduler
-                  will not start anyone.
+                description: MinTaskMember defines the minimal number of pods to run
+                  each task in the pod group; if there's not enough resources to start
+                  each task, the scheduler will not start anyone.
                 type: object
               priorityClassName:
-                description: |-
-                  If specified, indicates the PodGroup's priority. "system-node-critical" and
-                  "system-cluster-critical" are two special keywords which indicate the
-                  highest priorities with the former being the highest priority. Any other
-                  name must be defined by creating a PriorityClass object with that name.
-                  If not specified, the PodGroup priority will be default or zero if there is no
-                  default.
+                description: If specified, indicates the PodGroup's priority. "system-node-critical"
+                  and "system-cluster-critical" are two special keywords which indicate
+                  the highest priorities with the former being the highest priority.
+                  Any other name must be defined by creating a PriorityClass object
+                  with that name. If not specified, the PodGroup priority will be
+                  default or zero if there is no default.
                 type: string
               queue:
-                description: |-
-                  Queue defines the queue to allocate resource for PodGroup; if queue does not exist,
-                  the PodGroup will not be scheduled. Defaults to `default` Queue with the lowest weight.
+                description: Queue defines the queue to allocate resource for PodGroup;
+                  if queue does not exist, the PodGroup will not be scheduled. Defaults
+                  to `default` Queue with the lowest weight.
                 type: string
             type: object
           status:
-            description: |-
-              Status represents the current information about a pod group.
+            description: Status represents the current information about a pod group.
               This data may not be up to date.
             properties:
               conditions:
@@ -4485,13 +4378,20 @@ spec:
     served: true
     storage: true
     subresources: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: volcano/templates/scheduling_v1beta1_queue.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: queues.scheduling.volcano.sh
 spec:
   group: scheduling.volcano.sh
@@ -4511,26 +4411,20 @@ spec:
         description: Queue is a queue of PodGroup.
         properties:
           apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
           spec:
-            description: |-
-              Specification of the desired behavior of the queue.
-              More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
+            description: 'Specification of the desired behavior of the queue. More
+              info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status'
             properties:
               affinity:
                 description: If specified, the pod owned by the queue will be scheduled
@@ -4698,13 +4592,20 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: volcano/templates/nodeinfo_v1alpha1_numatopologies.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: numatopologies.nodeinfo.volcano.sh
 spec:
   group: nodeinfo.volcano.sh
@@ -4723,19 +4624,14 @@ spec:
         description: Numatopology is the Schema for the Numatopologies API
         properties:
           apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
             type: string
           kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
             type: object
@@ -4753,9 +4649,7 @@ spec:
                     socket:
                       type: integer
                   type: object
-                description: |-
-                  Specifies the cpu topology info
-                  Key is cpu id
+                description: Specifies the cpu topology info Key is cpu id
                 type: object
               numares:
                 additionalProperties:
@@ -4767,9 +4661,8 @@ spec:
                     capacity:
                       type: integer
                   type: object
-                description: |-
-                  Specifies the numa info for the resource
-                  Key is resource name
+                description: Specifies the numa info for the resource Key is resource
+                  name
                 type: object
               policies:
                 additionalProperties:
@@ -4779,14 +4672,19 @@ spec:
               resReserved:
                 additionalProperties:
                   type: string
-                description: |-
-                  Specifies the reserved resource of the node
-                  Key is resource name
+                description: Specifies the reserved resource of the node Key is resource
+                  name
                 type: object
             type: object
         type: object
     served: true
     storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: volcano/templates/webhooks.yaml
 apiVersion: admissionregistration.k8s.io/v1
@@ -5066,7 +4964,8 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: jobtemplates.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -5242,7 +5141,6 @@ spec:
                                                   type: object
                                                 type: array
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           weight:
                                             format: int32
                                             type: integer
@@ -5289,12 +5187,10 @@ spec:
                                                   type: object
                                                 type: array
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           type: array
                                       required:
                                       - nodeSelectorTerms
                                       type: object
-                                      x-kubernetes-map-type: atomic
                                   type: object
                                 podAffinity:
                                   properties:
@@ -5326,7 +5222,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               matchLabelKeys:
                                                 items:
                                                   type: string
@@ -5360,7 +5255,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               namespaces:
                                                 items:
                                                   type: string
@@ -5404,7 +5298,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           matchLabelKeys:
                                             items:
                                               type: string
@@ -5438,7 +5331,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           namespaces:
                                             items:
                                               type: string
@@ -5480,7 +5372,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               matchLabelKeys:
                                                 items:
                                                   type: string
@@ -5514,7 +5405,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               namespaces:
                                                 items:
                                                   type: string
@@ -5558,7 +5448,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           matchLabelKeys:
                                             items:
                                               type: string
@@ -5592,7 +5481,6 @@ spec:
                                                   type: string
                                                 type: object
                                             type: object
-                                            x-kubernetes-map-type: atomic
                                           namespaces:
                                             items:
                                               type: string
@@ -5638,7 +5526,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -5648,7 +5535,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -5664,7 +5550,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -5676,7 +5561,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -5692,7 +5576,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -5702,7 +5585,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -6298,7 +6180,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -6308,7 +6189,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -6324,7 +6204,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -6336,7 +6215,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -6352,7 +6230,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -6362,7 +6239,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -6932,7 +6808,6 @@ spec:
                                   name:
                                     type: string
                                 type: object
-                                x-kubernetes-map-type: atomic
                               type: array
                             initContainers:
                               items:
@@ -6965,7 +6840,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             fieldRef:
                                               properties:
                                                 apiVersion:
@@ -6975,7 +6849,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             resourceFieldRef:
                                               properties:
                                                 containerName:
@@ -6991,7 +6864,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             secretKeyRef:
                                               properties:
                                                 key:
@@ -7003,7 +6875,6 @@ spec:
                                               required:
                                               - key
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           type: object
                                       required:
                                       - name
@@ -7019,7 +6890,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                         prefix:
                                           type: string
                                         secretRef:
@@ -7029,7 +6899,6 @@ spec:
                                             optional:
                                               type: boolean
                                           type: object
-                                          x-kubernetes-map-type: atomic
                                       type: object
                                     type: array
                                   image:
@@ -7764,7 +7633,6 @@ spec:
                                           type: string
                                         type: object
                                     type: object
-                                    x-kubernetes-map-type: atomic
                                   matchLabelKeys:
                                     items:
                                       type: string
@@ -7858,7 +7726,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       user:
                                         type: string
                                     required:
@@ -7875,7 +7742,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       volumeID:
                                         type: string
                                     required:
@@ -7906,7 +7772,6 @@ spec:
                                       optional:
                                         type: boolean
                                     type: object
-                                    x-kubernetes-map-type: atomic
                                   csi:
                                     properties:
                                       driver:
@@ -7918,7 +7783,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       readOnly:
                                         type: boolean
                                       volumeAttributes:
@@ -7945,7 +7809,6 @@ spec:
                                               required:
                                               - fieldPath
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             mode:
                                               format: int32
                                               type: integer
@@ -7966,7 +7829,6 @@ spec:
                                               required:
                                               - resource
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                           required:
                                           - path
                                           type: object
@@ -8024,7 +7886,6 @@ spec:
                                                 - kind
                                                 - name
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               dataSourceRef:
                                                 properties:
                                                   apiGroup:
@@ -8081,7 +7942,6 @@ spec:
                                                       type: string
                                                     type: object
                                                 type: object
-                                                x-kubernetes-map-type: atomic
                                               storageClassName:
                                                 type: string
                                               volumeAttributesClassName:
@@ -8130,7 +7990,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                     required:
                                     - driver
                                     type: object
@@ -8215,7 +8074,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       targetPortal:
                                         type: string
                                     required:
@@ -8299,7 +8157,6 @@ spec:
                                                         type: string
                                                       type: object
                                                   type: object
-                                                  x-kubernetes-map-type: atomic
                                                 name:
                                                   type: string
                                                 optional:
@@ -8333,7 +8190,6 @@ spec:
                                                 optional:
                                                   type: boolean
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             downwardAPI:
                                               properties:
                                                 items:
@@ -8348,7 +8204,6 @@ spec:
                                                         required:
                                                         - fieldPath
                                                         type: object
-                                                        x-kubernetes-map-type: atomic
                                                       mode:
                                                         format: int32
                                                         type: integer
@@ -8369,7 +8224,6 @@ spec:
                                                         required:
                                                         - resource
                                                         type: object
-                                                        x-kubernetes-map-type: atomic
                                                     required:
                                                     - path
                                                     type: object
@@ -8397,7 +8251,6 @@ spec:
                                                 optional:
                                                   type: boolean
                                               type: object
-                                              x-kubernetes-map-type: atomic
                                             serviceAccountToken:
                                               properties:
                                                 audience:
@@ -8452,7 +8305,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       user:
                                         type: string
                                     required:
@@ -8474,7 +8326,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       sslEnabled:
                                         type: boolean
                                       storageMode:
@@ -8526,7 +8377,6 @@ spec:
                                           name:
                                             type: string
                                         type: object
-                                        x-kubernetes-map-type: atomic
                                       volumeName:
                                         type: string
                                       volumeNamespace:
@@ -8583,7 +8433,6 @@ spec:
                           - kind
                           - name
                           type: object
-                          x-kubernetes-map-type: atomic
                         dataSourceRef:
                           properties:
                             apiGroup:
@@ -8640,7 +8489,6 @@ spec:
                                 type: string
                               type: object
                           type: object
-                          x-kubernetes-map-type: atomic
                         storageClassName:
                           type: string
                         volumeAttributesClassName:
@@ -8669,13 +8517,20 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
 ---
 # Source: jobflow/templates/flow_v1alpha1_jobtemplates.yaml
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.6.0
+  creationTimestamp: null
   name: jobflows.flow.volcano.sh
 spec:
   group: flow.volcano.sh
@@ -8860,3 +8715,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
