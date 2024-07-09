@@ -170,7 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(kicBaseImage, kic.BaseImage, "The base image to use for docker/podman drivers. Intended for local development.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
-	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
+	startCmd.Flags().StringP(containerRuntime, "c", constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
