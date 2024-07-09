@@ -231,7 +231,8 @@ func gopoghMDLink(pr, rootJob, env, testName string) string {
 	return fmt.Sprintf("[(gopogh)](https://storage.googleapis.com/minikube-builds/logs/%s/%s/%s.html#%s)", pr, rootJob, env, testName)
 }
 
-// generateMarkdownTable convert 2d string slice into markdown table. The first string slice is the header of the table
+// generateMarkdownTable convert 2d string slice into markdown table. The first
+// string slice is the header of the table
 func generateMarkdownTable(table [][]string) string {
 	builder := strings.Builder{}
 	for i, group := range table {
