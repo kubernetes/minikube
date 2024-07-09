@@ -168,8 +168,8 @@ func generateCommentMessage(summaries map[string]*shortSummary, flakeRates map[s
 		})
 		envFailedTestList[env] = failedTestList
 	}
-	// we convert the result into a 2d string slice representing a markdown table,
-	// whose each line represents a line of the table
+	// we convert the result into a 2d string slice representing a markdown
+	// table, whose each line represents a line of the table
 	table := [][]string{
 		// title of the table
 		{"Environment", "Test Name", "Flake Rate"},
