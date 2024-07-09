@@ -174,8 +174,9 @@ func generateCommentMessage(summaries map[string]*shortSummary, flakeRates map[s
 		// title of the table
 		{"Environment", "Test Name", "Flake Rate"},
 	}
-	// if an env has too much failures we will just skip it and print a message in the end
-	// if the failed tests have high flake rates(over 50% for all), it will also be skipped in the table
+	// if an env has too many failures we will just skip it and print a
+	// message in the end if the failed tests have high flake rates (over
+	// 50% for all), it will also be skipped in the table
 	foldedFailures := []string{}
 	for env, list := range envFailedTestList {
 		if len(list) > maxItemEnv {
