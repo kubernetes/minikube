@@ -905,6 +905,7 @@
 	"The total number of nodes to spin up. Defaults to 1.": "要启动的节点总数。默认值为 1。",
 	"The value passed to --format is invalid": "传递给 --format 的值无效。",
 	"The value passed to --format is invalid: {{.error}}": "传递给 --format 的值无效：{{.error}}。",
+	"The {{.addon}} addon is only supported with the KVM driver.\n\nFor GPU setup instructions see: https://minikube.sigs.k8s.io/docs/tutorials/nvidia/": "",
 	"The {{.driver_name}} driver should not be used with root privileges.": "不应以根权限使用 {{.driver_name}} 驱动程序。",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "",
 	"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}": "“{{.driver_executable}}”有一个新版本。请考虑升级。{{.documentation_url}}",

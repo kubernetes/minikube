@@ -794,6 +794,7 @@
 	"The total number of nodes to spin up. Defaults to 1.": "",
 	"The value passed to --format is invalid": "",
 	"The value passed to --format is invalid: {{.error}}": "",
+	"The {{.addon}} addon is only supported with the KVM driver.\n\nFor GPU setup instructions see: https://minikube.sigs.k8s.io/docs/tutorials/nvidia/": "",
 	"There are a couple ways to enable the required file sharing:\n1. Enable \"Use the WSL 2 based engine\" in Docker Desktop\nor\n2. Enable file sharing in Docker Desktop for the %s%s directory": "",
 	"These --extra-config parameters are invalid: {{.invalid_extra_opts}}": "",
 	"These changes will take effect upon a minikube delete and then a minikube start": "",
