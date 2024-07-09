@@ -266,7 +266,8 @@ func CacheToDaemon(img string) (string, error) {
 		return "", err
 	}
 
-	cmd := exec.Command("docker", "pull", "--quiet", img)
+	platform := fmt.Sprintf("linux/%s", runtime.GOARCH)
+	cmd := exec.Command("docker", "pull", "--platform", platform, "--quiet", img)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)
 		img = image.Tag(img)
