@@ -185,9 +185,9 @@ func generateCommentMessage(summaries map[string]*shortSummary, flakeRates map[s
 		for i, item := range list {
 			if item.flakeRate > 50 {
 				if i == 0 {
-					// if this is the first failed test
-					// that means each tests in this env
-					// has a flakerate>50% and all of them will
+					// if this is the first failed test that
+					// means each tests in this env has a
+					// flakerate>50% and all of them will
 					// not be shown in the table
 					foldedFailures = append(foldedFailures, env)
 				}
