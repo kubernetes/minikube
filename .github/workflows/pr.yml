@@ -656,7 +656,6 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
-          sudo apt-get -qq -y install cni-plugins
           CRI_DOCKERD_VERSION="v0.3.14"
           CRI_DOCKERD_COMMIT="683f70f69901e66d49dfac802841ff843171f131"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
