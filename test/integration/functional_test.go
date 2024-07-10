@@ -57,7 +57,7 @@ import (
 	"golang.org/x/build/kubernetes/api"
 )
 
-const echoServerImg = "kicbase/echo-server"
+const echoServerImg = "docker.io/kicbase/echo-server"
 
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
