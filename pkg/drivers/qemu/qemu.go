@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -412,14 +413,19 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
-	if runtime.GOOS == "darwin" {
+	var accel string
+	if detect.IsAmd64M1Emulation() {
+		accel = "tcg"
+	} else if runtime.GOOS == "darwin" {
 		// On macOS, enable the Hypervisor framework accelerator.
-		startCmd = append(startCmd,
-			"-accel", "hvf")
+		accel = "hvf"
 	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
 		// On Linux, enable the Kernel Virtual Machine accelerator.
+		accel = "kvm"
+	}
+	if accel != "" {
 		startCmd = append(startCmd,
-			"-accel", "kvm")
+			"-accel", accel)
 	}
 
 	startCmd = append(startCmd,
