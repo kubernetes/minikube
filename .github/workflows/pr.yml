@@ -20,7 +20,7 @@ jobs:
   # Runs before before the functional tests
   # builds the binaries required for testing
   build_minikube_test_binaries:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -45,7 +45,7 @@ jobs:
           name: minikube_binaries
           path: out
   build_minikube:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -58,7 +58,7 @@ jobs:
           make cross
           make e2e-cross
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -76,7 +76,7 @@ jobs:
         run: make test
         continue-on-error: false
   unit_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -104,7 +104,7 @@ jobs:
       JOB_NAME: "functional_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -204,7 +204,7 @@ jobs:
       JOB_NAME: "functional_docker_containerd_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -423,7 +423,7 @@ jobs:
       JOB_NAME: functional_podman_ubuntu
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -635,7 +635,7 @@ jobs:
       JOB_NAME: "functional_baremetal_ubuntu20_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -748,7 +748,7 @@ jobs:
         functional_virtualbox_macos,
         functional_baremetal_ubuntu20_04,
       ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: download all reports
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
