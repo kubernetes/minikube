@@ -230,7 +230,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // tagAndLoadImage is a helper function to pull, tag, load image (decreases cyclomatic complexity for linter).
 func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage string) {
-	newPulledImage := fmt.Sprintf("%s:%s", echoServerImg, "2.0")
+	newPulledImage := fmt.Sprintf("%s:%s", echoServerImg, "latest")
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", newPulledImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
@@ -337,7 +337,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
 		}
 
-		pulledImage := fmt.Sprintf("%s:%s", echoServerImg, "2.0")
+		pulledImage := fmt.Sprintf("%s:%s", echoServerImg, "1.0")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
 		if err != nil {
 			t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
