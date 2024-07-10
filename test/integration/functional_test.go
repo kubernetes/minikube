@@ -73,7 +73,7 @@ var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !ar
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
-	profile := UniqueProfileName("functional")
+	profile := UniqueProfileName("func")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer func() {
 		if !*cleanup {
