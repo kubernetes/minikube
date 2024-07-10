@@ -626,13 +626,13 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_baremetal_ubuntu20_04:
+  functional_baremetal_ubuntu22_04:
     permissions:
       contents: none
     needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_baremetal_ubuntu20_04"
+      JOB_NAME: "functional_baremetal_ubuntu22_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-22.04
@@ -656,6 +656,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
+          sudo apt-get -qq -y install cni-plugins
           CRI_DOCKERD_VERSION="v0.3.14"
           CRI_DOCKERD_COMMIT="683f70f69901e66d49dfac802841ff843171f131"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
@@ -666,6 +667,18 @@ jobs:
           CRICTL_VERSION="v1.28.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+      # https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver
+      - name: Install container networking plugins
+        shell: bash
+        run: |
+          CNI_PLUGIN_VERSION="v1.5.1"
+          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
+          CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
+
+          curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+          sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
+          sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
+          rm "$CNI_PLUGIN_TAR"
       - name: Install gopogh
         shell: bash
         run: |
@@ -715,9 +728,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
-          name: functional_baremetal_ubuntu20_04
+          name: functional_baremetal_ubuntu22_04
           path: minikube_binaries/report
-      - name: The End Result functional_baremetal_ubuntu20_04
+      - name: The End Result functional_baremetal_ubuntu22_04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -746,7 +759,7 @@ jobs:
         functional_docker_rootless_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_virtualbox_macos,
-        functional_baremetal_ubuntu20_04,
+        functional_baremetal_ubuntu22_04,
       ]
     runs-on: ubuntu-22.04
     steps:
@@ -763,7 +776,7 @@ jobs:
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
-          cp -r ./functional_baremetal_ubuntu20_04 ./all_reports/
+          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
 
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
