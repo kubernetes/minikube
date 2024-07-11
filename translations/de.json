@@ -765,6 +765,7 @@
 	"The host does not support filesystem 9p.": "",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "Der Name des virtuellen Hyperv-Switch. Standardmäßig zuerst gefunden. (nur Hyperv-Treiber)",
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "Der Hypervisor wurde scheinbar nicht korrekt konfiguriert. Starte 'minikube start --alsologtostderr -v=1' und inspiziere den Fehler-Code",
+	"The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead": "",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "Das Image '{{.imageName}}' wurde nicht gefunden; Image kann nicht zum Cache hinzugefügt werden.",
 	"The initial time interval for each check that wait performs in seconds": "Der initiale Zeitintervall für jeden Check den wait durchfürt, in Sekunden",
 	"The kubeadm binary within the Docker container is not executable": "Das kubeadm Programm im Docker Container ist nicht ausführbar",
