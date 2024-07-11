@@ -6,7 +6,7 @@ on:
       - 'v*-beta.*'
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.4'
+  GO_VERSION: '1.22.5'
 permissions:
   contents: read
 
