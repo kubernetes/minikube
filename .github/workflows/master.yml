@@ -22,7 +22,7 @@ jobs:
   # Runs before before the functional tests
   # builds the binaries required for testing
   build_minikube_test_binaries:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -47,7 +47,7 @@ jobs:
           name: minikube_binaries
           path: out
   build_minikube:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -60,7 +60,7 @@ jobs:
           make cross
           make e2e-cross
   lint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -78,7 +78,7 @@ jobs:
         run: make test
         continue-on-error: false
   unit_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
@@ -106,7 +106,7 @@ jobs:
       JOB_NAME: "functional_docker_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -153,6 +153,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -205,7 +206,7 @@ jobs:
       JOB_NAME: "functional_docker_containerd_ubuntu"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -252,6 +253,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --container-runtime=containerd" -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -296,6 +298,124 @@ jobs:
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
 
+  functional_docker_rootless_containerd_ubuntu:
+    permissions:
+      contents: none
+    needs: [build_minikube_test_binaries]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_docker_rootless_containerd_ubuntu"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+      DEBIAN_FRONTEND: noninteractive
+    # ubuntu-22.04 is needed for cgroup v2
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
+      # https://rootlesscontaine.rs/getting-started/common/cgroup2/
+      - name: Set up cgroup v2 delegation
+        run: |
+          sudo mkdir -p /etc/systemd/system/user@.service.d
+          cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+          [Service]
+          Delegate=cpu cpuset io memory pids
+          EOF
+          sudo systemctl daemon-reload
+      - name: Set up Rootless Docker
+        run: |
+          sudo apt-get remove moby-engine-*
+          curl https://get.docker.com | sudo sh
+          dockerd-rootless-setuptool.sh install -f
+          docker context use rootless
+      - name: Docker Info
+        shell: bash
+        run: |
+          echo "--------------------------"
+          docker version || true
+          echo "--------------------------"
+          docker info || true
+          echo "--------------------------"
+          docker system df || true
+          echo "--------------------------"
+          docker system info --format='{{json .}}'|| true
+          echo "--------------------------"
+          docker ps || true
+          echo "--------------------------"
+      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
+        with:
+          cache: false
+          go-version: ${{env.GO_VERSION}}
+      - name: Install gopogh
+        shell: bash
+        run: |
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+      - name: Download Binaries
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with:
+          name: minikube_binaries
+          path: minikube_binaries
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --rootless --container-runtime=containerd" -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+        with:
+          name: functional_docker_rootless_containerd_ubuntu
+          path: minikube_binaries/report
+      - name: The End Result functional_docker_rootless_containerd_ubuntu
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "---------------- ${numFail} Failures :( ----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+
   functional_podman_ubuntu:
     permissions:
       contents: none
@@ -305,7 +425,7 @@ jobs:
       JOB_NAME: functional_podman_ubuntu
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -355,6 +475,7 @@ jobs:
           chmod a+x minikube-*
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -463,6 +584,7 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-amd64 -minikube-start-args=--vm-driver=virtualbox  -test.run "TestFunctional" -test.timeout=35m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -506,16 +628,16 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_baremetal_ubuntu20_04:
+  functional_baremetal_ubuntu22_04:
     permissions:
       contents: none
     needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_baremetal_ubuntu20_04"
+      JOB_NAME: "functional_baremetal_ubuntu22_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Install kubectl
         shell: bash
@@ -530,12 +652,15 @@ jobs:
       # conntrack is required for kubernetes 1.18 and higher
       # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
       # cri-dockerd is required for Kubernetes 1.24 and higher for none driver
-      - name: Install tools for none
+      - name: Install conntrack and socat
         shell: bash
         run: |
           sudo apt-get update -qq
           sudo apt-get -qq -y install conntrack
           sudo apt-get -qq -y install socat
+      - name: Install cri_dockerd & crictl
+        shell: bash
+        run: |
           CRI_DOCKERD_VERSION="v0.3.14"
           CRI_DOCKERD_COMMIT="683f70f69901e66d49dfac802841ff843171f131"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
@@ -546,6 +671,18 @@ jobs:
           CRICTL_VERSION="v1.28.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+      # https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver
+      - name: Install container networking plugins
+        shell: bash
+        run: |
+          CNI_PLUGIN_VERSION="v1.5.1"
+          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
+          CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
+
+          curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+          sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
+          sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
+          rm "$CNI_PLUGIN_TAR"
       - name: Install gopogh
         shell: bash
         run: |
@@ -569,6 +706,7 @@ jobs:
           mkdir -p testhome
           chmod a+x e2e-*
           chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctional -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
@@ -594,9 +732,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
-          name: functional_baremetal_ubuntu20_04
+          name: functional_baremetal_ubuntu22_04
           path: minikube_binaries/report
-      - name: The End Result functional_baremetal_ubuntu20_04
+      - name: The End Result functional_baremetal_ubuntu22_04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -622,11 +760,12 @@ jobs:
       [
         functional_docker_ubuntu,
         functional_docker_containerd_ubuntu,
+        functional_docker_rootless_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_virtualbox_macos,
-        functional_baremetal_ubuntu20_04,
+        functional_baremetal_ubuntu22_04,
       ]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: download all reports
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
@@ -638,9 +777,10 @@ jobs:
           ls -lah
           cp -r ./functional_docker_ubuntu ./all_reports/
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
+          cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_virtualbox_macos ./all_reports/
-          cp -r ./functional_baremetal_ubuntu20_04 ./all_reports/
+          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
 
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:

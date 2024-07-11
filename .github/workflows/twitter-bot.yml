@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   twitter-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: ethomson/send-tweet-action@288f9339e0412e3038dce350e0da5ecdf12133a6
         with:

@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - name: Checkout submodules
