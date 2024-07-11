@@ -458,7 +458,7 @@ sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
 
 ```shell
-winget install minikube
+winget install Kubernetes.minikube
 ```
 {{% /quiz_instruction %}}
 
