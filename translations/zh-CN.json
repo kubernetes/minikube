@@ -865,6 +865,7 @@
 	"The host does not support filesystem 9p.": "主机不支持 9p 文件系统。",
 	"The hyperv virtual switch name. Defaults to first found. (hyperv driver only)": "hyperv 虚拟交换机名称。默认为找到的第一个 hyperv 虚拟交换机。（仅限 hyperv 驱动程序）",
 	"The hypervisor does not appear to be configured properly. Run 'minikube start --alsologtostderr -v=1' and inspect the error code": "管理程序似乎配置的不正确。执行 'minikube start --alsologtostderr -v=1' 并且检查错误代码",
+	"The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead": "",
 	"The image '{{.imageName}}' was not found; unable to add it to cache.": "",
 	"The initial time interval for each check that wait performs in seconds": "等待执行的每次检查的初始时间间隔（以秒为单位）",
 	"The kubeadm binary within the Docker container is not executable": "Docker 容器内的 kubeadm 二进制文件不可执行",
