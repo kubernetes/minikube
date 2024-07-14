@@ -870,11 +870,15 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 		if driver.IsQEMU(driverName) && ip == "127.0.0.1" {
 			out.WarningT("Due to DNS issues your cluster may have problems starting and you may not be able to pull images\nMore details available at: https://minikube.sigs.k8s.io/docs/drivers/qemu/#known-issues")
 		}
-		// now we shall also try whether this registry is reachable outside the machine
-		// so that we can tell in the logs that if the user's computer had any network issue or could it be related to a network module config change in minikbue ISO
+		// now we shall also try whether this registry is reachable     
+		// outside the machine so that we can tell in the logs that if  
+		// the user's computer had any network issue or could it be     
+		// related to a network module config change in minikube ISO    
 
-		// We should skip the second check if the user is using the none or ssh driver since there is no difference
-		// between an "inside" and "outside" check on the none driver, and checking the host on the ssh driver is not helpful.
+		// We should skip the second check if the user is using the none
+		// or ssh driver since there is no difference between an "inside"
+		// and "outside" check on the none driver, and checking the host
+		// on the ssh driver is not helpful.
 		warning := "Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}"
 		if !driver.IsNone(driverName) && !driver.IsSSH(driverName) {
 			if err := cmd.Run(); err != nil {
