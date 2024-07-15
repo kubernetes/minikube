@@ -20,6 +20,39 @@ All you need is Docker (or similarly compatible) container or a Virtual Machine 
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">1</strong></span>Installation</h2>
 
+<script language="javascript">
+  const architectures = [
+    "Linux/x86-64",
+    "Linux/ARM64",
+    "Linux/ppc64",
+    "Linux/S390x",
+    "Linux/ARMv7",
+    "macOS/x86-64",
+    "macOS/ARM64",
+    "Windows/x86-64"
+  ];
+
+  console.time("timerReleaseFetch");
+  fetch('https://api.github.com/repos/kubernetes/minikube/releases')
+    .then((response) => response.json())
+    .then((releases) => {
+      console.timeEnd("timerReleaseFetch");
+      if (releases && releases.length > 0 && releases[0] && releases[0].tag_name) {
+        const isBetaMostRecent = releases[0].tag_name.includes("-beta");
+
+        if (isBetaMostRecent) {
+          for (architecture of architectures) {
+            const betaElement = document.querySelector(`button[data-quiz-id="/${architecture}/Beta"]`);
+            if (betaElement) {
+              betaElement.classList.remove("hide");
+            }
+          }
+        }
+      }
+    })
+    .catch(console.error);
+</script>
+
 {{% card %}}
 
 Click on the buttons that describe your target platform. For other architectures, see [the release page](https://github.com/kubernetes/minikube/releases/latest) for a complete list of minikube binaries.
@@ -33,7 +66,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/x86-64/Stable" name="Installer type" %}}
@@ -45,7 +78,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARM64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARM64/Stable" name="Installer type" %}}
@@ -57,7 +90,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ppc64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ppc64/Stable" name="Installer type" %}}
@@ -69,7 +102,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/S390x" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/S390x/Stable" name="Installer type" %}}
@@ -81,7 +114,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARMv7" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Linux/ARMv7/Stable" name="Installer type" %}}
@@ -97,7 +130,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/x86-64/Stable" name="Installer type" %}}
@@ -109,7 +142,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/macOS/ARM64/Stable" name="Installer type" %}}
@@ -125,7 +158,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64" name="Release type" %}}
-{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" %}}
+{{% quiz_button option="Stable" %}} {{% quiz_button option="Beta" hide="true" %}}
 {{% /quiz_row %}}
 
 {{% quiz_row base="/Windows/x86-64/Stable" name="Installer type" %}}
@@ -139,7 +172,7 @@ Click on the buttons that describe your target platform. For other architectures
 {{% quiz_instruction id="/Linux/x86-64/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 {{% /quiz_instruction %}}
 
@@ -147,7 +180,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-amd64' | head -n1)
-sudo install minikube-linux-amd64 /usr/local/bin/minikube
+sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 {{% /quiz_instruction %}}
 
@@ -184,7 +217,7 @@ curl -L $u > minikube-beta.x86_64.rpm && sudo rpm -Uvh minikube-beta.x86_64.rpm
 {{% quiz_instruction id="/Linux/ARM64/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm64
-sudo install minikube-linux-arm64 /usr/local/bin/minikube
+sudo install minikube-linux-arm64 /usr/local/bin/minikube && rm minikube-linux-arm64
 ```
 {{% /quiz_instruction %}}
 
@@ -192,7 +225,7 @@ sudo install minikube-linux-arm64 /usr/local/bin/minikube
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-arm64' | head -n1)
-sudo install minikube-linux-arm64 /usr/local/bin/minikube
+sudo install minikube-linux-arm64 /usr/local/bin/minikube && rm minikube-linux-arm64
 ```
 {{% /quiz_instruction %}}
 
@@ -229,7 +262,7 @@ curl -L $u > minikube-beta.aarch64.rpm && sudo rpm -Uvh minikube-beta.aarch64.rp
 {{% quiz_instruction id="/Linux/ppc64/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-ppc64le
-sudo install minikube-linux-ppc64le /usr/local/bin/minikube
+sudo install minikube-linux-ppc64le /usr/local/bin/minikube && rm minikube-linux-ppc64le
 ```
 {{% /quiz_instruction %}}
 
@@ -237,7 +270,7 @@ sudo install minikube-linux-ppc64le /usr/local/bin/minikube
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-ppc64le' | head -n1)
-sudo install minikube-linux-ppc64le /usr/local/bin/minikube
+sudo install minikube-linux-ppc64le /usr/local/bin/minikube && rm minikube-linux-ppc64le
 ```
 {{% /quiz_instruction %}}
 
@@ -274,7 +307,7 @@ curl -L $u > minikube-beta.ppc64el.rpm && sudo rpm -Uvh minikube-beta.ppc64el.rp
 {{% quiz_instruction id="/Linux/S390x/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-s390x
-sudo install minikube-linux-s390x /usr/local/bin/minikube
+sudo install minikube-linux-s390x /usr/local/bin/minikube && rm minikube-linux-s390x
 ```
 {{% /quiz_instruction %}}
 
@@ -282,7 +315,7 @@ sudo install minikube-linux-s390x /usr/local/bin/minikube
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-s390x' | head -n1)
-sudo install minikube-linux-s390x /usr/local/bin/minikube
+sudo install minikube-linux-s390x /usr/local/bin/minikube && rm minikube-linux-s390x
 ```
 {{% /quiz_instruction %}}
 
@@ -319,7 +352,7 @@ curl -L $u > minikube-beta.s390x.rpm && sudo rpm -Uvh minikube-beta.s390x.rpm
 {{% quiz_instruction id="/Linux/ARMv7/Stable/Binary download" %}}
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-arm
-sudo install minikube-linux-arm /usr/local/bin/minikube
+sudo install minikube-linux-arm /usr/local/bin/minikube && rm minikube-linux-arm
 ```
 {{% /quiz_instruction %}}
 
@@ -327,7 +360,7 @@ sudo install minikube-linux-arm /usr/local/bin/minikube
 ```shell
 r=https://api.github.com/repos/kubernetes/minikube/releases
 curl -LO $(curl -s $r | grep -o 'http.*download/v.*beta.*/minikube-linux-arm' | head -n1)
-sudo install minikube-linux-arm /usr/local/bin/minikube
+sudo install minikube-linux-arm /usr/local/bin/minikube && rm minikube-linux-arm
 ```
 {{% /quiz_instruction %}}
 
@@ -425,7 +458,7 @@ sudo install minikube-darwin-arm64 /usr/local/bin/minikube
 If the [Windows Package Manager](https://docs.microsoft.com/en-us/windows/package-manager/) is installed, use the following command to install minikube:
 
 ```shell
-winget install minikube
+winget install Kubernetes.minikube
 ```
 {{% /quiz_instruction %}}
 

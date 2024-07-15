@@ -35,58 +35,91 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-// VerifyEndpoint verifies the IP:port stored in kubeconfig.
-func VerifyEndpoint(contextName string, hostname string, port int, configPath ...string) error {
-	path := PathFromEnv()
-	if configPath != nil {
-		path = configPath[0]
+// UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
+// It will also fix missing cluster or context in kubeconfig, if needed.
+// Returns if the change was made and any error occurred.
+func UpdateEndpoint(contextName string, host string, port int, configPath string, ext *Extension) (bool, error) {
+	if host == "" {
+		return false, fmt.Errorf("empty host")
 	}
 
-	if hostname == "" {
-		return fmt.Errorf("empty IP")
+	if err := VerifyEndpoint(contextName, host, port, configPath); err != nil {
+		klog.Infof("verify endpoint returned: %v", err)
 	}
 
-	gotHostname, gotPort, err := Endpoint(contextName, path)
+	cfg, err := readOrNew(configPath)
 	if err != nil {
-		return errors.Wrap(err, "extract IP")
+		return false, errors.Wrap(err, "get kubeconfig")
 	}
 
-	if hostname != gotHostname || port != gotPort {
-		return fmt.Errorf("got: %s:%d, want: %s:%d", gotHostname, gotPort, hostname, port)
+	address := "https://" + host + ":" + strconv.Itoa(port)
+
+	// check & fix kubeconfig if the cluster or context setting is missing, or server address needs updating
+	errs := configIssues(cfg, contextName, address)
+	if errs == nil {
+		return false, nil
+	}
+	klog.Infof("%s needs updating (will repair): %v", configPath, errs)
+
+	kcs := &Settings{
+		ClusterName:          contextName,
+		ClusterServerAddress: address,
+		KeepContext:          false,
+	}
+
+	populateCerts(kcs, *cfg, contextName)
+
+	if ext != nil {
+		kcs.ExtensionCluster = ext
+	}
+	if err = PopulateFromSettings(kcs, cfg); err != nil {
+		return false, errors.Wrap(err, "populate kubeconfig")
+	}
+
+	err = writeToFile(cfg, configPath)
+	if err != nil {
+		return false, errors.Wrap(err, "write kubeconfig")
+	}
+
+	return true, nil
+}
+
+// VerifyEndpoint verifies the host:port stored in kubeconfig.
+func VerifyEndpoint(contextName string, host string, port int, configPath string) error {
+	if host == "" {
+		return fmt.Errorf("empty host")
+	}
+
+	if configPath == "" {
+		configPath = PathFromEnv()
+	}
+
+	gotHost, gotPort, err := Endpoint(contextName, configPath)
+	if err != nil {
+		return errors.Wrap(err, "get endpoint")
+	}
+
+	if host != gotHost || port != gotPort {
+		return fmt.Errorf("got: %s:%d, want: %s:%d", gotHost, gotPort, host, port)
 	}
 
 	return nil
 }
 
-// PathFromEnv gets the path to the first kubeconfig
-func PathFromEnv() string {
-	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
-	if kubeConfigEnv == "" {
-		return constants.KubeconfigPath
+// Endpoint returns the IP:port address stored for minikube in the kubeconfig specified.
+func Endpoint(contextName string, configPath string) (string, int, error) {
+	if configPath == "" {
+		configPath = PathFromEnv()
 	}
-	kubeConfigFiles := filepath.SplitList(kubeConfigEnv)
-	for _, kubeConfigFile := range kubeConfigFiles {
-		if kubeConfigFile != "" {
-			return kubeConfigFile
-		}
-		klog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
-	}
-	return constants.KubeconfigPath
-}
 
-// Endpoint returns the IP:port address stored for minikube in the kubeconfig specified
-func Endpoint(contextName string, configPath ...string) (string, int, error) {
-	path := PathFromEnv()
-	if configPath != nil {
-		path = configPath[0]
-	}
-	apiCfg, err := readOrNew(path)
+	apiCfg, err := readOrNew(configPath)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "read")
+		return "", 0, errors.Wrap(err, "read kubeconfig")
 	}
+
 	cluster, ok := apiCfg.Clusters[contextName]
 	if !ok {
-		return "", 0, errors.Errorf("%q does not appear in %s", contextName, path)
+		return "", 0, errors.Errorf("%q does not appear in %s", contextName, configPath)
 	}
 
 	klog.Infof("found %q server: %q", contextName, cluster.Server)
@@ -103,143 +136,64 @@ func Endpoint(contextName string, configPath ...string) (string, int, error) {
 	return u.Hostname(), port, nil
 }
 
-// verifyKubeconfig verifies that the cluster and context entries in the kubeconfig are valid
-func verifyKubeconfig(contextName string, hostname string, port int, configPath ...string) error {
-	if err := VerifyEndpoint(contextName, hostname, port, configPath...); err != nil {
-		return err
-	}
-	path := PathFromEnv()
-	if configPath != nil {
-		path = configPath[0]
-	}
-	apiCfg, err := readOrNew(path)
-	if err != nil {
-		return errors.Wrap(err, "read")
-	}
-	if _, ok := apiCfg.Contexts[contextName]; !ok {
-		return errors.Errorf("%q does not appear in %s", contextName, path)
-	}
-	return nil
-}
-
-// UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateEndpoint(contextName string, hostname string, port int, confpath string, ext *Extension) (bool, error) {
-	if hostname == "" {
-		return false, fmt.Errorf("empty ip")
-	}
-
-	err := verifyKubeconfig(contextName, hostname, port, confpath)
-	if err == nil {
-		return false, nil
-	}
-	klog.Infof("verify returned: %v", err)
-
-	cfg, err := readOrNew(confpath)
-	if err != nil {
-		return false, errors.Wrap(err, "read")
-	}
-
-	address := "https://" + hostname + ":" + strconv.Itoa(port)
-
-	// if the cluster or context setting is missing in the kubeconfig, create it
-	if configNeedsRepair(contextName, cfg) {
-		klog.Infof("%q context is missing from %s - will repair!", contextName, confpath)
-		lp := localpath.Profile(contextName)
-		gp := localpath.MiniPath()
-		kcs := &Settings{
-			ClusterName:          contextName,
-			ClusterServerAddress: address,
-			ClientCertificate:    path.Join(lp, "client.crt"),
-			ClientKey:            path.Join(lp, "client.key"),
-			CertificateAuthority: path.Join(gp, "ca.crt"),
-			KeepContext:          false,
-		}
-		if ext != nil {
-			kcs.ExtensionCluster = ext
-		}
-		err = PopulateFromSettings(kcs, cfg)
-		if err != nil {
-			return false, errors.Wrap(err, "populating kubeconfig")
-		}
-	} else {
-		cfg.Clusters[contextName].Server = address
-	}
-
-	err = writeToFile(cfg, confpath)
-	if err != nil {
-		return false, errors.Wrap(err, "write")
-	}
-
-	return true, nil
-}
-
-func configNeedsRepair(contextName string, cfg *api.Config) bool {
+// configIssues returns list of errors found in kubeconfig for given contextName and server address.
+func configIssues(cfg *api.Config, contextName string, address string) []error {
+	errs := []error{}
 	if _, ok := cfg.Clusters[contextName]; !ok {
-		return true
+		errs = append(errs, errors.Errorf("kubeconfig missing %q cluster setting", contextName))
+	} else if cfg.Clusters[contextName].Server != address {
+		errs = append(errs, errors.Errorf("kubeconfig needs server address update"))
 	}
+
 	if _, ok := cfg.Contexts[contextName]; !ok {
-		return true
+		errs = append(errs, errors.Errorf("kubeconfig missing %q context setting", contextName))
 	}
-	return false
+
+	if len(errs) > 0 {
+		return errs
+	}
+	return nil
 }
 
-// writeToFile encodes the configuration and writes it to the given file.
-// If the file exists, it's contents will be overwritten.
-func writeToFile(config runtime.Object, configPath ...string) error {
-	fPath := PathFromEnv()
-	if configPath != nil {
-		fPath = configPath[0]
+// populateCerts retains certs already defined in kubeconfig or sets default ones for those missing.
+func populateCerts(kcs *Settings, cfg api.Config, contextName string) {
+	lp := localpath.Profile(contextName)
+	gp := localpath.MiniPath()
+
+	kcs.CertificateAuthority = path.Join(gp, "ca.crt")
+	if cluster, ok := cfg.Clusters[contextName]; ok {
+		kcs.CertificateAuthority = cluster.CertificateAuthority
 	}
 
-	if config == nil {
-		klog.Errorf("could not write to '%s': config can't be nil", fPath)
-	}
-
-	// encode config to YAML
-	data, err := runtime.Encode(latest.Codec, config)
-	if err != nil {
-		return errors.Errorf("could not write to '%s': failed to encode config: %v", fPath, err)
-	}
-
-	// create parent dir if doesn't exist
-	dir := filepath.Dir(fPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.MkdirAll(dir, 0755); err != nil {
-			return errors.Wrapf(err, "Error creating directory: %s", dir)
+	kcs.ClientCertificate = path.Join(lp, "client.crt")
+	kcs.ClientKey = path.Join(lp, "client.key")
+	if context, ok := cfg.Contexts[contextName]; ok {
+		if user, ok := cfg.AuthInfos[context.AuthInfo]; ok {
+			kcs.ClientCertificate = user.ClientCertificate
+			kcs.ClientKey = user.ClientKey
 		}
 	}
-
-	// write with restricted permissions
-	if err := lock.WriteFile(fPath, data, 0600); err != nil {
-		return errors.Wrapf(err, "Error writing file %s", fPath)
-	}
-
-	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
-		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
-	}
-
-	return nil
 }
 
 // readOrNew retrieves Kubernetes client configuration from a file.
 // If no files exists, an empty configuration is returned.
-func readOrNew(configPath ...string) (*api.Config, error) {
-	fPath := PathFromEnv()
-	if configPath != nil {
-		fPath = configPath[0]
+func readOrNew(configPath string) (*api.Config, error) {
+	if configPath == "" {
+		configPath = PathFromEnv()
 	}
 
-	data, err := os.ReadFile(fPath)
+	data, err := os.ReadFile(configPath)
 	if os.IsNotExist(err) {
 		return api.NewConfig(), nil
-	} else if err != nil {
-		return nil, errors.Wrapf(err, "Error reading file %q", fPath)
+	}
+	if err != nil {
+		return nil, errors.Wrapf(err, "read kubeconfig from %q", configPath)
 	}
 
 	// decode config, empty if no bytes
 	kcfg, err := decode(data)
 	if err != nil {
-		return nil, errors.Errorf("could not read config: %v", err)
+		return nil, errors.Wrapf(err, "decode kubeconfig from %q", configPath)
 	}
 
 	// initialize nil maps
@@ -266,8 +220,61 @@ func decode(data []byte) (*api.Config, error) {
 
 	kcfg, _, err := latest.Codec.Decode(data, nil, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error decoding config from data: %s", string(data))
+		return nil, errors.Wrapf(err, "decode data: %s", string(data))
 	}
 
 	return kcfg.(*api.Config), nil
+}
+
+// writeToFile encodes the configuration and writes it to the given file.
+// If the file exists, it's contents will be overwritten.
+func writeToFile(config runtime.Object, configPath string) error {
+	if configPath == "" {
+		configPath = PathFromEnv()
+	}
+
+	if config == nil {
+		klog.Errorf("could not write to '%s': config can't be nil", configPath)
+	}
+
+	// encode config to YAML
+	data, err := runtime.Encode(latest.Codec, config)
+	if err != nil {
+		return errors.Errorf("could not write to '%s': failed to encode config: %v", configPath, err)
+	}
+
+	// create parent dir if doesn't exist
+	dir := filepath.Dir(configPath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return errors.Wrapf(err, "Error creating directory: %s", dir)
+		}
+	}
+
+	// write with restricted permissions
+	if err := lock.WriteFile(configPath, data, 0600); err != nil {
+		return errors.Wrapf(err, "Error writing file %s", configPath)
+	}
+
+	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
+	}
+
+	return nil
+}
+
+// PathFromEnv gets the path to the first kubeconfig
+func PathFromEnv() string {
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	if kubeConfigEnv == "" {
+		return constants.KubeconfigPath
+	}
+	kubeConfigFiles := filepath.SplitList(kubeConfigEnv)
+	for _, kubeConfigFile := range kubeConfigFiles {
+		if kubeConfigFile != "" {
+			return kubeConfigFile
+		}
+		klog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
+	}
+	return constants.KubeconfigPath
 }

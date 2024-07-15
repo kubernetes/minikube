@@ -27,11 +27,39 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
 var keywords = []string{"start", "stop", "status", "delete", "config", "open", "profile", "addons", "cache", "logs"}
+
+// ControlPlane returns the first available control-plane node or error, if none found.
+func ControlPlane(cc ClusterConfig) (Node, error) {
+	cps := ControlPlanes(cc)
+	if len(cps) == 0 {
+		return Node{}, fmt.Errorf("no control-plane nodes found")
+	}
+	return cps[0], nil
+}
+
+// ControlPlanes returns a list of control-plane nodes.
+func ControlPlanes(cc ClusterConfig) []Node {
+	cps := []Node{}
+	for _, n := range cc.Nodes {
+		if n.ControlPlane {
+			cps = append(cps, n)
+		}
+	}
+	return cps
+}
+
+// IsPrimaryControlPlane returns if node is primary control-plane node.
+func IsPrimaryControlPlane(cc ClusterConfig, node Node) bool {
+	// TODO (prezha): find where, for "none" driver, we set first (ie, primary control-plane) node name to "m01" - that should not happen but it's happening before pr #17909
+	// return node.ControlPlane && node.Name == ""
+	return cc.Nodes != nil && cc.Nodes[0].Name == node.Name
+}
 
 // IsValid checks if the profile has the essential info needed for a profile
 func (p *Profile) IsValid() bool {
@@ -47,39 +75,6 @@ func (p *Profile) IsValid() bool {
 		}
 	}
 	return true
-}
-
-// PrimaryControlPlane gets the node specific config for the first created control plane
-func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
-	for _, n := range cc.Nodes {
-		if n.ControlPlane {
-			return n, nil
-		}
-	}
-
-	// This config is probably from 1.6 or earlier, let's convert it.
-	cp := Node{
-		Name:              cc.KubernetesConfig.NodeName,
-		IP:                cc.KubernetesConfig.NodeIP,
-		Port:              cc.KubernetesConfig.NodePort,
-		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
-		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
-		ControlPlane:      true,
-		Worker:            true,
-	}
-
-	cc.Nodes = []Node{cp}
-
-	// Remove old style attribute to avoid confusion
-	cc.KubernetesConfig.NodeName = ""
-	cc.KubernetesConfig.NodeIP = ""
-
-	err := SaveProfile(viper.GetString(ProfileName), cc)
-	if err != nil {
-		return Node{}, err
-	}
-
-	return cp, nil
 }
 
 // ProfileNameValid checks if the profile name is container name and DNS hostname/label friendly.
@@ -206,6 +201,10 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		pDirs = append(pDirs, cs...)
 	}
 
+	activeKubeContext, err := kubeconfig.GetCurrentContext(kubeconfig.PathFromEnv())
+	if err != nil {
+		return nil, nil, err
+	}
 	nodeNames := map[string]bool{}
 	for _, n := range removeDupes(pDirs) {
 		p, err := LoadProfile(n, miniHome...)
@@ -220,6 +219,9 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		validPs = append(validPs, p)
 		if p.Name == activeP {
 			p.Active = true
+		}
+		if p.Name == activeKubeContext {
+			p.ActiveKubeContext = true
 		}
 		for _, child := range p.Config.Nodes {
 			nodeNames[MachineName(*p.Config, child)] = true
@@ -331,7 +333,7 @@ func ProfileFolderPath(profile string, miniHome ...string) string {
 // MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
 func MachineName(cc ClusterConfig, n Node) string {
 	// For single node cluster, default to back to old naming
-	if (len(cc.Nodes) == 1 && cc.Nodes[0].Name == n.Name) || n.ControlPlane {
+	if (len(cc.Nodes) == 1 && cc.Nodes[0].Name == n.Name) || n.Name == "" {
 		return cc.Name
 	}
 	return fmt.Sprintf("%s-%s", cc.Name, n.Name)

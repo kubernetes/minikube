@@ -187,7 +187,7 @@ func (t *SSHTunnel) stopMarkedConnections() {
 	}
 }
 
-// sshConnName creates a uniq name for the tunnel, using its name/clusterIP/ports.
+// sshConnUniqName creates a uniq name for the tunnel, using its name/clusterIP/ports.
 // This allows a new process to be created if an existing service was changed,
 // the new process will support the IP/Ports change occurred.
 func sshConnUniqName(service v1.Service) string {

@@ -22,7 +22,10 @@ import (
 	"regexp"
 )
 
-const addonsFile = "pkg/minikube/assets/addons.go"
+const (
+	addonsFile = "pkg/minikube/assets/addons.go"
+	dockerfile = "deploy/kicbase/Dockerfile"
+)
 
 type dependency struct {
 	filePath      string
@@ -32,12 +35,14 @@ type dependency struct {
 var dependencies = map[string]dependency{
 	"buildkit":                {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
 	"calico":                  {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
+	"cilium":                  {"pkg/minikube/cni/cilium.yaml", `quay.io/cilium/cilium:(.*)@`},
 	"cloud-spanner":           {addonsFile, `cloud-spanner-emulator/emulator:(.*)@`},
-	"cni-plugins":             {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins/cni-plugins.mk", `CNI_PLUGINS_VERSION = (.*)`},
+	"cni-plugins":             {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins-latest/cni-plugins-latest.mk", `CNI_PLUGINS_LATEST_VERSION = (.*)`},
 	"containerd":              {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
-	"cri-dockerd":             {"deploy/kicbase/Dockerfile", `CRI_DOCKERD_VERSION="(.*)"`},
+	"cri-dockerd":             {dockerfile, `CRI_DOCKERD_VERSION="(.*)"`},
 	"cri-o":                   {"deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk", `CRIO_BIN_VERSION = (.*)`},
 	"crictl":                  {"deploy/iso/minikube-iso/arch/x86_64/package/crictl-bin/crictl-bin.mk", `CRICTL_BIN_VERSION = (.*)`},
+	"crun":                    {"deploy/iso/minikube-iso/package/crun-latest/crun-latest.mk", `CRUN_LATEST_VERSION = (.*)`},
 	"docker":                  {"deploy/iso/minikube-iso/arch/x86_64/package/docker-bin/docker-bin.mk", `DOCKER_BIN_VERSION = (.*)`},
 	"flannel":                 {"pkg/minikube/cni/flannel.yaml", `flannel:(.*)`},
 	"gcp-auth":                {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},
@@ -47,12 +52,14 @@ var dependencies = map[string]dependency{
 	"golint":                  {"Makefile", `GOLINT_VERSION \?= (.*)`},
 	"gopogh":                  {"hack/jenkins/installers/check_install_gopogh.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
 	"gotestsum":               {"hack/jenkins/installers/check_install_gotestsum.sh", `gotest\.tools/gotestsum@(.*)`},
+	"headlamp":                {addonsFile, `headlamp-k8s/headlamp:(.*)@`},
 	"hugo":                    {"netlify.toml", `HUGO_VERSION = "(.*)"`},
 	"ingress":                 {addonsFile, `ingress-nginx/controller:(.*)@`},
 	"inspektor-gadget":        {addonsFile, `inspektor-gadget/inspektor-gadget:(.*)@`},
 	"istio-operator":          {addonsFile, `istio/operator:(.*)@`},
 	"kindnetd":                {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"kong":                    {addonsFile, `kong:(.*)@`},
+	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"kong-ingress-controller": {addonsFile, `kong/kubernetes-ingress-controller:(.*)@`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
@@ -62,7 +69,8 @@ var dependencies = map[string]dependency{
 	"nvidia-device-plugin":    {addonsFile, `nvidia/k8s-device-plugin:(.*)@`},
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
-	"ubuntu":                  {"deploy/kicbase/Dockerfile", `ubuntu:jammy-(.*)"`},
+	"ubuntu":                  {dockerfile, `ubuntu:jammy-(.*)"`},
+	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
 }
 
 func main() {

@@ -273,7 +273,7 @@ func propagateDockerContextToEnv() {
 		}
 		cf, err := dconfig.Load(dockerConfigDir)
 		if err != nil {
-			klog.Warningf("Unable to load the current Docker config from %q", dockerConfigDir)
+			klog.Warningf("Unable to load the current Docker config from %q: %v", dockerConfigDir, err)
 			return
 		}
 		currentContext = cf.CurrentContext

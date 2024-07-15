@@ -5,10 +5,10 @@ on:
       - 'v*.*.*'
 jobs:
   vexctl:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
       - name: Set env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - uses: openvex/generate-vex@31b415924ea0d72ed5f2640f1dee59dea6c2770b

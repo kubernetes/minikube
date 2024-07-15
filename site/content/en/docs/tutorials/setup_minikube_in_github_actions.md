@@ -9,12 +9,12 @@ description: >
 
 To install and start a minikube cluster, add the following step to your [GitHub Actions workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
 
-  ```yaml
-      steps:
-      - name: start minikube
-        id: minikube
-        uses: medyagh/setup-minikube@master
-  ```
+```yaml
+steps:
+- name: start minikube
+  id: minikube
+  uses: medyagh/setup-minikube@latest
+```
 
 for more information see GitHub Actions marketplace [setup-minikube](https://github.com/marketplace/actions/setup-minikube).
 
@@ -38,27 +38,26 @@ Create workflow:
       runs-on: ubuntu-latest
       name: build example and deploy to minikube
       steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+        with:
+          repository: medyagh/local-dev-example-with-minikube
       - name: Start minikube
-        uses: medyagh/setup-minikube@master
-      - name: Try the cluster !
+        uses: medyagh/setup-minikube@latest
+      - name: Try the cluster!
         run: kubectl get pods -A
       - name: Build image
         run: |
-          export SHELL=/bin/bash
-          eval $(minikube -p minikube docker-env)
-          docker build -f ./Dockerfile -t local/example .
-          echo -n "verifying images:"
-          docker images
+          minikube image build -t local/devex:v1 .
       - name: Deploy to minikube
         run:
-          kubectl apply -f deploy-to-minikube.yaml
+          kubectl apply -f deploy/k8s.yaml
+          kubectl wait --for=condition=ready pod -l app=local-devex
       - name: Test service URLs
         run: |
           minikube service list
-          minikube service example --url
+          minikube service local-devex-svc --url
           echo "------------------opening the service------------------"
-          curl $(minikube service example --url)
+          curl $(minikube service local-devex-svc --url)
   ```
 
 The above example workflow yaml, will do the following steps on each coming PR:

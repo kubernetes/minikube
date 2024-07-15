@@ -12,3 +12,6 @@ Benchmarking machine specs: Standard Github Action Runner
 
 ![Docker](https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/Iterative_buildpacksFewLargeFiles_docker_chart.png)
 ![Containerd](https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/Iterative_buildpacksFewLargeFiles_containerd_chart.png)
+
+
+*[Raw Test Data Link](https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/record.json)*

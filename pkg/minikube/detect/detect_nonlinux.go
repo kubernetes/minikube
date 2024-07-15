@@ -22,3 +22,8 @@ package detect
 func cgroupVersion() string {
 	return "v1"
 }
+
+// Assume 9p is supported by non linux apps
+func IsNinePSupported() bool {
+	return true
+}

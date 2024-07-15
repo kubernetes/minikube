@@ -32,7 +32,7 @@ It is possible to replace the CNI on a running minikube cluster, but it is signi
 
 The [Kubernetes documentation on declaring network policy](https://kubernetes.io/docs/tasks/administer-cluster/declare-network-policy/) is a good place to start to understand the possibilities. In addition, the tutorials in [Further reading]({{< ref "#further-reading" >}}) below give much more guidance. 
 
-The YAML below from the [Kubernetes NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-ingress-traffic) documentation shows a very simple default ingress isolation policy or a namespace by creating a NetworkPolicy that selects all pods but does not allow any ingress traffic to those pods.
+The YAML below from the [Kubernetes NetworkPolicies](https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-deny-all-ingress-traffic) documentation shows a very simple default ingress isolation policy on a namespace by creating a NetworkPolicy that selects all pods but does not allow any ingress traffic to those pods.
 
 ```yaml
 ---

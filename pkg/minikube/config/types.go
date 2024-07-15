@@ -25,10 +25,11 @@ import (
 
 // Profile represents a minikube profile
 type Profile struct {
-	Name   string
-	Status string // running, stopped, paused, unknown
-	Config *ClusterConfig
-	Active bool
+	Name              string
+	Status            string // running, stopped, paused, unknown
+	Config            *ClusterConfig
+	Active            bool
+	ActiveKubeContext bool
 }
 
 // ClusterConfig contains the parameters used to start a cluster.
@@ -41,7 +42,6 @@ type ClusterConfig struct {
 	Memory                  int
 	CPUs                    int
 	DiskSize                int
-	VMDriver                string // Legacy use only
 	Driver                  string
 	HyperkitVpnKitSock      string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts      []string // Only used by the Hyperkit driver
@@ -116,6 +116,7 @@ type KubernetesConfig struct {
 	KubernetesVersion   string
 	ClusterName         string
 	Namespace           string
+	APIServerHAVIP      string
 	APIServerName       string
 	APIServerNames      []string
 	APIServerIPs        []net.IP
@@ -136,11 +137,6 @@ type KubernetesConfig struct {
 
 	EnableDefaultCNI bool   // deprecated in preference to CNI
 	CNI              string // CNI to use
-
-	// We need to keep these in the short term for backwards compatibility
-	NodeIP   string
-	NodePort int
-	NodeName string
 }
 
 // Node contains information about specific nodes in a cluster

@@ -18,7 +18,6 @@ package addons
 
 import (
 	"fmt"
-	"runtime"
 	"strconv"
 
 	"github.com/spf13/viper"
@@ -47,8 +46,7 @@ const volumesnapshotsDisabledMsg = `[WARNING] For full functionality, the 'csi-h
 You can enable 'volumesnapshots' addon by running: 'minikube addons enable volumesnapshots'
 `
 
-// IsRuntimeContainerd is a validator which returns an error if the current runtime is not containerd
-func IsRuntimeContainerd(cc *config.ClusterConfig, _, _ string) error {
+func isRuntimeContainerd(cc *config.ClusterConfig, _, _ string) error {
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
 		return err
@@ -60,9 +58,9 @@ func IsRuntimeContainerd(cc *config.ClusterConfig, _, _ string) error {
 	return nil
 }
 
-// IsVolumesnapshotsEnabled is a validator that prints out a warning if the volumesnapshots addon
+// isVolumesnapshotsEnabled is a validator that prints out a warning if the volumesnapshots addon
 // is disabled (does not return any errors!)
-func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
+func isVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 	isCsiDriverEnabled, _ := strconv.ParseBool(value)
 	// assets.Addons[].IsEnabled() returns the current status of the addon or default value.
 	// config.AddonList contains list of addons to be enabled.
@@ -74,6 +72,15 @@ func IsVolumesnapshotsEnabled(cc *config.ClusterConfig, _, value string) error {
 		out.WarningT(volumesnapshotsDisabledMsg)
 	}
 	return nil
+}
+
+func isKVMDriverForNVIDIA(cc *config.ClusterConfig, name, _ string) error {
+	if driver.IsKVM(cc.Driver) {
+		return nil
+	}
+	out.Ln("")
+	out.FailureT("The {{.addon}} addon is only supported with the KVM driver.\n\nFor GPU setup instructions see: https://minikube.sigs.k8s.io/docs/tutorials/nvidia/", out.V{"addon": name})
+	return fmt.Errorf("%s addon is only supported with the KVM driver", name)
 }
 
 // isAddonValid returns the addon, true if it is valid
@@ -94,16 +101,4 @@ func contains(slice []string, val string) bool {
 		}
 	}
 	return false
-}
-
-// SupportsAmd64 ensures that the cluster supports running amd64 images
-func SupportsAmd64(cc *config.ClusterConfig, name, _ string) error {
-	// KIC can run amd64 images on a non-amd64 environment
-	if driver.IsKIC(cc.Driver) {
-		return nil
-	}
-	if runtime.GOARCH == "amd64" {
-		return nil
-	}
-	return fmt.Errorf("the %q addon requires a cluster that supports running amd64 images", name)
 }

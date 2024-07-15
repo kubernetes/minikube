@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: hello-world-app
-          image: gcr.io/google-samples/hello-app:1.0
+          image: docker.io/kicbase/echo-server:1.0
           ports:
             - containerPort: 8080
 ---

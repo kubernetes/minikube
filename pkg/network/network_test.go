@@ -63,12 +63,12 @@ func TestFreeSubnet(t *testing.T) {
 
 	t.Run("FirstSubnetIPV6NetworkFound", func(t *testing.T) {
 		count := 0
-		originalInspect := inspect
+		originalInspect := Inspect
 		defer func() {
-			inspect = originalInspect
+			Inspect = originalInspect
 		}()
 
-		inspect = func(addr string) (*Parameters, error) {
+		Inspect = func(addr string) (*Parameters, error) {
 			count++
 			p := &Parameters{IP: addr, IsPrivate: true}
 			if count == 1 {

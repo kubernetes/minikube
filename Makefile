@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 32
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 33
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.32.1-1708020063-17936
+ISO_VERSION ?= v1.33.1-1720433170-19199
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,18 +35,18 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.22.0
+GO_VERSION ?= 1.22.5
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.30.0
+GO_K8S_VERSION_PREFIX ?= v1.31.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2021.02.12
+BUILDROOT_BRANCH ?= 2023.02.9
 # the go version on the line below is for the ISO
-GOLANG_OPTIONS = GO_VERSION=1.19.9 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.21.6 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -56,7 +56,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
 # source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.19.5
+HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.22.2
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -76,10 +76,10 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 5.10.57
+KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.56.2
+GOLINT_VERSION ?= v1.59.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -108,7 +108,7 @@ SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= latest
+GVISOR_TAG ?= v0.0.1
 
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
@@ -303,10 +303,9 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
 		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
 		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git --work-tree=$(BUILD_DIR)/buildroot am ../../deploy/iso/minikube-iso/0001-linux-add-BR2_LINUX_KERNEL_NEEDS_HOST_PAHOLE.patch; \
 	fi;
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
 	if [ "$*" = "aarch64" ]; then \
@@ -669,6 +668,14 @@ release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
+.PHONY: build-and-push-hyperkit-build-image
+build-and-push-hyperkit-build-image:
+	test -d out/xcgo || git clone https://github.com/neilotoole/xcgo.git out/xcgo
+	(cd out/xcgo && git restore . && git pull && \
+	 sed -i'.bak' -e 's/ARG GO_VERSION.*/ARG GO_VERSION="go$(GO_VERSION)"/' Dockerfile && \
+	 docker build -t gcr.io/k8s-minikube/xcgo:go$(GO_VERSION) .)
+	docker push gcr.io/k8s-minikube/xcgo:go$(GO_VERSION)
+
 .PHONY: check-release
 check-release: ## Execute go test
 	go test -timeout 42m -v ./deploy/minikube/release_sanity_test.go
@@ -788,13 +795,15 @@ out/gvisor-addon: ## Build gvisor addon
 	$(Q)GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
-	docker build --platform=linux/amd64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
+gvisor-addon-image:
+	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
-push-gvisor-addon-image: gvisor-addon-image
+push-gvisor-addon-image: docker-multi-arch-build
 	docker login gcr.io/k8s-minikube
-	$(MAKE) push-docker IMAGE=$(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
+	docker buildx create --name multiarch --bootstrap
+	docker buildx build --push --builder multiarch --platform linux/amd64,linux/arm64 -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+	docker buildx rm multiarch
 
 .PHONY: release-iso
 release-iso: minikube-iso-aarch64 minikube-iso-x86_64 checksum  ## Build and release .iso files
@@ -925,6 +934,7 @@ endif
 site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init
 
+.PHONY: out/hugo/hugo
 out/hugo/hugo:
 	mkdir -p out
 	(cd site/themes/docsy && npm install)
@@ -1059,8 +1069,8 @@ update-gh-version:
 
 .PHONY: update-docsy-version
 update-docsy-version:
-	(cd hack/update/docsy_version && \
-	 go run update_docsy_version.go)
+	@(cd hack/update/docsy_version && \
+	  go run update_docsy_version.go)
 
 .PHONY: update-hugo-version
 update-hugo-version:
@@ -1086,6 +1096,11 @@ update-buildkit-version:
 update-cri-o-version:
 	(cd hack/update/cri-o_version && \
 	 go run update_cri-o_version.go)
+
+.PHONY: update-crun-version
+update-crun-version:
+	(cd hack/update/crun_version && \
+	 go run update_crun_version.go)
 
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
@@ -1182,6 +1197,11 @@ update-registry-version:
 	(cd hack/update/registry_version && \
 	 go run update_registry_version.go)
 
+.PHONY: update-volcano-version
+update-volcano-version:
+	(cd hack/update/volcano_version && \
+	 go run update_volcano_version.go)
+
 .PHONY: update-kong-version
 update-kong-version:
 	(cd hack/update/kong_version && \
@@ -1211,6 +1231,16 @@ update-kubectl-version:
 update-site-node-version:
 	(cd hack/update/site_node_version && \
 	 go run update_site_node_version.go)
+
+.PHONY: update-cilium-version
+update-cilium-version:
+	(cd hack/update/cilium_version && \
+	 go run update_cilium_version.go)
+
+.PHONY: update-yakd-version
+update-yakd-version:
+	(cd hack/update/yakd_version && \
+	 go run update_yakd_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

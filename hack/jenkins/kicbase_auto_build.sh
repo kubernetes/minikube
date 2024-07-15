@@ -124,9 +124,9 @@ else
 	make generate-docs
 
 	git add pkg/drivers/kic/types.go site/content/en/docs/commands/start.md
-	git commit -m "Update kicbase to ${KIC_VERSION}"
+	git commit -m "Release: Update kicbase to ${KIC_VERSION}"
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
-	gh pr create --fill --base master --head minikube-bot:${branch}
+	gh pr create --fill --base master --head minikube-bot:${branch} -l "ok-to-test"
 fi

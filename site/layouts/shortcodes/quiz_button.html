@@ -1,1 +1,1 @@
-<button data-quiz-id="{{ .Parent.Get "base" }}/{{ .Get "option" }}" type="button" class="btn btn-outline-primary option-button">{{ .Get "option" }}</button>
+<button data-quiz-id="{{ .Parent.Get "base" |  lower }}/{{ .Get "option" | lower}}" type="button" class="btn btn-outline-primary option-button{{ if eq (.Get "hide") "true" }} hide{{ end }}">{{ .Get "option" }}</button>

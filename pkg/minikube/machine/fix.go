@@ -53,7 +53,7 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 	start := time.Now()
 	klog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
-		klog.Infof("fixHost completed within %s", time.Since(start))
+		klog.Infof("duration metric: took %s for fixHost", time.Since(start))
 	}()
 
 	h, err := api.Load(config.MachineName(*cc, *n))
@@ -88,6 +88,16 @@ func fixHost(api libmachine.API, cc *config.ClusterConfig, n *config.Node) (*hos
 
 	if err := postStartSetup(h, *cc); err != nil {
 		return h, errors.Wrap(err, "post-start")
+	}
+
+	// on vm node restart and for ha (multi-control plane) topology only (for now),
+	// we deliberately aim to restore backed up machine config early,
+	// so that remaining code logic can amend files as needed,
+	// it's intentionally non-fatal in case of any error
+	if driver.IsVM(h.DriverName) && config.IsHA(*cc) {
+		if err := restore(*h); err != nil {
+			klog.Warningf("cannot read backup folder, skipping restore: %v", err)
+		}
 	}
 
 	return h, nil
@@ -176,7 +186,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	}
 }
 
-// ensureGuestClockSync ensures that the guest system clock is relatively in-sync
+// ensureSyncedGuestClock ensures that the guest system clock is relatively in-sync
 func ensureSyncedGuestClock(h hostRunner, drv string) error {
 	if !driver.IsVM(drv) {
 		return nil
@@ -220,7 +230,7 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	return d, nil
 }
 
-// adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
+// adjustGuestClock adjusts the guest system clock to be nearer to the host system clock
 func adjustGuestClock(h hostRunner, t time.Time) error {
 	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
 	klog.Infof("clock set: %s (err=%v)", out, err)

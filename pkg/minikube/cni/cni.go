@@ -133,7 +133,7 @@ func chooseDefault(cc config.ClusterConfig) Manager {
 	if len(cc.Nodes) > 1 || cc.MultiNodeRequested {
 		// Enables KindNet CNI in master in multi node cluster, This solves the network problem
 		// inside pod for multi node clusters. See https://github.com/kubernetes/minikube/issues/9838.
-		klog.Infof("%d nodes found, recommending kindnet", len(cc.Nodes))
+		klog.Infof("multinode detected (%d nodes found), recommending kindnet", len(cc.Nodes))
 		return KindNet{cc: cc}
 	}
 

@@ -31,7 +31,7 @@ kubectl describe pods
 To update the image of the application to version 2, use the `set image` command, followed by the deployment name and the new image version:
 
 ```shell
-kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=jocatalin/kubernetes-bootcamp:v2
+kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/k8s-minikube/kubernetes-bootcamp:v2
 ```
 
 The command notified the Deployment to use a different image for your app and initiated a rolling update. Check the status of the new Pods, and view the old one terminating with the `get pods` command:
@@ -85,7 +85,7 @@ In the `Image` field of the output, verify that you are running the latest image
 Let's perform another update, and deploy an image tagged with `v10`:
 
 ```shell
-kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v10
+kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/k8s-minikube/kubernetes-bootcamp:v10
 ```
 
 Use `get deployments` to see the status of the deployment:

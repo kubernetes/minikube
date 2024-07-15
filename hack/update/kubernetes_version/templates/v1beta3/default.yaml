@@ -50,6 +50,7 @@ authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
+containerRuntimeEndpoint: unix:///var/run/dockershim.sock
 hairpinMode: hairpin-veth
 runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"
