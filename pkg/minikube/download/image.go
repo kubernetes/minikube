@@ -86,27 +86,35 @@ func ImageExistsInDaemon(img string) bool {
 	if !strings.Contains(string(output), image.TrimDockerIO(img)) {
 		return false
 	}
-	ref, err := name.ParseReference(img)
+	correctArch, err := isImageCorrectArch(img)
 	if err != nil {
-		klog.Warningf("failed to parse reference: %v", err)
+		klog.Warning(err)
 		return false
 	}
-	dImg, err := daemon.Image(ref)
-	if err != nil {
-		klog.Warningf("failed to get image from daemon: %v", err)
-		return false
-	}
-	cfg, err := dImg.ConfigFile()
-	if err != nil {
-		klog.Warningf("failed to get config for %s: %v", img, err)
-		return false
-	}
-	if cfg.Architecture != runtime.GOOS {
+	if !correctArch {
 		klog.Warningf("image %s is of wrong architecture", img)
 		return false
 	}
 	klog.Infof("Found %s in local docker daemon, skipping pull", img)
 	return true
+}
+
+// isImageCorrectArch is needed to resolve
+// https://github.com/kubernetes/minikube/pull/19205
+func isImageCorrectArch(img string) (bool, error) {
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse reference: %v", err)
+	}
+	dImg, err := daemon.Image(ref)
+	if err != nil {
+		return false, fmt.Errorf("failed to get image from daemon: %v", err)
+	}
+	cfg, err := dImg.ConfigFile()
+	if err != nil {
+		return false, fmt.Errorf("failed to get config for %s: %v", img, err)
+	}
+	return cfg.Architecture == runtime.GOOS, nil
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
