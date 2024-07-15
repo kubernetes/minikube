@@ -300,6 +300,7 @@
 	"Failed to update cluster": "クラスター更新に失敗しました",
 	"Failed to update config": "設定更新に失敗しました",
 	"Failed unmount: {{.error}}": "アンマウントに失敗しました: {{.error}}",
+	"Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}": "",
 	"Filter to use only VM Drivers": "VM ドライバーのみ使用するためのフィルタ",
 	"Flags": "フラグ",
 	"Follow": "フォロー",

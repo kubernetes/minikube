@@ -317,6 +317,7 @@
 	"Failed to update cluster": "Aktualisierung des Clusters fehlgeschlagen",
 	"Failed to update config": "Aktualisierung der Konfiguration fehlgeschlagen",
 	"Failed unmount: {{.error}}": "Aushängen fehlgeschlagen: {{.error}}",
+	"Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}": "",
 	"Filter to use only VM Drivers": "Filtern um nur VM Treiber zu verwenden",
 	"Flags": "",
 	"Follow": "Fehler beim Folgen der Logs",
