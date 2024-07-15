@@ -20,7 +20,7 @@ jobs:
       AWS_DEFAULT_REGION: 'us-west-1'
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Benchmark time-to-k8s for Docker driver with Docker runtime
@@ -44,7 +44,7 @@ jobs:
           curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Disable firewall
