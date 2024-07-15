@@ -425,7 +425,7 @@ jobs:
       JOB_NAME: functional_podman_ubuntu
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04 # podman 4+ is only available on ubuntu 24.04 https://github.com/kubernetes/minikube/issues/19232#issuecomment-2229050557
     steps:
       - name: Install kubectl
         shell: bash
@@ -437,8 +437,9 @@ jobs:
       - name: Install Podman
         shell: bash
         run: |
-          sudo apt update
-          sudo apt install -y podman
+          sudo apt -q update
+          sudo apt install -q -y podman
+          lsb_release -a
           echo "--------------------------"
           podman version || true
           echo "--------------------------"
