@@ -38,7 +38,7 @@ function selectQuizOption(selectedId, autoselect = true) {
   }
 }
 
-function initQuiz() {
+async function initQuiz() {
   try {
     $(".option-button").click(function (e) {
       $(this).parent().find(".option-button").removeClass("active");
@@ -57,6 +57,21 @@ function initQuiz() {
     if (userOS === "mac") {
       // use the name "macos" to match the button
       userOS = "macos";
+    }
+    let arch = null;
+    try {
+      // currently compatible with these browsers: https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues#browser_compatibility
+      const architecture = await navigator.userAgentData.getHighEntropyValues(['architecture'])
+      switch (architecture.architecture) {
+        case "arm":
+          arch = "arm64"
+          break
+        case "x86":
+          arch = "x86-64"
+          break
+      }
+    } catch(e) {
+      console.log(e)
     }
     $(".option-row[data-level=0]").removeClass("hide");
 
@@ -87,6 +102,15 @@ function initQuiz() {
       const btn = $(".option-button[data-quiz-id='/" + userOS + "']").first();
       btn.addClass("active");
       selectQuizOption(btn.attr("data-quiz-id"));
+      // auto-select OS arch for user
+      if (arch) {
+        const btn = $(".option-button[data-quiz-id='/" + userOS + "/" + arch + "']").first();
+        // disacitve all buttons of the row first
+        const row = $(".option-row[data-quiz-id='/" + userOS + "']").first()
+        row.find(".option-button").removeClass("active");
+        btn.addClass("active");
+        selectQuizOption(btn.attr("data-quiz-id"));
+      }
     }
   } catch (e) {
     const elements = document.getElementsByClassName("quiz-instruction");
