@@ -413,16 +413,7 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
-	var accel string
-	if detect.IsAmd64M1Emulation() {
-		accel = "tcg"
-	} else if runtime.GOOS == "darwin" {
-		// On macOS, enable the Hypervisor framework accelerator.
-		accel = "hvf"
-	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
-		// On Linux, enable the Kernel Virtual Machine accelerator.
-		accel = "kvm"
-	}
+	accel := hardwareAcceleration()
 	if accel != "" {
 		startCmd = append(startCmd,
 			"-accel", accel)
@@ -550,6 +541,21 @@ func (d *Driver) Start() error {
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+}
+
+func hardwareAcceleration() string {
+	if detect.IsAmd64M1Emulation() {
+		return "tcg"
+	}
+	if runtime.GOOS == "darwin" {
+		// On macOS, enable the Hypervisor framework accelerator.
+		return "hvf"
+	}
+	if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
+		// On Linux, enable the Kernel Virtual Machine accelerator.
+		return "kvm"
+	}
+	return ""
 }
 
 func isBootpdError(err error) bool {
