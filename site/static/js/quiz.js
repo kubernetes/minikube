@@ -61,18 +61,16 @@ async function initQuiz() {
     let arch = null;
     try {
       // currently compatible with these browsers: https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues#browser_compatibility
-      let architecture = await navigator.userAgentData.getHighEntropyValues(['architecture'])
-      switch( architecture.architecture ){
-        case "arm" :{
+      const architecture = await navigator.userAgentData.getHighEntropyValues(['architecture'])
+      switch (architecture.architecture) {
+        case "arm"
           arch = "arm64"
           break
-        }
-        case "x86" :{
+        case "x86":
           arch = "x86-64"
           break
-        }
       }
-    }catch(e){
+    } catch(e) {
       console.log(e)
     }
     $(".option-row[data-level=0]").removeClass("hide");
@@ -105,7 +103,7 @@ async function initQuiz() {
       btn.addClass("active");
       selectQuizOption(btn.attr("data-quiz-id"));
       // auto-select OS arch for user
-      if (arch){
+      if (arch) {
         const btn = $(".option-button[data-quiz-id='/" + userOS + "/" + arch + "']").first();
         // disacitve all buttons of the row first
         const row = $(".option-row[data-quiz-id='/" + userOS + "']").first()
