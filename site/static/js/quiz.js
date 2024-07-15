@@ -63,7 +63,7 @@ async function initQuiz() {
       // currently compatible with these browsers: https://developer.mozilla.org/en-US/docs/Web/API/NavigatorUAData/getHighEntropyValues#browser_compatibility
       const architecture = await navigator.userAgentData.getHighEntropyValues(['architecture'])
       switch (architecture.architecture) {
-        case "arm"
+        case "arm":
           arch = "arm64"
           break
         case "x86":
