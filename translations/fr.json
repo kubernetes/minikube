@@ -313,6 +313,7 @@
 	"Failed to update cluster": "Échec de la mise à jour du cluster",
 	"Failed to update config": "Échec de la mise à jour de la configuration",
 	"Failed unmount: {{.error}}": "Échec du démontage : {{.error}}",
+	"Failing to connect to {{.curlTarget}} from inside the minikube {{.type}}": "",
 	"File permissions used for the mount": "Autorisations de fichier utilisées pour le montage",
 	"Filter to use only VM Drivers": "Filtrer pour n'utiliser que les pilotes VM",
 	"Flags": "Indicateurs",
