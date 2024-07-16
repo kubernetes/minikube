@@ -86,7 +86,7 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   "${DIR}/process_last_90/process_last_90.sh"
 else
   TMP_COMMENT=$(mktemp)
-  go run "${DIR}/report_flakes" "${MINIKUBE_LOCATION}" "${ROOT_JOB_ID}" "${FINISHED_LIST}"  > "$TMP_COMMENT"
+  (cd "${DIR}/report_flakes" && go run . "${MINIKUBE_LOCATION}" "${ROOT_JOB_ID}" "${FINISHED_LIST}")  > "$TMP_COMMENT"
   # install gh if not present
   "$DIR/../installers/check_install_gh.sh"
   gh pr comment "https://github.com/kubernetes/minikube/pull/$MINIKUBE_LOCATION" --body "$(cat $TMP_COMMENT)"
