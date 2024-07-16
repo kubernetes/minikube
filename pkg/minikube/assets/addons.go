@@ -799,7 +799,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.15.1@sha256:c0b7a46a9203ec789173374c2886adfd424639d4be23d3c9a6a836c3b2c91c13",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.16.0@sha256:0e266d96b931365c1ca0de5a877a242cf95d98fdc2ca658dd01b08990df97394",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}),
