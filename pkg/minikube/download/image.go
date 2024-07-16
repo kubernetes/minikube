@@ -99,7 +99,8 @@ func ImageExistsInDaemon(img string) bool {
 	return true
 }
 
-// isImageCorrectArch is needed to resolve
+// isImageCorrectArch returns true if the image arch is the same as the binary
+// arch. This is needed to resolve
 // https://github.com/kubernetes/minikube/pull/19205
 func isImageCorrectArch(img string) (bool, error) {
 	ref, err := name.ParseReference(img)
