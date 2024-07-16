@@ -62,7 +62,7 @@ FINISHED_COUNT=$(\
   | wc -l)
 
 if [ ${STARTED_COUNT} -ne ${FINISHED_COUNT} ]; then
-  echo "Started environments are not all finished! Started: ${STARTED_LIST}, Finished: $(cat ${FINISHED_LIST}))"
+  echo "Started environments are not all finished! Started: ${STARTED_LIST}, Finished: $(cat ${FINISHED_LIST})"
   exit 0
 fi
 
