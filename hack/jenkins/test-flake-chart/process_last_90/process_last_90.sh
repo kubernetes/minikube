@@ -19,7 +19,7 @@ set -eux -o pipefail
 # Get directory of script.
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-"${DIR}/../../installers/check_install_golang.sh" || true
+"${DIR}/../../installers/check_install_golang.sh" "/usr/local" || true
 
 DATA_CSV=$(mktemp)
 DATA_LAST_90_CSV=$(mktemp)
