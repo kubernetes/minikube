@@ -326,8 +326,8 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	start := time.Now()
-	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for registry replicacontroller to stabilize: %v", err)
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "registry", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for registry deployment to stabilize: %v", err)
 	}
 	t.Logf("registry stabilized in %s", time.Since(start))
 

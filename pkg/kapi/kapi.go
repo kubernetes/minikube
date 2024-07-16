@@ -108,40 +108,6 @@ func WaitForPods(c kubernetes.Interface, ns string, selector string, timeOut ...
 	return err
 }
 
-// WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status. used by integration tests
-func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := meta.ListOptions{FieldSelector: fields.Set{
-		"metadata.name":      name,
-		"metadata.namespace": ns,
-	}.AsSelector().String()}
-
-	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
-	defer cancel()
-
-	w, err := c.CoreV1().ReplicationControllers(ns).Watch(ctx, options)
-	if err != nil {
-		return err
-	}
-	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
-		if event.Type == watch.Deleted {
-			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
-		}
-
-		rc, ok := event.Object.(*core.ReplicationController)
-		if ok {
-			if rc.Name == name && rc.Namespace == ns &&
-				rc.Generation <= rc.Status.ObservedGeneration &&
-				*(rc.Spec.Replicas) == rc.Status.Replicas {
-				return true, nil
-			}
-			klog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
-				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
-		}
-		return false, nil
-	})
-	return err
-}
-
 // WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status. used by integration tests
 func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := meta.ListOptions{FieldSelector: fields.Set{
