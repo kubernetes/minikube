@@ -83,15 +83,6 @@ func IsAmd64M1Emulation() bool {
 	return runtime.GOARCH == "amd64" && strings.HasPrefix(cpuid.CPU.BrandName, "VirtualApple")
 }
 
-// EffectiveArch return architecture to use in minikube VM/container
-// may differ from host arch
-func EffectiveArch() string {
-	if IsAmd64M1Emulation() {
-		return "arm64"
-	}
-	return runtime.GOARCH
-}
-
 // MinikubeInstalledViaSnap returns true if the minikube binary path includes "snap".
 func MinikubeInstalledViaSnap() bool {
 	ex, err := os.Executable()

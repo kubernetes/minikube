@@ -78,14 +78,44 @@ func ImageExistsInDaemon(img string) bool {
 	// Check if image exists locally
 	klog.Infof("Checking for %s in local docker daemon", img)
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
-	if output, err := cmd.Output(); err == nil {
-		if strings.Contains(string(output), image.TrimDockerIO(img)) {
-			klog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return true
-		}
+	output, err := cmd.Output()
+	if err != nil {
+		klog.Warningf("failed to list docker images: %v", err)
+		return false
 	}
-	// Else, pull it
-	return false
+	if !strings.Contains(string(output), image.TrimDockerIO(img)) {
+		return false
+	}
+	correctArch, err := isImageCorrectArch(img)
+	if err != nil {
+		klog.Warning(err)
+		return false
+	}
+	if !correctArch {
+		klog.Warningf("image %s is of wrong architecture", img)
+		return false
+	}
+	klog.Infof("Found %s in local docker daemon, skipping pull", img)
+	return true
+}
+
+// isImageCorrectArch returns true if the image arch is the same as the binary
+// arch. This is needed to resolve
+// https://github.com/kubernetes/minikube/pull/19205
+func isImageCorrectArch(img string) (bool, error) {
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse reference: %v", err)
+	}
+	dImg, err := daemon.Image(ref)
+	if err != nil {
+		return false, fmt.Errorf("failed to get image from daemon: %v", err)
+	}
+	cfg, err := dImg.ConfigFile()
+	if err != nil {
+		return false, fmt.Errorf("failed to get config for %s: %v", img, err)
+	}
+	return cfg.Architecture == runtime.GOOS, nil
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
@@ -245,7 +275,8 @@ func CacheToDaemon(img string) (string, error) {
 		return "", err
 	}
 
-	cmd := exec.Command("docker", "pull", "--quiet", img)
+	platform := fmt.Sprintf("linux/%s", runtime.GOARCH)
+	cmd := exec.Command("docker", "pull", "--platform", platform, "--quiet", img)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)
 		img = image.Tag(img)

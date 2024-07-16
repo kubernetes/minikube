@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -149,6 +150,17 @@ func status() (retState registry.State) {
 var dockerVersionOrState = func() (string, registry.State) {
 	if _, err := exec.LookPath(oci.Docker); err != nil {
 		return "", registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
+	}
+
+	if detect.IsAmd64M1Emulation() {
+		return "", registry.State{
+			Reason:    "PROVIDER_DOCKER_INCORRECT_ARCH",
+			Installed: true,
+			Running:   true,
+			Error:     errors.New("Cannot use amd64 minikube binary to start minikube cluster with Docker driver on arm64 machine"),
+			Fix:       "Download and use arm64 version of the minikube binary",
+			Doc:       "https://minikube.sigs.k8s.io/docs/start/",
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
