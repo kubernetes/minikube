@@ -415,6 +415,7 @@ func (d *Driver) Start() error {
 	// hardware acceleration is important, it increases performance by 10x
 	accel := hardwareAcceleration()
 	if accel != "" {
+		klog.Infof("Using %s for hardware acceleration", accel)
 		startCmd = append(startCmd,
 			"-accel", accel)
 	}
