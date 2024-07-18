@@ -30,7 +30,7 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: |
-          make e2e-linux-amd64 e2e-darwin-amd64
+          make e2e-linux-amd64 e2e-darwin-arm64
           cp -r test/integration/testdata ./out
           whoami
           echo github ref $GITHUB_REF
@@ -640,6 +640,108 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 26 ];then echo "*** Failed to pass at least 26 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
+  functional_qemu_macos:
+    permissions:
+      contents: none
+    needs: [build_minikube_test_binaries]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "functional_qemu_macos"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    runs-on: macos-14
+    steps:
+      - name: Install kubectl
+        shell: bash
+        run: |
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/darwin/arm64/kubectl"
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+        with:
+          go-version: ${{env.GO_VERSION}}
+      - name: Install gopogh
+        shell: bash
+        run: |
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+      - name: Install QEMU
+        shell: bash
+        run: |
+          brew install qemu
+      - name: Install socket_vmnet
+        shell: bash
+        run: |
+          brew install socket_vmnet
+          brew tap homebrew/services
+          sudo /opt/homebrew/bin/brew services start socket_vmnet
+      - name: Install docker
+        shell: bash
+        run: |
+          brew install docker-machine docker
+          sudo docker --version
+      - name: Disable firewall
+        run: |
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+          sudo /usr/libexec/ApplicationFirewall/socketfilterfw -k
+      - name: Download Binaries
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with:
+          name: minikube_binaries
+          path: minikube_binaries
+      - name: Run Integration Test
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-arm64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-arm64 -minikube-start-args="--driver=qemu --wait-timeout=20m"  -test.run "TestFunctional" -test.timeout=110m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-arm64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Generate HTML Report
+        shell: bash
+        run: |
+          cd minikube_binaries
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          echo status: ${STAT}
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "GOPOGH_RESULT=${GOPOGH_RESULT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+        with:
+          name: functional_qemu_macos
+          path: minikube_binaries/report
+      - name: The End Result functional_qemu_macos
+        shell: bash
+        run: |
+          echo ${GOPOGH_RESULT}
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          numPass=$(echo $STAT | jq '.NumberOfPass')
+          echo "*******************${numPass} Passes :) *******************"
+          echo $STAT | jq '.PassedTests' || true
+          echo "*******************************************************"
+          echo "----------------${numFail} Failures :(----------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          if [ "$numPass" -lt 33 ];then echo "*** Failed to pass at least 33 ! ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   # After all integration tests finished
   # collect all the reports and upload them
   upload_all_reports:
@@ -653,6 +755,7 @@ jobs:
         functional_docker_rootless_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_baremetal_ubuntu22_04,
+        functional_qemu_macos,
       ]
     runs-on: ubuntu-22.04
     steps:
@@ -669,6 +772,7 @@ jobs:
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
+          cp -r ./functional_qemu_macos ./all_reports/
       - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
         with:
           name: all_reports

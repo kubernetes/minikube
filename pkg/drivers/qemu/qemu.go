@@ -515,7 +515,12 @@ func (d *Driver) Start() error {
 			return nil
 		}
 		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-		for i := 0; i < 60; i++ {
+		retries := 60
+		// If running in GitHub Action runner double the retries
+		if detect.GithubActionRunner() {
+			retries = 120
+		}
+		for i := 0; i < retries; i++ {
 			log.Debugf("Attempt %d", i)
 			err = getIP()
 			if err == nil {
@@ -545,18 +550,21 @@ func (d *Driver) Start() error {
 }
 
 func hardwareAcceleration() string {
-	if detect.IsAmd64M1Emulation() {
-		return "tcg"
-	}
-	if runtime.GOOS == "darwin" {
-		// On macOS, enable the Hypervisor framework accelerator.
-		return "hvf"
-	}
 	if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
 		// On Linux, enable the Kernel Virtual Machine accelerator.
 		return "kvm"
 	}
-	return ""
+	if runtime.GOOS != "darwin" {
+		return ""
+	}
+	if detect.IsAmd64M1Emulation() {
+		return "tcg"
+	}
+	if runtime.GOARCH == "arm64" && detect.GithubActionRunner() {
+		return "tcg"
+	}
+	// On macOS, enable the Hypervisor framework accelerator.
+	return "hvf"
 }
 
 func isBootpdError(err error) bool {

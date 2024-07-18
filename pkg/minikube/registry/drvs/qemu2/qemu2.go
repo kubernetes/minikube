@@ -146,7 +146,11 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 			if v.LT(qemu7) || cc.Memory <= 3072 {
 				qemuMachine += ",highmem=off"
 			}
-			qemuCPU = "host"
+			if detect.GithubActionRunner() {
+				qemuCPU = "max"
+			} else {
+				qemuCPU = "host"
+			}
 		} else if _, err := os.Stat("/dev/kvm"); err == nil {
 			qemuMachine += ",gic-version=3"
 			qemuCPU = "host"
