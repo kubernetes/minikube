@@ -63,7 +63,7 @@ kubectl logs $POD_NAME
 
 ## Step 4 - Executing command on the container
 
-We can execute commands directly on the container once the Pod is up and running. For this, we use the `exec` command and use the name of the Pod as a paramater. Let's list the environment variables:
+We can execute commands directly on the container once the Pod is up and running. For this, we use the `exec` command and use the name of the Pod as a parameter. Let's list the environment variables:
 
 ```shell
 kubectl exec $POD_NAME -- env
