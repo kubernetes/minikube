@@ -74,7 +74,7 @@ var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !ar
 func TestFunctional(t *testing.T) {
 
 	profile := UniqueProfileName("func")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(65))
 	defer func() {
 		if !*cleanup {
 			return

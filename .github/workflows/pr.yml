@@ -700,7 +700,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-arm64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-arm64 -minikube-start-args="--driver=qemu --wait-timeout=20m"  -test.run "TestFunctional" -test.timeout=110m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-arm64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-darwin-arm64 -minikube-start-args="--driver=qemu --wait-timeout=20m --cpus=max"  -test.run "TestFunctional" -test.timeout=110m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-arm64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
