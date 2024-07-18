@@ -34,6 +34,9 @@ function check_jenkins() {
         && exit 1
 }
 
+brew upgrade
+gcloud components update -q
+
 check_jenkins
 logger "cleanup_and_reboot running - may shutdown in 60 seconds"
 echo "cleanup_and_reboot running - may shutdown in 60 seconds" | wall
