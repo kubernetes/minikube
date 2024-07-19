@@ -20,6 +20,13 @@ DOCKER_BUILDX_ENV = \
 
 DOCKER_BUILDX_COMPILE_SRC = $(DOCKER_BUILDX_GOPATH)/src/github.com/docker/buildx
 
+define DOCKER_BUILDX_POST_EXTRACT_WORKAROUNDS
+        # Set -buildvcs=false to disable VCS stamping (fails in buildroot)
+        sed -i 's|go build |go build -buildvcs=false |' -i $(@D)/hack/build
+endef
+
+DOCKER_BUILDX_POST_EXTRACT_HOOKS += DOCKER_BUILDX_POST_EXTRACT_WORKAROUNDS
+
 define DOCKER_BUILDX_CONFIGURE_CMDS
         mkdir -p $(TARGET_DIR)/usr/libexec/docker/cli-plugins
 endef
