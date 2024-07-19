@@ -12,7 +12,7 @@ DOCKER_BUILDX_GOPATH = $(@D)/_output
 DOCKER_BUILDX_ENV = \
         $(GO_TARGET_ENV) \
         CGO_ENABLED=1 \
-        GO111MODULE=off \
+        GO111MODULE=on \
         GOPATH="$(DOCKER_BUILDX_GOPATH)" \
         GOBIN="$(DOCKER_BUILDX_GOPATH)/bin" \
         PATH=$(DOCKER_BUILDX_GOPATH)/bin:$(BR_PATH) \
