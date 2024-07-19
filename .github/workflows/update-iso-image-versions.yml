@@ -20,10 +20,11 @@ jobs:
           OLD_BUILDKIT=$(DEP=buildkit make get-dependency-version)
           OLD_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           OLD_CONTAINERD=$(DEP=containerd make get-dependency-version)
-          OLD_CRIO=$(DEP=cri-o make get-dependency-version)
           OLD_CRICTL=$(DEP=crictl make get-dependency-version)
+          OLD_CRIO=$(DEP=cri-o make get-dependency-version)
           OLD_CRUN=$(DEP=crun make get-dependency-version)
           OLD_DOCKER=$(DEP=docker make get-dependency-version)
+          OLD_DOCKER_BUILDX=$(DEP=docker-buildx make get-dependency-version)
           OLD_GO=$(DEP=go make get-dependency-version)
           OLD_NERDCTL=$(DEP=nerdctl make get-dependency-version)
           OLD_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
@@ -37,6 +38,7 @@ jobs:
           # make update-crictl-version
           make update-crun-version
           make update-docker-version
+          make update-docker-buildx-version
           make update-golang-version
           make update-nerdctl-version
           make update-nerdctld-version
@@ -45,10 +47,11 @@ jobs:
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
           NEW_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)
-          NEW_CRIO=$(DEP=cri-o make get-dependency-version)
           NEW_CRICTL=$(DEP=crictl make get-dependency-version)
+          NEW_CRIO=$(DEP=cri-o make get-dependency-version)
           NEW_CRUN=$(DEP=crun make get-dependency-version)
           NEW_DOCKER=$(DEP=docker make get-dependency-version)
+          NEW_DOCKER_BUILDX=$(DEP=docker-buildx make get-dependency-version)
           NEW_GO=$(DEP=go make get-dependency-version)
           NEW_NERDCTL=$(DEP=nerdctl make get-dependency-version)
           NEW_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
@@ -67,13 +70,13 @@ jobs:
             echo "### Update containerd from $OLD_CONTAINERD to $NEW_CONTAINERD" >> "$GITHUB_OUTPUT"
             echo "[Release notes](https://github.com/containerd/containerd/releases)" >> "$GITHUB_OUTPUT"
           fi
-          if [ "$OLD_CRIO" != "$NEW_CRIO" ]; then
-            echo "### Update CRI-O from $OLD_CRIO to $NEW_CRIO" >> "$GITHUB_OUTPUT"
-            echo "[Release notes](https://github.com/cri-o/cri-o/releases)" >> "$GITHUB_OUTPUT"
-          fi
           if [ "$OLD_CRICTL" != "$NEW_CRICTL" ]; then
             echo "### Update crictl from $OLD_CRICTL to $NEW_CRICTL" >> "$GITHUB_OUTPUT"
             echo "[Release notes](https://github.com/kubernetes-sigs/cri-tools/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_CRIO" != "$NEW_CRIO" ]; then
+            echo "### Update CRI-O from $OLD_CRIO to $NEW_CRIO" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/cri-o/cri-o/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_CRUN" != "$NEW_CRUN" ]; then
             echo "### Update crun from $OLD_CRUN to $NEW_CRUN" >> "$GITHUB_OUTPUT"
@@ -82,6 +85,10 @@ jobs:
           if [ "$OLD_DOCKER" != "$NEW_DOCKER" ]; then
             echo "### Update Docker from $OLD_DOCKER to $NEW_DOCKER" >> "$GITHUB_OUTPUT"
             echo "[Release notes](https://github.com/moby/moby/releases)" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$OLD_DOCKER_BUILDX" != "$NEW_DOCKER_BUILDX" ]; then
+            echo "### Update buildx from $OLD_DOCKER_BUILDX to $NEW_DOCKER_BUILDX" >> "$GITHUB_OUTPUT"
+            echo "[Release notes](https://github.com/docker/buildx/releases)" >> "$GITHUB_OUTPUT"
           fi
           if [ "$OLD_GO" != "$NEW_GO" ]; then
             echo "### Update Go from $OLD_GO to $NEW_GO" >> "$GITHUB_OUTPUT"
