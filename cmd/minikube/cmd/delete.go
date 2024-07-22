@@ -740,8 +740,8 @@ func getPids(path string) ([]int, error) {
 }
 
 // deleteKnownHosts reads minikube nodes' keys from the minikube home folder
-// and removes them from the known_hosts file
-// This is the long term solution for issue https://github.com/kubernetes/minikube/issues/16868
+// and removes them from the known_hosts file. This is the long term solution
+// for issue https://github.com/kubernetes/minikube/issues/16868
 func deleteKnownHosts() {
 	// remove this line from known_hosts file if it exists
 	knownHosts := filepath.Join(homedir.HomeDir(), ".ssh", "known_hosts")

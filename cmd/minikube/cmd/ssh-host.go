@@ -131,7 +131,7 @@ func appendKnownHelper(nodeName string, appendKnown bool) error {
 		_, cc := mustload.Partial(ClusterFlagValue())
 		knownHostPath := filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "known_host")
 		if err := os.WriteFile(knownHostPath, []byte(keys), 0666); err != nil {
-			return fmt.Errorf("WriteString to %s: %v", knownHostPath, err)
+			return fmt.Errorf("WriteFile to %s: %v", knownHostPath, err)
 		}
 	}
 	return nil

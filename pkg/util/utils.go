@@ -185,14 +185,13 @@ func RemoveLineFromFile(knownHostLine string, filePath string) error {
 	}
 	// remove the contents and move to the head of this file
 	if err := fd.Truncate(0); err != nil {
-		return fmt.Errorf("failed to write to %s: %v", filePath, err)
+		return fmt.Errorf("failed to truncate %s: %v", filePath, err)
 	}
 	if _, err := fd.Seek(0, 0); err != nil {
-		return fmt.Errorf("failed to write to %s: %v", filePath, err)
+		return fmt.Errorf("failed to seek %s: %v", filePath, err)
 	}
 
 	// write the new content into the file
-
 	for _, line := range newLines {
 		if _, err := fmt.Fprintln(fd, line); err != nil {
 			return fmt.Errorf("failed to write to %s: %v", filePath, err)
