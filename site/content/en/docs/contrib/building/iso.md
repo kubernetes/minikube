@@ -11,7 +11,7 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 ## Prerequisites
 
 * A recent GNU Make distribution (>=4.0)
-* A recent Go distribution (>=1.16)
+* A recent Go distribution (>=1.22.0)
 * If you are on Windows or Mac, you'll need Docker to be installed.
 * 4GB of RAM
 
