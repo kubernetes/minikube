@@ -49,12 +49,6 @@ sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
     unzip bc gcc-multilib automake libtool locales
 ```
 
-Additionally, if you are on Fedora, you will need to install `glibc-static`:
-
-```shell
-sudo dnf install -y glibc-static
-```
-
 ## Using a local ISO image
 
 ```shell
