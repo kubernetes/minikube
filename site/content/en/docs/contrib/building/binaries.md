@@ -11,12 +11,6 @@ weight: 2
 * If you are on Windows, you'll need Docker to be installed.
 * 4GB of RAM
 
-Additionally, if you are on Fedora, you will need to install `glibc-static`:
-
-```shell
-sudo dnf install -y glibc-static
-```
-
 ## Downloading the source
 
 ```shell
