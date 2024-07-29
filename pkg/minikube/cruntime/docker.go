@@ -38,7 +38,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -292,7 +291,7 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 		result = append(result, ListImage{
 			ID:          strings.TrimPrefix(jsonImage.ID, "sha256:"),
 			RepoDigests: []string{},
-			RepoTags:    []string{addDockerIO(repoTag)},
+			RepoTags:    []string{repoTag},
 			Size:        fmt.Sprintf("%d", size),
 		})
 	}
@@ -678,7 +677,6 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	preloadedImages := map[string]struct{}{}
 	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		i = image.TrimDockerIO(i)
 		preloadedImages[i] = struct{}{}
 	}
 
@@ -686,36 +684,12 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 
 	// Make sure images == imgs
 	for _, i := range images {
-		i = image.TrimDockerIO(i)
 		if _, ok := preloadedImages[i]; !ok {
 			klog.Infof("%s wasn't preloaded", i)
 			return false
 		}
 	}
 	return true
-}
-
-// Add docker.io prefix
-func addDockerIO(name string) string {
-	var reg, usr, img string
-	p := strings.SplitN(name, "/", 2)
-	if len(p) > 1 && strings.Contains(p[0], ".") {
-		reg = p[0]
-		img = p[1]
-	} else {
-		reg = "docker.io"
-		img = name
-		p = strings.SplitN(img, "/", 2)
-		if len(p) > 1 {
-			usr = p[0]
-			img = p[1]
-		} else {
-			usr = "library"
-			img = name
-		}
-		return reg + "/" + usr + "/" + img
-	}
-	return reg + "/" + img
 }
 
 func dockerBoundToContainerd(runner command.Runner) bool {

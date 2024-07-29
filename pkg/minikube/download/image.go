@@ -83,7 +83,7 @@ func ImageExistsInDaemon(img string) bool {
 		klog.Warningf("failed to list docker images: %v", err)
 		return false
 	}
-	if !strings.Contains(string(output), image.TrimDockerIO(img)) {
+	if !strings.Contains(string(output), img) {
 		return false
 	}
 	correctArch, err := isImageCorrectArch(img)
