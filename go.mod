@@ -9,7 +9,7 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.36.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
 	github.com/Xuanwo/go-locale v1.1.0
@@ -96,11 +96,11 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.10 // indirect
-	cloud.google.com/go/monitoring v1.20.1 // indirect
-	cloud.google.com/go/trace v1.10.9 // indirect
+	cloud.google.com/go/monitoring v1.20.2 // indirect
+	cloud.google.com/go/trace v1.10.10 // indirect
 	git.sr.ht/~sbinet/gg v0.5.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
@@ -216,8 +216,8 @@ require (
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.22.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -227,7 +227,7 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	google.golang.org/genproto v0.0.0-20240722135656-d784300faade // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240709173604-40e1e62336c5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240722135656-d784300faade // indirect
 	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
