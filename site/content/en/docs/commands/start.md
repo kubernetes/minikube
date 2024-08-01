@@ -45,7 +45,7 @@ minikube start [flags]
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
-      --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
+  -d, --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
       --enable-default-cni                DEPRECATED: Replaced by --cni=bridge
