@@ -48,7 +48,7 @@ var addonsImagesCmd = &cobra.Command{
 		case "table":
 			printAddonImagesTable(addon)
 		case "json":
-			printAddonImagesJson(addon)
+			printAddonImagesJSON(addon)
 		default:
 			exit.Message(reason.Usage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", addonImagesOutput))
 		}
@@ -82,7 +82,7 @@ func printAddonImagesTable(addon string) {
 	}
 }
 
-func printAddonImagesJson(addon string) {
+func printAddonImagesJSON(addon string) {
 	if conf, ok := assets.Addons[addon]; ok {
 		if conf.Images != nil {
 			var data []string
