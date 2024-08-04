@@ -1190,8 +1190,8 @@ github.com/miekg/dns v1.1.48/go.mod h1:e3IlAVfNqAllflbibAZEWOXOQ+Ynzk/dDozDxY7Xn
 github.com/miekg/pkcs11 v1.0.3/go.mod h1:XsNlhZGX73bx86s2hdc/FuaLm2CPZJemRLMA+WTFxgs=
 github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516 h1:TdnOOGMei4q3MooTy2xYv+EKnMyKUJE2LFotmBzC1zk=
 github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516/go.mod h1:I+HtQRi2cs3knYUuHwiY59H9j52F03+l489Vm6AoMok=
-github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1 h1:eYP7NkEv+tUZeB7BLfJ8PF4UNCW6lVyrbMvcWh1rgMA=
-github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
+github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417 h1:f+neTRGCtvmW3Tm1V72vWpoTPuNOnXSQsHZdYOryfGM=
+github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417/go.mod h1:NKwI5KryEmEHMZVj80t9JQcfXWZp4/ZYNBuw4C5sQ9E=
 github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5 h1:1z7xOzfMO4aBR9+2nYjlhRXX1773fX60HTS0QGpGRPU=
 github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5/go.mod h1:HifYFOWR0bAMN4hWtaSADClogvtPy/jV0aRC5alhrKo=
 github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible/go.mod h1:8AuVvqP/mXw1px98n46wfvcGfQ4ci2FwoAjKYxuo3Z4=

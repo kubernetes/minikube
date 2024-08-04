@@ -243,7 +243,7 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.1
+	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
 	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516
 	github.com/intel-go/cpuid => github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6
