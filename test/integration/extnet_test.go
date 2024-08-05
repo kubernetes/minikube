@@ -99,7 +99,7 @@ func TestExtNet(t *testing.T) {
 	})
 }
 
-// connectExtnet create a docker network
+// connectExtnet creates a docker network
 func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
 	subnet := "172.28.0.0/16"
 	ipRange :="172.28.0.0/24"
@@ -113,7 +113,7 @@ func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetwo
 	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
 }
 
-// connectExtnet connect network to the minikube cluster
+// connectExtnet connects additional network to the minikube cluster
 func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
 	cmd := exec.CommandContext(ctx, "docker", "network", "connect", extnetNetworkName, profile)
 
@@ -125,7 +125,7 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetw
 	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
 }
 
-// deleteExtnet just starts a new minikube cluster
+// deleteExtnet removes the external network in docker
 func deleteExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
 	cmd := exec.CommandContext(ctx, "docker", "network", "rm", extnetNetworkName)
 
@@ -148,8 +148,8 @@ func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string,
 	}
 }
 
-// extnetValidateStop  runs minikube Stop 
-func extnetValidateStop (ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+// extnetValidateStop runs minikube Stop
+func extnetValidateStop(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"stop", "-p", profile, "--alsologtostderr", "-v=5"}
