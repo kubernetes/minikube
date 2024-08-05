@@ -695,13 +695,12 @@ func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv
 	c := exec.CommandContext(ctx, Target(), "status", "-p", profile, "--output=json", "--layout=cluster")
 	// artificially set /var to 100% capacity
 	if increaseEnv {
-			c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
+		c.Env = append(os.Environ(), fmt.Sprintf("%s=100", constants.TestDiskUsedEnv))
 	}
 	rr, err := Run(t, c)
 	// status exits non-0 if status isn't Running
 	if err == nil {
-			t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
+		t.Fatalf("expected command to fail, but it succeeded: %v\n%v", rr.Command(), err)
 	}
 	return rr.Stdout.Bytes()
 }
-
