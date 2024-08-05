@@ -69,7 +69,6 @@ func TestExtNet(t *testing.T) {
 			{"VerifyStatus", extnetValidateStatus},
 			{"Start", extnetValidateStart},
 			{"Delete", extnetValidateDelete},
-		//	{"Fail", fail},
 			{"VerifyDeletedResources", extnetValidateVerifyDeleted},
 		}
 		for _, tc := range tests {
@@ -180,12 +179,6 @@ func extnetValidateDelete(ctx context.Context, t *testing.T, profile string, ext
 	if err != nil {
 		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
 	}
-}
-
-// extnetValidateDelete deletes the cluster
-func fail(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
-	defer PostMortemLogs(t, profile)
-  t.Errorf("testing failure")
 }
 
 // extnetValidateVerifyDeleted makes sure no left over left after deleting a profile such as containers or volumes
