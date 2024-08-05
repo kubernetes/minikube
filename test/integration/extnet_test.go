@@ -34,9 +34,8 @@ import (
 
 // TestExtNet tests minikube external network functionality
 func TestExtNet(t *testing.T) {
-	driverArg, driverArgPresent := DriverArg()
-	t.Logf("running with runtime:%s DriverArg:%s goos:%s goarch:%s", ContainerRuntime(), driverArg, runtime.GOOS, runtime.GOARCH)
-	if driverArgPresent && driverArg != "docker" {
+	t.Logf("running with runtime:%s goos:%s goarch:%s", ContainerRuntime(), runtime.GOOS, runtime.GOARCH)
+	if !DockerDriver() {
 		t.Skip("skipping: only docker driver supported")
 	}
 
