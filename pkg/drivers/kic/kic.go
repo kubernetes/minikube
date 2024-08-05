@@ -293,10 +293,10 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-        networkName := d.NodeConfig.Network
-        if networkName == "" {
-                networkName = d.NodeConfig.ClusterName
-        }
+	networkName := d.NodeConfig.Network
+	if networkName == "" {
+		networkName = d.NodeConfig.ClusterName
+	}
 
 	ip, _, err := oci.ContainerIPs(d.OCIBinary, d.MachineName, networkName)
 	return ip, err
