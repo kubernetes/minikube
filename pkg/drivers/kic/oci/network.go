@@ -197,25 +197,25 @@ func ForwardedPort(ociBin string, ociID string, contPort int) (int, error) {
 }
 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
-func ContainerIPs(ociBin string, containerNameOrID string, networkID string) (string, string, error) {
+func ContainerIPs(ociBin string, containerName string, networkName string) (string, string, error) {
 	if ociBin == Podman {
-		return podmanContainerIP(ociBin, containerNameOrID, networkID)
+		return podmanContainerIP(ociBin, containerName, networkName)
 	}
-	return dockerContainerIP(ociBin, containerNameOrID, networkID)
+	return dockerContainerIP(ociBin, containerName, networkName)
 }
 
 // podmanContainerIP returns ipv4, ipv6 of container or error
-func podmanContainerIP(ociBin string, containerNameOrID string, networkID string) (string, string, error) {
+func podmanContainerIP(ociBin string, containerName string, networkName string) (string, string, error) {
 	rr, err := runCmd(exec.Command(ociBin, "container", "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
-		containerNameOrID))
+		containerName))
 	if err != nil {
-		return "", "", errors.Wrapf(err, "podman inspect ip %s %s", containerNameOrID, networkID)
+		return "", "", errors.Wrapf(err, "podman inspect ip %s %s", containerName, networkName)
 	}
 	output := strings.TrimSpace(rr.Stdout.String())
 	if output == "" { // podman returns empty for 127.0.0.1
 		// check network, if the ip address is missing
-		ipv4, ipv6, err := dockerContainerIP(ociBin, containerNameOrID, networkID)
+		ipv4, ipv6, err := dockerContainerIP(ociBin, containerName, networkName)
 		if err == nil {
 			return ipv4, ipv6, nil
 		}
@@ -225,10 +225,10 @@ func podmanContainerIP(ociBin string, containerNameOrID string, networkID string
 }
 
 // dockerContainerIP returns ipv4, ipv6 of container or error
-func dockerContainerIP(ociBin string, containerNameOrID string, networkID string) (string, string, error) {
+func dockerContainerIP(ociBin string, containerName string, networkName string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
-	format := fmt.Sprintf("{{with (index .NetworkSettings.Networks \"%s\")}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}", networkID)
-	lines, err := inspect(ociBin, containerNameOrID, format)
+	format := fmt.Sprintf("{{with (index .NetworkSettings.Networks %q)}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}", networkName)
+	lines, err := inspect(ociBin, containerName, format)
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
