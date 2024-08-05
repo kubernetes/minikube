@@ -88,7 +88,7 @@ func printAddonImagesJSON(addon string) {
 			var data []string
 
 			for imageName, defaultImage := range conf.Images {
-				data = append(data, conf.Registries[imageName] + "/" + defaultImage)
+				data = append(data, conf.Registries[imageName]+"/"+defaultImage)
 			}
 
 			jsonString, _ := json.Marshal(data)
