@@ -46,7 +46,6 @@ func TestExtNet(t *testing.T) {
 
 	extnetNetworkName := fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
 
-	// Serial tests
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
 			name      string
