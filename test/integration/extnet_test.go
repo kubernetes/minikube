@@ -44,15 +44,6 @@ func TestExtNet(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
-	containerRuntime := ContainerRuntime()
-	switch containerRuntime {
-	case "containerd":
-	    t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
-	case "crio":
-	    t.Skip("skipping: access direct test is broken on windows: https://github.com/kubernetes/minikube/issues/8304")
-	case "docker":
-	}
-
 	extnetNetworkName := fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
 
 	// Serial tests
