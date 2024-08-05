@@ -90,9 +90,7 @@ func TestExtNet(t *testing.T) {
 
 // connectExtnet creates a docker network
 func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
-	subnet := "172.28.0.0/16"
-	ipRange :="172.28.0.0/24"
-	cmd := exec.CommandContext(ctx, "docker", "network", "create", extnetNetworkName, fmt.Sprintf("--subnet=%s", subnet), fmt.Sprintf("--ip-range=%s", ipRange))
+	cmd := exec.CommandContext(ctx, "docker", "network", "create", extnetNetworkName)
 
 	result, err := Run(t, cmd)
 	if err != nil {
