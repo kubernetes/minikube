@@ -32,8 +32,8 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 )
 
-// TestExtNet tests minikube external network functionality
-func TestExtNet(t *testing.T) {
+// TestContainerIPsMultiNetwork tests minikube with docker driver correctly inferring IPs when multiple networks are attached
+func TestContainerIPsMultiNetwork(t *testing.T) {
 	t.Logf("running with runtime:%s goos:%s goarch:%s", ContainerRuntime(), runtime.GOOS, runtime.GOARCH)
 	if !DockerDriver() {
 		t.Skip("skipping: only docker driver supported")
