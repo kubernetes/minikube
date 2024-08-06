@@ -173,6 +173,9 @@ const (
 
 	// DefaultWindowsNodeVersion is the default version of Windows node
 	DefaultWindowsNodeVersion = "2022"
+
+	// Windows Server ISO URL
+	DefaultWindowsServerIsoURL = "https://go.microsoft.com/fwlink/p/?LinkID=2195280&clcid=0x409&culture=en-us&country=US"
 )
 
 var (

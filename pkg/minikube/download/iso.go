@@ -18,6 +18,8 @@ package download
 
 import (
 	"fmt"
+	"mime"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -29,12 +31,15 @@ import (
 	"github.com/juju/mutex/v2"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
+
+var isWindowsISO bool
 
 const fileScheme = "file"
 
@@ -48,6 +53,22 @@ func DefaultISOURLs() []string {
 		fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s-%s.iso", v, v, runtime.GOARCH),
 		fmt.Sprintf("https://kubernetes.oss-cn-hangzhou.aliyuncs.com/minikube/iso/minikube-%s-%s.iso", v, runtime.GOARCH),
 	}
+}
+
+// WindowsISOURL retrieves the ISO URL for the Windows version specified
+func WindowsISOURL(version string) string {
+	versionToIsoURL := map[string]string{
+		"2022": constants.DefaultWindowsServerIsoURL,
+		// Add more versions here when we support them
+	}
+
+	url, exists := versionToIsoURL[version]
+	if !exists {
+		klog.Warningf("Windows version %s is not supported. Using default Windows Server ISO URL", version)
+		return constants.DefaultWindowsServerIsoURL
+	}
+
+	return url
 }
 
 // LocalISOResource returns a local file:// URI equivalent for a local or remote ISO path
@@ -103,6 +124,12 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 	return "", errors.New(msg.String())
 }
 
+func WindowsISO(windowsVersion string) error {
+	isWindowsISO = true
+	isoURL := WindowsISOURL(windowsVersion)
+	return downloadISO(isoURL, false)
+}
+
 // downloadISO downloads an ISO URL
 func downloadISO(isoURL string, skipChecksum bool) error {
 	u, err := url.Parse(isoURL)
@@ -117,6 +144,22 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 
 	// Lock before we check for existence to avoid thundering herd issues
 	dst := localISOPath(u)
+	if isWindowsISO {
+		resp, err := http.Head(isoURL)
+		if err != nil {
+			return errors.Wrapf(err, "HEAD %s", isoURL)
+		}
+
+		_, params, err := mime.ParseMediaType(resp.Header.Get("Content-Disposition"))
+		if err != nil {
+			return errors.Wrapf(err, "ParseMediaType %s", resp.Header.Get("Content-Disposition"))
+		}
+
+		dst = filepath.Join(detect.ISOCacheDir(), params["filename"])
+
+		isWindowsISO = false
+	}
+
 	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}

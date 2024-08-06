@@ -109,6 +109,7 @@ type ClusterConfig struct {
 	SSHAgentPID             int
 	GPUs                    string
 	AutoPauseInterval       time.Duration // Specifies interval of time to wait before checking if cluster should be paused
+	WindowsNodeVersion      string        // OS version of windows node
 	Rosetta                 bool          // Only used by vfkit driver
 }
 
