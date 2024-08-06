@@ -71,7 +71,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{IsRuntimeContainerd},
+		validations: []setFn{isRuntimeContainerd},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
@@ -125,14 +125,16 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
-		name:      "nvidia-driver-installer",
-		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		name:        "nvidia-driver-installer",
+		set:         SetBool,
+		validations: []setFn{isKVMDriverForNVIDIA},
+		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:      "nvidia-gpu-device-plugin",
-		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		name:        "nvidia-gpu-device-plugin",
+		set:         SetBool,
+		validations: []setFn{isKVMDriverForNVIDIA},
+		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "olm",
@@ -192,6 +194,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{enableOrDisableGCPAuth, EnableOrDisableAddon, verifyGCPAuthAddon},
 	},
 	{
+		name:      "volcano",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "volumesnapshots",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
@@ -199,7 +206,7 @@ var Addons = []*Addon{
 	{
 		name:        "csi-hostpath-driver",
 		set:         SetBool,
-		validations: []setFn{IsVolumesnapshotsEnabled},
+		validations: []setFn{isVolumesnapshotsEnabled},
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{

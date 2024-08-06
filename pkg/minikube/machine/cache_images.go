@@ -118,7 +118,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 		})
 	}
 	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "loading cached images")
+		return errors.Wrap(err, "LoadCachedImages")
 	}
 	klog.Infoln("Successfully loaded all cached images")
 	return nil
@@ -223,7 +223,6 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 
 		for _, n := range c.Nodes {
 			m := config.MachineName(*c, n)
-
 			status, err := Status(api, m)
 			if err != nil {
 				klog.Warningf("error getting status for %s: %v", m, err)
@@ -251,7 +250,7 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 				}
 				if err != nil {
 					failed = append(failed, m)
-					klog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+					klog.Warningf("Failed to load cached images for %q: %v", pName, err)
 					continue
 				}
 				succeeded = append(succeeded, m)
@@ -259,8 +258,12 @@ func DoLoadImages(images []string, profiles []*config.Profile, cacheDir string, 
 		}
 	}
 
-	klog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
-	klog.Infof("failed pushing to: %s", strings.Join(failed, " "))
+	if len(succeeded) > 0 {
+		klog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
+	}
+	if len(failed) > 0 {
+		klog.Infof("failed pushing to: %s", strings.Join(failed, " "))
+	}
 	// Live pushes are not considered a failure
 	return nil
 }
@@ -309,6 +312,9 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 
 	err = r.LoadImage(dst)
 	if err != nil {
+		if strings.Contains(err.Error(), "ctr: image might be filtered out") {
+			out.WarningT("The image '{{.imageName}}' does not match arch of the container runtime, use a multi-arch image instead", out.V{"imageName": imgName})
+		}
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 

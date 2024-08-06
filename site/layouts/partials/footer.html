@@ -1,0 +1,60 @@
+{{/* minikube-docsy file override */ -}}
+{{ $links := .Site.Params.links }}
+<footer class="bg-dark py-5 row d-print-none">
+  <div class="container-fluid mx-sm-5">
+    <div class="row">
+      <div class="col-6 col-sm-4 text-xs-center order-sm-2">
+        {{ with $links }}
+        {{ with index . "user"}}
+        {{ template "footer-links-block"  . }}
+        {{ end }}
+        {{ end }}
+      </div>
+      <div class="col-6 col-sm-4 text-right text-xs-center order-sm-3">
+        {{ with $links }}
+        {{ with index . "developer"}}
+        {{ template "footer-links-block"  . }}
+        {{ end }}
+        {{ end }}
+      </div>
+      <div class="col-12 col-sm-4 text-center py-2 order-sm-2">
+        {{ with .Site.Params.copyright }}<small class="text-white">&copy; {{ now.Year}} {{ . }}
+          <!-- {{ T "footer_all_rights_reserved" }} -->
+        </small>{{ end }}
+        {{ with .Site.Params.privacy_policy }}<small class="ml-1"><a href="{{ . }}" target="_blank">{{ T "footer_privacy_policy" }}</a></small>{{ end }}
+        {{ if not .Site.Params.ui.footer_about_disable }}
+          {{ with .Site.GetPage "about" -}}
+            <p class="mt-2 text-white"><a href="{{ .RelPermalink }}">{{ .Title }}</a> |
+              <a href="#">Trademark Usage</a> |
+              <a href="#">Terms of Use</a>
+            </p>
+          {{- end }}
+        {{ end }}
+      </div>
+    </div>
+    <div class="row text-center text-white small">
+      <div class="col-12 text-center py-2 order-sm-2">
+        <a href="https://www.linuxfoundation.org/terms" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Terms of Use</a> |
+        <a href="https://www.linuxfoundation.org/privacy" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Privacy Policy</a> |
+        <a href="https://www.linuxfoundation.org/trademark-usage" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Trademark Usage</a> |
+        <a href="https://github.com/kubernetes/minikube/blob/master/LICENSE" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+{{ define "footer-links-block" }}
+<ul class="list-inline mb-0">
+  {{ range . }}
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="{{ .name }}" aria-label="{{ .name }}">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="{{ .url }}">
+      <i class="{{ .icon }}"></i>
+    </a>
+  </li>
+  {{ end }}
+</ul>
+{{ end }}
+<style>
+  .footer-link:hover {
+    color: #b5b1b1 !important;
+  }
+</style>

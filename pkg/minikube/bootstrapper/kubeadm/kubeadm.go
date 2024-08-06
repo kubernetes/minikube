@@ -64,6 +64,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/network"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
@@ -440,8 +441,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 // tunnelToAPIServer creates ssh tunnel between apiserver:port inside control-plane node and host on port 8443.
 func (k *Bootstrapper) tunnelToAPIServer(cfg config.ClusterConfig) error {
-	if cfg.APIServerPort != 0 {
+	if cfg.APIServerPort == 0 {
 		return fmt.Errorf("apiserver port not set")
+	}
+	// An API server tunnel is only needed for QEMU w/ builtin network, for
+	// everything else return
+	if !driver.IsQEMU(cfg.Driver) || !network.IsBuiltinQEMU(cfg.Network) {
+		return nil
 	}
 
 	m, err := machine.NewAPIClient()

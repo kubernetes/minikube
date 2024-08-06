@@ -36,11 +36,6 @@ var (
 	}
 
 	schema = map[string]update.Item{
-		"go.mod": {
-			Replace: map[string]string{
-				`(?m)^go .*`: `go {{.StableVersionMM}}`,
-			},
-		},
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
@@ -78,9 +73,8 @@ var (
 
 // Data holds stable Golang version - in full and in <major>.<minor> format
 type Data struct {
-	StableVersion   string
-	StableVersionMM string // go.mod wants go version in <major>.<minor> format
-	K8SVersion      string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
+	StableVersion string
+	K8SVersion    string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
 
 }
 
@@ -88,8 +82,8 @@ func main() {
 	addGitHubWorkflowFiles()
 
 	// get Golang stable version
-	stable, stableMM, k8sVersion, err := goVersions()
-	if err != nil || stable == "" || stableMM == "" {
+	stable, k8sVersion, err := goVersions()
+	if err != nil || stable == "" {
 		klog.Fatalf("Unable to get Golang stable version: %v", err)
 	}
 	// skip rc versions
@@ -97,7 +91,7 @@ func main() {
 		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
 		return
 	}
-	data := Data{StableVersion: stable, StableVersionMM: stableMM, K8SVersion: k8sVersion}
+	data := Data{StableVersion: stable, K8SVersion: k8sVersion}
 	klog.Infof("Golang stable version: %s", data.StableVersion)
 
 	update.Apply(schema, data)
@@ -108,24 +102,22 @@ func main() {
 }
 
 // goVersions returns Golang stable version.
-func goVersions() (stable, stableMM, k8sVersion string, err error) {
+func goVersions() (stable, k8sVersion string, err error) {
 	// will update to the same image that kubernetes project uses
 	resp, err := http.Get("https://raw.githubusercontent.com/kubernetes/kubernetes/master/build/build-image/cross/VERSION")
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", "", err
+		return "", "", err
 	}
 	// example response: v1.23.0-go1.17-buster.0
 	stable = string(body)
 	k8sVersion = strings.Split(stable, "-")[0]
 	stable = strings.Split(stable, "-")[1]
 	stable = strings.Replace(stable, "go", "", 1)
-	mmp := strings.SplitN(stable, ".", 3)
-	stableMM = strings.Join(mmp[0:2], ".") // <major>.<minor> version
-	return stable, stableMM, k8sVersion, nil
+	return stable, k8sVersion, nil
 }
 
 func updateGoHashFile(version string) error {

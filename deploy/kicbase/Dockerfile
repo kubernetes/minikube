@@ -19,9 +19,9 @@
 
 
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240405"
+ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240627.1"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.22.1 as auto-pause
+FROM golang:1.22.5 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -41,14 +41,14 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.13.1"
+ARG BUILDKIT_VERSION="v0.15.0"
 ARG CRIO_VERSION="1.24"
-ARG CRI_DOCKERD_VERSION="v0.3.12"
-ARG CRI_DOCKERD_COMMIT="c2e3805c946c16ec7e3a6d35ec5d72d72dc0c742"
+ARG CRI_DOCKERD_VERSION="v0.3.15"
+ARG CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
-ARG NERDCTL_VERSION="1.7.5"
-ARG NERDCTLD_VERSION="0.6.0"
+ARG NERDCTL_VERSION="1.7.6"
+ARG NERDCTLD_VERSION="0.6.1"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf

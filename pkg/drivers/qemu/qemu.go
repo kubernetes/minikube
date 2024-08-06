@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -412,14 +413,11 @@ func (d *Driver) Start() error {
 	}
 
 	// hardware acceleration is important, it increases performance by 10x
-	if runtime.GOOS == "darwin" {
-		// On macOS, enable the Hypervisor framework accelerator.
+	accel := hardwareAcceleration()
+	if accel != "" {
+		klog.Infof("Using %s for hardware acceleration", accel)
 		startCmd = append(startCmd,
-			"-accel", "hvf")
-	} else if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
-		// On Linux, enable the Kernel Virtual Machine accelerator.
-		startCmd = append(startCmd,
-			"-accel", "kvm")
+			"-accel", accel)
 	}
 
 	startCmd = append(startCmd,
@@ -544,6 +542,21 @@ func (d *Driver) Start() error {
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
 
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+}
+
+func hardwareAcceleration() string {
+	if detect.IsAmd64M1Emulation() {
+		return "tcg"
+	}
+	if runtime.GOOS == "darwin" {
+		// On macOS, enable the Hypervisor framework accelerator.
+		return "hvf"
+	}
+	if _, err := os.Stat("/dev/kvm"); err == nil && runtime.GOOS == "linux" {
+		// On Linux, enable the Kernel Virtual Machine accelerator.
+		return "kvm"
+	}
+	return ""
 }
 
 func isBootpdError(err error) bool {

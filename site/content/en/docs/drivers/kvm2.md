@@ -38,7 +38,7 @@ The `minikube start` command supports 5 additional KVM specific flags:
 
 Also see [co/kvm2-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fkvm2-driver).
 
-### Nested Virtulization
+### Nested Virtualization
 
 If you are running KVM in a nested virtualization environment ensure your config the kernel modules correctly follow either [this](https://stafwag.github.io/blog/blog/2018/06/04/nested-virtualization-in-kvm/) or [this](https://computingforgeeks.com/how-to-install-kvm-virtualization-on-debian/) tutorial.
 

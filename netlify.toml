@@ -4,8 +4,8 @@ publish = "site/public/"
 command = "pwd && cd themes/docsy && npm install && git submodule update -f --init && cd ../.. && hugo"
 
 [build.environment]
-NODE_VERSION = "20.12.2"
-HUGO_VERSION = "v0.124.1"
+NODE_VERSION = "20.16.0"
+HUGO_VERSION = "v0.131.0"
 
 [context.production.environment]
 HUGO_ENV = "production"
