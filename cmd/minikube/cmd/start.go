@@ -1479,6 +1479,34 @@ func validateWindowsOSVersion(osVersion string) error {
 	return errors.Errorf("Invalid Windows Server OS Version: %s. Valid OS version are: %s", osVersion, maps.Keys(validOptions))
 }
 
+// validateOS validates the supplied OS
+func validateOS(os string) error {
+	validOptions := node.ValidOS()
+
+	for _, validOS := range validOptions {
+		if os == validOS {
+			return nil
+		}
+	}
+
+	return errors.Errorf("Invalid OS: %s. Valid OS are: %s", os, strings.Join(validOptions, ", "))
+}
+
+// validateOSandVersion validates the supplied OS and version
+func validateOSandVersion(os, version string) error {
+
+	if err := validateOS(os); err != nil {
+		return err
+	}
+
+	if version != "" {
+		if err := validateWindowsOSVersion(version); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // validateRuntime validates the supplied runtime
 func validateRuntime(rtime string) error {
 	validOptions := cruntime.ValidRuntimes()

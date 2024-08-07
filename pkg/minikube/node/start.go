@@ -1018,3 +1018,8 @@ To see benchmarks checkout https://minikube.sigs.k8s.io/docs/benchmarks/cpuusage
 func ValidWindowsOSVersions() map[string]bool {
 	return map[string]bool{"2019": true, "2022": true}
 }
+
+// ValidOS lists the supported OSes
+func ValidOS() []string {
+	return []string{"linux", "windows"}
+}
