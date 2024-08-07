@@ -569,7 +569,7 @@ minikube dashboard
 
 {{% tabs %}}
 {{% tab Service %}}
-Create a sample deployment and expose it on port 8080:
+Create a sample deployment and expose it on <port> which your application uses or configured in case of any proxy, Here example port is 8080:
 
 ```shell
 kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
