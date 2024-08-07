@@ -30,9 +30,14 @@ import (
 	"time"
 
 	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
 
 var extnetNetworkName string
+var clusterIPv4 string
+var clusterIPv6 string
+var extnetIPv4 string
+var extnetIPv6 string
 
 // TestContainerIPsMultiNetwork tests minikube with docker driver correctly inferring IPs when multiple networks are attached
 func TestContainerIPsMultiNetwork(t *testing.T) {
@@ -114,6 +119,14 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to execute 'docker network connect', error: %v, output: %s", err, result.Output())
 	}
+	if KicDriver() {
+		bin := "docker"
+		if PodmanDriver() {
+			bin = "podman"
+		}
+		extnetIPv4, extnetIPv6, _ = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		t.Logf("cluster %s was attached to network %s with address %s/%s", profile, extnetNetworkName, extnetIPv4, extnetIPv6)
+	}
 	extnetNetworkID := result.Output()
 	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
 }
@@ -141,6 +154,14 @@ func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string)
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+	if KicDriver() {
+		bin := "docker"
+		if PodmanDriver() {
+			bin = "podman"
+		}
+		clusterIPv4, clusterIPv6, _ = oci.ContainerIPs(bin, profile, profile)
+		t.Logf("cluster %s started with address %s/%s", profile, clusterIPv4, clusterIPv6)
+	}
 }
 
 // extnetValidateStop runs minikube Stop
@@ -162,6 +183,27 @@ func extnetValidateStart(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
+
+	if KicDriver() {
+		bin := "docker"
+		if PodmanDriver() {
+			bin = "podman"
+		}
+		ipv4, ipv6, _ := oci.ContainerIPs(bin, profile, profile)
+		if ipv4 != clusterIPv4 {
+			t.Fatalf("clusterIPv4 mismatch %s != %s", clusterIPv4, ipv4)
+		}
+		if ipv6 != clusterIPv6 {
+			t.Fatalf("clusterIPv6 mismatch %s != %s", clusterIPv6, ipv6)
+		}
+		ipv4, ipv6, _ = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		if ipv4 != extnetIPv4 {
+			t.Fatalf("extnetIPv4 mismatch %s != %s", extnetIPv4, ipv4)
+		}
+		if ipv6 != extnetIPv6 {
+			t.Fatalf("extnetIPv6 mismatch %s != %s", extnetIPv6, ipv6)
+		}
 	}
 }
 
