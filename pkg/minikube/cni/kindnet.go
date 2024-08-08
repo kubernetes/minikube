@@ -45,6 +45,8 @@ rules:
       - ""
     resources:
       - nodes
+      - namespaces
+      - pods
     verbs:
       - list
       - watch
@@ -55,6 +57,14 @@ rules:
       - configmaps
     verbs:
       - get
+  - apiGroups:
+      -  networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
