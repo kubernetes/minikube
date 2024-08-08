@@ -27,7 +27,7 @@ import (
 	"path"
 	"testing"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -82,19 +82,19 @@ func runStatusCmd(ctx context.Context, t *testing.T, profile string, increaseEnv
 }
 
 func verifyClusterState(t *testing.T, contents []byte) {
-	var cs cmd.ClusterState
+	var cs cluster.State
 	if err := json.Unmarshal(contents, &cs); err != nil {
 		t.Fatalf("unmarshalling: %v", err)
 	}
 	// verify the status looks as we expect
-	if cs.StatusCode != cmd.InsufficientStorage {
+	if cs.StatusCode != cluster.InsufficientStorage {
 		t.Fatalf("incorrect status code: %v", cs.StatusCode)
 	}
 	if cs.StatusName != "InsufficientStorage" {
 		t.Fatalf("incorrect status name: %v", cs.StatusName)
 	}
 	for _, n := range cs.Nodes {
-		if n.StatusCode != cmd.InsufficientStorage {
+		if n.StatusCode != cluster.InsufficientStorage {
 			t.Fatalf("incorrect node status code: %v", cs.StatusCode)
 		}
 	}

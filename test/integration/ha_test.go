@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -328,7 +328,7 @@ func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	var statuses []cmd.Status
+	var statuses []cluster.Status
 	if err = json.Unmarshal(rr.Stdout.Bytes(), &statuses); err != nil {
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}

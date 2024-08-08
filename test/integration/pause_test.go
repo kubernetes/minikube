@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/cluster"
 )
 
 // TestPause tests minikube pause functionality
@@ -191,12 +191,12 @@ func validateStatus(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	statusOutput := runStatusCmd(ctx, t, profile, false)
-	var cs cmd.ClusterState
+	var cs cluster.State
 	if err := json.Unmarshal(statusOutput, &cs); err != nil {
 		t.Fatalf("unmarshalling: %v", err)
 	}
 	// verify the status looks as we expect
-	if cs.StatusCode != cmd.Paused {
+	if cs.StatusCode != cluster.Paused {
 		t.Fatalf("incorrect status code: %v", cs.StatusCode)
 	}
 	if cs.StatusName != "Paused" {

@@ -20,22 +20,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/cluster"
 )
 
 func TestExitCode(t *testing.T) {
 	var tests = []struct {
 		name  string
 		want  int
-		state *Status
+		state *cluster.Status
 	}{
-		{"ok", 0, &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured}},
-		{"paused", 2, &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
-		{"down", 7, &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
-		{"missing", 7, &Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}},
+		{"ok", 0, &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured}},
+		{"paused", 2, &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}},
+		{"down", 7, &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}},
+		{"missing", 7, &cluster.Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := exitCode([]*Status{tc.state})
+			got := exitCode([]*cluster.Status{tc.state})
 			if got != tc.want {
 				t.Errorf("exitcode(%+v) = %d, want: %d", tc.state, got, tc.want)
 			}
@@ -46,22 +48,22 @@ func TestExitCode(t *testing.T) {
 func TestStatusText(t *testing.T) {
 	var tests = []struct {
 		name  string
-		state *Status
+		state *cluster.Status
 		want  string
 	}{
 		{
 			name:  "ok",
-			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"},
+			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured, TimeToStop: "10m"},
 			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\ntimeToStop: 10m\n\n",
 		},
 		{
 			name:  "paused",
-			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
+			state: &cluster.Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured},
 			want:  "minikube\ntype: Control Plane\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "down",
-			state: &Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
+			state: &cluster.Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured},
 			want:  "minikube\ntype: Control Plane\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
 		},
 	}
@@ -84,21 +86,21 @@ func TestStatusText(t *testing.T) {
 func TestStatusJSON(t *testing.T) {
 	var tests = []struct {
 		name  string
-		state *Status
+		state *cluster.Status
 	}{
-		{"ok", &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured, TimeToStop: "10m"}},
-		{"paused", &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
-		{"down", &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
+		{"ok", &cluster.Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: cluster.Configured, TimeToStop: "10m"}},
+		{"paused", &cluster.Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: cluster.Configured}},
+		{"down", &cluster.Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: cluster.Misconfigured}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			var b bytes.Buffer
-			err := statusJSON([]*Status{tc.state}, &b)
+			err := statusJSON([]*cluster.Status{tc.state}, &b)
 			if err != nil {
 				t.Errorf("json(%+v) error: %v", tc.state, err)
 			}
 
-			st := &Status{}
+			st := &cluster.Status{}
 			if err := json.Unmarshal(b.Bytes(), st); err != nil {
 				t.Errorf("json(%+v) unmarshal error: %v", tc.state, err)
 			}
