@@ -10,29 +10,28 @@ This roadmap is a living document outlining the major technical improvements whi
 
 Please send a PR to suggest any improvements to it.
 
-# 2022
+# 2024
 
-## (#1) GUI
+## (#1) AI
 
-- [x] Be able to start, stop, pause, and delete clusters via a GUI (prototype state)
-- [x] Application available for all supported platforms: Linux, macOS, Windows
+- [ ] Support Nvidia-Docker runtime
+- [ ] Try Kubeflow addon
 
 ## (#2) Documentation
 
-- [ ] Consolidate Kubernetes documentation that references minikube
+- [x] Consolidate Kubernetes documentation that references minikube
 - [ ] Delete outdated documentation
 - [ ] Add documentation for new features
 
-## (#3) ARM64 Support
-
-- [x] Add Linux VM support
-- [x] Add Mac M1 VM support (experimental, will improve by end of 2022)
-
-## (#4) Docker
+## (#3) Docker
 - [ ] Remove the Docker Desktop requirement on Mac and Windows
-- [x] Continue supporting Docker as a container runtime (with CRI)
+- [ ] Support the Docker Desktop environment on Linux as well
+
+## (#4) Podman
+- [ ] Improve support for rootless containers with Podman Engine
+- [ ] Support the Podman Desktop environment on Mac and Windows
 
 ## (#5) libmachine Refactor
 
-- [x] Add new driver (with QEMU) to replace HyperKit, primarily for Mac arm64 (experimental, will improve by end of 2022)
+- [ ] Add new driver with Virtualization.framework, as QEMU alternative on Mac arm64
 - [ ] Fix the provisioner, remove legacy Swarm, and add support for other runtimes
