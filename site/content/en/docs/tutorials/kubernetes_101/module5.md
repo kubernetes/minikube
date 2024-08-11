@@ -87,7 +87,7 @@ export NODE_PORT=$(kubectl get services/kubernetes-bootcamp -o go-template='{{(i
 echo NODE_PORT=$NODE_PORT
 ```
 
-Next, we'll do a `curl` to the exposed IP and port. Execute the command mulitple times:
+Next, we'll do a `curl` to the exposed IP and port. Execute the command multiple times:
 
 ```shell
 curl $(minikube ip):$NODE_PORT
