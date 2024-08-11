@@ -41,7 +41,7 @@ import (
 var docURL = "https://minikube.sigs.k8s.io/docs/drivers/podman/"
 
 // minReqPodmanVer is required the minimum version of podman to be installed for podman driver.
-var minReqPodmanVer = semver.Version{Major: 2, Minor: 1, Patch: 0}
+var minReqPodmanVer = semver.Version{Major: 4, Minor: 9, Patch: 0}
 
 func init() {
 	priority := registry.Default
