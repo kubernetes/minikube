@@ -61,6 +61,8 @@ const (
 	HyperV = "hyperv"
 	// Parallels driver
 	Parallels = "parallels"
+	// VFKit driver
+	VFKit = "vfkit"
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
