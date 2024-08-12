@@ -170,7 +170,7 @@ func extnetValidateStop(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"stop", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to stop minikube with args: %q : %v", rr.Command(), err)
+		t.Fatalf("failed to stop minikube with args: %q : %v", rr.Command(), err)
 	}
 }
 
