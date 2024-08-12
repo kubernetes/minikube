@@ -20,8 +20,8 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -32,6 +32,8 @@ import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 )
 
+var extnetNetworkName string
+
 // TestContainerIPsMultiNetwork tests minikube with docker driver correctly inferring IPs when multiple networks are attached
 func TestContainerIPsMultiNetwork(t *testing.T) {
 	t.Logf("running with runtime:%s goos:%s goarch:%s", ContainerRuntime(), runtime.GOOS, runtime.GOARCH)
@@ -39,12 +41,12 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 		t.Skip("skipping: only docker driver supported")
 	}
 
-	type validateFunc func(context.Context, *testing.T, string, string)
+	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("extnet")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
 	defer Cleanup(t, profile, cancel)
 
-	extnetNetworkName := fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
+	extnetNetworkName = fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
 
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
@@ -72,7 +74,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
-				tc.validator(ctx, t, profile, extnetNetworkName)
+				tc.validator(ctx, t, profile)
 				if t.Failed() && *postMortemLogs {
 					PostMortemLogs(t, profile)
 				}
@@ -80,7 +82,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 		}
 
 		t.Run("DeleteExtnet", func(t *testing.T) {
-			deleteExtnet(ctx, t, profile, extnetNetworkName)
+			deleteExtnet(ctx, t, profile)
 			if t.Failed() && *postMortemLogs {
 				PostMortemLogs(t, profile)
 			}
@@ -89,7 +91,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 }
 
 // connectExtnet creates a docker network
-func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func createExtnet(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	cmd := exec.CommandContext(ctx, "docker", "network", "create", extnetNetworkName)
@@ -103,7 +105,7 @@ func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetwo
 }
 
 // connectExtnet connects additional network to the minikube cluster
-func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func connectExtnet(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	cmd := exec.CommandContext(ctx, "docker", "network", "connect", extnetNetworkName, profile)
@@ -117,7 +119,7 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetw
 }
 
 // deleteExtnet removes the external network in docker
-func deleteExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func deleteExtnet(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	cmd := exec.CommandContext(ctx, "docker", "network", "rm", extnetNetworkName)
@@ -131,7 +133,7 @@ func deleteExtnet(ctx context.Context, t *testing.T, profile string, extnetNetwo
 }
 
 // extnetValidateFreshStart just starts a new minikube cluster
-func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := append([]string{"start", "-p", profile, "--memory=2048", "--install-addons=false", "--wait=all"}, StartArgs()...)
@@ -142,7 +144,7 @@ func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string,
 }
 
 // extnetValidateStop runs minikube Stop
-func extnetValidateStop(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateStop(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"stop", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -153,7 +155,7 @@ func extnetValidateStop(ctx context.Context, t *testing.T, profile string, extne
 }
 
 // extnetValidateStart runs minikube start
-func extnetValidateStart(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -164,7 +166,7 @@ func extnetValidateStart(ctx context.Context, t *testing.T, profile string, extn
 }
 
 // extnetValidateDelete deletes the cluster
-func extnetValidateDelete(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateDelete(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -175,7 +177,7 @@ func extnetValidateDelete(ctx context.Context, t *testing.T, profile string, ext
 }
 
 // extnetValidateVerifyDeleted makes sure no left over left after deleting a profile such as containers or volumes
-func extnetValidateVerifyDeleted(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
@@ -226,7 +228,7 @@ func extnetValidateVerifyDeleted(ctx context.Context, t *testing.T, profile stri
 }
 
 // extnetValidateStatus makes sure stopped clusters show up in minikube status correctly
-func extnetValidateStatus(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+func extnetValidateStatus(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	statusOutput := runStatusCmd(ctx, t, profile, false)
