@@ -49,9 +49,14 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 	type validateFunc func(context.Context, *testing.T, string)
 	profile := UniqueProfileName("extnet")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
-	defer Cleanup(t, profile, cancel)
 
 	extnetNetworkName = fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
+	defer func() {
+		if *cleanup {
+			CleanupExtnet(t)
+			Cleanup(t, profile, cancel)
+		}
+	}()
 
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
@@ -66,6 +71,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 			{"Start", extnetValidateStart},
 			{"Delete", extnetValidateDelete},
 			{"VerifyDeletedResources", extnetValidateVerifyDeleted},
+			{"DeleteExtnet", deleteExtnet},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -74,24 +80,17 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 				t.Fatalf("Unable to run more tests (deadline exceeded)")
 			}
 			if t.Failed() {
-				// t.Fatalf("Previous test failed, not running dependent tests")
-				break
+				t.Fatalf("Previous test failed, not running dependent tests")
 			}
 
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
+
 				if t.Failed() && *postMortemLogs {
 					PostMortemLogs(t, profile)
 				}
 			})
 		}
-
-		t.Run("DeleteExtnet", func(t *testing.T) {
-			deleteExtnet(ctx, t, profile)
-			if t.Failed() && *postMortemLogs {
-				PostMortemLogs(t, profile)
-			}
-		})
 	})
 }
 
@@ -285,4 +284,16 @@ func extnetValidateStatus(ctx context.Context, t *testing.T, profile string) {
 	if cs.StatusName != "Stopped" {
 		t.Fatalf("incorrect status name: %v", cs.StatusName)
 	}
+}
+
+// CleanupExtnet removes the external network in docker, no error on failure, used for Cleanup
+func CleanupExtnet(t *testing.T) {
+	ctx2, cancel2 := context.WithTimeout(context.Background(), Seconds(10))
+	defer cancel2()
+	t.Logf("Cleaning up docker network %q ...", extnetNetworkName)
+
+	cmd := exec.CommandContext(ctx2, "docker", "network", "rm", extnetNetworkName)
+	rr := &RunResult{Args: cmd.Args}
+	t.Logf("(dbg) Run:  %v", rr.Command())
+	_ = cmd.Run()
 }
