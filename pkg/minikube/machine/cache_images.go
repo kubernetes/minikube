@@ -335,7 +335,7 @@ func removeExistingImage(r cruntime.Manager, src string, imgName string) error {
 	}
 
 	errStr := strings.ToLower(err.Error())
-	if !strings.Contains(errStr, "no such image") {
+	if !strings.Contains(errStr, "no such image") && !strings.Contains(errStr, "unable to remove the image") {
 		return errors.Wrap(err, "removing image")
 	}
 
@@ -472,9 +472,22 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
+	found := false
+	// the reason why we are doing this is that
+	// unlike other tool, podman assume the image has a localhost registry (not docker.io)
+	// if the image is loaded with a tarball without a registry specified in tag
+	// see https://github.com/containers/podman/issues/15974
+	tryImageExist := []string{imgName, cruntime.AddDockerIO(imgName), cruntime.AddLocalhostPrefix(imgName)}
+	for _, imgName = range tryImageExist {
+		if r.ImageExists(imgName, "") {
+			found = true
+			break
+		}
+	}
 
-	if !r.ImageExists(imgName, "") {
-		return errors.Errorf("image %s not found", imgName)
+	if !found {
+		// if all of this failed, return the original error
+		return fmt.Errorf("image not found %s", imgName)
 	}
 
 	klog.Infof("Saving image to: %s", dst)
