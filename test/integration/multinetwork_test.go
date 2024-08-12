@@ -63,13 +63,13 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 			validator validateFunc
 		}{
 			{"CreateExtnet", createExtnet},
-			{"FreshStart", extnetValidateFreshStart},
+			{"FreshStart", multinetworkValidateFreshStart},
 			{"ConnectExtnet", connectExtnet},
-			{"Stop", extnetValidateStop},
-			{"VerifyStatus", extnetValidateStatus},
-			{"Start", extnetValidateStart},
-			{"Delete", extnetValidateDelete},
-			{"VerifyDeletedResources", extnetValidateVerifyDeleted},
+			{"Stop", multinetworkValidateStop},
+			{"VerifyStatus", multinetworkValidateStatus},
+			{"Start", multinetworkValidateStart},
+			{"Delete", multinetworkValidateDelete},
+			{"VerifyDeletedResources", multinetworkValidateVerifyDeleted},
 			{"DeleteExtnet", deleteExtnet},
 		}
 		for _, tc := range tests {
@@ -140,8 +140,8 @@ func deleteExtnet(ctx context.Context, t *testing.T, profile string) {
 	t.Logf("external network %s deleted", extnetNetworkName)
 }
 
-// extnetValidateFreshStart just starts a new minikube cluster
-func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateFreshStart just starts a new minikube cluster
+func multinetworkValidateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := append([]string{"start", "-p", profile, "--memory=2048", "--install-addons=false", "--wait=all"}, StartArgs()...)
@@ -159,8 +159,8 @@ func extnetValidateFreshStart(ctx context.Context, t *testing.T, profile string)
 	}
 }
 
-// extnetValidateStop runs minikube Stop
-func extnetValidateStop(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateStop runs minikube Stop
+func multinetworkValidateStop(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"stop", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -170,8 +170,8 @@ func extnetValidateStop(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// extnetValidateStart runs minikube start
-func extnetValidateStart(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateStart runs minikube start
+func multinetworkValidateStart(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -202,8 +202,8 @@ func extnetValidateStart(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// extnetValidateDelete deletes the cluster
-func extnetValidateDelete(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateDelete deletes the cluster
+func multinetworkValidateDelete(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
@@ -213,8 +213,8 @@ func extnetValidateDelete(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// extnetValidateVerifyDeleted makes sure no left over left after deleting a profile such as containers or volumes
-func extnetValidateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateVerifyDeleted makes sure no left over left after deleting a profile such as containers or volumes
+func multinetworkValidateVerifyDeleted(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
@@ -264,8 +264,8 @@ func extnetValidateVerifyDeleted(ctx context.Context, t *testing.T, profile stri
 
 }
 
-// extnetValidateStatus makes sure stopped clusters show up in minikube status correctly
-func extnetValidateStatus(ctx context.Context, t *testing.T, profile string) {
+// multinetworkValidateStatus makes sure stopped clusters show up in minikube status correctly
+func multinetworkValidateStatus(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	statusOutput := runStatusCmd(ctx, t, profile, false)
