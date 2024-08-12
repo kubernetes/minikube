@@ -700,7 +700,7 @@ func AddDockerIO(name string) string {
 	return addRegistryPreix(name, "docker.io")
 }
 func addRegistryPreix(name string, prefix string) string {
-	// we seperate the image name following this logic
+	// we separate the image name following this logic
 	// https://pkg.go.dev/github.com/distribution/reference#ParseNormalizedNamed
 	var reg, usr, img string
 	p := strings.SplitN(name, "/", 2)
