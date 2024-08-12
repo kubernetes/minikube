@@ -90,6 +90,8 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 
 // connectExtnet creates a docker network
 func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+	defer PostMortemLogs(t, profile)
+
 	cmd := exec.CommandContext(ctx, "docker", "network", "create", extnetNetworkName)
 
 	result, err := Run(t, cmd)
@@ -102,6 +104,8 @@ func createExtnet(ctx context.Context, t *testing.T, profile string, extnetNetwo
 
 // connectExtnet connects additional network to the minikube cluster
 func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+	defer PostMortemLogs(t, profile)
+
 	cmd := exec.CommandContext(ctx, "docker", "network", "connect", extnetNetworkName, profile)
 
 	result, err := Run(t, cmd)
@@ -114,6 +118,8 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string, extnetNetw
 
 // deleteExtnet removes the external network in docker
 func deleteExtnet(ctx context.Context, t *testing.T, profile string, extnetNetworkName string) {
+	defer PostMortemLogs(t, profile)
+
 	cmd := exec.CommandContext(ctx, "docker", "network", "rm", extnetNetworkName)
 
 	result, err := Run(t, cmd)
