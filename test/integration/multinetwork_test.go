@@ -177,7 +177,7 @@ func multinetworkValidateStart(ctx context.Context, t *testing.T, profile string
 	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
+		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
 	if KicDriver() {
@@ -209,7 +209,7 @@ func multinetworkValidateDelete(ctx context.Context, t *testing.T, profile strin
 	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
+		t.Fatalf("failed to delete minikube with args: %q : %v", rr.Command(), err)
 	}
 }
 
