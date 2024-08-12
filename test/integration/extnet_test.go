@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -104,8 +103,8 @@ func createExtnet(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to execute 'docker network create', error: %v, output: %s", err, result.Output())
 	}
-	extnetNetworkID := result.Output()
-	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
+	//	extnetNetworkID := result.Output()
+	t.Logf("external network %s created", extnetNetworkName)
 }
 
 // connectExtnet connects additional network to the minikube cluster
@@ -126,8 +125,6 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string) {
 		extnetIPv4, extnetIPv6, _ = oci.ContainerIPs(bin, profile, extnetNetworkName)
 		t.Logf("cluster %s was attached to network %s with address %s/%s", profile, extnetNetworkName, extnetIPv4, extnetIPv6)
 	}
-	extnetNetworkID := result.Output()
-	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
 }
 
 // deleteExtnet removes the external network in docker
@@ -140,8 +137,7 @@ func deleteExtnet(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("failed to execute 'docker network delete', error: %v, output: %s", err, result.Output())
 	}
-	extnetNetworkID := result.Output()
-	fmt.Fprintf(os.Stderr, "%s", extnetNetworkID)
+	t.Logf("external network %s deleted", extnetNetworkName)
 }
 
 // extnetValidateFreshStart just starts a new minikube cluster
