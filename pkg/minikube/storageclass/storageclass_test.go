@@ -230,13 +230,13 @@ func TestGetStoragev1(t *testing.T) {
 	}
 	configFile, err := os.CreateTemp("/tmp", "")
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	defer os.Remove(configFile.Name())
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if err := setK8SConfig(t, test.config, configFile.Name()); err != nil {
-				t.Fatalf(err.Error())
+				t.Fatal(err.Error())
 			}
 
 			// context name is hardcoded by mockK8sConfig

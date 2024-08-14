@@ -100,7 +100,7 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 		msg.WriteString(fmt.Sprintf("  %s: %s\n", u, err))
 	}
 
-	return "", fmt.Errorf(msg.String())
+	return "", errors.New(msg.String())
 }
 
 // downloadISO downloads an ISO URL

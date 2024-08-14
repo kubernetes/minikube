@@ -100,7 +100,7 @@ func TestSetAndSave(t *testing.T) {
 
 	// enable
 	if err := SetAndSave(profile, "dashboard", "true"); err != nil {
-		t.Errorf("Disable returned unexpected error: " + err.Error())
+		t.Errorf("Disable returned unexpected error: %v", err)
 	}
 
 	c, err := config.DefaultLoader.LoadConfigFromFile(profile)
@@ -113,7 +113,7 @@ func TestSetAndSave(t *testing.T) {
 
 	// disable
 	if err := SetAndSave(profile, "dashboard", "false"); err != nil {
-		t.Errorf("Disable returned unexpected error: " + err.Error())
+		t.Errorf("Disable returned unexpected error: %v", err)
 	}
 
 	c, err = config.DefaultLoader.LoadConfigFromFile(profile)

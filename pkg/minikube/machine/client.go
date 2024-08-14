@@ -191,7 +191,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 				// CA cert and client cert should be generated atomically, otherwise might cause bad certificate error.
 				lockErr := api.flock.LockWithTimeout(time.Second * 5)
 				if lockErr != nil {
-					return fmt.Errorf("failed to acquire bootstrap client lock: %v " + lockErr.Error())
+					return fmt.Errorf("failed to acquire bootstrap client lock: %v", lockErr)
 				}
 				defer func() {
 					lockErr = api.flock.Unlock()

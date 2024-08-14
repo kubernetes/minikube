@@ -241,7 +241,7 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 
 	out.ErrT(style.Tip, "You can delete them using the following command(s): ")
 	for _, p := range invalidProfiles {
-		out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
+		out.Errf("\t $ minikube delete -p %s \n", p.Name)
 	}
 }
 
