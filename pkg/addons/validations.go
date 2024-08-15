@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -53,7 +54,7 @@ func isRuntimeContainerd(cc *config.ClusterConfig, _, _ string) error {
 	}
 	_, ok := r.(*cruntime.Containerd)
 	if !ok {
-		return fmt.Errorf(containerdOnlyAddonMsg)
+		return errors.New(containerdOnlyAddonMsg)
 	}
 	return nil
 }

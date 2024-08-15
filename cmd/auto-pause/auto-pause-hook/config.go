@@ -20,7 +20,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"log"
 
 	v1 "k8s.io/api/admissionregistration/v1"
@@ -59,7 +58,7 @@ func apiServerCert(clientset *kubernetes.Clientset) []byte {
 
 	pem, ok := c.Data["requestheader-client-ca-file"]
 	if !ok {
-		klog.Fatalf(fmt.Sprintf("cannot find the ca.crt in the configmap, configMap.Data is %#v", c.Data))
+		klog.Fatalf("cannot find the ca.crt in the configmap, configMap.Data is %#v", c.Data)
 	}
 	klog.Info("client-ca-file=", pem)
 	return []byte(pem)

@@ -314,7 +314,7 @@ var buildImageCmd = &cobra.Command{
 		if runtime.GOOS == "windows" && strings.Contains(dockerFile, "\\") {
 			// if dockerFile is a DOS path, translate it into UNIX path
 			// because we are going to build this image in UNIX environment
-			out.String("minikube detects that you are using DOS-style path %s. minikube will convert it to UNIX-style by replacing all \\ to /", dockerFile)
+			out.Stringf("minikube detects that you are using DOS-style path %s. minikube will convert it to UNIX-style by replacing all \\ to /\n", dockerFile)
 			dockerFile = strings.ReplaceAll(dockerFile, "\\", "/")
 		}
 		if err := machine.BuildImage(img, dockerFile, tag, push, buildEnv, buildOpt, []*config.Profile{profile}, allNodes, nodeName); err != nil {

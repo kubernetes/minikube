@@ -122,7 +122,7 @@ func TestLatestVersionFromURLCorrect(t *testing.T) {
 
 	latestVersion, err := latestVersionFromURL(server.URL)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	expectedVersion, _ := semver.Make(versionFromURL)
 	if latestVersion.Compare(expectedVersion) != 0 {

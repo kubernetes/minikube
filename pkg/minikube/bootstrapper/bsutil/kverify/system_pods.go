@@ -58,7 +58,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 
 		klog.Infof("%d kube-system pods found", len(pods.Items))
 		for _, pod := range pods.Items {
-			klog.Infof(podStatusMsg(pod))
+			klog.Info(podStatusMsg(pod))
 		}
 
 		if len(pods.Items) < 2 {
@@ -86,7 +86,7 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	klog.Infof("%d kube-system pods found", len(pods.Items))
 
 	for _, pod := range pods.Items {
-		klog.Infof(podStatusMsg(pod))
+		klog.Info(podStatusMsg(pod))
 
 		if pod.Status.Phase != core.PodRunning {
 			continue

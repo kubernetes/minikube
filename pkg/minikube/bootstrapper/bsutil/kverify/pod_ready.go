@@ -19,6 +19,7 @@ package kverify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -95,7 +96,7 @@ func waitPodCondition(cs *kubernetes.Clientset, name, namespace string, conditio
 		// return immediately: status == core.ConditionUnknown
 		if status == core.ConditionUnknown {
 			klog.Info(reason)
-			return false, fmt.Errorf(reason)
+			return false, errors.New(reason)
 		}
 		// reduce log spam
 		if time.Since(lap) > (2 * time.Second) {

@@ -17,7 +17,6 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"os/exec"
 	"path"
 	"strings"
@@ -173,7 +172,7 @@ func backup(h host.Host, files []string) error {
 		}
 	}
 	if len(errs) > 0 {
-		return errors.Errorf(fmt.Sprintf("%v", errs))
+		return errors.Errorf("%v", errs)
 	}
 	return nil
 }
@@ -208,7 +207,7 @@ func restore(h host.Host) error {
 		}
 	}
 	if len(errs) > 0 {
-		return errors.Errorf(fmt.Sprintf("%v", errs))
+		return errors.Errorf("%v", errs)
 	}
 	return nil
 }
