@@ -762,14 +762,14 @@ func ListImages(profile *config.Profile, format string) error {
 			klog.Warningf("Error marshalling images list: %v", err.Error())
 			return nil
 		}
-		fmt.Printf("%s\n", string(json))
+		fmt.Printf("%s\n", json)
 	case "yaml":
 		yaml, err := yaml.Marshal(uniqueImages)
 		if err != nil {
 			klog.Warningf("Error marshalling images list: %v", err.Error())
 			return nil
 		}
-		fmt.Printf("%s\n", string(yaml))
+		fmt.Printf("%s\n", yaml)
 	default:
 		res := []string{}
 		for _, item := range uniqueImages {
