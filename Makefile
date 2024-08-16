@@ -106,6 +106,15 @@ BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
+# check which "flavor" of SED is being used as the flags are different between BSD and GNU sed.
+# BSD sed does not support "--version"
+SED_VERSION := $(shell sed --version 2>/dev/null | head -n 1 | cut -d' ' -f4)
+ifeq ($(SED_VERSION),)
+	SED = sed -i ''
+else
+	SED = sed -i
+endif
+
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
 GVISOR_TAG ?= v0.0.1
@@ -728,10 +737,6 @@ local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and 
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
-SED = sed -i
-ifeq ($(GOOS),darwin)
-	SED = sed -i ''
-endif
 
 .PHONY: local-kicbase-debug
 local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
