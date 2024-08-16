@@ -246,6 +246,11 @@ func (d *Driver) Start() error {
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
 	cmd := exec.Command("vfkit", startCmd...)
+
+	// Create vfkit in a new process group, so minikube caller can use killpg
+	// to terminate the entire process group without harming the vfkit process.
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
