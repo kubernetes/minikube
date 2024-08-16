@@ -26,6 +26,8 @@
 # EXTRA_TEST_ARGS: additional flags to pass into go test
 # JOB_NAME: the name of the logfile and check name to update on github
 
+set -x
+
 readonly OS_ARCH="${OS}-${ARCH}"
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${MINIKUBE_LOCATION}-$$"
