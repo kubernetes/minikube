@@ -42,7 +42,13 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
+	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/firewall"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -272,7 +278,6 @@ func (d *Driver) Start() error {
 
 func (d *Driver) setupIP(mac string) error {
 	var err error
-
 	getIP := func() error {
 		d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
 		if err != nil {
@@ -280,7 +285,6 @@ func (d *Driver) setupIP(mac string) error {
 		}
 		return nil
 	}
-
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
 	for i := 0; i < 60; i++ {
 		log.Debugf("Attempt %d", i)
@@ -291,12 +295,23 @@ func (d *Driver) setupIP(mac string) error {
 		time.Sleep(2 * time.Second)
 	}
 
-	if err != nil {
-		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
+	if err == nil {
+		log.Debugf("IP: %s", d.IPAddress)
+		return nil
 	}
-	log.Debugf("IP: %s", d.IPAddress)
+	if !isBootpdError(err) {
+		return errors.Wrap(err, "IP address never found in dhcp leases file")
+	}
+	if unblockErr := firewall.UnblockBootpd(); unblockErr != nil {
+		klog.Errorf("failed unblocking bootpd from firewall: %v", unblockErr)
+		exit.Error(reason.IfBootpdFirewall, "ip not found", err)
+	}
+	out.Styled(style.Restarting, "Successfully unblocked bootpd process from firewall, retrying")
+	return fmt.Errorf("ip not found: %v", err)
+}
 
-	return nil
+func isBootpdError(err error) bool {
+	return strings.Contains(err.Error(), "could not find an IP address")
 }
 
 func (d *Driver) Stop() error {
