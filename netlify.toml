@@ -5,7 +5,7 @@ command = "pwd && cd themes/docsy && npm install && git submodule update -f --in
 
 [build.environment]
 NODE_VERSION = "20.16.0"
-HUGO_VERSION = "v0.132.2"
+HUGO_VERSION = "v0.133.0"
 
 [context.production.environment]
 HUGO_ENV = "production"
