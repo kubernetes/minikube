@@ -139,6 +139,9 @@ case "${DRIVER}" in
   virtualbox)
     echo "vbox:      $(vboxmanage --version)"
   ;;
+  vfkit)
+    echo "vfkit:     $(vfkit --version)"
+  ;;
 esac
 
 echo ""
