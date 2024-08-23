@@ -109,6 +109,9 @@ func (d *Driver) Create() error {
 	} else if gateway != nil && staticIP != "" {
 		params.Network = networkName
 		params.IP = staticIP
+	} else if gateway == nil && staticIP != "" {
+		params.Network = networkName
+		params.IP = staticIP
 	} else if gateway != nil {
 		params.Network = networkName
 		ip := gateway.To4()
