@@ -191,7 +191,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 	if p.GPUs != "" {
-		runArgs = append(runArgs, "--gpus", "all")
+		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
 	}
 
 	memcgSwap := hasMemorySwapCgroup()

@@ -28,7 +28,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.20.2
-	github.com/google/go-github/v63 v63.0.0
+	github.com/google/go-github/v64 v64.0.0
 	github.com/google/slowjam v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.6
@@ -76,7 +76,7 @@ require (
 	golang.org/x/term v0.23.0
 	golang.org/x/text v0.17.0
 	gonum.org/v1/plot v0.14.0
-	google.golang.org/api v0.192.0
+	google.golang.org/api v0.194.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.0
 	k8s.io/apimachinery v0.31.0
@@ -91,9 +91,9 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.115.0 // indirect
-	cloud.google.com/go/auth v0.8.1 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
+	cloud.google.com/go v0.115.1 // indirect
+	cloud.google.com/go/auth v0.9.1 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	cloud.google.com/go/iam v1.1.12 // indirect
 	cloud.google.com/go/monitoring v1.20.3 // indirect
@@ -105,6 +105,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
+	github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
@@ -160,7 +161,6 @@ require (
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -203,7 +203,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
-	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
+	github.com/sayboras/dockerclient v1.0.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
@@ -227,9 +227,9 @@ require (
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
-	google.golang.org/genproto v0.0.0-20240730163845-b1a4ccb954bf // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240725223205-93522f1f2a9f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
+	google.golang.org/genproto v0.0.0-20240814211410-ddb44dafa142 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240730163845-b1a4ccb954bf // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
@@ -247,9 +247,7 @@ replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/Parallels/docker-machine-parallels/v2 => github.com/minikube-machine/machine-driver-parallels/v2 v2.0.2-0.20240730142131-ada9375ea417
 	github.com/briandowns/spinner => github.com/alonyb/spinner v1.12.7
-	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20230814171452-e95650b07516
-	github.com/intel-go/cpuid => github.com/aregm/cpuid v0.0.0-20181003105527-1a4a6f06a1c6
+	github.com/docker/machine => github.com/minikube-machine/machine v0.0.0-20240815173309-ffb6b643c381
 	github.com/machine-drivers/docker-machine-driver-vmware => github.com/minikube-machine/machine-driver-vmware v0.1.6-0.20230701123042-a391c48b14d5
-	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v1.0.0
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.22.4
 )

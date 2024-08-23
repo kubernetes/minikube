@@ -79,7 +79,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.60.1
+GOLINT_VERSION ?= v1.60.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -105,6 +105,15 @@ PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd)
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
+
+# check which "flavor" of SED is being used as the flags are different between BSD and GNU sed.
+# BSD sed does not support "--version"
+SED_VERSION := $(shell sed --version 2>/dev/null | head -n 1 | cut -d' ' -f4)
+ifeq ($(SED_VERSION),)
+	SED = sed -i ''
+else
+	SED = sed -i
+endif
 
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
@@ -728,10 +737,6 @@ local-kicbase: ## Builds the kicbase image and tags it local/kicbase:latest and 
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:latest
 	docker tag local/kicbase:$(KIC_VERSION) local/kicbase:$(KIC_VERSION)-$(COMMIT_SHORT)
 
-SED = sed -i
-ifeq ($(GOOS),darwin)
-	SED = sed -i ''
-endif
 
 .PHONY: local-kicbase-debug
 local-kicbase-debug: local-kicbase ## Builds a local kicbase image and switches source code to point to it
