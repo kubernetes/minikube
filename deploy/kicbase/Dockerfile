@@ -42,7 +42,10 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.15.2"
-ARG CRIO_VERSION="1.24"
+# cri-o depends on some kubernetes packages, the latest stable series
+# is a reasonable choice.
+ARG KUBERNETES_VERSION="v1.31.0"
+ARG CRIO_VERSION="v1.30"
 ARG CRI_DOCKERD_VERSION="v0.3.15"
 ARG CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -187,17 +190,6 @@ RUN clean-install podman && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create
 
-# install cri-o dependencies:
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
-    if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit conmon cri-tools crun; \
-    else \
-        clean-install conmon crun; \
-    fi
-
 # install containernetworking-plugins
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
     curl -LO "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" && \
@@ -205,12 +197,15 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
+# install cri-o based on https://github.com/cri-o/packaging
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
+    export KUBERNETES_RELEASE=$(echo $KUBERNETES_VERSION | grep -oE '[^.]+\.[^.]+') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+    sh -c "curl -fsSL https://pkgs.k8s.io/core:/stable:/$KUBERNETES_RELEASE/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg" && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/$KUBERNETES_RELEASE/deb/ /' > /etc/apt/sources.list.d/pkgs.k8s.io:core:stable.list" && \
+    sh -c "curl -fsSL https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg" && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://pkgs.k8s.io/addons:/cri-o:/stable:/$CRIO_VERSION/deb/ /' > /etc/apt/sources.list.d/pkgs.k8s.io:addons:cri-o:stable.list" && \
+    clean-install dbus cri-o cri-tools crun conmon catatonit; fi
 
 # install NVIDIA container toolkit
 RUN export ARCH=$(dpkg --print-architecture) && \

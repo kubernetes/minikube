@@ -101,6 +101,11 @@ var (
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`ARG KUBERNETES_VERSION=.*`: `ARG KUBERNETES_VERSION="{{.StableVersion}}"`,
+			},
+		},
 	}
 )
 
