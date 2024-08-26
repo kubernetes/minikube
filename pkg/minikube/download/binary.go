@@ -104,7 +104,7 @@ func CrictlBinary(k8sversion string, crictlVersion string) (string, error) {
 	// if we don't know the exact patch number of crictl then use 0.
 	// This definitely exists
 	if crictlVersion == "" {
-		crictlVersion = fmt.Sprintf("v%d.%d.%s", v.Major, v.Minor, crictlVersion)
+		crictlVersion = fmt.Sprintf("v%d.%d.0", v.Major, v.Minor)
 	}
 	url := fmt.Sprintf(
 		"https://github.com/kubernetes-sigs/cri-tools/releases/download/%s/crictl-%s-linux-%s.tar.gz",
