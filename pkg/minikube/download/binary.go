@@ -22,11 +22,11 @@ import (
 	"path"
 	"runtime"
 
-	"k8s.io/minikube/pkg/util"
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // DefaultKubeBinariesURL returns a URL to kube binaries
@@ -97,13 +97,14 @@ func CrictlBinary(k8sversion string, crictlVersion string) (string, error) {
 		klog.Infof("crictl found in cache: %s", targetPath)
 		return targetPath, nil
 	}
-	v, err := util.ParseKubernetesVersion(k8sversion)
-	if err != nil {
-		return "", err
-	}
+
 	// if we don't know the exact patch number of crictl then use 0.
 	// This definitely exists
 	if crictlVersion == "" {
+		v, err := util.ParseKubernetesVersion(k8sversion)
+		if err != nil {
+			return "", err
+		}
 		crictlVersion = fmt.Sprintf("v%d.%d.0", v.Major, v.Minor)
 	}
 	url := fmt.Sprintf(

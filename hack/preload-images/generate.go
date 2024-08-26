@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -136,7 +137,9 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		k8sVer, _ := util.ParseKubernetesVersion(kubernetesVersion)
 		crictlVer, _ := util.ParseKubernetesVersion(crictlVersion)
 		return k8sVer.Major == crictlVer.Major && k8sVer.Minor == crictlVer.Minor
-	}); err == nil {
+	}); err != nil {
+		klog.Error("failed to get the newest version tag pf crictl from github")
+	} else {
 		crictlVersion = stable.Tag
 	}
 

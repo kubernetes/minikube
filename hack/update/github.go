@@ -46,8 +46,11 @@ func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge R
 	return GHReleasesWithCondition(ctx, owner, repo, nil)
 }
 
-// GHReleasesWithCondition returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository whose version number satisfy the condition given in the parameter, and any error occurred.
-// If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
+// GHReleasesWithCondition returns greatest current stable release and greatest 
+// latest rc or beta pre-release from GitHub owner/repo repository whose version
+// number satisfy the condition given in the parameter, and any error occurred. 
+// If latest pre-release version is lower than the current stable release, then 
+// it will return current stable release for both.
 func GHReleasesWithCondition(ctx context.Context, owner, repo string, condition func(string) bool) (stable, latest, edge Release, err error) {
 	ghc := github.NewClient(nil)
 
