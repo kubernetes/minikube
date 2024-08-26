@@ -443,11 +443,16 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
+echo "EXTERNAL: $EXTERNAL"
+echo "MINIKUBE_LOCATION: $MINIKUBE_LOCATION"
 if [ "$EXTERNAL" != "yes" ] && [ "$MINIKUBE_LOCATION" = "master" ]
 then
-	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth || true
+	echo "Saving to DB"
+	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" -db_backend "${GOPOGH_DB_BACKEND}" -db_host "${GOPOGH_DB_HOST}" -db_path "${GOPOGH_DB_PATH}" -use_cloudsql -use_iam_auth
+	echo "Exit code: $?"
 else
-	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}" || true
+	echo "Not saving to DB"
+	gopogh -in "${JSON_OUT}" -out_html "${HTML_OUT}" -out_summary "${SUMMARY_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}:$(date +%Y-%m-%d):${ROOT_JOB_ID}"
 fi
 gopogh_status=$(cat "${SUMMARY_OUT}")
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
