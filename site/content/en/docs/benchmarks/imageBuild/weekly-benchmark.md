@@ -5,7 +5,7 @@ weight: 1
 ---
 
 Benchmarking machine specs: Standard Github Action Runner
-- OS: ubuntu 20.04
+- OS: Ubuntu 22.04
 - Memory Limit: 1800MB
 - Storage: SSD 14GB
 

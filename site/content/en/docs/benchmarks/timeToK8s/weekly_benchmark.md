@@ -5,7 +5,7 @@ description: >
 weight: -99999999
 ---
 
-[Benchmarking Machine Specs](https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources)
+[Benchmarking Machine Specs](https://docs.github.com/en/actions/using-github-hosted-runners/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories)
 
 ## Docker driver - Docker runtime
 
