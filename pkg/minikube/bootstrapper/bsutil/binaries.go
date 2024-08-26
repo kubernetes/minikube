@@ -42,7 +42,7 @@ func TransferCrictl(cfg config.KubernetesConfig, c command.Runner, crictlVersion
 	src, err := download.CrictlBinary(cfg.KubernetesVersion, crictlVersion)
 	if err != nil {
 		if strings.Contains(err.Error(), "response code: 404") {
-			klog.Info("Failed to download crictl with matching version. Using whatever version is already on the image")
+			klog.Warning("Failed to download crictl with matching version. Using whatever version is already on the image")
 			return nil
 		}
 		return errors.Wrapf(err, "downloading crictl")
