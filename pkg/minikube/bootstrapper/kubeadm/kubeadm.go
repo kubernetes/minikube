@@ -959,7 +959,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 	crictlVersion, err := cruntime.CrictlVersion(k.c)
 	// when preload is enabled
-	// if we failed to get the crictl version or the version does not match the k8s version
+	// if we failed to get the crictl version or the version does not match the K8s version
 	// then we download it
 	if !viper.GetBool("preload") && (err != nil || crictlVersion.Major != version.Major || crictlVersion.Minor != version.Minor) {
 		if err := bsutil.TransferCrictl(cfg.KubernetesConfig, k.c, ""); err != nil {
