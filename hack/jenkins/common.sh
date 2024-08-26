@@ -443,8 +443,8 @@ fi
 
 touch "${HTML_OUT}"
 touch "${SUMMARY_OUT}"
-echo "EXTERNAL: $EXTERNAL"
-echo "MINIKUBE_LOCATION: $MINIKUBE_LOCATION"
+echo "EXTERNAL: *$EXTERNAL*"
+echo "MINIKUBE_LOCATION: *$MINIKUBE_LOCATION*"
 if [ "$EXTERNAL" != "yes" ] && [ "$MINIKUBE_LOCATION" = "master" ]
 then
 	echo "Saving to DB"
