@@ -39,6 +39,9 @@ gcloud cloud-shell ssh --authorize-session << EOF
  EXTRA_BUILD_ARGS=$EXTRA_BUILD_ARGS
  access_token=$access_token
  ROOT_JOB_ID=$ROOT_JOB_ID
+ GOPOGH_DB_BACKEND=$GOPOGH_DB_BACKEND
+ GOPOGH_DB_HOST=$GOPOGH_DB_HOST
+ GOPOGH_DB_PATH=$GOPOGH_DB_PATH
 
  # Prevent cloud-shell is ephemeral warnings on apt-get
  mkdir ~/.cloudshell
