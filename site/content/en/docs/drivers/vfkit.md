@@ -19,7 +19,7 @@ aliases:
 
 ### Run with logs
 
-Run `minikube start --alsologtostderr -v=7` to debug crashes
+Run `minikube start --driver vfkit --alsologtostderr -v=7` to debug crashes
 
 ### Upgrade VFKit
 
