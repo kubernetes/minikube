@@ -966,7 +966,7 @@
 	"You must specify service name(s) or --all": "",
 	"Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.": "",
 	"Your cgroup does not allow setting memory.": "",
-	"Your firewall is blocking bootpd which is required for socket_vmnet. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "",
+	"Your firewall is blocking bootpd which is required for this configuration. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "",
 	"Your firewall is likely blocking bootpd, to unblock it run:\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd": "",
 	"Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem": "호스트가 KVM 가상화를 지원하지 않습니다. qemu-kvm 이 설치되었는지 확인 후, 문제 디버그를 위해 'virt-host-validate' 를 실행하세요",
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS": "호스트가 가상화를 지원하지 않습니다. 가상 머신 안에서 minikube 를 실행 중인 경우, '--driver=docker' 로 시도하세요. 그렇지 않다면, BIOS 에서 가상화를 활성화하세요",

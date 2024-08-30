@@ -1106,6 +1106,7 @@
 	"Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.": "你的 GCP 凭证现在将被挂载到 {{.name}} 集群中创建的每个 Pod 中。",
 	"Your cgroup does not allow setting memory.": "您的 cgroup 不允许设置内存",
 	"Your firewall is blocking bootpd which is required for socket_vmnet. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "您的防火墙正在阻止 socket_vmnet 所需的 bootpd。将执行以下命令来解除对 bootpd 的阻塞：\n\n{{.commands}}\n",
+	"Your firewall is blocking bootpd which is required for this configuration. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "",
 	"Your firewall is likely blocking bootpd, to unblock it run:\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd": "您的防火墙可能阻止了 bootpd，要解除阻止，请运行：\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd",
 	"Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem": "您的主机不支持 KVM 虚拟化。确保已安装 qemu-kvm，并运行 'virt-host-validate' 来调试问题",
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS": "你的主机不支持虚拟化。如果你在虚拟机内运行 minikube，请尝试使用 '--driver=docker'。否则，请在 BIOS 中启用虚拟化",
