@@ -886,7 +886,7 @@
 	"You must specify service name(s) or --all": "",
 	"Your GCP credentials will now be mounted into every pod created in the {{.name}} cluster.": "",
 	"Your cgroup does not allow setting memory.": "",
-	"Your firewall is blocking bootpd which is required for socket_vmnet. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "",
+	"Your firewall is blocking bootpd which is required for this configuration. The following commands will be executed to unblock bootpd:\n\n{{.commands}}\n": "",
 	"Your firewall is likely blocking bootpd, to unblock it run:\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --add /usr/libexec/bootpd\n\tsudo /usr/libexec/ApplicationFirewall/socketfilterfw --unblock /usr/libexec/bootpd": "",
 	"Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem": "",
 	"Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS": "",
