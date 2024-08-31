@@ -131,10 +131,9 @@ var Addons = []*Addon{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:        "nvidia-gpu-device-plugin",
-		set:         SetBool,
-		validations: []setFn{isKVMDriverForNVIDIA},
-		callbacks:   []setFn{EnableOrDisableAddon},
+		name:      "nvidia-gpu-device-plugin",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "olm",
