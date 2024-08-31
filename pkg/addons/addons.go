@@ -105,7 +105,7 @@ func preStartMessages(name, value string) {
 	case "olm":
 		out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
 	case "nvidia-device-plugin":
-		out.Styled(style.Warning, "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114")
+		out.Styled(style.Warning, "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.")
 	}
 }
 
@@ -166,7 +166,7 @@ func Deprecations(name string) (bool, string, string) {
 	case "efk":
 		return true, "", "The current images used in the efk addon contain Log4j vulnerabilities, the addon will be disabled until images are updated, see: https://github.com/kubernetes/minikube/issues/15280"
 	case "nvidia-device-plugin":
-		return true, "nvidia-gpu-device-plugin", "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114"
+		return true, "nvidia-gpu-device-plugin", "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114."
 	}
 	return false, "", ""
 }
