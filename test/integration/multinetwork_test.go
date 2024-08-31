@@ -93,7 +93,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 	})
 }
 
-// connectExtnet creates a docker network
+// createExtnet creates a docker network
 func createExtnet(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
