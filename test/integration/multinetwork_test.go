@@ -70,8 +70,8 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 			{"Start", multinetworkValidateStart},
 			{"VerifyNetworks", multinetworkValidateNetworks},
 			{"Delete", multinetworkValidateDelete},
-			{"VerifyDeletedResources", multinetworkValidateVerifyDeleted},
 			{"DeleteExtnet", deleteExtnet},
+			{"VerifyDeletedResources", multinetworkValidateVerifyDeleted},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -302,6 +302,9 @@ func multinetworkValidateVerifyDeleted(ctx context.Context, t *testing.T, profil
 		}
 		if strings.Contains(rr.Output(), profile) {
 			t.Errorf("expected network %q to not exist after deletion but contained: %s", profile, rr.Output())
+		}
+		if strings.Contains(rr.Output(), extnetNetworkName) {
+			t.Errorf("expected network %q to not exist after deletion but contained: %s", extnetNetworkName, rr.Output())
 		}
 	}
 
