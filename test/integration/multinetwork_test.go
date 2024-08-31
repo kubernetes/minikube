@@ -122,7 +122,10 @@ func connectExtnet(ctx context.Context, t *testing.T, profile string) {
 		if PodmanDriver() {
 			bin = "podman"
 		}
-		extnetIPv4, extnetIPv6, _ = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		extnetIPv4, extnetIPv6, err = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		if err != nil {
+			t.Fatalf("failed to execute oci.ContainerIPs, error: %v", err)
+		}
 		t.Logf("cluster %s was attached to network %s with address %s/%s", profile, extnetNetworkName, extnetIPv4, extnetIPv6)
 	}
 }
@@ -154,7 +157,10 @@ func multinetworkValidateFreshStart(ctx context.Context, t *testing.T, profile s
 		if PodmanDriver() {
 			bin = "podman"
 		}
-		clusterIPv4, clusterIPv6, _ = oci.ContainerIPs(bin, profile, profile)
+		clusterIPv4, clusterIPv6, err = oci.ContainerIPs(bin, profile, profile)
+		if err != nil {
+			t.Fatalf("failed to execute oci.ContainerIPs, error: %v", err)
+		}
 		t.Logf("cluster %s started with address %s/%s", profile, clusterIPv4, clusterIPv6)
 	}
 }
@@ -185,14 +191,20 @@ func multinetworkValidateStart(ctx context.Context, t *testing.T, profile string
 		if PodmanDriver() {
 			bin = "podman"
 		}
-		ipv4, ipv6, _ := oci.ContainerIPs(bin, profile, profile)
+		ipv4, ipv6, err := oci.ContainerIPs(bin, profile, profile)
+		if err != nil {
+			t.Fatalf("failed to execute oci.ContainerIPs, error: %v", err)
+		}
 		if ipv4 != clusterIPv4 {
 			t.Fatalf("clusterIPv4 mismatch %s != %s", clusterIPv4, ipv4)
 		}
 		if ipv6 != clusterIPv6 {
 			t.Fatalf("clusterIPv6 mismatch %s != %s", clusterIPv6, ipv6)
 		}
-		ipv4, ipv6, _ = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		ipv4, ipv6, err = oci.ContainerIPs(bin, profile, extnetNetworkName)
+		if err != nil {
+			t.Fatalf("failed to execute oci.ContainerIPs, error: %v", err)
+		}
 		if ipv4 != extnetIPv4 {
 			t.Fatalf("extnetIPv4 mismatch %s != %s", extnetIPv4, ipv4)
 		}
@@ -291,5 +303,8 @@ func CleanupExtnet(t *testing.T) {
 	cmd := exec.CommandContext(ctx, "docker", "network", "rm", extnetNetworkName)
 	rr := &RunResult{Args: cmd.Args}
 	t.Logf("(dbg) Run:  %v", rr.Command())
-	_ = cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		t.Logf("failed to run docker network rm %v", err)
+	}
 }
