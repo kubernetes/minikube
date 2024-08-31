@@ -52,8 +52,8 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 	extnetNetworkName = fmt.Sprintf("%s-%s", "network-extnet", fmt.Sprintf("%06d", time.Now().UnixNano()%1000000))
 	defer func() {
 		if *cleanup {
-			CleanupExtnet(t)
 			Cleanup(t, profile, cancel)
+			CleanupExtnet(t)
 		}
 	}()
 
