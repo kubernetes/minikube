@@ -284,11 +284,11 @@ func multinetworkValidateStatus(ctx context.Context, t *testing.T, profile strin
 
 // CleanupExtnet removes the external network in docker, no error on failure, used for Cleanup
 func CleanupExtnet(t *testing.T) {
-	ctx2, cancel2 := context.WithTimeout(context.Background(), Seconds(10))
-	defer cancel2()
+	ctx, cancel := context.WithTimeout(context.Background(), Seconds(10))
+	defer cancel()
 	t.Logf("Cleaning up docker network %q ...", extnetNetworkName)
 
-	cmd := exec.CommandContext(ctx2, "docker", "network", "rm", extnetNetworkName)
+	cmd := exec.CommandContext(ctx, "docker", "network", "rm", extnetNetworkName)
 	rr := &RunResult{Args: cmd.Args}
 	t.Logf("(dbg) Run:  %v", rr.Command())
 	_ = cmd.Run()
