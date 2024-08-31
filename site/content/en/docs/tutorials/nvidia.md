@@ -59,8 +59,9 @@ to expose GPUs with `--driver=kvm`. Please don't mix these instructions.
 
 - Install NVIDIA's device plugin:
   ```shell
-  minikube addons enable nvidia-device-plugin
+  minikube addons enable nvidia-gpu-device-plugin
   ```
+  NOTE: `nvidia-device-plugin` addon has been deprecated and it's functionality is merged inside of `nvidia-gpu-device-plugin` addon.
 {{% /tab %}}
 {{% tab kvm %}}
 ## Using the kvm driver
