@@ -85,10 +85,6 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 
 			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
-
-				if t.Failed() && *postMortemLogs {
-					PostMortemLogs(t, profile)
-				}
 			})
 		}
 	})
