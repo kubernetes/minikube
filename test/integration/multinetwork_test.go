@@ -68,6 +68,7 @@ func TestContainerIPsMultiNetwork(t *testing.T) {
 			{"Stop", multinetworkValidateStop},
 			{"VerifyStatus", multinetworkValidateStatus},
 			{"Start", multinetworkValidateStart},
+			{"VerifyNetworks", multinetworkValidateNetworks},
 			{"Delete", multinetworkValidateDelete},
 			{"VerifyDeletedResources", multinetworkValidateVerifyDeleted},
 			{"DeleteExtnet", deleteExtnet},
@@ -212,6 +213,40 @@ func multinetworkValidateStart(ctx context.Context, t *testing.T, profile string
 			t.Fatalf("extnetIPv6 mismatch %s != %s", extnetIPv6, ipv6)
 		}
 	}
+}
+
+// Define a struct to match the necessary parts of the JSON structure.
+type DockerInspectForNetworks struct {
+	NetworkSettings struct {
+		Networks map[string]interface{} `json:"Networks"`
+	} `json:"NetworkSettings"`
+}
+
+// multinetworkValidateNetworks makes sure that the cluster is attached to the correct networks 
+func multinetworkValidateNetworks(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	rr, err := Run(t, exec.Command("docker", "inspect", profile))
+	if err != nil {
+		t.Errorf("failed to list profiles with json format after it was deleted. args %q: %v", rr.Command(), err)
+	}
+
+	var inspectOutput []DockerInspectForNetworks
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &inspectOutput); err != nil {
+		t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
+	}
+
+	networks := inspectOutput[0].NetworkSettings.Networks
+	if len(networks) != 2 {
+		t.Errorf("expected container to have exactly two networks attached, it has %d networks.\n", len(networks))
+	}
+	if networks[profile] == nil {
+		t.Errorf("expected network %q to be attached to %q, but it is not", profile, profile)
+	}
+	if networks[extnetNetworkName] == nil {
+		t.Errorf("expected network %q to be attached to %q, but it is not", extnetNetworkName, profile)
+	}
+
 }
 
 // multinetworkValidateDelete deletes the cluster
