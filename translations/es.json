@@ -215,7 +215,7 @@
 	"Ensure that CRI-O is installed and healthy: Run 'sudo systemctl start crio' and 'journalctl -u crio'. Alternatively, use --container-runtime=docker": "Garantiza que CRI-O está instalado y saludable: ejecuta 'sudo systemctl start crio' y 'journalctl -u crio'. O usa --container-runtime=docker",
 	"Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --driver": "Garantiza que Docker está instalado y saludable: ejecuta 'sudo systemctl start docker' and 'journalctl -u docker'. O selecciona otro valor para --driver",
 	"Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups": "Garantiza de que los cgroup 'pids' requeridos están activados en tu host: grep pids /proc/cgroups",
-	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory": "Garantiza de que los usuarios listados en /etc/libvirt/qemu.conf tienen acceso a tu carpeta home",
+	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory or $MINIKUBE_HOME": "Garantiza de que los usuarios listados en /etc/libvirt/qemu.conf tienen acceso a tu carpeta home ($MINIKUBE_HOME)",
 	"Ensure that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)": "",
 	"Ensure that your value for HTTPS_PROXY points to an HTTPS proxy rather than an HTTP proxy": "Garantiza de que tú valor para HTTPS_PROXY apunte a un proxy HTTPS en lugar de uno HTTP",
 	"Ensure the tmp directory path is writable to the current user.": "Asegúrese que el usuario actual puede escribir en el direcotorio tmp",

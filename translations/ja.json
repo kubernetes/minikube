@@ -199,7 +199,7 @@
 	"Ensure that CRI-O is installed and healthy: Run 'sudo systemctl start crio' and 'journalctl -u crio'. Alternatively, use --container-runtime=docker": "CRI-O がインストール済みで正常であることを確認してください: 'sudo systemctl start crio' と 'journalctl -u crio' を実行してください。または、--container-runtime=docker を使用してください",
 	"Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --driver": "Docker がインストール済みで正常であることを確認してください: 'sudo systemctl start docker' と 'journalctl -u docker' を実行してください。または、--driver に別の値を選択してください",
 	"Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups": "必要な 'pids' cgroup がこのホスト上で有効であることを確認してください: grep pids /proc/cgroups",
-	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory": "/etc/libvirt/qemu.conf にリストされたユーザーがあなたのホームディレクトリーにアクセス可能であることを確認してください",
+	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory or $MINIKUBE_HOME": "/etc/libvirt/qemu.conf にリストされたユーザーがあなたのホームディレクトリーにアクセス可能であることを確認してください ($MINIKUBE_HOME)",
 	"Ensure that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)": "あなたが適切な libvirt グループメンバーの 1 人であることを確認してください (グループ変更を有効にするには再ログインをお忘れなく！)",
 	"Ensure that your value for HTTPS_PROXY points to an HTTPS proxy rather than an HTTP proxy": "HTTPS_PROXY の値が HTTP プロキシーではなく HTTPS プロキシーを指定していることを確認してください",
 	"Ensure the tmp directory path is writable to the current user.": "現在のユーザーで tmp ディレクトリーパスが書き込み可能であることを確認してください。",
