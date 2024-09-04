@@ -43,7 +43,6 @@ jobs=(
      'Docker_Windows'
      'Docker_Cloud_Shell'
      'QEMU_macOS'
-     'VFkit_macOS'
 )
 
 STARTED_LIST_REMOTE="gs://minikube-builds/logs/${ghprbPullId}/${BUILD_NUMBER}/started_environments.txt"
