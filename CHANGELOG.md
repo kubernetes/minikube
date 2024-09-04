@@ -10,27 +10,27 @@ Features:
 * Add new driver for macOS: vfkit [#19423](https://github.com/kubernetes/minikube/pull/19423)
 * Add Parallels driver support for darwin/arm64 [#19373](https://github.com/kubernetes/minikube/pull/19373)
 * Add new volcano addon [#18602](https://github.com/kubernetes/minikube/pull/18602)
+* Addons ingress-dns: Added support for all architectures [#19198](https://github.com/kubernetes/minikube/pull/19198)
+* Support privileged ports on WSL [#19370](https://github.com/kubernetes/minikube/pull/19370)
 * VM drivers with docker container-runtime now use docker-buildx for image building [#19339](https://github.com/kubernetes/minikube/pull/19339)
 * Support running x86 QEMU on arm64 [#19228](https://github.com/kubernetes/minikube/pull/19228)
+* Add `-o json` option for `addon images` command [#19364](https://github.com/kubernetes/minikube/pull/19364)
 
 Improvements:
-* QEMU: Fixed not creating API server tunnel [#19191](https://github.com/kubernetes/minikube/pull/19191)
+* add -d shorthand for --driver [#19356](https://github.com/kubernetes/minikube/pull/19356)
+* add -c shorthand for --container-runtime [#19217](https://github.com/kubernetes/minikube/pull/19217)
 * kvm2: Don't delete the "default" libvirt network [#18920](https://github.com/kubernetes/minikube/pull/18920)
-* Allow privileged ports on WSL [#19370](https://github.com/kubernetes/minikube/pull/19370)
 * Update MINIKUBE_HOME usage [#18648](https://github.com/kubernetes/minikube/pull/18648)
 * CNI: Updated permissions to support network policies on kindnet [#19360](https://github.com/kubernetes/minikube/pull/19360)
-* Set `NVIDIA_DRIVER_CAPABILITIES` to `all` when GPU is enabled [#19345](https://github.com/kubernetes/minikube/pull/19345)
+* GPU: Set `NVIDIA_DRIVER_CAPABILITIES` to `all` when GPU is enabled [#19345](https://github.com/kubernetes/minikube/pull/19345)
 * Improved error message when trying to use `mount` on system missing 9P [#18995](https://github.com/kubernetes/minikube/pull/18995)
 * Improved error message when enabling KVM addons on non-KVM cluster [#19195](https://github.com/kubernetes/minikube/pull/19195)
 * Added warning when loading image with wrong arch [#19229](https://github.com/kubernetes/minikube/pull/19229)
-* add -d shorthand for --driver [#19356](https://github.com/kubernetes/minikube/pull/19356)
-* add -c shorthand for --container-runtime [#19217](https://github.com/kubernetes/minikube/pull/19217)
-* Add `-o json` option for `addon images` command [#19364](https://github.com/kubernetes/minikube/pull/19364)
-* Addons ingress-dns: Added supportfor all architectures [#19198](https://github.com/kubernetes/minikube/pull/19198)
 * `profile list --output json` handle empty config folder  [#16900](https://github.com/kubernetes/minikube/pull/16900)
 * Check connectivity outside minikube when connectivity issuse [#18859](https://github.com/kubernetes/minikube/pull/18859)
 
 Bugs:
+* Fix not creating API server tunnel for QEMU w/ builtin network [#19191](https://github.com/kubernetes/minikube/pull/19191)
 * Fix waiting for user input on firewall unblock when `--interactive=false` [#19531](https://github.com/kubernetes/minikube/pull/19531)
 * Fix network retry check when subnet already in use for podman [#17779](https://github.com/kubernetes/minikube/pull/17779)
 * Fix empty tarball when generating image save [#19312](https://github.com/kubernetes/minikube/pull/19312)
@@ -61,9 +61,6 @@ Version Upgrades:
 * Kicbase/ISO: Update docker from 26.0.2 to 27.2.0 [#18993](https://github.com/kubernetes/minikube/pull/18993) [#19038](https://github.com/kubernetes/minikube/pull/19038) [#19142](https://github.com/kubernetes/minikube/pull/19142) [#19153](https://github.com/kubernetes/minikube/pull/19153) [#19175](https://github.com/kubernetes/minikube/pull/19175) [#19319](https://github.com/kubernetes/minikube/pull/19319) [#19326](https://github.com/kubernetes/minikube/pull/19326) [#19429](https://github.com/kubernetes/minikube/pull/19429) [#19530](https://github.com/kubernetes/minikube/pull/19530)
 * Kicbase/ISO: Update nerdctl from 1.7.5 to 1.7.6 [#18869](https://github.com/kubernetes/minikube/pull/18869)
 * Kicbase/ISO: Update runc from v1.1.12 to v1.1.13 [#19104](https://github.com/kubernetes/minikube/pull/19104)
-
-
-* feat: check connectivity outside minikube  once it  fails [#18859](https://github.com/kubernetes/minikube/pull/18859)
 
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
 
