@@ -191,7 +191,6 @@ var dockerVersionOrState = func() (string, registry.State) {
 }
 
 func checkDockerEngineVersion(o string) registry.State {
-	fmt.Println("**********------------------------------------********", o)
 	parts := strings.SplitN(o, "-", 2)
 	if len(parts) != 2 {
 		return registry.State{
