@@ -533,7 +533,7 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // ListContainersByLabel returns all the container names with a specified label
 func ListContainersByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) ([]string, error) {
-	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
+	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
 	if err != nil {
 		return nil, err
 	}
