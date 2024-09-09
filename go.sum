@@ -297,8 +297,8 @@ github.com/VividCortex/ewma v1.2.0 h1:f58SaIzcDXrSy3kWaHNvuJgJ3Nmz59Zji6XoJR/q1o
 github.com/VividCortex/ewma v1.2.0/go.mod h1:nz4BbCtbLyFDeC9SUHbtcT5644juEuWfUAUnGx7j5l4=
 github.com/VividCortex/godaemon v1.0.0 h1:aHYrScWvgaSOdAoYCdObWXLm+e1rldP9Pwb1ZvuZkQw=
 github.com/VividCortex/godaemon v1.0.0/go.mod h1:hBWe/72KbGt/lb95E+Sh9ersdYbB57Dt6CG66S1YPno=
-github.com/Xuanwo/go-locale v1.1.1 h1:nhvzo1phY4LRwdrwVwKWXn5iZ0pMwwsa3o29yiDRuZc=
-github.com/Xuanwo/go-locale v1.1.1/go.mod h1:ldC3FzZeMYALkL3YYpwhr4iVYdOIUx42kORcnAHdKUo=
+github.com/Xuanwo/go-locale v1.1.2 h1:6H+olvrQcyVOZ+GAC2rXu4armacTT4ZrFCA0mB24XVo=
+github.com/Xuanwo/go-locale v1.1.2/go.mod h1:1JBER4QV7Ji39GJ4AvVlfvqmTUqopzxQxdg2mXYOw94=
 github.com/ajstarks/deck v0.0.0-20200831202436-30c9fc6549a9/go.mod h1:JynElWSGnm/4RlzPXRlREEwqTHAN3T56Bv2ITsFT3gY=
 github.com/ajstarks/deck/generate v0.0.0-20210309230005-c3f852c02e19/go.mod h1:T13YZdzov6OU0A1+RfKZiZN9ca6VeKdBdyDV+BY97Tk=
 github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b h1:slYM766cy2nI3BwyRiyQj/Ud48djTMtMebDqepE95rw=
