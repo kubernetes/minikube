@@ -26,6 +26,7 @@ jobs:
       - name: Update Yearly Leaderboard
         id: yearlyLeaderboard
         run: |
+          sudo apt install ncal
           make update-yearly-leaderboard
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
