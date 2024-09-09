@@ -1,10 +1,10 @@
 # Release Notes
 
-## Version 1.34.1 - 2024-09-04
+## Version 1.34.0 - 2024-09-04
 
 Breaking Changes:
 * Bump minimum podman version to 4.9.0 [#19457](https://github.com/kubernetes/minikube/pull/19457)
-
+* Disallow using Docker Desktop 4.34.0 
 Features:
 * Bump default Kubernetes version to v1.31.0 [#19435](https://github.com/kubernetes/minikube/pull/19435)
 * Add new driver for macOS: vfkit [#19423](https://github.com/kubernetes/minikube/pull/19423)
