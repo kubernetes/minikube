@@ -26,6 +26,7 @@ jobs:
       - name: Update Yearly Leaderboard
         id: yearlyLeaderboard
         run: |
+          sudo apt install ncal
           make update-yearly-leaderboard
           # The following is to support multiline with GITHUB_OUTPUT, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           echo "changes<<EOF" >> "$GITHUB_OUTPUT"
@@ -35,7 +36,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.yearlyLeaderboard.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
+        uses: peter-evans/create-pull-request@8867c4aba1b742c39f8d0ba35429c2dfa4b6cb20
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: Update yearly leaderboard

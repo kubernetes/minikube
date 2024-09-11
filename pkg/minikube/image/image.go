@@ -19,6 +19,7 @@ package image
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -207,7 +208,24 @@ func UploadCachedImage(imgName string) error {
 		klog.Infof("error parsing image name %s tag %v ", imgName, err)
 		return err
 	}
-	return uploadImage(tag, imagePathInCache(imgName))
+	if err := uploadImage(tag, imagePathInCache(imgName)); err != nil {
+		// this time try determine image tags from tarball
+
+		manifest, err := tarball.LoadManifest(func() (io.ReadCloser, error) {
+			return os.Open(imagePathInCache(imgName))
+		})
+		if err != nil || len(manifest) == 0 || len(manifest[0].RepoTags) == 0 {
+			return fmt.Errorf("failed to determine the image tag from tarball, err: %v", err)
+		}
+
+		tag, err = name.NewTag(manifest[0].RepoTags[0], name.WeakValidation)
+		if err != nil {
+			klog.Infof("error parsing image name: %s ", err.Error())
+			return err
+		}
+		return uploadImage(tag, imagePathInCache(imgName))
+	}
+	return nil
 }
 
 func uploadImage(tag name.Tag, p string) error {

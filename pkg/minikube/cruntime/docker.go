@@ -292,7 +292,7 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 		result = append(result, ListImage{
 			ID:          strings.TrimPrefix(jsonImage.ID, "sha256:"),
 			RepoDigests: []string{},
-			RepoTags:    []string{addDockerIO(repoTag)},
+			RepoTags:    []string{AddDockerIO(repoTag)},
 			Size:        fmt.Sprintf("%d", size),
 		})
 	}
@@ -696,14 +696,22 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 }
 
 // Add docker.io prefix
-func addDockerIO(name string) string {
+func AddDockerIO(name string) string {
+	return addRegistryPreix(name, "docker.io")
+}
+func addRegistryPreix(name string, prefix string) string {
+	// we separate the image name following this logic
+	// https://pkg.go.dev/github.com/distribution/reference#ParseNormalizedNamed
 	var reg, usr, img string
 	p := strings.SplitN(name, "/", 2)
-	if len(p) > 1 && strings.Contains(p[0], ".") {
+	// containing . means that it is a valid url for registry(e.g. xxx.io)
+	// containing : means it contains some port number (e.g. xxx:5432)
+	// it may also start with localhost, which is also regarded as a valid registry
+	if len(p) > 1 && (strings.ContainsAny(p[0], ".:") || strings.Contains(p[0], "localhost")) {
 		reg = p[0]
 		img = p[1]
 	} else {
-		reg = "docker.io"
+		reg = prefix
 		img = name
 		p = strings.SplitN(img, "/", 2)
 		if len(p) > 1 {

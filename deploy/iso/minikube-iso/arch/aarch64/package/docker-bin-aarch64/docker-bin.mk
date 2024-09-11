@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-DOCKER_BIN_AARCH64_VERSION = 27.0.3
+DOCKER_BIN_AARCH64_VERSION = 27.2.0
 DOCKER_BIN_AARCH64_SITE = https://download.docker.com/linux/static/stable/aarch64
 DOCKER_BIN_AARCH64_SOURCE = docker-$(DOCKER_BIN_AARCH64_VERSION).tgz
 

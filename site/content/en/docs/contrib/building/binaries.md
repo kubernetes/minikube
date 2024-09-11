@@ -7,15 +7,9 @@ weight: 2
 
 ## Prerequisites
 
-* A recent Go distribution (>=1.16)
+* A recent Go distribution (>=1.22.0)
 * If you are on Windows, you'll need Docker to be installed.
 * 4GB of RAM
-
-Additionally, if you are on Fedora, you will need to install `glibc-static`:
-
-```shell
-sudo dnf install -y glibc-static
-```
 
 ## Downloading the source
 

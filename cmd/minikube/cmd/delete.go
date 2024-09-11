@@ -642,7 +642,7 @@ func killProcess(path string) error {
 		// if multiple errors were encountered, combine them into a single error
 		out.Styled(style.Failure, "Multiple errors encountered:")
 		for _, e := range errs {
-			out.Err("%v\n", e)
+			out.Errf("%v\n", e)
 		}
 		return errors.New("multiple errors encountered while closing mount processes")
 	}

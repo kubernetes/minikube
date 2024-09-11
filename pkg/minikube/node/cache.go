@@ -103,7 +103,7 @@ func CacheKubectlBinary(k8sVersion, binaryURL string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVersion, runtime.GOOS, detect.EffectiveArch(), binaryURL)
+	return download.Binary(binary, k8sVersion, runtime.GOOS, runtime.GOARCH, binaryURL)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground

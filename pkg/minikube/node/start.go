@@ -632,7 +632,7 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
 	}
-	addr := fmt.Sprintf("https://" + net.JoinHostPort(host, strconv.Itoa(port)))
+	addr := fmt.Sprintf("https://%s", net.JoinHostPort(host, strconv.Itoa(port)))
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.ReplaceAll(addr, host, cc.KubernetesConfig.APIServerName)

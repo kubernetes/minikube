@@ -11,7 +11,7 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 ## Prerequisites
 
 * A recent GNU Make distribution (>=4.0)
-* A recent Go distribution (>=1.16)
+* A recent Go distribution (>=1.22.0)
 * If you are on Windows or Mac, you'll need Docker to be installed.
 * 4GB of RAM
 
@@ -47,12 +47,6 @@ If you want to do this on baremetal, replace `make out/minikube-<arch>.iso` with
 ```shell
 sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
     unzip bc gcc-multilib automake libtool locales
-```
-
-Additionally, if you are on Fedora, you will need to install `glibc-static`:
-
-```shell
-sudo dnf install -y glibc-static
 ```
 
 ## Using a local ISO image

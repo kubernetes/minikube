@@ -219,6 +219,12 @@ minikube addons images ADDON_NAME [flags]
 minikube addons images ingress
 ```
 
+### Options
+
+```
+  -o, --output string   minikube addons images ADDON_NAME --output OUTPUT. table, json (default "table")
+```
+
 ### Options inherited from parent commands
 
 ```

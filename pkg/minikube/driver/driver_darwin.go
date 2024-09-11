@@ -28,6 +28,8 @@ var supportedDrivers = func() []string {
 		// on darwin/arm64 only docker and ssh are supported yet
 		return []string{
 			QEMU2,
+			VFKit,
+			Parallels,
 			Docker,
 			Podman,
 			SSH,
@@ -50,6 +52,7 @@ var supportedDrivers = func() []string {
 		HyperKit,
 		VMware,
 		QEMU2,
+		VFKit,
 		Docker,
 		Podman,
 		SSH,

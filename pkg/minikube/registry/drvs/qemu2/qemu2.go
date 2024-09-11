@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/qemu"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -75,6 +76,9 @@ func qemuFirmwarePath(customPath string) (string, error) {
 	}
 	if runtime.GOOS == "windows" {
 		return "C:\\Program Files\\qemu\\share\\edk2-x86_64-code.fd", nil
+	}
+	if detect.IsAmd64M1Emulation() {
+		return "/opt/homebrew/opt/qemu/share/qemu/edk2-x86_64-code.fd", nil
 	}
 	arch := runtime.GOARCH
 	// For macOS, find the correct brew installation path for qemu firmware

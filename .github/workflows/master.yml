@@ -42,7 +42,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: minikube_binaries
           path: out
@@ -135,7 +135,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.28.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -177,7 +177,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -235,7 +235,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.28.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -277,7 +277,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -353,7 +353,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.28.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -395,7 +395,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: functional_docker_rootless_containerd_ubuntu
           path: minikube_binaries/report
@@ -458,7 +458,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.28.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -500,7 +500,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: functional_podman_ubuntu
           path: minikube_binaries/report
@@ -553,8 +553,8 @@ jobs:
       - name: Install cri_dockerd & crictl
         shell: bash
         run: |
-          CRI_DOCKERD_VERSION="v0.3.14"
-          CRI_DOCKERD_COMMIT="683f70f69901e66d49dfac802841ff843171f131"
+          CRI_DOCKERD_VERSION="v0.3.15"
+          CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
           sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
@@ -578,7 +578,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.28.0
       - name: Set fs.protected_regular
         shell: bash
         run: |
@@ -622,7 +622,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: functional_baremetal_ubuntu22_04
           path: minikube_binaries/report
@@ -671,7 +671,7 @@ jobs:
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
         with:
           name: all_reports
           path: all_reports

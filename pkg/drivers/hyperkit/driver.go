@@ -427,7 +427,7 @@ func (d *Driver) extractKernel(isoPath string) error {
 		{"/boot/initrd", "initrd"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
-		if err := ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
+		if err := pkgdrivers.ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
 			return err
 		}
 	}

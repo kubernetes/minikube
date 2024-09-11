@@ -118,6 +118,26 @@ func TestAddons(t *testing.T) {
 		t.Fatalf("Failed setup for addon tests")
 	}
 
+	// Run tests in serial to avoid collision
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name      string
+			validator validateFunc
+		}{
+			{"Volcano", validateVolcanoAddon},
+			{"GCPAuth", validateGCPAuthAddon},
+		}
+		for _, tc := range tests {
+			tc := tc
+			if ctx.Err() == context.DeadlineExceeded {
+				t.Fatalf("Unable to run more tests (deadline exceeded)")
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
@@ -136,7 +156,6 @@ func TestAddons(t *testing.T) {
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
-			{"Volcano", validateVolcanoAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -145,25 +164,6 @@ func TestAddons(t *testing.T) {
 			}
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
-				tc.validator(ctx, t, profile)
-			})
-		}
-	})
-
-	// Run other tests after to avoid collision
-	t.Run("serial", func(t *testing.T) {
-		tests := []struct {
-			name      string
-			validator validateFunc
-		}{
-			{"GCPAuth", validateGCPAuthAddon},
-		}
-		for _, tc := range tests {
-			tc := tc
-			if ctx.Err() == context.DeadlineExceeded {
-				t.Fatalf("Unable to run more tests (deadline exceeded)")
-			}
-			t.Run(tc.name, func(t *testing.T) {
 				tc.validator(ctx, t, profile)
 			})
 		}
@@ -326,8 +326,8 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	start := time.Now()
-	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for registry replicacontroller to stabilize: %v", err)
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "registry", Minutes(6)); err != nil {
+		t.Errorf("failed waiting for registry deployment to stabilize: %v", err)
 	}
 	t.Logf("registry stabilized in %s", time.Since(start))
 
@@ -544,6 +544,10 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	// Operator installation takes a while
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())
+	}
+
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "olm", "--alsologtostderr", "-v=1")); err != nil {
+		t.Errorf("failed to disable olm addon: args %q: %v", rr.Command(), err)
 	}
 }
 
@@ -831,6 +835,10 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for headlamp pod: %v", err)
 	}
+
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "headlamp", "--alsologtostderr", "-v=1")); err != nil {
+		t.Errorf("failed to disable headlamp addon: args %q: %v", rr.Command(), err)
+	}
 }
 
 // validateInspektorGadgetAddon tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
@@ -1063,5 +1071,9 @@ func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
 
 	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
 		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
+	}
+
+	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "yakd", "--alsologtostderr", "-v=1")); err != nil {
+		t.Errorf("failed to disable yakd addon: args %q: %v", rr.Command(), err)
 	}
 }
