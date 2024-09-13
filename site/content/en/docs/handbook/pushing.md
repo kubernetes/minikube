@@ -31,7 +31,7 @@ Here is a comparison table to help you choose:
 
 | Method | Supported Runtimes | Performance | Load | Build |
 |--- |--- |--- |--- |--- |--- |--- |
-|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   only docker |  good  | yes | yes |
+|  [docker-env command](/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) |   docker & containerd |  good  | yes | yes |
 |  [cache command](/docs/handbook/pushing/#2-push-images-using-cache-command) |  all  |  ok  | yes | no |
 |  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-cri-o-podman-env) |   only cri-o |  good  | yes | yes |
 |  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all |  ok  | yes | no |
@@ -40,9 +40,9 @@ Here is a comparison table to help you choose:
 |  [image load command](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)  |  all  |  ok  | yes | no |
 |  [image build command](/docs/handbook/pushing/#8-building-images-to-in-cluster-container-runtime)  |  all  |  ok  | no | yes |
 
-* note1 : the default container-runtime on minikube is 'docker'.
-* note2 : 'none' driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the kubernetes.
-* note3: when using ssh to run the commands, the files to load or build must already be available on the node (not only on the client host).
+* Note 1: The default container-runtime on minikube is `docker`.
+* Note 2: The `none` driver (bare metal) does not need pushing image to the cluster, as any image on your system is already available to the Kubernetes cluster.
+* Note 3: When using ssh to run the commands, the files to load or build must already be available on the node (not only on the client host).
 
 ---
 
