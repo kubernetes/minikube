@@ -525,29 +525,6 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
 	}),
-	"helm-tiller": NewAddon([]*BinAsset{
-		MustBinAsset(addons.HelmTillerAssets,
-			"helm-tiller/helm-tiller-dp.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"helm-tiller-dp.yaml",
-			"0640"),
-		MustBinAsset(addons.HelmTillerAssets,
-			"helm-tiller/helm-tiller-rbac.yaml",
-			vmpath.GuestAddonsDir,
-			"helm-tiller-rbac.yaml",
-			"0640"),
-		MustBinAsset(addons.HelmTillerAssets,
-			"helm-tiller/helm-tiller-svc.yaml",
-			vmpath.GuestAddonsDir,
-			"helm-tiller-svc.yaml",
-			"0640"),
-	}, false, "helm-tiller", "3rd party (Helm)", "", "https://v2.helm.sh/docs/using_helm/", map[string]string{
-		"Tiller": "helm/tiller:v2.17.0@sha256:4c43eb385032945cad047d2350e4945d913b90b3ab43ee61cecb32a495c6df0f",
-	}, map[string]string{
-		// GCR is deprecated in helm
-		// https://github.com/helm/helm/issues/10004#issuecomment-894478908
-		"Tiller": "ghcr.io",
-	}),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(addons.IngressDNSAssets,
 			"ingress-dns/ingress-dns-pod.yaml.tmpl",

@@ -34,7 +34,6 @@
   "gcr.io/k8s-minikube/gvisor-addon": "registry.cn-hangzhou.aliyuncs.com/google_containers/gvisor-addon",
   "gcr.io/k8s-minikube/kicbase": "registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase",
   "gcr.io/k8s-minikube/storage-provisioner": "registry.cn-hangzhou.aliyuncs.com/google_containers/storage-provisioner",
-  "gcr.io/kubernetes-helm/tiller": "registry.cn-hangzhou.aliyuncs.com/google_containers/tiller",
   "registry.k8s.io/addon-resizer": "registry.cn-hangzhou.aliyuncs.com/google_containers/addon-resizer",
   "registry.k8s.io/busybox": "registry.cn-hangzhou.aliyuncs.com/google_containers/busybox",
   "registry.k8s.io/cluster-autoscaler": "registry.cn-hangzhou.aliyuncs.com/google_containers/cluster-autoscaler",
