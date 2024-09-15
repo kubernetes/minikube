@@ -58,6 +58,8 @@ func main() {
 }
 
 func updateYAML(version string) {
+	// for calico we are going to install both calico and calico api server via mainifest
+	// first we update the calico itself
 	res, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/projectcalico/calico/%s/manifests/calico.yaml", version))
 	if err != nil {
 		klog.Fatalf("failed to get calico.yaml: %v", err)
@@ -77,6 +79,26 @@ func updateYAML(version string) {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
 	if err := os.WriteFile("../../../pkg/minikube/cni/calico.yaml", yaml, 0644); err != nil {
+		klog.Fatalf("failed to write to YAML file: %v", err)
+	}
+	// the second step is the calico api server
+	// doc: https://docs.tigera.io/calico/latest/operations/install-apiserver
+	resAPIServer, err := http.Get(fmt.Sprintf("https://raw.githubusercontent.com/projectcalico/calico/%s/manifests/apiserver.yaml", version))
+	if err != nil {
+		klog.Fatalf("failed to get calico.yaml: %v", err)
+	}
+	defer resAPIServer.Body.Close()
+	yamlAPIServer, err := io.ReadAll(resAPIServer.Body)
+	if err != nil {
+		klog.Fatalf("failed to read body: %v", err)
+	}
+	replacementsAPIServer := map[string]string{
+		`calico\/apiserver:.*`: "{{ .APIServerImageName }}",
+	}
+	for re, repl := range replacementsAPIServer {
+		yamlAPIServer = regexp.MustCompile(re).ReplaceAll(yamlAPIServer, []byte(repl))
+	}
+	if err := os.WriteFile("../../../pkg/minikube/cni/calico-apiserver.yaml", yamlAPIServer, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }
