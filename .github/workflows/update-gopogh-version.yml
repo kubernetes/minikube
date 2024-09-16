@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpGopogh.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@d121e62763d8cc35b5fb1710e887d6e69a52d3a4
+        uses: peter-evans/create-pull-request@6cd32fd93684475c31847837f87bb135d40a2b79
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'CI: Update gopogh from ${{ steps.bumpGopogh.outputs.OLD_VERSION }} to ${{ steps.bumpGopogh.outputs.NEW_VERSION }}'
