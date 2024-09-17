@@ -39,7 +39,7 @@ generate_package_list() {
 	make
 	./out/minikube delete
 	./out/minikube start
-	./out/minikube ssh -- sudo dpkg -l --no-pager > hack/kicbase_version/package-list.txt
+	./out/minikube ssh -- sudo dpkg -l --no-pager > hack/kicbase_version/os-package-list.txt
 	./out/minikube delete
 }
 
