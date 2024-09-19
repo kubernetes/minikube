@@ -75,11 +75,6 @@ var Addons = []*Addon{
 		callbacks:   []setFn{EnableOrDisableAddon, verifyAddonStatus},
 	},
 	{
-		name:      "helm-tiller",
-		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
-	},
-	{
 		name:      "ingress",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon, verifyAddonStatus},

@@ -968,7 +968,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

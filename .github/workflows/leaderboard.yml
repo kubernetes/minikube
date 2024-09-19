@@ -6,7 +6,7 @@ on:
       - 'v*-beta.*'
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.5'
+  GO_VERSION: '1.23.0'
 permissions:
   contents: read
 
@@ -31,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.leaderboard.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Add leaderboard for ${{ github.ref_name }}'

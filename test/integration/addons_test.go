@@ -104,9 +104,6 @@ func TestAddons(t *testing.T) {
 		if !NoneDriver() { // none driver does not support ingress
 			args = append(args, "--addons=ingress", "--addons=ingress-dns")
 		}
-		if !arm64Platform() {
-			args = append(args, "--addons=helm-tiller")
-		}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Fatalf("%s failed: %v", rr.Command(), err)
@@ -148,7 +145,6 @@ func TestAddons(t *testing.T) {
 			{"Ingress", validateIngressAddon},
 			{"InspektorGadget", validateInspektorGadgetAddon},
 			{"MetricsServer", validateMetricsServerAddon},
-			{"HelmTiller", validateHelmTillerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
 			{"Headlamp", validateHeadlampAddon},
@@ -434,64 +430,6 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "metrics-server", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("failed to disable metrics-server addon: args %q: %v", rr.Command(), err)
-	}
-}
-
-// validateHelmTillerAddon tests the helm tiller addon by running "helm version" inside the cluster
-func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
-
-	defer PostMortemLogs(t, profile)
-
-	if arm64Platform() {
-		t.Skip("skip Helm test on arm64")
-	}
-
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("failed to get Kubernetes client for %s: %v", profile, err)
-	}
-
-	start := time.Now()
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "tiller-deploy", Minutes(6)); err != nil {
-		t.Errorf("failed waiting for tiller-deploy deployment to stabilize: %v", err)
-	}
-	t.Logf("tiller-deploy stabilized in %s", time.Since(start))
-
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app=helm", Minutes(6)); err != nil {
-		t.Fatalf("failed waiting for helm pod: %v", err)
-	}
-
-	if NoneDriver() {
-		_, err := exec.LookPath("socat")
-		if err != nil {
-			t.Skipf("socat is required by kubectl to complete this test")
-		}
-	}
-
-	want := "Server: &version.Version"
-	// Test from inside the cluster (`helm version` use pod.list permission.)
-	checkHelmTiller := func() error {
-
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=docker.io/alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--", "version"))
-		if err != nil {
-			return err
-		}
-		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
-		}
-		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
-		}
-		return nil
-	}
-
-	if err := retry.Expo(checkHelmTiller, 500*time.Millisecond, Minutes(2)); err != nil {
-		t.Errorf("failed checking helm tiller: %v", err.Error())
-	}
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "helm-tiller", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed disabling helm-tiller addon. arg %q.s %v", rr.Command(), err)
 	}
 }
 

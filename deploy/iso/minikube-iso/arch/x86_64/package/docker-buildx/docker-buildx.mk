@@ -4,8 +4,8 @@
 #   
 ################################################################################
 
-DOCKER_BUILDX_VERSION = v0.16.2
-DOCKER_BUILDX_COMMIT = 99dea6dacacc3d604788953088560b9880550570
+DOCKER_BUILDX_VERSION = v0.17.1
+DOCKER_BUILDX_COMMIT = 257815a6fbaee88976808020bf04274388275ae8
 DOCKER_BUILDX_SITE = https://github.com/docker/buildx/archive
 DOCKER_BUILDX_SOURCE = $(DOCKER_BUILDX_VERSION).tar.gz
 DOCKER_BUILDX_GOPATH = $(@D)/_output

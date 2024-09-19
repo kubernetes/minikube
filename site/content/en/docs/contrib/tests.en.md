@@ -30,9 +30,6 @@ tests the registry addon
 #### validateMetricsServerAddon
 tests the metrics server addon by making sure "kubectl top pods" returns a sensible result
 
-#### validateHelmTillerAddon
-tests the helm tiller addon by running "helm version" inside the cluster
-
 #### validateOlmAddon
 tests the OLM addon
 
