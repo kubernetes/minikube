@@ -115,7 +115,7 @@ func isImageCorrectArch(img string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get config for %s: %v", img, err)
 	}
-	return cfg.Architecture == runtime.GOOS, nil
+	return cfg.Architecture == runtime.GOARCH, nil
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
