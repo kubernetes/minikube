@@ -93,9 +93,9 @@ func updateYAML(version string) {
 		klog.Fatalf("failed to read body: %v", err)
 	}
 	replacements := map[string]string{
-		`volcanosh\/vc-webhook-manager:.*`:    "{{.CustomRegistries.vc_webhook_manager | default .ImageRepository | default .Registries.vc_webhook_manager}}{{.Images.vc_webhook_manager}}",
-		`volcanosh\/vc-controller-manager:.*`: "{{.CustomRegistries.vc_controller_manager | default .ImageRepository | default .Registries.vc_controller_manager}}{{.Images.vc_controller_manager}}",
-		`volcanosh\/vc-scheduler:.*`:          "{{.CustomRegistries.vc_scheduler | default .ImageRepository | default .Registries.vc_scheduler}}{{.Images.vc_scheduler}}",
+		`docker\.io\/volcanosh\/vc-webhook-manager:.*`:    "{{.CustomRegistries.vc_webhook_manager | default .ImageRepository | default .Registries.vc_webhook_manager}}{{.Images.vc_webhook_manager}}",
+		`docker\.io\/volcanosh\/vc-controller-manager:.*`: "{{.CustomRegistries.vc_controller_manager | default .ImageRepository | default .Registries.vc_controller_manager}}{{.Images.vc_controller_manager}}",
+		`docker\.io\/volcanosh\/vc-scheduler:.*`:          "{{.CustomRegistries.vc_scheduler | default .ImageRepository | default .Registries.vc_scheduler}}{{.Images.vc_scheduler}}",
 	}
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
