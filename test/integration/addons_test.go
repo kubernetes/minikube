@@ -189,6 +189,8 @@ func TestAddons(t *testing.T) {
 
 // validateIngressAddon tests the ingress addon by deploying a default nginx pod
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "ingress", profile)
+	defer disableAddon(t, "ingress-dns", profile)
 	defer PostMortemLogs(t, profile)
 	if NoneDriver() {
 		t.Skipf("skipping: ingress not supported")
@@ -300,20 +302,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Stdout.String(), ip) {
 		t.Errorf("unexpected output from nslookup. stdout: %v\nstderr: %v", rr.Stdout.String(), rr.Stderr.String())
 	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress-dns", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable ingress-dns addon. args %q : %v", rr.Command(), err)
-	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable ingress addon. args %q : %v", rr.Command(), err)
-	}
 }
 
 // validateRegistryAddon tests the registry addon
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "registry", profile)
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
@@ -382,15 +375,11 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, Seconds(150)); err != nil {
 		t.Errorf("failed to check external access to %s: %v", u.String(), err.Error())
 	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable registry addon. args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateMetricsServerAddon tests the metrics server addon by making sure "kubectl top pods" returns a sensible result
 func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "metrics-server", profile)
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
@@ -426,16 +415,12 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	if err := retry.Expo(checkMetricsServer, time.Second*3, Minutes(6)); err != nil {
 		t.Errorf("failed checking metric server: %v", err.Error())
 	}
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "metrics-server", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable metrics-server addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateOlmAddon tests the OLM addon
 func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	t.Skip("Skipping OLM addon test until https://github.com/operator-framework/operator-lifecycle-manager/issues/2534 is resolved")
+	defer disableAddon(t, "olm", profile)
 	defer PostMortemLogs(t, profile)
 	start := time.Now()
 
@@ -483,14 +468,12 @@ func validateOlmAddon(ctx context.Context, t *testing.T, profile string) {
 	if err := retry.Expo(checkOperatorInstalled, time.Second*3, Minutes(10)); err != nil {
 		t.Errorf("failed checking operator installed: %v", err.Error())
 	}
-
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "olm", "--alsologtostderr", "-v=1")); err != nil {
-		t.Errorf("failed to disable olm addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateCSIDriverAndSnapshots tests the csi hostpath driver by creating a persistent volume, snapshotting it and restoring it.
 func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "csi-hostpath-driver", profile)
+	defer disableAddon(t, "volumesnapshots", profile)
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
@@ -579,14 +562,6 @@ func validateCSIDriverAndSnapshots(ctx context.Context, t *testing.T, profile st
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "csi-hostpath-driver", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable csi-hostpath-driver addon: args %q: %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volumesnapshots", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable volumesnapshots addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateGCPAuthNamespaces validates that newly created namespaces contain the gcp-auth secret.
@@ -619,6 +594,15 @@ func validateGCPAuthNamespaces(ctx context.Context, t *testing.T, profile string
 
 // validateGCPAuthAddon tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly
 func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
+	defer func() {
+		disableGCPAuth := func() error {
+			disableAddon(t, "gcp-auth", profile)
+			return nil
+		}
+		if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
+			t.Errorf("failed to disable GCP auth addon: %v", err)
+		}
+	}()
 	defer PostMortemLogs(t, profile)
 
 	t.Run("Namespaces", func(t *testing.T) {
@@ -707,18 +691,6 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 	}
 
-	disableGCPAuth := func() error {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "gcp-auth", "--alsologtostderr", "-v=1"))
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := retry.Expo(disableGCPAuth, Minutes(2), Minutes(10), 5); err != nil {
-		t.Errorf("failed to disable GCP auth addon: %v", err)
-	}
-
 	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
 	if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
 		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
@@ -763,6 +735,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "headlamp", profile)
 	defer PostMortemLogs(t, profile)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "headlamp", "-p", profile, "--alsologtostderr", "-v=1"))
@@ -773,26 +746,21 @@ func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "headlamp", "app.kubernetes.io/name=headlamp", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for headlamp pod: %v", err)
 	}
-
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "headlamp", "--alsologtostderr", "-v=1")); err != nil {
-		t.Errorf("failed to disable headlamp addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateInspektorGadgetAddon tests the inspektor-gadget addon by ensuring the pod has come up and addon disables
 func validateInspektorGadgetAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "inspektor-gadget", profile)
 	defer PostMortemLogs(t, profile)
 
 	if _, err := PodWait(ctx, t, profile, "gadget", "k8s-app=gadget", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for inspektor-gadget pod: %v", err)
 	}
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "inspektor-gadget", "-p", profile)); err != nil {
-		t.Errorf("failed to disable inspektor-gadget addon: args %q : %v", rr.Command(), err)
-	}
 }
 
 // validateCloudSpannerAddon tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables
 func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "cloud-spanner", profile)
 	defer PostMortemLogs(t, profile)
 
 	client, err := kapi.Client(profile)
@@ -805,13 +773,11 @@ func validateCloudSpannerAddon(ctx context.Context, t *testing.T, profile string
 	if _, err := PodWait(ctx, t, profile, "default", "app=cloud-spanner-emulator", Minutes(6)); err != nil {
 		t.Errorf("failed waiting for app=cloud-spanner-emulator pod: %v", err)
 	}
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "cloud-spanner", "-p", profile)); err != nil {
-		t.Errorf("failed to disable cloud-spanner addon: args %q : %v", rr.Command(), err)
-	}
 }
 
 // validateVolcanoAddon tests the Volcano addon, makes sure the Volcano is installed into cluster.
 func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "volcano", profile)
 	defer PostMortemLogs(t, profile)
 	if ContainerRuntime() == "crio" {
 		t.Skipf("skipping: crio not supported")
@@ -902,19 +868,14 @@ func validateVolcanoAddon(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "my-volcano", "volcano.sh/job-name=test-job", Minutes(3)); err != nil {
 		t.Fatalf("failed waiting for test-local-path pod: %v", err)
 	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "volcano", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable volcano addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateLocalPathAddon tests the functionality of the storage-provisioner-rancher addon
 func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
-
 	if NoneDriver() {
 		t.Skipf("skip local-path test on none driver")
 	}
+	defer disableAddon(t, "storage-provisioner-rancher", profile)
 
 	// Create a test PVC
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pvc.yaml")))
@@ -964,10 +925,6 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Logf("cleanup with %s failed: %v", rr.Command(), err)
 	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "storage-provisioner-rancher", "--alsologtostderr", "-v=1"))
-	if err != nil {
-		t.Errorf("failed to disable storage-provisioner-rancher addon: args %q: %v", rr.Command(), err)
-	}
 }
 
 // validateEnablingAddonOnNonExistingCluster tests enabling an addon on a non-existing cluster
@@ -1013,5 +970,12 @@ func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
 
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "yakd", "--alsologtostderr", "-v=1")); err != nil {
 		t.Errorf("failed to disable yakd addon: args %q: %v", rr.Command(), err)
+	}
+}
+
+func disableAddon(t *testing.T, addon, profile string) {
+	rr, err := Run(t, exec.Command(Target(), "-p", profile, "addons", "disable", addon, "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("failed to disable %s addon: args %q: %v", addon, rr.Command(), err)
 	}
 }
