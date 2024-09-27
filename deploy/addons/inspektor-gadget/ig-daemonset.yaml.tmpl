@@ -173,7 +173,15 @@ spec:
           mountPath: /sys/fs/cgroup
         - name: bpffs
           mountPath: /sys/fs/bpf
-      tolerations:
+        # We need to add a dedicated volume to store OCI image otherwise it
+        # will fail as the container root filesystem is read only.
+        # For this, we use an emptyDir without size limit.
+        - mountPath: /var/lib/ig
+          name: oci
+        - mountPath: /etc/ig
+          name: config
+          readOnly: true
+      tolerations: 
       - effect: NoSchedule
         operator: Exists
       - effect: NoExecute
@@ -196,4 +204,10 @@ spec:
           path: /sys/fs/bpf
       - name: debugfs
         hostPath:
-          path: /sys/kernel/debug 
+          path: /sys/kernel/debug
+      - name: oci
+        emptyDir:
+      - name: config
+        configMap:
+          name: gadget
+          defaultMode: 0o400
