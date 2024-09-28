@@ -68,7 +68,7 @@ const (
 	// 2xx signifies that the API Server is able to service requests
 
 	OK       = 200
-	OKHAppy  = 201
+	HAppy    = 201
 	Warning  = 203
 	Degraded = 204
 
@@ -99,7 +99,7 @@ var (
 		103: "Deleting",
 
 		200: "OK",
-		201: "OKHAppy",
+		201: "HAppy",
 		203: "Warning",
 		204: "Degraded",
 
@@ -336,7 +336,7 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 		case healthyCPs == 2:
 			cs.StatusCode = Degraded
 		default:
-			cs.StatusCode = OKHAppy
+			cs.StatusCode = HAppy
 		}
 	}
 
