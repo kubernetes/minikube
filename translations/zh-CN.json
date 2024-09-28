@@ -171,7 +171,7 @@
 	"Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...": "正在创建 {{.driver_name}} {{.machine_type}}（CPUs={{.number_of_cpus}}，内存={{.memory_size}}MB）...",
 	"Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...": "正在创建 {{.driver_name}} {{.machine_type}}（CPUs={{.number_of_cpus}}，内存={{.memory_size}}MB，磁盘={{.disk_size}}MB）...",
 	"Creating {{.driver_name}} {{.machine_type}} (CPUs={{if not .number_of_cpus}}no-limit{{else}}{{.number_of_cpus}}{{end}}, Memory={{if not .memory_size}}no-limit{{else}}{{.memory_size}}MB{{end}}) ...": "",
-	"Current context is \"{{.context}}\"": "当前的上下文为 \"{{.context}}\"创建 {{.driver_name}} {{.machine_type}}（CPU={{if not .number_of_cpus}}无限制{{else}}{{.number_of_cpus}}{{end}}，内存={{if not .memory_size}}无限制{{else}}{{.memory_size}}MB{{end}}）...",
+	"Current context is \"{{.context}}\"": "当前的上下文为 \"{{.context}}\"",
 	"DEPRECATED, use `driver` instead.": "已弃用，请改用 `driver`。",
 	"DEPRECATED: Replaced by --cni": "已弃用，改用 --cni 来代替",
 	"DEPRECATED: Replaced by --cni=bridge": "已弃用，改用 --cni=bridge",
