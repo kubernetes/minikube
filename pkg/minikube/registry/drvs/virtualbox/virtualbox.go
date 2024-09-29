@@ -64,6 +64,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	d.HostOnlyCIDR = cc.HostOnlyCIDR
 	d.NoShare = cc.DisableDriverMounts
 	d.NoVTXCheck = cc.NoVTXCheck
+	d.NoAccelerate3DOff = cc.NoAccelerate3DOff
 	d.NatNicType = cc.NatNicType
 	d.HostOnlyNicType = cc.HostOnlyNicType
 	d.DNSProxy = cc.DNSProxy

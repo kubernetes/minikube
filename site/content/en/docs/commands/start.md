@@ -99,6 +99,7 @@ minikube start [flags]
       --network-plugin string             DEPRECATED: Replaced by --cni
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
+      --no-accelerate3d-off               Disable turning off the possibly missing 3D graphics acceleration before the vm is started (virtualbox driver only)
       --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
       --no-vtx-check                      Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)
   -n, --nodes int                         The total number of nodes to spin up. Defaults to 1. (default 1)

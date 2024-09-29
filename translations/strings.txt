@@ -146,6 +146,7 @@
 	"Directory to output licenses to": "",
 	"Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)": "",
 	"Disable dynamic memory in your VM manager, or pass in a larger --memory value": "",
+	"Disable turning off the possibly missing 3D graphics acceleration before the vm is started (virtualbox driver only)": "",
 	"Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list ": "",
 	"Disables the filesystem mounts provided by the hypervisors": "",
 	"Disk size allocated to the minikube VM (format: \u003cnumber\u003e[\u003cunit\u003e], where unit = b, k, m or g).": "",
