@@ -54,12 +54,12 @@ func MaybePrintUpdateTextFromAliyunMirror() {
 }
 
 func maybePrintUpdateText(latestReleasesURL string, betaReleasesURL string, lastUpdatePath string) {
+	if !shouldCheckURLVersion(lastUpdatePath) {
+		return
+	}
 	latestVersion, err := latestVersionFromURL(latestReleasesURL)
 	if err != nil {
 		klog.Warning(err)
-		return
-	}
-	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
 	localVersion, err := version.GetSemverVersion()
