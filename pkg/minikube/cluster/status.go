@@ -292,6 +292,7 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 			finalStep = data
 			klog.Infof("transient code %d (%q) for step: %+v", transientCode, codeNames[transientCode], data)
 		}
+
 		if ev.Type() == "io.k8s.sigs.minikube.error" {
 			var data map[string]string
 			err := ev.DataAs(&data)
@@ -299,15 +300,21 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 				klog.Errorf("unable to parse data: %v\nraw data: %s", err, ev.Data())
 				continue
 			}
-			exitCode, err := strconv.Atoi(data["exitcode"])
-			if err != nil {
-				klog.Errorf("exit code not found: %v", err)
-				continue
+			// process exit code, if present
+			if ec, ok := data["exitcode"]; ok && ec != "" {
+				exitCode, err := strconv.Atoi(ec)
+				if err != nil {
+					klog.Errorf("exit code not found: %v", err)
+					continue
+				}
+
+				if val, ok := exitCodeToHTTPCode[exitCode]; ok {
+					exitCode = val
+				}
+
+				transientCode = exitCode
 			}
-			if val, ok := exitCodeToHTTPCode[exitCode]; ok {
-				exitCode = val
-			}
-			transientCode = exitCode
+
 			for _, n := range cs.Nodes {
 				n.StatusCode = transientCode
 				n.StatusName = codeNames[n.StatusCode]
