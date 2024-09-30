@@ -1255,3 +1255,8 @@ get-dependency-version:
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
+
+.PHONY: update-kube-vip-version
+update-kube-vip-version:
+	(cd hack/update/kube_vip_version && \
+	 go run update_kube_vip_version.go)
