@@ -300,8 +300,10 @@ func validateHAStatusHAppy(ctx context.Context, t *testing.T, profile string) {
 
 	if profileObject == nil {
 		t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
-	} else if expected, numNodes := 4, len(profileObject.Config.Nodes); numNodes != expected {
-		t.Errorf("expected profile %q in json of 'profile list' to include %d nodes but have %d nodes. got *%q*. args: %q", profile, expected, numNodes, rr.Stdout.String(), rr.Command())
+	} else {
+		if expected, numNodes := 4, len(profileObject.Config.Nodes); numNodes != expected {
+			t.Errorf("expected profile %q in json of 'profile list' to include %d nodes but have %d nodes. got *%q*. args: %q", profile, expected, numNodes, rr.Stdout.String(), rr.Command())
+		}
 
 		if expected, status := "HAppy", profileObject.Status; status != expected {
 			t.Errorf("expected profile %q in json of 'profile list' to have %q status but have %q status. got *%q*. args: %q", profile, expected, status, rr.Stdout.String(), rr.Command())
