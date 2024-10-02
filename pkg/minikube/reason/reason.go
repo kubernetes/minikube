@@ -159,7 +159,7 @@ var (
 	// minikube was unable to daemonize the minikube process
 	DaemonizeError = Kind{ID: "MK_DAEMONIZE", ExitCode: ExProgramError}
 	// minikube was unable to add keys to known_hosts
-	AppendKnownError = Kind{ID: "MK_APPENDKNOWN", ExitCode: ExProgramError}
+	AppendKnownError = Kind{ID: "MK_APPEND_KNOWN", ExitCode: ExProgramError}
 
 	// insufficient cores available for use by minikube and kubernetes
 	RsrcInsufficientCores = Kind{ID: "RSRC_INSUFFICIENT_CORES", ExitCode: ExInsufficientCores, Style: style.UnmetRequirement}
