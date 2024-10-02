@@ -609,129 +609,131 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		validateGCPAuthNamespaces(ctx, t, profile)
 	})
 
-	// schedule a pod to check environment variables
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	serviceAccountName := "gcp-auth-test"
-	// create a dummy service account so we know the pull secret got added
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "sa", serviceAccountName))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// 8 minutes, because 4 is not enough for images to pull in all cases.
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
-	if err != nil {
-		t.Fatalf("wait: %v", err)
-	}
-
-	// Use this pod to confirm that the env vars are set correctly
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_APPLICATION_CREDENTIALS"))
-	if err != nil {
-		t.Fatalf("printenv creds: %v", err)
-	}
-
-	got := strings.TrimSpace(rr.Stdout.String())
-	expected := "/google-app-creds.json"
-	if got != expected {
-		t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
-	}
-
-	// Now check the service account and make sure the "gcp-auth" image pull secret is present
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "sa", serviceAccountName))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	expectedPullSecret := "gcp-auth"
-	re := regexp.MustCompile(`.*Image pull secrets:.*`)
-	secrets := re.FindString(rr.Stdout.String())
-	if !strings.Contains(secrets, expectedPullSecret) {
-		t.Errorf("Unexpected image pull secrets. expected %s, got %s", expectedPullSecret, secrets)
-	}
-
-	if !detect.IsOnGCE() || detect.IsCloudShell() {
-		// Make sure the file contents are correct
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+	t.Run("PullSecret", func(t *testing.T) {
+		// schedule a pod to check environment variables
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 		if err != nil {
-			t.Fatalf("cat creds: %v", err)
+			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
 
-		var gotJSON map[string]string
-		err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
+		serviceAccountName := "gcp-auth-test"
+		// create a dummy service account so we know the pull secret got added
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "sa", serviceAccountName))
 		if err != nil {
-			t.Fatalf("unmarshal json: %v", err)
-		}
-		expectedJSON := map[string]string{
-			"client_id":        "haha",
-			"client_secret":    "nice_try",
-			"quota_project_id": "this_is_fake",
-			"refresh_token":    "maybe_next_time",
-			"type":             "authorized_user",
+			t.Fatalf("%s failed: %v", rr.Command(), err)
 		}
 
-		if !reflect.DeepEqual(gotJSON, expectedJSON) {
-			t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
-		}
-	}
-
-	// Check the GOOGLE_CLOUD_PROJECT env var as well
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_CLOUD_PROJECT"))
-	if err != nil {
-		t.Fatalf("print env project: %v", err)
-	}
-
-	got = strings.TrimSpace(rr.Stdout.String())
-	expected = "this_is_fake"
-
-	if got != expected {
-		t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
-	}
-
-	// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
-	if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
-		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
-		// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
-		// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
-		os.Unsetenv("MOCK_GOOGLE_TOKEN")
-		// re-set MOCK_GOOGLE_TOKEN once we're done
-		defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
-
-		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-		if err != nil {
-			t.Errorf("%s failed: %v", rr.Command(), err)
-		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-			t.Errorf("Unexpected error message: %v", rr.Output())
-		}
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
-		if err != nil {
-			t.Fatalf("print env project: %v", err)
-		}
-
-		// Make sure the pod is up and running, which means we successfully pulled the private image down
 		// 8 minutes, because 4 is not enough for images to pull in all cases.
-		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
 		if err != nil {
-			t.Fatalf("wait for private image: %v", err)
+			t.Fatalf("wait: %v", err)
 		}
 
-		// Try it with a European mirror as well
-		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+		// Use this pod to confirm that the env vars are set correctly
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_APPLICATION_CREDENTIALS"))
+		if err != nil {
+			t.Fatalf("printenv creds: %v", err)
+		}
+
+		got := strings.TrimSpace(rr.Stdout.String())
+		expected := "/google-app-creds.json"
+		if got != expected {
+			t.Errorf("'printenv GOOGLE_APPLICATION_CREDENTIALS' returned %s, expected %s", got, expected)
+		}
+
+		// Now check the service account and make sure the "gcp-auth" image pull secret is present
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "sa", serviceAccountName))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Command(), err)
+		}
+
+		expectedPullSecret := "gcp-auth"
+		re := regexp.MustCompile(`.*Image pull secrets:.*`)
+		secrets := re.FindString(rr.Stdout.String())
+		if !strings.Contains(secrets, expectedPullSecret) {
+			t.Errorf("Unexpected image pull secrets. expected %s, got %s", expectedPullSecret, secrets)
+		}
+
+		if !detect.IsOnGCE() || detect.IsCloudShell() {
+			// Make sure the file contents are correct
+			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "cat /google-app-creds.json"))
+			if err != nil {
+				t.Fatalf("cat creds: %v", err)
+			}
+
+			var gotJSON map[string]string
+			err = json.Unmarshal(bytes.TrimSpace(rr.Stdout.Bytes()), &gotJSON)
+			if err != nil {
+				t.Fatalf("unmarshal json: %v", err)
+			}
+			expectedJSON := map[string]string{
+				"client_id":        "haha",
+				"client_secret":    "nice_try",
+				"quota_project_id": "this_is_fake",
+				"refresh_token":    "maybe_next_time",
+				"type":             "authorized_user",
+			}
+
+			if !reflect.DeepEqual(gotJSON, expectedJSON) {
+				t.Fatalf("unexpected creds file: got %v, expected %v", gotJSON, expectedJSON)
+			}
+		}
+
+		// Check the GOOGLE_CLOUD_PROJECT env var as well
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "printenv GOOGLE_CLOUD_PROJECT"))
 		if err != nil {
 			t.Fatalf("print env project: %v", err)
 		}
 
-		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
-		if err != nil {
-			t.Fatalf("wait for private image: %v", err)
+		got = strings.TrimSpace(rr.Stdout.String())
+		expected = "this_is_fake"
+
+		if got != expected {
+			t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 		}
-	}
+
+		// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
+		if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
+			t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
+			// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
+			// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
+			os.Unsetenv("MOCK_GOOGLE_TOKEN")
+			// re-set MOCK_GOOGLE_TOKEN once we're done
+			defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+
+			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+			os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+			args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Command(), err)
+			} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+				t.Errorf("Unexpected error message: %v", rr.Output())
+			}
+			_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+			if err != nil {
+				t.Fatalf("print env project: %v", err)
+			}
+
+			// Make sure the pod is up and running, which means we successfully pulled the private image down
+			// 8 minutes, because 4 is not enough for images to pull in all cases.
+			_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+			if err != nil {
+				t.Fatalf("wait for private image: %v", err)
+			}
+
+			// Try it with a European mirror as well
+			_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+			if err != nil {
+				t.Fatalf("print env project: %v", err)
+			}
+
+			_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
+			if err != nil {
+				t.Fatalf("wait for private image: %v", err)
+			}
+		}
+	})
 }
 
 func validateHeadlampAddon(ctx context.Context, t *testing.T, profile string) {
