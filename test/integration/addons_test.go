@@ -878,6 +878,7 @@ func validateLocalPathAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skip local-path test on none driver")
 	}
 	defer disableAddon(t, "storage-provisioner-rancher", profile)
+	defer PostMortemLogs(t, profile)
 
 	// Create a test PVC
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "storage-provisioner-rancher", "pvc.yaml")))
@@ -953,25 +954,20 @@ func validateDisablingAddonOnNonExistingCluster(ctx context.Context, t *testing.
 
 // validateNvidiaDevicePlugin tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables
 func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "nvidia-device-plugin", profile)
 	defer PostMortemLogs(t, profile)
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "name=nvidia-device-plugin-ds", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for nvidia-device-plugin-ds pod: %v", err)
 	}
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "nvidia-device-plugin", "-p", profile)); err != nil {
-		t.Errorf("failed to disable nvidia-device-plugin: args %q : %v", rr.Command(), err)
-	}
 }
 
 func validateYakdAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "yakd", profile)
 	defer PostMortemLogs(t, profile)
 
 	if _, err := PodWait(ctx, t, profile, "yakd-dashboard", "app.kubernetes.io/name=yakd-dashboard", Minutes(2)); err != nil {
 		t.Fatalf("failed waiting for YAKD - Kubernetes Dashboard pod: %v", err)
-	}
-
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "yakd", "--alsologtostderr", "-v=1")); err != nil {
-		t.Errorf("failed to disable yakd addon: args %q: %v", rr.Command(), err)
 	}
 }
 
