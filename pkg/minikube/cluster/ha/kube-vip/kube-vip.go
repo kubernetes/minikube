@@ -32,8 +32,8 @@ import (
 const Manifest = "kube-vip.yaml"
 
 // KubeVipTemplate is kube-vip static pod config template
-// ref: https://kube-vip.io/docs/installation/static/
-// update: regenerate with:
+// ref: https://kube-vip.io/docs/installation/static/#generating-a-manifest
+// note: to check if the latest kube-vip version introduces any significant changes, compare the current one with a latest default manifest generated with:
 //
 //	export KVVERSION=$(curl -sL https://api.github.com/repos/kube-vip/kube-vip/releases | jq -r ".[0].name")
 //	docker run --rm ghcr.io/kube-vip/kube-vip:$KVVERSION manifest pod --interface eth0 --address 192.168.42.17 --controlplane --arp --leaderElection
@@ -86,7 +86,7 @@ spec:
     - name: lb_port
       value: "{{ .Port }}"
     {{- end}}
-    image: ghcr.io/kube-vip/kube-vip:v0.8.0
+    image: ghcr.io/kube-vip/kube-vip:v0.8.3
     imagePullPolicy: IfNotPresent
     name: kube-vip
     resources: {}

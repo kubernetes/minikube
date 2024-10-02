@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.34.0-1726481713-19649
+ISO_VERSION ?= v1.34.0-1727108440-19696
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -1255,3 +1255,8 @@ get-dependency-version:
 .PHONY: generate-licenses
 generate-licenses:
 	./hack/generate_licenses.sh
+
+.PHONY: update-kube-vip-version
+update-kube-vip-version:
+	(cd hack/update/kube_vip_version && \
+	 go run update_kube_vip_version.go)
