@@ -76,7 +76,8 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 }
 
 // ExpectAppsRunning returns whether or not all expected k8s-apps are running. (without waiting for them)
-func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
+func ExpectAppsRunning(cfg *config.ClusterConfig, cs *kubernetes.Clientset, expected []string) error {
+
 	found := map[string]bool{}
 
 	pods, err := cs.CoreV1().Pods("kube-system").List(context.Background(), meta.ListOptions{})
@@ -85,11 +86,30 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	}
 	klog.Infof("%d kube-system pods found", len(pods.Items))
 
+	for !cfg.DisableOptimizations {
+		// when --disable-optimization is not specified
+		// core dns deployment has been scaled to 1 pods, wait until there is only 1 pod
+		corednsPods, err := cs.CoreV1().Pods("kube-system").List(context.Background(), meta.ListOptions{
+			LabelSelector: "k8s-app=kube-dns",
+		})
+		if err != nil {
+			return err
+		}
+		if len(corednsPods.Items) == 1 {
+			break
+		}
+	}
+
 	for _, pod := range pods.Items {
 		klog.Info(podStatusMsg(pod))
 
 		if pod.Status.Phase != core.PodRunning {
 			continue
+		}
+		for _, cs := range pod.Status.ContainerStatuses {
+			if !cs.Ready {
+				continue
+			}
 		}
 
 		for k, v := range pod.ObjectMeta.Labels {
@@ -112,12 +132,12 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 }
 
 // WaitForAppsRunning waits for expected Apps To be running
-func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
+func WaitForAppsRunning(cfg *config.ClusterConfig, cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
 	klog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
 
 	checkRunning := func() error {
-		return ExpectAppsRunning(cs, expected)
+		return ExpectAppsRunning(cfg, cs, expected)
 	}
 
 	if err := retry.Local(checkRunning, timeout); err != nil {
