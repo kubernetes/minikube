@@ -261,8 +261,6 @@ func (d *Driver) Start() error {
 		return errors.Wrap(err, "getting MAC address from UUID")
 	}
 
-	// Need to strip 0's
-	mac = pkgdrivers.TrimMacAddress(mac)
 	log.Debugf("Generated MAC %s", mac)
 
 	log.Debugf("Starting with cmdline: %s", d.Cmdline)
