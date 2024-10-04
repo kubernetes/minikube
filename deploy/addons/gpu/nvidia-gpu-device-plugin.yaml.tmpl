@@ -47,9 +47,6 @@ spec:
       - image: {{.CustomRegistries.NvidiaDevicePlugin  | default .ImageRepository | default .Registries.NvidiaDevicePlugin }}{{.Images.NvidiaDevicePlugin}}
         command: ["/usr/bin/nvidia-gpu-device-plugin", "-logtostderr"]
         name: nvidia-gpu-device-plugin
-        env:
-          - name: FAIL_ON_INIT_ERROR
-            value: "false"
         resources:
           requests:
             cpu: 50m
