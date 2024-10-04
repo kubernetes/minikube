@@ -5,11 +5,16 @@ weight: 1
 date: 2024-10-04
 ---
 
+This tutorial shows how to start minikube with support for AMD GPUs.
+
+Support is provided by the [AMD GPU device plugin for Kubernetes](https://github.com/ROCm/k8s-device-plugin).
+
+
 ## Prerequisites
 
 - Linux
-- Latest AMD GPU Drivers
-- minikube v1.32.0-beta.0 or later (docker driver only)
+- Latest AMD GPU Drivers 6.2.1 or greater
+- minikube v1.34.0 or later (docker driver only)
 
 ## Instructions per driver
 
@@ -35,7 +40,69 @@ date: 2024-10-04
 {{% /tab %}}
 {{% /tabs %}}
 
-### Where can I learn more about GPU passthrough?
+## Verifying the GPU is available
+
+Test the AMD GPUs are available to the cluster.
+
+1. Create the following Job:
+
+    ```shell
+    cat <<'EOF' | kubectl apply -f -
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: amd-gpu-check
+      labels:
+        purpose: amd-gpu-check
+    spec:
+      ttlSecondsAfterFinished: 100
+      template:
+        spec:
+          restartPolicy: Never
+          securityContext:
+            supplementalGroups: 
+            - 44
+            - 110
+          containers:
+            - name: amd-gpu-checker
+              image: rocm/rocm-terminal
+              workingDir: /root
+              command: ["rocminfo"]
+              args: []
+              resources:
+                limits:
+                  amd.com/gpu: 1 # requesting a GPU
+    EOF
+    ```
+
+2. Check the Job output `kubectl logs jobs/amd-gpu-check` looks something like the following:
+
+    ```plain
+    ROCk module version 6.8.5 is loaded
+    =====================    
+    HSA System Attributes    
+    =====================    
+    Runtime Version:         1.14
+    Runtime Ext Version:     1.6
+    System Timestamp Freq.:  1000.000000MHz
+    Sig. Max Wait Duration:  18446744073709551615 (0xFFFFFFFFFFFFFFFF) (timestamp count)
+    Machine Model:           LARGE                              
+    System Endianness:       LITTLE                             
+    Mwaitx:                  DISABLED
+    DMAbuf Support:          YES
+
+    ==========               
+    HSA Agents               
+    ==========               
+    *******                  
+    Agent 1                  
+    *******                  
+      Name:                    AMD Ryzen 7 7840U w/ Radeon  780M Graphics
+      Uuid:                    CPU-XX                             
+    ...
+    ```
+
+## Where can I learn more about GPU passthrough?
 
 See the excellent documentation at
 <https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF>
