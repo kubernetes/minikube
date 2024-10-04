@@ -34,10 +34,6 @@ spec:
         kubernetes.io/arch: amd64
       priorityClassName: system-node-critical
       tolerations:
-      - operator: "Exists"
-        effect: "NoExecute"
-      - operator: "Exists"
-        effect: "NoSchedule"
       - key: CriticalAddonsOnly
         operator: Exists
       volumes:
