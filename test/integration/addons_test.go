@@ -766,7 +766,7 @@ func validateLogviewerAddon(ctx context.Context, t *testing.T, profile string) {
 	defer disableAddon(t, "logviewer", profile)
 	defer PostMortemLogs(t, profile)
 
-	if _, err := PodWait(ctx, t, profile, "logviewer", "app=logviewer", Minutes(8)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app=logviewer", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for logviewer pod: %v", err)
 	}
 }
