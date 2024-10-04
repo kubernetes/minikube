@@ -73,6 +73,7 @@ var dependencies = map[string]dependency{
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"ubuntu":                  {dockerfile, `ubuntu:jammy-(.*)"`},
 	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
+	"amd-gpu-device-plugin":   {addonsFile, `rocm/k8s-device-plugin:(.*)@`},
 }
 
 func main() {

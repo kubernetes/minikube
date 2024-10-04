@@ -190,7 +190,11 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		runArgs = append(runArgs, "--network", p.Network)
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
-	if p.GPUs != "" {
+
+	if p.GPUs == "all" || p.GPUs == "amd" {
+		runArgs = append(runArgs, "--device", "/dev/kfd", "--device", "/dev/dri", "--group-add", "video", "--group-add", "render")
+	}
+	if p.GPUs == "all" || p.GPUs == "nvidia" {
 		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
 	}
 
