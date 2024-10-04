@@ -14,7 +14,7 @@ Support is provided by the [AMD GPU device plugin for Kubernetes](https://github
 
 - Linux
 - Latest AMD GPU Drivers 6.2.1 or greater
-- minikube v1.34.0 or later (docker driver only)
+- minikube v1.35.0 or later (docker driver only)
 
 ## Using the docker driver
 
@@ -26,7 +26,6 @@ Support is provided by the [AMD GPU device plugin for Kubernetes](https://github
   ```shell
   minikube delete
   ```
-  This will make sure minikube does any required setup or addon installs now that the nvidia runtime is available.
   
 - Start minikube:
   ```shell
