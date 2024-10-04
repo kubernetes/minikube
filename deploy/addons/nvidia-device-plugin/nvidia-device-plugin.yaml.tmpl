@@ -64,5 +64,6 @@ spec:
       - name: device-plugin
         hostPath:
           path: /var/lib/kubelet/device-plugins
-        - name: dev
-          mountPath: /dev
+      - name: dev
+        hostPath:
+          path: /dev
