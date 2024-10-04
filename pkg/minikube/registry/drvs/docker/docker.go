@@ -289,6 +289,17 @@ func checkDockerDesktopVersion(version string) (s registry.State) {
 			Fix:       "Update Docker Desktop to 4.16.1 or greater",
 		}
 	}
+
+	if runtime.GOOS == "darwin" && currSemver.EQ(semver.MustParse("4.34.0")) {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_DESKTOP_VERSION_BAD",
+			Running:   true,
+			Error:     errors.New("Docker Desktop 4.34.0 has a regression that prevents minikube from listing the containers"),
+			Installed: true,
+			Fix:       "Use a different Docker desktop version, more info at https://github.com/docker/cli/issues/5412",
+		}
+	}
+
 	return s
 }
 

@@ -25,7 +25,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -309,7 +308,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			exit.Message(reason.EnvMultiConflict, `The docker-env command is incompatible with multi-node clusters. Use the 'registry' add-on: https://minikube.sigs.k8s.io/docs/handbook/registry/`)
 		}
 		cr := co.Config.KubernetesConfig.ContainerRuntime
-		// nerdctld supports amd64 and arm64
 		if err := dockerEnvSupported(cr, driverName); err != nil {
 			exit.Message(reason.Usage, err.Error())
 		}
@@ -674,9 +672,6 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 }
 
 func dockerEnvSupported(containerRuntime, driverName string) error {
-	if runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64" {
-		return fmt.Errorf("the docker-env command only supports amd64 & arm64 architectures")
-	}
 	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
 		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
 	}

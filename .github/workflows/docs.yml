@@ -6,7 +6,7 @@ on:
       - master
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.5'
+  GO_VERSION: '1.23.0'
 permissions:
   contents: read
 
@@ -15,7 +15,7 @@ jobs:
     if: github.repository == 'kubernetes/minikube'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}
@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.gendocs.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: Update auto-generated docs and translations

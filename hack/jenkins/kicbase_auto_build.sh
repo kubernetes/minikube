@@ -35,6 +35,14 @@ source ./hack/jenkins/installers/check_install_linux_crons.sh
 export GOBIN=/usr/local/go/bin
 export PATH=$PATH:$GOBIN
 
+generate_package_list() {
+	make
+	./out/minikube delete
+	./out/minikube start
+	./out/minikube ssh -- sudo dpkg -l --no-pager > hack/kicbase_version/os-package-list.txt
+	./out/minikube delete
+}
+
 # Let's make sure we have the newest kicbase reference
 curl -L https://github.com/kubernetes/minikube/raw/master/pkg/drivers/kic/types.go --output types-head.go
 # kicbase tags are of the form VERSION-TIMESTAMP-PR, so this grep finds that TIMESTAMP in the middle
@@ -100,6 +108,7 @@ if [ "$release" = false ]; then
 	git checkout -b ${ghprbPullAuthorLogin}-${ghprbSourceBranch} ${ghprbPullAuthorLogin}/${ghprbSourceBranch}
 
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go; make generate-docs;
+	generate_package_list
 
 	git commit -am "Updating kicbase image to ${KIC_VERSION}"
 	git push ${ghprbPullAuthorLogin} HEAD:${ghprbSourceBranch}
@@ -122,6 +131,7 @@ else
 
 	sed -i "s|Version = .*|Version = \"${KIC_VERSION}\"|;s|baseImageSHA = .*|baseImageSHA = \"${sha}\"|;s|gcrRepo = .*|gcrRepo = \"${GCR_REPO}\"|;s|dockerhubRepo = .*|dockerhubRepo = \"${DH_REPO}\"|" pkg/drivers/kic/types.go
 	make generate-docs
+	generate_package_list
 
 	git add pkg/drivers/kic/types.go site/content/en/docs/commands/start.md
 	git commit -m "Release: Update kicbase to ${KIC_VERSION}"

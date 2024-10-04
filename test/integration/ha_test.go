@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -300,8 +300,10 @@ func validateHAStatusHAppy(ctx context.Context, t *testing.T, profile string) {
 
 	if profileObject == nil {
 		t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
-	} else if expected, numNodes := 4, len(profileObject.Config.Nodes); numNodes != expected {
-		t.Errorf("expected profile %q in json of 'profile list' to include %d nodes but have %d nodes. got *%q*. args: %q", profile, expected, numNodes, rr.Stdout.String(), rr.Command())
+	} else {
+		if expected, numNodes := 4, len(profileObject.Config.Nodes); numNodes != expected {
+			t.Errorf("expected profile %q in json of 'profile list' to include %d nodes but have %d nodes. got *%q*. args: %q", profile, expected, numNodes, rr.Stdout.String(), rr.Command())
+		}
 
 		if expected, status := "HAppy", profileObject.Status; status != expected {
 			t.Errorf("expected profile %q in json of 'profile list' to have %q status but have %q status. got *%q*. args: %q", profile, expected, status, rr.Stdout.String(), rr.Command())
@@ -328,7 +330,7 @@ func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	var statuses []cmd.Status
+	var statuses []cluster.Status
 	if err = json.Unmarshal(rr.Stdout.Bytes(), &statuses); err != nil {
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}

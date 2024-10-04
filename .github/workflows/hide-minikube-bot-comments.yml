@@ -8,6 +8,6 @@ jobs:
     if: ${{ github.event.issue.pull_request }}
     runs-on: ubuntu-22.04
     steps:
-      - uses: spowelljr/hide-minikube-bot-comments@7d9688dd9b7fce605c24be174110c344728160de
+      - uses: spowelljr/hide-minikube-bot-comments@6ef419ab40a17cf0bdc1f98f2442bf19b72d911d
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}

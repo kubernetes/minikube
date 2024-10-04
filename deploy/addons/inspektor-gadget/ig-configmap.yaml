@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gadget
+  namespace: gadget
+data:
+  config.yaml: |-
+    hook-mode: auto
+    fallback-pod-informer: true
+    events-buffer-length: 16384
+    containerd-socketpath: /run/containerd/containerd.sock
+    crio-socketpath: /run/crio/crio.sock
+    docker-socketpath: /run/docker.sock
+    podman-socketpath: /run/podman/podman.sock
+    operator:
+      oci:
+        verify-image: true
+        public-keys:
+          - |
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoDOC0gYSxZTopenGmX3ZFvQ1DSfh
+            Ir4EKRt5jC+mXaJ7c7J+oREskYMn/SfZdRHNSOjLTZUMDm60zpXGhkFecg==
+            -----END PUBLIC KEY-----
+        allowed-gadgets:
+          []
+        disallow-pulling: false
