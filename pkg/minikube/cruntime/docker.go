@@ -581,7 +581,7 @@ func (r *Docker) configureDocker(driver string) error {
 		StorageDriver: "overlay2",
 	}
 	if r.GPUs {
-		assets.Addons["nvidia-gpu-device-plugin"].EnableByDefault()
+		assets.Addons["nvidia-device-plugin"].EnableByDefault()
 		daemonConfig.DefaultRuntime = "nvidia"
 		runtimes := &dockerDaemonRuntimes{}
 		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
