@@ -965,13 +965,11 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 
 // validateAmdGpuDevicePlugin tests the amd-gpu-device-plugin addon by ensuring the pod comes up and the addon disables
 func validateAmdGpuDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "amd-gpu-device-plugin", profile)
 	defer PostMortemLogs(t, profile)
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "name=amd-gpu-device-plugin", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for amd-gpu-device-plugin pod: %v", err)
-	}
-	if rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "amd-gpu-device-plugin", "-p", profile)); err != nil {
-		t.Errorf("failed to disable amd-gpu-device-plugin: args %q : %v", rr.Command(), err)
 	}
 }
 

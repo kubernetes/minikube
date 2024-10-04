@@ -16,10 +16,6 @@ Support is provided by the [AMD GPU device plugin for Kubernetes](https://github
 - Latest AMD GPU Drivers 6.2.1 or greater
 - minikube v1.34.0 or later (docker driver only)
 
-## Instructions per driver
-
-{{% tabs %}}
-{{% tab docker %}}
 ## Using the docker driver
 
 - Ensure you have an AMD driver installed, you can check if one is installed by running `rocminfo`, if one is not installed follow the [Radeon™ Driver Installation Guide](https://amdgpu-install.readthedocs.io/en/latest/)
@@ -36,9 +32,6 @@ Support is provided by the [AMD GPU device plugin for Kubernetes](https://github
   ```shell
   minikube start --driver docker --container-runtime docker --gpus amd
   ```
-
-{{% /tab %}}
-{{% /tabs %}}
 
 ## Verifying the GPU is available
 
