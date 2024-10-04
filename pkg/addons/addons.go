@@ -104,8 +104,8 @@ func preStartMessages(name, value string) {
 		out.Styled(style.Warning, "The ambassador addon has stopped working as of v1.23.0, for more details visit: https://github.com/datawire/ambassador-operator/issues/73")
 	case "olm":
 		out.Styled(style.Warning, "The OLM addon has stopped working, for more details visit: https://github.com/operator-framework/operator-lifecycle-manager/issues/2534")
-	case "nvidia-device-plugin":
-		out.Styled(style.Warning, "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.")
+	case "nvidia-gpu-device-plugin":
+		out.Styled(style.Warning, "The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon. It will be removed in a future release. Please use the nvidia-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.")
 	}
 }
 
@@ -165,8 +165,8 @@ func Deprecations(name string) (bool, string, string) {
 		return true, "metrics-server", "using metrics-server addon, heapster is deprecated"
 	case "efk":
 		return true, "", "The current images used in the efk addon contain Log4j vulnerabilities, the addon will be disabled until images are updated, see: https://github.com/kubernetes/minikube/issues/15280"
-	case "nvidia-device-plugin":
-		return true, "nvidia-gpu-device-plugin", "The nvidia-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-gpu-device-plugin addon. It will be removed in a future release. Please use the nvidia-gpu-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114."
+	case "nvidia-gpu-device-plugin":
+		return true, "nvidia-device-plugin", "The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon. It will be removed in a future release. Please use the nvidia-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114."
 	}
 	return false, "", ""
 }
