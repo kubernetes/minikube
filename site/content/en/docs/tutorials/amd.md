@@ -1,8 +1,8 @@
 ---
-title: "Using NVIDIA GPUs with minikube"
-linkTitle: "Using NVIDIA GPUs with minikube"
+title: "Using AMD GPUs with minikube"
+linkTitle: "Using AMD GPUs with minikube"
 weight: 1
-date: 2018-01-02
+date: 2024-10-04
 ---
 
 ## Prerequisites
@@ -17,11 +17,11 @@ date: 2018-01-02
 {{% tab docker %}}
 ## Using the docker driver
 
-- Ensure you have an NVIDIA driver installed, you can check if one is installed by running `nvidia-smi`, if one is not installed follow the [NVIDIA Driver Installation Guide](https://docs.nvidia.com/datacenter/tesla/tesla-installation-notes/index.html)
+- Ensure you have an AMD driver installed, you can check if one is installed by running `rocminfo`, if one is not installed follow the [Radeon™ Driver Installation Guide](https://amdgpu-install.readthedocs.io/en/latest/)
 
 - Delete existing minikube (optional)
 
-  If you have an existing minikube instance, you may need to delete it if it was built before installing the nvidia runtime shim.
+  If you have an existing minikube instance, you may need to delete it if it was built before installing the AMD drivers.
   ```shell
   minikube delete
   ```
@@ -29,40 +29,18 @@ date: 2018-01-02
   
 - Start minikube:
   ```shell
-  minikube start --driver docker --container-runtime docker --gpus all
+  minikube start --driver docker --container-runtime docker --gpus amd
   ```
 
 {{% /tab %}}
-{{% tab none %}}
-## Using the 'none' driver
-
-NOTE: This approach used to expose GPUs here is different than the approach used
-to expose GPUs with `--driver=kvm`. Please don't mix these instructions.
-
-- Install minikube.
-
-- Install the nvidia driver, nvidia-docker and configure docker with nvidia as
-  the default runtime. See instructions at
-  <https://github.com/NVIDIA/nvidia-docker>
-
-- Start minikube:
-  ```shell
-  minikube start --driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
-  ```
-
-- Install AMD's device plugin:
-  ```shell
-  minikube addons enable amd-gpu-device-plugin
-  ```
-{{% /tab %}}
-{{% tab kvm %}}
+{{% /tabs %}}
 
 ### Where can I learn more about GPU passthrough?
 
 See the excellent documentation at
 <https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF>
 
-## Why does minikube not support NVIDIA GPUs on Windows?
+## Why does minikube not support AMD GPUs on Windows?
 
 minikube supports Windows host through Hyper-V or VirtualBox.
 
