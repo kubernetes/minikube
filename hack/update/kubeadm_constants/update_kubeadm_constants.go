@@ -29,7 +29,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/google/go-github/v65/github"
+	"github.com/google/go-github/v66/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/hack/update"
