@@ -231,7 +231,7 @@ ii  ucf                             3.0043                                  all 
 ii  udev                            249.11-0ubuntu3.12                      amd64        /dev/ and hotplug management daemon
 ii  usrmerge                        25ubuntu2                               all          Convert the system to the merged /usr directories scheme
 ii  util-linux                      2.37.2-4ubuntu3.4                       amd64        miscellaneous system utilities
-ii  vim-common                      2:8.2.3995-1ubuntu2.18                  all          Vi IMproved - Common files
-ii  vim-tiny                        2:8.2.3995-1ubuntu2.18                  amd64        Vi IMproved - enhanced vi editor - compact version
-ii  xxd                             2:8.2.3995-1ubuntu2.18                  amd64        tool to make (or reverse) a hex dump
+ii  vim-common                      2:8.2.3995-1ubuntu2.19                  all          Vi IMproved - Common files
+ii  vim-tiny                        2:8.2.3995-1ubuntu2.19                  amd64        Vi IMproved - enhanced vi editor - compact version
+ii  xxd                             2:8.2.3995-1ubuntu2.19                  amd64        tool to make (or reverse) a hex dump
 ii  zlib1g:amd64                    1:1.2.11.dfsg-2ubuntu9.2                amd64        compression library - runtime
