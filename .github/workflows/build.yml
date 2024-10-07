@@ -39,7 +39,7 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+      - uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9
         with:
           name: minikube_binaries
           path: out
