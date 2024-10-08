@@ -47,12 +47,7 @@ func MiniPath() string {
 	if filepath.Base(minikubeHomeEnv) == ".minikube" {
 		return minikubeHomeEnv
 	}
-
-	legacyMinikubeHome := filepath.Join(minikubeHomeEnv, ".minikube")
-	if _, err := os.Stat(legacyMinikubeHome); !os.IsNotExist(err) {
-		return legacyMinikubeHome
-	}
-	return filepath.Clean(minikubeHomeEnv)
+	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.

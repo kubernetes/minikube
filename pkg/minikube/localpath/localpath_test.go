@@ -66,7 +66,7 @@ func TestMiniPath(t *testing.T) {
 		env, expectedPath string
 	}{
 		{"/tmp/.minikube", "/tmp/.minikube"},
-		{"/tmp", "/tmp"},
+		{"/tmp", "/tmp/.minikube"},
 		{"", filepath.Join(homedir.HomeDir(), ".minikube")},
 	}
 	for _, tc := range testCases {
