@@ -277,11 +277,11 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L445
-		"IngressController": "ingress-nginx/controller:v1.11.2@sha256:d5f8217feeac4887cb1ed21f27c2674e58be06bd8f5184cacea2a69abaf78dce",
+		"IngressController": "ingress-nginx/controller:v1.11.3@sha256:d56f135b6462cfc476447cfe564b83a45e8bb7da2774963b00d12161112270b7",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L552
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.4.3@sha256:a320a50cc91bd15fd2d6fa6de58bd98c1bd64b9a6f926ce23a600d87043455a3",
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L601
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.4.3@sha256:a320a50cc91bd15fd2d6fa6de58bd98c1bd64b9a6f926ce23a600d87043455a3",
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
 	}, map[string]string{
 		"IngressController":        "registry.k8s.io",
 		"KubeWebhookCertgenCreate": "registry.k8s.io",
@@ -593,7 +593,7 @@ var Addons = map[string]*Addon{
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
-		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.4.3@sha256:a320a50cc91bd15fd2d6fa6de58bd98c1bd64b9a6f926ce23a600d87043455a3",
+		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.1.2@sha256:e6c5b3bc32072ea370d34c27836efd11b3519d25bd444c2a8efc339cff0e20fb",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
