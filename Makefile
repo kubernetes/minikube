@@ -1247,6 +1247,11 @@ update-yakd-version:
 	(cd hack/update/yakd_version && \
 	 go run update_yakd_version.go)
 
+.PHONY: update-kube-registry-proxy-version
+update-kube-registry-proxy-version:
+	(cd hack/update/kube_registry_proxy_version && \
+	 go run update_kube_registry_proxy_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
