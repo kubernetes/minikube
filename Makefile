@@ -117,7 +117,7 @@ endif
 
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= v0.0.1
+GVISOR_TAG ?= v0.0.2
 
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5

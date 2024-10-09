@@ -522,7 +522,7 @@ var Addons = map[string]*Addon{
 			"gvisor-runtimeclass.yaml",
 			"0640"),
 	}, false, "gvisor", "minikube", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gvisor/", map[string]string{
-		"GvisorAddon": "k8s-minikube/gvisor-addon:v0.0.1@sha256:d29adbddc7a44dab4c675c0eaea398907fe1f33f5f723274b0d40195b3076cae",
+		"GvisorAddon": "k8s-minikube/gvisor-addon:v0.0.2@sha256:511bf52bdec6be2b846f98e92addf70c544044f96e35085f85ae9bdcd4df2da2",
 	}, map[string]string{
 		"GvisorAddon": "gcr.io",
 	}),
