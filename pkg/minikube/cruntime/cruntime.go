@@ -156,7 +156,7 @@ type Config struct {
 	// InsecureRegistry list of insecure registries
 	InsecureRegistry []string
 	// GPUs add GPU devices to the container
-	GPUs bool
+	GPUs string
 }
 
 // ListContainersOptions are the options to use for listing containers

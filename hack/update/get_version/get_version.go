@@ -33,6 +33,7 @@ type dependency struct {
 }
 
 var dependencies = map[string]dependency{
+	"amd-gpu-device-plugin":   {addonsFile, `rocm/k8s-device-plugin:(.*)@`},
 	"buildkit":                {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
 	"calico":                  {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
 	"cilium":                  {"pkg/minikube/cni/cilium.yaml", `quay.io/cilium/cilium:(.*)@`},

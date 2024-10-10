@@ -1462,8 +1462,8 @@ func validateGPUs(value, drvName, rtime string) error {
 	if err := validateGPUsArch(); err != nil {
 		return err
 	}
-	if value != "nvidia" && value != "all" {
-		return errors.Errorf(`The gpus flag must be passed a value of "nvidia" or "all"`)
+	if value != "nvidia" && value != "all" && value != "amd" {
+		return errors.Errorf(`The gpus flag must be passed a value of "nvidia", "amd" or "all"`)
 	}
 	if drvName == constants.Docker && (rtime == constants.Docker || rtime == constants.DefaultContainerRuntime) {
 		return nil

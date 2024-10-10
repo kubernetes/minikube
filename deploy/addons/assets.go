@@ -107,6 +107,10 @@ var (
 	//go:embed gpu/nvidia-gpu-device-plugin.yaml.tmpl
 	NvidiaGpuDevicePluginAssets embed.FS
 
+	// AmdGpuDevicePluginAssets assets for amd-gpu-device-plugin addon
+	//go:embed gpu/amd-gpu-device-plugin.yaml.tmpl
+	AmdGpuDevicePluginAssets embed.FS
+
 	// LogviewerAssets assets for logviewer addon
 	//go:embed logviewer/*.tmpl logviewer/*.yaml
 	LogviewerAssets embed.FS

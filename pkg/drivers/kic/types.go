@@ -69,5 +69,5 @@ type Config struct {
 	StaticIP          string            // static IP for the kic cluster
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress     string            // IP Address to listen to
-	GPUs              string            // add NVIDIA GPU devices to the container
+	GPUs              string            // add GPU devices to the container
 }
