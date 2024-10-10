@@ -17,6 +17,7 @@ limitations under the License.
 package download
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"net/url"
 	"os"
@@ -77,7 +78,10 @@ func localISOPath(u *url.URL) string {
 		return u.String()
 	}
 
-	return filepath.Join(detect.ISOCacheDir(), path.Base(u.Path))
+	urlHash := sha1.Sum([]byte(u.String()))
+	fileName := fmt.Sprintf("%s-%040x", path.Base(u.Path), urlHash)
+
+	return filepath.Join(detect.ISOCacheDir(), fileName)
 }
 
 // ISO downloads and returns the path to the downloaded ISO
