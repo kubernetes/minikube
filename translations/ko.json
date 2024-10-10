@@ -216,7 +216,7 @@
 	"Ensure that CRI-O is installed and healthy: Run 'sudo systemctl start crio' and 'journalctl -u crio'. Alternatively, use --container-runtime=docker": "",
 	"Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --driver": "",
 	"Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups": "",
-	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory": "",
+	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory or $MINIKUBE_HOME": "",
 	"Ensure that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)": "",
 	"Ensure that your value for HTTPS_PROXY points to an HTTPS proxy rather than an HTTP proxy": "",
 	"Ensure the tmp directory path is writable to the current user.": "",
