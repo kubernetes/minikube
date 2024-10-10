@@ -545,10 +545,7 @@ func (d *Driver) Start() error {
 }
 
 func hardwareAcceleration() string {
-	if detect.IsAmd64M1Emulation() {
-		return "tcg"
-	}
-	if runtime.GOOS == "darwin" {
+	if !detect.IsAmd64M1Emulation() && runtime.GOOS == "darwin" {
 		// On macOS, enable the Hypervisor framework accelerator.
 		return "hvf"
 	}
@@ -556,6 +553,11 @@ func hardwareAcceleration() string {
 		// On Linux, enable the Kernel Virtual Machine accelerator.
 		return "kvm"
 	}
+	if runtime.GOOS == "windows" {
+		// On Windows, enable the Windows Hypervisor Platform accelerator.
+		return "whpx"
+	}
+	// Use the default, "tcg" (in software, not hardware accelerated)
 	return ""
 }
 
