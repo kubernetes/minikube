@@ -60,9 +60,9 @@ var dependencies = map[string]dependency{
 	"istio-operator":          {addonsFile, `istio/operator:(.*)@`},
 	"kindnetd":                {"pkg/minikube/bootstrapper/images/images.go", `kindnetd:(.*)"`},
 	"kong":                    {addonsFile, `kong:(.*)@`},
-	"kube-vip":                {"pkg/minikube/cluster/ha/kube-vip/kube-vip.go", `image: ghcr.io/kube-vip/kube-vip:(.*)`},
-	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"kong-ingress-controller": {addonsFile, `kong/kubernetes-ingress-controller:(.*)@`},
+	"kube-registry-proxy":     {addonsFile, `"k8s-minikube/kube-registry-proxy:(.*)@`},
+	"kube-vip":                {"pkg/minikube/cluster/ha/kube-vip/kube-vip.go", `image: ghcr.io/kube-vip/kube-vip:(.*)`},
 	"kubectl":                 {addonsFile, `bitnami/kubectl:(.*)@`},
 	"metrics-server":          {addonsFile, `metrics-server/metrics-server:(.*)@`},
 	"nerdctl":                 {"deploy/kicbase/Dockerfile", `NERDCTL_VERSION="(.*)"`},
@@ -72,6 +72,7 @@ var dependencies = map[string]dependency{
 	"registry":                {addonsFile, `registry:(.*)@`},
 	"runc":                    {"deploy/iso/minikube-iso/package/runc-master/runc-master.mk", `RUNC_MASTER_VERSION = (.*)`},
 	"ubuntu":                  {dockerfile, `ubuntu:jammy-(.*)"`},
+	"volcano":                 {addonsFile, `volcanosh/vc-webhook-manager:(.*)@`},
 	"yakd":                    {addonsFile, `marcnuri/yakd:(.*)@`},
 }
 
