@@ -99,6 +99,7 @@ const (
 	vsockPorts              = "hyperkit-vsock-ports"
 	embedCerts              = "embed-certs"
 	noVTXCheck              = "no-vtx-check"
+	noAccelerate3DOff       = "no-accelerate3d-off"
 	downloadOnly            = "download-only"
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
@@ -246,6 +247,7 @@ func initDriverFlags() {
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)")
+	startCmd.Flags().Bool(noAccelerate3DOff, false, "Disable turning off the possibly missing 3D graphics acceleration before the vm is started (virtualbox driver only)")
 	startCmd.Flags().String(hostOnlyNicType, "virtio", "NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
 	startCmd.Flags().String(natNicType, "virtio", "NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
 
@@ -557,6 +559,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		DisableDriverMounts:     viper.GetBool(disableDriverMounts),
 		UUID:                    viper.GetString(uuid),
 		NoVTXCheck:              viper.GetBool(noVTXCheck),
+		NoAccelerate3DOff:       viper.GetBool(noAccelerate3DOff),
 		DNSProxy:                viper.GetBool(dnsProxy),
 		HostDNSResolver:         viper.GetBool(hostDNSResolver),
 		HostOnlyNicType:         viper.GetString(hostOnlyNicType),
