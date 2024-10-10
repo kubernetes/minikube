@@ -505,10 +505,7 @@ func (d *Driver) Start() error {
 	case "socket_vmnet":
 		var err error
 		getIP := func() error {
-			// QEMU requires MAC address with leading 0s
-			// But socket_vmnet writes the MAC address to the dhcp leases file with leading 0s stripped
-			mac := pkgdrivers.TrimMacAddress(d.MACAddress)
-			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(d.MACAddress)
 			if err != nil {
 				return errors.Wrap(err, "failed to get IP address")
 			}

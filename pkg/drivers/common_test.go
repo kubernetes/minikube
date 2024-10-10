@@ -55,6 +55,13 @@ var validLeases = []byte(`{
         lease=0x597e1267
 }
 {
+        name=bootp
+        ip_address=192.168.105.2
+        hw_address=1,8e:1:99:9c:54:b1
+        identifier=1,8e:1:99:9c:54:b1
+        lease=0x597e1268
+}
+{
         name=bar
         ip_address=192.168.64.3
         hw_address=1,a4:b5:c6:d7:e8:f9
@@ -96,6 +103,14 @@ func Test_getIpAddressFromFile(t *testing.T) {
 			"valid",
 			args{"a1:b2:c3:d4:e5:f6", dhcpFile},
 			"1.2.3.4",
+			false,
+		},
+		{
+			// bootp use "%x" format instead of "%02x"
+			// https://openradar.appspot.com/FB15382970
+			"valid-bootp",
+			args{"8e:01:99:9c:54:b1", dhcpFile},
+			"192.168.105.2",
 			false,
 		},
 		{

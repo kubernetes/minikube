@@ -265,8 +265,6 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	// Need to strip 0's
-	mac = pkgdrivers.TrimMacAddress(mac)
 	if err := d.setupIP(mac); err != nil {
 		return err
 	}
