@@ -100,12 +100,9 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
 		if !NoneDriver() {
 			args = append(args, "--addons=ingress", "--addons=ingress-dns", "--addons=storage-provisioner-rancher")
-		}
-		if DockerDriver() && amd64Platform() {
-			args = append(args, "--addons=amd-gpu-device-plugin")
 		}
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
@@ -153,9 +150,7 @@ func TestAddons(t *testing.T) {
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
-		}
-		if DockerDriver() && amd64Platform() {
-			tests = append(tests, TestCase{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin})
+			{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
 		}
 
 		for _, tc := range tests {
@@ -969,6 +964,9 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 
 // validateAmdGpuDevicePlugin tests the amd-gpu-device-plugin addon by ensuring the pod comes up and the addon disables
 func validateAmdGpuDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	if !(DockerDriver() && amd64Platform()) {
+		t.Skipf("skip amd gpu test on all but docker driver and amd64 platform")
+	}
 	defer disableAddon(t, "amd-gpu-device-plugin", profile)
 	defer PostMortemLogs(t, profile)
 
