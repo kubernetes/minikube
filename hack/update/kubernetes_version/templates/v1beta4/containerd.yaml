@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -11,19 +11,20 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: unix:///var/run/dockershim.sock
+  criSocket: unix:///run/containerd/containerd.sock
   name: "mk"
   kubeletExtraArgs:
-    node-ip: 1.1.1.1
+    - name: "node-ip"
+      value: "1.1.1.1"
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
-imageRepository: test/repo
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
-    enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    - name: "enable-admission-plugins"
+      value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 controllerManager:
   extraArgs:
     allocate-node-cidrs: "true"
@@ -51,7 +52,7 @@ authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
-containerRuntimeEndpoint: unix:///var/run/dockershim.sock
+containerRuntimeEndpoint: unix:///run/containerd/containerd.sock
 hairpinMode: hairpin-veth
 runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"
