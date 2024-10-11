@@ -419,7 +419,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		InsecureRegistry:  cc.InsecureRegistry,
 	}
 	if cc.GPUs != "" {
-		co.GPUs = true
+		co.GPUs = cc.GPUs
 	}
 	cr, err := cruntime.New(co)
 	if err != nil {

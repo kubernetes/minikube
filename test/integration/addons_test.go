@@ -100,7 +100,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
 		if !NoneDriver() {
 			args = append(args, "--addons=ingress", "--addons=ingress-dns", "--addons=storage-provisioner-rancher")
 		}
@@ -115,12 +115,13 @@ func TestAddons(t *testing.T) {
 		t.Fatalf("Failed setup for addon tests")
 	}
 
+	type TestCase = struct {
+		name      string
+		validator validateFunc
+	}
 	// Run tests in serial to avoid collision
 	t.Run("serial", func(t *testing.T) {
-		tests := []struct {
-			name      string
-			validator validateFunc
-		}{
+		tests := []TestCase{
 			{"Volcano", validateVolcanoAddon},
 			{"GCPAuth", validateGCPAuthAddon},
 		}
@@ -137,10 +138,7 @@ func TestAddons(t *testing.T) {
 
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
-		tests := []struct {
-			name      string
-			validator validateFunc
-		}{
+		tests := []TestCase{
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
 			{"InspektorGadget", validateInspektorGadgetAddon},
@@ -152,7 +150,9 @@ func TestAddons(t *testing.T) {
 			{"LocalPath", validateLocalPathAddon},
 			{"NvidiaDevicePlugin", validateNvidiaDevicePlugin},
 			{"Yakd", validateYakdAddon},
+			{"AmdGpuDevicePlugin", validateAmdGpuDevicePlugin},
 		}
+
 		for _, tc := range tests {
 			tc := tc
 			if ctx.Err() == context.DeadlineExceeded {
@@ -959,6 +959,19 @@ func validateNvidiaDevicePlugin(ctx context.Context, t *testing.T, profile strin
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "name=nvidia-device-plugin-ds", Minutes(6)); err != nil {
 		t.Fatalf("failed waiting for nvidia-device-plugin-ds pod: %v", err)
+	}
+}
+
+// validateAmdGpuDevicePlugin tests the amd-gpu-device-plugin addon by ensuring the pod comes up and the addon disables
+func validateAmdGpuDevicePlugin(ctx context.Context, t *testing.T, profile string) {
+	if !(DockerDriver() && amd64Platform()) {
+		t.Skipf("skip amd gpu test on all but docker driver and amd64 platform")
+	}
+	defer disableAddon(t, "amd-gpu-device-plugin", profile)
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "name=amd-gpu-device-plugin", Minutes(6)); err != nil {
+		t.Fatalf("failed waiting for amd-gpu-device-plugin pod: %v", err)
 	}
 }
 

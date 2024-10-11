@@ -75,7 +75,7 @@ type Docker struct {
 	Init              sysinit.Manager
 	UseCRI            bool
 	CRIService        string
-	GPUs              bool
+	GPUs              string
 }
 
 // Name is a human readable name for Docker
@@ -580,13 +580,17 @@ func (r *Docker) configureDocker(driver string) error {
 		},
 		StorageDriver: "overlay2",
 	}
-	if r.GPUs {
+
+	if r.GPUs == "all" || r.GPUs == "nvidia" {
 		assets.Addons["nvidia-device-plugin"].EnableByDefault()
 		daemonConfig.DefaultRuntime = "nvidia"
 		runtimes := &dockerDaemonRuntimes{}
 		runtimes.Nvidia.Path = "/usr/bin/nvidia-container-runtime"
 		daemonConfig.Runtimes = runtimes
+	} else if r.GPUs == "amd" {
+		assets.Addons["amd-gpu-device-plugin"].EnableByDefault()
 	}
+
 	daemonConfigBytes, err := json.Marshal(daemonConfig)
 	if err != nil {
 		return err
