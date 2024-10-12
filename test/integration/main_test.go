@@ -180,6 +180,11 @@ func arm64Platform() bool {
 	return runtime.GOARCH == "arm64"
 }
 
+// amd64Platform returns true if running on amd64/* platform
+func amd64Platform() bool {
+	return runtime.GOARCH == "amd64"
+}
+
 // NeedsPortForward returns access to endpoints with this driver needs port forwarding
 // (Docker on non-Linux platforms and rootless KIC requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {

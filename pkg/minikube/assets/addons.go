@@ -487,6 +487,17 @@ var Addons = map[string]*Addon{
 	}, map[string]string{
 		"NvidiaDevicePlugin": "registry.k8s.io",
 	}),
+	"amd-gpu-device-plugin": NewAddon([]*BinAsset{
+		MustBinAsset(addons.AmdGpuDevicePluginAssets,
+			"gpu/amd-gpu-device-plugin.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"amd-gpu-device-plugin.yaml",
+			"0640"),
+	}, false, "amd-gpu-device-plugin", "3rd party (AMD)", "", "https://minikube.sigs.k8s.io/docs/tutorials/amd/", map[string]string{
+		"AmdDevicePlugin": "rocm/k8s-device-plugin:1.25.2.8@sha256:f3835498cf2274e0a07c32b38c166c05a876f8eb776d756cc06805e599a3ba5f",
+	}, map[string]string{
+		"AmdDevicePlugin": "docker.io",
+	}),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(addons.LogviewerAssets,
 			"logviewer/logviewer-dp-and-svc.yaml.tmpl",

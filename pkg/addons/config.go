@@ -132,6 +132,11 @@ var Addons = []*Addon{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:      "amd-gpu-device-plugin",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "olm",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},
