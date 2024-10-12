@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubernetes Authors All rights reserved.
+Copyright 2024 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package ktmpl
 
 import "text/template"
 
-// V1Beta4 is kubeadm config template for Kubernetes v1.23.0+
+// V1Beta4 is kubeadm config template for Kubernetes v1.31.0+
 var V1Beta4 = template.Must(template.New("configTmpl-v1beta4").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta4
