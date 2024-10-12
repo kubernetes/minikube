@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.23.0'
+  GO_VERSION: '1.23.1'
 permissions:
   contents: read
 
@@ -20,7 +20,7 @@ jobs:
   build_minikube:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}
@@ -39,14 +39,14 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: minikube_binaries
           path: out
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}
@@ -64,7 +64,7 @@ jobs:
   unit_test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938
+      - uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
         with:
           go-version: ${{env.GO_VERSION}}

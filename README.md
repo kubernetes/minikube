@@ -35,6 +35,7 @@ As well as developer-friendly features:
 
 * [Addons](https://minikube.sigs.k8s.io/docs/handbook/deploying/#addons) - a marketplace for developers to share configurations for running services on minikube
 * [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia/) - for machine learning
+* [AMD GPU support](https://minikube.sigs.k8s.io/docs/tutorials/amd/) - for machine learning
 * [Filesystem mounts](https://minikube.sigs.k8s.io/docs/handbook/mount/)
 
 **For more information, see the official [minikube website](https://minikube.sigs.k8s.io)**

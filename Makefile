@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.34.0-1727108440-19696
+ISO_VERSION ?= v1.34.0-1728382514-19774
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.23.0
+GO_VERSION ?= 1.23.1
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.32.0
 
@@ -117,7 +117,7 @@ endif
 
 # gvisor tag to automatically push changes to
 # to update minikubes default, update deploy/addons/gvisor
-GVISOR_TAG ?= v0.0.1
+GVISOR_TAG ?= v0.0.2
 
 # auto-pause-hook tag to push changes to
 AUTOPAUSE_HOOK_TAG ?= v0.0.5
@@ -1222,6 +1222,11 @@ update-nvidia-device-plugin-version:
 	(cd hack/update/nvidia_device_plugin_version && \
 	 go run update_nvidia_device_plugin_version.go)
 
+.PHONY: update-amd-gpu-device-plugin-version
+update-amd-gpu-device-plugin-version:
+	(cd hack/update/amd_device_plugin_version && \
+	 go run update_amd_device_plugin_version.go)
+
 .PHONY: update-nerctld-version
 update-nerdctld-version:
 	(cd hack/update/nerdctld_version && \
@@ -1246,6 +1251,11 @@ update-cilium-version:
 update-yakd-version:
 	(cd hack/update/yakd_version && \
 	 go run update_yakd_version.go)
+
+.PHONY: update-kube-registry-proxy-version
+update-kube-registry-proxy-version:
+	(cd hack/update/kube_registry_proxy_version && \
+	 go run update_kube_registry_proxy_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

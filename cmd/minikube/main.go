@@ -289,6 +289,7 @@ func propagateDockerContextToEnv() {
 	md, err := st.GetMetadata(currentContext)
 	if err != nil {
 		klog.Warningf("Unable to resolve the current Docker CLI context %q: %v", currentContext, err)
+		klog.Warningf("Try running `docker context use %s` to resolve the above error", currentContext)
 		return
 	}
 	dockerEP, ok := md.Endpoints[ddocker.DockerEndpoint]

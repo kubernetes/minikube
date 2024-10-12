@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.45-1727731891-master@sha256:d66dfd4a976cf0b4581cac255174cef4031588c4570fa4a795e0b3d42edc9122")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.45-1728382586-19774@sha256:5d8c4f6d838467365e214e2194dd0153a763e3f78723b5f2a8e06ef7b47409ec")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -57,7 +57,7 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
-  -g, --gpus string                       Allow pods to use your NVIDIA GPUs. Options include: [all,nvidia] (Docker driver with Docker container-runtime only)
+  -g, --gpus string                       Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)
       --ha                                Create Highly Available Multi-Control Plane Cluster with a minimum of three control-plane nodes that will also be marked for work.
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.59.1/24")
