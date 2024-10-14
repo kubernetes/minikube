@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -14,22 +14,27 @@ nodeRegistration:
   criSocket: unix:///var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
-    node-ip: 1.1.1.1
+    - name: "node-ip"
+      value: "1.1.1.1"
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
-    enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    - name: "enable-admission-plugins"
+      value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
-    leader-elect: "false"
+    - name: "allocate-node-cidrs"
+      value: "true"
+    - name: "leader-elect"
+      value: "false"
 scheduler:
   extraArgs:
-    leader-elect: "false"
+    - name: "leader-elect"
+      value: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -37,7 +42,8 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
-      proxy-refresh-interval: "70000"
+      - name: "proxy-refresh-interval"
+        value: "70000"
 kubernetesVersion: v1.31.0
 networking:
   dnsDomain: cluster.local

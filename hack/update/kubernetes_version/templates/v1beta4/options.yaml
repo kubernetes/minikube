@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -11,25 +11,36 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: unix:///run/containerd/containerd.sock
+  criSocket: unix:///var/run/dockershim.sock
   name: "mk"
   kubeletExtraArgs:
-    node-ip: 1.1.1.1
+    - name: "node-ip"
+      value: "1.1.1.1"
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
-    enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    - name: "enable-admission-plugins"
+      value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+    - name: "fail-no-swap"
+      value: "true"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
-    leader-elect: "false"
+    - name: "allocate-node-cidrs"
+      value: "true"
+    - name: "kube-api-burst"
+      value: "32"
+    - name: "leader-elect"
+      value: "false"
 scheduler:
   extraArgs:
-    leader-elect: "false"
+    - name: "leader-elect"
+      value: "false"
+    - name: "scheduler-name"
+      value: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -37,7 +48,8 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
-      proxy-refresh-interval: "70000"
+      - name: "proxy-refresh-interval"
+        value: "70000"
 kubernetesVersion: v1.23.0
 networking:
   dnsDomain: cluster.local
@@ -50,7 +62,7 @@ authentication:
   x509:
     clientCAFile: /var/lib/minikube/certs/ca.crt
 cgroupDriver: systemd
-containerRuntimeEndpoint: unix:///run/containerd/containerd.sock
+containerRuntimeEndpoint: unix:///var/run/dockershim.sock
 hairpinMode: hairpin-veth
 runtimeRequestTimeout: 15m
 clusterDomain: "cluster.local"
@@ -73,3 +85,4 @@ conntrack:
   tcpEstablishedTimeout: 0s
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_close"
   tcpCloseWaitTimeout: 0s
+mode: "iptables"

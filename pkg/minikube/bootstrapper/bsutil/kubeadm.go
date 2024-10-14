@@ -172,7 +172,15 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if version.GTE(semver.MustParse("1.23.0")) {
 		configTmpl = ktmpl.V1Beta3
 	}
-	// TODO: support v1beta4 kubeadm config when released - refs: https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/ and https://github.com/kubernetes/kubeadm/issues/2890
+	// v1beta4 isn't required until v1.31.
+	if version.GTE(semver.MustParse("1.31.0")) {
+		// Support v1beta4 kubeadm config
+		// refs:
+		// - https://kubernetes.io/blog/2024/08/23/kubernetes-1-31-kubeadm-v1beta4/
+		// - https://kubernetes.io/docs/reference/config-api/kubeadm-config.v1beta4/
+		// - https://github.com/kubernetes/kubeadm/issues/2890
+		configTmpl = ktmpl.V1Beta4
+	}
 
 	if version.GTE(semver.MustParse("1.24.0-alpha.2")) {
 		opts.PrependCriSocketUnix = true
