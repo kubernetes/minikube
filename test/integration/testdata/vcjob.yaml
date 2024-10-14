@@ -40,9 +40,4 @@ spec:
               - 10m
               image: nginx:latest
               name: nginx
-              resources:
-                requests:
-                  cpu: 1
-                limits:
-                  cpu: 1
           restartPolicy: Never
