@@ -609,7 +609,7 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		validateGCPAuthNamespaces(ctx, t, profile)
 	})
 
-	t.Run("PullSecret", func(t *testing.T) {
+	t.Run("FakeCredentials", func(t *testing.T) {
 		// schedule a pod to check environment variables
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 		if err != nil {
@@ -691,47 +691,51 @@ func validateGCPAuthAddon(ctx context.Context, t *testing.T, profile string) {
 		if got != expected {
 			t.Errorf("'printenv GOOGLE_CLOUD_PROJECT' returned %s, expected %s", got, expected)
 		}
+	})
+
+	t.Run("RealCredentials", func(t *testing.T) {
+		if !detect.IsOnGCE() || detect.IsCloudShell() || VMDriver() {
+			t.Skip("This test requires a GCE instance (excluding Cloud Shell) with a container based driver")
+		}
 
 		// If we're on GCE, we have proper credentials and can test the registry secrets with an artifact registry image
-		if detect.IsOnGCE() && !detect.IsCloudShell() && !VMDriver() {
-			t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
-			// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
-			// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
-			os.Unsetenv("MOCK_GOOGLE_TOKEN")
-			// re-set MOCK_GOOGLE_TOKEN once we're done
-			defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
+		t.Skip("skipping GCPAuth addon test until 'Permission \"artifactregistry.repositories.downloadArtifacts\" denied on resource \"projects/k8s-minikube/locations/us/repositories/test-artifacts\" (or it may not exist)' issue is resolved")
+		// "Setting the environment variable MOCK_GOOGLE_TOKEN to true will prevent using the google application credentials to fetch the token used for the image pull secret. Instead the token will be mocked."
+		// ref: https://github.com/GoogleContainerTools/gcp-auth-webhook#gcp-auth-webhook
+		os.Unsetenv("MOCK_GOOGLE_TOKEN")
+		// re-set MOCK_GOOGLE_TOKEN once we're done
+		defer os.Setenv("MOCK_GOOGLE_TOKEN", "true")
 
-			os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-			os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-			args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Command(), err)
-			} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
-				t.Errorf("Unexpected error message: %v", rr.Output())
-			}
-			_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
-			if err != nil {
-				t.Fatalf("print env project: %v", err)
-			}
+		os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
+		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
+		args := []string{"-p", profile, "addons", "enable", "gcp-auth"}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Command(), err)
+		} else if !strings.Contains(rr.Output(), "It seems that you are running in GCE") {
+			t.Errorf("Unexpected error message: %v", rr.Output())
+		}
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
 
-			// Make sure the pod is up and running, which means we successfully pulled the private image down
-			// 8 minutes, because 4 is not enough for images to pull in all cases.
-			_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
-			if err != nil {
-				t.Fatalf("wait for private image: %v", err)
-			}
+		// Make sure the pod is up and running, which means we successfully pulled the private image down
+		// 8 minutes, because 4 is not enough for images to pull in all cases.
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
+		}
 
-			// Try it with a European mirror as well
-			_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
-			if err != nil {
-				t.Fatalf("print env project: %v", err)
-			}
+		// Try it with a European mirror as well
+		_, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "private-image-eu.yaml")))
+		if err != nil {
+			t.Fatalf("print env project: %v", err)
+		}
 
-			_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
-			if err != nil {
-				t.Fatalf("wait for private image: %v", err)
-			}
+		_, err = PodWait(ctx, t, profile, "default", "integration-test=private-image-eu", Minutes(8))
+		if err != nil {
+			t.Fatalf("wait for private image: %v", err)
 		}
 	})
 }
