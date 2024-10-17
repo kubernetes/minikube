@@ -118,7 +118,11 @@ func (d *Driver) ensureNetwork() error {
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
 	}
-	defer conn.Close()
+	defer func() {
+		if _, err := conn.Close(); err != nil {
+			log.Errorf("unable to close libvirt connection: %v", err)
+		}
+	}()
 
 	// network: default
 
@@ -162,7 +166,11 @@ func (d *Driver) createNetwork() error {
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
 	}
-	defer conn.Close()
+	defer func() {
+		if _, err := conn.Close(); err != nil {
+			log.Errorf("unable to close libvirt connection: %v", err)
+		}
+	}()
 
 	// network: default
 	// It is assumed that the libvirt/kvm installation has already created this network
@@ -240,7 +248,11 @@ func (d *Driver) deleteNetwork() error {
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
 	}
-	defer conn.Close()
+	defer func() {
+		if _, err := conn.Close(); err != nil {
+			log.Errorf("unable to close libvirt connection: %v", err)
+		}
+	}()
 
 	// network: default
 	// It is assumed that the OS manages this network
