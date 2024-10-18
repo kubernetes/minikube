@@ -31,7 +31,7 @@ import (
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting domain")
+		return nil, nil, errors.Wrap(err, "getting libvirt connection")
 	}
 
 	dom, err := conn.LookupDomainByName(d.MachineName)
@@ -71,9 +71,13 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	}
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting libvirt connection")
+		return nil, errors.Wrap(err, "getting libvirt connection")
 	}
-	defer conn.Close()
+	defer func() {
+		if _, err := conn.Close(); err != nil {
+			log.Errorf("unable to close libvirt connection: %v", err)
+		}
+	}()
 
 	log.Infof("define libvirt domain using xml: %v", domainXML.String())
 	// define the domain in libvirt using the generated XML
