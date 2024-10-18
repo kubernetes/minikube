@@ -572,7 +572,7 @@ minikube dashboard
 Create a sample deployment and expose it on port 8080:
 
 ```shell
-kubectl create deployment hello-minikube --image=kicbase/echo-server:1.0
+kubectl create deployment hello-minikube --image=docker.io/kicbase/echo-server:1.0
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
@@ -602,7 +602,7 @@ You should be able to see the request metadata in the application output. Try ch
 To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
-kubectl create deployment balanced --image=kicbase/echo-server:1.0
+kubectl create deployment balanced --image=docker.io/kicbase/echo-server:1.0
 kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
@@ -637,7 +637,7 @@ metadata:
 spec:
   containers:
     - name: foo-app
-      image: 'kicbase/echo-server:1.0'
+      image: 'docker.io/kicbase/echo-server:1.0'
 ---
 kind: Service
 apiVersion: v1
@@ -658,7 +658,7 @@ metadata:
 spec:
   containers:
     - name: bar-app
-      image: 'kicbase/echo-server:1.0'
+      image: 'docker.io/kicbase/echo-server:1.0'
 ---
 kind: Service
 apiVersion: v1
