@@ -475,8 +475,9 @@ choco install minikube
 <br>
     Or if using `PowerShell`, use this command:
     ```powershell
-    New-Item -Path 'c:\' -Name 'minikube' -ItemType Directory -Force
-    Invoke-WebRequest -OutFile 'c:\minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
+    New-Item -Path 'C:\Program Files' -Name 'Kubernetes' -ItemType Directory -Force
+    New-Item -Path 'C:\Program Files\Kubernetes' -Name 'Minikube' -ItemType Directory -Force
+    Invoke-WebRequest -OutFile 'C:\Program Files\Kubernetes\Minikube\minikube.exe' -Uri 'https://github.com/kubernetes/minikube/releases/latest/download/minikube-windows-amd64.exe' -UseBasicParsing
     ```
 
 2. Add the `minikube.exe` binary to your `PATH`.
@@ -484,8 +485,8 @@ choco install minikube
     _Make sure to run PowerShell as Administrator._
     ```powershell
     $oldPath = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine)
-    if ($oldPath.Split(';') -inotcontains 'C:\minikube'){
-      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
+    if ($oldPath.Split(';') -inotcontains 'C:\Program Files\Kubernetes\Minikube'){
+      [Environment]::SetEnvironmentVariable('Path', $('{0};C:\Program Files\Kubernetes\Minikube' -f $oldPath), [EnvironmentVariableTarget]::Machine)
     }
     ```
     <span style="color:blue">
