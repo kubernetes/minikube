@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_PLUGINS_LATEST_AARCH64_VERSION = v1.5.1
+CNI_PLUGINS_LATEST_AARCH64_VERSION = v1.6.0
 CNI_PLUGINS_LATEST_AARCH64_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_LATEST_AARCH64_VERSION)
 CNI_PLUGINS_LATEST_AARCH64_SOURCE = cni-plugins-linux-arm64-$(CNI_PLUGINS_LATEST_AARCH64_VERSION).tgz
 CNI_PLUGINS_LATEST_AARCH64_LICENSE = Apache-2.0
