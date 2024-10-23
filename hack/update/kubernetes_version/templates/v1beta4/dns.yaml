@@ -27,11 +27,14 @@ apiServer:
       value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
-    leader-elect: "false"
+    - name: "allocate-node-cidrs"
+      value: "true"
+    - name: "leader-elect"
+      value: "false"
 scheduler:
   extraArgs:
-    leader-elect: "false"
+    - name: "leader-elect"
+      value: "false"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -39,7 +42,8 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
-      proxy-refresh-interval: "70000"
+      - name: "proxy-refresh-interval"
+        value: "70000"
 kubernetesVersion: v1.23.0
 networking:
   dnsDomain: minikube.local

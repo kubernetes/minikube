@@ -25,19 +25,28 @@ apiServer:
   extraArgs:
     - name: "enable-admission-plugins"
       value: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-    fail-no-swap: "true"
-    feature-gates: "a=b"
+    - name: "fail-no-swap"
+      value: "true"
+    - name: "feature-gates"
+      value: "a=b"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
-    feature-gates: "a=b"
-    kube-api-burst: "32"
-    leader-elect: "false"
+    - name: "allocate-node-cidrs"
+      value: "true"
+    - name: "feature-gates"
+      value: "a=b"
+    - name: "kube-api-burst"
+      value: "32"
+    - name: "leader-elect"
+      value: "false"
 scheduler:
   extraArgs:
-    feature-gates: "a=b"
-    leader-elect: "false"
-    scheduler-name: "mini-scheduler"
+    - name: "feature-gates"
+      value: "a=b"
+    - name: "leader-elect"
+      value: "false"
+    - name: "scheduler-name"
+      value: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: control-plane.minikube.internal:8443
@@ -45,7 +54,8 @@ etcd:
   local:
     dataDir: /var/lib/minikube/etcd
     extraArgs:
-      proxy-refresh-interval: "70000"
+      - name: "proxy-refresh-interval"
+        value: "70000"
 kubernetesVersion: v1.23.0
 networking:
   dnsDomain: cluster.local
