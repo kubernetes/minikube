@@ -252,8 +252,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7PamTW8vY5MyCA=
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
-github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.0 h1:gl5KGBBLKXc4BVKkyOJW9w6B890gUkoDkG/pYkTTQHE=
-github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.0/go.mod h1:43xFPKNglOf/bHDR1DbcGTp4Erza2TiUJaU+X9L+1AI=
+github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.1 h1:40v45s6YbkCBtknqosxlR6VocaEgPpCH+olGS59OFs4=
+github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.1/go.mod h1:zcWX3K3ypF25givYElK5dh/K2cVu2w1vcSboXS3sX7k=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.1 h1:pB2F2JKCj1Znmp2rwxxt1J0Fg0wezTMgWYk5Mpbi1kg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.1/go.mod h1:itPGVDKf9cC/ov4MdvJ2QZ0khw4bfoo9jzwTJlaxy2k=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 h1:UQ0AhxogsIRZDkElkblfnwjc3IaltCm2HUMvezQaL7s=
