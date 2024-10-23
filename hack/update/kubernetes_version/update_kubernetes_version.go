@@ -48,55 +48,55 @@ var (
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-api-port.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd-api-port.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd-api-port.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd-pod-network-cidr.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd-pod-network-cidr.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd-pod-network-cidr.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/containerd.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio-options-gates.yaml": {
-			Content: update.Loadf("templates/v1beta3/crio-options-gates.yaml"),
+			Content: update.Loadf("templates/v1beta4/crio-options-gates.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/crio.yaml": {
-			Content: update.Loadf("templates/v1beta3/crio.yaml"),
+			Content: update.Loadf("templates/v1beta4/crio.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/default.yaml": {
-			Content: update.Loadf("templates/v1beta3/default.yaml"),
+			Content: update.Loadf("templates/v1beta4/default.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/dns.yaml": {
-			Content: update.Loadf("templates/v1beta3/dns.yaml"),
+			Content: update.Loadf("templates/v1beta4/dns.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/image-repository.yaml": {
-			Content: update.Loadf("templates/v1beta3/image-repository.yaml"),
+			Content: update.Loadf("templates/v1beta4/image-repository.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.LatestVersionMM}}/options.yaml": {
-			Content: update.Loadf("templates/v1beta3/options.yaml"),
+			Content: update.Loadf("templates/v1beta4/options.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.LatestVersionP0}}`,
 			},
@@ -169,55 +169,55 @@ func updateCurrentTestDataFiles(latestMM string, data *Data) {
 
 	currentSchema := map[string]update.Item{
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/containerd-api-port.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd-api-port.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd-api-port.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/containerd-pod-network-cidr.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd-pod-network-cidr.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd-pod-network-cidr.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/containerd.yaml": {
-			Content: update.Loadf("templates/v1beta3/containerd.yaml"),
+			Content: update.Loadf("templates/v1beta4/containerd.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/crio-options-gates.yaml": {
-			Content: update.Loadf("templates/v1beta3/crio-options-gates.yaml"),
+			Content: update.Loadf("templates/v1beta4/crio-options-gates.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/crio.yaml": {
-			Content: update.Loadf("templates/v1beta3/crio.yaml"),
+			Content: update.Loadf("templates/v1beta4/crio.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/default.yaml": {
-			Content: update.Loadf("templates/v1beta3/default.yaml"),
+			Content: update.Loadf("templates/v1beta4/default.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/dns.yaml": {
-			Content: update.Loadf("templates/v1beta3/dns.yaml"),
+			Content: update.Loadf("templates/v1beta4/dns.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/image-repository.yaml": {
-			Content: update.Loadf("templates/v1beta3/image-repository.yaml"),
+			Content: update.Loadf("templates/v1beta4/image-repository.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
 		},
 		"pkg/minikube/bootstrapper/bsutil/testdata/{{.CurrentVersionMM}}/options.yaml": {
-			Content: update.Loadf("templates/v1beta3/options.yaml"),
+			Content: update.Loadf("templates/v1beta4/options.yaml"),
 			Replace: map[string]string{
 				`kubernetesVersion:.*`: `kubernetesVersion: {{.CurrentVersionP0}}`,
 			},
