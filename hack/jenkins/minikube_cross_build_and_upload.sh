@@ -48,6 +48,7 @@ make -j 16 \
   out/minikube_${DEB_VER}_arm64.deb \
   out/docker-machine-driver-kvm2_$(make deb_version_base).deb \
   out/docker-machine-driver-kvm2_${DEB_VER}_amd64.deb \
+  out/docker-machine-driver-kvm2_${DEB_VER}_arm64.deb \
 && failed=$? || failed=$?
 
 BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
