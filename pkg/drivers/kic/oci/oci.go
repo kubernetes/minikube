@@ -45,7 +45,8 @@ import (
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	ctx := context.Background()
-	cs, err := ListContainersByLabel(ctx, ociBin, label)
+	//set warnSlow to true to give a warning for slow dockers
+	cs, err := ListContainersByLabel(ctx, ociBin, label, true)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
