@@ -91,6 +91,11 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 		if pod.Status.Phase != core.PodRunning {
 			continue
 		}
+		for _, cs := range pod.Status.ContainerStatuses {
+			if !cs.Ready {
+				continue
+			}
+		}
 
 		for k, v := range pod.ObjectMeta.Labels {
 			if k == "component" || k == "k8s-app" {
