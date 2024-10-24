@@ -100,7 +100,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=logviewer", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
 		if !NoneDriver() {
 			args = append(args, "--addons=ingress", "--addons=ingress-dns", "--addons=storage-provisioner-rancher")
 		}
@@ -142,6 +142,7 @@ func TestAddons(t *testing.T) {
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
 			{"InspektorGadget", validateInspektorGadgetAddon},
+			{"Logviewer", validateLogviewerAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 			{"Olm", validateOlmAddon},
 			{"CSI", validateCSIDriverAndSnapshots},
@@ -761,6 +762,16 @@ func validateInspektorGadgetAddon(ctx context.Context, t *testing.T, profile str
 
 	if _, err := PodWait(ctx, t, profile, "gadget", "k8s-app=gadget", Minutes(8)); err != nil {
 		t.Fatalf("failed waiting for inspektor-gadget pod: %v", err)
+	}
+}
+
+// validateLogviewerAddon tests the log-viewer addon by ensuring the pod has come up and addon disables
+func validateLogviewerAddon(ctx context.Context, t *testing.T, profile string) {
+	defer disableAddon(t, "logviewer", profile)
+	defer PostMortemLogs(t, profile)
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app=logviewer", Minutes(8)); err != nil {
+		t.Fatalf("failed waiting for logviewer pod: %v", err)
 	}
 }
 
