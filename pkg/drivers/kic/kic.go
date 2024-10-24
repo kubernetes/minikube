@@ -106,7 +106,8 @@ func (d *Driver) Create() error {
 			exit.Message(reason.IfDedicatedNetwork, msg, args)
 		}
 		out.WarningT(msg, args)
-	} else if gateway != nil && staticIP != "" {
+		//  Remove gateway check to test only. SCAROLAN
+	} else if staticIP != "" {
 		params.Network = networkName
 		params.IP = staticIP
 	} else if gateway != nil {
