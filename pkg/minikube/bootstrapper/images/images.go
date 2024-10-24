@@ -202,6 +202,10 @@ func CalicoBin(repo string) string {
 	return calicoCommon(repo, "cni")
 }
 
+// CalicoAPIServer returns image used for calico apiserver image
+func CalicoAPIServer(repo string) string {
+	return calicoCommon(repo, "apiserver")
+}
 func calicoCommon(repo string, name string) string {
 	if repo == "" {
 		repo = calicoRepo
