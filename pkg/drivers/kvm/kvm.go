@@ -299,7 +299,7 @@ func (d *Driver) Start() error {
 	log.Info("getting domain XML...")
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return errors.Wrap(err, "getting domain")
+		return errors.Wrap(err, "getting domain XML")
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
