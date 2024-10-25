@@ -366,10 +366,10 @@ func (d *Driver) Create() error {
 	}
 
 	if d.GPU {
-		log.Info("creating devices...")
+		log.Info("getting devices XML...")
 		xml, err := getDevicesXML()
 		if err != nil {
-			return errors.Wrap(err, "creating devices")
+			return errors.Wrap(err, "getting devices XML")
 		}
 		d.DevicesXML = xml
 	}
