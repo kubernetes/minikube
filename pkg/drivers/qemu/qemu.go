@@ -604,7 +604,7 @@ func cmdOutErr(cmdStr string, args ...string) (string, string, error) {
 	if found {
 		cmd.Stdin = nil // unset to avoid "Stdin already set" error
 		if stdin, err = cmd.StdinPipe(); err != nil {
-			return "", "", fmt.Errorf("cannont create StdinPipe: %v", err)
+			return "", "", fmt.Errorf("cannot create StdinPipe: %v", err)
 		}
 	}
 
