@@ -398,7 +398,7 @@ func (d *Driver) Create() error {
 		// Limiting the number of disks to 20 arbitrarily. If more disks are
 		// needed, the logical name generation has to changed to create them if
 		// the form hdaa, hdab, etc
-		return errors.New("creating more than 20 extra disks")
+		return errors.New("cannot create more than 20 extra disks")
 	}
 	for i := 0; i < d.ExtraDisks; i++ {
 		diskpath := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
