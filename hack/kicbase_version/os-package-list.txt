@@ -22,7 +22,7 @@ ii  coreutils                       8.32-4.1ubuntu1.2                       amd6
 ii  cri-o                           1.24.6~0                                amd64        OCI-based implementation of Kubernetes Container Runtime Interface.
 ii  cri-o-runc                      1.1.12~0                                amd64        Open Container Project - runtime
 ii  cri-tools                       1.25.0~0                                amd64        A command line tool used for creating OCI images.
-ii  criu                            3.19-4                                  amd64        checkpoint and restore in userspace
+ii  criu                            4.0-2                                   amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                               amd64        OCI runtime written in C
 ii  curl                            7.81.0-1ubuntu1.18                      amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.11+git20210903+057cd650a4ed-3build1 amd64        POSIX-compliant shell
