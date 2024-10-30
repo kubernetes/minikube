@@ -14,7 +14,7 @@ These tools can be used to monitor your Kubernetes application in minikube.
 This tutorial will cover how to set up your minikube cluster so that you can run eBPF tools from a Docker container within minikube.
 
 
-## Requirment
+## Requirement
 - x86 (currently bcc image does not support arm64)
 ## Prerequisites
 
