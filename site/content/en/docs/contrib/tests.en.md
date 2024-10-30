@@ -115,7 +115,8 @@ asserts that there are no unexpected errors displayed in minikube command output
 are functionality tests which can safely share a profile in parallel
 
 ## TestFunctionalNewestKubernetes
-are functionality run functional tests using NewestKubernetesVersion
+are functionality run functional tests using
+NewestKubernetesVersion
 
 #### validateNodeLabels
 checks if minikube cluster is created with correct kubernetes's node label

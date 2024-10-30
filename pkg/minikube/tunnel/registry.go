@@ -87,9 +87,10 @@ func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 
 	alreadyExists := false
 	for i, t := range tunnels {
-		// it is allowed for multiple minikube clusters to have multiple tunnels simultaneously
-		// it is possible that an old tunnel from an old profile has duplicated route information
-		// so we need to check both machine name and route information
+		// It is allowed for multiple minikube clusters to have multiple
+		// tunnels simultaneously. It is possible that an old tunnel
+		// from an old profile has duplicated route information so we
+		// need to check both machine name and route information.
 		if tunnel.MachineName == t.MachineName && t.Route.Equal(tunnel.Route) {
 			isRunning, err := checkIfRunning(t.Pid)
 			if err != nil {
