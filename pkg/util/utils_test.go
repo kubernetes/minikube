@@ -324,19 +324,19 @@ func TestRemoveLineFromFile(t *testing.T) {
 	filePath := "./test_known_hosts"
 	// first we write the content into the test file
 	if err := os.WriteFile(filePath, []byte(testFileContent), 0666); err != nil {
-		t.Errorf("Failed to write to test file, err=%v", err)
+		t.Fatalf("Failed to write to test file, err=%v", err)
 	}
 	defer os.Remove(filePath)
 
 	line := "35.244.161.222  remove.test"
 	if err := RemoveLineFromFile(line, filePath); err != nil {
-		t.Errorf("Failed to run RemoveLineFromFile, err=%v", err)
+		t.Fatalf("Failed to run RemoveLineFromFile, err=%v", err)
 	}
 	// now read the file again to see whether this line still exists
 
 	newContent, err := os.ReadFile(filePath)
 	if err != nil {
-		t.Errorf("Failed to read file, err=%v", err)
+		t.Fatalf("Failed to read file, err=%v", err)
 	}
 	if strings.Contains(string(newContent), line) {
 		t.Errorf("Failed to remove the line")

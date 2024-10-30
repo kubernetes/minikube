@@ -757,24 +757,31 @@ func deleteKnownHosts() {
 	}
 	for _, file := range fileInfo {
 		if file.IsDir() {
-			nodeName := file.Name()
+			continue
+		}
+		nodeName := file.Name()
 
-			knownHostPath := filepath.Join(localpath.MiniPath(), "machines", nodeName, "known_host")
-			if _, err := os.Stat(knownHostPath); err == nil {
-				// if this file exists, remove this line from known_hosts
-				key, err := os.ReadFile(knownHostPath)
-				if err != nil {
-					klog.Warningf("error reading keys from %s: %v", knownHostPath, err)
-					continue
-				}
-				if err := util.RemoveLineFromFile(string(key), knownHosts); err != nil {
-					klog.Warningf("failed to remove key: %v", err)
-				}
-				// and, remove the file which stores this key
-				if err := os.Remove(knownHostPath); err != nil {
-					klog.Warningf("failed to remove key: %v", err)
-				}
-			}
+		knownHostPath := filepath.Join(localpath.MiniPath(), "machines", nodeName, "known_host")
+		_, err := os.Stat(knownHostPath)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			klog.Warningf("error reading %s: %v", knownHostPath, err)
+			continue
+		}
+		// if this file exists, remove this line from known_hosts
+		key, err := os.ReadFile(knownHostPath)
+		if err != nil {
+			klog.Warningf("error reading key from %s: %v", knownHostPath, err)
+			continue
+		}
+		if err := util.RemoveLineFromFile(string(key), knownHosts); err != nil {
+			klog.Warningf("failed to remove key: %v", err)
+		}
+		// and, remove the file which stores this key
+		if err := os.Remove(knownHostPath); err != nil {
+			klog.Warningf("failed to remove %s: %v", knownHostPath, err)
 		}
 	}
 
