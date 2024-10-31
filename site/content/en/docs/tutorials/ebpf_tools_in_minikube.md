@@ -16,7 +16,7 @@ This tutorial will cover how to set up your minikube cluster so that you can run
 
 ## Requirement
 - use VM Driver (not docker or podman)
-- x86 (currently bcc image does not support arm64)
+- x86 (currently the [bcc image](https://hub.docker.com/r/zlim/bcc/tags) does not support arm64)
 - Latest minikube version
 
 ## Tutorial
