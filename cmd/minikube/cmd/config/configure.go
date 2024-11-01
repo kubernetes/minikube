@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 var posResponses = []string{"yes", "y"}
@@ -255,7 +256,7 @@ var addonsConfigureCmd = &cobra.Command{
 				}
 			}
 		case "auto-pause":
-			_, cfg := mustload.Partial(profile)
+			lapi, cfg := mustload.Partial(profile)
 			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
 			intervalTime, err := time.ParseDuration(intervalInput)
 			if err != nil {
@@ -273,6 +274,17 @@ var addonsConfigureCmd = &cobra.Command{
 				// Re-enable auto-pause addon in order to update interval time
 				if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
 					out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
+				}
+				// see #17945: restart auto-pause service
+				p, err := config.LoadProfile(profile)
+				if err != nil {
+					out.ErrT(style.Fatal, "failed to load profile: {{.error}}", out.V{"error": err})
+				}
+				if profileStatus(p, lapi).StatusCode/100 == 2 { // 2xx code
+					co := mustload.Running(profile)
+					if err := sysinit.New(co.CP.Runner).Restart("auto-pause"); err != nil {
+						out.ErrT(style.Fatal, "failed to restart auto-pause: {{.error}}", out.V{"error": err})
+					}
 				}
 			}
 		default:
