@@ -106,6 +106,9 @@ func LatestControllerTag(ctx context.Context) (string, error) {
 				continue
 			}
 			vTag := s[1]
+			if semver.Prerelease(vTag) != "" {
+				continue
+			}
 			if semver.Compare(vTag, latest) == 1 {
 				latest = vTag
 			}
