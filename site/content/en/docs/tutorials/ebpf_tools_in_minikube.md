@@ -13,29 +13,20 @@ eBPF tools are performance tools used for observing the Linux kernel.
 These tools can be used to monitor your Kubernetes application in minikube.
 This tutorial will cover how to set up your minikube cluster so that you can run eBPF tools from a Docker container within minikube.
 
-## Prerequisites
 
-- Latest minikube binary
+## Requirement
+- use VM Driver (not docker or podman)
+- x86 (currently the [bcc image](https://hub.docker.com/r/zlim/bcc/tags) does not support arm64)
+- Latest minikube version
 
 ## Tutorial
 
-First, start minikube:
+First, start minikube with a VM driver:
 
 ```
-$ minikube start --iso-url https://storage.googleapis.com/minikube-performance/minikube.iso
+$ minikube start --vm=true
 ```
 
-You will need to download and extract necessary kernel headers within minikube:
-
-```shell
-minikube ssh -- curl -Lo /tmp/kernel-headers-linux-4.19.94.tar.lz4 https://storage.googleapis.com/minikube-kernel-headers/kernel-headers-linux-4.19.94.tar.lz4
-
-minikube ssh -- sudo mkdir -p /lib/modules/4.19.94/build
-
-minikube ssh -- sudo tar -I lz4 -C /lib/modules/4.19.94/build -xvf /tmp/kernel-headers-linux-4.19.94.tar.lz4
-
-minikube ssh -- rm /tmp/kernel-headers-linux-4.19.94.tar.lz4
-```
 
 You can now run [BCC tools](https://github.com/iovisor/bcc) as a Docker container in minikube:
 
@@ -59,3 +50,4 @@ runc             5059   2011     0 /usr/bin/runc --version
 docker-init      5065   2011     0 /usr/bin/docker-init --version
 nice             5066   4012     0 /usr/bin/nice -n 19 du -x -s -B 1 /var/lib/kubelet/pods/1cf22976-f3e0-498b-bc04-8c7068e6e545/volumes/kubernetes.io~secret/storage-provisioner-token-cvk4x
 ```
+
