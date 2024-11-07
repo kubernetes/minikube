@@ -8,6 +8,10 @@ aliases:
 
 minikube is local Kubernetes, focusing on making it easy to learn and develop for Kubernetes.
 
+How can one laptop act as many machines? Minikube utilizes virtualization or containerization to create multiple virtual nodes on a single laptop. Each virtual node operates as an independent machine with its own isolated resources. This setup allows you to simulate a multi-node Kubernetes cluster locally. 
+
+How do virtual nodes communicate on the same laptop? Each virtual node is assigned a unique IP address within a virtual network. Standard network protocols, such as HTTP and TCP/IP, manage communication between these nodes, enabling them to interact as if they were on separate physical machines.
+
 All you need is Docker (or similarly compatible) container or a Virtual Machine environment, and Kubernetes is a single command away: `minikube start`
 
 ## What you’ll need
