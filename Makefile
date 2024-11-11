@@ -912,7 +912,6 @@ else
 		-buildvcs=false \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt_without_lxc" \
 		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
