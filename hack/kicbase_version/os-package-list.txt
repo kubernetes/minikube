@@ -137,8 +137,8 @@ ii  libnghttp2-14:amd64             1.43.0-1ubuntu0.2                       amd6
 ii  libnl-3-200:amd64               3.5.0-0.1                               amd64        library for dealing with netlink sockets
 ii  libnpth0:amd64                  1.6-3build2                             amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2build2                           amd64        Public client interface for NIS(YP) and NIS+
-ii  libnvidia-container-tools       1.17.0-1                                amd64        NVIDIA container runtime library (command-line tools)
-ii  libnvidia-container1:amd64      1.17.0-1                                amd64        NVIDIA container runtime library
+ii  libnvidia-container-tools       1.17.1-1                                amd64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:amd64      1.17.1-1                                amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.0-6build1                          amd64        library for loading and coordinating access to PKCS#11 modules - runtime
 ii  libpam-modules:amd64            1.4.0-11ubuntu2.4                       amd64        Pluggable Authentication Modules for PAM
 ii  libpam-modules-bin              1.4.0-11ubuntu2.4                       amd64        Pluggable Authentication Modules for PAM - helper binaries
@@ -196,8 +196,8 @@ ii  ncurses-bin                     6.3-2ubuntu0.1                          amd6
 ii  netbase                         6.3                                     all          Basic TCP/IP networking system
 ii  netcat-openbsd                  1.218-4ubuntu1                          amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
-ii  nvidia-container-toolkit        1.17.0-1                                amd64        NVIDIA Container toolkit
-ii  nvidia-container-toolkit-base   1.17.0-1                                amd64        NVIDIA Container Toolkit Base
+ii  nvidia-container-toolkit        1.17.1-1                                amd64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base   1.17.1-1                                amd64        NVIDIA Container Toolkit Base
 ii  openssh-client                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
