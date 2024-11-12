@@ -112,7 +112,10 @@ var serviceCmd = &cobra.Command{
 			services = newServices
 		}
 
-		if len(services) == 0 {
+		if len(services) == 0 && all {
+			exit.Message(reason.SvcNotFound, `No services were found in the '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service --all -n <namespace>'`, out.V{"namespace": namespace})
+		} else if len(services) == 0 {
 			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
 		}
