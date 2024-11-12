@@ -472,6 +472,7 @@
 	"No minikube profile was found.": "",
 	"No minikube profile was found. ": "Nie znaleziono żadnego profilu minikube",
 	"No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/": "Nie znaleziono żadnego możliwego sterownika. Spróbuj przekazać sterownik za pomocą flagi --driver lub odwiedź https://minikube.sigs.k8s.io/docs/start/",
+	"No services were found in the '{{.namespace}}' namespace.\nYou may select another namespace by using 'minikube service --all -n \u003cnamespace\u003e'": "",
 	"No such addon {{.name}}": "Nie istnieje addon {{.name}}",
 	"No valid URL found for tunnel.": "",
 	"No valid port found for tunnel.": "",
