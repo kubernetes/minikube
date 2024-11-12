@@ -507,13 +507,13 @@ func (r *Containerd) StopContainers(ids []string) error {
 }
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
-func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(r.Runner, id, len, follow)
+func (r *Containerd) ContainerLogCmd(id string, length int, follow bool) string {
+	return criContainerLogCmd(r.Runner, id, length, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs
-func (r *Containerd) SystemLogCmd(len int) string {
-	return fmt.Sprintf("sudo journalctl -u containerd -n %d", len)
+func (r *Containerd) SystemLogCmd(length int) string {
+	return fmt.Sprintf("sudo journalctl -u containerd -n %d", length)
 }
 
 // Preload preloads the container runtime with k8s images

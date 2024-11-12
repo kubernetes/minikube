@@ -148,13 +148,13 @@ var Inspect = func(addr string) (*Parameters, error) {
 	}
 	gatewayIP := binary.BigEndian.Uint32(gateway)
 
-	min := make(net.IP, 4)
-	binary.BigEndian.PutUint32(min, gatewayIP+1) // clients-from: first network IP address after gateway
-	n.ClientMin = min.String()
+	minIP := make(net.IP, 4)
+	binary.BigEndian.PutUint32(minIP, gatewayIP+1) // clients-from: first network IP address after gateway
+	n.ClientMin = minIP.String()
 
-	max := make(net.IP, 4)
-	binary.BigEndian.PutUint32(max, broadcastIP-1) // clients-to: last network IP address before broadcast
-	n.ClientMax = max.String()
+	maxIP := make(net.IP, 4)
+	binary.BigEndian.PutUint32(maxIP, broadcastIP-1) // clients-to: last network IP address before broadcast
+	n.ClientMax = maxIP.String()
 
 	return n, nil
 }

@@ -268,8 +268,8 @@ func (m *MemoryAsset) GetLength() int {
 }
 
 // SetLength returns length
-func (m *MemoryAsset) SetLength(len int) {
-	m.length = len
+func (m *MemoryAsset) SetLength(length int) {
+	m.length = length
 }
 
 // Read reads the asset
@@ -403,8 +403,8 @@ func (m *BinAsset) GetLength() int {
 }
 
 // SetLength sets length
-func (m *BinAsset) SetLength(len int) {
-	m.length = len
+func (m *BinAsset) SetLength(length int) {
+	m.length = length
 }
 
 // Read reads the asset
