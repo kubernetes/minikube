@@ -561,6 +561,7 @@
 	"No minikube profile was found.": "未找到 minikube 配置文件。",
 	"No minikube profile was found. ": "未找到 minikube 配置文件。",
 	"No possible driver was detected. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/": "未检测到可用的驱动程序。尝试指定 --driver，或查看 https://minikube.sigs.k8s.io/docs/start/",
+	"No services were found in the '{{.namespace}}' namespace.\nYou may select another namespace by using 'minikube service --all -n \u003cnamespace\u003e'": "",
 	"No such addon {{.name}}": "没有此类插件 {{.name}}",
 	"No valid URL found for tunnel.": "未找到有效的隧道URL。",
 	"No valid port found for tunnel.": "没有找到隧道的有效端口。",
