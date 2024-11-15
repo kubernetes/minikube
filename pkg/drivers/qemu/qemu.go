@@ -327,8 +327,8 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 	return minPort, maxPort, nil
 }
 
-func getRandomPortNumberInRange(min, max int) int {
-	return rand.Intn(max-min) + min
+func getRandomPortNumberInRange(minimum, maximum int) int {
+	return rand.Intn(maximum-minimum) + minimum
 }
 
 func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {

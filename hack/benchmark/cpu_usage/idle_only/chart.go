@@ -36,9 +36,9 @@ var FOLDER = "site/static/images/benchmarks/cpuUsage/idleOnly"
 
 type integerTicks struct{}
 
-func (integerTicks) Ticks(min, max float64) []plot.Tick {
+func (integerTicks) Ticks(minimum, maximum float64) []plot.Tick {
 	var t []plot.Tick
-	for i := math.Trunc(min); i <= max; i += 50 {
+	for i := math.Trunc(minimum); i <= maximum; i += 50 {
 		t = append(t, plot.Tick{Value: i, Label: fmt.Sprint(i)})
 	}
 	return t

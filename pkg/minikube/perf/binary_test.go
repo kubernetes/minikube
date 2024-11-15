@@ -65,16 +65,10 @@ func TestNewBinary(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.input, func(t *testing.T) {
 			bin, err := NewBinary(test.input)
-			if err == nil && test.errExpected {
-				t.Fatalf("Input %v returned unexpected error", test.input)
+			if wantErr, gotErr := test.errExpected, (err != nil); wantErr != gotErr {
+				t.Fatalf("NewBinary(%s) returned err = %v; expected err %t", test.input, err, wantErr)
 			}
-			if test.errExpected {
-				return
-			}
-			if bin == nil {
-				t.Fatalf("Input string(%v) returned unexpected empty binary", test.input)
-			}
-			if !strings.Contains(bin.path, test.prNum) {
+			if err == nil && !strings.Contains(bin.path, test.prNum) {
 				t.Fatalf("Binary path(%v) doesn't contain expected(%v)", bin.path, test.prNum)
 			}
 		})

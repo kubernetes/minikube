@@ -329,14 +329,14 @@ func listCRIImages(cr CommandRunner) ([]ListImage, error) {
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
-func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
+func criContainerLogCmd(cr CommandRunner, id string, length int, follow bool) string {
 	crictl := getCrictlPath(cr)
 	var cmd strings.Builder
 	cmd.WriteString("sudo ")
 	cmd.WriteString(crictl)
 	cmd.WriteString(" logs ")
-	if len > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
+	if length > 0 {
+		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
 	}
 	if follow {
 		cmd.WriteString("--follow ")

@@ -524,14 +524,14 @@ func (r *Docker) UnpauseContainers(ids []string) error {
 }
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
-func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
+func (r *Docker) ContainerLogCmd(id string, length int, follow bool) string {
 	if r.UseCRI {
-		return criContainerLogCmd(r.Runner, id, len, follow)
+		return criContainerLogCmd(r.Runner, id, length, follow)
 	}
 	var cmd strings.Builder
 	cmd.WriteString("docker logs ")
-	if len > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
+	if length > 0 {
+		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
 	}
 	if follow {
 		cmd.WriteString("--follow ")
@@ -542,8 +542,8 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 }
 
 // SystemLogCmd returns the command to retrieve system logs
-func (r *Docker) SystemLogCmd(len int) string {
-	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", len)
+func (r *Docker) SystemLogCmd(length int) string {
+	return fmt.Sprintf("sudo journalctl -u docker -u cri-docker -n %d", length)
 }
 
 type dockerDaemonConfig struct {
