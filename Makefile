@@ -834,7 +834,8 @@ update-leaderboard:
 update-yearly-leaderboard:
 	hack/yearly-leaderboard.sh
 
-out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
+# after https://github.com/kubernetes/minikube/issues/19959 is fixed needs to become out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
+out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2--x86_64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
@@ -842,9 +843,10 @@ out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
-out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
-	$(if $(quiet),@echo "  CP       $@")
-	$(Q)cp $< $@
+# commented out till https://github.com/kubernetes/minikube/issues/19959
+# out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
+# 	$(if $(quiet),@echo "  CP       $@")
+# 	$(Q)cp $< $@
 
 
 out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb

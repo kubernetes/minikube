@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -165,6 +166,18 @@ func status() registry.State {
 			Doc:       docURL,
 		}
 	}
+
+	if runtime.GOARCH == "arm64" {
+		return registry.State{
+			Installed: true,
+			Running:   true,
+			Error:     fmt.Errorf("KVM is not supported on arm64 due to a gcc build error, contributions are welcome"),
+			Fix:       "follow the github issue for possible fix",
+			Doc:       "https://github.com/kubernetes/minikube/issues/19959",
+		}
+
+	}
+
 	if err != nil {
 		return registry.State{
 			Installed: true,
