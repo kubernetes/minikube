@@ -61,8 +61,8 @@ env BUILD_IN_DOCKER=y \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_armhf.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_ppc64el.deb" \
   "out/minikube_${DEB_VERSION}-${DEB_REVISION}_s390x.deb" \
-  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb" \
-  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_arm64.deb"
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb"
+  # "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_arm64.deb"
 
 env BUILD_IN_DOCKER=y
   make \
