@@ -64,7 +64,7 @@ env BUILD_IN_DOCKER=y \
   "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_amd64.deb"
   # "out/docker-machine-driver-kvm2_${DEB_VERSION}-${DEB_REVISION}_arm64.deb"
 
-env BUILD_IN_DOCKER=y
+env BUILD_IN_DOCKER=y \
   make \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm" \
   "out/minikube-${RPM_VERSION}-${RPM_REVISION}.aarch64.rpm" \
