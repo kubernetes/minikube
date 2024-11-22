@@ -845,8 +845,8 @@ out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
 
 # not used till https://github.com/kubernetes/minikube/issues/19959
 out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
- 	$(if $(quiet),@echo "  CP       $@")
- 	$(Q)cp $< $@
+	$(if $(quiet),@echo "  CP       $@")
+	$(Q)cp $< $@
 
 
 out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
