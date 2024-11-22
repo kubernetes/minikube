@@ -364,7 +364,6 @@ drivers: docker-machine-driver-hyperkit \
 	 out/docker-machine-driver-kvm2-amd64 \
 
 
-
 .PHONY: docker-machine-driver-hyperkit
 docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
 
