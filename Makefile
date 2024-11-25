@@ -557,7 +557,7 @@ debs: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
 	  out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb \
 	  out/docker-machine-driver-kvm2_$(DEB_VERSION).deb \
 	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
-	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb
+	#   out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb
 
 .PHONY: deb_version
 deb_version:
