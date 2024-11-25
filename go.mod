@@ -79,7 +79,7 @@ require (
 	google.golang.org/api v0.206.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.2
-	k8s.io/apimachinery v0.31.2
+	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v0.31.2
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.31.2
