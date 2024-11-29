@@ -35,6 +35,7 @@ The `minikube start` command supports 5 additional KVM specific flags:
 * `unable to set user and group to '65534:992` when `dynamic ownership = 1` in `qemu.conf` [#4467](https://github.com/kubernetes/minikube/issues/4467)
 * KVM VM's cannot be used simultaneously with VirtualBox  [#4913](https://github.com/kubernetes/minikube/issues/4913)
 * On some distributions, libvirt bridge networking may fail until the host reboots
+* Cannot open boot2docker.iso: permission denied [#5950](https://github.com/kubernetes/minikube/issues/5950)
 
 Also see [co/kvm2-driver open issues](https://github.com/kubernetes/minikube/labels/co%2Fkvm2-driver).
 
