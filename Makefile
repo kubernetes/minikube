@@ -842,7 +842,7 @@ out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
 
-# not used till https://github.com/kubernetes/minikube/issues/19959
+#  https://github.com/kubernetes/minikube/issues/19959
 out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
@@ -900,24 +900,25 @@ kvm_in_docker:
 install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
-
+	
 
 out/docker-machine-driver-kvm2-arm64:
-ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_ARM64) || $(MAKE) kvm-image-arm64
-	$(call DOCKER,$(KVM_BUILD_IMAGE_ARM64),/usr/bin/make $@ COMMIT=$(COMMIT))
-else
-	$(if $(quiet),@echo "  GO       $@")
-	$(Q)GOARCH=arm64 \
-	go build \
-		-buildvcs=false \
-		-installsuffix "static" \
-		-ldflags="$(KVM2_LDFLAGS)" \
-		-tags "libvirt_without_lxc" \
-		-o $@ \
-		k8s.io/minikube/cmd/drivers/kvm
-endif
-	chmod +X $@
+	echo "not used till https://github.com/kubernetes/minikube/issues/19959"
+# ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+# 	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_ARM64) || $(MAKE) kvm-image-arm64
+# 	$(call DOCKER,$(KVM_BUILD_IMAGE_ARM64),/usr/bin/make $@ COMMIT=$(COMMIT))
+# else
+# 	$(if $(quiet),@echo "  GO       $@")
+# 	$(Q)GOARCH=arm64 \
+# 	go build \
+# 		-buildvcs=false \
+# 		-installsuffix "static" \
+# 		-ldflags="$(KVM2_LDFLAGS)" \
+# 		-tags "libvirt_without_lxc" \
+# 		-o $@ \
+# 		k8s.io/minikube/cmd/drivers/kvm
+# endif
+# 	chmod +X $@
 
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
