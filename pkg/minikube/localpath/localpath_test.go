@@ -63,18 +63,19 @@ func TestHasWindowsDriveLetter(t *testing.T) {
 
 func TestMiniPath(t *testing.T) {
 	var testCases = []struct {
-		env, expectedPath string
+		env, basePath string
 	}{
-		{"/tmp/.minikube", "/tmp/.minikube"},
-		{"/tmp", "/tmp"},
-		{"", filepath.Join(homedir.HomeDir(), ".minikube")},
+		{"/tmp/.minikube", "/tmp/"},
+		{"/tmp/", "/tmp"},
+		{"", homedir.HomeDir()},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.env, func(t *testing.T) {
+			expectedPath := filepath.Join(tc.basePath, ".minikube")
 			t.Setenv(MinikubeHome, tc.env)
 			path := MiniPath()
-			if path != tc.expectedPath {
-				t.Errorf("MiniPath expected to return '%s', but got '%s'", tc.expectedPath, path)
+			if path != expectedPath {
+				t.Errorf("MiniPath expected to return '%s', but got '%s'", expectedPath, path)
 			}
 		})
 	}
