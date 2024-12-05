@@ -3,5 +3,5 @@ title: "Triage & Contributions Leaderboard"
 linkTitle: "Triage & Contributions Leaderboard"
 weight: 10
 description: >
-  Contributions split by release
+  Contributions split by year and release
 ---
