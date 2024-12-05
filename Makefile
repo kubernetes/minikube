@@ -361,7 +361,7 @@ all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build a
 drivers: ## Build Hyperkit and KVM2 drivers
 drivers: docker-machine-driver-hyperkit \
 	 docker-machine-driver-kvm2 \
-	 out/docker-machine-driver-kvm2-amd64 \
+	 out/docker-machine-driver-kvm2-amd64 
 
 
 .PHONY: docker-machine-driver-hyperkit
@@ -556,7 +556,7 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 debs: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
 	  out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb \
 	  out/docker-machine-driver-kvm2_$(DEB_VERSION).deb \
-	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
+	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb 
 	#   out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb
 
 .PHONY: deb_version
