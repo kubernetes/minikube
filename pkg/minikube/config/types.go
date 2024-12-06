@@ -65,6 +65,7 @@ type ClusterConfig struct {
 	NFSSharesRoot           string
 	UUID                    string // Only used by hyperkit to restore the mac address
 	NoVTXCheck              bool   // Only used by virtualbox
+	NoAccelerate3DOff       bool   // Only used by virtualbox
 	DNSProxy                bool   // Only used by virtualbox
 	HostDNSResolver         bool   // Only used by virtualbox
 	HostOnlyNicType         string // Only used by virtualbox
