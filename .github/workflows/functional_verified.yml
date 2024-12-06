@@ -22,7 +22,7 @@ on:
       - deleted
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.23.2'
+  GO_VERSION: '1.23.3'
 
 permissions:
   contents: read
