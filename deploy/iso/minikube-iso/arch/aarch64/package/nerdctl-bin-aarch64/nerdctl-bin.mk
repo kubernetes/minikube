@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-NERDCTL_BIN_AARCH64_VERSION = 1.7.7
-NERDCTL_BIN_AARCH64_COMMIT = 5882c720f4e7f358fb26b759e514b3ae9dd8ea83
+NERDCTL_BIN_AARCH64_VERSION = 2.0.1
+NERDCTL_BIN_AARCH64_COMMIT = 47f31ff2c1615c1accb85c1ce4e7882ad739102f
 NERDCTL_BIN_AARCH64_SITE = https://github.com/containerd/nerdctl/releases/download/v$(NERDCTL_BIN_AARCH64_VERSION)
 NERDCTL_BIN_AARCH64_SOURCE = nerdctl-$(NERDCTL_BIN_AARCH64_VERSION)-linux-arm64.tar.gz
 NERDCTL_BIN_AARCH64_STRIP_COMPONENTS = 0
