@@ -104,11 +104,11 @@ func updateProfilesStatus(profiles []*config.Profile) {
 	defer api.Close()
 
 	for _, p := range profiles {
-		p.Status = profileStatus(p, api)
+		p.Status = profileStatus(p, api).StatusName
 	}
 }
 
-func profileStatus(p *config.Profile, api libmachine.API) string {
+func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 	cps := config.ControlPlanes(*p.Config)
 	if len(cps) == 0 {
 		exit.Message(reason.GuestCpConfig, "No control-plane nodes found.")
@@ -116,11 +116,16 @@ func profileStatus(p *config.Profile, api libmachine.API) string {
 	statuses, err := cluster.GetStatus(api, p.Config)
 	if err != nil {
 		klog.Errorf("error getting statuses: %v", err)
-		return "Unknown"
+		return cluster.State{
+			BaseState: cluster.BaseState{
+				Name:       "Unknown",
+				StatusCode: 520,
+			},
+		}
 	}
 	clusterStatus := cluster.GetState(statuses, ClusterFlagValue(), p.Config)
 
-	return clusterStatus.StatusName
+	return clusterStatus
 }
 
 func renderProfilesTable(ps [][]string) {
