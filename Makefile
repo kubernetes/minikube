@@ -361,7 +361,7 @@ all: cross drivers e2e-cross cross-tars exotic retro out/gvisor-addon ## Build a
 drivers: ## Build Hyperkit and KVM2 drivers
 drivers: docker-machine-driver-hyperkit \
 	 docker-machine-driver-kvm2 \
-	 out/docker-machine-driver-kvm2-amd64 
+	 out/docker-machine-driver-kvm2-amd64
 
 
 .PHONY: docker-machine-driver-hyperkit
@@ -556,7 +556,7 @@ out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
 debs: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
 	  out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb \
 	  out/docker-machine-driver-kvm2_$(DEB_VERSION).deb \
-	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb 
+	  out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb
 	#   out/docker-machine-driver-kvm2_$(DEB_VERSION)-$(DEB_REVISION)_arm64.deb
 
 .PHONY: deb_version
@@ -835,8 +835,11 @@ update-yearly-leaderboard:
 	hack/yearly-leaderboard.sh
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
+# skipping kvm2-arm64 till https://github.com/kubernetes/minikube/issues/19959 is fixed
+ifneq ($(GOARCH),arm64)
 	$(if $(quiet),@echo "  CP       $@")
 	$(Q)cp $< $@
+endif
 
 out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
 	$(if $(quiet),@echo "  CP       $@")
@@ -900,10 +903,10 @@ kvm_in_docker:
 install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
-	
+
 
 out/docker-machine-driver-kvm2-arm64:
-	echo "not used till https://github.com/kubernetes/minikube/issues/19959"
+	@echo "skipping kvm2-arm64 till https://github.com/kubernetes/minikube/issues/19959 is fixed"
 # ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 # 	docker image inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE_ARM64) || $(MAKE) kvm-image-arm64
 # 	$(call DOCKER,$(KVM_BUILD_IMAGE_ARM64),/usr/bin/make $@ COMMIT=$(COMMIT))
@@ -938,7 +941,7 @@ endif
 	chmod +X $@
 
 
-site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule
 	git submodule update -f --init
 
 .PHONY: out/hugo/hugo
@@ -1007,7 +1010,7 @@ compare: out/mkcmp out/minikube
 	mv out/minikube out/master.minikube
 	git checkout $(CURRENT_GIT_BRANCH)
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
-	
+
 
 .PHONY: help
 help:
