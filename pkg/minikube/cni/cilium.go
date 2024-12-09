@@ -20,6 +20,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"io"
 	"os/exec"
 	"text/template"
 
@@ -58,7 +59,7 @@ func (c Cilium) GenerateCiliumYAML() ([]byte, error) {
 	// see issue #19683, older Kubernetes versions cannot recognize appArmorProfile fields
 	k8sVersion, err := util.ParseKubernetesVersion(c.cc.KubernetesConfig.KubernetesVersion)
 	if err == nil && k8sVersion.LT(semver.MustParse("1.30.0")) {
-		if ciliumYaml, err = removeAppArorProfile(ciliumYaml); err != nil {
+		if ciliumYaml, err = removeAppArmorProfile(ciliumYaml); err != nil {
 			return nil, err
 		}
 	}
@@ -99,7 +100,7 @@ func (c Cilium) Apply(r Runner) error {
 	return applyManifest(c.cc, r, manifestAsset(ciliumCfg))
 }
 
-func removeAppArorProfile(ciliumConfig string) (string, error) {
+func removeAppArmorProfile(ciliumConfig string) (string, error) {
 	// remove all appArmorProfile fields
 	decoder := yaml.NewDecoder(bytes.NewBufferString(ciliumConfig))
 	var buffer bytes.Buffer
@@ -107,7 +108,7 @@ func removeAppArorProfile(ciliumConfig string) (string, error) {
 	for {
 		obj := map[string]interface{}{}
 		err := decoder.Decode(&obj)
-		if err != nil && err.Error() == "EOF" {
+		if err == io.EOF {
 			// we have unmarshaled all objects
 			break
 		} else if err != nil {
