@@ -74,7 +74,7 @@ require (
 	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.28.0
 	golang.org/x/term v0.27.0
-	golang.org/x/text v0.20.0
+	golang.org/x/text v0.21.0
 	gonum.org/v1/plot v0.15.0
 	google.golang.org/api v0.210.0
 	gopkg.in/yaml.v2 v2.4.0
