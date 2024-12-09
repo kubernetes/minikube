@@ -40,8 +40,8 @@ jobs:
           make update-docker-version
           # make update-docker-buildx-version
           make update-golang-version
-          make update-nerdctl-version
-          make update-nerdctld-version
+          # make update-nerdctl-version
+          # make update-nerdctld-version
           make update-runc-version
           make update-ubuntu-version
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
