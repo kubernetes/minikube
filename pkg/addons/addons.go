@@ -579,7 +579,7 @@ func ToEnable(cc *config.ClusterConfig, existing map[string]bool, additional []s
 	return enable
 }
 
-// UpdateConfig tries to update config with all enabled addons (not thread-safe).
+// UpdateConfigToEnable tries to update config with all enabled addons (not thread-safe).
 // Any error will be logged and it will continue.
 func UpdateConfigToEnable(cc *config.ClusterConfig, enabled []string) {
 	for _, a := range enabled {

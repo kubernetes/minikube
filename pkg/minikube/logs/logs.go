@@ -206,7 +206,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	}
 }
 
-// outputAudit displays the audit logs.
+// OutputAudit displays the audit logs.
 func OutputAudit(lines int) error {
 	out.Styled(style.None, "")
 	out.Styled(style.None, "==> Audit <==")
@@ -218,7 +218,7 @@ func OutputAudit(lines int) error {
 	return nil
 }
 
-// outputLastStart outputs the last start logs.
+// OutputLastStart outputs the last start logs.
 func OutputLastStart() error {
 	out.Styled(style.None, "")
 	out.Styled(style.None, "==> Last Start <==")

@@ -149,7 +149,7 @@ func PodmanDriver() bool {
 	return strings.Contains(*startArgs, "--driver=podman") || strings.Contains(*startArgs, "--vm-driver=podman")
 }
 
-// Rootless returns whether or not this test is using the rootless KIC driver
+// RootlessDriver returns whether or not this test is using the rootless KIC driver
 func RootlessDriver() bool {
 	return strings.Contains(*startArgs, "--rootless")
 }
