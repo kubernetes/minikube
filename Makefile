@@ -1229,7 +1229,7 @@ update-amd-gpu-device-plugin-version:
 	(cd hack/update/amd_device_plugin_version && \
 	 go run update_amd_device_plugin_version.go)
 
-.PHONY: update-nerctld-version
+.PHONY: update-nerdctld-version
 update-nerdctld-version:
 	(cd hack/update/nerdctld_version && \
 	 go run update_nerdctld_version.go)
