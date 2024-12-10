@@ -21,7 +21,7 @@
 # this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
 ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20240911.1"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.23.2 as auto-pause
+FROM golang:1.23.3 as auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -41,7 +41,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
-ARG BUILDKIT_VERSION="v0.16.0"
+ARG BUILDKIT_VERSION="v0.18.1"
 ARG CRIO_VERSION="1.24"
 ARG CRI_DOCKERD_VERSION="v0.3.15"
 ARG CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
