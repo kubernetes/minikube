@@ -1956,6 +1956,9 @@ func validateStaticIP(staticIP, drvName, subnet string) error {
 		}
 		return nil
 	}
+	if staticIP != "" && viper.GetInt(nodes) > 1 {
+		out.WarningT("--static-ip is not suppoted in a multi-node cluster.")
+	}
 	if subnet != "" {
 		out.WarningT("--static-ip overrides --subnet, --subnet will be ignored")
 	}
