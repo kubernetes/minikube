@@ -478,7 +478,7 @@ Alternatively, you can try upgrading to the latest hyperkit version, or using an
 		Kind: Kind{
 			ID:       "PR_KVM_ISO_PERMISSION",
 			ExitCode: ExProviderPermission,
-			Advice:   "Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory",
+			Advice:   "Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory or $MINIKUBE_HOME",
 			Issues:   []int{5950},
 		},
 		Regexp: re(`boot2docker.iso.*Permission denied`),
