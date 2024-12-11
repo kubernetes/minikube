@@ -31,9 +31,9 @@ ii  debianutils                     5.5-1ubuntu2                            amd6
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.1                       amd64        GNU privacy guard - network certificate management service
 ii  dnsutils                        1:9.18.28-0ubuntu0.22.04.1              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.17.1-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:27.3.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:27.3.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.19.2-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:27.4.0-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:27.4.0-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -90,7 +90,7 @@ ii  libdevmapper1.02.1:amd64        2:1.02.175-2.1ubuntu4                   amd6
 ii  libedit2:amd64                  3.1-20210910-1build1                    amd64        BSD editline and history libraries
 ii  libelf1:amd64                   0.186-1build1                           amd64        library to read and write ELF files
 ii  libevent-core-2.1-7:amd64       2.1.12-stable-1build3                   amd64        Asynchronous event notification library (core)
-ii  libexpat1:amd64                 2.4.7-1ubuntu0.4                        amd64        XML parsing C library - runtime library
+ii  libexpat1:amd64                 2.4.7-1ubuntu0.5                        amd64        XML parsing C library - runtime library
 ii  libext2fs2:amd64                1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system libraries
 ii  libffi8:amd64                   3.4.2-4                                 amd64        Foreign Function Interface library runtime
 ii  libfido2-1:amd64                1.10.0-1                                amd64        library for generating and verifying FIDO 2.0 objects
