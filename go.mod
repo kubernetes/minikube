@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/storage v1.48.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
 	github.com/Delta456/box-cli-maker/v2 v2.3.0
-	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.2
+	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.25.0
 	github.com/Parallels/docker-machine-parallels/v2 v2.0.1
 	github.com/VividCortex/godaemon v1.0.0
@@ -68,7 +68,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
-	golang.org/x/crypto v0.29.0
+	golang.org/x/crypto v0.30.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/mod v0.22.0
 	golang.org/x/oauth2 v0.24.0
@@ -94,7 +94,7 @@ require (
 require (
 	cel.dev/expr v0.16.1 // indirect
 	cloud.google.com/go v0.116.0 // indirect
-	cloud.google.com/go/auth v0.11.0 // indirect
+	cloud.google.com/go/auth v0.12.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.2 // indirect
@@ -234,12 +234,12 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/image v0.21.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/net v0.32.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241113202542-65e8d215514f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241118233622-e639e219e697 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241206012308-a4fef0638583 // indirect
 	google.golang.org/grpc v1.67.2 // indirect
 	google.golang.org/grpc/stats/opentelemetry v0.0.0-20240907200651-3ffb98b2c93a // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
