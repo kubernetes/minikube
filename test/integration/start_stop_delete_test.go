@@ -58,8 +58,6 @@ func TestStartStop(t *testing.T) {
 				"--keep-context=false",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
-				"--feature-gates",
-				"ServerSideApply=true",
 				"--network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=10.42.0.0/16",
 			}},
