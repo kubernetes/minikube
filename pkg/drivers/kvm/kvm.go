@@ -553,7 +553,7 @@ func (d *Driver) waitForStopState(maxsec int, method string) (state.State, error
 		time.Sleep(1 * time.Second)
 	}
 
-	return s, fmt.Errorf("timed out waitig for domain %s, current state is %q", method, s)
+	return s, fmt.Errorf("timed out waiting for domain %s, current state is %q", method, s)
 }
 
 // Remove a host
