@@ -29,10 +29,6 @@ spec:
         name: nvidia-device-plugin-ds
     spec:
       tolerations:
-      - operator: Exists
-        effect: NoExecute
-      - operator: Exists
-        effect: NoSchedule
       - key: nvidia.com/gpu
         operator: Exists
         effect: NoSchedule
