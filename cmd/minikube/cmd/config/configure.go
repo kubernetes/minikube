@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"log"
 	"net"
 	"os"
 	"regexp"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
+var AddonConfigFile = ""
 var posResponses = []string{"yes", "y"}
 var negResponses = []string{"no", "n"}
 
@@ -73,25 +75,56 @@ var addonsConfigureCmd = &cobra.Command{
 			acrClientID := "changeme"
 			acrPassword := "changeme"
 
-			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
-			if enableAWSECR {
-				awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
-				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
-				awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
-				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
-				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma separated list): ")
-				awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
+			regCredsConfig := make(map[string]any)
+
+			if regCredsConfig == nil || regCredsConfig["enableAWSEcr"] == "prompt" {
+				enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
+				if enableAWSECR {
+					awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
+					awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
+					awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
+					awsRegion = AskForStaticValue("-- Enter AWS Region: ")
+					awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma separated list): ")
+					awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
+				}
+			} else if regCredsConfig["enableAWSEcr"] == "enable" {
+				log.Println("Loading AWS ECR configs from: ", AddonConfigFile)
+				// Then read the configs
+				awsAccessID = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsAccessID")
+				awsAccessKey = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsAccessKey")
+				awsSessionToken = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsSessionToken")
+				awsRegion = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsRegion")
+				awsAccount = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsAccount")
+				awsRole = GetNextedJsonString(regCredsConfig, "awsEcrConfigs", "awsRole")
+			} else if regCredsConfig["enableAWSEcr"] == "disable" {
+				log.Println("Ignoring AWS ECR configs")
+			} else {
+				log.Printf("Disabling AWS ECR.  Invalid value for enableAWSEcr (%s).  Must be one of 'disable', 'enable' or 'prompt'", regCredsConfig["enableAWSEcr"])
 			}
 
-			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
-			if enableGCR {
-				gcrPath := AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
-				gcrchangeURL := AskForYesNoConfirmation("-- Do you want to change the GCR URL (Default https://gcr.io)?", posResponses, negResponses)
+			gcrPath := ""
+			if regCredsConfig == nil || regCredsConfig["enableGCR"] == "prompt" {
+				enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
+				if enableGCR {
+					gcrPath = AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
+					gcrchangeURL := AskForYesNoConfirmation("-- Do you want to change the GCR URL (Default https://gcr.io)?", posResponses, negResponses)
 
-				if gcrchangeURL {
-					gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
+					if gcrchangeURL {
+						gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
+					}
 				}
+			} else if regCredsConfig["enableGCR"] == "enable" {
+				log.Println("Loading GCR configs from: ", AddonConfigFile)
+				// Then read the configs
+				gcrPath = GetNextedJsonString(regCredsConfig, "gcrConfigs", "gcrPath")
+				gcrURL = GetNextedJsonString(regCredsConfig, "gcrConfigs", "gcrURL")
+			} else if regCredsConfig["enableGCR"] == "disable" {
+				log.Println("Ignoring GCR configs")
+			} else {
+				log.Printf("Disabling GCR.  Invalid value for enableGCR (%s).  Must be one of 'disable', 'enable' or 'prompt'", regCredsConfig["enableGCR"])
+			}
 
+			if gcrPath != "" {
 				// Read file from disk
 				dat, err := os.ReadFile(gcrPath)
 
@@ -102,18 +135,39 @@ var addonsConfigureCmd = &cobra.Command{
 				}
 			}
 
-			enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
-			if enableDR {
-				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
-				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
-				dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
+			if regCredsConfig == nil || regCredsConfig["enableDockerRegistry"] == "prompt" {
+				enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
+				if enableDR {
+					dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
+					dockerUser = AskForStaticValue("-- Enter docker registry username: ")
+					dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
+				}
+			} else if regCredsConfig["enableDockerRegistry"] == "enable" {
+				dockerServer = GetNextedJsonString(regCredsConfig, "dockerConfigs", "dockerServer")
+				dockerUser = GetNextedJsonString(regCredsConfig, "dockerConfigs", "dockerUser")
+				dockerPass = GetNextedJsonString(regCredsConfig, "dockerConfigs", "dockerPass")
+			} else if regCredsConfig["enableDockerRegistry"] == "disable" {
+				log.Println("Ignoring Docker Registry configs")
+			} else {
+				log.Printf("Disabling Docker Registry.  Invalid value for enableDockerRegistry (%s).  Must be one of 'disable', 'enable' or 'prompt'", regCredsConfig["enableDockerRegistry"])
 			}
 
-			enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
-			if enableACR {
-				acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
-				acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
-				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
+			if regCredsConfig == nil || regCredsConfig["enableACR"] == "prompt" {
+				enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
+				if enableACR {
+					acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
+					acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
+					acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
+				}
+			} else if regCredsConfig == nil || regCredsConfig["enableACR"] == "enable" {
+				log.Println("Loading ACR configs from: ", AddonConfigFile)
+				acrURL = GetNextedJsonString(regCredsConfig, "acrConfigs", "acrURL")
+				acrClientID = GetNextedJsonString(regCredsConfig, "acrConfigs", "acrClientID")
+				acrPassword = GetNextedJsonString(regCredsConfig, "acrConfigs", "acrPassword")
+			} else if regCredsConfig["enableDockerRegistry"] == "disable" {
+				log.Println("Ignoring ACR configs")
+			} else {
+				log.Printf("Disabling ACR.  Invalid value for enableACR (%s).  Must be one of 'disable', 'enable' or 'prompt'", regCredsConfig["enableACR"])
 			}
 
 			namespace := "kube-system"
@@ -339,5 +393,10 @@ func unpauseWholeCluster(co mustload.ClusterController) {
 }
 
 func init() {
+	addonsConfigureCmd.Flags().StringVarP(&AddonConfigFile, "config-file", "c", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
 	AddonsCmd.AddCommand(addonsConfigureCmd)
+}
+
+func GetNextedJsonString(configMap map[string]any, keypath ...string) (out string) {
+	return
 }
