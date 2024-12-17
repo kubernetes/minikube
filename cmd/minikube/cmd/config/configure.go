@@ -105,7 +105,7 @@ var addonsConfigureCmd = &cobra.Command{
 					awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 				}
 			} else if awsEcrAction == "enable" {
-				out.Ln("Loading AWS ECR configs from: ", AddonConfigFile)
+				out.Ln("Loading AWS ECR configs from: %s", AddonConfigFile)
 				// Then read the configs
 				awsAccessID = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessID")
 				awsAccessKey = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessKey")
