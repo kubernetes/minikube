@@ -7,7 +7,7 @@ description: >
   How to use minikube in GitHub Actions for testing your app
 ---
 
-To install and start a minikube cluster, add the following step to your [GitHub Actions workflow](https://help.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow).
+To install and start a minikube cluster, add the following step to your [GitHub Actions workflow](https://docs.github.com/en/actions/writing-workflows/quickstart).
 
 ```yaml
 steps:
