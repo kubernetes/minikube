@@ -57,7 +57,7 @@ To point your terminal to use the docker daemon inside minikube run this:
 {{% tabs %}}
 {{% linuxtab %}}
 ```shell
-eval $(minikube docker-env)
+eval $(minikube -p minikube docker-env)
 ```
 {{% /linuxtab %}}
 {{% mactab %}}
