@@ -43,10 +43,6 @@ spec:
         env:
           - name: FAIL_ON_INIT_ERROR
             value: "false"
-        resources:
-          requests:
-            cpu: 50m
-            memory: 10Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -54,12 +50,7 @@ spec:
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins
-        - name: dev
-          mountPath: /dev
       volumes:
       - name: device-plugin
         hostPath:
           path: /var/lib/kubelet/device-plugins
-      - name: dev
-        hostPath:
-          path: /dev
