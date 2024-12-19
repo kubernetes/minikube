@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,6 +25,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/hack/update"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -126,6 +129,22 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 
 	if err := bsutil.TransferBinaries(kcfg, runner, sm, ""); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
+	}
+	// download crictl if needed
+	// first we need to check the version of crictl we are going to download
+	crictlVersion := ""
+	if stable, _, _, err := update.GHReleasesWithCondition(context.TODO(), "kubernetes-sigs", "cri-tools", func(crictlVersion string) bool {
+		k8sVer, _ := util.ParseKubernetesVersion(kubernetesVersion)
+		crictlVer, _ := util.ParseKubernetesVersion(crictlVersion)
+		return k8sVer.Major == crictlVer.Major && k8sVer.Minor == crictlVer.Minor
+	}); err != nil {
+		klog.Error("failed to get the newest version tag pf crictl from github")
+	} else {
+		crictlVersion = stable.Tag
+	}
+
+	if err := bsutil.TransferCrictl(kcfg, runner, crictlVersion); err != nil {
+		return errors.Wrap(err, "transferring crictl")
 	}
 	// Create image tarball
 	if err := createImageTarball(tarballFilename, containerRuntime); err != nil {
