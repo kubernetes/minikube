@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/reason"
@@ -73,9 +74,26 @@ var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !ar
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
+	testFunctional(t, "")
+}
 
+// TestFunctionalNewestKubernetes are functionality run functional tests using
+// NewestKubernetesVersion
+func TestFunctionalNewestKubernetes(t *testing.T) {
+	if strings.Contains(*startArgs, "--kubernetes-version") || constants.NewestKubernetesVersion == constants.DefaultKubernetesVersion {
+		t.Skip()
+	}
+	k8sVersionString := constants.NewestKubernetesVersion
+	t.Run("Version"+k8sVersionString, func(t *testing.T) {
+		testFunctional(t, k8sVersionString)
+	})
+
+}
+
+func testFunctional(t *testing.T, k8sVersion string) {
 	profile := UniqueProfileName("functional")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+	ctx := context.WithValue(context.Background(), ContextKey("k8sVersion"), k8sVersion)
+	ctx, cancel := context.WithTimeout(ctx, Minutes(40))
 	defer func() {
 		if !*cleanup {
 			return
@@ -87,7 +105,6 @@ func TestFunctional(t *testing.T) {
 
 		Cleanup(t, profile, cancel)
 	}()
-
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
@@ -969,7 +986,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Run `minikube start --dry-run --memory 250MB`
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsWithContext(ctx)...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -986,7 +1003,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	dctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	// docs: Run `minikube start --dry-run`
-	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgsWithContext(ctx)...)
 	c = exec.CommandContext(dctx, Target(), startArgs...)
 	rr, err = Run(t, c)
 	// docs: Make sure the command doesn't raise any error
@@ -1011,7 +1028,7 @@ func validateInternationalLanguage(ctx context.Context, t *testing.T, profile st
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsWithContext(ctx)...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	// docs: Set environment variable `LC_ALL=fr` to enable minikube translation to French
 	c.Env = append(os.Environ(), "LC_ALL=fr")
@@ -2225,7 +2242,7 @@ func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, p
 		memoryFlag = "--memory=6000"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.
-	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgsWithContext(ctx)...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("%s=%s", proxyEnv, addr))
