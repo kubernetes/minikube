@@ -190,11 +190,9 @@ define DOCKER
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
-# ifeq ($(BUILD_IN_DOCKER),y)
-# 	MINIKUBE_BUILD_IN_DOCKER=y
-# endif
-
-MINIKUBE_BUILD_IN_DOCKER=y
+ifeq ($(BUILD_IN_DOCKER),y)
+	MINIKUBE_BUILD_IN_DOCKER=y
+endif
 
 # If we are already running in docker,
 # prevent recursion by unsetting the BUILD_IN_DOCKER directives.
