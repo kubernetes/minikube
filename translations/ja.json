@@ -746,6 +746,7 @@
 	"The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.\n\t\t\n\t\tPlease install dockerd using these instructions:\n\n\t\thttps://docs.docker.com/engine/install/": "Kubernetes v1.24+ の none ドライバーと docker container-runtime は dockerd を要求します。\n\t\t\n\t\tこれらの手順を参照して dockerd をインストールしてください:\n\n\t\thttps://docs.docker.com/engine/install/",
 	"The none driver with Kubernetes v1.24+ requires containernetworking-plugins.\n\n\t\tPlease install containernetworking-plugins using these instructions:\n\n\t\thttps://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver": "",
 	"The number of nodes to spin up. Defaults to 1.": "起動するノード数。デフォルトは 1。",
+	"The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon. It will be removed in a future release. Please use the nvidia-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.": "",
 	"The output format. One of 'json', 'table'": "出力形式。'json', 'table' のいずれか",
 	"The path on the file system where the docs in markdown need to be saved": "markdown で書かれたドキュメントの保存先のファイルシステムパス",
 	"The path on the file system where the error code docs in markdown need to be saved": "markdown で書かれたエラーコードドキュメントの保存先のファイルシステムパス",
