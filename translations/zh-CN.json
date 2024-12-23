@@ -249,7 +249,7 @@
 	"Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --driver": "确保 Docker 已安装并处于健康状态：运行 'sudo systemctl start docker' 和 'journalctl -u docker'。或者，选择另一个 --driver 的值",
 	"Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --vm-driver": "确保 Docker 已安装且正常运行： 执行 'sudo systemctl start docker' and 'journalctl -u docker'。或者为 --vm-driver 指定另外的值",
 	"Ensure that the required 'pids' cgroup is enabled on your host: grep pids /proc/cgroups": "确保你的主机上已启用所需的 'pids' cgroup：grep pids /proc/cgroups",
-	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory": "确保 /etc/libvirt/qemu.conf 中列出的用户具备访问您 home 目录的权限",
+	"Ensure that the user listed in /etc/libvirt/qemu.conf has access to your home directory or $MINIKUBE_HOME": "确保 /etc/libvirt/qemu.conf 中列出的用户具备访问您 home 目录的权限 ($MINIKUBE_HOME)",
 	"Ensure that you are a member of the appropriate libvirt group (remember to relogin for group changes to take effect!)": "确保你是适当的 libvirt 组的成员（记得重新登录以使组更改生效！）",
 	"Ensure that your value for HTTPS_PROXY points to an HTTPS proxy rather than an HTTP proxy": "确保您配置的 HTTPS_PROXY 指向了 HTTPS 代理而不是 HTTP 代理",
 	"Ensure the tmp directory path is writable to the current user.": "确保当前用户可以写入 tmp 目录路径。",
