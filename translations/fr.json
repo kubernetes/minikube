@@ -779,6 +779,7 @@
 	"The none driver with Kubernetes v1.24+ requires containernetworking-plugins.\n\n\t\tPlease install containernetworking-plugins using these instructions:\n\n\t\thttps://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver": "Le pilote none avec Kubernetes v1.24+ nécessite containernetworking-plugins.\n\n\t\tVeuillez installer containernetworking-plugins en suivant ces instructions :\n\n\t\thttps://minikube.sigs.k8s.io/docs /faq/#how-do-i-install-containernetworking-plugins-for-none-driver",
 	"The number of bytes to use for 9p packet payload": "Le nombre d'octets à utiliser pour la charge utile du paquet 9p",
 	"The number of nodes to spin up. Defaults to 1.": "Le nombre de nœuds à faire tourner. La valeur par défaut est 1.",
+	"The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon. It will be removed in a future release. Please use the nvidia-device-plugin addon instead. For more details, visit: https://github.com/kubernetes/minikube/issues/19114.": "",
 	"The output format. One of 'json', 'table'": "Le format de sortie. 'json' ou 'table'",
 	"The path on the file system where the docs in markdown need to be saved": "Le chemin sur le système de fichiers où les documents en markdown doivent être enregistrés",
 	"The path on the file system where the error code docs in markdown need to be saved": "Le chemin sur le système de fichiers où les documents code d'erreur en markdown doivent être enregistrés",
