@@ -316,6 +316,30 @@ data:
                           }
                         }
                       ],
+                      "internal_address_config": {
+                        "cidr_ranges": [
+                          {
+                            "address_prefix": "10.0.0.0",
+                            "prefix_len": 8
+                          },
+                          {
+                            "address_prefix": "172.16.0.0",
+                            "prefix_len": 12
+                          },
+                          {
+                            "address_prefix": "192.168.0.0",
+                            "prefix_len": 16
+                          },
+                          {
+                            "address_prefix": "127.0.0.1",
+                            "prefix_len": 32
+                          },
+                          {
+                            "address_prefix": "::1",
+                            "prefix_len": 128
+                          }
+                        ]
+                      },
                       "stream_idle_timeout": "0s"
                     }
                   }
@@ -369,6 +393,30 @@ data:
                           }
                         }
                       ],
+                      "internal_address_config": {
+                        "cidr_ranges": [
+                          {
+                            "address_prefix": "10.0.0.0",
+                            "prefix_len": 8
+                          },
+                          {
+                            "address_prefix": "172.16.0.0",
+                            "prefix_len": 12
+                          },
+                          {
+                            "address_prefix": "192.168.0.0",
+                            "prefix_len": 16
+                          },
+                          {
+                            "address_prefix": "127.0.0.1",
+                            "prefix_len": 32
+                          },
+                          {
+                            "address_prefix": "::1",
+                            "prefix_len": 128
+                          }
+                        ]
+                      },
                       "stream_idle_timeout": "0s"
                     }
                   }
@@ -1068,7 +1116,7 @@ spec:
           type: Unconfined
       containers:
       - name: cilium-agent
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-agent
@@ -1222,7 +1270,7 @@ spec:
           mountPath: /tmp
       initContainers:
       - name: config
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-dbg
@@ -1245,7 +1293,7 @@ spec:
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
       - name: mount-cgroup
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         env:
         - name: CGROUP_ROOT
@@ -1282,7 +1330,7 @@ spec:
             drop:
               - ALL
       - name: apply-sysctl-overwrites
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         env:
         - name: BIN_PATH
@@ -1320,7 +1368,7 @@ spec:
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
       - name: mount-bpf-fs
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
@@ -1336,7 +1384,7 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
       - name: clean-cilium-state
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - /init-container.sh
@@ -1383,7 +1431,7 @@ spec:
           mountPath: /var/run/cilium # wait-for-kube-proxy
       # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
       - name: install-cni-binaries
-        image: "quay.io/cilium/cilium:v1.16.4@sha256:d55ec38938854133e06739b1af237932b9c4dd4e75e9b7b2ca3acc72540a44bf"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
           - "/install-plugin.sh"
@@ -1561,7 +1609,7 @@ spec:
           type: Unconfined
       containers:
       - name: cilium-envoy
-        image: "quay.io/cilium/cilium-envoy:v1.30.7-1731393961-97edc2815e2c6a174d3d12e71731d54f5d32ea16@sha256:0287b36f70cfbdf54f894160082f4f94d1ee1fb10389f3a95baa6c8e448586ed"
+        image: "quay.io/cilium/cilium-envoy:v1.30.8-1733837904-eaae5aca0fb988583e5617170a65ac5aa51c0aa8@sha256:709c08ade3d17d52da4ca2af33f431360ec26268d288d9a6cd1d98acc9a1dced"
         imagePullPolicy: IfNotPresent
         command:
         - /usr/bin/cilium-envoy-starter
@@ -1737,7 +1785,7 @@ spec:
     spec:
       containers:
       - name: cilium-operator
-        image: "quay.io/cilium/operator-generic:v1.16.4@sha256:c55a7cbe19fe0b6b28903a085334edb586a3201add9db56d2122c8485f7a51c5"
+        image: "quay.io/cilium/operator-generic:v1.16.5@sha256:f7884848483bbcd7b1e0ccfd34ba4546f258b460cb4b7e2f06a1bcc96ef88039"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-operator-generic
