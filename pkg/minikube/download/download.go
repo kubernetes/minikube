@@ -65,7 +65,7 @@ func CreateDstDownloadMock(_, dst string) error {
 }
 
 // download is a well-configured atomic download function
-func download(src, dst string) error {
+func download(src, dst string, options ...getter.ClientOption) error {
 	var clientOptions []getter.ClientOption
 	if out.IsTerminal(os.Stdout) && !detect.GithubActionRunner() {
 		progress := getter.WithProgress(DefaultProgressBar)
@@ -76,6 +76,7 @@ func download(src, dst string) error {
 	} else {
 		clientOptions = []getter.ClientOption{}
 	}
+	clientOptions = append(clientOptions, options...)
 	tmpDst := dst + ".download"
 	client := &getter.Client{
 		Src:     src,
