@@ -17,8 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net"
 	"os"
+	"reflect"
 	"regexp"
 	"time"
 
@@ -38,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
+var AddonConfigFile = ""
 var posResponses = []string{"yes", "y"}
 var negResponses = []string{"no", "n"}
 
@@ -51,150 +56,27 @@ var addonsConfigureCmd = &cobra.Command{
 		}
 
 		profile := ClusterFlagValue()
-
 		addon := args[0]
+
+		configFileData := make(map[string]any)
+
+		if AddonConfigFile != "" {
+			out.Ln("Reading %s configs from %s", addon, AddonConfigFile)
+			if confData, err := os.ReadFile(AddonConfigFile); err != nil && errors.Is(err, os.ErrNotExist) {
+				exit.Message(reason.Usage, "config file does not exist")
+			} else if err != nil {
+				exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
+					fmt.Sprintf("error opening config file: %v", err))
+			} else if err = json.Unmarshal(confData, &configFileData); err != nil {
+				exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
+					fmt.Sprintf("error opening config file: %v", err))
+			}
+		}
+
 		// allows for additional prompting of information when enabling addons
 		switch addon {
 		case "registry-creds":
-
-			// Default values
-			awsAccessID := "changeme"
-			awsAccessKey := "changeme"
-			awsSessionToken := ""
-			awsRegion := "changeme"
-			awsAccount := "changeme"
-			awsRole := "changeme"
-			gcrApplicationDefaultCredentials := "changeme"
-			dockerServer := "changeme"
-			dockerUser := "changeme"
-			dockerPass := "changeme"
-			gcrURL := "https://gcr.io"
-			acrURL := "changeme"
-			acrClientID := "changeme"
-			acrPassword := "changeme"
-
-			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
-			if enableAWSECR {
-				awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
-				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
-				awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
-				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
-				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma separated list): ")
-				awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
-			}
-
-			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
-			if enableGCR {
-				gcrPath := AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
-				gcrchangeURL := AskForYesNoConfirmation("-- Do you want to change the GCR URL (Default https://gcr.io)?", posResponses, negResponses)
-
-				if gcrchangeURL {
-					gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
-				}
-
-				// Read file from disk
-				dat, err := os.ReadFile(gcrPath)
-
-				if err != nil {
-					out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
-				} else {
-					gcrApplicationDefaultCredentials = string(dat)
-				}
-			}
-
-			enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
-			if enableDR {
-				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
-				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
-				dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
-			}
-
-			enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
-			if enableACR {
-				acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
-				acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
-				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
-			}
-
-			namespace := "kube-system"
-
-			// Create ECR Secret
-			err := service.CreateSecret(
-				profile,
-				namespace,
-				"registry-creds-ecr",
-				map[string]string{
-					"AWS_ACCESS_KEY_ID":     awsAccessID,
-					"AWS_SECRET_ACCESS_KEY": awsAccessKey,
-					"AWS_SESSION_TOKEN":     awsSessionToken,
-					"aws-account":           awsAccount,
-					"aws-region":            awsRegion,
-					"aws-assume-role":       awsRole,
-				},
-				map[string]string{
-					"app":                           "registry-creds",
-					"cloud":                         "ecr",
-					"kubernetes.io/minikube-addons": "registry-creds",
-				})
-			if err != nil {
-				out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
-			}
-
-			// Create GCR Secret
-			err = service.CreateSecret(
-				profile,
-				namespace,
-				"registry-creds-gcr",
-				map[string]string{
-					"application_default_credentials.json": gcrApplicationDefaultCredentials,
-					"gcrurl":                               gcrURL,
-				},
-				map[string]string{
-					"app":                           "registry-creds",
-					"cloud":                         "gcr",
-					"kubernetes.io/minikube-addons": "registry-creds",
-				})
-
-			if err != nil {
-				out.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", out.V{"error": err})
-			}
-
-			// Create Docker Secret
-			err = service.CreateSecret(
-				profile,
-				namespace,
-				"registry-creds-dpr",
-				map[string]string{
-					"DOCKER_PRIVATE_REGISTRY_SERVER":   dockerServer,
-					"DOCKER_PRIVATE_REGISTRY_USER":     dockerUser,
-					"DOCKER_PRIVATE_REGISTRY_PASSWORD": dockerPass,
-				},
-				map[string]string{
-					"app":                           "registry-creds",
-					"cloud":                         "dpr",
-					"kubernetes.io/minikube-addons": "registry-creds",
-				})
-
-			if err != nil {
-				out.WarningT("ERROR creating `registry-creds-dpr` secret")
-			}
-
-			// Create Azure Container Registry Secret
-			err = service.CreateSecret(
-				profile,
-				namespace,
-				"registry-creds-acr",
-				map[string]string{
-					"ACR_URL":       acrURL,
-					"ACR_CLIENT_ID": acrClientID,
-					"ACR_PASSWORD":  acrPassword,
-				},
-				map[string]string{
-					"app":                           "registry-creds",
-					"cloud":                         "acr",
-					"kubernetes.io/minikube-addons": "registry-creds",
-				})
-
+			err := processRegistryCredsConfig(profile, configFileData)
 			if err != nil {
 				out.WarningT("ERROR creating `registry-creds-acr` secret")
 			}
@@ -339,5 +221,226 @@ func unpauseWholeCluster(co mustload.ClusterController) {
 }
 
 func init() {
+	addonsConfigureCmd.Flags().StringVarP(&AddonConfigFile, "config-file", "c", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
 	AddonsCmd.AddCommand(addonsConfigureCmd)
+}
+
+func getNestedJsonString(configMap map[string]any, keypath ...string) string {
+	for idx, key := range keypath {
+		next, ok := configMap[key]
+		if !ok || next == nil {
+			break
+		}
+		if idx == len(keypath)-1 {
+			if strval, ok := next.(string); ok {
+				return strval
+			} else {
+				out.Ln("Expected string at last key, found: ", reflect.TypeOf(next), next)
+				break
+			}
+		} else {
+			if mapval, ok := next.(map[string]any); ok && mapval != nil {
+				configMap = mapval
+			} else {
+				out.Stringf("expected map[string]any at %d, found: %v", idx, mapval)
+				break
+			}
+		}
+	}
+	return ""
+}
+
+func processRegistryCredsConfig(profile string, configFileData map[string]any) (err error) {
+	// Default values
+	awsAccessID := "changeme"
+	awsAccessKey := "changeme"
+	awsSessionToken := ""
+	awsRegion := "changeme"
+	awsAccount := "changeme"
+	awsRole := "changeme"
+	gcrApplicationDefaultCredentials := "changeme"
+	dockerServer := "changeme"
+	dockerUser := "changeme"
+	dockerPass := "changeme"
+	gcrURL := "https://gcr.io"
+	acrURL := "changeme"
+	acrClientID := "changeme"
+	acrPassword := "changeme"
+
+	awsEcrAction := getNestedJsonString(configFileData, "enableAWSEcr")
+	if awsEcrAction == "prompt" || awsEcrAction == "" {
+		enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
+		if enableAWSECR {
+			awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
+			awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
+			awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
+			awsRegion = AskForStaticValue("-- Enter AWS Region: ")
+			awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma separated list): ")
+			awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
+		}
+	} else if awsEcrAction == "enable" {
+		out.Ln("Loading AWS ECR configs from: %s", AddonConfigFile)
+		// Then read the configs
+		awsAccessID = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessID")
+		awsAccessKey = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessKey")
+		awsSessionToken = getNestedJsonString(configFileData, "awsEcrConfigs", "awsSessionToken")
+		awsRegion = getNestedJsonString(configFileData, "awsEcrConfigs", "awsRegion")
+		awsAccount = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccount")
+		awsRole = getNestedJsonString(configFileData, "awsEcrConfigs", "awsRole")
+	} else if awsEcrAction == "disable" {
+		out.Ln("Ignoring AWS ECR configs")
+	} else {
+		out.Ln("Disabling AWS ECR.  Invalid value for enableAWSEcr (%s).  Must be one of 'disable', 'enable' or 'prompt'", awsEcrAction)
+	}
+
+	gcrPath := ""
+	gcrAction := getNestedJsonString(configFileData, "enableGCR")
+	if gcrAction == "prompt" || gcrAction == "" {
+		enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
+		if enableGCR {
+			gcrPath = AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
+			gcrchangeURL := AskForYesNoConfirmation("-- Do you want to change the GCR URL (Default https://gcr.io)?", posResponses, negResponses)
+
+			if gcrchangeURL {
+				gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
+			}
+		}
+	} else if gcrAction == "enable" {
+		out.Ln("Loading GCR configs from: ", AddonConfigFile)
+		// Then read the configs
+		gcrPath = getNestedJsonString(configFileData, "gcrConfigs", "gcrPath")
+		gcrURL = getNestedJsonString(configFileData, "gcrConfigs", "gcrURL")
+	} else if gcrAction == "disable" {
+		out.Ln("Ignoring GCR configs")
+	} else {
+		out.Ln("Disabling GCR.  Invalid value for enableGCR (%s).  Must be one of 'disable', 'enable' or 'prompt'", gcrAction)
+	}
+
+	if gcrPath != "" {
+		// Read file from disk
+		dat, err := os.ReadFile(gcrPath)
+
+		if err != nil {
+			out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
+		} else {
+			gcrApplicationDefaultCredentials = string(dat)
+		}
+	}
+
+	dockerRegistryAction := getNestedJsonString(configFileData, "enableDockerRegistry")
+	if dockerRegistryAction == "prompt" || dockerRegistryAction == "" {
+		enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
+		if enableDR {
+			dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
+			dockerUser = AskForStaticValue("-- Enter docker registry username: ")
+			dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
+		}
+	} else if dockerRegistryAction == "enable" {
+		dockerServer = getNestedJsonString(configFileData, "dockerConfigs", "dockerServer")
+		dockerUser = getNestedJsonString(configFileData, "dockerConfigs", "dockerUser")
+		dockerPass = getNestedJsonString(configFileData, "dockerConfigs", "dockerPass")
+	} else if dockerRegistryAction == "disable" {
+		out.Ln("Ignoring Docker Registry configs")
+	} else {
+		out.Ln("Disabling Docker Registry.  Invalid value for enableDockerRegistry (%s).  Must be one of 'disable', 'enable' or 'prompt'", dockerRegistryAction)
+	}
+
+	acrAction := getNestedJsonString(configFileData, "enableACR")
+	if acrAction == "prompt" || acrAction == "" {
+		enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
+		if enableACR {
+			acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
+			acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
+			acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
+		}
+	} else if configFileData == nil || acrAction == "enable" {
+		out.Ln("Loading ACR configs from: ", AddonConfigFile)
+		acrURL = getNestedJsonString(configFileData, "acrConfigs", "acrURL")
+		acrClientID = getNestedJsonString(configFileData, "acrConfigs", "acrClientID")
+		acrPassword = getNestedJsonString(configFileData, "acrConfigs", "acrPassword")
+	} else if acrAction == "disable" {
+		out.Ln("Ignoring ACR configs")
+	} else {
+		out.Stringf("Disabling ACR.  Invalid value for enableACR (%s).  Must be one of 'disable', 'enable' or 'prompt'", configFileData["enableACR"])
+	}
+
+	namespace := "kube-system"
+
+	// Create ECR Secret
+	err = service.CreateSecret(
+		profile,
+		namespace,
+		"registry-creds-ecr",
+		map[string]string{
+			"AWS_ACCESS_KEY_ID":     awsAccessID,
+			"AWS_SECRET_ACCESS_KEY": awsAccessKey,
+			"AWS_SESSION_TOKEN":     awsSessionToken,
+			"aws-account":           awsAccount,
+			"aws-region":            awsRegion,
+			"aws-assume-role":       awsRole,
+		},
+		map[string]string{
+			"app":                           "registry-creds",
+			"cloud":                         "ecr",
+			"kubernetes.io/minikube-addons": "registry-creds",
+		})
+	if err != nil {
+		out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
+	}
+
+	// Create GCR Secret
+	err = service.CreateSecret(
+		profile,
+		namespace,
+		"registry-creds-gcr",
+		map[string]string{
+			"application_default_credentials.json": gcrApplicationDefaultCredentials,
+			"gcrurl":                               gcrURL,
+		},
+		map[string]string{
+			"app":                           "registry-creds",
+			"cloud":                         "gcr",
+			"kubernetes.io/minikube-addons": "registry-creds",
+		})
+
+	if err != nil {
+		out.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", out.V{"error": err})
+	}
+
+	// Create Docker Secret
+	err = service.CreateSecret(
+		profile,
+		namespace,
+		"registry-creds-dpr",
+		map[string]string{
+			"DOCKER_PRIVATE_REGISTRY_SERVER":   dockerServer,
+			"DOCKER_PRIVATE_REGISTRY_USER":     dockerUser,
+			"DOCKER_PRIVATE_REGISTRY_PASSWORD": dockerPass,
+		},
+		map[string]string{
+			"app":                           "registry-creds",
+			"cloud":                         "dpr",
+			"kubernetes.io/minikube-addons": "registry-creds",
+		})
+
+	if err != nil {
+		out.WarningT("ERROR creating `registry-creds-dpr` secret")
+	}
+
+	// Create Azure Container Registry Secret
+	err = service.CreateSecret(
+		profile,
+		namespace,
+		"registry-creds-acr",
+		map[string]string{
+			"ACR_URL":       acrURL,
+			"ACR_CLIENT_ID": acrClientID,
+			"ACR_PASSWORD":  acrPassword,
+		},
+		map[string]string{
+			"app":                           "registry-creds",
+			"cloud":                         "acr",
+			"kubernetes.io/minikube-addons": "registry-creds",
+		})
+	return
 }
