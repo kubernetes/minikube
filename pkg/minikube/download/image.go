@@ -32,6 +32,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -39,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
+	"k8s.io/minikube/pkg/version"
 )
 
 var (
@@ -222,6 +224,37 @@ func ImageToCache(img string) error {
 			return nil
 		}
 	}
+}
+
+// GHImageTarballToCache try to download the tarball of kicbase from github release.
+// This is the last resort, in case of all docker registry is not available.
+func GHImageTarballToCache(img, imgVersion string) (string, error) {
+	f := imagePathInCache(img)
+	fileLock := f + ".lock"
+
+	kicbaseArch := runtime.GOARCH
+	if kicbaseArch == "arm" {
+		kicbaseArch = "armv7"
+	}
+
+	releaser, err := lockDownload(fileLock)
+	if err != nil {
+		return "", err
+	}
+	if releaser != nil {
+		defer releaser.Release()
+	}
+	downloadURL := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/%s-%s-%s.tar",
+		version.GetVersion(),
+		img, imgVersion, kicbaseArch)
+
+	// we don't want the tarball to be decompressed
+	// so we pass client options to suppress this behavior
+	if err := download(downloadURL, f, getter.WithDecompressors(map[string]getter.Decompressor{})); err != nil {
+		return "", err
+	}
+	return downloadURL, nil
+
 }
 
 func parseImage(img string) (*name.Tag, name.Reference, error) {
