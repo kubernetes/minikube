@@ -24,7 +24,7 @@ require (
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.5.0
 	github.com/docker/machine v0.16.2
-	github.com/elazarl/goproxy v0.0.0-20210110162100-a92cc753f88e
+	github.com/elazarl/goproxy v1.2.3
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.20.2
