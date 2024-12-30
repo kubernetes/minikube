@@ -58,9 +58,10 @@ var addonsConfigureCmd = &cobra.Command{
 		profile := ClusterFlagValue()
 		addon := args[0]
 
-		configFileData := make(map[string]any)
+		var addonConfig map[string]any
 
 		if AddonConfigFile != "" {
+			configFileData := make(map[string]any)
 			out.Ln("Reading %s configs from %s", addon, AddonConfigFile)
 			if confData, err := os.ReadFile(AddonConfigFile); err != nil && errors.Is(err, os.ErrNotExist) {
 				exit.Message(reason.Usage, "config file does not exist")
@@ -71,112 +72,32 @@ var addonsConfigureCmd = &cobra.Command{
 				exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 					fmt.Sprintf("error opening config file: %v", err))
 			}
+
+			// Make sure the addon specific config exists and it is a map
+			if addonSpecificConfig, ok := configFileData[addon]; ok && addonSpecificConfig != nil {
+				if casted, ok := addonSpecificConfig.(map[string]any); casted != nil && ok {
+					addonConfig = casted
+				}
+			}
 		}
 
 		// allows for additional prompting of information when enabling addons
 		switch addon {
 		case "registry-creds":
-			err := processRegistryCredsConfig(profile, configFileData)
-			if err != nil {
-				out.WarningT("ERROR creating `registry-creds-acr` secret")
-			}
+			processRegistryCredsConfig(profile, addonConfig)
 
 		case "metallb":
-			_, cfg := mustload.Partial(profile)
+			processMetalLBConfig(profile, addonConfig)
 
-			validator := func(s string) bool {
-				return net.ParseIP(s) != nil
-			}
-
-			cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
-
-			cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
-
-			if err := config.SaveProfile(profile, cfg); err != nil {
-				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
-			}
-
-			// Re-enable metallb addon in order to generate template manifest files with Load Balancer Start/End IP
-			if err := addons.EnableOrDisableAddon(cfg, "metallb", "true"); err != nil {
-				out.ErrT(style.Fatal, "Failed to configure metallb IP {{.profile}}", out.V{"profile": profile})
-			}
 		case "ingress":
-			_, cfg := mustload.Partial(profile)
+			processIngressConfig(profile, addonConfig)
 
-			validator := func(s string) bool {
-				format := regexp.MustCompile("^.+/.+$")
-				return format.MatchString(s)
-			}
-
-			customCert := AskForStaticValidatedValue("-- Enter custom cert (format is \"namespace/secret\"): ", validator)
-			if cfg.KubernetesConfig.CustomIngressCert != "" {
-				overwrite := AskForYesNoConfirmation("A custom cert for ingress has already been set. Do you want overwrite it?", posResponses, negResponses)
-				if !overwrite {
-					break
-				}
-			}
-
-			cfg.KubernetesConfig.CustomIngressCert = customCert
-
-			if err := config.SaveProfile(profile, cfg); err != nil {
-				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
-			}
 		case "registry-aliases":
-			_, cfg := mustload.Partial(profile)
-			validator := func(s string) bool {
-				format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
-				return format.MatchString(s)
-			}
-			registryAliases := AskForStaticValidatedValue("-- Enter registry aliases separated by space: ", validator)
-			cfg.KubernetesConfig.RegistryAliases = registryAliases
+			processRegistryAliasesConfig(profile, addonConfig)
 
-			if err := config.SaveProfile(profile, cfg); err != nil {
-				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
-			}
-			addon := assets.Addons["registry-aliases"]
-			if addon.IsEnabled(cfg) {
-				// Re-enable registry-aliases addon in order to generate template manifest files with custom hosts
-				if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true"); err != nil {
-					out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
-				}
-			}
 		case "auto-pause":
-			lapi, cfg := mustload.Partial(profile)
-			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
-			intervalTime, err := time.ParseDuration(intervalInput)
-			if err != nil {
-				out.ErrT(style.Fatal, "Interval is an invalid duration: {{.error}}", out.V{"error": err})
-			}
-			if intervalTime != intervalTime.Abs() || intervalTime.String() == "0s" {
-				out.ErrT(style.Fatal, "Interval must be greater than 0s")
-			}
-			cfg.AutoPauseInterval = intervalTime
-			if err := config.SaveProfile(profile, cfg); err != nil {
-				out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
-			}
-			addon := assets.Addons["auto-pause"]
-			if addon.IsEnabled(cfg) {
+			processAutoPauseConfig(profile, addonConfig)
 
-				// see #17945: restart auto-pause service
-				p, err := config.LoadProfile(profile)
-				if err != nil {
-					out.ErrT(style.Fatal, "failed to load profile: {{.error}}", out.V{"error": err})
-				}
-				if profileStatus(p, lapi).StatusCode/100 == 2 { // 2xx code
-					co := mustload.Running(profile)
-					// first unpause all nodes cluster immediately
-					unpauseWholeCluster(co)
-					// Re-enable auto-pause addon in order to update interval time
-					if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
-						out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
-					}
-					// restart auto-pause service
-					if err := sysinit.New(co.CP.Runner).Restart("auto-pause"); err != nil {
-						out.ErrT(style.Fatal, "failed to restart auto-pause: {{.error}}", out.V{"error": err})
-					}
-
-				}
-			}
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
 			return
@@ -225,19 +146,19 @@ func init() {
 	AddonsCmd.AddCommand(addonsConfigureCmd)
 }
 
-func getNestedJsonString(configMap map[string]any, keypath ...string) string {
+func getNestedJSONString(configMap map[string]any, keypath ...string) string {
 	for idx, key := range keypath {
 		next, ok := configMap[key]
 		if !ok || next == nil {
 			break
 		}
 		if idx == len(keypath)-1 {
-			if strval, ok := next.(string); ok {
+			strval, ok := next.(string)
+
+			if ok {
 				return strval
-			} else {
-				out.Ln("Expected string at last key, found: ", reflect.TypeOf(next), next)
-				break
 			}
+			out.Ln("Expected string at last key, found: ", reflect.TypeOf(next), next)
 		} else {
 			if mapval, ok := next.(map[string]any); ok && mapval != nil {
 				configMap = mapval
@@ -250,7 +171,119 @@ func getNestedJsonString(configMap map[string]any, keypath ...string) string {
 	return ""
 }
 
-func processRegistryCredsConfig(profile string, configFileData map[string]any) (err error) {
+// Processes metallb addon config from configFile if it exists otherwise resorts to default behavior
+func processMetalLBConfig(profile string, _ map[string]any) {
+	_, cfg := mustload.Partial(profile)
+
+	validator := func(s string) bool {
+		return net.ParseIP(s) != nil
+	}
+
+	cfg.KubernetesConfig.LoadBalancerStartIP = AskForStaticValidatedValue("-- Enter Load Balancer Start IP: ", validator)
+
+	cfg.KubernetesConfig.LoadBalancerEndIP = AskForStaticValidatedValue("-- Enter Load Balancer End IP: ", validator)
+
+	if err := config.SaveProfile(profile, cfg); err != nil {
+		out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+	}
+
+	// Re-enable metallb addon in order to generate template manifest files with Load Balancer Start/End IP
+	if err := addons.EnableOrDisableAddon(cfg, "metallb", "true"); err != nil {
+		out.ErrT(style.Fatal, "Failed to configure metallb IP {{.profile}}", out.V{"profile": profile})
+	}
+}
+
+// Processes ingress addon config from configFile if it exists otherwise resorts to default behavior
+func processIngressConfig(profile string, _ map[string]any) {
+	_, cfg := mustload.Partial(profile)
+
+	validator := func(s string) bool {
+		format := regexp.MustCompile("^.+/.+$")
+		return format.MatchString(s)
+	}
+
+	customCert := AskForStaticValidatedValue("-- Enter custom cert (format is \"namespace/secret\"): ", validator)
+	if cfg.KubernetesConfig.CustomIngressCert != "" {
+		overwrite := AskForYesNoConfirmation("A custom cert for ingress has already been set. Do you want overwrite it?", posResponses, negResponses)
+		if !overwrite {
+			return
+		}
+	}
+
+	cfg.KubernetesConfig.CustomIngressCert = customCert
+
+	if err := config.SaveProfile(profile, cfg); err != nil {
+		out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+	}
+}
+
+// Processes auto-pause addon config from configFile if it exists otherwise resorts to default behavior
+func processAutoPauseConfig(profile string, _ map[string]any) {
+	lapi, cfg := mustload.Partial(profile)
+	intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
+	intervalTime, err := time.ParseDuration(intervalInput)
+	if err != nil {
+		out.ErrT(style.Fatal, "Interval is an invalid duration: {{.error}}", out.V{"error": err})
+	}
+
+	if intervalTime != intervalTime.Abs() || intervalTime.String() == "0s" {
+		out.ErrT(style.Fatal, "Interval must be greater than 0s")
+	}
+
+	cfg.AutoPauseInterval = intervalTime
+	if err = config.SaveProfile(profile, cfg); err != nil {
+		out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+	}
+
+	addon := assets.Addons["auto-pause"]
+	if addon.IsEnabled(cfg) {
+
+		// see #17945: restart auto-pause service
+		p, err := config.LoadProfile(profile)
+		if err != nil {
+			out.ErrT(style.Fatal, "failed to load profile: {{.error}}", out.V{"error": err})
+		}
+		if profileStatus(p, lapi).StatusCode/100 == 2 { // 2xx code
+			co := mustload.Running(profile)
+			// first unpause all nodes cluster immediately
+			unpauseWholeCluster(co)
+			// Re-enable auto-pause addon in order to update interval time
+			if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
+				out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
+			}
+			// restart auto-pause service
+			if err := sysinit.New(co.CP.Runner).Restart("auto-pause"); err != nil {
+				out.ErrT(style.Fatal, "failed to restart auto-pause: {{.error}}", out.V{"error": err})
+			}
+		}
+	}
+}
+
+// Processes registry-aliases addon config from configFile if it exists otherwise resorts to default behavior
+func processRegistryAliasesConfig(profile string, _ map[string]any) {
+	_, cfg := mustload.Partial(profile)
+	validator := func(s string) bool {
+		format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
+		return format.MatchString(s)
+	}
+	registryAliases := AskForStaticValidatedValue("-- Enter registry aliases separated by space: ", validator)
+	cfg.KubernetesConfig.RegistryAliases = registryAliases
+
+	if err := config.SaveProfile(profile, cfg); err != nil {
+		out.ErrT(style.Fatal, "Failed to save config {{.profile}}", out.V{"profile": profile})
+	}
+
+	addon := assets.Addons["registry-aliases"]
+	if addon.IsEnabled(cfg) {
+		// Re-enable registry-aliases addon in order to generate template manifest files with custom hosts
+		if err := addons.EnableOrDisableAddon(cfg, "registry-aliases", "true"); err != nil {
+			out.ErrT(style.Fatal, "Failed to configure registry-aliases {{.profile}}", out.V{"profile": profile})
+		}
+	}
+}
+
+// Processes registry-creds addon config from configFile if it exists otherwise resorts to default behavior
+func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 	// Default values
 	awsAccessID := "changeme"
 	awsAccessKey := "changeme"
@@ -267,7 +300,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 	acrClientID := "changeme"
 	acrPassword := "changeme"
 
-	awsEcrAction := getNestedJsonString(configFileData, "enableAWSEcr")
+	awsEcrAction := getNestedJSONString(configFileData, "enableAWSEcr")
 	if awsEcrAction == "prompt" || awsEcrAction == "" {
 		enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
 		if enableAWSECR {
@@ -281,12 +314,12 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 	} else if awsEcrAction == "enable" {
 		out.Ln("Loading AWS ECR configs from: %s", AddonConfigFile)
 		// Then read the configs
-		awsAccessID = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessID")
-		awsAccessKey = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccessKey")
-		awsSessionToken = getNestedJsonString(configFileData, "awsEcrConfigs", "awsSessionToken")
-		awsRegion = getNestedJsonString(configFileData, "awsEcrConfigs", "awsRegion")
-		awsAccount = getNestedJsonString(configFileData, "awsEcrConfigs", "awsAccount")
-		awsRole = getNestedJsonString(configFileData, "awsEcrConfigs", "awsRole")
+		awsAccessID = getNestedJSONString(configFileData, "awsEcrConfigs", "awsAccessID")
+		awsAccessKey = getNestedJSONString(configFileData, "awsEcrConfigs", "awsAccessKey")
+		awsSessionToken = getNestedJSONString(configFileData, "awsEcrConfigs", "awsSessionToken")
+		awsRegion = getNestedJSONString(configFileData, "awsEcrConfigs", "awsRegion")
+		awsAccount = getNestedJSONString(configFileData, "awsEcrConfigs", "awsAccount")
+		awsRole = getNestedJSONString(configFileData, "awsEcrConfigs", "awsRole")
 	} else if awsEcrAction == "disable" {
 		out.Ln("Ignoring AWS ECR configs")
 	} else {
@@ -294,7 +327,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 	}
 
 	gcrPath := ""
-	gcrAction := getNestedJsonString(configFileData, "enableGCR")
+	gcrAction := getNestedJSONString(configFileData, "enableGCR")
 	if gcrAction == "prompt" || gcrAction == "" {
 		enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
 		if enableGCR {
@@ -308,8 +341,8 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 	} else if gcrAction == "enable" {
 		out.Ln("Loading GCR configs from: ", AddonConfigFile)
 		// Then read the configs
-		gcrPath = getNestedJsonString(configFileData, "gcrConfigs", "gcrPath")
-		gcrURL = getNestedJsonString(configFileData, "gcrConfigs", "gcrURL")
+		gcrPath = getNestedJSONString(configFileData, "gcrConfigs", "gcrPath")
+		gcrURL = getNestedJSONString(configFileData, "gcrConfigs", "gcrURL")
 	} else if gcrAction == "disable" {
 		out.Ln("Ignoring GCR configs")
 	} else {
@@ -327,7 +360,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 		}
 	}
 
-	dockerRegistryAction := getNestedJsonString(configFileData, "enableDockerRegistry")
+	dockerRegistryAction := getNestedJSONString(configFileData, "enableDockerRegistry")
 	if dockerRegistryAction == "prompt" || dockerRegistryAction == "" {
 		enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
 		if enableDR {
@@ -336,16 +369,16 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 			dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 		}
 	} else if dockerRegistryAction == "enable" {
-		dockerServer = getNestedJsonString(configFileData, "dockerConfigs", "dockerServer")
-		dockerUser = getNestedJsonString(configFileData, "dockerConfigs", "dockerUser")
-		dockerPass = getNestedJsonString(configFileData, "dockerConfigs", "dockerPass")
+		dockerServer = getNestedJSONString(configFileData, "dockerConfigs", "dockerServer")
+		dockerUser = getNestedJSONString(configFileData, "dockerConfigs", "dockerUser")
+		dockerPass = getNestedJSONString(configFileData, "dockerConfigs", "dockerPass")
 	} else if dockerRegistryAction == "disable" {
 		out.Ln("Ignoring Docker Registry configs")
 	} else {
 		out.Ln("Disabling Docker Registry.  Invalid value for enableDockerRegistry (%s).  Must be one of 'disable', 'enable' or 'prompt'", dockerRegistryAction)
 	}
 
-	acrAction := getNestedJsonString(configFileData, "enableACR")
+	acrAction := getNestedJSONString(configFileData, "enableACR")
 	if acrAction == "prompt" || acrAction == "" {
 		enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
 		if enableACR {
@@ -355,9 +388,9 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 		}
 	} else if configFileData == nil || acrAction == "enable" {
 		out.Ln("Loading ACR configs from: ", AddonConfigFile)
-		acrURL = getNestedJsonString(configFileData, "acrConfigs", "acrURL")
-		acrClientID = getNestedJsonString(configFileData, "acrConfigs", "acrClientID")
-		acrPassword = getNestedJsonString(configFileData, "acrConfigs", "acrPassword")
+		acrURL = getNestedJSONString(configFileData, "acrConfigs", "acrURL")
+		acrClientID = getNestedJSONString(configFileData, "acrConfigs", "acrClientID")
+		acrPassword = getNestedJSONString(configFileData, "acrConfigs", "acrPassword")
 	} else if acrAction == "disable" {
 		out.Ln("Ignoring ACR configs")
 	} else {
@@ -367,7 +400,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 	namespace := "kube-system"
 
 	// Create ECR Secret
-	err = service.CreateSecret(
+	err := service.CreateSecret(
 		profile,
 		namespace,
 		"registry-creds-ecr",
@@ -442,5 +475,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) (
 			"cloud":                         "acr",
 			"kubernetes.io/minikube-addons": "registry-creds",
 		})
-	return
+	if err != nil {
+		out.WarningT("ERROR creating `registry-creds-acr` secret")
+	}
 }
