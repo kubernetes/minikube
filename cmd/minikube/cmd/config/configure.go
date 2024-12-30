@@ -142,7 +142,7 @@ func unpauseWholeCluster(co mustload.ClusterController) {
 }
 
 func init() {
-	addonsConfigureCmd.Flags().StringVarP(&AddonConfigFile, "config-file", "c", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
+	addonsConfigureCmd.Flags().StringVarP(&AddonConfigFile, "config-file", "f", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
 	AddonsCmd.AddCommand(addonsConfigureCmd)
 }
 
