@@ -126,6 +126,7 @@ var Addons = []*Addon{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		// The nvidia-gpu-device-plugin addon is deprecated and it's functionality is merged inside of nvidia-device-plugin addon.
 		name:        "nvidia-gpu-device-plugin",
 		set:         SetBool,
 		validations: []setFn{isKVMDriverForNVIDIA},
