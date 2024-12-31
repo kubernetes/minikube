@@ -171,7 +171,7 @@ Click on the buttons that describe your target platform. For other architectures
 
 {{% quiz_instruction id="/Linux/x86-64/Stable/Binary download" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64/
+curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-linux-amd64
 sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64
 ```
 {{% /quiz_instruction %}}
