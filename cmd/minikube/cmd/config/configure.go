@@ -57,29 +57,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 		profile := ClusterFlagValue()
 		addon := args[0]
-
-		var addonConfig map[string]any
-
-		if AddonConfigFile != "" {
-			configFileData := make(map[string]any)
-			out.Ln("Reading %s configs from %s", addon, AddonConfigFile)
-			if confData, err := os.ReadFile(AddonConfigFile); err != nil && errors.Is(err, os.ErrNotExist) {
-				exit.Message(reason.Usage, "config file does not exist")
-			} else if err != nil {
-				exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
-					fmt.Sprintf("error opening config file: %v", err))
-			} else if err = json.Unmarshal(confData, &configFileData); err != nil {
-				exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
-					fmt.Sprintf("error opening config file: %v", err))
-			}
-
-			// Make sure the addon specific config exists and it is a map
-			if addonSpecificConfig, ok := configFileData[addon]; ok && addonSpecificConfig != nil {
-				if casted, ok := addonSpecificConfig.(map[string]any); casted != nil && ok {
-					addonConfig = casted
-				}
-			}
-		}
+		addonConfig := loadAddonConfigFile(addon, AddonConfigFile)
 
 		// allows for additional prompting of information when enabling addons
 		switch addon {
@@ -146,6 +124,33 @@ func init() {
 	AddonsCmd.AddCommand(addonsConfigureCmd)
 }
 
+// Helper method to load a config file for addons
+func loadAddonConfigFile(addon, configFilePath string) (addonConfig map[string]any) {
+	if configFilePath != "" {
+		configFileData := make(map[string]any)
+		out.Ln("Reading %s configs from %s", addon, configFilePath)
+		if confData, err := os.ReadFile(configFilePath); err != nil && errors.Is(err, os.ErrNotExist) {
+			exit.Message(reason.Usage, "config file does not exist")
+		} else if err != nil {
+			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
+				fmt.Sprintf("error opening config file: %v", err))
+		} else if err = json.Unmarshal(confData, &configFileData); err != nil {
+			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
+				fmt.Sprintf("error opening config file: %v", err))
+		}
+
+		// Make sure the addon specific config exists and it is a map
+		if addonSpecificConfig, ok := configFileData[addon]; ok && addonSpecificConfig != nil {
+			if casted, ok := addonSpecificConfig.(map[string]any); casted != nil && ok {
+				addonConfig = casted
+			}
+		}
+	}
+	return
+}
+
+// Given a map, returns the (string) value of a key in a given path, equivalent of a["x]["y"]["z"].
+// In case of errors or type mismatches (eg missing key paths or invalid types) an empty string is returned.
 func getNestedJSONString(configMap map[string]any, keypath ...string) string {
 	for idx, key := range keypath {
 		next, ok := configMap[key]
