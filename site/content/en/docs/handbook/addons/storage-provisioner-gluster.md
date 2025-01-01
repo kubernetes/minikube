@@ -1,6 +1,6 @@
 ---
 title: "Using the Storage Provisioner Gluster Addon"
-linkTitle: "Storage Provisioner Cluster"
+linkTitle: "Storage Provisioner Gluster"
 weight: 1
 date: 2019-01-09
 ---

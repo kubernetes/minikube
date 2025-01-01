@@ -112,7 +112,10 @@ var serviceCmd = &cobra.Command{
 			services = newServices
 		}
 
-		if len(services) == 0 {
+		if len(services) == 0 && all {
+			exit.Message(reason.SvcNotFound, `No services were found in the '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service --all -n <namespace>'`, out.V{"namespace": namespace})
+		} else if len(services) == 0 {
 			exit.Message(reason.SvcNotFound, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
 You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": args[0], "namespace": namespace})
 		}
@@ -147,7 +150,7 @@ You may select another namespace by using 'minikube service {{.service}} -n <nam
 				data = append(data, []string{svc.Namespace, svc.Name, servicePortNames, serviceURLs})
 
 				if serviceURLMode && !driver.NeedsPortForward(co.Config.Driver) {
-					out.String(fmt.Sprintf("%s\n", serviceURLs))
+					out.Stringf("%s\n", serviceURLs)
 				}
 			}
 			// check whether there are running pods for this service
@@ -229,7 +232,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 		service.PrintServiceList(os.Stdout, data)
 	} else {
 		for _, row := range data {
-			out.String(fmt.Sprintf("%s\n", row[3]))
+			out.Stringf("%s\n", row[3])
 		}
 	}
 
@@ -286,12 +289,12 @@ func openURLs(urls [][]string) {
 		_, err := url.Parse(u[3])
 		if err != nil {
 			klog.Warningf("failed to parse url %q: %v (will not open)", u[3], err)
-			out.String(fmt.Sprintf("%s\n", u))
+			out.Stringf("%s\n", u)
 			continue
 		}
 
 		if serviceURLMode {
-			out.String(fmt.Sprintf("%s\n", u))
+			out.Stringf("%s\n", u)
 			continue
 		}
 

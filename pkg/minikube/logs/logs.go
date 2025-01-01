@@ -206,7 +206,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.Cluster
 	}
 }
 
-// outputAudit displays the audit logs.
+// OutputAudit displays the audit logs.
 func OutputAudit(lines int) error {
 	out.Styled(style.None, "")
 	out.Styled(style.None, "==> Audit <==")
@@ -218,7 +218,7 @@ func OutputAudit(lines int) error {
 	return nil
 }
 
-// outputLastStart outputs the last start logs.
+// OutputLastStart outputs the last start logs.
 func OutputLastStart() error {
 	out.Styled(style.None, "")
 	out.Styled(style.None, "==> Last Start <==")
@@ -234,15 +234,21 @@ func OutputLastStart() error {
 	}
 	defer f.Close()
 	l := ""
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		l += s.Text() + "\n"
+	r := bufio.NewReader(f)
+	var s string
+	for {
+		s, err = r.ReadString('\n')
+		if err != nil {
+			break
+		}
+		l += s
 	}
 	out.Styled(style.None, l)
-	if err := s.Err(); err != nil {
-		return fmt.Errorf("failed to read file %s: %v", fp, err)
+	if err == io.EOF {
+		return nil
 	}
-	return nil
+
+	return fmt.Errorf("failed to read file %s: %v", fp, err)
 }
 
 // OutputOffline outputs logs that don't need a running cluster.

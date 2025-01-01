@@ -23,10 +23,9 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -35,7 +34,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
@@ -106,86 +104,28 @@ func updateProfilesStatus(profiles []*config.Profile) {
 	defer api.Close()
 
 	for _, p := range profiles {
-		p.Status = profileStatus(p, api)
+		p.Status = profileStatus(p, api).StatusName
 	}
 }
 
-func profileStatus(p *config.Profile, api libmachine.API) string {
+func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 	cps := config.ControlPlanes(*p.Config)
 	if len(cps) == 0 {
 		exit.Message(reason.GuestCpConfig, "No control-plane nodes found.")
 	}
-
-	status := "Unknown"
-	healthyCPs := 0
-	for _, cp := range cps {
-		machineName := config.MachineName(*p.Config, cp)
-
-		ms, err := machine.Status(api, machineName)
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): machine status for %s: %v", machineName, err)
-			continue
-		}
-		if ms != state.Running.String() {
-			klog.Warningf("error loading profile (will continue): machine %s is not running: %q", machineName, ms)
-			status = ms
-			continue
-		}
-
-		host, err := machine.LoadHost(api, machineName)
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): load host for %s: %v", machineName, err)
-			continue
-		}
-
-		hs, err := host.Driver.GetState()
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): host state for %s: %v", machineName, err)
-			continue
-		}
-		if hs != state.Running {
-			klog.Warningf("error loading profile (will continue): host %s is not running: %q", machineName, hs)
-			status = hs.String()
-			continue
-		}
-
-		cr, err := machine.CommandRunner(host)
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): command runner for %s: %v", machineName, err)
-			continue
-		}
-
-		hostname, _, port, err := driver.ControlPlaneEndpoint(p.Config, &cp, host.DriverName)
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): control-plane endpoint for %s: %v", machineName, err)
-			continue
-		}
-
-		as, err := kverify.APIServerStatus(cr, hostname, port)
-		if err != nil {
-			klog.Warningf("error loading profile (will continue): apiserver status for %s: %v", machineName, err)
-			continue
-		}
-		status = as.String()
-		if as != state.Running {
-			klog.Warningf("error loading profile (will continue): apiserver %s is not running: %q", machineName, hs)
-			continue
-		}
-
-		healthyCPs++
-	}
-
-	if config.IsHA(*p.Config) {
-		switch {
-		case healthyCPs < 2:
-			return state.Stopped.String()
-		case healthyCPs == 2:
-			return "Degraded"
-		default:
-			return "HAppy"
+	statuses, err := cluster.GetStatus(api, p.Config)
+	if err != nil {
+		klog.Errorf("error getting statuses: %v", err)
+		return cluster.State{
+			BaseState: cluster.BaseState{
+				Name:       "Unknown",
+				StatusCode: 520,
+			},
 		}
 	}
-	return status
+	clusterStatus := cluster.GetState(statuses, ClusterFlagValue(), p.Config)
+
+	return clusterStatus
 }
 
 func renderProfilesTable(ps [][]string) {
@@ -241,7 +181,7 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 
 	out.ErrT(style.Tip, "You can delete them using the following command(s): ")
 	for _, p := range invalidProfiles {
-		out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
+		out.Errf("\t $ minikube delete -p %s \n", p.Name)
 	}
 }
 

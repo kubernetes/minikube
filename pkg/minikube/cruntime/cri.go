@@ -220,10 +220,28 @@ func removeCRIImage(cr CommandRunner, name string) error {
 	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "rmi"}, name)
 	c := exec.Command("sudo", args...)
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "crictl")
+	var err error
+	if _, err = cr.RunCmd(c); err == nil {
+		return nil
 	}
-	return nil
+	// the reason why we are doing this is that
+	// unlike other tool, podman assume the image has a localhost registry (not docker.io)
+	// if the image is loaded with a tarball without a registry specified in tag
+	// see https://github.com/containers/podman/issues/15974
+
+	// then retry with dockerio prefix
+	if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddDockerIO(name))); err == nil {
+		return nil
+	}
+
+	// then retry with localhost prefix
+	if _, err := cr.RunCmd(exec.Command("sudo", crictl, "rmi", AddLocalhostPrefix(name))); err == nil {
+
+		return nil
+	}
+
+	// if all of above failed, return original error
+	return errors.Wrap(err, "crictl")
 }
 
 // stopCRIContainers stops containers using crictl
@@ -311,14 +329,14 @@ func listCRIImages(cr CommandRunner) ([]ListImage, error) {
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
-func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
+func criContainerLogCmd(cr CommandRunner, id string, length int, follow bool) string {
 	crictl := getCrictlPath(cr)
 	var cmd strings.Builder
 	cmd.WriteString("sudo ")
 	cmd.WriteString(crictl)
 	cmd.WriteString(" logs ")
-	if len > 0 {
-		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
+	if length > 0 {
+		cmd.WriteString(fmt.Sprintf("--tail %d ", length))
 	}
 	if follow {
 		cmd.WriteString("--follow ")
@@ -357,4 +375,9 @@ func checkCNIPlugins(kubernetesVersion semver.Version) error {
 	}
 	_, err := os.Stat("/opt/cni/bin")
 	return err
+}
+
+// Add localhost prefix if the registry part is missing
+func AddLocalhostPrefix(name string) string {
+	return addRegistryPreix(name, "localhost")
 }

@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v63/github"
+	"github.com/google/go-github/v68/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
@@ -106,6 +106,9 @@ func LatestControllerTag(ctx context.Context) (string, error) {
 				continue
 			}
 			vTag := s[1]
+			if semver.Prerelease(vTag) != "" {
+				continue
+			}
 			if semver.Compare(vTag, latest) == 1 {
 				latest = vTag
 			}

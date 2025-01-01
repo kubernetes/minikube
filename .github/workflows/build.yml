@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.5'
+  GO_VERSION: '1.23.3'
 permissions:
   contents: read
 
@@ -20,8 +20,8 @@ jobs:
   build_minikube:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Download Dependencies
@@ -39,15 +39,15 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: minikube_binaries
           path: out
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt
@@ -64,8 +64,8 @@ jobs:
   unit_test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt

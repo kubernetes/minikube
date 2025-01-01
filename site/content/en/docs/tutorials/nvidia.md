@@ -23,6 +23,7 @@ date: 2018-01-02
   ```shell
   sudo sysctl net.core.bpf_jit_harden
   ```
+
   - If it's not `0` run:
   ```shell
   echo "net.core.bpf_jit_harden=0" | sudo tee -a /etc/sysctl.conf
@@ -35,10 +36,20 @@ date: 2018-01-02
   ```shell
   sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker
   ```
+
+- Delete existing minikube (optional)
+
+  If you have an existing minikube instance, you may need to delete it if it was built before installing the nvidia runtime shim.
+  ```shell
+  minikube delete
+  ```
+  This will make sure minikube does any required setup or addon installs now that the nvidia runtime is available.
+  
 - Start minikube:
   ```shell
   minikube start --driver docker --container-runtime docker --gpus all
   ```
+
 {{% /tab %}}
 {{% tab none %}}
 ## Using the 'none' driver
@@ -102,9 +113,10 @@ host to the minikube VM. Doing so has a few prerequisites:
 
   If this succeeded, run the following commands:
   ```shell
-  minikube addons enable nvidia-gpu-device-plugin
+  minikube addons enable nvidia-device-plugin
   minikube addons enable nvidia-driver-installer
   ```
+  NOTE: `nvidia-gpu-device-plugin` addon has been deprecated and it's functionality is merged inside of `nvidia-device-plugin` addon.
 
   This will install the NVIDIA driver (that works for GeForce/Quadro cards)
   on the VM.

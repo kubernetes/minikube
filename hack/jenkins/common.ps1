@@ -68,7 +68,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check
 ./out/check_install_golang.ps1
 
 # Download gopogh and gotestsum
-go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
 go install gotest.tools/gotestsum@v1.12.0
 # temporary: remove the old install of gopogh & gotestsum as it's taking priority over our current install, preventing updating
 if (Test-Path "C:\Go") {

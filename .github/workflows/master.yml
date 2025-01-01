@@ -14,7 +14,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.5'
+  GO_VERSION: '1.23.3'
 permissions:
   contents: read
 
@@ -24,8 +24,8 @@ jobs:
   build_minikube_test_binaries:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Download Dependencies
@@ -42,15 +42,15 @@ jobs:
           echo workspace $GITHUB_WORKSPACE
           echo "end of debug stuff"
           echo $(which jq)
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: minikube_binaries
           path: out
   build_minikube:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Download Dependencies
@@ -62,8 +62,8 @@ jobs:
   lint:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt
@@ -80,8 +80,8 @@ jobs:
   unit_test:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Install libvirt
@@ -128,14 +128,14 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -155,7 +155,7 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker"  -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -177,7 +177,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: functional_docker_ubuntu
           path: minikube_binaries/report
@@ -228,14 +228,14 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -277,7 +277,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: functional_docker_containerd_ubuntu
           path: minikube_binaries/report
@@ -346,14 +346,14 @@ jobs:
           echo "--------------------------"
           docker ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -395,7 +395,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: functional_docker_rootless_containerd_ubuntu
           path: minikube_binaries/report
@@ -451,14 +451,14 @@ jobs:
           echo "--------------------------"
           podman ps || true
           echo "--------------------------"
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           cache: false
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       - name: Download Binaries
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
         with:
@@ -478,7 +478,7 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -v=6 --alsologtostderr -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=podman -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -500,7 +500,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: functional_podman_ubuntu
           path: minikube_binaries/report
@@ -537,7 +537,7 @@ jobs:
           curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           sudo install kubectl /usr/local/bin/kubectl
           kubectl version --client=true
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           cache: false
           go-version: ${{env.GO_VERSION}}
@@ -578,7 +578,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@v0.27.0
+          go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       - name: Set fs.protected_regular
         shell: bash
         run: |
@@ -600,7 +600,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctional -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--driver=none" -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctional -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -622,7 +622,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: functional_baremetal_ubuntu22_04
           path: minikube_binaries/report
@@ -671,7 +671,7 @@ jobs:
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
           cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
-      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: all_reports
           path: all_reports

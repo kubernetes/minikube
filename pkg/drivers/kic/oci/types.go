@@ -61,7 +61,7 @@ type CreateParams struct {
 	OCIBinary     string            // docker or podman
 	Network       string            // network name that the container will attach to
 	IP            string            // static IP to assign the container in the cluster network
-	GPUs          string            // add NVIDIA GPU devices to the container
+	GPUs          string            // add GPU devices to the container
 }
 
 // createOpt is an option for Create

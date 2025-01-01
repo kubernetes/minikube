@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -186,7 +186,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
-	var statuses []cmd.Status
+	var statuses []cluster.Status
 	if err = json.Unmarshal(rr.Stdout.Bytes(), &statuses); err != nil {
 		t.Errorf("failed to decode json from status: args %q: %v", rr.Command(), err)
 	}
@@ -281,7 +281,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 	// Start the node back up
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "-v=7", "--alsologtostderr"))
 	if err != nil {
-		t.Logf(rr.Stderr.String())
+		t.Log(rr.Stderr.String())
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
 	}
 
@@ -505,17 +505,17 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
 		if err != nil {
 			err := fmt.Errorf("failed to retrieve Pod IPs (may be temporary): %v", err)
-			t.Logf(err.Error())
+			t.Log(err.Error())
 			return err
 		}
 		podIPs := strings.Split(strings.Trim(rr.Stdout.String(), "'"), " ")
 		if len(podIPs) != 2 {
 			err := fmt.Errorf("expected 2 Pod IPs but got %d (may be temporary), output: %q", len(podIPs), rr.Output())
-			t.Logf(err.Error())
+			t.Log(err.Error())
 			return err
 		} else if podIPs[0] == podIPs[1] {
 			err := fmt.Errorf("expected 2 different pod IPs but got %s and %s (may be temporary), output: %q", podIPs[0], podIPs[1], rr.Output())
-			t.Logf(err.Error())
+			t.Log(err.Error())
 			return err
 		}
 		return nil

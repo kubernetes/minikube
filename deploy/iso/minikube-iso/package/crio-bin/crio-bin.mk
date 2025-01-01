@@ -72,9 +72,6 @@ define CRIO_BIN_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -Dm644 \
 		$(CRIO_BIN_PKGDIR)/crio.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio.service
-	$(INSTALL) -Dm644 \
-		$(CRIO_BIN_PKGDIR)/crio-wipe.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/crio-wipe.service
 	$(call link-service,crio.service)
 	$(call link-service,crio-shutdown.service)
 endef

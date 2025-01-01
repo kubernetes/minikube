@@ -29,5 +29,5 @@ ARG GO_VERSION
 
 RUN curl -sSL https://go.dev/dl/go${GO_VERSION}.linux-arm64.tar.gz | tar -C /usr/local -xzf -
 
-ENV GOPATH /go
+ENV GOPATH=/go
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin

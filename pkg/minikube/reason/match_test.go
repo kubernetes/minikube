@@ -17,7 +17,7 @@ limitations under the License.
 package reason
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 )
 
@@ -68,7 +68,7 @@ VBoxManage.exe: error: Details: code E_FAIL (0x80004005), component MachineWrap,
 	}
 	for _, tc := range tests {
 		t.Run(tc.want, func(t *testing.T) {
-			got := MatchKnownIssue(Kind{}, fmt.Errorf(tc.err), tc.os)
+			got := MatchKnownIssue(Kind{}, errors.New(tc.err), tc.os)
 			if got == nil {
 				if tc.want != "" {
 					t.Errorf("FromError(%q)=nil, want %s", tc.err, tc.want)

@@ -25,13 +25,17 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 var posResponses = []string{"yes", "y"}
@@ -255,7 +259,7 @@ var addonsConfigureCmd = &cobra.Command{
 				}
 			}
 		case "auto-pause":
-			_, cfg := mustload.Partial(profile)
+			lapi, cfg := mustload.Partial(profile)
 			intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
 			intervalTime, err := time.ParseDuration(intervalInput)
 			if err != nil {
@@ -270,9 +274,25 @@ var addonsConfigureCmd = &cobra.Command{
 			}
 			addon := assets.Addons["auto-pause"]
 			if addon.IsEnabled(cfg) {
-				// Re-enable auto-pause addon in order to update interval time
-				if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
-					out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
+
+				// see #17945: restart auto-pause service
+				p, err := config.LoadProfile(profile)
+				if err != nil {
+					out.ErrT(style.Fatal, "failed to load profile: {{.error}}", out.V{"error": err})
+				}
+				if profileStatus(p, lapi).StatusCode/100 == 2 { // 2xx code
+					co := mustload.Running(profile)
+					// first unpause all nodes cluster immediately
+					unpauseWholeCluster(co)
+					// Re-enable auto-pause addon in order to update interval time
+					if err := addons.EnableOrDisableAddon(cfg, "auto-pause", "true"); err != nil {
+						out.ErrT(style.Fatal, "Failed to configure auto-pause {{.profile}}", out.V{"profile": profile})
+					}
+					// restart auto-pause service
+					if err := sysinit.New(co.CP.Runner).Restart("auto-pause"); err != nil {
+						out.ErrT(style.Fatal, "failed to restart auto-pause: {{.error}}", out.V{"error": err})
+					}
+
 				}
 			}
 		default:
@@ -282,6 +302,40 @@ var addonsConfigureCmd = &cobra.Command{
 
 		out.SuccessT("{{.name}} was successfully configured", out.V{"name": addon})
 	},
+}
+
+func unpauseWholeCluster(co mustload.ClusterController) {
+	for _, n := range co.Config.Nodes {
+
+		// Use node-name if available, falling back to cluster name
+		name := n.Name
+		if n.Name == "" {
+			name = co.Config.Name
+		}
+
+		out.Step(style.Pause, "Unpausing node {{.name}} ... ", out.V{"name": name})
+
+		machineName := config.MachineName(*co.Config, n)
+		host, err := machine.LoadHost(co.API, machineName)
+		if err != nil {
+			exit.Error(reason.GuestLoadHost, "Error getting host", err)
+		}
+
+		r, err := machine.CommandRunner(host)
+		if err != nil {
+			exit.Error(reason.InternalCommandRunner, "Failed to get command runner", err)
+		}
+
+		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: r})
+		if err != nil {
+			exit.Error(reason.InternalNewRuntime, "Failed runtime", err)
+		}
+
+		_, err = cluster.Unpause(cr, r, nil) // nil means all namespaces
+		if err != nil {
+			exit.Error(reason.GuestUnpause, "Pause", err)
+		}
+	}
 }
 
 func init() {

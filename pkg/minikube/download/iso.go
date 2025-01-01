@@ -41,7 +41,7 @@ const fileScheme = "file"
 // DefaultISOURLs returns a list of ISO URL's to consult by default, in priority order
 func DefaultISOURLs() []string {
 	v := version.GetISOVersion()
-	isoBucket := "minikube-builds/iso/19339"
+	isoBucket := "minikube-builds/iso/20090"
 
 	return []string{
 		fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s-%s.iso", isoBucket, v, runtime.GOARCH),
@@ -100,7 +100,7 @@ func ISO(urls []string, skipChecksum bool) (string, error) {
 		msg.WriteString(fmt.Sprintf("  %s: %s\n", u, err))
 	}
 
-	return "", fmt.Errorf(msg.String())
+	return "", errors.New(msg.String())
 }
 
 // downloadISO downloads an ISO URL

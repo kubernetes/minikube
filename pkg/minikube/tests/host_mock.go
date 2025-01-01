@@ -17,7 +17,7 @@ limitations under the License.
 package tests
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/docker/machine/libmachine/drivers"
 )
@@ -49,7 +49,7 @@ func (m MockHost) RunSSHCommand(cmd string) (string, error) {
 		return output, nil
 	}
 	if m.Error != "" {
-		return "", fmt.Errorf(m.Error)
+		return "", errors.New(m.Error)
 	}
 	return "", nil
 }

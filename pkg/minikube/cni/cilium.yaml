@@ -236,6 +236,7 @@ data:
   proxy-xff-num-trusted-hops-ingress: "0"
   proxy-xff-num-trusted-hops-egress: "0"
   proxy-connect-timeout: "2"
+  proxy-initial-fetch-timeout: "30"
   proxy-max-requests-per-connection: "0"
   proxy-max-connection-duration-seconds: "0"
   proxy-idle-timeout-seconds: "60"
@@ -247,6 +248,9 @@ data:
   max-connected-clusters: "255"
   clustermesh-enable-endpoint-sync: "false"
   clustermesh-enable-mcs-api: "false"
+
+  nat-map-stats-entries: "32"
+  nat-map-stats-interval: "30s"
 
 # Extra config allows adding arbitrary properties to the cilium config.
 # By putting it at the end of the ConfigMap, it's also possible to override existing properties.
@@ -312,6 +316,30 @@ data:
                           }
                         }
                       ],
+                      "internal_address_config": {
+                        "cidr_ranges": [
+                          {
+                            "address_prefix": "10.0.0.0",
+                            "prefix_len": 8
+                          },
+                          {
+                            "address_prefix": "172.16.0.0",
+                            "prefix_len": 12
+                          },
+                          {
+                            "address_prefix": "192.168.0.0",
+                            "prefix_len": 16
+                          },
+                          {
+                            "address_prefix": "127.0.0.1",
+                            "prefix_len": 32
+                          },
+                          {
+                            "address_prefix": "::1",
+                            "prefix_len": 128
+                          }
+                        ]
+                      },
                       "stream_idle_timeout": "0s"
                     }
                   }
@@ -365,6 +393,30 @@ data:
                           }
                         }
                       ],
+                      "internal_address_config": {
+                        "cidr_ranges": [
+                          {
+                            "address_prefix": "10.0.0.0",
+                            "prefix_len": 8
+                          },
+                          {
+                            "address_prefix": "172.16.0.0",
+                            "prefix_len": 12
+                          },
+                          {
+                            "address_prefix": "192.168.0.0",
+                            "prefix_len": 16
+                          },
+                          {
+                            "address_prefix": "127.0.0.1",
+                            "prefix_len": 32
+                          },
+                          {
+                            "address_prefix": "::1",
+                            "prefix_len": 128
+                          }
+                        ]
+                      },
                       "stream_idle_timeout": "0s"
                     }
                   }
@@ -518,6 +570,7 @@ data:
       },
       "dynamicResources": {
         "ldsConfig": {
+          "initialFetchTimeout": "30s",
           "apiConfigSource": {
             "apiType": "GRPC",
             "transportApiVersion": "V3",
@@ -533,6 +586,7 @@ data:
           "resourceApiVersion": "V3"
         },
         "cdsConfig": {
+          "initialFetchTimeout": "30s",
           "apiConfigSource": {
             "apiType": "GRPC",
             "transportApiVersion": "V3",
@@ -556,14 +610,13 @@ data:
           }
         }
       ],
-      "layeredRuntime": {
-        "layers": [
+      "overload_manager": {
+        "resource_monitors": [
           {
-            "name": "static_layer_0",
-            "staticLayer": {
-              "overload": {
-                "global_downstream_max_connections": 50000
-              }
+            "name": "envoy.resource_monitors.global_downstream_max_connections",
+            "typed_config": {
+              "@type": "type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig",
+              "max_active_downstream_connections": "50000"
             }
           }
         ]
@@ -708,6 +761,15 @@ rules:
   # to automatically delete [core|kube]dns pods so that are starting to being
   # managed by Cilium
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  resourceNames:
+  - cilium-config
+  verbs:
+   # allow patching of the configmap to set annotations
+  - patch
 - apiGroups:
   - ""
   resources:
@@ -978,6 +1040,31 @@ subjects:
     name: "cilium"
     namespace: kube-system
 ---
+# Source: cilium/templates/cilium-envoy/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cilium-envoy
+  namespace: kube-system
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9964"
+  labels:
+    k8s-app: cilium-envoy
+    app.kubernetes.io/name: cilium-envoy
+    app.kubernetes.io/part-of: cilium
+    io.cilium/app: proxy
+spec:
+  clusterIP: None
+  type: ClusterIP
+  selector:
+    k8s-app: cilium-envoy
+  ports:
+  - name: envoy-metrics
+    port: 9964
+    protocol: TCP
+    targetPort: envoy-metrics
+---
 # Source: cilium/templates/hubble/peer-service.yaml
 apiVersion: v1
 kind: Service
@@ -1029,7 +1116,7 @@ spec:
           type: Unconfined
       containers:
       - name: cilium-agent
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-agent
@@ -1183,7 +1270,7 @@ spec:
           mountPath: /tmp
       initContainers:
       - name: config
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-dbg
@@ -1206,7 +1293,7 @@ spec:
       # Required to mount cgroup2 filesystem on the underlying Kubernetes node.
       # We use nsenter command with host's cgroup and mount namespaces enabled.
       - name: mount-cgroup
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         env:
         - name: CGROUP_ROOT
@@ -1243,7 +1330,7 @@ spec:
             drop:
               - ALL
       - name: apply-sysctl-overwrites
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         env:
         - name: BIN_PATH
@@ -1281,7 +1368,7 @@ spec:
       # from a privileged container because the mount propagation bidirectional
       # only works from privileged containers.
       - name: mount-bpf-fs
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         args:
         - 'mount | grep "/sys/fs/bpf type bpf" || mount -t bpf bpf /sys/fs/bpf'
@@ -1297,7 +1384,7 @@ spec:
           mountPath: /sys/fs/bpf
           mountPropagation: Bidirectional
       - name: clean-cilium-state
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
         - /init-container.sh
@@ -1344,7 +1431,7 @@ spec:
           mountPath: /var/run/cilium # wait-for-kube-proxy
       # Install the CNI binaries in an InitContainer so we don't have a writable host mount in the agent
       - name: install-cni-binaries
-        image: "quay.io/cilium/cilium:v1.16.0@sha256:46ffa4ef3cf6d8885dcc4af5963b0683f7d59daa90d49ed9fb68d3b1627fe058"
+        image: "quay.io/cilium/cilium:v1.16.5@sha256:758ca0793f5995bb938a2fa219dcce63dc0b3fa7fc4ce5cc851125281fb7361d"
         imagePullPolicy: IfNotPresent
         command:
           - "/install-plugin.sh"
@@ -1511,8 +1598,6 @@ spec:
   template:
     metadata:
       annotations:
-        prometheus.io/port: "9964"
-        prometheus.io/scrape: "true"
       labels:
         k8s-app: cilium-envoy
         name: cilium-envoy
@@ -1524,7 +1609,7 @@ spec:
           type: Unconfined
       containers:
       - name: cilium-envoy
-        image: "quay.io/cilium/cilium-envoy:v1.29.7-39a2a56bbd5b3a591f69dbca51d3e30ef97e0e51@sha256:bd5ff8c66716080028f414ec1cb4f7dc66f40d2fb5a009fff187f4a9b90b566b"
+        image: "quay.io/cilium/cilium-envoy:v1.30.8-1733837904-eaae5aca0fb988583e5617170a65ac5aa51c0aa8@sha256:709c08ade3d17d52da4ca2af33f431360ec26268d288d9a6cd1d98acc9a1dced"
         imagePullPolicy: IfNotPresent
         command:
         - /usr/bin/cilium-envoy-starter
@@ -1700,7 +1785,7 @@ spec:
     spec:
       containers:
       - name: cilium-operator
-        image: "quay.io/cilium/operator-generic:v1.16.0@sha256:d6621c11c4e4943bf2998af7febe05be5ed6fdcf812b27ad4388f47022190316"
+        image: "quay.io/cilium/operator-generic:v1.16.5@sha256:f7884848483bbcd7b1e0ccfd34ba4546f258b460cb4b7e2f06a1bcc96ef88039"
         imagePullPolicy: IfNotPresent
         command:
         - cilium-operator-generic

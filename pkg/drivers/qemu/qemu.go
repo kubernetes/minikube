@@ -327,8 +327,8 @@ func parsePortRange(rawPortRange string) (int, int, error) {
 	return minPort, maxPort, nil
 }
 
-func getRandomPortNumberInRange(min, max int) int {
-	return rand.Intn(max-min) + min
+func getRandomPortNumberInRange(minimum, maximum int) int {
+	return rand.Intn(maximum-minimum) + minimum
 }
 
 func getAvailableTCPPortFromRange(minPort, maxPort int) (int, error) {
@@ -505,10 +505,7 @@ func (d *Driver) Start() error {
 	case "socket_vmnet":
 		var err error
 		getIP := func() error {
-			// QEMU requires MAC address with leading 0s
-			// But socket_vmnet writes the MAC address to the dhcp leases file with leading 0s stripped
-			mac := pkgdrivers.TrimMacAddress(d.MACAddress)
-			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(d.MACAddress)
 			if err != nil {
 				return errors.Wrap(err, "failed to get IP address")
 			}

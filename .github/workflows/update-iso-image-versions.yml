@@ -3,15 +3,15 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.22.5'
+  GO_VERSION: '1.23.3'
 permissions:
   contents: read
 jobs:
   update-all:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump versions
@@ -32,16 +32,16 @@ jobs:
           OLD_UBUNTU=$(DEP=ubuntu make get-dependency-version)
           make update-buildkit-version
           make update-cni-plugins-version
-          make update-containerd-version
+          # make update-containerd-version
           # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
           # make update-cri-o-version
           # make update-crictl-version
           make update-crun-version
           make update-docker-version
-          make update-docker-buildx-version
+          # make update-docker-buildx-version
           make update-golang-version
-          make update-nerdctl-version
-          make update-nerdctld-version
+          # make update-nerdctl-version
+          # make update-nerdctld-version
           make update-runc-version
           make update-ubuntu-version
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
@@ -116,7 +116,7 @@ jobs:
       - name: Create PR
         id: createPR
         if: ${{ steps.bumpVersions.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c
+        uses: peter-evans/create-pull-request@5e914681df9dc83aa4e4905692ca88beb2f9e91f
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Kicbase/ISO: Update dependency versions'

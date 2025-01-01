@@ -107,6 +107,10 @@ var (
 	//go:embed gpu/nvidia-gpu-device-plugin.yaml.tmpl
 	NvidiaGpuDevicePluginAssets embed.FS
 
+	// AmdGpuDevicePluginAssets assets for amd-gpu-device-plugin addon
+	//go:embed gpu/amd-gpu-device-plugin.yaml.tmpl
+	AmdGpuDevicePluginAssets embed.FS
+
 	// LogviewerAssets assets for logviewer addon
 	//go:embed logviewer/*.tmpl logviewer/*.yaml
 	LogviewerAssets embed.FS
@@ -114,10 +118,6 @@ var (
 	// GvisorAssets assets for gvisor addon
 	//go:embed gvisor/*.tmpl
 	GvisorAssets embed.FS
-
-	// HelmTillerAssets assets for helm-tiller addon
-	//go:embed helm-tiller/*.tmpl helm-tiller/*.yaml
-	HelmTillerAssets embed.FS
 
 	// IngressDNSAssets assets for ingress-dns addon
 	//go:embed ingress-dns/ingress-dns-pod.yaml.tmpl

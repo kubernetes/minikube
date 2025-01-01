@@ -55,9 +55,10 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-const echoServerImg = "docker.io/kicbase/echo-server"
+const echoServerImg = "kicbase/echo-server"
 
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
@@ -424,8 +425,11 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Fatalf("saving image from minikube to daemon: %v\n%s", err, rr.Output())
 		}
-
-		rr, err = Run(t, exec.CommandContext(ctx, "docker", "image", "inspect", taggedImage))
+		imageToDelete := taggedImage
+		if ContainerRuntime() == "crio" {
+			imageToDelete = cruntime.AddLocalhostPrefix(imageToDelete)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, "docker", "image", "inspect", imageToDelete))
 		if err != nil {
 			t.Fatalf("expected image to be loaded into Docker, but image was not found: %v\n%s", err, rr.Output())
 		}

@@ -4,8 +4,6 @@ Documentation=https://github.com/cri-o/cri-o
 Wants=network-online.target
 After=network-online.target minikube-automount.service
 Requires=minikube-automount.service
-After=crio-wipe.service
-Requires=crio-wipe.service
 
 [Service]
 Type=notify
