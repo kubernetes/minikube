@@ -203,3 +203,34 @@ sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
 sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
 rm "$CNI_PLUGIN_TAR"
 ```
+
+## How to increase open files limit for minikube
+
+When using a container-based driver (docker, podman)) and you are creating multiple nodes, like when creating a [Highly Available Control Plane](https://minikube.sigs.k8s.io/docs/tutorials/multi_control_plane_ha_clusters/) you may see pods in Error status using the `kubectl get po -A` command.
+
+Inspecting the logs of a Pod shows a "too many open files" Linux error:
+
+```shell
+minikube kubectl -- logs -n kube-system kube-proxy-84gm6
+E1210 11:50:42.117036       1 run.go:72] "command failed" err="failed complete: too many open files"
+```
+This can be fixed by increasing the number of inotify watchers on the host where you run minikube:
+
+```shell
+# cat > /etc/sysctl.d/minikube.conf <<EOF
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+EOF
+```
+
+```shell
+# sysctl --system
+...
+* Applying /etc/sysctl.d/minikube.conf ...
+* Applying /etc/sysctl.conf ...
+...
+fs.inotify.max_user_watches = 524288
+fs.inotify.max_user_instances = 512
+```
+
+After increasing the number of watchers, restart the minikube cluster and the error should disappear.
