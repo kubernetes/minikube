@@ -86,8 +86,9 @@ func ExpectAppsRunning(cfg *config.ClusterConfig, cs *kubernetes.Clientset, expe
 	}
 	klog.Infof("%d kube-system pods found", len(pods.Items))
 
-	for !cfg.DisableOptimizations {
+	for !config.IsHA(*cfg) && !cfg.DisableOptimizations {
 		// when --disable-optimization is not specified
+		// for non-HA cluster
 		// core dns deployment has been scaled to 1 pods, wait until there is only 1 pod
 		corednsPods, err := cs.CoreV1().Pods("kube-system").List(context.Background(), meta.ListOptions{
 			LabelSelector: "k8s-app=kube-dns",
