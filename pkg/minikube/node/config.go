@@ -49,6 +49,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 		out.Infof("opt {{.docker_option}}", out.V{"docker_option": v})
 	}
 	for _, v := range config.DockerEnv {
+		v = util.MaskProxyPasswordWithKey(v)
 		out.Infof("env {{.docker_env}}", out.V{"docker_env": v})
 	}
 }
