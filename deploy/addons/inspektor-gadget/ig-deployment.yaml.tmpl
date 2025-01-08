@@ -158,7 +158,7 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           image: {{.CustomRegistries.InspektorGadget  | default .ImageRepository | default .Registries.InspektorGadget }}{{.Images.InspektorGadget}}
           imagePullPolicy: Always
-          command: [ "/entrypoint" ]
+          command: [ "/bin/gadgettracermanager", "-serve", "-controller" ]
           lifecycle:
             preStop:
               exec:
@@ -189,8 +189,6 @@ spec:
                   fieldPath: metadata.uid
             - name: GADGET_IMAGE
               value: "ghcr.io/inspektor-gadget/inspektor-gadget"
-            - name: INSPEKTOR_GADGET_VERSION
-              value: "latest"
             - name: INSPEKTOR_GADGET_OPTION_HOOK_MODE
               value: "auto"
             - name: INSPEKTOR_GADGET_OPTION_FALLBACK_POD_INFORMER
