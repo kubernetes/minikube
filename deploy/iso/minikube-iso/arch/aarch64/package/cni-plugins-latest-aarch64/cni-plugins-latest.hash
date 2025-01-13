@@ -6,3 +6,4 @@ sha256 ab38507efe50c34bc2242a25c5783c19fdfe0376c65a2a91d48174d4f39f1fc2  cni-plu
 sha256 c2a292714d0fad98a3491ae43df8ad58354b3c0bdf5d5a3e281777967c70fcff  cni-plugins-linux-arm64-v1.5.1.tgz
 sha256 db09ab057ecf60b05ba05cbec38d55b95cc139c7f1078e2e4857cc13af158cee  cni-plugins-linux-arm64-v1.6.0.tgz
 sha256 f0f440b968ab50ad13d9d42d993ba98ec30b2ec666846f4ef1bddc7646a701cc  cni-plugins-linux-arm64-v1.6.1.tgz
+sha256 01e0e22acc7f7004e4588c1fe1871cc86d7ab562cd858e1761c4641d89ebfaa4  cni-plugins-linux-arm64-v1.6.2.tgz
