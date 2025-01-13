@@ -57,7 +57,10 @@ var addonsConfigureCmd = &cobra.Command{
 
 		profile := ClusterFlagValue()
 		addon := args[0]
-		addonConfig := loadAddonConfigFile(addon, AddonConfigFile)
+		addonConfig, err := loadAddonConfigFile(addon, AddonConfigFile)
+		if err != nil {
+			return
+		}
 
 		// allows for additional prompting of information when enabling addons
 		switch addon {
@@ -125,18 +128,21 @@ func init() {
 }
 
 // Helper method to load a config file for addons
-func loadAddonConfigFile(addon, configFilePath string) (addonConfig map[string]any) {
+func loadAddonConfigFile(addon, configFilePath string) (addonConfig map[string]any, err error) {
 	if configFilePath != "" {
 		configFileData := make(map[string]any)
 		out.Ln("Reading %s configs from %s", addon, configFilePath)
 		if confData, err := os.ReadFile(configFilePath); err != nil && errors.Is(err, os.ErrNotExist) {
 			exit.Message(reason.Usage, "config file does not exist")
+			return nil, err
 		} else if err != nil {
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error opening config file: %v", err))
+			return nil, err
 		} else if err = json.Unmarshal(confData, &configFileData); err != nil {
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error opening config file: %v", err))
+			return nil, err
 		}
 
 		// Make sure the addon specific config exists and it is a map
@@ -359,7 +365,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 		dat, err := os.ReadFile(gcrPath)
 
 		if err != nil {
-			out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
+			exit.Message(reason.Usage, "Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
 		} else {
 			gcrApplicationDefaultCredentials = string(dat)
 		}
@@ -423,7 +429,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			"kubernetes.io/minikube-addons": "registry-creds",
 		})
 	if err != nil {
-		out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
+		exit.Message(reason.InternalCommandRunner, "ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
 	}
 
 	// Create GCR Secret
@@ -442,7 +448,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 		})
 
 	if err != nil {
-		out.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", out.V{"error": err})
+		exit.Message(reason.InternalCommandRunner, "ERROR creating `registry-creds-gcr` secret: {{.error}}", out.V{"error": err})
 	}
 
 	// Create Docker Secret
