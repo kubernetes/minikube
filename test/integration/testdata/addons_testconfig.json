@@ -14,7 +14,7 @@
         "gcrPath": "./testdata/gcp-creds.json",
         "gcrURL": "https://gcr.io"
       },
-      "enableDockerRegistry": "enable",
+      "enableDockerRegistry": "disable",
       "dockerConfigs": {
         "dockerServer": "test_docker_server",
         "dockerUser": "test_docker_user",

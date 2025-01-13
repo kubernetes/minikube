@@ -20,9 +20,12 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -122,5 +125,41 @@ func validateRegistryCredsAddon(ctx context.Context, t *testing.T, profile strin
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "addons", "configure", "registry-creds", "-f", "./testdata/addons_testconfig.json", "-p", profile))
 	if err != nil {
 		t.Errorf("failed to configure addon. args %q : %v", rr.Command(), err)
+	}
+
+	// Check a few secrets exists that match our test data
+	// In our test aws and gcp are set, docker and acr are disabled - so they will be set to "changeme"
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "-n", "kube-system", "get", "secret", "-o", "yaml"))
+	if err != nil {
+		t.Errorf("failed to get secrets. args %q : %v", rr.Command(), err)
+	}
+
+	expected := []string{
+		"DOCKER_PRIVATE_REGISTRY_PASSWORD: Y2hhbmdlbWU=",
+		"DOCKER_PRIVATE_REGISTRY_SERVER: Y2hhbmdlbWU=",
+		"DOCKER_PRIVATE_REGISTRY_USER: Y2hhbmdlbWU=",
+
+		"ACR_CLIENT_ID: Y2hhbmdlbWU=",
+		"ACR_PASSWORD: Y2hhbmdlbWU=",
+		"ACR_URL: Y2hhbmdlbWU=",
+
+		"AWS_ACCESS_KEY_ID: dGVzdF9hd3NfYWNjZXNzaWQ=",
+		"AWS_SECRET_ACCESS_KEY: dGVzdF9hd3NfYWNjZXNza2V5",
+		"AWS_SESSION_TOKEN: dGVzdF9hd3Nfc2Vzc2lvbl90b2tlbg==",
+		"aws-account: dGVzdF9hd3NfYWNjb3VudA==",
+		"aws-assume-role: dGVzdF9hd3Nfcm9sZQ==",
+		"aws-region: dGVzdF9hd3NfcmVnaW9u",
+
+		"application_default_credentials.json: ewogICJjbGllbnRfaWQiOiAiaGFoYSIsCiAgImNsaWVudF9zZWNyZXQiOiAibmljZV90cnkiLAogICJxdW90YV9wcm9qZWN0X2lkIjogInRoaXNfaXNfZmFrZSIsCiAgInJlZnJlc2hfdG9rZW4iOiAibWF5YmVfbmV4dF90aW1lIiwKICAidHlwZSI6ICJhdXRob3JpemVkX3VzZXIiCn0K",
+		"gcrurl: aHR0cHM6Ly9nY3IuaW8=",
+	}
+
+	rrout := strings.TrimSpace(rr.Stdout.String())
+	for _, exp := range expected {
+		re := regexp.MustCompile(fmt.Sprintf(".*%s.*", exp))
+		secret := re.FindString(rrout)
+		if secret == "" {
+			t.Errorf("Did not find expected secret: '%s'", secret)
+		}
 	}
 }

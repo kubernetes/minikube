@@ -350,7 +350,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			}
 		}
 	} else if gcrAction == "enable" {
-		out.Ln("Loading GCR configs from: ", AddonConfigFile)
+		out.Ln("Loading GCR configs from: %s", AddonConfigFile)
 		// Then read the configs
 		gcrPath = getNestedJSONString(configFileData, "gcrConfigs", "gcrPath")
 		gcrURL = getNestedJSONString(configFileData, "gcrConfigs", "gcrURL")
@@ -380,6 +380,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 		}
 	} else if dockerRegistryAction == "enable" {
+		out.Ln("Loading Docker Registry configs from: %s", AddonConfigFile)
 		dockerServer = getNestedJSONString(configFileData, "dockerConfigs", "dockerServer")
 		dockerUser = getNestedJSONString(configFileData, "dockerConfigs", "dockerUser")
 		dockerPass = getNestedJSONString(configFileData, "dockerConfigs", "dockerPass")
