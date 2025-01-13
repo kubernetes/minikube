@@ -24,16 +24,16 @@ ii  cri-o-runc                      1.1.12~0                                amd6
 ii  cri-tools                       1.25.0~0                                amd64        A command line tool used for creating OCI images.
 ii  criu                            4.0-3                                   amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                               amd64        OCI runtime written in C
-ii  curl                            7.81.0-1ubuntu1.19                      amd64        command line tool for transferring data with URL syntax
+ii  curl                            7.81.0-1ubuntu1.20                      amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.11+git20210903+057cd650a4ed-3build1 amd64        POSIX-compliant shell
 ii  debconf                         1.5.79ubuntu1                           all          Debian configuration management system
 ii  debianutils                     5.5-1ubuntu2                            amd64        Miscellaneous utilities specific to Debian
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.1                       amd64        GNU privacy guard - network certificate management service
 ii  dnsutils                        1:9.18.28-0ubuntu0.22.04.1              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.19.2-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:27.4.0-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:27.4.0-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.19.3-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:27.4.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:27.4.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -83,7 +83,7 @@ ii  libcbor0.8:amd64                0.8.0-2ubuntu1                          amd6
 ii  libcom-err2:amd64               1.46.5-2ubuntu1.2                       amd64        common error description library
 ii  libcrypt1:amd64                 1:4.4.27-1                              amd64        libcrypt shared library
 ii  libcryptsetup12:amd64           2:2.4.3-1ubuntu1.2                      amd64        disk encryption support - shared library
-ii  libcurl4:amd64                  7.81.0-1ubuntu1.19                      amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
+ii  libcurl4:amd64                  7.81.0-1ubuntu1.20                      amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
 ii  libdb5.3:amd64                  5.3.28+dfsg1-0.8ubuntu3                 amd64        Berkeley v5.3 Database Libraries [runtime]
 ii  libdebconfclient0:amd64         0.261ubuntu1                            amd64        Debian Configuration Management System (C-implementation library)
 ii  libdevmapper1.02.1:amd64        2:1.02.175-2.1ubuntu4                   amd64        Linux Kernel Device Mapper userspace library
