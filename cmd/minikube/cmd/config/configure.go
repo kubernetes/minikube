@@ -146,9 +146,13 @@ func loadAddonConfigFile(addon, configFilePath string) (addonConfig map[string]a
 		}
 
 		// Make sure the addon specific config exists and it is a map
-		if addonSpecificConfig, ok := configFileData[addon]; ok && addonSpecificConfig != nil {
-			if casted, ok := addonSpecificConfig.(map[string]any); casted != nil && ok {
-				addonConfig = casted
+		if addonSection, ok := configFileData["addons"]; ok && addonSection != nil {
+			if addonSectionMap, ok := addonSection.(map[string]any); ok && addonSectionMap != nil {
+				if addonSpecificConfig, ok := addonSectionMap[addon]; ok && addonSpecificConfig != nil {
+					if casted, ok := addonSpecificConfig.(map[string]any); casted != nil && ok {
+						addonConfig = casted
+					}
+				}
 			}
 		}
 	}
