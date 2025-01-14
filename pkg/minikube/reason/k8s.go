@@ -20,7 +20,7 @@ import "github.com/blang/semver/v4"
 
 // K8sIssue represents a known issue with a particular version of Kubernetes
 type K8sIssue struct {
-	// VersionAffected is the list of Kubernetes versions that has a particular issue
+	// VersionsAffected is the list of Kubernetes versions that has a particular issue
 	VersionsAffected []string
 	// Description is what will be printed to the user describing the issue
 	Description string
