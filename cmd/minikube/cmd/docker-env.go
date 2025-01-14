@@ -233,6 +233,27 @@ func mustRestartDockerd(name string, runner command.Runner) {
 	}
 }
 
+// ensurePodman ensures podman inside minikube is running before a docker-env command
+func ensurePodman(name string, r command.Runner) {
+	if ok := isPodmanActive(r); ok {
+		return
+	}
+	startPodman(name, r)
+}
+
+// isPodmanActive checks if Podman is active
+func isPodmanActive(r command.Runner) bool {
+	return sysinit.New(r).Active("podman.socket")
+}
+
+// startPodman will attempt to start podman
+func startPodman(name string, r command.Runner) {
+	if err := sysinit.New(r).Start("podman.socket"); err != nil {
+		klog.Warningf("Couldn't start podman inside minikube within '%v' because: %v", name, err)
+		return
+	}
+}
+
 func waitForAPIServerProcess(cr command.Runner, start time.Time, timeout time.Duration) error {
 	klog.Infof("waiting for apiserver process to appear ...")
 	err := apiWait.PollUntilContextTimeout(context.Background(), time.Millisecond*500, timeout, true, func(_ context.Context) (bool, error) {
@@ -312,14 +333,26 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			exit.Message(reason.Usage, err.Error())
 		}
 
+		forceSSH := false
+
 		// for the sake of docker-env command, start nerdctl and nerdctld
 		if cr == constants.Containerd {
 			out.WarningT("Using the docker-env command with the containerd runtime is a highly experimental feature, please provide feedback or contribute to make it better")
 
 			startNerdctld()
+			forceSSH = true
+		}
+		if cr == constants.CRIO {
+			if _, err := co.CP.Runner.RunCmd(exec.Command("sudo", "ln", "-sf", "/run/podman/podman.sock", "/var/run/docker.sock")); err != nil {
+				exit.Message(reason.SSHAgentStart, err.Error())
+			}
+			forceSSH = true
+		}
 
+		if forceSSH {
 			// docker-env on containerd depends on nerdctld (https://github.com/afbjorklund/nerdctld) as "docker" daeomn
 			// and nerdctld daemon must be used with ssh connection (it is set in kicbase image's Dockerfile)
+			// the podman service must be used with ssh connection (it does not support tcp connection)
 			// so directly set --ssh-host --ssh-add to true, even user didn't specify them
 			sshAdd = true
 			sshHost = true
@@ -341,6 +374,9 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 		if cr == constants.Docker {
 			ensureDockerd(cname, r)
+		}
+		if cr == constants.CRIO {
+			ensurePodman(cname, r)
 		}
 
 		d := co.CP.Host.Driver
@@ -670,9 +706,6 @@ func tryDockerConnectivity(bin string, ec DockerEnvConfig) ([]byte, error) {
 }
 
 func dockerEnvSupported(containerRuntime, driverName string) error {
-	if containerRuntime != constants.Docker && containerRuntime != constants.Containerd {
-		return fmt.Errorf("the docker-env command only supports the docker and containerd runtimes")
-	}
 	// we only support containerd-env on the Docker driver
 	if containerRuntime == constants.Containerd && driverName != driver.Docker {
 		return fmt.Errorf("the docker-env command only supports the containerd runtime with the docker driver")
