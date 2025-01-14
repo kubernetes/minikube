@@ -122,11 +122,19 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 	register.Reg.SetStep(register.PullingBaseImage)
 	out.Step(style.Pulling, "Pulling base image {{.kicVersion}} ...", out.V{"kicVersion": kic.Version})
 	g.Go(func() error {
+		images := make([]string, 0, 2+len(kic.FallbackImages))
 		baseImg := cc.KicBaseImage
+		baseFallbackImg := ""
 		if baseImg == kic.BaseImage && len(cc.KubernetesConfig.ImageRepository) != 0 {
-			baseImg = updateKicImageRepo(baseImg, cc.KubernetesConfig.ImageRepository)
+			baseImg, baseFallbackImg = updateKicImageRepo(baseImg, cc.KubernetesConfig.ImageRepository)
 			cc.KicBaseImage = baseImg
 		}
+		images = append(images, baseImg)
+		if baseFallbackImg != "" && baseFallbackImg != baseImg {
+			images = append(images, baseFallbackImg)
+		}
+		images = append(images, kic.FallbackImages...)
+
 		var finalImg string
 		// If we end up using a fallback image, notify the user
 		defer func() {
@@ -139,7 +147,7 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		}()
 		// first we try to download the kicbase image (and fall back images) from docker registry
 		var err error
-		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
+		for _, img := range images {
 
 			if driver.IsDocker(cc.Driver) && download.ImageExistsInDaemon(img) && !downloadOnly {
 				klog.Infof("%s exists in daemon, skipping load", img)
@@ -278,7 +286,7 @@ func imagesInConfigFile() ([]string, error) {
 	return []string{}, nil
 }
 
-func updateKicImageRepo(imgName string, repo string) string {
+func updateKicImageRepo(imgName string, repo string) (string, string) {
 	image := strings.TrimPrefix(imgName, "gcr.io/")
 	if repo == constants.AliyunMirror {
 		// for aliyun registry must strip namespace from image name, e.g.
@@ -286,5 +294,8 @@ func updateKicImageRepo(imgName string, repo string) string {
 		//   registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase:v0.0.25 does work
 		image = strings.TrimPrefix(image, "k8s-minikube/")
 	}
-	return path.Join(repo, image)
+	baseImg := path.Join(repo, image)
+	// try a fallback image without sha, because #11068
+	fallbackImg := strings.Split(image, "@sha256:")[0]
+	return baseImg, fallbackImg
 }
