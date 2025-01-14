@@ -41,7 +41,7 @@ type SSHServer struct {
 	Transfers *bytes.Buffer
 	// Only access this with atomic ops
 	hadASessionRequested int32
-	// commandsToOutput can be used to mock what the SSHServer returns for a given command
+	// commandToOutput can be used to mock what the SSHServer returns for a given command
 	// Only access this with atomic ops
 	commandToOutput atomic.Value
 
