@@ -38,7 +38,9 @@ grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
 # Force go packages to the Jekins home directory
-export GOPATH=$HOME/go
+# export GOPATH=$HOME/go
+./hack/jenkins/installers/check_install_golang.sh "/usr/local"
+
 # Make sure docker is installed and configured
 ./hack/jenkins/installers/check_install_docker.sh
 # Verify ISO exists
