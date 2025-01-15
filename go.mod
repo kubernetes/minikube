@@ -1,8 +1,6 @@
 module k8s.io/minikube
 
-go 1.23.0
-
-toolchain go1.23.4
+go 1.22.1
 
 require (
 	cloud.google.com/go/storage v1.48.0
@@ -80,7 +78,7 @@ require (
 	google.golang.org/api v0.214.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.31.3
-	k8s.io/apimachinery v0.32.0
+	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v0.31.3
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.31.3
