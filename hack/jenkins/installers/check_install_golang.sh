@@ -55,7 +55,7 @@ function check_and_install_golang() {
   # golang has been installed and check its version
   if [[ $(go version | cut -d' ' -f 3) =~ go(([0-9]+)\.([0-9]+).([0-9]+)*) ]]; then
     HOST_VERSION=${BASH_REMATCH[1]}
-    if [ $HOST_VERSION = $VERSION_TO_INSTALL ]; then
+    if [ $HOST_VERSION == $VERSION_TO_INSTALL ]; then
       echo "go version on the host looks good : $HOST_VERSION"
     else
       echo "WARNING: expected go version to be $VERSION_TO_INSTALL but got $HOST_VERSION"
