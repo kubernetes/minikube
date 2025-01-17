@@ -186,7 +186,7 @@ sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-a
 
 {{% quiz_instruction id="/Linux/x86-64/Stable/Debian package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube_latest_amd64.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_amd64.deb
 sudo dpkg -i minikube_latest_amd64.deb
 ```
 {{% /quiz_instruction %}}
@@ -201,7 +201,7 @@ curl -L $u > minikube_beta_amd64.deb && sudo dpkg -i minikube_beta_amd64.deb
 
 {{% quiz_instruction id="/Linux/x86-64/Stable/RPM package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-latest.x86_64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.x86_64.rpm
 sudo rpm -Uvh minikube-latest.x86_64.rpm
 ```
 {{% /quiz_instruction %}}
@@ -231,7 +231,7 @@ sudo install minikube-linux-arm64 /usr/local/bin/minikube && rm minikube-linux-a
 
 {{% quiz_instruction id="/Linux/ARM64/Stable/Debian package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube_latest_arm64.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_arm64.deb
 sudo dpkg -i minikube_latest_arm64.deb
 ```
 {{% /quiz_instruction %}}
@@ -246,7 +246,7 @@ curl -L $u > minikube_beta_arm64.deb && sudo dpkg -i minikube_beta_arm64.deb
 
 {{% quiz_instruction id="/Linux/ARM64/Stable/RPM package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-latest.aarch64.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.aarch64.rpm
 sudo rpm -Uvh minikube-latest.aarch64.rpm
 ```
 {{% /quiz_instruction %}}
@@ -276,7 +276,7 @@ sudo install minikube-linux-ppc64le /usr/local/bin/minikube && rm minikube-linux
 
 {{% quiz_instruction id="/Linux/ppc64/Stable/Debian package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube_latest_ppc64le.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_ppc64le.deb
 sudo dpkg -i minikube_latest_ppc64le.deb
 ```
 {{% /quiz_instruction %}}
@@ -291,7 +291,7 @@ curl -L $u > minikube_beta_ppc64le.deb && sudo dpkg -i minikube_beta_ppc64le.deb
 
 {{% quiz_instruction id="/Linux/ppc64/Stable/RPM package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-latest.ppc64el.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.ppc64el.rpm
 sudo rpm -Uvh minikube-latest.ppc64el.rpm
 ```
 {{% /quiz_instruction %}}
@@ -321,7 +321,7 @@ sudo install minikube-linux-s390x /usr/local/bin/minikube && rm minikube-linux-s
 
 {{% quiz_instruction id="/Linux/S390x/Stable/Debian package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube_latest_s390x.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_s390x.deb
 sudo dpkg -i minikube_latest_s390x.deb
 ```
 {{% /quiz_instruction %}}
@@ -336,7 +336,7 @@ curl -L $u > minikube_beta_s390x.deb && sudo dpkg -i minikube_beta_s390x.deb
 
 {{% quiz_instruction id="/Linux/S390x/Stable/RPM package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-latest.s390x.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.s390x.rpm
 sudo rpm -Uvh minikube-latest.s390x.rpm
 ```
 {{% /quiz_instruction %}}
@@ -366,7 +366,7 @@ sudo install minikube-linux-arm /usr/local/bin/minikube && rm minikube-linux-arm
 
 {{% quiz_instruction id="/Linux/ARMv7/Stable/Debian package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube_latest_armhf.deb
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_latest_armhf.deb
 sudo dpkg -i minikube_latest_armhf.deb
 ```
 {{% /quiz_instruction %}}
@@ -381,7 +381,7 @@ curl -L $u > minikube_beta_armhf.deb && sudo dpkg -i minikube_beta_armhf.deb
 
 {{% quiz_instruction id="/Linux/ARMv7/Stable/RPM package" %}}
 ```shell
-curl -LO https://github.com/kubernetes/minikube/releases/latest/download/minikube-latest.armv7hl.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-latest.armv7hl.rpm
 sudo rpm -Uvh minikube-latest.armv7hl.rpm
 ```
 {{% /quiz_instruction %}}
@@ -471,7 +471,7 @@ choco install minikube
 {{% /quiz_instruction %}}
 
 {{% quiz_instruction id="/Windows/x86-64/Stable/.exe download" %}}
-1. Download and run the installer for the [latest release](https://github.com/kubernetes/minikube/releases/latest/download/minikube-installer.exe).
+1. Download and run the installer for the [latest release](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe).
 <br>
     Or if using `PowerShell`, use this command:
     ```powershell

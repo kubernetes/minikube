@@ -92,7 +92,7 @@ for path in $(gsutil ls "gs://${ISO_BUCKET}/minikube-v${VERSION}*" || true); do
 done
  
 # Upload all end-user assets other than preload files, as they are release independent
-for file in $( find out \( -name "minikube[_-]*" -or -name "docker-machine-*"  \) -and ! -name "*latest*"); do
+for file in $( find out \( -name "minikube[_-]*" -or -name "docker-machine-*"  \) ); do
     n=0
     until [ $n -ge 5 ]
     do
