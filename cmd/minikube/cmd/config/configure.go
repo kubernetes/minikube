@@ -300,20 +300,20 @@ func processRegistryAliasesConfig(profile string, _ map[string]any) {
 // Processes registry-creds addon config from configFile if it exists otherwise resorts to default behavior
 func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 	// Default values
-	awsAccessID := "changeme"
-	awsAccessKey := "changeme"
+	awsAccessID := "MINIKUBE_DEFAULT_VALUE"
+	awsAccessKey := "MINIKUBE_DEFAULT_VALUE"
 	awsSessionToken := ""
-	awsRegion := "changeme"
-	awsAccount := "changeme"
-	awsRole := "changeme"
-	gcrApplicationDefaultCredentials := "changeme"
-	dockerServer := "changeme"
-	dockerUser := "changeme"
-	dockerPass := "changeme"
+	awsRegion := "MINIKUBE_DEFAULT_VALUE"
+	awsAccount := "MINIKUBE_DEFAULT_VALUE"
+	awsRole := "MINIKUBE_DEFAULT_VALUE"
+	gcrApplicationDefaultCredentials := "MINIKUBE_DEFAULT_VALUE"
+	dockerServer := "MINIKUBE_DEFAULT_VALUE"
+	dockerUser := "MINIKUBE_DEFAULT_VALUE"
+	dockerPass := "MINIKUBE_DEFAULT_VALUE"
 	gcrURL := "https://gcr.io"
-	acrURL := "changeme"
-	acrClientID := "changeme"
-	acrPassword := "changeme"
+	acrURL := "MINIKUBE_DEFAULT_VALUE"
+	acrClientID := "MINIKUBE_DEFAULT_VALUE"
+	acrPassword := "MINIKUBE_DEFAULT_VALUE"
 
 	awsEcrAction := getNestedJSONString(configFileData, "enableAWSEcr")
 	if awsEcrAction == "prompt" || awsEcrAction == "" {

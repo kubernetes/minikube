@@ -327,7 +327,7 @@ func validateRegistryCredsAddon(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// Check a few secrets exists that match our test data
-	// In our test aws and gcp are set, docker and acr are disabled - so they will be set to "changeme"
+	// In our test aws and gcp are set, docker and acr are disabled - so they will be set to "MINIKUBE_DEFAULT_VALUE"
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "-n", "kube-system", "get", "secret", "-o", "yaml"))
 	if err != nil {
 		t.Errorf("failed to get secrets. args %q : %v", rr.Command(), err)
