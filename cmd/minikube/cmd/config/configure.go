@@ -42,7 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-var AddonConfigFile = ""
+var addonConfigFile = ""
 var posResponses = []string{"yes", "y"}
 var negResponses = []string{"no", "n"}
 
@@ -57,7 +57,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 		profile := ClusterFlagValue()
 		addon := args[0]
-		addonConfig, err := loadAddonConfigFile(addon, AddonConfigFile)
+		addonConfig, err := loadAddonConfigFile(addon, addonConfigFile)
 		if err != nil {
 			return
 		}
@@ -123,7 +123,7 @@ func unpauseWholeCluster(co mustload.ClusterController) {
 }
 
 func init() {
-	addonsConfigureCmd.Flags().StringVarP(&AddonConfigFile, "config-file", "f", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
+	addonsConfigureCmd.Flags().StringVarP(&addonConfigFile, "config-file", "f", "", "An optional configuration file to read addon specific configs from instead of being prompted each time.")
 	AddonsCmd.AddCommand(addonsConfigureCmd)
 }
 
@@ -327,7 +327,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 		}
 	} else if awsEcrAction == "enable" {
-		out.Ln("Loading AWS ECR configs from: %s", AddonConfigFile)
+		out.Ln("Loading AWS ECR configs from: %s", addonConfigFile)
 		// Then read the configs
 		awsAccessID = getNestedJSONString(configFileData, "awsEcrConfigs", "awsAccessID")
 		awsAccessKey = getNestedJSONString(configFileData, "awsEcrConfigs", "awsAccessKey")
@@ -354,7 +354,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			}
 		}
 	} else if gcrAction == "enable" {
-		out.Ln("Loading GCR configs from: %s", AddonConfigFile)
+		out.Ln("Loading GCR configs from: %s", addonConfigFile)
 		// Then read the configs
 		gcrPath = getNestedJSONString(configFileData, "gcrConfigs", "gcrPath")
 		gcrURL = getNestedJSONString(configFileData, "gcrConfigs", "gcrURL")
@@ -384,7 +384,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 		}
 	} else if dockerRegistryAction == "enable" {
-		out.Ln("Loading Docker Registry configs from: %s", AddonConfigFile)
+		out.Ln("Loading Docker Registry configs from: %s", addonConfigFile)
 		dockerServer = getNestedJSONString(configFileData, "dockerConfigs", "dockerServer")
 		dockerUser = getNestedJSONString(configFileData, "dockerConfigs", "dockerUser")
 		dockerPass = getNestedJSONString(configFileData, "dockerConfigs", "dockerPass")
@@ -403,7 +403,7 @@ func processRegistryCredsConfig(profile string, configFileData map[string]any) {
 			acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 		}
 	} else if configFileData == nil || acrAction == "enable" {
-		out.Ln("Loading ACR configs from: ", AddonConfigFile)
+		out.Ln("Loading ACR configs from: ", addonConfigFile)
 		acrURL = getNestedJSONString(configFileData, "acrConfigs", "acrURL")
 		acrClientID = getNestedJSONString(configFileData, "acrConfigs", "acrClientID")
 		acrPassword = getNestedJSONString(configFileData, "acrConfigs", "acrPassword")
