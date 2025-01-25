@@ -567,7 +567,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 
 		if cfg.VerifyComponents[kverify.AppsRunningKey] {
-			if err := kverify.WaitForAppsRunning(&cfg, client, kverify.AppsRunningList, timeout); err != nil {
+			if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 				return errors.Wrap(err, "waiting for apps_running")
 			}
 		}
