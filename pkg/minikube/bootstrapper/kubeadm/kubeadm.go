@@ -589,7 +589,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 }
 
 // restartPrimaryControlPlane restarts the kubernetes cluster configured by kubeadm.
-func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) error { //nolint: gocyclo
 	klog.Infof("restartPrimaryControlPlane start ...")
 
 	start := time.Now()
@@ -739,7 +739,10 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		klog.Infof("kubelet initialised")
 		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
 
-		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
+		// for ha (multi-control plane) cluster, primary control-plane node (and pods scheduled there) will not come up alone until secondary joins
+		if config.IsHA(cfg) {
+			klog.Infof("HA (multi-control plane) cluster: will skip waiting for pods on primary control-plane node %+v", pcp)
+		} else if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "extra")
 		}
 	}
