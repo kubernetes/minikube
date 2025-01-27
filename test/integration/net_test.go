@@ -41,6 +41,10 @@ import (
 // Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
 // Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection
 func TestNetworkPlugins(t *testing.T) {
+	if KVM2Driver() && ContainerRuntime() == "docker" {
+		// See https://github.com/kubernetes/minikube/issues/20266
+		t.Skip("temporarly skip TestNetworkPlugin on kvm2 docker, see https://github.com/kubernetes/minikube/issues/20266")
+	}
 	// generate reasonably unique profile name suffix to be used for all tests
 	suffix := UniqueProfileName("")
 

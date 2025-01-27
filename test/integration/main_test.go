@@ -129,6 +129,11 @@ func NoneDriver() bool {
 	return strings.Contains(*startArgs, "--driver=none") || strings.Contains(*startArgs, "--vm-driver=none")
 }
 
+// NoneDriver returns whether or not this test is using the none driver
+func KVM2Driver() bool {
+	return strings.Contains(*startArgs, "--driver=kvm2")
+}
+
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
