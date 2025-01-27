@@ -321,7 +321,7 @@ var Addons = map[string]*Addon{
 			"kong-ingress-controller.yaml",
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
-		"Kong":        "kong:3.8.0@sha256:616b2ab5a4c7b6c14022e8a1495ff34930ced76f25f3d418e76758717fec335f",
+		"Kong":        "kong:3.9.0@sha256:f0c19931763dccac7f927e205c98e656eb0c106a44f86d4c56e1355055627443",
 		"KongIngress": "kong/kubernetes-ingress-controller:3.3.1@sha256:9211b2e6c10fc899ad85c77d02eed5ff5c9ec0ca6b4accdfb82679cdba196662",
 	}, map[string]string{
 		"Kong":        "docker.io",
@@ -401,7 +401,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
 		"KubeRegistryProxy": "k8s-minikube/kube-registry-proxy:0.0.8@sha256:60ab3508367ad093b4b891231572577371a29f838d61e64d7f7d093d961c862c",
-		"Registry":          "registry:2.8.3@sha256:543dade69668e02e5768d7ea2b0aa4fae6aa7384c9a5a8dbecc2be5136079ddb",
+		"Registry":          "registry:2.8.3@sha256:319881be2ee9e345d5837d15842a04268de6a139e23be42654fc7664fc6eaf52",
 	}, map[string]string{
 		"KubeRegistryProxy": "gcr.io",
 		"Registry":          "docker.io",
