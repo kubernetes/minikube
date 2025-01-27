@@ -188,15 +188,18 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		out.Ln("")
 
 		kicbaseVersion := strings.Split(kic.Version, "-")[0]
-		finalImg, err = download.GHImageTarballToCache("kicbase", kicbaseVersion)
+		_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
 		if err != nil {
-			klog.Infof("failed to download %s", finalImg)
+			klog.Infof("failed to download kicbase from github")
 			return fmt.Errorf("failed to download kic base image or any fallback image")
 		}
-		klog.Infof("successfully downloaded %s as fall back image", finalImg)
+
+		klog.Infof("successfully downloaded kicbase as fall back image from github")
 		if !downloadOnly && driver.IsDocker(cc.Driver) {
-			if finalImg, err = download.CacheToDaemon("kicbase"); err == nil {
+			if finalImg, err = download.CacheToDaemon(fmt.Sprintf("kicbase/stable:%s", kicbaseVersion)); err == nil {
 				klog.Infof("successfully loaded and using kicbase from tarball on github")
+			} else {
+				return fmt.Errorf("failed to load kic base image into docker: %v", err)
 			}
 		}
 		return nil
