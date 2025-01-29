@@ -113,6 +113,7 @@ Make appropriate changes to [SECURITY-INSIGHTS.yml](https://github.com/kubernete
 ## Announce
 
 Please mention the new release https://github.com/kubernetes/minikube/blob/master/README.md
+Please notify the LWKD team of the new release at slack channel - #sig-contribex-comms
 
 Other places:
 
