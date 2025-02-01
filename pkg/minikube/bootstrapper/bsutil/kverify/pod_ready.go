@@ -90,6 +90,7 @@ func waitPodCondition(ctx context.Context, cs *kubernetes.Clientset, name, names
 		}
 
 		// back off if pod condition is unknown or node is not ready - we check node healt elsewhere
+		// and we must not block starting all nodes for cluster to eventually stabilise
 		if status == core.ConditionUnknown || status == core.TaintNodeNotReady {
 			klog.Warning(reason)
 			return true, nil
@@ -120,22 +121,22 @@ func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condit
 	// check if undelying node is Ready - skip in case we got stale data about the pod
 	if pod.Spec.NodeName != "" {
 		if status, reason := nodeConditionStatus(cs, pod.Spec.NodeName, core.NodeReady); status != core.ConditionTrue {
-			return core.TaintNodeNotReady, fmt.Sprintf("node %q hosting pod %q in %q namespace is not %q (skipping!): %v", pod.Spec.NodeName, name, namespace, core.NodeReady, reason)
+			return core.TaintNodeNotReady, fmt.Sprintf("node %q hosting pod %q in %q namespace is not %q (skipping!): %v", pod.Spec.NodeName, pod.Name, pod.Namespace, core.NodeReady, reason)
 		}
 	}
 
 	if pod.Status.Phase != core.PodRunning && pod.Status.Phase != core.PodPending {
-		return core.ConditionUnknown, fmt.Sprintf("pod %q in %q namespace has status phase %q (skipping!): %+v", pod.Name, pod.Namespace, pod.Status.Phase, pod.Status)
+		return core.ConditionUnknown, fmt.Sprintf("pod %q in %q namespace scheduled on %q node has status phase %q (skipping!): %+v", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.Phase, pod.Status)
 	}
 
 	for _, c := range pod.Status.Conditions {
 		if c.Type == condition {
-			return c.Status, fmt.Sprintf("pod %q in %q namespace has status %q:%q", pod.Name, pod.Namespace, condition, c.Status)
+			return c.Status, fmt.Sprintf("pod %q in %q namespace scheduled on %q node has status %q:%q", pod.Name, pod.Namespace, pod.Spec.NodeName, condition, c.Status)
 		}
 	}
 
 	// assume transient condition
-	return core.ConditionFalse, fmt.Sprintf("pod %q in %q namespace doesn't have %q status: %+v", pod.Name, pod.Namespace, core.PodReady, pod.Status)
+	return core.ConditionFalse, fmt.Sprintf("pod %q in %q namespace scheduled on %q node doesn't have %q status: %+v", pod.Name, pod.Namespace, pod.Spec.NodeName, core.PodReady, pod.Status)
 }
 
 // IsPodReady returns if pod is Ready and verbose reason.

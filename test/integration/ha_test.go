@@ -97,14 +97,14 @@ func TestMultiControlPlane(t *testing.T) {
 // validateHAStartCluster ensures ha (multi-control plane) cluster can start.
 func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
 	// start ha (multi-control plane) cluster
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--ha", "-v=7", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"-p", profile, "start", "--ha", "--memory", "2200", "--wait", "true", "--alsologtostderr", "-v", "5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to fresh-start ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -125,19 +125,19 @@ func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
 // validateHADeployApp deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.
 func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 	// Create a deployment for app
-	_, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "apply", "-f", "./testdata/ha/ha-pod-dns-test.yaml"))
+	_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "apply", "-f", "./testdata/ha/ha-pod-dns-test.yaml"))
 	if err != nil {
 		t.Errorf("failed to create busybox deployment to ha (multi-control plane) cluster")
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "rollout", "status", "deployment/busybox"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "rollout", "status", "deployment/busybox"))
 	if err != nil {
 		t.Errorf("failed to deploy busybox to ha (multi-control plane) cluster")
 	}
 
 	// resolve Pod IPs
 	resolvePodIPs := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "get", "pods", "-o", "jsonpath='{.items[*].status.podIP}'"))
 		if err != nil {
 			err := fmt.Errorf("failed to retrieve Pod IPs (may be temporary): %v", err)
 			t.Log(err.Error())
@@ -160,7 +160,7 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// get Pod names
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {
 		t.Errorf("failed get Pod names")
 	}
@@ -168,7 +168,7 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 
 	// verify all Pods could resolve a public DNS
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.io"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", name, "--", "nslookup", "kubernetes.io"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve 'kubernetes.io': %v", name, err)
 		}
@@ -178,7 +178,7 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 	// this one is also checked by k8s e2e node conformance tests:
 	// https://github.com/kubernetes/kubernetes/blob/f137c4777095b3972e2dd71a01365d47be459389/test/e2e_node/environment/conformance.go#L125-L179
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", name, "--", "nslookup", "kubernetes.default"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve 'kubernetes.default': %v", name, err)
 		}
@@ -186,7 +186,7 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 
 	// verify all pods could resolve to a local service.
 	for _, name := range podNames {
-		_, err = Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
+		_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", name, "--", "nslookup", "kubernetes.default.svc.cluster.local"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve local service (kubernetes.default.svc.cluster.local): %v", name, err)
 		}
@@ -196,7 +196,7 @@ func validateHADeployApp(ctx context.Context, t *testing.T, profile string) {
 // validateHAPingHostFromPods uses app previously deplyed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile string) {
 	// get Pod names
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))
 	if err != nil {
 		t.Fatalf("failed to get Pod names: %v", err)
 	}
@@ -204,7 +204,7 @@ func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile strin
 
 	for _, name := range podNames {
 		// get host.minikube.internal ip as resolved by nslookup
-		out, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
+		out, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", name, "--", "sh", "-c", "nslookup host.minikube.internal | awk 'NR==5' | cut -d' ' -f3"))
 		if err != nil {
 			t.Errorf("Pod %s could not resolve 'host.minikube.internal': %v", name, err)
 			continue
@@ -215,7 +215,7 @@ func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile strin
 		}
 		// try pinging host from pod
 		ping := fmt.Sprintf("ping -c 1 %s", hostIP)
-		if _, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
+		if _, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "kubectl", "--", "exec", name, "--", "sh", "-c", ping)); err != nil {
 			t.Errorf("Failed to ping host (%s) from pod (%s): %v", hostIP, name, err)
 		}
 	}
@@ -224,14 +224,14 @@ func validateHAPingHostFromPods(ctx context.Context, t *testing.T, profile strin
 // validateHAAddWorkerNode uses the minikube node add command to add a worker node to an existing ha (multi-control plane) cluster.
 func validateHAAddWorkerNode(ctx context.Context, t *testing.T, profile string) {
 	// add a node to the current ha (multi-control plane) cluster
-	addArgs := []string{"node", "add", "-p", profile, "-v=7", "--alsologtostderr"}
+	addArgs := []string{"-p", profile, "node", "add", "--alsologtostderr", "-v", "5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
 		t.Fatalf("failed to add worker node to current ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes and 1 worker node
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -325,7 +325,7 @@ func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: cp is unsupported by none driver")
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--output", "json", "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--output", "json", "--alsologtostderr", "-v", "5"))
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -362,13 +362,13 @@ func validateHACopyFile(ctx context.Context, t *testing.T, profile string) {
 // validateHAStopSecondaryNode tests ha (multi-control plane) cluster by stopping a secondary control-plane node using minikube node stop command.
 func validateHAStopSecondaryNode(ctx context.Context, t *testing.T, profile string) {
 	// run minikube node stop on secondary control-plane node
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "stop", SecondNodeName, "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "stop", SecondNodeName, "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("secondary control-plane node stop returned an error. args %q: %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 running nodes and 1 stopped node
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	// exit code 7 means a host is stopped, which we are expecting
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -419,7 +419,7 @@ func validateHAStatusDegraded(ctx context.Context, t *testing.T, profile string)
 // validateHARestartSecondaryNode tests the minikube node start command on existing stopped secondary node.
 func validateHARestartSecondaryNode(ctx context.Context, t *testing.T, profile string) {
 	// start stopped node(s) back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", SecondNodeName, "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", SecondNodeName, "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Log(rr.Stderr.String())
 		t.Errorf("secondary control-plane node start returned an error. args %q: %v", rr.Command(), err)
@@ -427,7 +427,7 @@ func validateHARestartSecondaryNode(ctx context.Context, t *testing.T, profile s
 
 	// ensure minikube status shows all 4 nodes running, waiting for ha (multi-control plane) cluster/apiservers to stabilise
 	minikubeStatus := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 		return err
 	}
 	if err := retry.Expo(minikubeStatus, 1*time.Second, 60*time.Second); err != nil {
@@ -455,23 +455,23 @@ func validateHARestartSecondaryNode(ctx context.Context, t *testing.T, profile s
 
 // validateHARestartClusterKeepsNodes restarts minikube cluster and checks if the reported node list is unchanged.
 func validateHARestartClusterKeepsNodes(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile, "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "list", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
 	}
 	nodeList := rr.Stdout.String()
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "-v=7", "--alsologtostderr"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("failed to run minikube stop. args %q : %v", rr.Command(), err)
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=true", "-v=7", "--alsologtostderr"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "start", "--wait", "true", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("failed to run minikube start. args %q : %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "node", "list", "-p", profile))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "list", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("failed to run node list. args %q : %v", rr.Command(), err)
 	}
@@ -486,13 +486,13 @@ func validateHARestartClusterKeepsNodes(ctx context.Context, t *testing.T, profi
 // note: currently, 'minikube status' subcommand relies on primary control-plane node and storage-provisioner only runs on a primary control-plane node.
 func validateHADeleteSecondaryNode(ctx context.Context, t *testing.T, profile string) {
 	// delete the other secondary control-plane node
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName, "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "delete", ThirdNodeName, "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("node delete returned an error. args %q: %v", rr.Command(), err)
 	}
 
 	// ensure status is back down to 3 hosts
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -530,13 +530,13 @@ func validateHADeleteSecondaryNode(ctx context.Context, t *testing.T, profile st
 // validateHAStopCluster runs minikube stop on a ha (multi-control plane) cluster.
 func validateHAStopCluster(ctx context.Context, t *testing.T, profile string) {
 	// Run minikube stop on the cluster
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop", "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "stop", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Errorf("failed to stop cluster. args %q: %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows all 3 nodes stopped
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	// exit code 7 means a host is stopped, which we are expecting
 	if err != nil && rr.ExitCode != 7 {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
@@ -558,14 +558,14 @@ func validateHAStopCluster(ctx context.Context, t *testing.T, profile string) {
 // validateHARestartCluster verifies a soft restart on a ha (multi-control plane) cluster works.
 func validateHARestartCluster(ctx context.Context, t *testing.T, profile string) {
 	// restart cluster with minikube start
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=7", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"-p", profile, "start", "--wait", "true", "--alsologtostderr", "-v", "5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows all 3 nodes running
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
@@ -603,14 +603,14 @@ func validateHARestartCluster(ctx context.Context, t *testing.T, profile string)
 // validateHAAddSecondaryNode uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.
 func validateHAAddSecondaryNode(ctx context.Context, t *testing.T, profile string) {
 	// add a node to the current ha (multi-control plane) cluster
-	addArgs := []string{"node", "add", "-p", profile, "--control-plane", "-v=7", "--alsologtostderr"}
+	addArgs := []string{"-p", profile, "node", "add", "--control-plane", "--alsologtostderr", "-v", "5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
 		t.Fatalf("failed to add control-plane node to current ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
 	}
 
 	// ensure minikube status shows 3 operational control-plane nodes and 1 worker node
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "--alsologtostderr", "-v", "5"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}

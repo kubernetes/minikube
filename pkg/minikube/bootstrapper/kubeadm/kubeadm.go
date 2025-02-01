@@ -490,7 +490,8 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 	return c, err
 }
 
-// WaitForNode blocks until the node appears to be healthy
+// WaitForNode blocks until the node appears to be healthy.
+// It should not be called for [re]started primary control-plane node in HA clusters.
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 	register.Reg.SetStep(register.VerifyingKubernetes)
@@ -525,7 +526,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	if cfg.VerifyComponents[kverify.NodeReadyKey] {
+	// if extra waiting for system pods to be ready is required, we need node to be ready beforehands
+	if cfg.VerifyComponents[kverify.NodeReadyKey] || cfg.VerifyComponents[kverify.ExtraKey] {
 		name := bsutil.KubeNodeName(cfg, n)
 		if err := kverify.WaitNodeCondition(client, name, core.NodeReady, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
