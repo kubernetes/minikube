@@ -534,12 +534,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.VerifyComponents[kverify.ExtraKey] {
-		if err := kverify.WaitExtra(client, kverify.CorePodsLabels, timeout); err != nil {
-			return errors.Wrap(err, "extra waiting")
-		}
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
@@ -731,7 +725,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 				return err
 			}
 			for _, pod := range pods.Items {
-				if ready, _ := kverify.IsPodReady(&pod); !ready {
+				if !kverify.IsPodReady(&pod) {
 					return nil
 				}
 			}
@@ -740,13 +734,6 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
 		klog.Infof("kubelet initialised")
 		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
-
-		// for ha (multi-control plane) cluster, primary control-plane node (and pods scheduled there) will not come up alone until secondary joins
-		if config.IsHA(cfg) {
-			klog.Infof("HA (multi-control plane) cluster: will skip waiting for pods on primary control-plane node %+v", pcp)
-		} else if err := kverify.WaitExtra(client, kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
-			return errors.Wrap(err, "extra")
-		}
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {

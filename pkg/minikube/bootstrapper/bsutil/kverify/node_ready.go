@@ -38,43 +38,47 @@ func WaitNodeCondition(cs *kubernetes.Clientset, name string, condition core.Nod
 		klog.Infof("duration metric: took %s for node %q to be %q ...", time.Since(start), name, condition)
 	}()
 
-	lap := time.Now()
-	checkCondition := func(_ context.Context) (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("timed out waiting %v for node %q to be %q (will not retry!)", timeout, name, condition)
-		}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
 
-		status, reason := nodeConditionStatus(cs, name, condition)
+	lap := time.Now()
+	checkCondition := func(ctx context.Context) (bool, error) {
+		status, err := nodeConditionStatus(ctx, cs, name, condition)
+		// done if node has condition
 		if status == core.ConditionTrue {
-			klog.Info(reason)
+			klog.Infof("node %q is %q", name, condition)
 			return true, nil
 		}
+		// retry in all other cases, decrease log spam
 		if time.Since(lap) > (2 * time.Second) {
-			klog.Info(reason)
+			if err != nil {
+				klog.Warningf("error getting node %q condition %q status (will retry): %v", name, condition, err)
+			} else {
+				klog.Warningf("node %q has %q:%q status (will retry)", name, condition, status)
+			}
 			lap = time.Now()
 		}
 		return false, nil
 	}
-	if err := wait.PollUntilContextTimeout(context.Background(), kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, true, checkCondition); err != nil {
-		return fmt.Errorf("waitNodeCondition: %w", err)
+	if err := wait.PollUntilContextCancel(ctx, kconst.APICallRetryInterval, true, checkCondition); err != nil {
+		return fmt.Errorf("WaitNodeCondition: %w", err)
 	}
 
 	return nil
 }
 
-// nodeConditionStatus returns if node is in specified condition and verbose reason.
-func nodeConditionStatus(cs *kubernetes.Clientset, name string, condition core.NodeConditionType) (status core.ConditionStatus, reason string) {
-	node, err := cs.CoreV1().Nodes().Get(context.Background(), name, meta.GetOptions{})
+// nodeConditionStatus checks if node exists and returns condition status.
+func nodeConditionStatus(ctx context.Context, cs *kubernetes.Clientset, name string, condition core.NodeConditionType) (core.ConditionStatus, error) {
+	node, err := cs.CoreV1().Nodes().Get(ctx, name, meta.GetOptions{})
 	if err != nil {
-		return core.ConditionUnknown, fmt.Sprintf("error getting node %q: %v", name, err)
+		return core.ConditionUnknown, err
 	}
-
+	// check if node has the condition
 	for _, c := range node.Status.Conditions {
 		if c.Type == condition {
-			return c.Status, fmt.Sprintf("node %q has status %q:%q", node.Name, condition, c.Status)
+			return c.Status, nil
 		}
 	}
-
-	// assume transient condition
-	return core.ConditionFalse, fmt.Sprintf("node %q doesn't have %q status: %+v", node.Name, condition, node.Status)
+	// assume transient error
+	return core.ConditionUnknown, fmt.Errorf("node %q does not have %q condition type: %+v", name, condition, node.Status)
 }

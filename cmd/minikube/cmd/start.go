@@ -47,15 +47,14 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/firewall"
-	netutil "k8s.io/minikube/pkg/network"
-
 	"k8s.io/klog/v2"
+
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -64,6 +63,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/driver/auxdriver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -74,13 +74,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/out/register"
 	"k8s.io/minikube/pkg/minikube/pause"
 	"k8s.io/minikube/pkg/minikube/reason"
-	"k8s.io/minikube/pkg/minikube/style"
-	pkgtrace "k8s.io/minikube/pkg/trace"
-
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/translate"
+	netutil "k8s.io/minikube/pkg/network"
+	pkgtrace "k8s.io/minikube/pkg/trace"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
+	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
 type versionJSON struct {
@@ -285,6 +286,12 @@ func runStart(cmd *cobra.Command, _ []string) {
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		exit.Error(reason.GuestStart, "failed to start node", err)
+	}
+
+	if starter.Cfg.VerifyComponents[kverify.ExtraKey] {
+		if err := kverify.WaitExtra(ClusterFlagValue(), kverify.CorePodsLabels, kconst.DefaultControlPlaneTimeout); err != nil {
+			exit.Message(reason.GuestStart, "extra waiting: {{.error}}", out.V{"error": err})
+		}
 	}
 
 	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Node.ContainerRuntime, starter.Cfg.Name); err != nil {

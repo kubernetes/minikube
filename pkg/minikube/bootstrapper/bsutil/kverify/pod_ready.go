@@ -23,15 +23,17 @@ import (
 	"time"
 
 	core "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/kapi"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
 
-// WaitExtra calls waitPodCondition for all (at least one) kube-system pods having one of specified labels to be "Ready".
-func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration) error {
+// WaitExtra calls waitPodCondition for all (at least one) kube-system pods having one of specified labels to be "Ready" on profile cluster.
+func WaitExtra(profile string, labels []string, timeout time.Duration) error {
 	klog.Infof("extra waiting up to %v for all %q pods having one of %v labels to be %q ...", timeout, meta.NamespaceSystem, labels, core.PodReady)
 	start := time.Now()
 	defer func() {
@@ -40,6 +42,11 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+
+	cs, err := kapi.Client(profile)
+	if err != nil {
+		return fmt.Errorf("failed to get kube client: %v", err)
+	}
 
 	// podsReady poll function checks if all (at least one) pods in the namespace having the label is Ready
 	var label string
@@ -61,7 +68,6 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 		}
 		return true, nil
 	}
-
 	for _, l := range labels {
 		label = l
 		if err := wait.PollUntilContextCancel(ctx, kconst.APICallRetryInterval, true, podsReady); err != nil {
@@ -72,7 +78,7 @@ func WaitExtra(cs *kubernetes.Clientset, labels []string, timeout time.Duration)
 	return nil
 }
 
-// waitPodCondition waits for specified condition of podName in a namespace.
+// waitPodCondition waits for specified condition of pod name in namespace.
 func waitPodCondition(ctx context.Context, cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) error {
 	klog.Infof("waiting for pod %q in %q namespace to be %q or be gone ...", name, namespace, condition)
 	start := time.Now()
@@ -81,76 +87,70 @@ func waitPodCondition(ctx context.Context, cs *kubernetes.Clientset, name, names
 	}()
 
 	lap := time.Now()
-	checkCondition := func(_ context.Context) (bool, error) {
-		status, reason := podConditionStatus(cs, name, namespace, condition)
-		// done if pod is ready
+	checkCondition := func(ctx context.Context) (bool, error) {
+		status, err := podConditionStatus(ctx, cs, name, namespace, condition)
+		// done if pod has condition
 		if status == core.ConditionTrue {
-			klog.Info(reason)
+			klog.Infof("pod %q is %q", name, condition)
 			return true, nil
 		}
-
-		// back off if pod condition is unknown or node is not ready - we check node healt elsewhere
-		// and we must not block starting all nodes for cluster to eventually stabilise
-		if status == core.ConditionUnknown || status == core.TaintNodeNotReady {
-			klog.Warning(reason)
+		// back off if pod or node is gone
+		if kerrors.IsNotFound(err) || status == core.TaintNodeUnreachable {
+			klog.Infof("pod %q in %q namespace is gone: %v", name, namespace, err)
 			return true, nil
 		}
-
-		// retry in all other cases (eg, node not ready, pod pending, pod not ready, etc.)
-		// decrease log spam
+		// retry in all other cases, decrease log spam
 		if time.Since(lap) > (2 * time.Second) {
-			klog.Warning(reason)
+			klog.Warningf("pod %q is not %q, error: %v", name, condition, err)
 			lap = time.Now()
 		}
 		return false, nil
 	}
-	if err := wait.PollUntilContextCancel(ctx, kconst.APICallRetryInterval, false, checkCondition); err != nil {
+	if err := wait.PollUntilContextCancel(ctx, kconst.APICallRetryInterval, true, checkCondition); err != nil {
 		return fmt.Errorf("waitPodCondition: %w", err)
 	}
 
 	return nil
 }
 
-// podConditionStatus returns if pod is in specified condition and verbose reason.
-func podConditionStatus(cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) (status core.ConditionStatus, reason string) {
-	pod, err := cs.CoreV1().Pods(namespace).Get(context.Background(), name, meta.GetOptions{})
+// podConditionStatus returns if pod is in specified condition.
+func podConditionStatus(ctx context.Context, cs *kubernetes.Clientset, name, namespace string, condition core.PodConditionType) (core.ConditionStatus, error) {
+	pod, err := cs.CoreV1().Pods(namespace).Get(ctx, name, meta.GetOptions{})
 	if err != nil {
-		return core.ConditionUnknown, fmt.Sprintf("error getting pod %q in %q namespace (skipping!): %v", name, namespace, err)
+		return core.ConditionUnknown, fmt.Errorf("getting pod %q in %q namespace (will retry): %w", name, namespace, err)
 	}
-
-	// check if undelying node is Ready - skip in case we got stale data about the pod
-	if pod.Spec.NodeName != "" {
-		if status, reason := nodeConditionStatus(cs, pod.Spec.NodeName, core.NodeReady); status != core.ConditionTrue {
-			return core.TaintNodeNotReady, fmt.Sprintf("node %q hosting pod %q in %q namespace is not %q (skipping!): %v", pod.Spec.NodeName, pod.Name, pod.Namespace, core.NodeReady, reason)
+	// check if pod is scheduled on any node
+	if pod.Spec.NodeName == "" {
+		return core.ConditionUnknown, fmt.Errorf("pod %q in %q namespace is not scheduled on any node (will retry): %+v", name, namespace, pod.Status)
+	}
+	// check if node exists and is Ready (KubeAPI)
+	nodeReadyStatus, err := nodeConditionStatus(ctx, cs, pod.Spec.NodeName, core.NodeReady)
+	if err != nil {
+		if kerrors.IsNotFound(err) {
+			return core.TaintNodeUnreachable, fmt.Errorf("node %q hosting pod %q is not found/running (skipping!): %v", pod.Spec.NodeName, name, err)
 		}
+		return core.ConditionUnknown, fmt.Errorf("node %q hosting pod %q is not %q (will retry): %v", pod.Spec.NodeName, name, core.NodeReady, err)
 	}
-
-	if pod.Status.Phase != core.PodRunning && pod.Status.Phase != core.PodPending {
-		return core.ConditionUnknown, fmt.Sprintf("pod %q in %q namespace scheduled on %q node has status phase %q (skipping!): %+v", pod.Name, pod.Namespace, pod.Spec.NodeName, pod.Status.Phase, pod.Status)
+	if nodeReadyStatus != core.ConditionTrue {
+		return core.ConditionUnknown, fmt.Errorf("node %q hosting pod %q is not %q (will retry)", pod.Spec.NodeName, name, core.NodeReady)
 	}
-
+	// check if pod has the condition
 	for _, c := range pod.Status.Conditions {
 		if c.Type == condition {
-			return c.Status, fmt.Sprintf("pod %q in %q namespace scheduled on %q node has status %q:%q", pod.Name, pod.Namespace, pod.Spec.NodeName, condition, c.Status)
+			return c.Status, nil
 		}
 	}
-
-	// assume transient condition
-	return core.ConditionFalse, fmt.Sprintf("pod %q in %q namespace scheduled on %q node doesn't have %q status: %+v", pod.Name, pod.Namespace, pod.Spec.NodeName, core.PodReady, pod.Status)
+	// assume transient error
+	return core.ConditionUnknown, fmt.Errorf("pod %q does not have %q condition type: %+v", name, condition, pod.Status)
 }
 
-// IsPodReady returns if pod is Ready and verbose reason.
-func IsPodReady(pod *core.Pod) (ready bool, reason string) {
-	if pod.Status.Phase != core.PodRunning {
-		return false, fmt.Sprintf("pod %q in %q namespace is not Running: %+v", pod.Name, pod.Namespace, pod.Status)
-	}
+// IsPodReady returns if pod is Ready.
+func IsPodReady(pod *core.Pod) bool {
 	for _, c := range pod.Status.Conditions {
 		if c.Type == core.PodReady {
-			if c.Status != core.ConditionTrue {
-				return false, fmt.Sprintf("pod %q in %q namespace is not Ready: %+v", pod.Name, pod.Namespace, c)
-			}
-			return true, fmt.Sprintf("pod %q in %q namespace is Ready: %+v", pod.Name, pod.Namespace, c)
+			return c.Status == core.ConditionTrue
 		}
 	}
-	return false, fmt.Sprintf("pod %q in %q namespace does not have %q status: %+v", pod.Name, pod.Namespace, core.PodReady, pod.Status)
+	// assume transient error
+	return false
 }
