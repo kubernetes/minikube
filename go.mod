@@ -77,9 +77,9 @@ require (
 	gonum.org/v1/plot v0.15.0
 	google.golang.org/api v0.217.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.31.3
-	k8s.io/apimachinery v0.32.0
-	k8s.io/client-go v0.31.3
+	k8s.io/api v0.32.1
+	k8s.io/apimachinery v0.32.1
+	k8s.io/client-go v0.32.1
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.31.3
 	k8s.io/klog/v2 v2.130.1
@@ -164,7 +164,6 @@ require (
 	github.com/hectane/go-acl v0.0.0-20190604041725-da78bae5fc95 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

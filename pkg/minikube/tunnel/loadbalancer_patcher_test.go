@@ -24,9 +24,12 @@ import (
 
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	"k8s.io/client-go/gentype"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	fake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/rest"
+	testing_fake "k8s.io/client-go/testing"
 )
 
 type stubCoreClient struct {
@@ -35,10 +38,21 @@ type stubCoreClient struct {
 	restClient   *rest.RESTClient
 }
 
-func (c *stubCoreClient) Services(_ string) typed_core.ServiceInterface {
+func (c *stubCoreClient) Services(namespace string) typed_core.ServiceInterface {
 	return &stubServices{
-		fake.FakeServices{Fake: &c.FakeCoreV1},
-		c.servicesList,
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration](
+			fake.FakeCoreV1{Fake: &testing_fake.Fake{}}.Fake,
+			namespace,
+			core.SchemeGroupVersion.WithResource("services"),
+			core.SchemeGroupVersion.WithKind("Service"),
+			func() *core.Service { return &core.Service{} },
+			func() *core.ServiceList { return &core.ServiceList{} },
+			func(dst, src *core.ServiceList) { dst.ListMeta = src.ListMeta },
+			func(list *core.ServiceList) []*core.Service { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.ServiceList, items []*core.Service) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake:         fake.FakeCoreV1{},
+		servicesList: c.servicesList,
 	}
 }
 
@@ -47,7 +61,9 @@ func (c *stubCoreClient) RESTClient() rest.Interface {
 }
 
 type stubServices struct {
-	fake.FakeServices
+	*gentype.FakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration]
+	Fake fake.FakeCoreV1
+	typed_core.ServiceExpansion
 	servicesList *core.ServiceList
 }
 
