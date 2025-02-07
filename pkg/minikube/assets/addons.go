@@ -761,7 +761,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.HeadlampAssets, "headlamp/headlamp-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "headlamp-clusterrolebinding.yaml", "0640"),
 	}, false, "headlamp", "3rd party (kinvolk.io)", "yolossn", "https://minikube.sigs.k8s.io/docs/handbook/addons/headlamp/",
 		map[string]string{
-			"Headlamp": "headlamp-k8s/headlamp:v0.28.0@sha256:fcf2f93fc3dfa8c9beb6467502aa9bb6cc9fac4379e0683246475a57bb05daae",
+			"Headlamp": "headlamp-k8s/headlamp:v0.28.1@sha256:06e9c1f22d4185b90980181ce7acc3045d236e221ee5f59becd9a24e655b0c59",
 		},
 		map[string]string{
 			"Headlamp": "ghcr.io",
