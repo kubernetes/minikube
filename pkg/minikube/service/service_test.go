@@ -34,6 +34,8 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	"k8s.io/client-go/gentype"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
@@ -63,8 +65,24 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		secretsMap:   m.secretsMap}, nil
 }
 
-func (m *MockCoreClient) Secrets(_ string) typed_core.SecretInterface {
-	return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
+func (m *MockCoreClient) Secrets(namespace string) typed_core.SecretInterface {
+	return &MockSecretInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration](
+			fake.FakeCoreV1{Fake: &testing_fake.Fake{}}.Fake,
+			namespace,
+			core.SchemeGroupVersion.WithResource("secrets"),
+			core.SchemeGroupVersion.WithKind("Secret"),
+			func() *core.Secret { return &core.Secret{} },
+			func() *core.SecretList { return &core.SecretList{} },
+			func(dst, src *core.SecretList) { dst.ListMeta = src.ListMeta },
+			func(list *core.SecretList) []*core.Secret { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.SecretList, items []*core.Secret) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake: fake.FakeCoreV1{},
+		SecretsList: &core.SecretList{
+			Items: []core.Secret{},
+		},
+	}
 }
 
 func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
@@ -171,7 +189,8 @@ func (m *MockCoreClient) Endpoints(namespace string) typed_core.EndpointsInterfa
 }
 
 type MockEndpointsInterface struct {
-	fake.FakeEndpoints
+	*gentype.FakeClientWithListAndApply[*core.Endpoints, *core.EndpointsList, *corev1.EndpointsApplyConfiguration]
+	fake.FakeCoreV1
 	Endpoints *core.Endpoints
 }
 
@@ -227,12 +246,15 @@ func (e MockEndpointsInterface) Get(_ context.Context, name string, _ meta.GetOp
 }
 
 type MockServiceInterface struct {
-	fake.FakeServices
+	*gentype.FakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration]
+	fake.FakeCoreV1
+	typed_core.ServiceExpansion
 	ServiceList *core.ServiceList
 }
 
 type MockSecretInterface struct {
-	fake.FakeSecrets
+	*gentype.FakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration]
+	Fake        fake.FakeCoreV1
 	SecretsList *core.SecretList
 }
 
