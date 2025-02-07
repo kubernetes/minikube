@@ -1265,6 +1265,11 @@ update-kube-registry-proxy-version:
 	(cd hack/update/kube_registry_proxy_version && \
 	 go run update_kube_registry_proxy_version.go)
 
+.PHONY: update-headlamp-version
+update-headlamp-version:
+	(cd hack/update/headlamp_version && \
+	 go run update_headlamp_version.go)
+
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack/update/get_version && \
