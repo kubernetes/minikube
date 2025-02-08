@@ -277,7 +277,7 @@ func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
 
-// Writer writes the asset
+// Write writes the asset
 func (m *MemoryAsset) Write(p []byte) (int, error) {
 	m.length = len(p)
 	m.reader = bytes.NewReader(p)
