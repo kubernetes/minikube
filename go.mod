@@ -26,7 +26,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-containerregistry v0.20.2
-	github.com/google/go-github/v68 v68.0.0
+	github.com/google/go-github/v69 v69.0.0
 	github.com/google/slowjam v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-getter v1.7.8
