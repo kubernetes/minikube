@@ -68,7 +68,7 @@ require (
 	golang.org/x/build v0.0.0-20190927031335-2835ba2e683f
 	golang.org/x/crypto v0.32.0
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
-	golang.org/x/mod v0.22.0
+	golang.org/x/mod v0.23.0
 	golang.org/x/oauth2 v0.25.0
 	golang.org/x/sync v0.10.0
 	golang.org/x/sys v0.30.0
