@@ -549,8 +549,8 @@ cloud.google.com/go/storage v1.23.0/go.mod h1:vOEEDNFnciUMhBeT6hsJIn3ieU5cFRmzeL
 cloud.google.com/go/storage v1.27.0/go.mod h1:x9DOL8TK/ygDUMieqwfhdpQryTeEkhGKMi80i/iqR2s=
 cloud.google.com/go/storage v1.28.1/go.mod h1:Qnisd4CqDdo6BGs2AD5LLnEsmSQ80wQ5ogcBBKhU86Y=
 cloud.google.com/go/storage v1.29.0/go.mod h1:4puEjyTKnku6gfKoTfNOU/W+a9JyuVNxjpS5GBrB8h4=
-cloud.google.com/go/storage v1.48.0 h1:FhBDHACbVtdPx7S/AbcKujPWiHvfO6F8OXGgCEbB2+o=
-cloud.google.com/go/storage v1.48.0/go.mod h1:aFoDYNMAjv67lp+xcuZqjUKv/ctmplzQ3wJgodA7b+M=
+cloud.google.com/go/storage v1.50.0 h1:3TbVkzTooBvnZsk7WaAQfOsNrdoM8QHusXA1cpk6QJs=
+cloud.google.com/go/storage v1.50.0/go.mod h1:l7XeiD//vx5lfqE3RavfmU9yvk5Pp0Zhcv482poyafY=
 cloud.google.com/go/storagetransfer v1.5.0/go.mod h1:dxNzUopWy7RQevYFHewchb29POFv3/AaBgnhqzqiK0w=
 cloud.google.com/go/storagetransfer v1.6.0/go.mod h1:y77xm4CQV/ZhFZH75PLEXY0ROiS7Gh6pSKrM8dJyg6I=
 cloud.google.com/go/storagetransfer v1.7.0/go.mod h1:8Giuj1QNb1kfLAiWM1bN6dHzfdlDAVC9rv9abHot2W4=
@@ -674,8 +674,8 @@ github.com/Delta456/box-cli-maker/v2 v2.3.0 h1:rGdoK/Qt3shdT1uqRMGgPqrhtisGD7Pam
 github.com/Delta456/box-cli-maker/v2 v2.3.0/go.mod h1:Uv/kSX95LuNQn3C8wWazEIETE6MunPuYN+/knckbPQc=
 github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.4 h1:9tYmgu3dUmM8lcVAl4RVt7tlfOrcGZraqBUaWF13480=
 github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.4/go.mod h1:x8nDiJmhU8lv6OhnFU96L6Y6Jyztme1Nr9Ibf3FXtp0=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.2 h1:cZpsGsWTIFKymTA0je7IIvi1O7Es7apb9CF3EQlOcfE=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.2/go.mod h1:itPGVDKf9cC/ov4MdvJ2QZ0khw4bfoo9jzwTJlaxy2k=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 h1:3c8yed4lgqTt+oTQ+JNMDo+F4xprBf+O/il4ZC0nRLw=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0/go.mod h1:obipzmGjfSjam60XLwGfqUkJsfiheAl+TUjG+4yzyPM=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 h1:UQ0AhxogsIRZDkElkblfnwjc3IaltCm2HUMvezQaL7s=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1/go.mod h1:jyqM3eLpJ3IbIFDTKVz2rF9T/xWGW0rIriGwnz8l9Tk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.25.0 h1:4PoDbd/9/06IpwLGxSfvfNoEr9urvfkrN6mmJangGCg=
