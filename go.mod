@@ -17,7 +17,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.1.5
 	github.com/cloudevents/sdk-go/v2 v2.15.2
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v27.4.1+incompatible
+	github.com/docker/cli v27.5.1+incompatible
 	github.com/docker/docker v27.4.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/docker/go-units v0.5.0
