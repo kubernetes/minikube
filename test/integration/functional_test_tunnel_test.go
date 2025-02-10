@@ -432,4 +432,9 @@ func validateTunnelDelete(_ context.Context, t *testing.T, _ string) {
 	checkRoutePassword(t)
 	// Stop tunnel
 	tunnelSession.Stop(t)
+	// prevent the child process from becoming a defunct zombie process
+	if err := tunnelSession.cmd.Wait(); err != nil {
+		t.Logf("failed to stop process: %v", err)
+		return
+	}
 }

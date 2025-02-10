@@ -119,6 +119,17 @@ func StartArgs() []string {
 	return strings.Split(*startArgs, " ")
 }
 
+type ContextKey string
+
+func StartArgsWithContext(ctx context.Context) []string {
+	res := strings.Split(*startArgs, " ")
+	value := ctx.Value(ContextKey("k8sVersion"))
+	if value != nil && value != "" {
+		res = append(res, fmt.Sprintf("--kubernetes-version=%s", value))
+	}
+	return res
+}
+
 // Target returns where the minikube binary can be found
 func Target() string {
 	return *binaryPath

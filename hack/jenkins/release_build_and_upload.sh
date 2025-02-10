@@ -110,16 +110,7 @@ cp "out/minikube-${RPM_VERSION}-0.armv7hl.rpm" out/minikube-latest.armv7hl.rpm
 cp "out/minikube-${RPM_VERSION}-0.ppc64le.rpm" out/minikube-latest.ppc64le.rpm
 cp "out/minikube-${RPM_VERSION}-0.s390x.rpm" out/minikube-latest.s390x.rpm
 
-gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 
-# Update "latest" release for non-beta/non-alpha builds
-if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
-  echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"
-  exit 0
-fi
-
-#echo "Updating Docker images ..."
-#make push-gvisor-addon-image push-storage-provisioner-manifest
 
 echo "Generating tarballs for kicbase images"
 # first get the correct tag of the kic base image
@@ -135,6 +126,20 @@ do
   openssl sha256 "${TARBALL_NAME}" | awk '{print $2}' > "${TARBALL_NAME}.sha256"
   docker rmi -f ${IMAGE_NAME}
 done
+
+
+# upload to google bucket
+gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
+
+# Update "latest" release for non-beta/non-alpha builds
+if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
+  echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"
+  exit 0
+fi
+
+#echo "Updating Docker images ..."
+#make push-gvisor-addon-image push-storage-provisioner-manifest
+
 
 echo "Updating latest bucket for ${VERSION} release ..."
 gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
