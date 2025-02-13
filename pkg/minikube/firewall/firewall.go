@@ -50,11 +50,9 @@ func IsBootpdBlocked(cc config.ClusterConfig) bool {
 	if err != nil {
 		// macOS < 15 or other issue: need to use --list.
 		klog.Warningf("failed to list firewall allowedsinged option: %v", err)
-	} else {
-		// macOS >= 15: bootpd may be allowed as builtin software.
-		if regexp.MustCompile(`Automatically allow built-in signed software ENABLED`).Match(out) {
-			return false
-		}
+		// macOS >= 15: bootpd may be allowed as builtin software
+	} else if regexp.MustCompile(`Automatically allow built-in signed software ENABLED`).Match(out) {
+		return false
 	}
 	out, err = exec.Command("/usr/libexec/ApplicationFirewall/socketfilterfw", "--listapps").Output()
 	if err != nil {
