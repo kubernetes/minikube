@@ -226,10 +226,11 @@ func ImageToCache(img string) error {
 	}
 }
 
-// GHImageTarballToCache try to download the tarball of kicbase from github release.
+// GHKicbaseTarballToCache try to download the tarball of kicbase from github release.
 // This is the last resort, in case of all docker registry is not available.
-func GHImageTarballToCache(img, imgVersion string) (string, error) {
-	f := imagePathInCache(img)
+func GHKicbaseTarballToCache(kicBaseVersion string) (string, error) {
+	imageName := fmt.Sprintf("kicbase/stable:%s", kicBaseVersion)
+	f := imagePathInCache(imageName)
 	fileLock := f + ".lock"
 
 	kicbaseArch := runtime.GOARCH
@@ -244,9 +245,9 @@ func GHImageTarballToCache(img, imgVersion string) (string, error) {
 	if releaser != nil {
 		defer releaser.Release()
 	}
-	downloadURL := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/%s-%s-%s.tar",
+	downloadURL := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/kicbase-%s-%s.tar",
 		version.GetVersion(),
-		img, imgVersion, kicbaseArch)
+		kicBaseVersion, kicbaseArch)
 
 	// we don't want the tarball to be decompressed
 	// so we pass client options to suppress this behavior

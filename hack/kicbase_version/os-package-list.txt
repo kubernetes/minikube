@@ -8,15 +8,15 @@ ii  apt                             2.4.13                                  amd6
 ii  base-files                      12ubuntu4.7                             amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.5.52build1                            amd64        Debian base system master password and group files
 ii  bash                            5.1-6ubuntu1.1                          amd64        GNU Bourne Again SHell
-ii  bind9-dnsutils                  1:9.18.30-0ubuntu0.22.04.1              amd64        Clients provided with BIND 9
-ii  bind9-host                      1:9.18.30-0ubuntu0.22.04.1              amd64        DNS Lookup Utility
-ii  bind9-libs:amd64                1:9.18.30-0ubuntu0.22.04.1              amd64        Shared Libraries used by BIND 9
+ii  bind9-dnsutils                  1:9.18.30-0ubuntu0.22.04.2              amd64        Clients provided with BIND 9
+ii  bind9-host                      1:9.18.30-0ubuntu0.22.04.2              amd64        DNS Lookup Utility
+ii  bind9-libs:amd64                1:9.18.30-0ubuntu0.22.04.2              amd64        Shared Libraries used by BIND 9
 ii  bsdutils                        1:2.37.2-4ubuntu3.4                     amd64        basic utilities from 4.4BSD-Lite
 ii  ca-certificates                 20240203~22.04.1                        all          Common CA certificates
 ii  catatonit                       0.1.7-1                                 amd64        init process for containers
 ii  conmon                          100:2.1.2~0                             amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.6-2build2                         amd64        Program to modify the conntrack tables
-ii  containerd.io                   1.7.24-1                                amd64        An open and reliable container runtime
+ii  containerd.io                   1.7.25-1                                amd64        An open and reliable container runtime
 ii  containernetworking-plugins     0.9.1+ds1-1ubuntu0.1                    amd64        standard networking plugins - binaries
 ii  coreutils                       8.32-4.1ubuntu1.2                       amd64        GNU core utilities
 ii  cri-o                           1.24.6~0                                amd64        OCI-based implementation of Kubernetes Container Runtime Interface.
@@ -30,10 +30,10 @@ ii  debconf                         1.5.79ubuntu1                           all 
 ii  debianutils                     5.5-1ubuntu2                            amd64        Miscellaneous utilities specific to Debian
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.1                       amd64        GNU privacy guard - network certificate management service
-ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.1              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.19.3-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:27.4.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:27.4.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
+ii  docker-buildx-plugin            0.20.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:27.5.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:27.5.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -137,13 +137,13 @@ ii  libnghttp2-14:amd64             1.43.0-1ubuntu0.2                       amd6
 ii  libnl-3-200:amd64               3.5.0-0.1                               amd64        library for dealing with netlink sockets
 ii  libnpth0:amd64                  1.6-3build2                             amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2build2                           amd64        Public client interface for NIS(YP) and NIS+
-ii  libnvidia-container-tools       1.17.3-1                                amd64        NVIDIA container runtime library (command-line tools)
-ii  libnvidia-container1:amd64      1.17.3-1                                amd64        NVIDIA container runtime library
+ii  libnvidia-container-tools       1.17.4-1                                amd64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:amd64      1.17.4-1                                amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.0-6build1                          amd64        library for loading and coordinating access to PKCS#11 modules - runtime
-ii  libpam-modules:amd64            1.4.0-11ubuntu2.4                       amd64        Pluggable Authentication Modules for PAM
-ii  libpam-modules-bin              1.4.0-11ubuntu2.4                       amd64        Pluggable Authentication Modules for PAM - helper binaries
-ii  libpam-runtime                  1.4.0-11ubuntu2.4                       all          Runtime support for the PAM library
-ii  libpam0g:amd64                  1.4.0-11ubuntu2.4                       amd64        Pluggable Authentication Modules library
+ii  libpam-modules:amd64            1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules for PAM
+ii  libpam-modules-bin              1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules for PAM - helper binaries
+ii  libpam-runtime                  1.4.0-11ubuntu2.5                       all          Runtime support for the PAM library
+ii  libpam0g:amd64                  1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules library
 ii  libpcre2-8-0:amd64              10.39-3ubuntu0.1                        amd64        New Perl Compatible Regular Expression Library- 8 bit runtime files
 ii  libpcre3:amd64                  2:8.39-13ubuntu0.22.04.1                amd64        Old Perl 5 Compatible Regular Expression Library - runtime files
 ii  libpopt0:amd64                  1.18-3build1                            amd64        lib for parsing cmdline parameters
@@ -152,13 +152,13 @@ ii  libprotobuf-c1:amd64            1.3.3-1ubuntu2.1                        amd6
 ii  libprotobuf23:amd64             3.12.4-1ubuntu7.22.04.1                 amd64        protocol buffers C++ library
 ii  libpsl5:amd64                   0.21.0-1.2build2                        amd64        Library for Public Suffix List (shared libraries)
 ii  libpython3-stdlib:amd64         3.10.6-1~22.04.1                        amd64        interactive high-level object-oriented language (default python3 version)
-ii  libpython3.10-minimal:amd64     3.10.12-1~22.04.7                       amd64        Minimal subset of the Python language (version 3.10)
-ii  libpython3.10-stdlib:amd64      3.10.12-1~22.04.7                       amd64        Interactive high-level object-oriented language (standard library, version 3.10)
+ii  libpython3.10-minimal:amd64     3.10.12-1~22.04.8                       amd64        Minimal subset of the Python language (version 3.10)
+ii  libpython3.10-stdlib:amd64      3.10.12-1~22.04.8                       amd64        Interactive high-level object-oriented language (standard library, version 3.10)
 ii  libreadline8:amd64              8.1.2-1                                 amd64        GNU readline and history libraries, run-time libraries
 ii  librtmp1:amd64                  2.4+20151223.gitfa8646d.1-2build4       amd64        toolkit for RTMP streams (shared library)
 ii  libsasl2-2:amd64                2.1.27+dfsg2-3ubuntu1.2                 amd64        Cyrus SASL - authentication abstraction library
 ii  libsasl2-modules-db:amd64       2.1.27+dfsg2-3ubuntu1.2                 amd64        Cyrus SASL - pluggable authentication modules (DB)
-ii  libseccomp2:amd64               2.5.3-2ubuntu2                          amd64        high level interface to Linux seccomp filter
+ii  libseccomp2:amd64               2.5.3-2ubuntu3~22.04.1                  amd64        high level interface to Linux seccomp filter
 ii  libselinux1:amd64               3.3-1build2                             amd64        SELinux runtime shared libraries
 ii  libsemanage-common              3.3-1build2                             all          Common files for SELinux policy management libraries
 ii  libsemanage2:amd64              3.3-1build2                             amd64        SELinux policy management library
@@ -179,7 +179,7 @@ ii  libunistring2:amd64             1.0-1                                   amd6
 ii  libuuid1:amd64                  2.37.2-4ubuntu3.4                       amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.43.0-1ubuntu0.1                       amd64        asynchronous event notification library - runtime library
 ii  libwrap0:amd64                  7.6.q-31build2                          amd64        Wietse Venema's TCP wrappers library
-ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.4                  amd64        GNOME XML library
+ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.5                  amd64        GNOME XML library
 ii  libxtables12:amd64              1.8.7-1ubuntu5.2                        amd64        netfilter xtables library
 ii  libxxhash0:amd64                0.8.1-1                                 amd64        shared library for xxhash
 ii  libyajl2:amd64                  2.1.0-3ubuntu0.22.04.1                  amd64        Yet Another JSON Library
@@ -196,8 +196,8 @@ ii  ncurses-bin                     6.3-2ubuntu0.1                          amd6
 ii  netbase                         6.3                                     all          Basic TCP/IP networking system
 ii  netcat-openbsd                  1.218-4ubuntu1                          amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
-ii  nvidia-container-toolkit        1.17.3-1                                amd64        NVIDIA Container toolkit
-ii  nvidia-container-toolkit-base   1.17.3-1                                amd64        NVIDIA Container Toolkit Base
+ii  nvidia-container-toolkit        1.17.4-1                                amd64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base   1.17.4-1                                amd64        NVIDIA Container Toolkit Base
 ii  openssh-client                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
@@ -213,11 +213,11 @@ ii  python3-minimal                 3.10.6-1~22.04.1                        amd6
 ii  python3-pkg-resources           59.6.0-1.2ubuntu0.22.04.2               all          Package Discovery and Resource Access using pkg_resources
 ii  python3-protobuf                3.12.4-1ubuntu7.22.04.1                 amd64        Python 3 bindings for protocol buffers
 ii  python3-six                     1.16.0-3ubuntu1                         all          Python 2 and 3 compatibility library (Python 3 interface)
-ii  python3.10                      3.10.12-1~22.04.7                       amd64        Interactive high-level object-oriented language (version 3.10)
-ii  python3.10-minimal              3.10.12-1~22.04.7                       amd64        Minimal subset of the Python language (version 3.10)
+ii  python3.10                      3.10.12-1~22.04.8                       amd64        Interactive high-level object-oriented language (version 3.10)
+ii  python3.10-minimal              3.10.12-1~22.04.8                       amd64        Minimal subset of the Python language (version 3.10)
 ii  readline-common                 8.1.2-1                                 all          GNU readline and history libraries, common files
 ii  rpcbind                         1.2.6-2build1                           amd64        converts RPC program numbers into universal addresses
-ii  rsync                           3.2.7-0ubuntu0.22.04.2                  amd64        fast, versatile, remote (and local) file-copying tool
+ii  rsync                           3.2.7-0ubuntu0.22.04.4                  amd64        fast, versatile, remote (and local) file-copying tool
 ii  sed                             4.8-1ubuntu2                            amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.17                                  all          Utilities for sensible alternative selection
 ii  socat                           1.7.4.1-3ubuntu4                        amd64        multipurpose relay for bidirectional data transfer
@@ -225,13 +225,13 @@ ii  sudo                            1.9.9-1ubuntu2.4                        amd6
 ii  systemd                         249.11-0ubuntu3.12                      amd64        system and service manager
 ii  sysvinit-utils                  3.01-1ubuntu1                           amd64        System-V-like utilities
 ii  tar                             1.34+dfsg-1ubuntu0.1.22.04.2            amd64        GNU version of the tar archiving utility
-ii  tzdata                          2024a-0ubuntu0.22.04.1                  all          time zone and daylight-saving time data
+ii  tzdata                          2024b-0ubuntu0.22.04                    all          time zone and daylight-saving time data
 ii  ubuntu-keyring                  2021.03.26                              all          GnuPG keys of the Ubuntu archive
 ii  ucf                             3.0043                                  all          Update Configuration File(s): preserve user changes to config files
 ii  udev                            249.11-0ubuntu3.12                      amd64        /dev/ and hotplug management daemon
 ii  usrmerge                        25ubuntu2                               all          Convert the system to the merged /usr directories scheme
 ii  util-linux                      2.37.2-4ubuntu3.4                       amd64        miscellaneous system utilities
-ii  vim-common                      2:8.2.3995-1ubuntu2.21                  all          Vi IMproved - Common files
-ii  vim-tiny                        2:8.2.3995-1ubuntu2.21                  amd64        Vi IMproved - enhanced vi editor - compact version
-ii  xxd                             2:8.2.3995-1ubuntu2.21                  amd64        tool to make (or reverse) a hex dump
+ii  vim-common                      2:8.2.3995-1ubuntu2.22                  all          Vi IMproved - Common files
+ii  vim-tiny                        2:8.2.3995-1ubuntu2.22                  amd64        Vi IMproved - enhanced vi editor - compact version
+ii  xxd                             2:8.2.3995-1ubuntu2.22                  amd64        tool to make (or reverse) a hex dump
 ii  zlib1g:amd64                    1:1.2.11.dfsg-2ubuntu9.2                amd64        compression library - runtime
