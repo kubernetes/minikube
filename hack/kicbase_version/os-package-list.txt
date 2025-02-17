@@ -225,13 +225,13 @@ ii  sudo                            1.9.9-1ubuntu2.4                        amd6
 ii  systemd                         249.11-0ubuntu3.12                      amd64        system and service manager
 ii  sysvinit-utils                  3.01-1ubuntu1                           amd64        System-V-like utilities
 ii  tar                             1.34+dfsg-1ubuntu0.1.22.04.2            amd64        GNU version of the tar archiving utility
-ii  tzdata                          2024b-0ubuntu0.22.04                    all          time zone and daylight-saving time data
+ii  tzdata                          2024b-0ubuntu0.22.04.1                  all          time zone and daylight-saving time data
 ii  ubuntu-keyring                  2021.03.26                              all          GnuPG keys of the Ubuntu archive
 ii  ucf                             3.0043                                  all          Update Configuration File(s): preserve user changes to config files
 ii  udev                            249.11-0ubuntu3.12                      amd64        /dev/ and hotplug management daemon
 ii  usrmerge                        25ubuntu2                               all          Convert the system to the merged /usr directories scheme
 ii  util-linux                      2.37.2-4ubuntu3.4                       amd64        miscellaneous system utilities
-ii  vim-common                      2:8.2.3995-1ubuntu2.22                  all          Vi IMproved - Common files
-ii  vim-tiny                        2:8.2.3995-1ubuntu2.22                  amd64        Vi IMproved - enhanced vi editor - compact version
-ii  xxd                             2:8.2.3995-1ubuntu2.22                  amd64        tool to make (or reverse) a hex dump
+ii  vim-common                      2:8.2.3995-1ubuntu2.23                  all          Vi IMproved - Common files
+ii  vim-tiny                        2:8.2.3995-1ubuntu2.23                  amd64        Vi IMproved - enhanced vi editor - compact version
+ii  xxd                             2:8.2.3995-1ubuntu2.23                  amd64        tool to make (or reverse) a hex dump
 ii  zlib1g:amd64                    1:1.2.11.dfsg-2ubuntu9.2                amd64        compression library - runtime
