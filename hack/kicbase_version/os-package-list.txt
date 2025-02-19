@@ -198,9 +198,9 @@ ii  netcat-openbsd                  1.218-4ubuntu1                          amd6
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
 ii  nvidia-container-toolkit        1.17.4-1                                amd64        NVIDIA Container toolkit
 ii  nvidia-container-toolkit-base   1.17.4-1                                amd64        NVIDIA Container Toolkit Base
-ii  openssh-client                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) client, for secure access to remote machines
-ii  openssh-server                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) server, for secure access from remote machines
-ii  openssh-sftp-server             1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
+ii  openssh-client                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) client, for secure access to remote machines
+ii  openssh-server                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) server, for secure access from remote machines
+ii  openssh-sftp-server             1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
 ii  openssl                         3.0.2-0ubuntu1.18                       amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.8.1-2ubuntu2.2                      amd64        change and administer password and group data
 ii  perl-base                       5.34.0-3ubuntu1.3                       amd64        minimal Perl system
