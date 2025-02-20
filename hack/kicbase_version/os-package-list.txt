@@ -31,9 +31,9 @@ ii  debianutils                     5.5-1ubuntu2                            amd6
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.1                       amd64        GNU privacy guard - network certificate management service
 ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.20.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:27.5.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:27.5.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.21.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:28.0.0-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:28.0.0-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -198,9 +198,9 @@ ii  netcat-openbsd                  1.218-4ubuntu1                          amd6
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
 ii  nvidia-container-toolkit        1.17.4-1                                amd64        NVIDIA Container toolkit
 ii  nvidia-container-toolkit-base   1.17.4-1                                amd64        NVIDIA Container Toolkit Base
-ii  openssh-client                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) client, for secure access to remote machines
-ii  openssh-server                  1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) server, for secure access from remote machines
-ii  openssh-sftp-server             1:8.9p1-3ubuntu0.10                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
+ii  openssh-client                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) client, for secure access to remote machines
+ii  openssh-server                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) server, for secure access from remote machines
+ii  openssh-sftp-server             1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
 ii  openssl                         3.0.2-0ubuntu1.18                       amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.8.1-2ubuntu2.2                      amd64        change and administer password and group data
 ii  perl-base                       5.34.0-3ubuntu1.3                       amd64        minimal Perl system
