@@ -24,15 +24,14 @@ minikube service headlamp -n headlamp
 To authenticate in Headlamp, fetch the Authentication Token using the following command:
 
 ```shell script
-export SECRET=$(kubectl get secrets --namespace headlamp -o custom-columns=":metadata.name" | grep "headlamp-token")
-kubectl get secret $SECRET --namespace headlamp --template=\{\{.data.token\}\} | base64 --decode
-``` 
+kubectl create token headlamp --duration 24h -n headlamp
+```
 
 Headlamp can display more detailed information when metrics-server is installed. To install it, run:
 
 ```shell script
-minikube addons enable metrics-server	
-```		
+minikube addons enable metrics-server
+```
 
 ### Testing installation
 
