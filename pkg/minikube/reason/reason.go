@@ -361,8 +361,9 @@ var (
 		ExitCode: ExGuestError,
 		Advice: translate.T(`If the host has a firewall:
 		
-		1. Allow a port through the firewall
-		2. Specify "--port=<port_number>" for "minikube mount"`),
+		1. Allow inbound port 22 to minikube from the host
+  		2. Allow an inbound port of your choosing from minikube to the host
+		2. Specify "--port=<your_inbound_port_number>" for "minikube mount"`),
 	}
 	// minkube failed to update a mount
 	GuestMountConflict = Kind{ID: "GUEST_MOUNT_CONFLICT", ExitCode: ExGuestConflict}
