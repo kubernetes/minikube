@@ -1363,8 +1363,8 @@ github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db/go.mod h1:vavhavw2zAx
 github.com/google/renameio v0.1.0/go.mod h1:KWCgfxg9yswjAJkECMjeO8J8rahYeXnNhOm40UhjYkI=
 github.com/google/s2a-go v0.1.9 h1:LGD7gtMgezd8a/Xak7mEWL0PjoTQFvpRudN895yqKW0=
 github.com/google/s2a-go v0.1.9/go.mod h1:YA0Ei2ZQL3acow2O62kdp9UlnvMmU7kA6Eutn0dXayM=
-github.com/google/slowjam v1.1.1 h1:3Sau9H9JD1v+L4G8RP9aQarp/RytJ2NZrIDwG4OS4AQ=
-github.com/google/slowjam v1.1.1/go.mod h1:7epwCwKh++Th0+lOGEUkwq55JBb8i9zHYrUS4e7ijlY=
+github.com/google/slowjam v1.1.2 h1:uAsv7r9f1TP5xwerte6OseOYbRur2y47jLGvn22dXk8=
+github.com/google/slowjam v1.1.2/go.mod h1:XGDJY4mZ5Y4BAi7itXRLZ0Hl/fcfNwx9iX06qCwZu1M=
 github.com/google/uuid v1.0.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
