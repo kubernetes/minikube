@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.23.4 AS builder
+FROM golang:1.23.6 AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
