@@ -31,7 +31,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.MINIKUBE_BOT_PAT }}
       - name: Create PR
         if: ${{ steps.leaderboard.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f
+        uses: peter-evans/create-pull-request@dd2324fc52d5d43c699a5636bcf19fceaa70c284
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Add leaderboard for ${{ github.ref_name }}'
