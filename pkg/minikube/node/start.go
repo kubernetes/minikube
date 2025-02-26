@@ -163,6 +163,9 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 			}()
 		}
 	} else {
+		if err := cr.Preload(*starter.Cfg); err != nil {
+			return nil, errors.Wrap(err, "preload failed")
+		}
 		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
