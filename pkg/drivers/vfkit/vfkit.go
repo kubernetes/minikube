@@ -257,9 +257,8 @@ func (d *Driver) Start() error {
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-blk,path=%s", isoPath))
 
-	var mac = d.MACAddress
 	startCmd = append(startCmd,
-		"--device", fmt.Sprintf("virtio-net,nat,mac=%s", mac))
+		"--device", fmt.Sprintf("virtio-net,nat,mac=%s", d.MACAddress))
 
 	startCmd = append(startCmd,
 		"--device", "virtio-rng")
@@ -293,7 +292,7 @@ func (d *Driver) Start() error {
 	if err := writePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
-	if err := d.setupIP(mac); err != nil {
+	if err := d.setupIP(d.MACAddress); err != nil {
 		return err
 	}
 
