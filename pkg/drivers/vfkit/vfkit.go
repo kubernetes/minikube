@@ -369,7 +369,27 @@ func (d *Driver) extractKernel(isoPath string) error {
 
 func (d *Driver) Kill() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
-		return err
+		// Typically fails with EOF due to https://github.com/crc-org/vfkit/issues/277.
+		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
+		pidfile := d.pidfilePath()
+		pid, err := process.ReadPidfile(pidfile)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			// No pidfile.
+			return nil
+		}
+		if err := process.Kill(pid, "vfkit"); err != nil {
+			if err != os.ErrProcessDone {
+				return err
+			}
+			// No process, stale pidfile.
+			if err := os.Remove(pidfile); err != nil {
+				log.Debugf("failed to remove %q: %s", pidfile, err)
+			}
+			return nil
+		}
 	}
 	return nil
 }
