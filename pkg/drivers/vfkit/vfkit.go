@@ -136,6 +136,11 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
+func writePidfile(pidfile string, pid int) error {
+	data := fmt.Sprintf("%v", pid)
+	return os.WriteFile(pidfile, []byte(data), 0600)
+}
+
 func readPidfile(pidfile string) (int, error) {
 	data, err := os.ReadFile(pidfile)
 	if err != nil {
@@ -269,11 +274,9 @@ func (d *Driver) Start() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	pid := cmd.Process.Pid
-	if err := os.WriteFile(d.pidfilePath(), []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+	if err := writePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
-
 	if err := d.setupIP(mac); err != nil {
 		return err
 	}
