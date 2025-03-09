@@ -153,6 +153,32 @@ func readPidfile(pidfile string) (int, error) {
 	return pid, nil
 }
 
+func signalPidfile(pidfile string, sig syscall.Signal) error {
+	pid, err := readPidfile(pidfile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		// Already stopped.
+		os.Remove(pidfile)
+		return nil
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return err
+	}
+	log.Infof("Sending signal %q to pid %v", sig, pid)
+	if err := process.Signal(sig); err != nil {
+		if err != os.ErrProcessDone {
+			return err
+		}
+		// Process done.
+		os.Remove(pidfile)
+		return nil
+	}
+	return nil
+}
+
 func checkPid(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -316,7 +342,9 @@ func isBootpdError(err error) bool {
 
 func (d *Driver) Stop() error {
 	if err := d.SetVFKitState("Stop"); err != nil {
-		return err
+		// vfkit may be already stopped, shutting down, or not listening.
+		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
+		return signalPidfile(d.pidfilePath(), syscall.SIGTERM)
 	}
 	return nil
 }
