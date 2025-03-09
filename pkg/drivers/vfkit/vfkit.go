@@ -30,7 +30,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -47,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -145,20 +145,17 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
+	pidfile := d.pidfilePath()
+	pid, err := process.ReadPidfile(pidfile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return state.Error, err
+		}
 		return state.Stopped, nil
-	}
-	p, err := os.ReadFile(d.pidfilePath())
-	if err != nil {
-		return state.Error, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
-		return state.Error, err
 	}
 	if err := checkPid(pid); err != nil {
 		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
+		os.Remove(pidfile)
 		return state.Stopped, nil
 	}
 	ret, err := d.GetVFKitState()
@@ -260,11 +257,9 @@ func (d *Driver) Start() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	pid := cmd.Process.Pid
-	if err := os.WriteFile(d.pidfilePath(), []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+	if err := process.WritePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
-
 	if err := d.setupIP(mac); err != nil {
 		return err
 	}
