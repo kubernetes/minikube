@@ -529,7 +529,7 @@ func (d *Driver) SetVFKitState(state string) error {
 	if err != nil {
 		return err
 	}
-	log.Debugf("set state: %+v", vmstate)
+	log.Infof("Set vfkit state: %+v", vmstate)
 	return nil
 }
 
