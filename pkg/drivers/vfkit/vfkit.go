@@ -158,17 +158,7 @@ func (d *Driver) GetState() (state.State, error) {
 		os.Remove(pidfile)
 		return state.Stopped, nil
 	}
-	ret, err := d.GetVFKitState()
-	if err != nil {
-		return state.Error, err
-	}
-	switch ret {
-	case "running", "VirtualMachineStateRunning":
-		return state.Running, nil
-	case "stopped", "VirtualMachineStateStopped":
-		return state.Stopped, nil
-	}
-	return state.None, nil
+	return state.Running, nil
 }
 
 func (d *Driver) Create() error {
@@ -322,11 +312,6 @@ func (d *Driver) Remove() error {
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
 			return errors.Wrap(err, "kill")
-		}
-	}
-	if s != state.Stopped {
-		if err := d.SetVFKitState("Stop"); err != nil {
-			return errors.Wrap(err, "quit")
 		}
 	}
 	return nil
