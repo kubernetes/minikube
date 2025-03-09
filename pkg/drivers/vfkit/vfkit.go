@@ -394,7 +394,9 @@ func (d *Driver) extractKernel(isoPath string) error {
 
 func (d *Driver) Kill() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
-		return err
+		// Typically fails with EOF.
+		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
+		return signalPidfile(d.pidfilePath(), syscall.SIGKILL)
 	}
 	return nil
 }
