@@ -297,7 +297,29 @@ func isBootpdError(err error) bool {
 
 func (d *Driver) Stop() error {
 	if err := d.SetVFKitState("Stop"); err != nil {
-		return err
+		// vfkit may be already stopped, shutting down, or not listening.
+		// We don't fallback to "HardStop" since it typically fails due to
+		// https://github.com/crc-org/vfkit/issues/277.
+		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
+		pidfile := d.pidfilePath()
+		pid, err := process.ReadPidfile(pidfile)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			// No pidfile.
+			return nil
+		}
+		if err := process.Terminate(pid, "vfkit"); err != nil {
+			if err != os.ErrProcessDone {
+				return err
+			}
+			// No process, stale pidfile.
+			if err := os.Remove(pidfile); err != nil {
+				log.Debugf("failed to remove %q: %s", pidfile, err)
+			}
+			return nil
+		}
 	}
 	return nil
 }
