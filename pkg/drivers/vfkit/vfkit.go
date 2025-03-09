@@ -30,7 +30,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -136,67 +135,16 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
-func writePidfile(pidfile string, pid int) error {
-	data := fmt.Sprintf("%v", pid)
-	return os.WriteFile(pidfile, []byte(data), 0600)
-}
-
-func readPidfile(pidfile string) (int, error) {
-	data, err := os.ReadFile(pidfile)
-	if err != nil {
-		return -1, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
-	if err != nil {
-		return -1, err
-	}
-	return pid, nil
-}
-
-func signalPidfile(pidfile string, sig syscall.Signal) error {
-	pid, err := readPidfile(pidfile)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		// Already stopped.
-		os.Remove(pidfile)
-		return nil
-	}
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	log.Infof("Sending signal %q to pid %v", sig, pid)
-	if err := process.Signal(sig); err != nil {
-		if err != os.ErrProcessDone {
-			return err
-		}
-		// Process done.
-		os.Remove(pidfile)
-		return nil
-	}
-	return nil
-}
-
-func checkPid(pid int) error {
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	return process.Signal(syscall.Signal(0))
-}
-
 func (d *Driver) GetState() (state.State, error) {
 	pidfile := d.pidfilePath()
-	pid, err := readPidfile(pidfile)
+	pid, err := pkgdrivers.ReadPidfile(pidfile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return state.Stopped, nil
 		}
 		return state.Error, err
 	}
-	if err := checkPid(pid); err != nil {
+	if err := pkgdrivers.CheckPid(pid); err != nil {
 		// No pid, remove pidfile
 		os.Remove(pidfile)
 		return state.Stopped, nil
@@ -289,7 +237,7 @@ func (d *Driver) Start() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	if err := writePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
+	if err := pkgdrivers.WritePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
 	if err := d.setupIP(d.MACAddress); err != nil {
@@ -343,7 +291,7 @@ func (d *Driver) Stop() error {
 	if err := d.SetVFKitState("Stop"); err != nil {
 		// vfkit may be already stopped, shutting down, or not listening.
 		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
-		return signalPidfile(d.pidfilePath(), syscall.SIGTERM)
+		return pkgdrivers.SignalPidfile(d.pidfilePath(), syscall.SIGTERM)
 	}
 	return nil
 }
@@ -395,7 +343,7 @@ func (d *Driver) Kill() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
 		// Typically fails with EOF.
 		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
-		return signalPidfile(d.pidfilePath(), syscall.SIGKILL)
+		return pkgdrivers.SignalPidfile(d.pidfilePath(), syscall.SIGKILL)
 	}
 	return nil
 }
