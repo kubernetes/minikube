@@ -136,6 +136,18 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
+func readPidfile(pidfile string) (int, error) {
+	data, err := os.ReadFile(pidfile)
+	if err != nil {
+		return -1, err
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return -1, err
+	}
+	return pid, nil
+}
+
 func checkPid(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -145,20 +157,17 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
-		return state.Stopped, nil
-	}
-	p, err := os.ReadFile(d.pidfilePath())
+	pidfile := d.pidfilePath()
+	pid, err := readPidfile(pidfile)
 	if err != nil {
-		return state.Error, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return state.Stopped, nil
+		}
 		return state.Error, err
 	}
 	if err := checkPid(pid); err != nil {
 		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
+		os.Remove(pidfile)
 		return state.Stopped, nil
 	}
 	ret, err := d.GetVFKitState()
