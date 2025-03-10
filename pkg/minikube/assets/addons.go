@@ -310,7 +310,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.37.0@sha256:886412e63d6c580c50b3b7b59eee709a870768a7b5d0d9c27d66fe2a32c555e0",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.38.0@sha256:580e12fff0c6af7c2877a7a1b76ac01289b5149d591f26b54e722bf7e9569a4b",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}),
