@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpKubeVip.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@dd2324fc52d5d43c699a5636bcf19fceaa70c284
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'HA (multi-control plane): Update kube-vip from ${{ steps.bumpKubeVip.outputs.OLD_VERSION }} to ${{ steps.bumpKubeVip.outputs.NEW_VERSION }}'
