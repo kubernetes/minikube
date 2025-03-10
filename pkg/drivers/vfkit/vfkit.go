@@ -136,6 +136,49 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
+func writePidfile(pidfile string, pid int) error {
+	data := fmt.Sprintf("%v", pid)
+	return os.WriteFile(pidfile, []byte(data), 0600)
+}
+
+func readPidfile(pidfile string) (int, error) {
+	data, err := os.ReadFile(pidfile)
+	if err != nil {
+		return -1, err
+	}
+	pid, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return -1, err
+	}
+	return pid, nil
+}
+
+func signalPidfile(pidfile string, sig syscall.Signal) error {
+	pid, err := readPidfile(pidfile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		// Already stopped.
+		os.Remove(pidfile)
+		return nil
+	}
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return err
+	}
+	log.Infof("Sending signal %q to pid %v", sig, pid)
+	if err := process.Signal(sig); err != nil {
+		if err != os.ErrProcessDone {
+			return err
+		}
+		// Process done.
+		os.Remove(pidfile)
+		return nil
+	}
+	return nil
+}
+
 func checkPid(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -145,33 +188,20 @@ func checkPid(pid int) error {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
-		return state.Stopped, nil
-	}
-	p, err := os.ReadFile(d.pidfilePath())
+	pidfile := d.pidfilePath()
+	pid, err := readPidfile(pidfile)
 	if err != nil {
-		return state.Error, err
-	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return state.Stopped, nil
+		}
 		return state.Error, err
 	}
 	if err := checkPid(pid); err != nil {
 		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
+		os.Remove(pidfile)
 		return state.Stopped, nil
 	}
-	ret, err := d.GetVFKitState()
-	if err != nil {
-		return state.Error, err
-	}
-	switch ret {
-	case "running", "VirtualMachineStateRunning":
-		return state.Running, nil
-	case "stopped", "VirtualMachineStateStopped":
-		return state.Stopped, nil
-	}
-	return state.None, nil
+	return state.Running, nil
 }
 
 func (d *Driver) Create() error {
@@ -260,11 +290,9 @@ func (d *Driver) Start() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	pid := cmd.Process.Pid
-	if err := os.WriteFile(d.pidfilePath(), []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+	if err := writePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
-
 	if err := d.setupIP(mac); err != nil {
 		return err
 	}
@@ -313,8 +341,10 @@ func isBootpdError(err error) bool {
 }
 
 func (d *Driver) Stop() error {
-	if err := d.SetVFKitState("HardStop"); err != nil {
-		return err
+	if err := d.SetVFKitState("Stop"); err != nil {
+		// vfkit may be already stopped, shutting down, or not listening.
+		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
+		return signalPidfile(d.pidfilePath(), syscall.SIGTERM)
 	}
 	return nil
 }
@@ -327,11 +357,6 @@ func (d *Driver) Remove() error {
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
 			return errors.Wrap(err, "kill")
-		}
-	}
-	if s != state.Stopped {
-		if err := d.SetVFKitState("Stop"); err != nil {
-			return errors.Wrap(err, "quit")
 		}
 	}
 	return nil
@@ -369,7 +394,9 @@ func (d *Driver) extractKernel(isoPath string) error {
 
 func (d *Driver) Kill() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
-		return err
+		// Typically fails with EOF.
+		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
+		return signalPidfile(d.pidfilePath(), syscall.SIGKILL)
 	}
 	return nil
 }
