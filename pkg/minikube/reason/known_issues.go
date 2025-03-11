@@ -1213,7 +1213,7 @@ var controlPlaneIssues = []match{
 			ID:       "K8S_APISERVER_MISSING",
 			ExitCode: ExControlPlaneNotFound,
 			Advice:   "Check that the provided apiserver flags are valid, and that SELinux is disabled",
-			Issues:   []int{4536, 6014},
+			Issues:   []int{4536, 6014, 20518},
 		},
 		Regexp: re(`apiserver process never appeared`),
 	},
