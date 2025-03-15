@@ -136,14 +136,6 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
-func checkPid(pid int) error {
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	return process.Signal(syscall.Signal(0))
-}
-
 func (d *Driver) GetState() (state.State, error) {
 	pidfile := d.pidfilePath()
 	pid, err := process.ReadPidfile(pidfile)
@@ -153,9 +145,15 @@ func (d *Driver) GetState() (state.State, error) {
 		}
 		return state.Stopped, nil
 	}
-	if err := checkPid(pid); err != nil {
-		// No pid, remove pidfile
-		os.Remove(pidfile)
+	exists, err := process.Exists(pid, "vfkit")
+	if err != nil {
+		return state.Error, err
+	}
+	if !exists {
+		// No process, stale pidfile.
+		if err := os.Remove(pidfile); err != nil {
+			log.Debugf("failed to remove %q: %s", pidfile, err)
+		}
 		return state.Stopped, nil
 	}
 	return state.Running, nil
