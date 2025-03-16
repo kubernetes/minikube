@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Kubernetes 101 on minikube</title>
+    <link>http://localhost:1313/docs/tutorials/kubernetes_101/</link>
+    <description>Recent content in Kubernetes 101 on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/tutorials/kubernetes_101/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Module 1 - Create a Kubernetes Cluster</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module1/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty&lt;/strong&gt;: Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;The goal of this scenario is to deploy a local development Kubernetes cluster using minikube&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---cluster-up-and-running&#34;&gt;Step 1 - Cluster up and running&lt;/h2&gt;&#xA;&lt;p&gt;If you haven&amp;rsquo;t already, first &lt;a href=&#34;http://localhost:1313/docs/start/&#34;&gt;install minikube&lt;/a&gt;. Check that it is properly installed, by running the &lt;em&gt;minikube version&lt;/em&gt; command:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;minikube version&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Once minikube is installed, start the cluster, by running the &lt;em&gt;minikube start&lt;/em&gt; command:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;minikube start&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Great! You now have a runnning Kubernetes cluster in your terminal. minikube started a virtual environment for you, and a Kubernetes cluster is now running in that environment.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Module 2 - Deploy an app</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module2/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty&lt;/strong&gt;: Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;The goal of this scenario is to help you deploy your first app on Kubernetes using kubectl. You will learn the basics about kubectl cli and how to interact with your application.&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---kubectl-basics&#34;&gt;Step 1 - kubectl basics&lt;/h2&gt;&#xA;&lt;p&gt;Type kubectl in the terminal to see its usage. The common format of a kubectl command is: kubectl action resource. This performs the specified action (like create, describe) on the specified resource (like node, container). You can use &lt;code&gt;--help&lt;/code&gt; after the command to get additional info about possible parameters (&lt;code&gt;kubectl get nodes --help&lt;/code&gt;).&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Module 3 - Explore your app</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module3/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module3/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty&lt;/strong&gt;: Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;In this scenario you will learn how to troubleshoot Kubernetes applications using the kubectl get, describe, logs and exec commands.&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---check-application-configuration&#34;&gt;Step 1 - Check application configuration&lt;/h2&gt;&#xA;&lt;p&gt;Let&amp;rsquo;s verify that the application we deployed in the previous scenario is running. We&amp;rsquo;ll use the &lt;code&gt;kubectl get&lt;/code&gt; command and look for existing Pods:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get pods&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Next, to view what containers are inside that Pod and what images are used to build those containers we run the &lt;code&gt;describe pods&lt;/code&gt; command:&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Module 4 - Expose your app publicly</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module4/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module4/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty&lt;/strong&gt;: Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;In this scenario you will learn how to expose Kubernetes applications outside the cluster using the kubectl expose command. You will also learn how to view and apply labels to objects with the kubectl label command.&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---create-a-new-service&#34;&gt;Step 1 - Create a new service&lt;/h2&gt;&#xA;&lt;p&gt;Let&amp;rsquo;s verify that our application is running. We&amp;rsquo;ll use the &lt;code&gt;kubectl get&lt;/code&gt; command and look for existing Pods:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get pods&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Next, let&amp;rsquo;s list the current Services from our cluster:&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Module 5 - Scale up your app</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module5/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module5/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty&lt;/strong&gt;: Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;The goal of this scenario is to scale a deployment with kubectl scale and to see the load balancing in action&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---scaling-a-deployment&#34;&gt;Step 1 - Scaling a deployment&lt;/h2&gt;&#xA;&lt;p&gt;First, let&amp;rsquo;s list the deployments using the &lt;code&gt;get deployment&lt;/code&gt; command:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get deployments&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;The output should be similar to:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;NAME                  READY   UP-TO_DATE   AVAILABLE   AGE&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubernetes-bootcamp   1/1     1            1           11m&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;We should have 1 Pod. If not, run the command again. This shows:&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Module 6 - Update your app</title>
+      <link>http://localhost:1313/docs/tutorials/kubernetes_101/module6/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/tutorials/kubernetes_101/module6/</guid>
+      <description>&lt;p&gt;&lt;strong&gt;Difficulty:&lt;/strong&gt; Beginner&#xA;&lt;strong&gt;Estimated Time:&lt;/strong&gt; 10 minutes&lt;/p&gt;&#xA;&lt;p&gt;The goal of this scenario is to update a deployed application with kubectl set image and to rollback with the rollout undo command.&lt;/p&gt;&#xA;&lt;h2 id=&#34;step-1---update-the-version-of-the-app&#34;&gt;Step 1 - Update the version of the app&lt;/h2&gt;&#xA;&lt;p&gt;To list your deployments, run the &lt;code&gt;get deployments&lt;/code&gt; command:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get deployments&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;To list the running Pods, run the &lt;code&gt;get pods&lt;/code&gt; command:&lt;/p&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;kubectl get pods&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;To view the current image version of the app, run the &lt;code&gt;describe pods&lt;/code&gt; command and look for the &lt;code&gt;Image&lt;/code&gt; field:&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

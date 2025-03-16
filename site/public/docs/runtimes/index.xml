@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Runtimes on minikube</title>
+    <link>http://localhost:1313/docs/runtimes/</link>
+    <description>Recent content in Runtimes on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/runtimes/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>containerd</title>
+      <link>http://localhost:1313/docs/runtimes/containerd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/runtimes/containerd/</guid>
+      <description>&lt;p&gt;Home page: &lt;a href=&#34;https://containerd.io&#34;&gt;https://containerd.io&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://github.com/containerd/containerd&#34;&gt;https://github.com/containerd/containerd&lt;/a&gt;&#xA;&lt;a href=&#34;https://github.com/moby/buildkit&#34;&gt;https://github.com/moby/buildkit&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>cri-o</title>
+      <link>http://localhost:1313/docs/runtimes/cri-o/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/runtimes/cri-o/</guid>
+      <description>&lt;p&gt;Home page: &lt;a href=&#34;https://cri-o.io&#34;&gt;https://cri-o.io&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;See also &lt;code&gt;minikube podman-env&lt;/code&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://github.com/cri-o/cri-o&#34;&gt;https://github.com/cri-o/cri-o&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>docker</title>
+      <link>http://localhost:1313/docs/runtimes/docker/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/runtimes/docker/</guid>
+      <description>&lt;p&gt;Home page: &lt;a href=&#34;https://docker.com&#34;&gt;https://docker.com&lt;/a&gt;&lt;/p&gt;&#xA;&lt;p&gt;See also &lt;code&gt;minikube docker-env&lt;/code&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;a href=&#34;https://docs.docker.com/engine/&#34;&gt;https://docs.docker.com/engine/&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

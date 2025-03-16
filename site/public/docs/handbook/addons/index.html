@@ -1,0 +1,2258 @@
+<!doctype html>
+<html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="alternate" type="application/rss&#43;xml" href="http://localhost:1313/docs/handbook/addons/index.xml">
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="shortcut icon" href="/favicons/favicon.ico" >
+<link rel="apple-touch-icon" href="/favicons/apple-touch-icon-180x180.png" sizes="180x180">
+<link rel="icon" type="image/png" href="/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicons/android-36x36.png" sizes="36x36">
+<link rel="icon" type="image/png" href="/favicons/android-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="/favicons/android-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="/favicons/android-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/favicons/android-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="/favicons/android-192x192.png" sizes="192x192">
+
+<title>Addons | minikube</title>
+<meta name="description" content="Details on maintained minikube addons">
+<meta property="og:url" content="http://localhost:1313/docs/handbook/addons/">
+  <meta property="og:site_name" content="minikube">
+  <meta property="og:title" content="Addons">
+  <meta property="og:description" content="Details on maintained minikube addons">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="website">
+
+  <meta itemprop="name" content="Addons">
+  <meta itemprop="description" content="Details on maintained minikube addons">
+  <meta itemprop="dateModified" content="2025-03-14T11:07:49-07:00">
+  <meta itemprop="wordCount" content="12">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Addons">
+  <meta name="twitter:description" content="Details on maintained minikube addons">
+<link href="/scss/main.css" rel="stylesheet">
+<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+  crossorigin="anonymous"></script>
+<script defer
+  src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+  integrity="sha384-203J0SNzyqHby3iU6hzvzltrWi/M41wOP5Gu+BiJMz5nwKykbkUx8Kp7iti0Lpli"
+  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/css/prism.css"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Open+Sans:wght@600;700&display=swap" rel="stylesheet">
+<link href="/css/tabs.css" rel="stylesheet">
+<link href="/css/button.css" rel="stylesheet">
+<script src="/js/tabs.js"></script>
+<script src="/js/quiz.js"></script>
+
+
+  </head>
+  <body class="td-section">
+    <header>
+      <nav class="td-navbar js-navbar-scroll" data-bs-theme="dark">
+<div class="container-fluid flex-column flex-md-row">
+  <a class="navbar-brand" href="/"><span class="navbar-brand__logo navbar-logo"><svg width="702" height="683" viewBox="0 0 702 683" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>minikube</title><desc>Created with Sketch.</desc><defs><polygon id="path-1" points="701.060294 684.263047 701.060294 1.59247059 0 1.59247059 0 684.263047"/></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="minikube" transform="translate(0.000000, -4.000000)"><g id="border" transform="translate(0.000000, 2.554588)"><mask id="mask-2" fill="#fff"><use xlink:href="#path-1"/></mask><g id="Clip-2"/><path d="M351.210679 1.59081176c-9.51750000000004.0-19.039147 2.26844118-28.104617 6.345L93.7363853 117.637959C75.6012971 126.247253 62.9112971 142.1139 58.3785618 161.605076L1.71315 407.749606c-4.53273529 19.491176.0 39.438529 12.6941471 55.305176L173.061326 660.239135c12.242118 15.414618 30.825089 24.023912 50.316265 24.023912H477.683532C497.174709 684.263047 515.757679 675.653753 527.999797 660.239135L686.653826 463.054782c12.694148-15.414617 17.226883-35.814 12.694148-55.305176L642.682562 161.605076C638.149826 142.1139 625.459826 126.247253 607.324738 117.637959L378.863268 7.93581176c-8.61344200000002-4.07655882-18.135089-6.345-27.652589-6.345m0 21.30344114c6.34499999999997.0 12.694147 1.3602353 18.587118 4.0807059L599.167474 136.220929C610.953415 142.1139 620.018885 152.995782 622.739356 165.685782l56.661265 246.14453C682.573121 424.976488 679.400621 438.574694 670.787179 449.0004L512.13315 646.1889C503.971738 656.614606 491.281738 662.507576 478.135562 662.507576H223.833768c-13.146177.0-25.840324-5.89296999999999-33.997589-16.318676L31.1780029 449.0004c-8.1572647-10.425706-11.3297647-24.023912-8.6134411-37.170088l56.6654117-246.14453c3.1725-13.146176 11.7859412-24.023911 23.5718825-29.464853L332.171532 26.5229294C338.064503 24.2544882 344.865679 22.8942529 351.210679 22.8942529" id="Fill-1" fill="#326de6" mask="url(#mask-2)"/></g><path d="M218.498162 607.501403C226.630544 617.711462 238.827044 623.347315 251.558515 623.347315L451.127426 622.994815c12.735618.0 24.803559-5.98835299999996 32.935942-15.845912L605.721485 453.977285C609.234044 449.195726 608.844221 439.819226 608.844221 431.919079V218.026226L347.455103 368.527138V368.522991L86.3148088 218.167226V431.919079c0 8.028706 2.8365883 15.858353 8.0535883 22.410706L218.498162 607.501403z" id="kube-bottom" fill="#1fbfcf"/><polygon id="kube-top" fill="#c9e9ec" points="347.455103 368.526309 608.844221 218.029544 347.210426 67.6198676 86.3148088 218.158103"/><path d="M409.813182 484.797397C402.319447 489.566515 392.096947 488.206279 385.963447 480.708397 383.918947 478.663897 383.238829 475.939279 382.558712 473.214662L376.425212 362.143985C423.440418 367.597368 466.370771 388.718338 499.078624 421.426191l-89.265442 63.371206zm-92.670176-14.3115C316.458741 480.028279 308.965006 488.206279 298.742506 488.206279 296.017888 488.206279 292.613153 487.522015 290.568653 486.161779l-90.629824-64.735588c27.938736-27.938735 62.691089-47.015206 101.532442-55.873323C308.965006 364.188485 315.778624 362.824103 323.276506 361.463868L317.143006 470.485897zm254.845059-45.650823L578.801682 418.701574V417.337191C578.801682 413.932456 579.4818 410.523574 582.210565 407.118838 590.384418 399.620956 600.606918 393.487456 612.869771 385.993721 614.914271 384.629338 616.958771 383.949221 619.003271 382.584838 623.092271 380.544485 626.501153 378.499985 630.590153 375.771221 631.270271 375.091103 632.630506 374.410985 633.994888 373.046603 634.675006 372.366485 635.359271 372.366485 635.359271 371.682221 644.897506 363.508368 646.942006 349.881132 640.128388 341.023015 636.719506 336.24975 630.590153 333.525132 624.456653 333.525132 619.003271 333.525132 614.234153 335.569632 609.465035 338.978515L608.100653 340.33875C606.740418 341.023015 606.056153 342.38325 604.695918 343.063368 601.287035 346.47225 598.562418 349.196868 595.8378 352.60575 594.473418 353.965985 593.113182 356.010485 591.068682 357.374868 581.5263 367.597368 572.668182 375.771221 563.810065 381.904721 561.765565 383.269103 559.721065 383.949221 557.676565 383.949221 556.316329 383.949221 554.951947 383.949221 553.587565 383.269103H552.227329L544.049329 388.718338C535.191212 379.180103 525.652976 371.002103 516.110594 362.824103c-40.881706-32.023588-90.625676-51.784324-142.41-56.553441L373.016329 297.412544 371.656094 296.048162C369.611594 294.003662 366.882829 291.959162 366.202712 287.190044 365.522594 276.287426 366.882829 264.020426 368.247212 250.393191V249.713074C368.247212 247.668574 368.927329 244.943956 369.611594 242.899456 370.291712 238.810456 370.971829 234.721456 371.656094 229.952338v-4.089-2.0445c0-12.262853-9.54238199999998-22.485353-21.125118-22.485353C345.081741 201.333485 339.628359 204.058103 335.539359 208.147103 331.450359 212.236103 329.405859 217.685338 329.405859 223.818838v1.364383 4.089C329.405859 234.041338 330.090124 238.130338 331.450359 242.215191 332.134624 244.259691 332.134624 246.304191 332.814741 249.032956V249.713074C334.179124 263.340309 336.219476 275.607309 334.859241 286.509926 334.179124 291.279044 331.450359 293.323544 329.405859 295.368044 328.725741 296.048162 328.725741 296.048162 328.045624 296.728279L327.361359 305.586397C315.098506 306.950779 302.831506 308.315162 290.568653 311.039779c-52.468588 11.582736-98.803677 38.157089-134.920412 76.318324L148.834624 382.584838h-1.364383C146.110006 382.584838 144.745624 383.269103 143.385388 383.269103c-2.0445.0-4.089-.684264999999982-6.1335-2.04449999999997C128.393771 375.091103 119.535653 366.232985 109.993271 356.010485 108.633035 354.65025 107.268653 352.60575 105.224153 351.241368 102.499535 347.836632 99.7749176 345.107868 96.3660353 341.703132 95.6859176 341.023015 94.3215353 340.33875 92.9613 338.978515 92.2770353 338.29425 91.5969176 338.29425 91.5969176 337.614132 87.5079176 334.20525 82.0586824 332.16075 76.6053 332.16075c-6.1335.0-12.2628529 2.72876500000001-15.6717353 7.497882C54.1199471 348.51675 56.1644471 362.143985 65.7026824 370.321985c.6842647.0.6842647.680117999999993 1.3643823.680117999999993C68.4273 371.682221 69.1115647 373.046603 70.4718 373.726721 74.5608 376.455485 77.9696824 378.499985 82.0586824 380.544485 84.1031824 381.224603 86.1476824 382.584838 88.1880353 383.949221c12.2669997 7.497882 22.4894997 13.627235 30.6633527 21.125117C122.260271 408.479074 122.260271 411.887956 122.260271 415.292691V416.657074L129.073888 422.790574C127.709506 424.835074 126.349271 426.195309 125.669153 428.239809c-7.99138199999999 12.627794-14.775971 25.794706-20.436706 39.339L144.077947 515.510515C149.332271 496.960721 157.025065 479.041279 167.230976 462.312044l81.087442 72.229324c7.497882 6.12935299999992 8.178 17.716235 2.0445 25.20997C248.318418 562.475956 245.5938 564.520456 242.189065 565.204721l-46.824441 13.594058L218.629624 607.500574C226.762006 617.714779 238.954359 623.346485 251.689976 623.346485L451.258888 622.993985c12.731471.0 24.799412-5.98420599999997 32.935941-15.845911l21.842559-27.503295-47.844617-13.759941C448.654535 563.160221 443.201153 553.617838 445.245653 544.079603 445.925771 541.354985 447.290153 538.630368 449.334653 536.585868l82.451823-74.273824c10.035883 16.534324 18.018971 35.121441 23.517971 55.305177l39.621-49.880824C588.530682 452.811132 580.858624 438.478897 571.988065 424.835074z" id="wheel" fill="#326de6"/></g></g></svg></span><span class="navbar-brand__name">minikube</span></a>
+  <div class="td-navbar-nav-scroll ms-md-auto" id="main_navbar">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="/community/"><span>Community</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/kubernetes/minikube" target="_blank" rel="noopener"><span>GitHub</span></a>
+      </li>
+      </ul>
+  </div>
+  <div class="d-none d-lg-block">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+  </div>
+</div>
+</nav>
+    </header>
+    <div class="container-fluid td-outer">
+      <div class="td-main">
+        <div class="row flex-xl-nowrap">
+          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none">
+            
+
+  
+<div
+  id="td-sidebar-menu"
+  class="td-sidebar__inner"
+>
+  
+  <form class="td-sidebar__search d-flex align-items-center">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+    <button
+      class="btn btn-link td-sidebar__toggle d-md-none p-0 ml-3 fas fa-bars"
+      type="button"
+      data-toggle="collapse"
+      data-target="#td-section-nav"
+      aria-controls="td-docs-nav"
+      aria-expanded="false"
+      aria-label="Toggle section navigation"
+    ></button>
+  </form>
+  
+  <nav class="collapse td-sidebar-nav" id="td-section-nav">
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Documentation</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docs">
+            
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/start/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Get Started!</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsstart">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Handbook</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbook">
+             
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+               
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/addons/"
+      class="align-left pl-0 pr-2 collapsed active td-sidebar-link td-sidebar-link__section"
+    >
+      Addons</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbookaddons">
+             
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsyakd-kubernetes-dashboard"
+        href="/docs/handbook/addons/yakd-kubernetes-dashboard/"
+      >
+        YAKD - Kubernetes Dashboard 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsinspektor-gadget"
+        href="/docs/handbook/addons/inspektor-gadget/"
+      >
+        Inspektor Gadget 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonscloud-spanner"
+        href="/docs/handbook/addons/cloud-spanner/"
+      >
+        Cloud Spanner 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsheadlamp"
+        href="/docs/handbook/addons/headlamp/"
+      >
+        Headlamp 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonskong-ingress"
+        href="/docs/handbook/addons/kong-ingress/"
+      >
+        Kong Ingress 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsingress-dns"
+        href="/docs/handbook/addons/ingress-dns/"
+      >
+        Ingress DNS 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsgcp-auth"
+        href="/docs/handbook/addons/gcp-auth/"
+      >
+        GCP Auth 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonskubevirt"
+        href="/docs/handbook/addons/kubevirt/"
+      >
+        KubeVirt 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsambassador"
+        href="/docs/handbook/addons/ambassador/"
+      >
+        Ambassador 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsregistry-aliases"
+        href="/docs/handbook/addons/registry-aliases/"
+      >
+        Registry Aliases 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsistio"
+        href="/docs/handbook/addons/istio/"
+      >
+        Istio 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonspod-security-policy"
+        href="/docs/handbook/addons/pod-security-policy/"
+      >
+        Pod Security Policy 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsstorage-provisioner-gluster"
+        href="/docs/handbook/addons/storage-provisioner-gluster/"
+      >
+        Storage Provisioner Gluster 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonsgvisor"
+        href="/docs/handbook/addons/gvisor/"
+      >
+        gVisor 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docshandbookaddonscustom-images"
+        href="/docs/handbook/addons/custom-images/"
+      >
+        Custom Images 
+      </a>
+         
+    </li>
+  </ul>
+</ul>
+        
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+           
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/faq/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      FAQ</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsfaq">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/presentations/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Presentations</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docspresentations">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/tutorials/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Tutorials</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docstutorials">
+            
+        
+
+
+          
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/commands/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Commands</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscommands">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/drivers/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Drivers</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsdrivers">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/runtimes/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Runtimes</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsruntimes">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Contributing</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontrib">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+              
+        
+
+
+          
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+              
+        
+
+
+         
+        
+
+
+          
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/benchmarks/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Benchmarks</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsbenchmarks">
+            
+        
+
+
+         
+        
+
+
+         
+        
+
+
+     
+    </li>
+  </ul>
+</ul>
+   
+    </li>
+  </ul>
+</ul>
+ 
+  </nav>
+</div>
+
+
+
+
+          </aside>
+          <aside class="d-none d-xl-block col-xl-2 td-sidebar-toc d-print-none">
+            <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+<a href="https://github.com/kubernetes/minikube/tree/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5chandbook%5caddons%5c_index.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
+  <a href="https://github.com/kubernetes/minikube/edit/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5chandbook%5caddons%5c_index.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
+  <a href="https://github.com/kubernetes/minikube/new/master/site/C:/Users/Dell/minikube/site/content/en/docs/handbook/addons?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60getting-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
+  <a href="https://github.com/kubernetes/minikube/issues/new?title=Addons" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  
+</div>
+
+            
+            
+
+          </aside>
+          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+            
+  
+
+            <nav aria-label="breadcrumb" class="td-breadcrumbs">
+  <ol class="breadcrumb">
+  <li class="breadcrumb-item">
+    <a href="/docs/">Documentation</a></li>
+  <li class="breadcrumb-item">
+    <a href="/docs/handbook/">Handbook</a></li>
+  <li class="breadcrumb-item active" aria-current="page">
+    Addons</li>
+  </ol>
+</nav>
+            
+<div class="td-content">
+	<h1>Addons</h1>
+  <div class="lead">Details on maintained minikube addons</div>
+	<header class="article-meta">
+		
+</header>
+	<p>Addons are maintained extensions of minikube used for added functionality for Kubernetes.</p>
+
+  
+
+
+<div class="section-index">
+    
+    
+    
+    
+    <hr class="panel-line">
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/yakd-kubernetes-dashboard/">Using the YAKD - Kubernetes Dashboard Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/inspektor-gadget/">Using the Inspektor Gadget Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/cloud-spanner/">Using the Cloud Spanner Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/headlamp/">Using the Headlamp Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/kong-ingress/">Using the Kong Ingress Controller Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/ingress-dns/">Ingress DNS</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/gcp-auth/">Automated Google Cloud Platform Authentication</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/kubevirt/">Using the KubeVirt Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/ambassador/">Using the Ambassador Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/registry-aliases/">Using the Registry Aliases Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/istio/">Using the Istio Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/pod-security-policy/">Using the Pod Security Policy Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/storage-provisioner-gluster/">Using the Storage Provisioner Gluster Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/gvisor/">Using the gVisor Addon</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+                <div class="entry">
+                    <h5>
+                        <a href="/docs/handbook/addons/custom-images/">Config the Addon to Use Custom Registries and Images</a>
+                    </h5>
+                    <p></p>
+                </div>
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+            
+        
+    
+</div>
+<style>
+  .feedback--answer {
+    display: inline-block;
+  }
+  .feedback--answer-no {
+    margin-left: 1em;
+  }
+  .feedback--response {
+    display: none;
+    margin-top: 1em;
+  }
+  .feedback--response__visible {
+    display: block;
+  }
+</style>
+<div class="d-print-none">
+<h2 class="feedback--title">Feedback</h2>
+<p class="feedback--question">Was this page helpful?</p>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-yes">Yes</button>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-no">No</button>
+<p class="feedback--response feedback--response-yes">
+  Glad to hear it! Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+<p class="feedback--response feedback--response-no">
+  Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+</div>
+<script>
+  const yesButton = document.querySelector('.feedback--answer-yes');
+  const noButton = document.querySelector('.feedback--answer-no');
+  const yesResponse = document.querySelector('.feedback--response-yes');
+  const noResponse = document.querySelector('.feedback--response-no');
+  const disableButtons = () => {
+    yesButton.disabled = true;
+    noButton.disabled = true;
+  };
+  const sendFeedback = (value) => {
+    if (typeof gtag !== 'function') return;
+    gtag('event', 'page_helpful', {
+      'event_category': 'Helpful',
+      'event_label': window.location.pathname,
+      'value': value
+    });
+  };
+  yesButton.addEventListener('click', () => {
+    yesResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback( 100 );
+  });
+  noButton.addEventListener('click', () => {
+    noResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback(0);
+  });
+</script>
+<br />
+<div class="td-page-meta__lastmod">
+  Last modified March 14, 2025: <a href="https://github.com/kubernetes/minikube/commit/8ed8f15350377dffabe5ae2cdc1aea41f5d08141">Build(deps): Bump peter-evans/create-pull-request from 7.0.7 to 7.0.8 (#20517) (8ed8f15)</a>
+</div>
+</div>
+
+          </main>
+        </div>
+      </div>
+      
+<footer class="bg-dark py-5 row d-print-none">
+  <div class="container-fluid mx-sm-5">
+    <div class="row">
+      <div class="col-6 col-sm-4 text-xs-center order-sm-2">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack" aria-label="Slack">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/C1F5CT6Q1">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack Invitation" aria-label="Slack Invitation">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://communityinviter.com/apps/kubernetes/community">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-users mailing list" aria-label="minikube-users mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-users">
+      <i class="fas fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="twitter" aria-label="twitter">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://twitter.com/minikube_dev">
+      <i class="fab fa-twitter"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-6 col-sm-4 text-right text-xs-center order-sm-3">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="GitHub" aria-label="GitHub">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://github.com/kubernetes/minikube">
+      <i class="fab fa-github"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-dev mailing list" aria-label="minikube-dev mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-dev">
+      <i class="fa fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Contributing Guide" aria-label="Contributing Guide">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Project Roadmap" aria-label="Project Roadmap">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/roadmap/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-12 col-sm-4 text-center py-2 order-sm-2">
+        <small class="text-white">&copy; 2025 The Kubernetes Authors.
+          
+        </small>
+        
+        
+          
+        
+      </div>
+    </div>
+    <div class="row text-center text-white small">
+      <div class="col-12 text-center py-2 order-sm-2">
+        <a href="https://www.linuxfoundation.org/terms" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Terms of Use</a> |
+        <a href="https://www.linuxfoundation.org/privacy" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Privacy Policy</a> |
+        <a href="https://www.linuxfoundation.org/trademark-usage" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Trademark Usage</a> |
+        <a href="https://github.com/kubernetes/minikube/blob/master/LICENSE" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-link:hover {
+    color: #b5b1b1 !important;
+  }
+</style>
+
+    </div>
+    <script src="/js/main.js"></script>
+<script src='/js/prism.js'></script>
+<script src='/js/tabpane-persist.js'></script>
+
+<script language="javascript">initTabs();</script>
+<script language="javascript">initQuiz();</script>
+
+
+  </body>
+</html>

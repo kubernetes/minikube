@@ -1,0 +1,2647 @@
+<!doctype html>
+<html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="shortcut icon" href="/favicons/favicon.ico" >
+<link rel="apple-touch-icon" href="/favicons/apple-touch-icon-180x180.png" sizes="180x180">
+<link rel="icon" type="image/png" href="/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicons/android-36x36.png" sizes="36x36">
+<link rel="icon" type="image/png" href="/favicons/android-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="/favicons/android-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="/favicons/android-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/favicons/android-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="/favicons/android-192x192.png" sizes="192x192">
+
+<title>List of Integration Test Cases | minikube</title>
+<meta name="description" content="Auto generated list of all minikube integration tests and what they do.">
+<meta property="og:url" content="http://localhost:1313/docs/contrib/tests/">
+  <meta property="og:site_name" content="minikube">
+  <meta property="og:title" content="List of Integration Test Cases">
+  <meta property="og:description" content="Auto generated list of all minikube integration tests and what they do.">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-03-14T11:07:49-07:00">
+
+  <meta itemprop="name" content="List of Integration Test Cases">
+  <meta itemprop="description" content="Auto generated list of all minikube integration tests and what they do.">
+  <meta itemprop="dateModified" content="2025-03-14T11:07:49-07:00">
+  <meta itemprop="wordCount" content="3534">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="List of Integration Test Cases">
+  <meta name="twitter:description" content="Auto generated list of all minikube integration tests and what they do.">
+<link href="/scss/main.css" rel="stylesheet">
+<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+  crossorigin="anonymous"></script>
+<script defer
+  src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+  integrity="sha384-203J0SNzyqHby3iU6hzvzltrWi/M41wOP5Gu+BiJMz5nwKykbkUx8Kp7iti0Lpli"
+  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/css/prism.css"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Open+Sans:wght@600;700&display=swap" rel="stylesheet">
+<link href="/css/tabs.css" rel="stylesheet">
+<link href="/css/button.css" rel="stylesheet">
+<script src="/js/tabs.js"></script>
+<script src="/js/quiz.js"></script>
+
+
+  </head>
+  <body class="td-page">
+    <header>
+      <nav class="td-navbar js-navbar-scroll" data-bs-theme="dark">
+<div class="container-fluid flex-column flex-md-row">
+  <a class="navbar-brand" href="/"><span class="navbar-brand__logo navbar-logo"><svg width="702" height="683" viewBox="0 0 702 683" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>minikube</title><desc>Created with Sketch.</desc><defs><polygon id="path-1" points="701.060294 684.263047 701.060294 1.59247059 0 1.59247059 0 684.263047"/></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="minikube" transform="translate(0.000000, -4.000000)"><g id="border" transform="translate(0.000000, 2.554588)"><mask id="mask-2" fill="#fff"><use xlink:href="#path-1"/></mask><g id="Clip-2"/><path d="M351.210679 1.59081176c-9.51750000000004.0-19.039147 2.26844118-28.104617 6.345L93.7363853 117.637959C75.6012971 126.247253 62.9112971 142.1139 58.3785618 161.605076L1.71315 407.749606c-4.53273529 19.491176.0 39.438529 12.6941471 55.305176L173.061326 660.239135c12.242118 15.414618 30.825089 24.023912 50.316265 24.023912H477.683532C497.174709 684.263047 515.757679 675.653753 527.999797 660.239135L686.653826 463.054782c12.694148-15.414617 17.226883-35.814 12.694148-55.305176L642.682562 161.605076C638.149826 142.1139 625.459826 126.247253 607.324738 117.637959L378.863268 7.93581176c-8.61344200000002-4.07655882-18.135089-6.345-27.652589-6.345m0 21.30344114c6.34499999999997.0 12.694147 1.3602353 18.587118 4.0807059L599.167474 136.220929C610.953415 142.1139 620.018885 152.995782 622.739356 165.685782l56.661265 246.14453C682.573121 424.976488 679.400621 438.574694 670.787179 449.0004L512.13315 646.1889C503.971738 656.614606 491.281738 662.507576 478.135562 662.507576H223.833768c-13.146177.0-25.840324-5.89296999999999-33.997589-16.318676L31.1780029 449.0004c-8.1572647-10.425706-11.3297647-24.023912-8.6134411-37.170088l56.6654117-246.14453c3.1725-13.146176 11.7859412-24.023911 23.5718825-29.464853L332.171532 26.5229294C338.064503 24.2544882 344.865679 22.8942529 351.210679 22.8942529" id="Fill-1" fill="#326de6" mask="url(#mask-2)"/></g><path d="M218.498162 607.501403C226.630544 617.711462 238.827044 623.347315 251.558515 623.347315L451.127426 622.994815c12.735618.0 24.803559-5.98835299999996 32.935942-15.845912L605.721485 453.977285C609.234044 449.195726 608.844221 439.819226 608.844221 431.919079V218.026226L347.455103 368.527138V368.522991L86.3148088 218.167226V431.919079c0 8.028706 2.8365883 15.858353 8.0535883 22.410706L218.498162 607.501403z" id="kube-bottom" fill="#1fbfcf"/><polygon id="kube-top" fill="#c9e9ec" points="347.455103 368.526309 608.844221 218.029544 347.210426 67.6198676 86.3148088 218.158103"/><path d="M409.813182 484.797397C402.319447 489.566515 392.096947 488.206279 385.963447 480.708397 383.918947 478.663897 383.238829 475.939279 382.558712 473.214662L376.425212 362.143985C423.440418 367.597368 466.370771 388.718338 499.078624 421.426191l-89.265442 63.371206zm-92.670176-14.3115C316.458741 480.028279 308.965006 488.206279 298.742506 488.206279 296.017888 488.206279 292.613153 487.522015 290.568653 486.161779l-90.629824-64.735588c27.938736-27.938735 62.691089-47.015206 101.532442-55.873323C308.965006 364.188485 315.778624 362.824103 323.276506 361.463868L317.143006 470.485897zm254.845059-45.650823L578.801682 418.701574V417.337191C578.801682 413.932456 579.4818 410.523574 582.210565 407.118838 590.384418 399.620956 600.606918 393.487456 612.869771 385.993721 614.914271 384.629338 616.958771 383.949221 619.003271 382.584838 623.092271 380.544485 626.501153 378.499985 630.590153 375.771221 631.270271 375.091103 632.630506 374.410985 633.994888 373.046603 634.675006 372.366485 635.359271 372.366485 635.359271 371.682221 644.897506 363.508368 646.942006 349.881132 640.128388 341.023015 636.719506 336.24975 630.590153 333.525132 624.456653 333.525132 619.003271 333.525132 614.234153 335.569632 609.465035 338.978515L608.100653 340.33875C606.740418 341.023015 606.056153 342.38325 604.695918 343.063368 601.287035 346.47225 598.562418 349.196868 595.8378 352.60575 594.473418 353.965985 593.113182 356.010485 591.068682 357.374868 581.5263 367.597368 572.668182 375.771221 563.810065 381.904721 561.765565 383.269103 559.721065 383.949221 557.676565 383.949221 556.316329 383.949221 554.951947 383.949221 553.587565 383.269103H552.227329L544.049329 388.718338C535.191212 379.180103 525.652976 371.002103 516.110594 362.824103c-40.881706-32.023588-90.625676-51.784324-142.41-56.553441L373.016329 297.412544 371.656094 296.048162C369.611594 294.003662 366.882829 291.959162 366.202712 287.190044 365.522594 276.287426 366.882829 264.020426 368.247212 250.393191V249.713074C368.247212 247.668574 368.927329 244.943956 369.611594 242.899456 370.291712 238.810456 370.971829 234.721456 371.656094 229.952338v-4.089-2.0445c0-12.262853-9.54238199999998-22.485353-21.125118-22.485353C345.081741 201.333485 339.628359 204.058103 335.539359 208.147103 331.450359 212.236103 329.405859 217.685338 329.405859 223.818838v1.364383 4.089C329.405859 234.041338 330.090124 238.130338 331.450359 242.215191 332.134624 244.259691 332.134624 246.304191 332.814741 249.032956V249.713074C334.179124 263.340309 336.219476 275.607309 334.859241 286.509926 334.179124 291.279044 331.450359 293.323544 329.405859 295.368044 328.725741 296.048162 328.725741 296.048162 328.045624 296.728279L327.361359 305.586397C315.098506 306.950779 302.831506 308.315162 290.568653 311.039779c-52.468588 11.582736-98.803677 38.157089-134.920412 76.318324L148.834624 382.584838h-1.364383C146.110006 382.584838 144.745624 383.269103 143.385388 383.269103c-2.0445.0-4.089-.684264999999982-6.1335-2.04449999999997C128.393771 375.091103 119.535653 366.232985 109.993271 356.010485 108.633035 354.65025 107.268653 352.60575 105.224153 351.241368 102.499535 347.836632 99.7749176 345.107868 96.3660353 341.703132 95.6859176 341.023015 94.3215353 340.33875 92.9613 338.978515 92.2770353 338.29425 91.5969176 338.29425 91.5969176 337.614132 87.5079176 334.20525 82.0586824 332.16075 76.6053 332.16075c-6.1335.0-12.2628529 2.72876500000001-15.6717353 7.497882C54.1199471 348.51675 56.1644471 362.143985 65.7026824 370.321985c.6842647.0.6842647.680117999999993 1.3643823.680117999999993C68.4273 371.682221 69.1115647 373.046603 70.4718 373.726721 74.5608 376.455485 77.9696824 378.499985 82.0586824 380.544485 84.1031824 381.224603 86.1476824 382.584838 88.1880353 383.949221c12.2669997 7.497882 22.4894997 13.627235 30.6633527 21.125117C122.260271 408.479074 122.260271 411.887956 122.260271 415.292691V416.657074L129.073888 422.790574C127.709506 424.835074 126.349271 426.195309 125.669153 428.239809c-7.99138199999999 12.627794-14.775971 25.794706-20.436706 39.339L144.077947 515.510515C149.332271 496.960721 157.025065 479.041279 167.230976 462.312044l81.087442 72.229324c7.497882 6.12935299999992 8.178 17.716235 2.0445 25.20997C248.318418 562.475956 245.5938 564.520456 242.189065 565.204721l-46.824441 13.594058L218.629624 607.500574C226.762006 617.714779 238.954359 623.346485 251.689976 623.346485L451.258888 622.993985c12.731471.0 24.799412-5.98420599999997 32.935941-15.845911l21.842559-27.503295-47.844617-13.759941C448.654535 563.160221 443.201153 553.617838 445.245653 544.079603 445.925771 541.354985 447.290153 538.630368 449.334653 536.585868l82.451823-74.273824c10.035883 16.534324 18.018971 35.121441 23.517971 55.305177l39.621-49.880824C588.530682 452.811132 580.858624 438.478897 571.988065 424.835074z" id="wheel" fill="#326de6"/></g></g></svg></span><span class="navbar-brand__name">minikube</span></a>
+  <div class="td-navbar-nav-scroll ms-md-auto" id="main_navbar">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="/community/"><span>Community</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/kubernetes/minikube" target="_blank" rel="noopener"><span>GitHub</span></a>
+      </li>
+      </ul>
+  </div>
+  <div class="d-none d-lg-block">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+  </div>
+</div>
+</nav>
+    </header>
+    <div class="container-fluid td-outer">
+      <div class="td-main">
+        <div class="row flex-xl-nowrap">
+          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none">
+            
+
+  
+<div
+  id="td-sidebar-menu"
+  class="td-sidebar__inner"
+>
+  
+  <form class="td-sidebar__search d-flex align-items-center">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+    <button
+      class="btn btn-link td-sidebar__toggle d-md-none p-0 ml-3 fas fa-bars"
+      type="button"
+      data-toggle="collapse"
+      data-target="#td-section-nav"
+      aria-controls="td-docs-nav"
+      aria-expanded="false"
+      aria-label="Toggle section navigation"
+    ></button>
+  </form>
+  
+  <nav class="collapse td-sidebar-nav" id="td-section-nav">
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Documentation</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docs">
+            
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/start/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Get Started!</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsstart">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Handbook</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbook">
+             
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+               
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/addons/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Addons</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbookaddons">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+           
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/faq/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      FAQ</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsfaq">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/presentations/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Presentations</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docspresentations">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/tutorials/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Tutorials</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docstutorials">
+            
+        
+
+
+          
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/commands/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Commands</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscommands">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/drivers/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Drivers</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsdrivers">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/runtimes/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Runtimes</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsruntimes">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/"
+      class="align-left pl-0 pr-2 collapsed active td-sidebar-link td-sidebar-link__section"
+    >
+      Contributing</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontrib">
+             
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribguide"
+        href="/docs/contrib/guide/"
+      >
+        Guide 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribrelease_schedule"
+        href="/docs/contrib/release_schedule/"
+      >
+        Release Schedule 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribdocumentation"
+        href="/docs/contrib/documentation/"
+      >
+        Documentation 
+      </a>
+             
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/building/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Building</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribbuilding">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtranslations"
+        href="/docs/contrib/translations/"
+      >
+        Translations 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtesting"
+        href="/docs/contrib/testing/"
+      >
+        Testing 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribdrivers"
+        href="/docs/contrib/drivers/"
+      >
+        Drivers 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribjson_output"
+        href="/docs/contrib/json_output/"
+      >
+        Minikube JSON Output 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribroadmap"
+        href="/docs/contrib/roadmap/"
+      >
+        Roadmap 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribaddons"
+        href="/docs/contrib/addons/"
+      >
+        Addons 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtriage"
+        href="/docs/contrib/triage/"
+      >
+        Triage 
+      </a>
+             
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/leaderboard/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Triage &amp; Contributions Leaderboard</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribleaderboard">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/releasing/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Releasing</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribreleasing">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontriberrorcodes"
+        href="/docs/contrib/errorcodes/"
+      >
+        Error Codes 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtest_flakes"
+        href="/docs/contrib/test_flakes/"
+      >
+        Integration Test Flake Rates 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page  active"
+        id="m-docscontribtests"
+        href="/docs/contrib/tests/"
+      >
+        List of Integration Test Cases 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribexternal-packages"
+        href="/docs/contrib/external-packages/"
+      >
+        Managing External Packages 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribprinciples"
+        href="/docs/contrib/principles/"
+      >
+        Principles 
+      </a>
+         
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/benchmarks/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Benchmarks</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsbenchmarks">
+            
+        
+
+
+         
+        
+
+
+         
+        
+
+
+     
+    </li>
+  </ul>
+</ul>
+   
+    </li>
+  </ul>
+</ul>
+ 
+  </nav>
+</div>
+
+
+
+
+          </aside>
+          <aside class="d-none d-xl-block col-xl-2 td-sidebar-toc d-print-none">
+            <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+<a href="https://github.com/kubernetes/minikube/tree/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5ccontrib%5ctests.en.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
+  <a href="https://github.com/kubernetes/minikube/edit/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5ccontrib%5ctests.en.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
+  <a href="https://github.com/kubernetes/minikube/new/master/site/C:/Users/Dell/minikube/site/content/en/docs/contrib?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60getting-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
+  <a href="https://github.com/kubernetes/minikube/issues/new?title=List%20of%20Integration%20Test%20Cases" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  
+</div>
+
+            <div class="td-toc">
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#testdownloadonly">TestDownloadOnly</a></li>
+    <li><a href="#testdownloadonlykic">TestDownloadOnlyKic</a></li>
+    <li><a href="#testbinarymirror">TestBinaryMirror</a></li>
+    <li><a href="#testoffline">TestOffline</a></li>
+    <li><a href="#testaddons">TestAddons</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testcertoptions">TestCertOptions</a></li>
+    <li><a href="#testcertexpiration">TestCertExpiration</a></li>
+    <li><a href="#testdockerflags">TestDockerFlags</a></li>
+    <li><a href="#testforcesystemdflag">TestForceSystemdFlag</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testforcesystemdenv">TestForceSystemdEnv</a></li>
+    <li><a href="#testdockerenvcontainerd">TestDockerEnvContainerd</a></li>
+    <li><a href="#testkvmdriverinstallorupdate">TestKVMDriverInstallOrUpdate</a></li>
+    <li><a href="#testhyperkitdriverinstallorupdate">TestHyperKitDriverInstallOrUpdate</a></li>
+    <li><a href="#testhyperkitdriverskipupgrade">TestHyperkitDriverSkipUpgrade</a></li>
+    <li><a href="#testerrorspam">TestErrorSpam</a></li>
+    <li><a href="#testfunctional">TestFunctional</a></li>
+    <li><a href="#testfunctionalnewestkubernetes">TestFunctionalNewestKubernetes</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testguestenvironment">TestGuestEnvironment</a></li>
+    <li><a href="#testgvisoraddon">TestGvisorAddon</a></li>
+    <li><a href="#testmulticontrolplane">TestMultiControlPlane</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testimagebuild">TestImageBuild</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testjsonoutput">TestJSONOutput</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testerrorjsonoutput">TestErrorJSONOutput</a></li>
+    <li><a href="#testkiccustomnetwork">TestKicCustomNetwork</a></li>
+    <li><a href="#testkicexistingnetwork">TestKicExistingNetwork</a></li>
+    <li><a href="#testkiccustomsubnet">TestKicCustomSubnet</a></li>
+    <li><a href="#testkicstaticip">TestKicStaticIP</a></li>
+    <li><a href="#testingkicbaseimage">TestingKicBaseImage</a></li>
+    <li><a href="#testminikubeprofile">TestMinikubeProfile</a></li>
+    <li><a href="#testmountstart">TestMountStart</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testmultinode">TestMultiNode</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testnetworkplugins">TestNetworkPlugins</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testnokubernetes">TestNoKubernetes</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testchangenoneuser">TestChangeNoneUser</a></li>
+    <li><a href="#testpause">TestPause</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testpreload">TestPreload</a></li>
+    <li><a href="#testscheduledstopwindows">TestScheduledStopWindows</a></li>
+    <li><a href="#testscheduledstopunix">TestScheduledStopUnix</a></li>
+    <li><a href="#testskaffold">TestSkaffold</a></li>
+    <li><a href="#teststartstop">TestStartStop</a>
+      <ul>
+        <li></li>
+      </ul>
+    </li>
+    <li><a href="#testinsufficientstorage">TestInsufficientStorage</a></li>
+    <li><a href="#testrunningbinaryupgrade">TestRunningBinaryUpgrade</a></li>
+    <li><a href="#teststoppedbinaryupgrade">TestStoppedBinaryUpgrade</a></li>
+    <li><a href="#testkubernetesupgrade">TestKubernetesUpgrade</a></li>
+    <li><a href="#testmissingcontainerupgrade">TestMissingContainerUpgrade</a></li>
+  </ul>
+</nav>
+      </div>
+    
+            
+
+          </aside>
+          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+            
+  
+
+            <nav aria-label="breadcrumb" class="td-breadcrumbs">
+  <ol class="breadcrumb">
+  <li class="breadcrumb-item">
+    <a href="/docs/">Documentation</a></li>
+  <li class="breadcrumb-item">
+    <a href="/docs/contrib/">Contributing</a></li>
+  <li class="breadcrumb-item active" aria-current="page">
+    List of Integration Test Cases</li>
+  </ol>
+</nav>
+            
+<div class="td-content">
+	<h1>List of Integration Test Cases</h1>
+	<div class="lead">Auto generated list of all minikube integration tests and what they do.</div>
+	<header class="article-meta">
+		
+</header>
+	<h2 id="testdownloadonly">TestDownloadOnly</h2>
+<p>makes sure the &ndash;download-only parameter in minikube start caches the appropriate images and tarballs.</p>
+<h2 id="testdownloadonlykic">TestDownloadOnlyKic</h2>
+<p>makes sure &ndash;download-only caches the docker driver images as well.</p>
+<h2 id="testbinarymirror">TestBinaryMirror</h2>
+<p>tests functionality of &ndash;binary-mirror flag</p>
+<h2 id="testoffline">TestOffline</h2>
+<p>makes sure minikube works without internet, once the user has cached the necessary images.
+This test has to run after TestDownloadOnly.</p>
+<h2 id="testaddons">TestAddons</h2>
+<p>tests addons that require no special environment in parallel</p>
+<h4 id="validateingressaddon">validateIngressAddon</h4>
+<p>tests the ingress addon by deploying a default nginx pod</p>
+<h4 id="validateregistryaddon">validateRegistryAddon</h4>
+<p>tests the registry addon</p>
+<h4 id="validatemetricsserveraddon">validateMetricsServerAddon</h4>
+<p>tests the metrics server addon by making sure &ldquo;kubectl top pods&rdquo; returns a sensible result</p>
+<h4 id="validateolmaddon">validateOlmAddon</h4>
+<p>tests the OLM addon</p>
+<h4 id="validatecsidriverandsnapshots">validateCSIDriverAndSnapshots</h4>
+<p>tests the csi hostpath driver by creating a persistent volume, snapshotting it and restoring it.</p>
+<h4 id="validategcpauthnamespaces">validateGCPAuthNamespaces</h4>
+<p>validates that newly created namespaces contain the gcp-auth secret.</p>
+<h4 id="validategcpauthaddon">validateGCPAuthAddon</h4>
+<p>tests the GCP Auth addon with either phony or real credentials and makes sure the files are mounted into pods correctly</p>
+<h4 id="validateheadlampaddon">validateHeadlampAddon</h4>
+<h4 id="validateinspektorgadgetaddon">validateInspektorGadgetAddon</h4>
+<p>tests the inspektor-gadget addon by ensuring the pod has come up and addon disables</p>
+<h4 id="validatecloudspanneraddon">validateCloudSpannerAddon</h4>
+<p>tests the cloud-spanner addon by ensuring the deployment and pod come up and addon disables</p>
+<h4 id="validatevolcanoaddon">validateVolcanoAddon</h4>
+<p>tests the Volcano addon, makes sure the Volcano is installed into cluster.</p>
+<h4 id="validatelocalpathaddon">validateLocalPathAddon</h4>
+<p>tests the functionality of the storage-provisioner-rancher addon</p>
+<h4 id="validateenablingaddononnonexistingcluster">validateEnablingAddonOnNonExistingCluster</h4>
+<p>tests enabling an addon on a non-existing cluster</p>
+<h4 id="validatedisablingaddononnonexistingcluster">validateDisablingAddonOnNonExistingCluster</h4>
+<p>tests disabling an addon on a non-existing cluster</p>
+<h4 id="validatenvidiadeviceplugin">validateNvidiaDevicePlugin</h4>
+<p>tests the nvidia-device-plugin addon by ensuring the pod comes up and the addon disables</p>
+<h4 id="validateamdgpudeviceplugin">validateAmdGpuDevicePlugin</h4>
+<p>tests the amd-gpu-device-plugin addon by ensuring the pod comes up and the addon disables</p>
+<h4 id="validateyakdaddon">validateYakdAddon</h4>
+<h2 id="testcertoptions">TestCertOptions</h2>
+<p>makes sure minikube certs respect the &ndash;apiserver-ips and &ndash;apiserver-names parameters</p>
+<h2 id="testcertexpiration">TestCertExpiration</h2>
+<p>makes sure minikube can start after its profile certs have expired.
+It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
+It also makes sure minikube prints a cert expiration warning to the user.</p>
+<h2 id="testdockerflags">TestDockerFlags</h2>
+<p>makes sure the &ndash;docker-env and &ndash;docker-opt parameters are respected</p>
+<h2 id="testforcesystemdflag">TestForceSystemdFlag</h2>
+<p>tests the &ndash;force-systemd flag, as one would expect.</p>
+<h4 id="validatedockersystemd">validateDockerSystemd</h4>
+<p>makes sure the &ndash;force-systemd flag worked with the docker container runtime</p>
+<h4 id="validatecontainerdsystemd">validateContainerdSystemd</h4>
+<p>makes sure the &ndash;force-systemd flag worked with the containerd container runtime</p>
+<h4 id="validatecriosystemd">validateCrioSystemd</h4>
+<p>makes sure the &ndash;force-systemd flag worked with the cri-o container runtime</p>
+<h2 id="testforcesystemdenv">TestForceSystemdEnv</h2>
+<p>makes sure the MINIKUBE_FORCE_SYSTEMD environment variable works just as well as the &ndash;force-systemd flag</p>
+<h2 id="testdockerenvcontainerd">TestDockerEnvContainerd</h2>
+<p>makes sure that minikube docker-env command works when the runtime is containerd</p>
+<h2 id="testkvmdriverinstallorupdate">TestKVMDriverInstallOrUpdate</h2>
+<p>makes sure our docker-machine-driver-kvm2 binary can be installed properly</p>
+<h2 id="testhyperkitdriverinstallorupdate">TestHyperKitDriverInstallOrUpdate</h2>
+<p>makes sure our docker-machine-driver-hyperkit binary can be installed properly</p>
+<h2 id="testhyperkitdriverskipupgrade">TestHyperkitDriverSkipUpgrade</h2>
+<p>makes sure our docker-machine-driver-hyperkit binary can be installed properly</p>
+<h2 id="testerrorspam">TestErrorSpam</h2>
+<p>asserts that there are no unexpected errors displayed in minikube command outputs.</p>
+<h2 id="testfunctional">TestFunctional</h2>
+<p>are functionality tests which can safely share a profile in parallel</p>
+<h2 id="testfunctionalnewestkubernetes">TestFunctionalNewestKubernetes</h2>
+<p>are functionality run functional tests using
+NewestKubernetesVersion</p>
+<h4 id="validatenodelabels">validateNodeLabels</h4>
+<p>checks if minikube cluster is created with correct kubernetes&rsquo;s node label</p>
+<p>Steps:</p>
+<ul>
+<li>Get the node labels from the cluster with <code>kubectl get nodes</code></li>
+<li>check if the node labels matches with the expected Minikube labels: <code>minikube.k8s.io/*</code></li>
+</ul>
+<h4 id="validateimagecommands">validateImageCommands</h4>
+<p>runs tests on all the <code>minikube image</code> commands, ex. <code>minikube image load</code>, <code>minikube image list</code>, etc.</p>
+<p>Steps:</p>
+<ul>
+<li>Make sure image building works by <code>minikube image build</code></li>
+<li>Make sure image loading from Docker daemon works by <code>minikube image load --daemon</code></li>
+<li>Try to load image already loaded and make sure <code>minikube image load --daemon</code> works</li>
+<li>Make sure a new updated tag works by <code>minikube image load --daemon</code></li>
+<li>Make sure image saving works by <code>minikube image load --daemon</code></li>
+<li>Make sure image removal works by <code>minikube image rm</code></li>
+<li>Make sure image loading from file works by <code>minikube image load</code></li>
+<li>Make sure image saving to Docker daemon works by <code>minikube image load</code></li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips on <code>none</code> driver as image loading is not supported</li>
+<li>Skips on GitHub Actions and macOS as this test case requires a running docker daemon</li>
+</ul>
+<h4 id="validatedockerenv">validateDockerEnv</h4>
+<p>check functionality of minikube after evaluating docker-env</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>eval $(minikube docker-env)</code> to configure current environment to use minikube&rsquo;s Docker daemon</li>
+<li>Run <code>minikube status</code> to get the minikube status</li>
+<li>Make sure minikube components have status <code>Running</code></li>
+<li>Make sure <code>docker-env</code> has status <code>in-use</code></li>
+<li>Run eval <code>$(minikube -p profile docker-env)</code> and check if we are point to docker inside minikube</li>
+<li>Make sure <code>docker images</code> hits the minikube&rsquo;s Docker daemon by check if <code>gcr.io/k8s-minikube/storage-provisioner</code> is in the output of <code>docker images</code></li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips on <code>none</code> drive since <code>docker-env</code> is not supported</li>
+<li>Skips on non-docker container runtime</li>
+</ul>
+<h4 id="validatepodmanenv">validatePodmanEnv</h4>
+<p>check functionality of minikube after evaluating podman-env</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>eval $(minikube podman-env)</code> to configure current environment to use minikube&rsquo;s Podman daemon, and <code>minikube status</code> to get the minikube status</li>
+<li>Make sure minikube components have status <code>Running</code></li>
+<li>Make sure <code>podman-env</code> has status <code>in-use</code></li>
+<li>Run <code>eval $(minikube docker-env)</code> again and <code>docker images</code> to list the docker images using the minikube&rsquo;s Docker daemon</li>
+<li>Make sure <code>docker images</code> hits the minikube&rsquo;s Podman daemon by check if <code>gcr.io/k8s-minikube/storage-provisioner</code> is in the output of <code>docker images</code></li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips on <code>none</code> drive since <code>podman-env</code> is not supported</li>
+<li>Skips on non-docker container runtime</li>
+<li>Skips on non-Linux platforms</li>
+</ul>
+<h4 id="validatestartwithproxy">validateStartWithProxy</h4>
+<p>makes sure minikube start respects the HTTP_PROXY environment variable</p>
+<p>Steps:</p>
+<ul>
+<li>Start a local HTTP proxy</li>
+<li>Start minikube with the environment variable <code>HTTP_PROXY</code> set to the local HTTP proxy</li>
+</ul>
+<h4 id="validatestartwithcustomcerts">validateStartWithCustomCerts</h4>
+<p>makes sure minikube start respects the HTTPS_PROXY environment variable and works with custom certs
+a proxy is started by calling the mitmdump binary in the background, then installing the certs generated by the binary
+mitmproxy/dump creates the proxy at localhost at port 8080
+only runs on GitHub Actions for amd64 linux, otherwise validateStartWithProxy runs instead</p>
+<h4 id="validateauditafterstart">validateAuditAfterStart</h4>
+<p>makes sure the audit log contains the correct logging after minikube start</p>
+<p>Steps:</p>
+<ul>
+<li>Read the audit log file and make sure it contains the current minikube profile name</li>
+</ul>
+<h4 id="validatesoftstart">validateSoftStart</h4>
+<p>validates that after minikube already started, a <code>minikube start</code> should not change the configs.</p>
+<p>Steps:</p>
+<ul>
+<li>The test <code>validateStartWithProxy</code> should have start minikube, make sure the configured node port is <code>8441</code></li>
+<li>Run <code>minikube start</code> again as a soft start</li>
+<li>Make sure the configured node port is not changed</li>
+</ul>
+<h4 id="validatekubecontext">validateKubeContext</h4>
+<p>asserts that kubectl is properly configured (race-condition prone!)</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>kubectl config current-context</code></li>
+<li>Make sure the current minikube profile name is in the output of the command</li>
+</ul>
+<h4 id="validatekubectlgetpods">validateKubectlGetPods</h4>
+<p>asserts that <code>kubectl get pod -A</code> returns non-zero content</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>kubectl get po -A</code> to get all pods in the current minikube profile</li>
+<li>Make sure the output is not empty and contains <code>kube-system</code> components</li>
+</ul>
+<h4 id="validateminikubekubectl">validateMinikubeKubectl</h4>
+<p>validates that the <code>minikube kubectl</code> command returns content</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube kubectl -- get pods</code> to get the pods in the current minikube profile</li>
+<li>Make sure the command doesn&rsquo;t raise any error</li>
+</ul>
+<h4 id="validateminikubekubectldirectcall">validateMinikubeKubectlDirectCall</h4>
+<p>validates that calling minikube&rsquo;s kubectl</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>kubectl get pods</code> by calling the minikube&rsquo;s <code>kubectl</code> binary file directly</li>
+<li>Make sure the command doesn&rsquo;t raise any error</li>
+</ul>
+<h4 id="validateextraconfig">validateExtraConfig</h4>
+<p>verifies minikube with &ndash;extra-config works as expected</p>
+<p>Steps:</p>
+<ul>
+<li>The tests before this already created a profile</li>
+<li>Soft-start minikube with different <code>--extra-config</code> command line option</li>
+<li>Load the profile&rsquo;s config</li>
+<li>Make sure the specified <code>--extra-config</code> is correctly returned</li>
+</ul>
+<h4 id="validatecomponenthealth">validateComponentHealth</h4>
+<p>asserts that all Kubernetes components are healthy
+NOTE: It expects all components to be Ready, so it makes sense to run it close after only those tests that include &lsquo;&ndash;wait=all&rsquo; start flag</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>kubectl get po po -l tier=control-plane -n kube-system -o=json</code> to get all the Kubernetes conponents</li>
+<li>For each component, make sure the pod status is <code>Running</code></li>
+</ul>
+<h4 id="validatestatuscmd">validateStatusCmd</h4>
+<p>makes sure <code>minikube status</code> outputs correctly</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube status</code> with custom format <code>host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}</code></li>
+<li>Make sure <code>host</code>, <code>kublete</code>, <code>apiserver</code> and <code>kubeconfig</code> statuses are shown in the output</li>
+<li>Run <code>minikube status</code> again as JSON output</li>
+<li>Make sure <code>host</code>, <code>kublete</code>, <code>apiserver</code> and <code>kubeconfig</code> statuses are set in the JSON output</li>
+</ul>
+<h4 id="validatedashboardcmd">validateDashboardCmd</h4>
+<p>asserts that the dashboard command works</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube dashboard --url</code> to start minikube dashboard and return the URL of it</li>
+<li>Send a GET request to the dashboard URL</li>
+<li>Make sure HTTP status OK is returned</li>
+</ul>
+<h4 id="validatedryrun">validateDryRun</h4>
+<p>asserts that the dry-run mode quickly exits with the right code</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube start --dry-run --memory 250MB</code></li>
+<li>Since the 250MB memory is less than the required 2GB, minikube should exit with an exit code <code>ExInsufficientMemory</code></li>
+<li>Run <code>minikube start --dry-run</code></li>
+<li>Make sure the command doesn&rsquo;t raise any error</li>
+</ul>
+<h4 id="validateinternationallanguage">validateInternationalLanguage</h4>
+<p>asserts that the language used can be changed with environment variables</p>
+<p>Steps:</p>
+<ul>
+<li>Set environment variable <code>LC_ALL=fr</code> to enable minikube translation to French</li>
+<li>Start minikube with memory of 250MB which is too little: <code>minikube start --dry-run --memory 250MB</code></li>
+<li>Make sure the dry-run output message is in French</li>
+</ul>
+<h4 id="validatecachecmd">validateCacheCmd</h4>
+<p>tests functionality of cache command (cache add, delete, list)</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube cache add</code> and make sure we can add a remote image to the cache</li>
+<li>Run <code>minikube cache add</code> and make sure we can build and add a local image to the cache</li>
+<li>Run <code>minikube cache delete</code> and make sure we can delete an image from the cache</li>
+<li>Run <code>minikube cache list</code> and make sure we can list the images in the cache</li>
+<li>Run <code>minikube ssh sudo crictl images</code> and make sure we can list the images in the cache with <code>crictl</code></li>
+<li>Delete an image from minikube node and run <code>minikube cache reload</code> to make sure the image is brought back correctly</li>
+</ul>
+<h4 id="validateconfigcmd">validateConfigCmd</h4>
+<p>asserts basic &ldquo;config&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube config set/get/unset</code> to make sure configuration is modified correctly</li>
+</ul>
+<h4 id="validatelogscmd">validateLogsCmd</h4>
+<p>asserts basic &ldquo;logs&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube logs</code> and make sure the logs contains some keywords like <code>apiserver</code>, <code>Audit</code> and <code>Last Start</code></li>
+</ul>
+<h4 id="validatelogsfilecmd">validateLogsFileCmd</h4>
+<p>asserts &ldquo;logs &ndash;file&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube logs --file logs.txt</code> to save the logs to a local file</li>
+<li>Make sure the logs are correctly written</li>
+</ul>
+<h4 id="validateprofilecmd">validateProfileCmd</h4>
+<p>asserts &ldquo;profile&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube profile lis</code> and make sure the command doesn&rsquo;t fail for the non-existent profile <code>lis</code></li>
+<li>Run <code>minikube profile list --output json</code> to make sure the previous command doesn&rsquo;t create a new profile</li>
+<li>Run <code>minikube profile list</code> and make sure the profiles are correctly listed</li>
+<li>Run <code>minikube profile list -o JSON</code> and make sure the profiles are correctly listed as JSON output</li>
+</ul>
+<h4 id="validateservicecmd">validateServiceCmd</h4>
+<p>asserts basic &ldquo;service&rdquo; command functionality</p>
+<h4 id="validateservicecmddeployapp">validateServiceCmdDeployApp</h4>
+<p>Create a new <code>registry.k8s.io/echoserver</code> deployment</p>
+<h4 id="validateservicecmdlist">validateServiceCmdList</h4>
+<p>Run <code>minikube service list</code> to make sure the newly created service is correctly listed in the output</p>
+<h4 id="validateservicecmdjson">validateServiceCmdJSON</h4>
+<p>Run <code>minikube service list -o JSON</code> and make sure the services are correctly listed as JSON output</p>
+<h4 id="validateservicecmdhttps">validateServiceCmdHTTPS</h4>
+<p>Run <code>minikube service</code> with <code>--https --url</code> to make sure the HTTPS endpoint URL of the service is printed</p>
+<h4 id="validateservicecmdformat">validateServiceCmdFormat</h4>
+<p>Run <code>minikube service</code> with <code>--url --format={{.IP}}</code> to make sure the IP address of the service is printed</p>
+<h4 id="validateservicecmdurl">validateServiceCmdURL</h4>
+<p>Run <code>minikube service</code> with a regular <code>--url</code> to make sure the HTTP endpoint URL of the service is printed</p>
+<h4 id="validateservicecmdconnect">validateServiceCmdConnect</h4>
+<p>Steps:</p>
+<ul>
+<li>Create a new <code>registry.k8s.io/echoserver</code> deployment</li>
+<li>Run <code>minikube service</code> with a regular <code>--url</code> to make sure the HTTP endpoint URL of the service is printed</li>
+<li>Make sure we can hit the endpoint URL with an HTTP GET request</li>
+</ul>
+<h4 id="validateaddonscmd">validateAddonsCmd</h4>
+<p>asserts basic &ldquo;addon&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube addons list</code> to list the addons in a tabular format</li>
+<li>Make sure <code>dashboard</code>, <code>ingress</code> and <code>ingress-dns</code> is listed as available addons</li>
+<li>Run <code>minikube addons list -o JSON</code> lists the addons in JSON format</li>
+</ul>
+<h4 id="validatesshcmd">validateSSHCmd</h4>
+<p>asserts basic &ldquo;ssh&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube ssh echo hello</code> to make sure we can SSH into the minikube container and run an command</li>
+<li>Run <code>minikube ssh cat /etc/hostname</code> as well to make sure the command is run inside minikube</li>
+</ul>
+<h4 id="validatecpcmd">validateCpCmd</h4>
+<p>asserts basic &ldquo;cp&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube cp ...</code> to copy a file to the minikube node</li>
+<li>Run <code>minikube ssh sudo cat ...</code> to print out the copied file within minikube</li>
+<li>make sure the file is correctly copied</li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips <code>none</code> driver since <code>cp</code> is not supported</li>
+</ul>
+<h4 id="validatemysql">validateMySQL</h4>
+<p>validates a minimalist MySQL deployment</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>kubectl replace --force -f testdata/mysql/yaml</code></li>
+<li>Wait for the <code>mysql</code> pod to be running</li>
+<li>Run <code>mysql -e show databases;</code> inside the MySQL pod to verify MySQL is up and running</li>
+<li>Retry with exponential backoff if failed, as <code>mysqld</code> first comes up without users configured. Scan for names in case of a reschedule.</li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips for ARM64 architecture since it&rsquo;s not supported by MySQL</li>
+</ul>
+<h4 id="validatefilesync">validateFileSync</h4>
+<p>to check existence of the test file</p>
+<p>Steps:</p>
+<ul>
+<li>Test files have been synced into minikube in the previous step <code>setupFileSync</code></li>
+<li>Check the existence of the test file</li>
+<li>Make sure the file is correctly synced</li>
+</ul>
+<p>Skips:</p>
+<ul>
+<li>Skips on <code>none</code> driver since SSH is not supported</li>
+</ul>
+<h4 id="validatecertsync">validateCertSync</h4>
+<p>checks to make sure a custom cert has been copied into the minikube guest and installed correctly</p>
+<p>Steps:</p>
+<ul>
+<li>Check both the installed &amp; reference certs and make sure they are symlinked</li>
+</ul>
+<h4 id="validatenotactiveruntimedisabled">validateNotActiveRuntimeDisabled</h4>
+<p>asserts that for a given runtime, the other runtimes are disabled, for example for <code>containerd</code> runtime, <code>docker</code> and <code>crio</code> needs to be not running</p>
+<p>Steps:</p>
+<ul>
+<li>For each container runtime, run <code>minikube ssh sudo systemctl is-active ...</code> and make sure the other container runtimes are not running</li>
+</ul>
+<h4 id="validateupdatecontextcmd">validateUpdateContextCmd</h4>
+<p>asserts basic &ldquo;update-context&rdquo; command functionality</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube update-context</code></li>
+<li>Make sure the context has been correctly updated by checking the command output</li>
+</ul>
+<h4 id="validateversioncmd">validateVersionCmd</h4>
+<p>asserts <code>minikube version</code> command works fine for both &ndash;short and &ndash;components</p>
+<p>Steps:</p>
+<ul>
+<li>Run <code>minikube version --short</code> and make sure the returned version is a valid semver</li>
+<li>Run <code>minikube version --components</code> and make sure the component versions are returned</li>
+</ul>
+<h4 id="validatelicensecmd">validateLicenseCmd</h4>
+<p>asserts that the <code>minikube license</code> command downloads and untars the licenses
+Note: This test will fail on release PRs as the licenses file for the new version won&rsquo;t be uploaded at that point</p>
+<h4 id="validateinvalidservice">validateInvalidService</h4>
+<p>makes sure minikube will not start a tunnel for an unavailable service that has no running pods</p>
+<h4 id="validatemountcmd">validateMountCmd</h4>
+<p>verifies the minikube mount command works properly
+for the platforms that support it, we&rsquo;re testing:</p>
+<ul>
+<li>a generic 9p mount</li>
+<li>a 9p mount on a specific port</li>
+<li>cleaning-mechanism for profile-specific mounts</li>
+</ul>
+<h4 id="validatepersistentvolumeclaim">validatePersistentVolumeClaim</h4>
+<p>makes sure PVCs work properly</p>
+<h4 id="validatetunnelcmd">validateTunnelCmd</h4>
+<p>makes sure the minikube tunnel command works as expected</p>
+<h4 id="validatetunnelstart">validateTunnelStart</h4>
+<p>starts <code>minikube tunnel</code></p>
+<h4 id="validatenosecondtunnel">validateNoSecondTunnel</h4>
+<p>ensures only 1 tunnel can run simultaneously</p>
+<h4 id="validateservicestable">validateServiceStable</h4>
+<p>starts nginx pod, nginx service and waits nginx having loadbalancer ingress IP</p>
+<h4 id="validateaccessdirect">validateAccessDirect</h4>
+<p>validates if the test service can be accessed with LoadBalancer IP from host</p>
+<h4 id="validatednsdig">validateDNSDig</h4>
+<p>validates if the DNS forwarding works by dig command DNS lookup
+NOTE: DNS forwarding is experimental: <a href="https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental">https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental</a></p>
+<h4 id="validatednsdscacheutil">validateDNSDscacheutil</h4>
+<p>validates if the DNS forwarding works by dscacheutil command DNS lookup
+NOTE: DNS forwarding is experimental: <a href="https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental">https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental</a></p>
+<h4 id="validateaccessdns">validateAccessDNS</h4>
+<p>validates if the test service can be accessed with DNS forwarding from host
+NOTE: DNS forwarding is experimental: <a href="https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental">https://minikube.sigs.k8s.io/docs/handbook/accessing/#dns-resolution-experimental</a></p>
+<h4 id="validatetunneldelete">validateTunnelDelete</h4>
+<p>stops <code>minikube tunnel</code></p>
+<h2 id="testguestenvironment">TestGuestEnvironment</h2>
+<p>verifies files and packages installed inside minikube ISO/Base image</p>
+<h2 id="testgvisoraddon">TestGvisorAddon</h2>
+<p>tests the functionality of the gVisor addon</p>
+<h2 id="testmulticontrolplane">TestMultiControlPlane</h2>
+<p>tests all ha (multi-control plane) cluster functionality</p>
+<h4 id="validatehastartcluster">validateHAStartCluster</h4>
+<p>ensures ha (multi-control plane) cluster can start.</p>
+<h4 id="validatehadeployapp">validateHADeployApp</h4>
+<p>deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.</p>
+<h4 id="validatehapinghostfrompods">validateHAPingHostFromPods</h4>
+<p>uses app previously deplyed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve &ldquo;host.minikube.internal&rdquo;.</p>
+<h4 id="validatehaaddworkernode">validateHAAddWorkerNode</h4>
+<p>uses the minikube node add command to add a worker node to an existing ha (multi-control plane) cluster.</p>
+<h4 id="validatehanodelabels">validateHANodeLabels</h4>
+<p>check if all node labels were configured correctly.</p>
+<p>Steps:</p>
+<ul>
+<li>Get the node labels from the cluster with <code>kubectl get nodes</code></li>
+<li>check if all node labels matches with the expected Minikube labels: <code>minikube.k8s.io/*</code></li>
+</ul>
+<h4 id="validatehastatushappy">validateHAStatusHAppy</h4>
+<p>ensures minikube profile list outputs correct with ha (multi-control plane) clusters.</p>
+<h4 id="validatehacopyfile">validateHACopyFile</h4>
+<p>ensures minikube cp works with ha (multi-control plane) clusters.</p>
+<h4 id="validatehastopsecondarynode">validateHAStopSecondaryNode</h4>
+<p>tests ha (multi-control plane) cluster by stopping a secondary control-plane node using minikube node stop command.</p>
+<h4 id="validatehastatusdegraded">validateHAStatusDegraded</h4>
+<p>ensures minikube profile list outputs correct with ha (multi-control plane) clusters.</p>
+<h4 id="validateharestartsecondarynode">validateHARestartSecondaryNode</h4>
+<p>tests the minikube node start command on existing stopped secondary node.</p>
+<h4 id="validateharestartclusterkeepsnodes">validateHARestartClusterKeepsNodes</h4>
+<p>restarts minikube cluster and checks if the reported node list is unchanged.</p>
+<h4 id="validatehadeletesecondarynode">validateHADeleteSecondaryNode</h4>
+<p>tests the minikube node delete command on secondary control-plane.
+note: currently, &lsquo;minikube status&rsquo; subcommand relies on primary control-plane node and storage-provisioner only runs on a primary control-plane node.</p>
+<h4 id="validatehastopcluster">validateHAStopCluster</h4>
+<p>runs minikube stop on a ha (multi-control plane) cluster.</p>
+<h4 id="validateharestartcluster">validateHARestartCluster</h4>
+<p>verifies a soft restart on a ha (multi-control plane) cluster works.</p>
+<h4 id="validatehaaddsecondarynode">validateHAAddSecondaryNode</h4>
+<p>uses the minikube node add command to add a secondary control-plane node to an existing ha (multi-control plane) cluster.</p>
+<h2 id="testimagebuild">TestImageBuild</h2>
+<p>makes sure the &lsquo;minikube image build&rsquo; command works fine</p>
+<h4 id="validatesetupimagebuild">validateSetupImageBuild</h4>
+<p>starts a cluster for the image builds</p>
+<h4 id="validatenormalimagebuild">validateNormalImageBuild</h4>
+<p>is normal test case for minikube image build, with -t parameter</p>
+<h4 id="validatenormalimagebuildwithspecifieddockerfile">validateNormalImageBuildWithSpecifiedDockerfile</h4>
+<p>is normal test case for minikube image build, with -t and -f parameter</p>
+<h4 id="validateimagebuildwithbuildarg">validateImageBuildWithBuildArg</h4>
+<p>is a test case building with &ndash;build-opt</p>
+<h4 id="validateimagebuildwithbuildenv">validateImageBuildWithBuildEnv</h4>
+<p>is a test case building with &ndash;build-env</p>
+<h4 id="validateimagebuildwithdockerignore">validateImageBuildWithDockerIgnore</h4>
+<p>is a test case building with .dockerignore</p>
+<h2 id="testjsonoutput">TestJSONOutput</h2>
+<p>makes sure json output works properly for the start, pause, unpause, and stop commands</p>
+<h4 id="validatedistinctcurrentsteps">validateDistinctCurrentSteps</h4>
+<p>makes sure each step has a distinct step number</p>
+<h4 id="validateincreasingcurrentsteps">validateIncreasingCurrentSteps</h4>
+<p>verifies that for a successful minikube start, &lsquo;current step&rsquo; should be increasing</p>
+<h2 id="testerrorjsonoutput">TestErrorJSONOutput</h2>
+<p>makes sure json output can print errors properly</p>
+<h2 id="testkiccustomnetwork">TestKicCustomNetwork</h2>
+<p>verifies the docker driver works with a custom network</p>
+<h2 id="testkicexistingnetwork">TestKicExistingNetwork</h2>
+<p>verifies the docker driver and run with an existing network</p>
+<h2 id="testkiccustomsubnet">TestKicCustomSubnet</h2>
+<p>verifies the docker/podman driver works with a custom subnet</p>
+<h2 id="testkicstaticip">TestKicStaticIP</h2>
+<p>starts minikube with the static IP flag</p>
+<h2 id="testingkicbaseimage">TestingKicBaseImage</h2>
+<p>will return true if the integraiton test is running against a passed &ndash;base-image flag</p>
+<h2 id="testminikubeprofile">TestMinikubeProfile</h2>
+<h2 id="testmountstart">TestMountStart</h2>
+<p>tests using the mount command on start</p>
+<h4 id="validatestartwithmount">validateStartWithMount</h4>
+<p>starts a cluster with mount enabled</p>
+<h4 id="validatemount">validateMount</h4>
+<p>checks if the cluster has a folder mounted</p>
+<h4 id="validatemountstop">validateMountStop</h4>
+<p>stops a cluster</p>
+<h4 id="validaterestart">validateRestart</h4>
+<p>restarts a cluster</p>
+<h2 id="testmultinode">TestMultiNode</h2>
+<p>tests all multi node cluster functionality</p>
+<h4 id="validatemultinodestart">validateMultiNodeStart</h4>
+<p>makes sure a 2 node cluster can start</p>
+<h4 id="validateaddnodetomultinode">validateAddNodeToMultiNode</h4>
+<p>uses the minikube node add command to add a node to an existing cluster</p>
+<h4 id="validateprofilelistwithmultinode">validateProfileListWithMultiNode</h4>
+<p>make sure minikube profile list outputs correct with multinode clusters</p>
+<h4 id="validatecopyfilewithmultinode">validateCopyFileWithMultiNode</h4>
+<p>make sure minikube cp works with multinode clusters.</p>
+<h4 id="validatemultinodelabels">validateMultiNodeLabels</h4>
+<p>check if all node labels were configured correctly</p>
+<p>Steps:</p>
+<ul>
+<li>Get the node labels from the cluster with <code>kubectl get nodes</code></li>
+<li>check if all node labels matches with the expected Minikube labels: <code>minikube.k8s.io/*</code></li>
+</ul>
+<h4 id="validatestoprunningnode">validateStopRunningNode</h4>
+<p>tests the minikube node stop command</p>
+<h4 id="validatestartnodeafterstop">validateStartNodeAfterStop</h4>
+<p>tests the minikube node start command on an existing stopped node</p>
+<h4 id="validaterestartkeepsnodes">validateRestartKeepsNodes</h4>
+<p>restarts minikube cluster and checks if the reported node list is unchanged</p>
+<h4 id="validatestopmultinodecluster">validateStopMultiNodeCluster</h4>
+<p>runs minikube stop on a multinode cluster</p>
+<h4 id="validaterestartmultinodecluster">validateRestartMultiNodeCluster</h4>
+<p>verifies a soft restart on a multinode cluster works</p>
+<h4 id="validatedeletenodefrommultinode">validateDeleteNodeFromMultiNode</h4>
+<p>tests the minikube node delete command</p>
+<h4 id="validatenameconflict">validateNameConflict</h4>
+<p>tests that the node name verification works as expected</p>
+<h4 id="validatedeployapptomultinode">validateDeployAppToMultiNode</h4>
+<p>deploys an app to a multinode cluster and makes sure all nodes can serve traffic</p>
+<h4 id="validatepodspinghost">validatePodsPingHost</h4>
+<p>uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve &ldquo;host.minikube.internal&rdquo;.</p>
+<h2 id="testnetworkplugins">TestNetworkPlugins</h2>
+<p>tests all supported CNI options
+Options tested: kubenet, bridge, flannel, kindnet, calico, cilium
+Flags tested: enable-default-cni (legacy), false (CNI off), auto-detection</p>
+<h4 id="validatefalsecni">validateFalseCNI</h4>
+<p>checks that minikube returns and error
+if container runtime is &ldquo;containerd&rdquo; or &ldquo;crio&rdquo;
+and &ndash;cni=false</p>
+<h4 id="validatehairpinmode">validateHairpinMode</h4>
+<p>makes sure the hairpinning (<a href="https://en.wikipedia.org/wiki/Hairpinning">https://en.wikipedia.org/wiki/Hairpinning</a>) is correctly configured for given CNI
+try to access deployment/netcat pod using external, obtained from &rsquo;netcat&rsquo; service dns resolution, IP address
+should fail if hairpinMode is off</p>
+<h2 id="testnokubernetes">TestNoKubernetes</h2>
+<p>tests starting minikube without Kubernetes,
+for use cases where user only needs to use the container runtime (docker, containerd, crio) inside minikube</p>
+<h4 id="validatestartnok8swithversion">validateStartNoK8sWithVersion</h4>
+<p>expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.</p>
+<p>Steps:</p>
+<ul>
+<li>start minikube with no kubernetes.</li>
+</ul>
+<h4 id="validatestartwithk8s">validateStartWithK8S</h4>
+<p>starts a minikube cluster with Kubernetes started/configured.</p>
+<p>Steps:</p>
+<ul>
+<li>start minikube with Kubernetes.</li>
+<li>return an error if Kubernetes is not running.</li>
+</ul>
+<h4 id="validatestartwithstopk8s">validateStartWithStopK8s</h4>
+<p>starts a minikube cluster while stopping Kubernetes.</p>
+<p>Steps:</p>
+<ul>
+<li>start minikube with no Kubernetes.</li>
+<li>return an error if Kubernetes is not stopped.</li>
+<li>delete minikube profile.</li>
+</ul>
+<h4 id="validatestartnok8s">validateStartNoK8S</h4>
+<p>starts a minikube cluster without kubernetes started/configured</p>
+<p>Steps:</p>
+<ul>
+<li>start minikube with no Kubernetes.</li>
+</ul>
+<h4 id="validatek8snotrunning">validateK8SNotRunning</h4>
+<p>validates that there is no kubernetes running inside minikube</p>
+<h4 id="validatestopnok8s">validateStopNoK8S</h4>
+<p>validates that minikube is stopped after a &ndash;no-kubernetes start</p>
+<h4 id="validateprofilelistnok8s">validateProfileListNoK8S</h4>
+<p>validates that profile list works with &ndash;no-kubernetes</p>
+<h4 id="validatestartnoargs">validateStartNoArgs</h4>
+<p>validates that minikube start with no args works.</p>
+<h2 id="testchangenoneuser">TestChangeNoneUser</h2>
+<p>tests to make sure the CHANGE_MINIKUBE_NONE_USER environment variable is respected
+and changes the minikube file permissions from root to the correct user.</p>
+<h2 id="testpause">TestPause</h2>
+<p>tests minikube pause functionality</p>
+<h4 id="validatefreshstart">validateFreshStart</h4>
+<p>just starts a new minikube cluster</p>
+<h4 id="validatestartnoreconfigure">validateStartNoReconfigure</h4>
+<p>validates that starting a running cluster does not invoke reconfiguration</p>
+<h4 id="validatepause">validatePause</h4>
+<p>runs minikube pause</p>
+<h4 id="validateunpause">validateUnpause</h4>
+<p>runs minikube unpause</p>
+<h4 id="validatedelete">validateDelete</h4>
+<p>deletes the unpaused cluster</p>
+<h4 id="validateverifydeleted">validateVerifyDeleted</h4>
+<p>makes sure no left over left after deleting a profile such as containers or volumes</p>
+<h4 id="validatestatus">validateStatus</h4>
+<p>makes sure paused clusters show up in minikube status correctly</p>
+<h2 id="testpreload">TestPreload</h2>
+<p>verifies the preload tarballs get pulled in properly by minikube</p>
+<h2 id="testscheduledstopwindows">TestScheduledStopWindows</h2>
+<p>tests the schedule stop functionality on Windows</p>
+<h2 id="testscheduledstopunix">TestScheduledStopUnix</h2>
+<p>tests the schedule stop functionality on Unix</p>
+<h2 id="testskaffold">TestSkaffold</h2>
+<p>makes sure skaffold run can be run with minikube</p>
+<h2 id="teststartstop">TestStartStop</h2>
+<p>tests starting, stopping and restarting a minikube clusters with various Kubernetes versions and configurations
+The oldest supported, newest supported and default Kubernetes versions are always tested.</p>
+<h4 id="validatefirststart">validateFirstStart</h4>
+<p>runs the initial minikube start</p>
+<h4 id="validatedeploying">validateDeploying</h4>
+<p>deploys an app the minikube cluster</p>
+<h4 id="validateenableaddonwhileactive">validateEnableAddonWhileActive</h4>
+<p>makes sure addons can be enabled while cluster is active.</p>
+<h4 id="validatestop">validateStop</h4>
+<p>tests minikube stop</p>
+<h4 id="validateenableaddonafterstop">validateEnableAddonAfterStop</h4>
+<p>makes sure addons can be enabled on a stopped cluster</p>
+<h4 id="validatesecondstart">validateSecondStart</h4>
+<p>verifies that starting a stopped cluster works</p>
+<h4 id="validateappexistsafterstop">validateAppExistsAfterStop</h4>
+<p>verifies that a user&rsquo;s app will not vanish after a minikube stop</p>
+<h4 id="validateaddonafterstop">validateAddonAfterStop</h4>
+<p>validates that an addon which was enabled when minikube is stopped will be enabled and working..</p>
+<h4 id="validatekubernetesimages">validateKubernetesImages</h4>
+<p>verifies that a restarted cluster contains all the necessary images</p>
+<h4 id="validatepauseafterstart">validatePauseAfterStart</h4>
+<p>verifies that minikube pause works</p>
+<h2 id="testinsufficientstorage">TestInsufficientStorage</h2>
+<p>makes sure minikube status displays the correct info if there is insufficient disk space on the machine</p>
+<h2 id="testrunningbinaryupgrade">TestRunningBinaryUpgrade</h2>
+<p>upgrades a running legacy cluster to minikube at HEAD</p>
+<h2 id="teststoppedbinaryupgrade">TestStoppedBinaryUpgrade</h2>
+<p>starts a legacy minikube, stops it, and then upgrades to minikube at HEAD</p>
+<h2 id="testkubernetesupgrade">TestKubernetesUpgrade</h2>
+<p>upgrades Kubernetes from oldest to newest</p>
+<h2 id="testmissingcontainerupgrade">TestMissingContainerUpgrade</h2>
+<p>tests a Docker upgrade where the underlying container is missing</p>
+
+	<style>
+  .feedback--answer {
+    display: inline-block;
+  }
+  .feedback--answer-no {
+    margin-left: 1em;
+  }
+  .feedback--response {
+    display: none;
+    margin-top: 1em;
+  }
+  .feedback--response__visible {
+    display: block;
+  }
+</style>
+<div class="d-print-none">
+<h2 class="feedback--title">Feedback</h2>
+<p class="feedback--question">Was this page helpful?</p>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-yes">Yes</button>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-no">No</button>
+<p class="feedback--response feedback--response-yes">
+  Glad to hear it! Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+<p class="feedback--response feedback--response-no">
+  Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+</div>
+<script>
+  const yesButton = document.querySelector('.feedback--answer-yes');
+  const noButton = document.querySelector('.feedback--answer-no');
+  const yesResponse = document.querySelector('.feedback--response-yes');
+  const noResponse = document.querySelector('.feedback--response-no');
+  const disableButtons = () => {
+    yesButton.disabled = true;
+    noButton.disabled = true;
+  };
+  const sendFeedback = (value) => {
+    if (typeof gtag !== 'function') return;
+    gtag('event', 'page_helpful', {
+      'event_category': 'Helpful',
+      'event_label': window.location.pathname,
+      'value': value
+    });
+  };
+  yesButton.addEventListener('click', () => {
+    yesResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback( 100 );
+  });
+  noButton.addEventListener('click', () => {
+    noResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback(0);
+  });
+</script>
+<br />
+<div class="td-page-meta__lastmod">
+  Last modified March 14, 2025: <a href="https://github.com/kubernetes/minikube/commit/8ed8f15350377dffabe5ae2cdc1aea41f5d08141">Build(deps): Bump peter-evans/create-pull-request from 7.0.7 to 7.0.8 (#20517) (8ed8f15)</a>
+</div>
+
+</div>
+
+
+          </main>
+        </div>
+      </div>
+      
+<footer class="bg-dark py-5 row d-print-none">
+  <div class="container-fluid mx-sm-5">
+    <div class="row">
+      <div class="col-6 col-sm-4 text-xs-center order-sm-2">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack" aria-label="Slack">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/C1F5CT6Q1">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack Invitation" aria-label="Slack Invitation">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://communityinviter.com/apps/kubernetes/community">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-users mailing list" aria-label="minikube-users mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-users">
+      <i class="fas fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="twitter" aria-label="twitter">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://twitter.com/minikube_dev">
+      <i class="fab fa-twitter"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-6 col-sm-4 text-right text-xs-center order-sm-3">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="GitHub" aria-label="GitHub">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://github.com/kubernetes/minikube">
+      <i class="fab fa-github"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-dev mailing list" aria-label="minikube-dev mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-dev">
+      <i class="fa fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Contributing Guide" aria-label="Contributing Guide">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Project Roadmap" aria-label="Project Roadmap">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/roadmap/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-12 col-sm-4 text-center py-2 order-sm-2">
+        <small class="text-white">&copy; 2025 The Kubernetes Authors.
+          
+        </small>
+        
+        
+          
+        
+      </div>
+    </div>
+    <div class="row text-center text-white small">
+      <div class="col-12 text-center py-2 order-sm-2">
+        <a href="https://www.linuxfoundation.org/terms" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Terms of Use</a> |
+        <a href="https://www.linuxfoundation.org/privacy" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Privacy Policy</a> |
+        <a href="https://www.linuxfoundation.org/trademark-usage" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Trademark Usage</a> |
+        <a href="https://github.com/kubernetes/minikube/blob/master/LICENSE" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-link:hover {
+    color: #b5b1b1 !important;
+  }
+</style>
+
+    </div>
+    <script src="/js/main.js"></script>
+<script src='/js/prism.js'></script>
+<script src='/js/tabpane-persist.js'></script>
+
+<script language="javascript">initTabs();</script>
+<script language="javascript">initQuiz();</script>
+
+
+  </body>
+</html>

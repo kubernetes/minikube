@@ -1,0 +1,2345 @@
+<!doctype html>
+<html itemscope itemtype="http://schema.org/WebPage" lang="en" class="no-js">
+  <head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="noindex, nofollow">
+
+
+<link rel="shortcut icon" href="/favicons/favicon.ico" >
+<link rel="apple-touch-icon" href="/favicons/apple-touch-icon-180x180.png" sizes="180x180">
+<link rel="icon" type="image/png" href="/favicons/favicon-16x16.png" sizes="16x16">
+<link rel="icon" type="image/png" href="/favicons/favicon-32x32.png" sizes="32x32">
+<link rel="icon" type="image/png" href="/favicons/android-36x36.png" sizes="36x36">
+<link rel="icon" type="image/png" href="/favicons/android-48x48.png" sizes="48x48">
+<link rel="icon" type="image/png" href="/favicons/android-72x72.png" sizes="72x72">
+<link rel="icon" type="image/png" href="/favicons/android-96x96.png" sizes="96x96">
+<link rel="icon" type="image/png" href="/favicons/android-144x144.png" sizes="144x144">
+<link rel="icon" type="image/png" href="/favicons/android-192x192.png" sizes="192x192">
+
+<title>Error Codes | minikube</title>
+<meta name="description" content="minikube error codes and strings">
+<meta property="og:url" content="http://localhost:1313/docs/contrib/errorcodes/">
+  <meta property="og:site_name" content="minikube">
+  <meta property="og:title" content="Error Codes">
+  <meta property="og:description" content="minikube error codes and strings">
+  <meta property="og:locale" content="en">
+  <meta property="og:type" content="article">
+    <meta property="article:section" content="docs">
+    <meta property="article:modified_time" content="2025-03-14T11:07:49-07:00">
+
+  <meta itemprop="name" content="Error Codes">
+  <meta itemprop="description" content="minikube error codes and strings">
+  <meta itemprop="dateModified" content="2025-03-14T11:07:49-07:00">
+  <meta itemprop="wordCount" content="2354">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Error Codes">
+  <meta name="twitter:description" content="minikube error codes and strings">
+<link href="/scss/main.css" rel="stylesheet">
+<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+  crossorigin="anonymous"></script>
+<script defer
+  src="https://unpkg.com/lunr@2.3.9/lunr.min.js"
+  integrity="sha384-203J0SNzyqHby3iU6hzvzltrWi/M41wOP5Gu+BiJMz5nwKykbkUx8Kp7iti0Lpli"
+  crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/css/prism.css"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Open+Sans:wght@600;700&display=swap" rel="stylesheet">
+<link href="/css/tabs.css" rel="stylesheet">
+<link href="/css/button.css" rel="stylesheet">
+<script src="/js/tabs.js"></script>
+<script src="/js/quiz.js"></script>
+
+
+  </head>
+  <body class="td-page">
+    <header>
+      <nav class="td-navbar js-navbar-scroll" data-bs-theme="dark">
+<div class="container-fluid flex-column flex-md-row">
+  <a class="navbar-brand" href="/"><span class="navbar-brand__logo navbar-logo"><svg width="702" height="683" viewBox="0 0 702 683" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><title>minikube</title><desc>Created with Sketch.</desc><defs><polygon id="path-1" points="701.060294 684.263047 701.060294 1.59247059 0 1.59247059 0 684.263047"/></defs><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="minikube" transform="translate(0.000000, -4.000000)"><g id="border" transform="translate(0.000000, 2.554588)"><mask id="mask-2" fill="#fff"><use xlink:href="#path-1"/></mask><g id="Clip-2"/><path d="M351.210679 1.59081176c-9.51750000000004.0-19.039147 2.26844118-28.104617 6.345L93.7363853 117.637959C75.6012971 126.247253 62.9112971 142.1139 58.3785618 161.605076L1.71315 407.749606c-4.53273529 19.491176.0 39.438529 12.6941471 55.305176L173.061326 660.239135c12.242118 15.414618 30.825089 24.023912 50.316265 24.023912H477.683532C497.174709 684.263047 515.757679 675.653753 527.999797 660.239135L686.653826 463.054782c12.694148-15.414617 17.226883-35.814 12.694148-55.305176L642.682562 161.605076C638.149826 142.1139 625.459826 126.247253 607.324738 117.637959L378.863268 7.93581176c-8.61344200000002-4.07655882-18.135089-6.345-27.652589-6.345m0 21.30344114c6.34499999999997.0 12.694147 1.3602353 18.587118 4.0807059L599.167474 136.220929C610.953415 142.1139 620.018885 152.995782 622.739356 165.685782l56.661265 246.14453C682.573121 424.976488 679.400621 438.574694 670.787179 449.0004L512.13315 646.1889C503.971738 656.614606 491.281738 662.507576 478.135562 662.507576H223.833768c-13.146177.0-25.840324-5.89296999999999-33.997589-16.318676L31.1780029 449.0004c-8.1572647-10.425706-11.3297647-24.023912-8.6134411-37.170088l56.6654117-246.14453c3.1725-13.146176 11.7859412-24.023911 23.5718825-29.464853L332.171532 26.5229294C338.064503 24.2544882 344.865679 22.8942529 351.210679 22.8942529" id="Fill-1" fill="#326de6" mask="url(#mask-2)"/></g><path d="M218.498162 607.501403C226.630544 617.711462 238.827044 623.347315 251.558515 623.347315L451.127426 622.994815c12.735618.0 24.803559-5.98835299999996 32.935942-15.845912L605.721485 453.977285C609.234044 449.195726 608.844221 439.819226 608.844221 431.919079V218.026226L347.455103 368.527138V368.522991L86.3148088 218.167226V431.919079c0 8.028706 2.8365883 15.858353 8.0535883 22.410706L218.498162 607.501403z" id="kube-bottom" fill="#1fbfcf"/><polygon id="kube-top" fill="#c9e9ec" points="347.455103 368.526309 608.844221 218.029544 347.210426 67.6198676 86.3148088 218.158103"/><path d="M409.813182 484.797397C402.319447 489.566515 392.096947 488.206279 385.963447 480.708397 383.918947 478.663897 383.238829 475.939279 382.558712 473.214662L376.425212 362.143985C423.440418 367.597368 466.370771 388.718338 499.078624 421.426191l-89.265442 63.371206zm-92.670176-14.3115C316.458741 480.028279 308.965006 488.206279 298.742506 488.206279 296.017888 488.206279 292.613153 487.522015 290.568653 486.161779l-90.629824-64.735588c27.938736-27.938735 62.691089-47.015206 101.532442-55.873323C308.965006 364.188485 315.778624 362.824103 323.276506 361.463868L317.143006 470.485897zm254.845059-45.650823L578.801682 418.701574V417.337191C578.801682 413.932456 579.4818 410.523574 582.210565 407.118838 590.384418 399.620956 600.606918 393.487456 612.869771 385.993721 614.914271 384.629338 616.958771 383.949221 619.003271 382.584838 623.092271 380.544485 626.501153 378.499985 630.590153 375.771221 631.270271 375.091103 632.630506 374.410985 633.994888 373.046603 634.675006 372.366485 635.359271 372.366485 635.359271 371.682221 644.897506 363.508368 646.942006 349.881132 640.128388 341.023015 636.719506 336.24975 630.590153 333.525132 624.456653 333.525132 619.003271 333.525132 614.234153 335.569632 609.465035 338.978515L608.100653 340.33875C606.740418 341.023015 606.056153 342.38325 604.695918 343.063368 601.287035 346.47225 598.562418 349.196868 595.8378 352.60575 594.473418 353.965985 593.113182 356.010485 591.068682 357.374868 581.5263 367.597368 572.668182 375.771221 563.810065 381.904721 561.765565 383.269103 559.721065 383.949221 557.676565 383.949221 556.316329 383.949221 554.951947 383.949221 553.587565 383.269103H552.227329L544.049329 388.718338C535.191212 379.180103 525.652976 371.002103 516.110594 362.824103c-40.881706-32.023588-90.625676-51.784324-142.41-56.553441L373.016329 297.412544 371.656094 296.048162C369.611594 294.003662 366.882829 291.959162 366.202712 287.190044 365.522594 276.287426 366.882829 264.020426 368.247212 250.393191V249.713074C368.247212 247.668574 368.927329 244.943956 369.611594 242.899456 370.291712 238.810456 370.971829 234.721456 371.656094 229.952338v-4.089-2.0445c0-12.262853-9.54238199999998-22.485353-21.125118-22.485353C345.081741 201.333485 339.628359 204.058103 335.539359 208.147103 331.450359 212.236103 329.405859 217.685338 329.405859 223.818838v1.364383 4.089C329.405859 234.041338 330.090124 238.130338 331.450359 242.215191 332.134624 244.259691 332.134624 246.304191 332.814741 249.032956V249.713074C334.179124 263.340309 336.219476 275.607309 334.859241 286.509926 334.179124 291.279044 331.450359 293.323544 329.405859 295.368044 328.725741 296.048162 328.725741 296.048162 328.045624 296.728279L327.361359 305.586397C315.098506 306.950779 302.831506 308.315162 290.568653 311.039779c-52.468588 11.582736-98.803677 38.157089-134.920412 76.318324L148.834624 382.584838h-1.364383C146.110006 382.584838 144.745624 383.269103 143.385388 383.269103c-2.0445.0-4.089-.684264999999982-6.1335-2.04449999999997C128.393771 375.091103 119.535653 366.232985 109.993271 356.010485 108.633035 354.65025 107.268653 352.60575 105.224153 351.241368 102.499535 347.836632 99.7749176 345.107868 96.3660353 341.703132 95.6859176 341.023015 94.3215353 340.33875 92.9613 338.978515 92.2770353 338.29425 91.5969176 338.29425 91.5969176 337.614132 87.5079176 334.20525 82.0586824 332.16075 76.6053 332.16075c-6.1335.0-12.2628529 2.72876500000001-15.6717353 7.497882C54.1199471 348.51675 56.1644471 362.143985 65.7026824 370.321985c.6842647.0.6842647.680117999999993 1.3643823.680117999999993C68.4273 371.682221 69.1115647 373.046603 70.4718 373.726721 74.5608 376.455485 77.9696824 378.499985 82.0586824 380.544485 84.1031824 381.224603 86.1476824 382.584838 88.1880353 383.949221c12.2669997 7.497882 22.4894997 13.627235 30.6633527 21.125117C122.260271 408.479074 122.260271 411.887956 122.260271 415.292691V416.657074L129.073888 422.790574C127.709506 424.835074 126.349271 426.195309 125.669153 428.239809c-7.99138199999999 12.627794-14.775971 25.794706-20.436706 39.339L144.077947 515.510515C149.332271 496.960721 157.025065 479.041279 167.230976 462.312044l81.087442 72.229324c7.497882 6.12935299999992 8.178 17.716235 2.0445 25.20997C248.318418 562.475956 245.5938 564.520456 242.189065 565.204721l-46.824441 13.594058L218.629624 607.500574C226.762006 617.714779 238.954359 623.346485 251.689976 623.346485L451.258888 622.993985c12.731471.0 24.799412-5.98420599999997 32.935941-15.845911l21.842559-27.503295-47.844617-13.759941C448.654535 563.160221 443.201153 553.617838 445.245653 544.079603 445.925771 541.354985 447.290153 538.630368 449.334653 536.585868l82.451823-74.273824c10.035883 16.534324 18.018971 35.121441 23.517971 55.305177l39.621-49.880824C588.530682 452.811132 580.858624 438.478897 571.988065 424.835074z" id="wheel" fill="#326de6"/></g></g></svg></span><span class="navbar-brand__name">minikube</span></a>
+  <div class="td-navbar-nav-scroll ms-md-auto" id="main_navbar">
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" href="/community/"><span>Community</span></a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="https://github.com/kubernetes/minikube" target="_blank" rel="noopener"><span>GitHub</span></a>
+      </li>
+      </ul>
+  </div>
+  <div class="d-none d-lg-block">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+  </div>
+</div>
+</nav>
+    </header>
+    <div class="container-fluid td-outer">
+      <div class="td-main">
+        <div class="row flex-xl-nowrap">
+          <aside class="col-12 col-md-3 col-xl-2 td-sidebar d-print-none">
+            
+
+  
+<div
+  id="td-sidebar-menu"
+  class="td-sidebar__inner"
+>
+  
+  <form class="td-sidebar__search d-flex align-items-center">
+    <div class="td-search td-search--offline">
+  <div class="td-search__icon"></div>
+  <input
+    type="search"
+    class="td-search__input form-control"
+    placeholder="Search this site…"
+    aria-label="Search this site…"
+    autocomplete="off"
+    
+    data-offline-search-index-json-src="/offline-search-index.json"
+    data-offline-search-base-href="/"
+    data-offline-search-max-results="10"
+  >
+</div>
+    <button
+      class="btn btn-link td-sidebar__toggle d-md-none p-0 ml-3 fas fa-bars"
+      type="button"
+      data-toggle="collapse"
+      data-target="#td-section-nav"
+      aria-controls="td-docs-nav"
+      aria-expanded="false"
+      aria-label="Toggle section navigation"
+    ></button>
+  </form>
+  
+  <nav class="collapse td-sidebar-nav" id="td-section-nav">
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Documentation</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docs">
+            
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/start/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Get Started!</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsstart">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Handbook</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbook">
+             
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+               
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/handbook/addons/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Addons</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docshandbookaddons">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+                
+
+      
+      
+
+      
+       
+      
+           
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/faq/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      FAQ</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsfaq">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/presentations/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Presentations</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docspresentations">
+        
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/tutorials/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Tutorials</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docstutorials">
+            
+        
+
+
+          
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/commands/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Commands</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscommands">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/drivers/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Drivers</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsdrivers">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/runtimes/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Runtimes</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsruntimes">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/"
+      class="align-left pl-0 pr-2 collapsed active td-sidebar-link td-sidebar-link__section"
+    >
+      Contributing</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontrib">
+             
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribguide"
+        href="/docs/contrib/guide/"
+      >
+        Guide 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribrelease_schedule"
+        href="/docs/contrib/release_schedule/"
+      >
+        Release Schedule 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribdocumentation"
+        href="/docs/contrib/documentation/"
+      >
+        Documentation 
+      </a>
+             
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/building/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Building</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribbuilding">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtranslations"
+        href="/docs/contrib/translations/"
+      >
+        Translations 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtesting"
+        href="/docs/contrib/testing/"
+      >
+        Testing 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribdrivers"
+        href="/docs/contrib/drivers/"
+      >
+        Drivers 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribjson_output"
+        href="/docs/contrib/json_output/"
+      >
+        Minikube JSON Output 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribroadmap"
+        href="/docs/contrib/roadmap/"
+      >
+        Roadmap 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribaddons"
+        href="/docs/contrib/addons/"
+      >
+        Addons 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtriage"
+        href="/docs/contrib/triage/"
+      >
+        Triage 
+      </a>
+             
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/leaderboard/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Triage &amp; Contributions Leaderboard</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribleaderboard">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/contrib/releasing/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Releasing</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docscontribreleasing">
+             
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+               
+
+      
+      
+
+      
+          
+    </li>
+  </ul>
+</ul>
+        
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page  active"
+        id="m-docscontriberrorcodes"
+        href="/docs/contrib/errorcodes/"
+      >
+        Error Codes 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtest_flakes"
+        href="/docs/contrib/test_flakes/"
+      >
+        Integration Test Flake Rates 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribtests"
+        href="/docs/contrib/tests/"
+      >
+        List of Integration Test Cases 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribexternal-packages"
+        href="/docs/contrib/external-packages/"
+      >
+        Managing External Packages 
+      </a>
+              
+
+      
+        
+      
+
+      
+       
+      <a
+        class="td-sidebar-link td-sidebar-link__page "
+        id="m-docscontribprinciples"
+        href="/docs/contrib/principles/"
+      >
+        Principles 
+      </a>
+         
+    </li>
+  </ul>
+</ul>
+       
+        
+
+ 
+
+
+  
+<ul class="td-sidebar-nav__section pr-md-3">
+  <li class="td-sidebar-nav__section-title">
+    
+    <a
+      href="/docs/benchmarks/"
+      class="align-left pl-0 pr-2 collapsed td-sidebar-link td-sidebar-link__section"
+    >
+      Benchmarks</a
+    >
+  </li>
+  <ul>
+    <li class="collapse show" id="docsbenchmarks">
+            
+        
+
+
+         
+        
+
+
+         
+        
+
+
+     
+    </li>
+  </ul>
+</ul>
+   
+    </li>
+  </ul>
+</ul>
+ 
+  </nav>
+</div>
+
+
+
+
+          </aside>
+          <aside class="d-none d-xl-block col-xl-2 td-sidebar-toc d-print-none">
+            <div class="td-page-meta ms-2 pb-1 pt-2 mb-0">
+<a href="https://github.com/kubernetes/minikube/tree/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5ccontrib%5cerrorcodes.en.md" class="td-page-meta--view td-page-meta__view" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines fa-fw"></i> View page source</a>
+  <a href="https://github.com/kubernetes/minikube/edit/master/site/C:%5cUsers%5cDell%5cminikube%5csite%5ccontent%5cen%5cdocs%5ccontrib%5cerrorcodes.en.md" class="td-page-meta--edit td-page-meta__edit" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Edit this page</a>
+  <a href="https://github.com/kubernetes/minikube/new/master/site/C:/Users/Dell/minikube/site/content/en/docs/contrib?filename=change-me.md&amp;value=---%0Atitle%3A&#43;%22Long&#43;Page&#43;Title%22%0AlinkTitle%3A&#43;%22Short&#43;Nav&#43;Title%22%0Aweight%3A&#43;100%0Adescription%3A&#43;%3E-%0A&#43;&#43;&#43;&#43;&#43;Page&#43;description&#43;for&#43;heading&#43;and&#43;indexes.%0A---%0A%0A%23%23&#43;Heading%0A%0AEdit&#43;this&#43;template&#43;to&#43;create&#43;your&#43;new&#43;page.%0A%0A%2A&#43;Give&#43;it&#43;a&#43;good&#43;name%2C&#43;ending&#43;in&#43;%60.md%60&#43;-&#43;e.g.&#43;%60getting-started.md%60%0A%2A&#43;Edit&#43;the&#43;%22front&#43;matter%22&#43;section&#43;at&#43;the&#43;top&#43;of&#43;the&#43;page&#43;%28weight&#43;controls&#43;how&#43;its&#43;ordered&#43;amongst&#43;other&#43;pages&#43;in&#43;the&#43;same&#43;directory%3B&#43;lowest&#43;number&#43;first%29.%0A%2A&#43;Add&#43;a&#43;good&#43;commit&#43;message&#43;at&#43;the&#43;bottom&#43;of&#43;the&#43;page&#43;%28%3C80&#43;characters%3B&#43;use&#43;the&#43;extended&#43;description&#43;field&#43;for&#43;more&#43;detail%29.%0A%2A&#43;Create&#43;a&#43;new&#43;branch&#43;so&#43;you&#43;can&#43;preview&#43;your&#43;new&#43;file&#43;and&#43;request&#43;a&#43;review&#43;via&#43;Pull&#43;Request.%0A" class="td-page-meta--child td-page-meta__child" target="_blank" rel="noopener"><i class="fa-solid fa-pen-to-square fa-fw"></i> Create child page</a>
+  <a href="https://github.com/kubernetes/minikube/issues/new?title=Error%20Codes" class="td-page-meta--issue td-page-meta__issue" target="_blank" rel="noopener"><i class="fa-solid fa-list-check fa-fw"></i> Create documentation issue</a>
+  
+</div>
+
+            <div class="td-toc">
+        <nav id="TableOfContents">
+  <ul>
+    <li><a href="#error-strings">Error Strings</a></li>
+    <li><a href="#error-codes">Error Codes</a>
+      <ul>
+        <li><a href="#generic-errors">Generic Errors</a></li>
+        <li><a href="#error-codes-specific-to-the-minikube-program">Error codes specific to the minikube program</a></li>
+        <li><a href="#error-codes-specific-to-resource-limits-exit-code-layout-follows-no-rules">Error codes specific to resource limits (exit code layout follows no rules)</a></li>
+        <li><a href="#error-codes-specific-to-the-host">Error codes specific to the host</a></li>
+        <li><a href="#error-codes-specific-to-remote-networking">Error codes specific to remote networking</a></li>
+        <li><a href="#error-codes-specific-to-the-libmachine-driver">Error codes specific to the libmachine driver</a></li>
+        <li><a href="#error-codes-specific-to-the-driver-provider">Error codes specific to the driver provider</a></li>
+        <li><a href="#error-codes-specific-to-local-networking">Error codes specific to local networking</a></li>
+        <li><a href="#error-codes-specific-to-the-guest-host">Error codes specific to the guest host</a></li>
+        <li><a href="#error-codes-specific-to-the-container-runtime">Error codes specific to the container runtime</a></li>
+        <li><a href="#error-codes-specific-to-the-kubernetes-control-plane">Error codes specific to the Kubernetes control plane</a></li>
+        <li><a href="#error-codes-specific-to-a-kubernetes-service">Error codes specific to a Kubernetes service</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+      </div>
+    
+            
+
+          </aside>
+          <main class="col-12 col-md-9 col-xl-8 ps-md-5" role="main">
+            
+  
+
+            <nav aria-label="breadcrumb" class="td-breadcrumbs">
+  <ol class="breadcrumb">
+  <li class="breadcrumb-item">
+    <a href="/docs/">Documentation</a></li>
+  <li class="breadcrumb-item">
+    <a href="/docs/contrib/">Contributing</a></li>
+  <li class="breadcrumb-item active" aria-current="page">
+    Error Codes</li>
+  </ol>
+</nav>
+            
+<div class="td-content">
+	<h1>Error Codes</h1>
+	<div class="lead">minikube error codes and strings</div>
+	<header class="article-meta">
+		
+</header>
+	<h2 id="error-strings">Error Strings</h2>
+<p>&ldquo;MK_PATCH_NOT_FOUND&rdquo; (Exit code ExProgramUsage)<br>
+minikube could not find a patch for the provided major.minor version</p>
+<p>&ldquo;MK_USAGE&rdquo; (Exit code ExProgramUsage)<br>
+minikube has been passed an incorrect parameter</p>
+<p>&ldquo;MK_USAGE_NO_PROFILE&rdquo; (Exit code ExProgramUsage)<br>
+minikube has no current cluster running</p>
+<p>&ldquo;MK_INTERRUPTED&rdquo; (Exit code ExProgramConflict)<br>
+minikube was interrupted by an OS signal</p>
+<p>&ldquo;MK_WRONG_BINARY_WSL&rdquo; (Exit code ExProgramUnsupported)<br>
+user attempted to run a Windows executable (.exe) inside of WSL rather than using the Linux binary</p>
+<p>&ldquo;MK_UNIMPLEMENTED&rdquo; (Exit code ExProgramUnsupported)<br>
+this feature is unimplemented for whatever reason</p>
+<p>&ldquo;MK_NEW_APICLIENT&rdquo; (Exit code ExProgramError)<br>
+minikube failed to create a new Docker Machine api client</p>
+<p>&ldquo;MK_ADDON_DISABLE&rdquo; (Exit code ExProgramError)<br>
+minikube could not disable an addon, e.g. dashboard addon</p>
+<p>&ldquo;MK_ADDON_ENABLE&rdquo; (Exit code ExProgramError)<br>
+minikube could not enable an addon, e.g. dashboard addon</p>
+<p>&ldquo;MK_ADDON_ENABLE_PAUSED&rdquo; (Exit code ExProgramConflict)<br>
+minikube could not enable an addon on a paused cluster</p>
+<p>&ldquo;MK_ADDON_DISABLE_PAUSED&rdquo; (Exit code ExProgramConflict)<br>
+minikube could not disable an addon on a paused cluster</p>
+<p>&ldquo;MK_ADD_CONFIG&rdquo; (Exit code ExProgramError)<br>
+minikube failed to update internal configuration, such as the cached images config map</p>
+<p>&ldquo;MK_BOOTSTRAPPER&rdquo; (Exit code ExProgramError)<br>
+minikube failed to create a cluster bootstrapper</p>
+<p>&ldquo;MK_CACHE_LIST&rdquo; (Exit code ExProgramError)<br>
+minikube failed to list cached images</p>
+<p>&ldquo;MK_CACHE_LOAD&rdquo; (Exit code ExProgramError)<br>
+minkube failed to cache and load cached images</p>
+<p>&ldquo;MK_COMMAND_RUNNER&rdquo; (Exit code ExProgramError)<br>
+minikube failed to load a Docker Machine CommandRunner</p>
+<p>&ldquo;MK_START_NERDCTLD&rdquo; (Exit code ExProgramError)<br>
+minikube failed to start nerdctld</p>
+<p>&ldquo;MK_COMPLETION&rdquo; (Exit code ExProgramError)<br>
+minikube failed to generate shell command completion for a supported shell</p>
+<p>&ldquo;MK_CONFIG_SET&rdquo; (Exit code ExProgramError)<br>
+minikube failed to set an internal config value</p>
+<p>&ldquo;MK_CONFIG_UNSET&rdquo; (Exit code ExProgramError)<br>
+minikube failed to unset an internal config value</p>
+<p>&ldquo;MK_CONFIG_VIEW&rdquo; (Exit code ExProgramError)<br>
+minikube failed to view current config values</p>
+<p>&ldquo;MK_DEL_CONFIG&rdquo; (Exit code ExProgramError)<br>
+minikube failed to delete an internal configuration, such as a cached image</p>
+<p>&ldquo;MK_DOCKER_SCRIPT&rdquo; (Exit code ExProgramError)<br>
+minikube failed to generate script to activate minikube docker-env</p>
+<p>&ldquo;MK_BIND_FLAGS&rdquo; (Exit code ExProgramError)<br>
+an error occurred when viper attempted to bind flags to configuration</p>
+<p>&ldquo;MK_FORMAT_USAGE&rdquo; (Exit code ExProgramError)<br>
+minkube was passed an invalid format string in the &ndash;format flag</p>
+<p>&ldquo;MK_GENERATE_DOCS&rdquo; (Exit code ExProgramError)<br>
+minikube failed to auto-generate markdown-based documentation in the specified folder</p>
+<p>&ldquo;MK_JSON_MARSHAL&rdquo; (Exit code ExProgramError)<br>
+minikube failed to marshal a JSON object</p>
+<p>&ldquo;MK_K8S_CLIENT&rdquo; (Exit code ExControlPlaneUnavailable)<br>
+minikube failed to create a Kubernetes client set which is necessary for querying the Kubernetes API</p>
+<p>&ldquo;MK_LIST_CONFIG&rdquo; (Exit code ExProgramError)<br>
+minikube failed to list some configuration data</p>
+<p>&ldquo;MK_LOG_FOLLOW&rdquo; (Exit code ExProgramError)<br>
+minikube failed to follow or watch minikube logs</p>
+<p>&ldquo;MK_NEW_RUNTIME&rdquo; (Exit code ExProgramError)<br>
+minikube failed to create an appropriate new runtime based on the driver in use</p>
+<p>&ldquo;MK_OUTPUT_USAGE&rdquo; (Exit code ExProgramError)<br>
+minikube was passed an invalid value for the &ndash;output command line flag</p>
+<p>&ldquo;MK_RUNTIME&rdquo; (Exit code ExProgramError)<br>
+minikube could not configure the runtime in use, or the runtime failed</p>
+<p>&ldquo;MK_RESERVED_PROFILE&rdquo; (Exit code ExProgramConflict)<br>
+minikube was passed a reserved keyword as a profile name, which is not allowed</p>
+<p>&ldquo;MK_ENV_SCRIPT&rdquo; (Exit code ExProgramError)<br>
+minkube failed to generate script to set or unset minikube-env</p>
+<p>&ldquo;MK_SHELL_DETECT&rdquo; (Exit code ExProgramError)<br>
+minikube failed to detect the shell in use</p>
+<p>&ldquo;MK_STATUS_JSON&rdquo; (Exit code ExProgramError)<br>
+minikube failed to output JSON-formatted minikube status</p>
+<p>&ldquo;MK_STATUS_TEXT&rdquo; (Exit code ExProgramError)<br>
+minikube failed to output minikube status text</p>
+<p>&ldquo;MK_VIEW_EXEC&rdquo; (Exit code ExProgramError)<br>
+minikube failed to execute (i.e. fill in values for) a view template for displaying current config</p>
+<p>&ldquo;MK_VIEW_TMPL&rdquo; (Exit code ExProgramError)<br>
+minikube failed to create view template for displaying current config</p>
+<p>&ldquo;MK_YAML_MARSHAL&rdquo; (Exit code ExProgramError)<br>
+minikube failed to marshal a YAML object</p>
+<p>&ldquo;MK_CREDENTIALS_NOT_FOUND&rdquo; (Exit code ExProgramNotFound)<br>
+minikube could not locate credentials needed to utilize an appropriate service, e.g. GCP</p>
+<p>&ldquo;MK_CREDENTIALS_NOT_NEEDED&rdquo; (Exit code ExProgramNotFound)<br>
+minikube was passed service credentials when they were not needed, such as when using the GCP Auth addon when running in GCE</p>
+<p>&ldquo;MK_SEMVER_PARSE&rdquo; (Exit code ExProgramError)<br>
+minikube found an invalid semver string for kubernetes in the minikube constants</p>
+<p>&ldquo;MK_DAEMONIZE&rdquo; (Exit code ExProgramError)<br>
+minikube was unable to daemonize the minikube process</p>
+<p>&ldquo;RSRC_INSUFFICIENT_CORES&rdquo; (Exit code ExInsufficientCores)<br>
+insufficient cores available for use by minikube and kubernetes</p>
+<p>&ldquo;RSRC_DOCKER_CORES&rdquo; (Exit code ExInsufficientCores)<br>
+insufficient cores available for use by Docker Desktop on Mac</p>
+<p>&ldquo;RSRC_DOCKER_CORES&rdquo; (Exit code ExInsufficientCores)<br>
+insufficient cores available for use by Docker Desktop on Windows</p>
+<p>&ldquo;RSRC_INSUFFICIENT_REQ_MEMORY&rdquo; (Exit code ExInsufficientMemory)<br>
+insufficient memory (less than the recommended minimum) allocated to minikube</p>
+<p>&ldquo;RSRC_INSUFFICIENT_SYS_MEMORY&rdquo; (Exit code ExInsufficientMemory)<br>
+insufficient memory (less than the recommended minimum) available on the system running minikube</p>
+<p>&ldquo;RSRC_INSUFFICIENT_CONTAINER_MEMORY&rdquo; (Exit code ExInsufficientMemory)<br>
+insufficient memory available for the driver in use by minikube</p>
+<p>&ldquo;RSRC_DOCKER_MEMORY&rdquo; (Exit code ExInsufficientMemory)<br>
+insufficient memory available to Docker Desktop on Windows</p>
+<p>&ldquo;RSRC_DOCKER_MEMORY&rdquo; (Exit code ExInsufficientMemory)<br>
+insufficient memory available to Docker Desktop on Mac</p>
+<p>&ldquo;RSRC_INVALID_HYPERV_MEMORY&rdquo; (Exit code ExResourceError)<br>
+invalid memory value for Hyper-V</p>
+<p>&ldquo;RSRC_DOCKER_STORAGE&rdquo; (Exit code ExInsufficientStorage)<br>
+insufficient disk storage available to the docker driver</p>
+<p>&ldquo;RSRC_PODMAN_STORAGE&rdquo; (Exit code ExInsufficientStorage)<br>
+insufficient disk storage available to the podman driver</p>
+<p>&ldquo;RSRC_INSUFFICIENT_STORAGE&rdquo; (Exit code ExInsufficientStorage)<br>
+insufficient disk storage available for running minikube and kubernetes</p>
+<p>&ldquo;HOST_HOME_MKDIR&rdquo; (Exit code ExHostPermission)<br>
+minikube could not create the minikube directory</p>
+<p>&ldquo;HOST_HOME_CHOWN&rdquo; (Exit code ExHostPermission)<br>
+minikube could not change permissions for the minikube directory</p>
+<p>&ldquo;HOST_BROWSER&rdquo; (Exit code ExHostError)<br>
+minikube failed to open the host browser, such as when running minikube dashboard</p>
+<p>&ldquo;HOST_CONFIG_LOAD&rdquo; (Exit code ExHostConfig)<br>
+minikube failed to load cluster config from the host for the profile in use</p>
+<p>&ldquo;HOST_HOME_PERMISSION&rdquo; (Exit code ExHostPermission)<br>
+the current user has insufficient permissions to create the minikube profile directory</p>
+<p>&ldquo;HOST_CURRENT_USER&rdquo; (Exit code ExHostConfig)<br>
+minikube failed to determine current user</p>
+<p>&ldquo;HOST_DEL_CACHE&rdquo; (Exit code ExHostError)<br>
+minikube failed to delete cached images from host</p>
+<p>&ldquo;HOST_KILL_MOUNT_PROC&rdquo; (Exit code ExHostError)<br>
+minikube failed to kill a mount process</p>
+<p>&ldquo;HOST_KUBECONFIG_UPDATE&rdquo; (Exit code ExHostConfig)<br>
+minikube failed to update host Kubernetes resources config</p>
+<p>&ldquo;HOST_KUBECONFIG_DELETE_CTX&rdquo; (Exit code ExHostConfig)<br>
+minikube failed to delete Kubernetes config from context for a given profile</p>
+<p>&ldquo;HOST_KUBECTL_PROXY&rdquo; (Exit code ExHostError)<br>
+minikube failed to launch a kubectl proxy</p>
+<p>&ldquo;HOST_MOUNT_PID&rdquo; (Exit code ExHostError)<br>
+minikube failed to write mount pid</p>
+<p>&ldquo;HOST_PATH_MISSING&rdquo; (Exit code ExHostNotFound)<br>
+minikube was passed a path to a host directory that does not exist</p>
+<p>&ldquo;HOST_PATH_STAT&rdquo; (Exit code ExHostError)<br>
+minikube failed to access info for a directory path</p>
+<p>&ldquo;HOST_PURGE&rdquo; (Exit code ExHostError)<br>
+minikube failed to purge minikube config directories</p>
+<p>&ldquo;HOST_SAVE_PROFILE&rdquo; (Exit code ExHostConfig)<br>
+minikube failed to persist profile config</p>
+<p>&ldquo;HOST_UNSUPPORTED&rdquo; (Exit code ExHostUnsupported)<br>
+Host doesn&rsquo;t support 9p</p>
+<p>&ldquo;PROVIDER_NOT_FOUND&rdquo; (Exit code ExProviderNotFound)<br>
+minikube could not find a provider for the selected driver</p>
+<p>&ldquo;PROVIDER_UNAVAILABLE&rdquo; (Exit code ExProviderNotFound)<br>
+the host does not support or is improperly configured to support a provider for the selected driver</p>
+<p>&ldquo;DRV_CP_ENDPOINT&rdquo; (Exit code ExDriverError)<br>
+minikube failed to access the driver control plane or API endpoint</p>
+<p>&ldquo;DRV_PORT_FORWARD&rdquo; (Exit code ExDriverError)<br>
+minikube failed to bind container ports to host ports</p>
+<p>&ldquo;DRV_UNSUPPORTED&rdquo; (Exit code ExDriverUnsupported)<br>
+the driver is currently not supported by minikube</p>
+<p>&ldquo;DRV_UNSUPPORTED_MULTINODE&rdquo; (Exit code ExDriverConflict)<br>
+the driver in use does not support multi-node clusters</p>
+<p>&ldquo;DRV_UNSUPPORTED_OS&rdquo; (Exit code ExDriverUnsupported)<br>
+the specified driver is not supported on the host OS</p>
+<p>&ldquo;DRV_UNSUPPORTED_PROFILE&rdquo; (Exit code ExDriverUnsupported)<br>
+the driver in use does not support the selected profile or multiple profiles</p>
+<p>&ldquo;DRV_NOT_FOUND&rdquo; (Exit code ExDriverNotFound)<br>
+minikube failed to locate specified driver</p>
+<p>&ldquo;DRV_NOT_DETECTED&rdquo; (Exit code ExDriverNotFound)<br>
+minikube could not find a valid driver</p>
+<p>&ldquo;DRV_NOT_HEALTHY&rdquo; (Exit code ExDriverNotFound)<br>
+minikube found drivers but none were ready to use</p>
+<p>&ldquo;DRV_DOCKER_NOT_RUNNING&rdquo; (Exit code ExDriverNotFound)<br>
+minikube found the docker driver but the docker service was not running</p>
+<p>&ldquo;DRV_AS_ROOT&rdquo; (Exit code ExDriverPermission)<br>
+the driver in use is being run as root</p>
+<p>&ldquo;DRV_NEEDS_ROOT&rdquo; (Exit code ExDriverPermission)<br>
+the specified driver needs to be run as root</p>
+<p>&ldquo;GUEST_CACHE_LOAD&rdquo; (Exit code ExGuestError)<br>
+minikube failed to load cached images</p>
+<p>&ldquo;GUEST_CERT&rdquo; (Exit code ExGuestError)<br>
+minikube failed to setup certificates</p>
+<p>&ldquo;GUEST_CP_CONFIG&rdquo; (Exit code ExGuestConfig)<br>
+minikube failed to access the control plane</p>
+<p>&ldquo;GUEST_DELETION&rdquo; (Exit code ExGuestError)<br>
+minikube failed to properly delete a resource, such as a profile</p>
+<p>&ldquo;GUEST_IMAGE_LIST&rdquo; (Exit code ExGuestError)<br>
+minikube failed to list images on the machine</p>
+<p>&ldquo;GUEST_IMAGE_LOAD&rdquo; (Exit code ExGuestError)<br>
+minikube failed to pull or load an image</p>
+<p>&ldquo;GUEST_IMAGE_REMOVE&rdquo; (Exit code ExGuestError)<br>
+minikube failed to remove an image</p>
+<p>&ldquo;GUEST_IMAGE_PULL&rdquo; (Exit code ExGuestError)<br>
+minikube failed to pull an image</p>
+<p>&ldquo;GUEST_IMAGE_BUILD&rdquo; (Exit code ExGuestError)<br>
+minikube failed to build an image</p>
+<p>&ldquo;GUEST_IMAGE_SAVE&rdquo; (Exit code ExGuestError)<br>
+minikube failed to push or save an image</p>
+<p>&ldquo;GUEST_IMAGE_PUSH&rdquo; (Exit code ExGuestError)<br>
+minikube failed to push an image</p>
+<p>&ldquo;GUEST_IMAGE_TAG&rdquo; (Exit code ExGuestError)<br>
+minikube failed to tag an image</p>
+<p>&ldquo;GUEST_LOAD_HOST&rdquo; (Exit code ExGuestError)<br>
+minikube failed to load host</p>
+<p>&ldquo;GUEST_MOUNT&rdquo; (Exit code ExGuestError)<br>
+minkube failed to create a mount</p>
+<p>&ldquo;GUEST_MOUNT_COULD_NOT_CONNECT&rdquo; (Exit code ExGuestError)<br>
+mount on guest was unable to connect to host mount server</p>
+<p>&ldquo;GUEST_MOUNT_CONFLICT&rdquo; (Exit code ExGuestConflict)<br>
+minkube failed to update a mount</p>
+<p>&ldquo;GUEST_NODE_ADD&rdquo; (Exit code ExGuestError)<br>
+minikube failed to add a node to the cluster</p>
+<p>&ldquo;GUEST_NODE_DELETE&rdquo; (Exit code ExGuestError)<br>
+minikube failed to remove a node from the cluster</p>
+<p>&ldquo;GUEST_NODE_PROVISION&rdquo; (Exit code ExGuestError)<br>
+minikube failed to provision a node</p>
+<p>&ldquo;GUEST_NODE_RETRIEVE&rdquo; (Exit code ExGuestNotFound)<br>
+minikube failed to retrieve information for a cluster node</p>
+<p>&ldquo;GUEST_NODE_START&rdquo; (Exit code ExGuestError)<br>
+minikube failed to startup a cluster node</p>
+<p>&ldquo;GUEST_PAUSE&rdquo; (Exit code ExGuestError)<br>
+minikube failed to pause the cluster process</p>
+<p>&ldquo;GUEST_PROFILE_DELETION&rdquo; (Exit code ExGuestError)<br>
+minikube failed to delete a machine profile directory</p>
+<p>&ldquo;GUEST_PROVISION&rdquo; (Exit code ExGuestError)<br>
+minikube failed while attempting to provision the guest</p>
+<p>&ldquo;GUEST_PROVISION_CONTAINER_EXITED&rdquo; (Exit code ExGuestError)<br>
+docker container exited prematurely during provisioning</p>
+<p>&ldquo;GUEST_START&rdquo; (Exit code ExGuestError)<br>
+minikube failed to start a node with current driver</p>
+<p>&ldquo;GUEST_STATUS&rdquo; (Exit code ExGuestError)<br>
+minikube failed to get docker machine status</p>
+<p>&ldquo;GUEST_STOP_TIMEOUT&rdquo; (Exit code ExGuestTimeout)<br>
+stopping the cluster process timed out</p>
+<p>&ldquo;GUEST_UNPAUSE&rdquo; (Exit code ExGuestError)<br>
+minikube failed to unpause the cluster process</p>
+<p>&ldquo;GUEST_CHECK_PAUSED&rdquo; (Exit code ExGuestError)<br>
+minikube failed to check if Kubernetes containers are paused</p>
+<p>&ldquo;GUEST_DRIVER_MISMATCH&rdquo; (Exit code ExGuestConflict)<br>
+minikube cluster was created used a driver that is incompatible with the driver being requested</p>
+<p>&ldquo;GUEST_MISSING_CONNTRACK&rdquo; (Exit code ExGuestUnsupported)<br>
+minikube could not find conntrack on the host, which is required from Kubernetes 1.18 onwards</p>
+<p>&ldquo;GUEST_MISSING_CRICTL&rdquo; (Exit code ExGuestUnsupported)<br>
+minikube could not find crictl on the host, which is required from Kubernetes 1.24 onwards</p>
+<p>&ldquo;IF_HOST_IP&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to get the host IP to use from within the VM</p>
+<p>&ldquo;IF_MOUNT_IP&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to parse the input IP address for mount</p>
+<p>&ldquo;IF_MOUNT_PORT&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to parse or find port for mount</p>
+<p>&ldquo;IF_SSH_CLIENT&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to access an ssh client on the host machine</p>
+<p>&ldquo;IF_DEDICATED_NETWORK&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to create a dedicated network</p>
+<p>&ldquo;IF_BOOTPD_FIREWALL&rdquo; (Exit code ExLocalNetworkError)<br>
+minikube failed to populate dchpd_leases file due to bootpd being blocked by firewall</p>
+<p>&ldquo;INET_CACHE_BINARIES&rdquo; (Exit code ExInternetError)<br>
+minikube failed to cache kubernetes binaries for the current runtime</p>
+<p>&ldquo;INET_CACHE_KUBECTL&rdquo; (Exit code ExInternetError)<br>
+minikube failed to cache the kubectl binary</p>
+<p>&ldquo;INET_CACHE_TAR&rdquo; (Exit code ExInternetError)<br>
+minikube failed to cache required images to tar files</p>
+<p>&ldquo;INET_LICENSES&rdquo; (Exit code ExInternetError)<br>
+minikube failed to download licenses</p>
+<p>&ldquo;INET_REPO&rdquo; (Exit code ExInternetError)<br>
+minikube was unable to access main repository and mirrors for images</p>
+<p>&ldquo;INET_REPOS_UNAVAILABLE&rdquo; (Exit code ExInternetError)<br>
+minikube was unable to access any known image repositories</p>
+<p>&ldquo;INET_VERSION_UNAVAILABLE&rdquo; (Exit code ExInternetUnavailable)<br>
+minikube was unable to fetch latest release/version info for minkikube</p>
+<p>&ldquo;INET_VERSION_EMPTY&rdquo; (Exit code ExInternetConfig)<br>
+minikube received invalid empty data for latest release/version info from the server</p>
+<p>&ldquo;RUNTIME_ENABLE&rdquo; (Exit code ExRuntimeError)<br>
+minikube failed to enable the current container runtime</p>
+<p>&ldquo;RUNTIME_CACHE&rdquo; (Exit code ExRuntimeError)<br>
+minikube failed to cache images for the current container runtime</p>
+<p>&ldquo;SSH_AGENT_START&rdquo; (Exit code ExRuntimeError)<br>
+minikube failed to start an ssh-agent when executing docker-env</p>
+<p>&ldquo;SVC_CHECK_TIMEOUT&rdquo; (Exit code ExSvcTimeout)<br>
+service check timed out while starting minikube dashboard</p>
+<p>&ldquo;SVC_TIMEOUT&rdquo; (Exit code ExSvcTimeout)<br>
+minikube was unable to access a service</p>
+<p>&ldquo;SVC_UNREACHABLE&rdquo; (Exit code ExSvcNotFound)<br>
+minikube found that the service has no available pods</p>
+<p>&ldquo;SVC_LIST&rdquo; (Exit code ExSvcError)<br>
+minikube failed to list services for the specified namespace</p>
+<p>&ldquo;SVC_TUNNEL_START&rdquo; (Exit code ExSvcError)<br>
+minikube failed to start a tunnel</p>
+<p>&ldquo;SVC_TUNNEL_STOP&rdquo; (Exit code ExSvcError)<br>
+minikube could not stop an active tunnel</p>
+<p>&ldquo;TUNNEL_ALREADY_RUNNING&rdquo; (Exit code ExSvcConflict)<br>
+another instance of tunnel already running</p>
+<p>&ldquo;SVC_URL_TIMEOUT&rdquo; (Exit code ExSvcTimeout)<br>
+minikube was unable to access the service url</p>
+<p>&ldquo;SVC_NOT_FOUND&rdquo; (Exit code ExSvcNotFound)<br>
+minikube couldn&rsquo;t find the specified service in the specified namespace</p>
+<p>&ldquo;ENV_DRIVER_CONFLICT&rdquo; (Exit code ExDriverConflict)<br>
+user attempted to use a command that is not supported by the driver currently in use</p>
+<p>&ldquo;ENV_MULTINODE_CONFLICT&rdquo; (Exit code ExGuestConflict)<br>
+user attempted to run a command that is not supported on multi-node setup without some additional configuration</p>
+<p>&ldquo;ENV_PODMAN_UNAVAILABLE&rdquo; (Exit code ExRuntimeUnavailable)<br>
+the podman service was unavailable to the cluster</p>
+<p>&ldquo;SVC_ADDON_UNSUPPORTED&rdquo; (Exit code ExSvcUnsupported)<br>
+user attempted to use an addon that is not supported</p>
+<p>&ldquo;SVC_ADDON_NOT_ENABLED&rdquo; (Exit code ExProgramConflict)<br>
+user attempted to use an addon that is currently not enabled</p>
+<p>&ldquo;K8S_INSTALL_FAILED&rdquo; (Exit code ExControlPlaneError)<br>
+minikube failed to update the Kubernetes cluster</p>
+<p>&ldquo;K8S_INSTALL_FAILED_CONTAINER_RUNTIME_NOT_RUNNING&rdquo; (Exit code ExRuntimeNotRunning)<br>
+minikube failed to update the Kubernetes cluster because the container runtime was unavailable</p>
+<p>&ldquo;K8S_OLD_UNSUPPORTED&rdquo; (Exit code ExControlPlaneUnsupported)<br>
+an outdated Kubernetes version was specified for minikube to use</p>
+<p>&ldquo;K8S_NEW_UNSUPPORTED&rdquo; (Exit code ExControlPlaneUnsupported)<br>
+a too new Kubernetes version was specified for minikube to use</p>
+<p>&ldquo;K8S_FAIL_CONNECT&rdquo; (Exit code ExInternetError)<br>
+error fetching GitHub Kubernetes version list</p>
+<p>&ldquo;K8S_DOWNGRADE_UNSUPPORTED&rdquo; (Exit code ExControlPlaneUnsupported)<br>
+minikube was unable to safely downgrade installed Kubernetes version</p>
+<p>&ldquo;NOT_FOUND_CRI_DOCKERD&rdquo; (Exit code ExProgramNotFound)</p>
+<p>&ldquo;NOT_FOUND_DOCKERD&rdquo; (Exit code ExProgramNotFound)</p>
+<p>&ldquo;NOT_FOUND_CNI_PLUGINS&rdquo; (Exit code ExProgramNotFound)</p>
+<p>&ldquo;NOT_FOUND_SOCKET_VMNET&rdquo; (Exit code ExProgramNotFound)</p>
+<h2 id="error-codes">Error Codes</h2>
+<h3 id="generic-errors">Generic Errors</h3>
+<p>1: ExFailure<br>
+2: ExInterrupted</p>
+<h3 id="error-codes-specific-to-the-minikube-program">Error codes specific to the minikube program</h3>
+<p>10: ExProgramError<br>
+14: ExProgramUsage<br>
+11: ExProgramConflict<br>
+15: ExProgramNotFound<br>
+16: ExProgramUnsupported<br>
+18: ExProgramConfig</p>
+<h3 id="error-codes-specific-to-resource-limits-exit-code-layout-follows-no-rules">Error codes specific to resource limits (exit code layout follows no rules)</h3>
+<p>20: ExResourceError<br>
+23: ExInsufficientMemory<br>
+26: ExInsufficientStorage<br>
+27: ExInsufficientPermission<br>
+29: ExInsufficientCores</p>
+<h3 id="error-codes-specific-to-the-host">Error codes specific to the host</h3>
+<p>30: ExHostError<br>
+31: ExHostConflict<br>
+32: ExHostTimeout<br>
+34: ExHostUsage<br>
+35: ExHostNotFound<br>
+36: ExHostUnsupported<br>
+37: ExHostPermission<br>
+38: ExHostConfig</p>
+<h3 id="error-codes-specific-to-remote-networking">Error codes specific to remote networking</h3>
+<p>40: ExInternetError<br>
+41: ExInternetConflict<br>
+42: ExInternetTimeout<br>
+45: ExInternetNotFound<br>
+48: ExInternetConfig<br>
+49: ExInternetUnavailable</p>
+<h3 id="error-codes-specific-to-the-libmachine-driver">Error codes specific to the libmachine driver</h3>
+<p>50: ExDriverError<br>
+51: ExDriverConflict<br>
+52: ExDriverTimeout<br>
+54: ExDriverUsage<br>
+55: ExDriverNotFound<br>
+56: ExDriverUnsupported<br>
+57: ExDriverPermission<br>
+58: ExDriverConfig<br>
+59: ExDriverUnavailable</p>
+<h3 id="error-codes-specific-to-the-driver-provider">Error codes specific to the driver provider</h3>
+<p>60: ExProviderError<br>
+61: ExProviderConflict<br>
+62: ExProviderTimeout<br>
+63: ExProviderNotRunning<br>
+65: ExProviderNotFound<br>
+66: ExProviderUnsupported<br>
+67: ExProviderPermission<br>
+68: ExProviderConfig<br>
+69: ExProviderUnavailable</p>
+<h3 id="error-codes-specific-to-local-networking">Error codes specific to local networking</h3>
+<p>70: ExLocalNetworkError<br>
+71: ExLocalNetworkConflict<br>
+72: ExLocalNetworkTimeout<br>
+75: ExLocalNetworkNotFound<br>
+77: ExLocalNetworkPermission<br>
+78: ExLocalNetworkConfig<br>
+79: ExLocalNetworkUnavailable</p>
+<h3 id="error-codes-specific-to-the-guest-host">Error codes specific to the guest host</h3>
+<p>80: ExGuestError<br>
+81: ExGuestConflict<br>
+82: ExGuestTimeout<br>
+83: ExGuestNotRunning<br>
+85: ExGuestNotFound<br>
+86: ExGuestUnsupported<br>
+87: ExGuestPermission<br>
+88: ExGuestConfig<br>
+89: ExGuestUnavailable</p>
+<h3 id="error-codes-specific-to-the-container-runtime">Error codes specific to the container runtime</h3>
+<p>90: ExRuntimeError<br>
+93: ExRuntimeNotRunning<br>
+95: ExRuntimeNotFound<br>
+99: ExRuntimeUnavailable</p>
+<h3 id="error-codes-specific-to-the-kubernetes-control-plane">Error codes specific to the Kubernetes control plane</h3>
+<p>100: ExControlPlaneError<br>
+101: ExControlPlaneConflict<br>
+102: ExControlPlaneTimeout<br>
+103: ExControlPlaneNotRunning<br>
+105: ExControlPlaneNotFound<br>
+106: ExControlPlaneUnsupported<br>
+108: ExControlPlaneConfig<br>
+109: ExControlPlaneUnavailable</p>
+<h3 id="error-codes-specific-to-a-kubernetes-service">Error codes specific to a Kubernetes service</h3>
+<p>110: ExSvcError<br>
+111: ExSvcConflict<br>
+112: ExSvcTimeout<br>
+113: ExSvcNotRunning<br>
+115: ExSvcNotFound<br>
+116: ExSvcUnsupported<br>
+117: ExSvcPermission<br>
+118: ExSvcConfig<br>
+119: ExSvcUnavailable</p>
+
+	<style>
+  .feedback--answer {
+    display: inline-block;
+  }
+  .feedback--answer-no {
+    margin-left: 1em;
+  }
+  .feedback--response {
+    display: none;
+    margin-top: 1em;
+  }
+  .feedback--response__visible {
+    display: block;
+  }
+</style>
+<div class="d-print-none">
+<h2 class="feedback--title">Feedback</h2>
+<p class="feedback--question">Was this page helpful?</p>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-yes">Yes</button>
+<button class="btn btn-primary mb-4 feedback--answer feedback--answer-no">No</button>
+<p class="feedback--response feedback--response-yes">
+  Glad to hear it! Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+<p class="feedback--response feedback--response-no">
+  Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.
+</p>
+</div>
+<script>
+  const yesButton = document.querySelector('.feedback--answer-yes');
+  const noButton = document.querySelector('.feedback--answer-no');
+  const yesResponse = document.querySelector('.feedback--response-yes');
+  const noResponse = document.querySelector('.feedback--response-no');
+  const disableButtons = () => {
+    yesButton.disabled = true;
+    noButton.disabled = true;
+  };
+  const sendFeedback = (value) => {
+    if (typeof gtag !== 'function') return;
+    gtag('event', 'page_helpful', {
+      'event_category': 'Helpful',
+      'event_label': window.location.pathname,
+      'value': value
+    });
+  };
+  yesButton.addEventListener('click', () => {
+    yesResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback( 100 );
+  });
+  noButton.addEventListener('click', () => {
+    noResponse.classList.add('feedback--response__visible');
+    disableButtons();
+    sendFeedback(0);
+  });
+</script>
+<br />
+<div class="td-page-meta__lastmod">
+  Last modified March 14, 2025: <a href="https://github.com/kubernetes/minikube/commit/8ed8f15350377dffabe5ae2cdc1aea41f5d08141">Build(deps): Bump peter-evans/create-pull-request from 7.0.7 to 7.0.8 (#20517) (8ed8f15)</a>
+</div>
+
+</div>
+
+
+          </main>
+        </div>
+      </div>
+      
+<footer class="bg-dark py-5 row d-print-none">
+  <div class="container-fluid mx-sm-5">
+    <div class="row">
+      <div class="col-6 col-sm-4 text-xs-center order-sm-2">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack" aria-label="Slack">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://kubernetes.slack.com/messages/C1F5CT6Q1">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Slack Invitation" aria-label="Slack Invitation">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://communityinviter.com/apps/kubernetes/community">
+      <i class="fab fa-slack"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-users mailing list" aria-label="minikube-users mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-users">
+      <i class="fas fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="twitter" aria-label="twitter">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://twitter.com/minikube_dev">
+      <i class="fab fa-twitter"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-6 col-sm-4 text-right text-xs-center order-sm-3">
+        
+        
+        
+<ul class="list-inline mb-0">
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="GitHub" aria-label="GitHub">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://github.com/kubernetes/minikube">
+      <i class="fab fa-github"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="minikube-dev mailing list" aria-label="minikube-dev mailing list">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://groups.google.com/forum/#!forum/minikube-dev">
+      <i class="fa fa-envelope"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Contributing Guide" aria-label="Contributing Guide">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+  <li class="list-inline-item mx-2 h3" data-toggle="tooltip" data-placement="top" title="Project Roadmap" aria-label="Project Roadmap">
+    <a class="footer-link text-white" target="_blank" rel="noopener noreferrer" href="https://minikube.sigs.k8s.io/docs/contrib/roadmap/">
+      <i class="fas fa-external-link-alt"></i>
+    </a>
+  </li>
+  
+</ul>
+
+        
+        
+      </div>
+      <div class="col-12 col-sm-4 text-center py-2 order-sm-2">
+        <small class="text-white">&copy; 2025 The Kubernetes Authors.
+          
+        </small>
+        
+        
+          
+        
+      </div>
+    </div>
+    <div class="row text-center text-white small">
+      <div class="col-12 text-center py-2 order-sm-2">
+        <a href="https://www.linuxfoundation.org/terms" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Terms of Use</a> |
+        <a href="https://www.linuxfoundation.org/privacy" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Privacy Policy</a> |
+        <a href="https://www.linuxfoundation.org/trademark-usage" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">Trademark Usage</a> |
+        <a href="https://github.com/kubernetes/minikube/blob/master/LICENSE" class="footer-link" style="color: #ffffff" target="_blank" rel="noopener">License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer-link:hover {
+    color: #b5b1b1 !important;
+  }
+</style>
+
+    </div>
+    <script src="/js/main.js"></script>
+<script src='/js/prism.js'></script>
+<script src='/js/tabpane-persist.js'></script>
+
+<script language="javascript">initTabs();</script>
+<script language="javascript">initQuiz();</script>
+
+
+  </body>
+</html>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Image Build Benchmarks on minikube</title>
+    <link>http://localhost:1313/docs/benchmarks/imagebuild/</link>
+    <description>Recent content in Image Build Benchmarks on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/benchmarks/imagebuild/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>About the Benchmarking Process</title>
+      <link>http://localhost:1313/docs/benchmarks/imagebuild/benchmarkingprocess/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/imagebuild/benchmarkingprocess/</guid>
+      <description>&lt;h2 id=&#34;whats-the-difference-between-the-four-images&#34;&gt;What&amp;rsquo;s the difference between the four images?&lt;/h2&gt;&#xA;&lt;p&gt;In the benchmarking charts you&amp;rsquo;ll see four images: Few Large Layers, Few Small Layers, Many Large Layers, and Many Small Layers&lt;/p&gt;&#xA;&lt;p&gt;All the images use the same base image: &lt;code&gt;gcr.io/buildpacks/builder:v1&lt;/code&gt;&lt;/p&gt;&#xA;&lt;h4 id=&#34;few-vs-many&#34;&gt;Few vs Many&lt;/h4&gt;&#xA;&lt;p&gt;Few will copy two files while many will copy 20 files.&lt;/p&gt;&#xA;&lt;h4 id=&#34;small-vs-large&#34;&gt;Small vs Large&lt;/h4&gt;&#xA;&lt;p&gt;Small will copy a 20MB file while large will copy a 123MB file.&lt;/p&gt;&#xA;&lt;p&gt;Using this info you can see the following:&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Linux Benchmarks</title>
+      <link>http://localhost:1313/docs/benchmarks/imagebuild/linuxbenchmark/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/imagebuild/linuxbenchmark/</guid>
+      <description>&lt;p&gt;Benchmarking machine specs:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;OS: Debian 10&lt;/li&gt;&#xA;&lt;li&gt;Processor: 2.30 GHz 8-Core Intel Xeon&lt;/li&gt;&#xA;&lt;li&gt;Memory: 32 GB&lt;/li&gt;&#xA;&lt;li&gt;Storage: SSD&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;docker-runtime&#34;&gt;Docker Runtime&lt;/h2&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/dockerRuntime/iterative.png&#34; alt=&#34;Docker Runtime  Iterative Loads&#34;&gt;&#xA;&lt;img src=&#34;http://localhost:1313/images/benchmarks/dockerRuntime/initial.png&#34; alt=&#34;Linux Runtime Docker Initial Loads&#34;&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;containerd-runtime&#34;&gt;Containerd Runtime&lt;/h2&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/containerdRuntime/iterative.png&#34; alt=&#34;Containerd Runtime Iterative Loads&#34;&gt;&#xA;&lt;img src=&#34;http://localhost:1313/images/benchmarks/containerdRuntime/initial.png&#34; alt=&#34;Containerd Runtime Initial Loads&#34;&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;cri-o-runtime&#34;&gt;Cri-o Runtime&lt;/h2&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/crioRuntime/iterative.png&#34; alt=&#34;Cri-o Runtime Iterative Loads&#34;&gt;&#xA;&lt;img src=&#34;http://localhost:1313/images/benchmarks/crioRuntime/initial.png&#34; alt=&#34;Cri-o Runtime Initial Loads&#34;&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Mac Benchmarks</title>
+      <link>http://localhost:1313/docs/benchmarks/imagebuild/macbenchmark/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/imagebuild/macbenchmark/</guid>
+      <description>&lt;p&gt;Benchmarking machine specs:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Model: Mac mini (Late 2014)&lt;/li&gt;&#xA;&lt;li&gt;Processor: 2.6 GHz Dual-Core Intel Core i5&lt;/li&gt;&#xA;&lt;li&gt;Memory: 8 GB 1600 MHz DDR3&lt;/li&gt;&#xA;&lt;li&gt;Storage: SSD&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/macArchitecture/iterative.png&#34; alt=&#34;Iterative Loads&#34;&gt;&#xA;&lt;img src=&#34;http://localhost:1313/images/benchmarks/macArchitecture/initial.png&#34; alt=&#34;Initial Loads&#34;&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>minikube vs kind vs k3d vs microk8s Benchmarks</title>
+      <link>http://localhost:1313/docs/benchmarks/imagebuild/minikubevsothers/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/imagebuild/minikubevsothers/</guid>
+      <description>&lt;p&gt;Benchmarking machine specs:&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;OS: Debian 10&lt;/li&gt;&#xA;&lt;li&gt;Processor: 2.30 GHz 8-Core Intel Xeon&lt;/li&gt;&#xA;&lt;li&gt;Memory: 32 GB&lt;/li&gt;&#xA;&lt;li&gt;Storage: SSD&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/minikubeVsOthers/iterative.png&#34; alt=&#34;Iterative Loads&#34;&gt;&#xA;&lt;img src=&#34;http://localhost:1313/images/benchmarks/minikubeVsOthers/initial.png&#34; alt=&#34;Initial Loads&#34;&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Weekly Image Build Benchmark</title>
+      <link>http://localhost:1313/docs/benchmarks/imagebuild/weekly-benchmark/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/imagebuild/weekly-benchmark/</guid>
+      <description>&lt;p&gt;Benchmarking machine specs: Standard Github Action Runner&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;OS: Ubuntu 22.04&lt;/li&gt;&#xA;&lt;li&gt;Memory Limit: 1800MB&lt;/li&gt;&#xA;&lt;li&gt;Storage: SSD 14GB&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;&lt;img src=&#34;https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/Iterative_buildpacksFewLargeFiles_docker_chart.png&#34; alt=&#34;Docker&#34;&gt;&#xA;&lt;img src=&#34;https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/Iterative_buildpacksFewLargeFiles_containerd_chart.png&#34; alt=&#34;Containerd&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;&lt;em&gt;&lt;a href=&#34;https://time-to-k8s.s3.us-west-1.amazonaws.com/image-benchmark/record.json&#34;&gt;Raw Test Data Link&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>

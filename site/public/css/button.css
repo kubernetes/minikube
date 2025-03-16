@@ -1,0 +1,13 @@
+.module-button {
+  color: #fff;
+  background: #306EE5;
+  border-radius: 0.5rem;
+  font-size: 2rem;
+  border: none;
+  padding: 0.5rem 1rem;
+  margin: 2rem 0;
+}
+
+.module-button:hover {
+  background: #164cb2;
+}

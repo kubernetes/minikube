@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Building on minikube</title>
+    <link>http://localhost:1313/docs/contrib/building/</link>
+    <description>Recent content in Building on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/contrib/building/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Building the minikube binary</title>
+      <link>http://localhost:1313/docs/contrib/building/binaries/</link>
+      <pubDate>Wed, 31 Jul 2019 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/contrib/building/binaries/</guid>
+      <description>&lt;h2 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;A recent Go distribution (&amp;gt;=1.22.0)&lt;/li&gt;&#xA;&lt;li&gt;If you are on Windows, you&amp;rsquo;ll need Docker to be installed.&lt;/li&gt;&#xA;&lt;li&gt;4GB of RAM&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;downloading-the-source&#34;&gt;Downloading the source&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;git clone https://github.com/kubernetes/minikube.git&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd minikube&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;compiling-minikube&#34;&gt;Compiling minikube&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;make&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;Note: On Windows, this will only work in Git Bash or other terminals that support bash commands.&lt;/p&gt;&#xA;&lt;p&gt;You can also build platform specific executables like below:&#xA;1. &lt;code&gt;make windows&lt;/code&gt; will build the binary for Windows platform&#xA;2. &lt;code&gt;make linux&lt;/code&gt; will build the binary for Linux platform&#xA;3. &lt;code&gt;make darwin&lt;/code&gt; will build the binary for Darwin/Mac platform&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Building the minikube ISO</title>
+      <link>http://localhost:1313/docs/contrib/building/iso/</link>
+      <pubDate>Fri, 09 Aug 2019 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/contrib/building/iso/</guid>
+      <description>&lt;h2 id=&#34;overview&#34;&gt;Overview&lt;/h2&gt;&#xA;&lt;p&gt;The minikube ISO is booted by each hypervisor to provide a stable minimal Linux environment to start Kubernetes from. It is based on coreboot, uses systemd, and includes all necessary container runtimes and hypervisor guest drivers.&lt;/p&gt;&#xA;&lt;h2 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;A recent GNU Make distribution (&amp;gt;=4.0)&lt;/li&gt;&#xA;&lt;li&gt;A recent Go distribution (&amp;gt;=1.22.0)&lt;/li&gt;&#xA;&lt;li&gt;If you are on Windows or Mac, you&amp;rsquo;ll need Docker to be installed.&lt;/li&gt;&#xA;&lt;li&gt;4GB of RAM&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;downloading-the-source&#34;&gt;Downloading the source&lt;/h2&gt;&#xA;&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; style=&#34;background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4;&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;git clone https://github.com/kubernetes/minikube.git&#xA;&lt;/span&gt;&lt;/span&gt;&lt;span style=&#34;display:flex;&#34;&gt;&lt;span&gt;cd minikube&#xA;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h2 id=&#34;building&#34;&gt;Building&lt;/h2&gt;&#xA;&lt;h3 id=&#34;building-in-docker&#34;&gt;Building in Docker&lt;/h3&gt;&#xA;&lt;p&gt;To build for x86&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
