@@ -40,8 +40,11 @@ import (
 	"k8s.io/klog/v2"
 )
 
-var profileOutput string
-var isLight bool
+var (
+	profileOutput string
+	isLight       bool
+	isDetailed    bool
+)
 
 var profileListCmd = &cobra.Command{
 	Use:   "list",
@@ -130,7 +133,13 @@ func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status", "Nodes", "Active Profile", "Active Kubecontext"})
+	if isDetailed {
+		table.SetHeader([]string{"Profile", "Driver", "Runtime", "IP", "Port", "Version",
+			"Status", "Nodes", "Active Profile", "Active Kubecontext"})
+	} else {
+		table.SetHeader([]string{"Profile", "Driver", "Runtime", "IP", "Version", "Status",
+			"Nodes", "Active Profile", "Active Kubecontext"})
+	}
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -164,7 +173,13 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if p.ActiveKubeContext {
 			k = "*"
 		}
-		data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+		if isDetailed {
+			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+		} else {
+			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+		}
 	}
 	return data
 }
@@ -213,5 +228,6 @@ func profilesOrDefault(profiles []*config.Profile) []*config.Profile {
 func init() {
 	profileListCmd.Flags().StringVarP(&profileOutput, "output", "o", "table", "The output format. One of 'json', 'table'")
 	profileListCmd.Flags().BoolVarP(&isLight, "light", "l", false, "If true, returns list of profiles faster by skipping validating the status of the cluster.")
+	profileListCmd.Flags().BoolVarP(&isDetailed, "detailed", "d", false, "If true, returns a detailed list of profiles.")
 	ProfileCmd.AddCommand(profileListCmd)
 }
