@@ -549,4 +549,18 @@ var (
 		  minikube start{{.profile}} --driver qemu --network user`),
 		Style: style.SeeNoEvil,
 	}
+	NotFoundVmnetHelper = Kind{
+		ID:       "NOT_FOUND_VMNET_HELPER",
+		ExitCode: ExProgramNotFound,
+		Advice: translate.T(`vmnet-helper was not found on the system, resolve by:
+
+		Option 1) Installing vment-helper:
+
+		  https://github.com/nirs/vmnet-helper#installation
+
+		Option 2) Using the nat network:
+
+		  minikube start{{.profile}} --driver vfkit --network nat`),
+		Style: style.SeeNoEvil,
+	}
 )
