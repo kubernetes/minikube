@@ -229,7 +229,7 @@ var (
 		ID:       "RSRC_DOCKER_STORAGE",
 		ExitCode: ExInsufficientStorage,
 		Advice: translate.T(`Try one or more of the following to free up space on the device:
-	
+
 			1. Run "docker system prune" to remove unused Docker data (optionally with "-a")
 			2. Increase the storage allocated to Docker for Desktop by clicking on:
 				Docker icon > Preferences > Resources > Disk Image Size
@@ -241,7 +241,7 @@ var (
 		ID:       "RSRC_PODMAN_STORAGE",
 		ExitCode: ExInsufficientStorage,
 		Advice: translate.T(`Try one or more of the following to free up space on the device:
-	
+
 			1. Run "sudo podman system prune" to remove unused podman data
 			2. Run "minikube ssh -- docker system prune" if using the Docker container runtime`),
 		Issues: []int{9024},
@@ -360,7 +360,7 @@ var (
 		ID:       "GUEST_MOUNT_COULD_NOT_CONNECT",
 		ExitCode: ExGuestError,
 		Advice: translate.T(`If the host has a firewall:
-		
+
 		1. Allow a port through the firewall
 		2. Specify "--port=<port_number>" for "minikube mount"`),
 	}
@@ -490,16 +490,16 @@ var (
 		ID:       "K8S_DOWNGRADE_UNSUPPORTED",
 		ExitCode: ExControlPlaneUnsupported,
 		Advice: translate.T(`1) Recreate the cluster with Kubernetes {{.new}}, by running:
-	  
+
 		  minikube delete{{.profile}}
 		  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.new}}
-	  
+
 		2) Create a second cluster with Kubernetes {{.new}}, by running:
-	  
+
 		  minikube start -p {{.suggestedName}} --kubernetes-version={{.prefix}}{{.new}}
-	  
+
 		3) Use the existing cluster at version Kubernetes {{.old}}, by running:
-	  
+
 		  minikube start{{.profile}} --kubernetes-version={{.prefix}}{{.old}}
 		`),
 		Style: style.SeeNoEvil,
@@ -509,7 +509,7 @@ var (
 		ID:       "NOT_FOUND_CRI_DOCKERD",
 		ExitCode: ExProgramNotFound,
 		Advice: translate.T(`The none driver with Kubernetes v1.24+ and the docker container-runtime requires cri-dockerd.
-		
+
 		Please install cri-dockerd using these instructions:
 
 		https://github.com/Mirantis/cri-dockerd`),
@@ -519,7 +519,7 @@ var (
 		ID:       "NOT_FOUND_DOCKERD",
 		ExitCode: ExProgramNotFound,
 		Advice: translate.T(`The none driver with Kubernetes v1.24+ and the docker container-runtime requires dockerd.
-		
+
 		Please install dockerd using these instructions:
 
 		https://docs.docker.com/engine/install/`),
