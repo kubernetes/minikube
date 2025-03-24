@@ -398,7 +398,7 @@
 	"Ignoring invalid pair entry {{.pair}}": "Ignoriere invaliden Wertepaar-Eintrag {{.pair}}",
 	"Ignoring unknown custom image {{.name}}": "Ignoriere unbekanntes Custom Image {{.name}}",
 	"Ignoring unknown custom registry {{.name}}": "Ignoriere unbekannte Custom Registry {{.name}}",
-	"Image was not built for the current minikube version. To resolve this you can delete and recreate your minikube cluster using the latest images. Expected minikube version: {{.imageMinikubeVersion}} -\u003e Actual minikube version: {{.minikubeVersion}}": "Das Image wurde nicht für die aktuelle Minikube Version gebaut. Um dies zu beheben, können Sie die Installation löschen und Minikube mit dem neuesten Image neu restellen. Erwartete Minikube Version: {{.imageMinikubeVersion}} - \u003e Aktuelle Minikube Version: {{.minikubeVersion}}",
+	"Image was not built for the current minikube version. To resolve this you can delete and recreate your minikube cluster using the latest images. Expected minikube version: {{.imageMinikubeVersion}} -\u003e Actual minikube version: {{.minikubeVersion}}": "Das Image wurde nicht für die aktuelle Minikube Version gebaut. Um dies zu beheben, können Sie die Installation löschen und Minikube mit dem neuesten Image neu erstellen. Erwartete Minikube Version: {{.imageMinikubeVersion}} - \u003e Aktuelle Minikube Version: {{.minikubeVersion}}",
 	"Images Commands:": "Image Befehle:",
 	"Images used by this addon. Separated by commas.": "Images, die durch dieses Addon verwendet werden. Durch Komma getrennt.",
 	"In order to use the fall back image, you need to log in to the github packages registry": "Um das Fallback Image zu verwenden, müssen Sie sich an der Github Package Registry anmelden",
