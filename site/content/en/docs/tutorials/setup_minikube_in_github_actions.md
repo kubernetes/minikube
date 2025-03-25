@@ -62,7 +62,7 @@ Create workflow:
 
 The above example workflow yaml, will do the following steps on each coming PR:
 
-1. Checks out the the source code
+1. Checks out the source code
 2. Installs & starts minikube
 3. Tries out the cluster just by running `kubectl` command
 4. Build the docker image using minikube's [docker-env]({{< ref "/docs/commands/docker-env.md" >}}) feature
