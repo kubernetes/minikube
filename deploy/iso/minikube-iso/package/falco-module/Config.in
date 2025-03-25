@@ -1,6 +1,0 @@
-config BR2_PACKAGE_FALCO_MODULE
-	bool "falco-module"
-	default y
-	depends on BR2_LINUX_KERNEL
-	select BR2_PACKAGE_NCURSES
-	select BR2_PACKAGE_LIBYAML
