@@ -313,7 +313,7 @@ func isBootpdError(err error) bool {
 }
 
 func (d *Driver) Stop() error {
-	if err := d.SetVFKitState("HardStop"); err != nil {
+	if err := d.SetVFKitState("Stop"); err != nil {
 		return err
 	}
 	return nil

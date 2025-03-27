@@ -769,7 +769,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.28@sha256:4c5deadfc50f5165270a6d8672290b1545c91dcf54ab69fc3cb2255a6ff736bf",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.30@sha256:a9c7274e55bba48a4f5bec813a11087d9f2e3a3f7e583dae9873aae2ec17f125",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),
