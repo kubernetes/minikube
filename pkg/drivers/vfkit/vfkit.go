@@ -30,7 +30,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -47,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
 )
@@ -136,42 +136,27 @@ func (d *Driver) GetIP() (string, error) {
 	return d.IPAddress, nil
 }
 
-func checkPid(pid int) error {
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	return process.Signal(syscall.Signal(0))
-}
-
 func (d *Driver) GetState() (state.State, error) {
-	if _, err := os.Stat(d.pidfilePath()); err != nil {
+	pidfile := d.pidfilePath()
+	pid, err := process.ReadPidfile(pidfile)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return state.Error, err
+		}
 		return state.Stopped, nil
 	}
-	p, err := os.ReadFile(d.pidfilePath())
+	exists, err := process.Exists(pid, "vfkit")
 	if err != nil {
 		return state.Error, err
 	}
-	pid, err := strconv.Atoi(strings.TrimSpace(string(p)))
-	if err != nil {
-		return state.Error, err
-	}
-	if err := checkPid(pid); err != nil {
-		// No pid, remove pidfile
-		os.Remove(d.pidfilePath())
+	if !exists {
+		// No process, stale pidfile.
+		if err := os.Remove(pidfile); err != nil {
+			log.Debugf("failed to remove %q: %s", pidfile, err)
+		}
 		return state.Stopped, nil
 	}
-	ret, err := d.GetVFKitState()
-	if err != nil {
-		return state.Error, err
-	}
-	switch ret {
-	case "running", "VirtualMachineStateRunning":
-		return state.Running, nil
-	case "stopped", "VirtualMachineStateStopped":
-		return state.Stopped, nil
-	}
-	return state.None, nil
+	return state.Running, nil
 }
 
 func (d *Driver) Create() error {
@@ -260,11 +245,9 @@ func (d *Driver) Start() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	pid := cmd.Process.Pid
-	if err := os.WriteFile(d.pidfilePath(), []byte(fmt.Sprintf("%v", pid)), 0600); err != nil {
+	if err := process.WritePidfile(d.pidfilePath(), cmd.Process.Pid); err != nil {
 		return err
 	}
-
 	if err := d.setupIP(mac); err != nil {
 		return err
 	}
@@ -314,7 +297,29 @@ func isBootpdError(err error) bool {
 
 func (d *Driver) Stop() error {
 	if err := d.SetVFKitState("Stop"); err != nil {
-		return err
+		// vfkit may be already stopped, shutting down, or not listening.
+		// We don't fallback to "HardStop" since it typically fails due to
+		// https://github.com/crc-org/vfkit/issues/277.
+		log.Debugf("Failed to set vfkit state to 'Stop': %s", err)
+		pidfile := d.pidfilePath()
+		pid, err := process.ReadPidfile(pidfile)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			// No pidfile.
+			return nil
+		}
+		if err := process.Terminate(pid, "vfkit"); err != nil {
+			if err != os.ErrProcessDone {
+				return err
+			}
+			// No process, stale pidfile.
+			if err := os.Remove(pidfile); err != nil {
+				log.Debugf("failed to remove %q: %s", pidfile, err)
+			}
+			return nil
+		}
 	}
 	return nil
 }
@@ -327,11 +332,6 @@ func (d *Driver) Remove() error {
 	if s == state.Running {
 		if err := d.Kill(); err != nil {
 			return errors.Wrap(err, "kill")
-		}
-	}
-	if s != state.Stopped {
-		if err := d.SetVFKitState("Stop"); err != nil {
-			return errors.Wrap(err, "quit")
 		}
 	}
 	return nil
@@ -369,7 +369,27 @@ func (d *Driver) extractKernel(isoPath string) error {
 
 func (d *Driver) Kill() error {
 	if err := d.SetVFKitState("HardStop"); err != nil {
-		return err
+		// Typically fails with EOF due to https://github.com/crc-org/vfkit/issues/277.
+		log.Debugf("Failed to set vfkit state to 'HardStop': %s", err)
+		pidfile := d.pidfilePath()
+		pid, err := process.ReadPidfile(pidfile)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return err
+			}
+			// No pidfile.
+			return nil
+		}
+		if err := process.Kill(pid, "vfkit"); err != nil {
+			if err != os.ErrProcessDone {
+				return err
+			}
+			// No process, stale pidfile.
+			if err := os.Remove(pidfile); err != nil {
+				log.Debugf("failed to remove %q: %s", pidfile, err)
+			}
+			return nil
+		}
 	}
 	return nil
 }
