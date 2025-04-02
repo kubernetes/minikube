@@ -3,8 +3,8 @@
 # containerd
 #
 ################################################################################
-CONTAINERD_BIN_VERSION = v1.7.23
-CONTAINERD_BIN_COMMIT = 57f17b0a6295a39009d861b89e3b3b87b005ca27
+CONTAINERD_BIN_VERSION = v2.0.3
+CONTAINERD_BIN_COMMIT = 06b99ca80cdbfbc6cc8bd567021738c9af2b36ce
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/archive
 CONTAINERD_BIN_SOURCE = $(CONTAINERD_BIN_VERSION).tar.gz
 CONTAINERD_BIN_DEPENDENCIES = host-go libgpgme
@@ -39,12 +39,12 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/containerd \
 		$(TARGET_DIR)/usr/bin
-	$(INSTALL) -Dm755 \
-		$(@D)/bin/containerd-shim \
-		$(TARGET_DIR)/usr/bin
-	$(INSTALL) -Dm755 \
-		$(@D)/bin/containerd-shim-runc-v1 \
-		$(TARGET_DIR)/usr/bin
+	# $(INSTALL) -Dm755 \
+	# 	$(@D)/bin/containerd-shim \
+	# 	$(TARGET_DIR)/usr/bin
+	# $(INSTALL) -Dm755 \
+	# 	$(@D)/bin/containerd-shim-runc-v1 \
+	# 	$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/containerd-shim-runc-v2 \
 		$(TARGET_DIR)/usr/bin
