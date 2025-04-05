@@ -178,4 +178,8 @@ var (
 	// YakdAssets assets for yakd addon
 	//go:embed yakd/*.yaml yakd/*.tmpl
 	YakdAssets embed.FS
+
+	// Kubetail assets for kubetail addon
+	//go:embed kubetail/*.yaml kubetail/*.tmpl
+	KubetailAssets embed.FS
 )
