@@ -52,7 +52,7 @@ See https://minikube.sigs.k8s.io/docs/
 
 ## More Examples
 
-See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
+See Minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Governance
 
