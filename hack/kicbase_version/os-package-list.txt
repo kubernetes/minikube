@@ -90,7 +90,7 @@ ii  libdevmapper1.02.1:amd64        2:1.02.175-2.1ubuntu5                   amd6
 ii  libedit2:amd64                  3.1-20210910-1build1                    amd64        BSD editline and history libraries
 ii  libelf1:amd64                   0.186-1ubuntu0.1                        amd64        library to read and write ELF files
 ii  libevent-core-2.1-7:amd64       2.1.12-stable-1build3                   amd64        Asynchronous event notification library (core)
-ii  libexpat1:amd64                 2.4.7-1ubuntu0.5                        amd64        XML parsing C library - runtime library
+ii  libexpat1:amd64                 2.4.7-1ubuntu0.6                        amd64        XML parsing C library - runtime library
 ii  libext2fs2:amd64                1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system libraries
 ii  libffi8:amd64                   3.4.2-4                                 amd64        Foreign Function Interface library runtime
 ii  libfido2-1:amd64                1.10.0-1                                amd64        library for generating and verifying FIDO 2.0 objects
