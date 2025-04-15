@@ -52,7 +52,7 @@ var (
 	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
 	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
 	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
-	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunningKey, NodeReadyKey, KubeletKey}
+	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunningKey, NodeReadyKey, KubeletKey, ExtraKey}
 	// AppsRunningList running list are valid k8s-app components to wait for them to be running
 	AppsRunningList = []string{
 		"kube-dns", // coredns
