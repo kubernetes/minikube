@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Releasing on minikube</title>
+    <link>http://localhost:1313/docs/contrib/releasing/</link>
+    <description>Recent content in Releasing on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/contrib/releasing/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Binaries</title>
+      <link>http://localhost:1313/docs/contrib/releasing/binaries/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/contrib/releasing/binaries/</guid>
+      <description>&lt;h2 id=&#34;preparation&#34;&gt;Preparation&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Announce release intent on #minikube&lt;/li&gt;&#xA;&lt;li&gt;Pause merge requests so that they are not accidentally left out of the ISO or release notes&lt;/li&gt;&#xA;&lt;li&gt;Two minikube repos checked out locally:&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Your personal fork&lt;/li&gt;&#xA;&lt;li&gt;Upstream&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;update-the-kubernetes-version&#34;&gt;Update the Kubernetes version&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Run &lt;code&gt;make update-kubernetes-version&lt;/code&gt; from your local upstream repo copy&lt;/li&gt;&#xA;&lt;li&gt;If any files are updated, create and merge a PR before moving forward&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;build-a-new-iso&#34;&gt;Build a new ISO&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;All non-patch releases require a new ISO to be built.&lt;/li&gt;&#xA;&lt;li&gt;Patch releases (vx.x.1+) require a new ISO if the &lt;code&gt;deploy/iso&lt;/code&gt; directory has seen changes since the previous release.&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;See &lt;a href=&#34;http://localhost:1313/docs/contrib/releasing/iso/&#34;&gt;ISO release instructions&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>Releasing a gVisor image</title>
+      <link>http://localhost:1313/docs/contrib/releasing/gvisor/</link>
+      <pubDate>Wed, 25 Sep 2019 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/contrib/releasing/gvisor/</guid>
+      <description>&lt;h2 id=&#34;prerequisites&#34;&gt;Prerequisites&lt;/h2&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Credentials for &lt;code&gt;gcr.io/k8s-minikube&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Docker&lt;/li&gt;&#xA;&lt;li&gt;Gcloud&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;h2 id=&#34;background&#34;&gt;Background&lt;/h2&gt;&#xA;&lt;p&gt;gVisor support within minikube requires a special Docker image to be generated. After merging changes to &lt;code&gt;cmd/gvisor&lt;/code&gt; or &lt;code&gt;pkg/gvisor&lt;/code&gt;, this image will need to be updated.&lt;/p&gt;&#xA;&lt;p&gt;The image is located at &lt;code&gt;gcr.io/k8s-minikube/gvisor-addon&lt;/code&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;why-is-this-image-required&#34;&gt;Why is this image required?&lt;/h2&gt;&#xA;&lt;p&gt;&lt;code&gt;gvisor&lt;/code&gt; requires changes to the guest VM in order to function. The &lt;code&gt;addons&lt;/code&gt; feature in minikube does not normally allow for this, so to workaround it, a custom docker image is launched, containing a binary that makes the changes.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>ISO</title>
+      <link>http://localhost:1313/docs/contrib/releasing/iso/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/contrib/releasing/iso/</guid>
+      <description>&lt;p&gt;Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the &lt;code&gt;deploy/iso&lt;/code&gt; folder.&#xA;To check, run &lt;code&gt;git log -- deploy/iso&lt;/code&gt; from the root directory and see if there has been a commit since the most recent release.&lt;/p&gt;&#xA;&lt;p&gt;Note: you can build the ISO using the &lt;code&gt;hack/jenkins/build_iso.sh&lt;/code&gt; script locally.&lt;/p&gt;&#xA;&lt;ul&gt;&#xA;&lt;li&gt;Navigate to the minikube ISO jenkins job&lt;/li&gt;&#xA;&lt;li&gt;Ensure that you are logged in (top right)&lt;/li&gt;&#xA;&lt;li&gt;Click &amp;ldquo;▶️ Build with Parameters&amp;rdquo; (left)&lt;/li&gt;&#xA;&lt;li&gt;For &lt;code&gt;ISO_VERSION&lt;/code&gt;, type in the intended release version (same as the minikube binary&amp;rsquo;s version)&lt;/li&gt;&#xA;&lt;li&gt;For &lt;code&gt;ISO_BUCKET&lt;/code&gt;, type in &lt;code&gt;minikube/iso&lt;/code&gt;&lt;/li&gt;&#xA;&lt;li&gt;Click &lt;em&gt;Build&lt;/em&gt;&lt;/li&gt;&#xA;&lt;/ul&gt;&#xA;&lt;p&gt;The build will automatically create a PR with the changes.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
