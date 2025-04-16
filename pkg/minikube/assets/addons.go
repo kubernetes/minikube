@@ -610,9 +610,9 @@ var Addons = map[string]*Addon{
 			"volcano-deployment.yaml",
 			"0640"),
 	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.11.0@sha256:2ceea91a5f05a366955f20cb1ab266b4732f906a205cb2e3f5930cf93335aeee",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.11.0@sha256:4ebe173752c86bd4a81d5514e9ba56f62dac79d081042a9069333f9aae32d8a3",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.11.0@sha256:5cfdfe4343ed267002262f1bb056a7b191cead04003016490cade1e14cfdad86",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.11.1@sha256:cc1176ecd37e6ff68dc42ae0fe9479f76fa83c92337e22f00047bd39eb1d3281",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.11.1@sha256:17168ad7c5df85db878d5170ed9a0c3938872b9ddef545bfb06922abc12e9cbf",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.11.1@sha256:b50b31efb47d3ac8f724575b8e3d0fa3d79ab2229c9fcc4b3ac7dd3866ed56de",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
@@ -769,7 +769,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.31@sha256:e1906706fb5dddca6a5724d01f6e95242ec560abb2279afb95127e1c5ee37920",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.32@sha256:98f4dfa5bed8bf94420accb71f0edddc6141079e19e63236e983deeb69e15d18",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),
