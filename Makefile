@@ -1108,7 +1108,7 @@ update-buildkit-version:
 .PHONY: update-cri-o-version
 update-cri-o-version:
 	(cd hack/update/cri-o_version && \
-	 go run update_cri-o_version.go)
+	 go run .)
 
 .PHONY: update-crun-version
 update-crun-version:
@@ -1189,11 +1189,6 @@ update-docker-buildx-version:
 update-nerdctl-version:
 	(cd hack/update/nerdctl_version && \
 	 go run update_nerdctl_version.go)
-
-.PHONY: update-crictl-version
-update-crictl-version:
-	(cd hack/update/crictl_version && \
-	 go run update_crictl_version.go)
 
 .PHONY: update-kindnetd-version
 update-kindnetd-version:
