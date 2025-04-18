@@ -43,7 +43,7 @@ FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.18.1"
 ARG CRIO_VERSION="1.32"
-ARG CRICTL_VERSION="1.32.0"
+ARG CRICTL_VERSION="v1.32.0"
 ARG CRI_DOCKERD_VERSION="v0.3.15"
 ARG CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -202,9 +202,9 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
 # install crictl
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
     if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
-        curl -LO "https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz" && \
-        sudo tar zxvf crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz -C /usr/local/bin && \
-        rm -f crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz ; fi
+        curl -LO "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-$ARCH.tar.gz" && \
+        sudo tar zxvf crictl-${CRICTL_VERSION}-linux-$ARCH.tar.gz -C /usr/local/bin && \
+        rm -f crictl-${CRICTL_VERSION}-linux-$ARCH.tar.gz ; fi
 
 # install containernetworking-plugins
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
