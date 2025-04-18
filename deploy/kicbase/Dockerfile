@@ -200,10 +200,11 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     fi
 
 # install crictl
-RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    curl -LO "https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz" && \
-    sudo tar zxvf crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz -C /usr/local/bin && \
-    rm -f crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz 
+RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+        curl -LO "https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz" && \
+        sudo tar zxvf crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz -C /usr/local/bin && \
+        rm -f crictl-v${CRICTL_VERSION}-linux-$ARCH.tar.gz ; fi
 
 # install containernetworking-plugins
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm/') && \
@@ -216,9 +217,9 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
 # install cri-o based on https://github.com/cri-o/packaging/blob/70c253469c493463afb30499dd93674baff3f38e/README.md
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
     if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
-    curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg &&\
-    echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/ /" |  tee /etc/apt/sources.list.d/cri-o.list && \
-    clean-install software-properties-common cri-o ; fi
+        curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg &&\
+        echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/ /" |  tee /etc/apt/sources.list.d/cri-o.list && \
+        clean-install software-properties-common cri-o ; fi
 
 # install NVIDIA container toolkit
 RUN export ARCH=$(dpkg --print-architecture) && \
