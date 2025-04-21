@@ -22,7 +22,7 @@ ii  coreutils                       8.32-4.1ubuntu1.2                       amd6
 ii  cri-o                           1.24.6~0                                amd64        OCI-based implementation of Kubernetes Container Runtime Interface.
 ii  cri-o-runc                      1.1.12~0                                amd64        Open Container Project - runtime
 ii  cri-tools                       1.25.0~0                                amd64        A command line tool used for creating OCI images.
-ii  criu                            4.0-3                                   amd64        checkpoint and restore in userspace
+ii  criu                            4.1-1                                   amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                               amd64        OCI runtime written in C
 ii  curl                            7.81.0-1ubuntu1.20                      amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.11+git20210903+057cd650a4ed-3build1 amd64        POSIX-compliant shell
@@ -31,9 +31,9 @@ ii  debianutils                     5.5-1ubuntu2                            amd6
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.3                       amd64        GNU privacy guard - network certificate management service
 ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.22.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:28.0.4-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:28.0.4-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.23.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:28.1.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:28.1.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -90,7 +90,7 @@ ii  libdevmapper1.02.1:amd64        2:1.02.175-2.1ubuntu5                   amd6
 ii  libedit2:amd64                  3.1-20210910-1build1                    amd64        BSD editline and history libraries
 ii  libelf1:amd64                   0.186-1ubuntu0.1                        amd64        library to read and write ELF files
 ii  libevent-core-2.1-7:amd64       2.1.12-stable-1build3                   amd64        Asynchronous event notification library (core)
-ii  libexpat1:amd64                 2.4.7-1ubuntu0.5                        amd64        XML parsing C library - runtime library
+ii  libexpat1:amd64                 2.4.7-1ubuntu0.6                        amd64        XML parsing C library - runtime library
 ii  libext2fs2:amd64                1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system libraries
 ii  libffi8:amd64                   3.4.2-4                                 amd64        Foreign Function Interface library runtime
 ii  libfido2-1:amd64                1.10.0-1                                amd64        library for generating and verifying FIDO 2.0 objects
@@ -149,7 +149,7 @@ ii  libpcre3:amd64                  2:8.39-13ubuntu0.22.04.1                amd6
 ii  libpopt0:amd64                  1.18-3build1                            amd64        lib for parsing cmdline parameters
 ii  libprocps8:amd64                2:3.3.17-6ubuntu2.1                     amd64        library for accessing process information from /proc
 ii  libprotobuf-c1:amd64            1.3.3-1ubuntu2.1                        amd64        Protocol Buffers C shared library (protobuf-c)
-ii  libprotobuf23:amd64             3.12.4-1ubuntu7.22.04.1                 amd64        protocol buffers C++ library
+ii  libprotobuf23:amd64             3.12.4-1ubuntu7.22.04.2                 amd64        protocol buffers C++ library
 ii  libpsl5:amd64                   0.21.0-1.2build2                        amd64        Library for Public Suffix List (shared libraries)
 ii  libpython3-stdlib:amd64         3.10.6-1~22.04.1                        amd64        interactive high-level object-oriented language (default python3 version)
 ii  libpython3.10-minimal:amd64     3.10.12-1~22.04.9                       amd64        Minimal subset of the Python language (version 3.10)
@@ -211,7 +211,7 @@ ii  procps                          2:3.3.17-6ubuntu2.1                     amd6
 ii  python3                         3.10.6-1~22.04.1                        amd64        interactive high-level object-oriented language (default python3 version)
 ii  python3-minimal                 3.10.6-1~22.04.1                        amd64        minimal subset of the Python language (default python3 version)
 ii  python3-pkg-resources           59.6.0-1.2ubuntu0.22.04.2               all          Package Discovery and Resource Access using pkg_resources
-ii  python3-protobuf                3.12.4-1ubuntu7.22.04.1                 amd64        Python 3 bindings for protocol buffers
+ii  python3-protobuf                3.12.4-1ubuntu7.22.04.2                 amd64        Python 3 bindings for protocol buffers
 ii  python3-six                     1.16.0-3ubuntu1                         all          Python 2 and 3 compatibility library (Python 3 interface)
 ii  python3.10                      3.10.12-1~22.04.9                       amd64        Interactive high-level object-oriented language (version 3.10)
 ii  python3.10-minimal              3.10.12-1~22.04.9                       amd64        Minimal subset of the Python language (version 3.10)
