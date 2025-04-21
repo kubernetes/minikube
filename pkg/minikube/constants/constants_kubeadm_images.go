@@ -18,6 +18,41 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.33.0-rc.1": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-rc.0": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-beta.0": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.17-0",
+			"pause":           "3.10",
+		},
+		"v1.32.3": {
+			"coredns/coredns": "v1.11.3",
+			"etcd":            "3.5.16-0",
+			"pause":           "3.10",
+		},
+		"v1.31.7": {
+			"coredns/coredns": "v1.11.3",
+			"etcd":            "3.5.15-0",
+			"pause":           "3.10",
+		},
+		"v1.30.11": {
+			"coredns/coredns": "v1.11.3",
+			"etcd":            "3.5.15-0",
+			"pause":           "3.9",
+		},
+		"v1.29.15": {
+			"coredns/coredns": "v1.11.1",
+			"etcd":            "3.5.16-0",
+			"pause":           "3.9",
+		},
 		"v1.33.0-alpha.3": {
 			"coredns/coredns": "v1.12.0",
 			"etcd":            "3.5.17-0",
