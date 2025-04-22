@@ -134,7 +134,7 @@ func MaskProxyPassword(proxyURL string) string {
 	if len(parts) == 2 {
 		proxyAddress := parts[1]
 		// Let's store the username, the URL and an optional port address
-		pattern := `([^:]+):.+(@[\w\.]+)(:\d+)?`
+		pattern := `([^:]+):.+(@[\w\.\$\-\+\*\'\(\)]+)(:\d+)?`
 		re := regexp.MustCompile(pattern)
 		matches := re.FindStringSubmatch(proxyAddress)
 		mask := "*****"

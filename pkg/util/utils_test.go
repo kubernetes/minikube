@@ -250,6 +250,13 @@ func TestMaskProxyPassword(t *testing.T) {
 		{
 			input:  "https://fr@ank5t3in:an0th3erF@akeP@55word@minikube.sigs.k8s.io",
 			output: "https://fr@ank5t3in:*****@minikube.sigs.k8s.io",
+		}, {
+			input:  "http://aaa:bbb@internet-app.corp.thales:8080",
+			output: "http://aaa:*****@internet-app.corp.thales:8080",
+		},
+		{
+			input:  "https://aaa:bbb@internet-app.corp.thales:8080",
+			output: "https://aaa:*****@internet-app.corp.thales:8080",
 		},
 	}
 	for _, test := range tests {
