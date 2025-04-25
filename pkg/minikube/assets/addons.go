@@ -310,7 +310,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.InspektorGadgetAssets, "inspektor-gadget/ig-deployment.yaml.tmpl", vmpath.GuestAddonsDir, "ig-deployment.yaml", "0640"),
 	}, false, "inspektor-gadget", "3rd party (inspektor-gadget.io)", "https://github.com/orgs/inspektor-gadget/people", "https://minikube.sigs.k8s.io/docs/handbook/addons/inspektor-gadget/",
 		map[string]string{
-			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.37.0@sha256:886412e63d6c580c50b3b7b59eee709a870768a7b5d0d9c27d66fe2a32c555e0",
+			"InspektorGadget": "inspektor-gadget/inspektor-gadget:v0.39.0@sha256:446fdca157cb78b6a6598e23be7176fb7e7d6b115f1f4174a5a3dfbdb41e4764",
 		}, map[string]string{
 			"InspektorGadget": "ghcr.io",
 		}),
@@ -322,7 +322,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
 		"Kong":        "kong:3.9.0@sha256:f0c19931763dccac7f927e205c98e656eb0c106a44f86d4c56e1355055627443",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.4.1@sha256:45da0da02c395bfdb6a324370b87eca39098bad42b184b57d56a44d5d95da99e",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.4.4@sha256:cf74e0e1e54a5a96d7b48e1c02120369953d66126ff5763398372bce925b5d8e",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -334,7 +334,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.32.1@sha256:87687743e2b62fa8642b1e8f21835dd08e37c3a1d56b5c51f1eeb385a8630c36",
+		"Kubectl": "bitnami/kubectl:1.32.3@sha256:f65b74480c37b65099453fb3a5ca7eaaea235b3d4268ef3b1ed0f0150d340646",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
@@ -401,7 +401,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
 		"KubeRegistryProxy": "k8s-minikube/kube-registry-proxy:0.0.8@sha256:60ab3508367ad093b4b891231572577371a29f838d61e64d7f7d093d961c862c",
-		"Registry":          "registry:2.8.3@sha256:319881be2ee9e345d5837d15842a04268de6a139e23be42654fc7664fc6eaf52",
+		"Registry":          "registry:3.0.0@sha256:1fc7de654f2ac1247f0b67e8a459e273b0993be7d2beda1f3f56fbf1001ed3e7",
 	}, map[string]string{
 		"KubeRegistryProxy": "gcr.io",
 		"Registry":          "docker.io",
@@ -781,7 +781,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.0@sha256:7089559ce6153018806857f5049085bae15b3bf6f1c8bd19d8b12f707d087dea",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.1@sha256:af31e2b7c7f89834c4e5219860def7ac2e49a207b3d4e8610d5a26772b7738e5",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}),
