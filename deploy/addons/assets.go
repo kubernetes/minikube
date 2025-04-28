@@ -135,7 +135,7 @@ var (
 	//go:embed gcp-auth/*.tmpl gcp-auth/*.yaml
 	GcpAuthAssets embed.FS
 
-	// Volcano assets for volcano addon
+	// VolcanoAssets assets for volcano addon
 	//go:embed volcano/*.tmpl
 	VolcanoAssets embed.FS
 
