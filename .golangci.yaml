@@ -1,0 +1,195 @@
+version: "2"
+run:
+  timeout: 7m
+linters:
+  enable:
+    - gocritic
+    - revive
+    - gocyclo
+    - misspell
+    - nakedret
+    - staticcheck
+    - unconvert
+    - unparam
+    - dogsled
+  settings:
+    staticcheck:
+      checks:
+        # Below is the default set
+        - "all"
+        - "-ST1000"
+        - "-ST1003"
+        - "-ST1016"
+        - "-ST1020"
+        - "-ST1021"
+        - "-ST1022"
+        ##### TODO: fix and enable these
+        # 4 occurrences.
+        # Use fmt.Fprintf(x, ...) instead of x.Write(fmt.Sprintf(...)) https://staticcheck.dev/docs/checks#QF1012
+        - "-QF1012"
+        # 3 occurrences.
+        # Apply De Morgan’s law https://staticcheck.dev/docs/checks#QF1001
+        - "-QF1001"
+        # 9 occurrences.
+        # Convert if/else-if chain to tagged switch https://staticcheck.dev/docs/checks#QF1003
+        - "-QF1003"
+        # 1 occurrence.
+        # could omit type *os.File from declaration; it will be inferred from the right-hand side
+        - "-QF1011"
+        ##### These have been vetted to be disabled.
+        # 19 occurrences. Omit embedded fields from selector expression https://staticcheck.dev/docs/checks#QF1008
+        # Usefulness is questionable.
+        - "-QF1008"
+    revive:
+      enable-all-rules: true
+      rules:
+        # See https://revive.run/r
+
+        ##### P0: we should do it ASAP.
+        - name: max-control-nesting
+          arguments: [7]
+        - name: deep-exit
+          disabled: true
+        - name: unchecked-type-assertion
+          disabled: true
+        - name: bare-return
+          disabled: true
+        - name: import-shadowing
+          disabled: true
+        - name: use-errors-new
+          disabled: true
+        ##### P1: consider making a dent on these, but not critical.
+        - name: argument-limit
+          arguments: [12]
+        - name: unnecessary-stmt
+          disabled: true
+        - name: defer
+          disabled: true
+        - name: confusing-naming
+          disabled: true
+        - name: early-return
+          disabled: true
+        - name: function-result-limit
+          arguments: [7]
+        - name: function-length
+          arguments: [0, 400]
+        - name: cyclomatic
+          arguments: [100]
+        - name: unhandled-error
+          disabled: true
+        - name: cognitive-complexity
+          arguments: [197]
+        ##### P2: nice to have.
+        - name: max-public-structs
+          arguments: [25]
+        - name: confusing-results
+          disabled: true
+        - name: comment-spacings
+          disabled: true
+        - name: use-any
+          disabled: true
+        - name: empty-lines
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: exported
+          disabled: true
+        ###### Permanently disabled. Below have been reviewed and vetted to be unnecessary.
+        - name: line-length-limit
+          disabled: true
+        - name: nested-structs
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+        - name: unused-receiver
+          disabled: true
+        - name: add-constant
+          disabled: true
+        ###### To be determined, this is a rule with differences.
+        - name: import-alias-naming
+          disabled: true
+        - name: unexported-naming
+          disabled: true
+        - name: struct-tag
+          disabled: true
+        - name: redundant-import-alias
+          disabled: true
+    gocritic:
+      #  See https://go-critic.com/overview.html
+      disabled-checks:
+        # Below are normally enabled by default, but we do not pass
+        - appendAssign
+        - ifElseChain
+        - unslice
+        - badCall
+        - assignOp
+        - commentFormatting
+        - captLocal
+        - singleCaseSwitch
+        - wrapperFunc
+        - elseif
+        - regexpMust
+        - deprecatedComment
+        # enabled-checks:
+        #   # Below used to be enabled, but we do not pass anymore
+        #   # - paramTypeCombine
+        #   # - octalLiteral
+        #   # - unnamedResult
+        #   # - equalFold
+        #   # - sloppyReassign
+        #   # - emptyStringTest
+        #   # - hugeParam
+        #   # - appendCombine
+        #   # - stringXbytes
+        #   # - ptrToRefParam
+        #   # - commentedOutCode
+        #   # - rangeValCopy
+        #   # - methodExprCall
+        #   # - yodaStyleExpr
+        #   # - typeUnparen
+  #   # We enabled these and we pass
+  #   - nilValReturn
+  #   - weakCond
+  #   - indexAlloc
+  #   - rangeExprCopy
+  #   - boolExprSimplify
+  #   - commentedOutImport
+  #   - docStub
+  #   - emptyFallthrough
+  #   - hexLiteral
+  #   - typeAssertChain
+  #   - unlabelStmt
+  #   - builtinShadow
+  #   - importShadow
+  #   - initClause
+  #   - nestingReduce
+  #   - unnecessaryBlock
+
+  ####### The content below is the content skipped by regular expression in the first version, 
+  ####### which has been gradually replaced by the detailed configuration above.
+  exclusions:
+    paths:
+      # we generally dont wanna touch or lint the Third_party code, it is basically like a fork for code that we can not import.
+      # but have to copy/paste
+      - third_party
+      # Skip test files
+      - '(.+)_test\.go'
+    rules:
+      - path: 'third_party/kubeadm/app/constants/constants.go'
+        text: "redefines-builtin-id: redefinition of the built-in function .*"
+        linter: revive
+      - path: '(.+)\.go$'
+        text: "unnecessary conversion"
+        linter: unconvert
+      - path: '(.+)\.go$'
+        text: "Error return value of `.*` is not checked"
+        linter: errcheck
+      - path: '(.+)\.go$'
+        text: "Error return value is not checked"
+        linter: errcheck
+      # This code is doubtful and I don't understand it. Location: Line 456
+      - path: 'cmd/minikube/cmd/docker-env.go'
+        text: "useless-break: useless break in case clause"
+        linter: revive
