@@ -934,6 +934,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "",
 	"error: --output must be 'yaml' or 'json'": "",
 	"experimental": "",
+	"extra waiting: {{.error}}": "",
 	"failed to acquire lock due to unexpected error": "",
 	"failed to add node": "",
 	"failed to load profile: {{.error}}": "",

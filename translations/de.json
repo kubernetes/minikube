@@ -1047,6 +1047,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "Fehler: --output muss entweder 'text', 'yaml' oder 'json' sein",
 	"error: --output must be 'yaml' or 'json'": "Fehler: --output muss entweder 'yaml' oder 'json' sein",
 	"experimental": "experimentell",
+	"extra waiting: {{.error}}": "",
 	"failed to acquire lock due to unexpected error": "Probleme beim Sperren, aufgrund von unerwarteten Fehlern",
 	"failed to add node": "Hinzufügen des Nodes fehlgeschlagen",
 	"failed to load profile: {{.error}}": "",
