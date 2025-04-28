@@ -1154,6 +1154,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "错误: --output 必须是 'text', 'yaml' 或 'json'",
 	"error: --output must be 'yaml' or 'json'": "错误: --output 必须是 'yaml' 或 'json'",
 	"experimental": "实验性功能",
+	"extra waiting: {{.error}}": "",
 	"failed to acquire lock due to unexpected error": "由于意外错误，无法获取锁",
 	"failed to add node": "添加节点失败",
 	"failed to load profile: {{.error}}": "",

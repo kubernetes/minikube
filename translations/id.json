@@ -932,6 +932,7 @@
 	"error: --output must be 'text', 'yaml' or 'json'": "Kesalahan: --output harus berupa 'text', 'yaml', atau 'json'",
 	"error: --output must be 'yaml' or 'json'": "Kesalahan: --output harus berupa 'yaml' atau 'json'",
 	"experimental": "Eksperimental.",
+	"extra waiting: {{.error}}": "",
 	"failed to acquire lock due to unexpected error": "Gagal mendapatkan kunci karena kesalahan tak terduga",
 	"failed to add node": "Gagal menambahkan node",
 	"failed to load profile: {{.error}}": "Gagal memuat profil: {{.error}}",
