@@ -17,10 +17,13 @@ endif
 CRIO_BIN_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
-	GO111MODULE=off \
+	GO111MODULE=on \
 	GOPATH="$(CRIO_BIN_GOPATH)" \
 	PATH=$(CRIO_BIN_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=$(CRIO_BIN_GOARCH)
+	GOARCH=$(CRIO_BIN_GOARCH) \
+	GOPROXY="https://proxy.golang.org,direct" \
+	GOSUMDB='sum.golang.org'\
+	GOOS=linux
 
 define CRIO_BIN_USERS
 	- -1 crio-admin -1 - - - - -
@@ -36,7 +39,7 @@ endef
 
 define CRIO_BIN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) COMMIT_NO=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) COMMIT_NO=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries TRIMPATH="-trimpath -buildvcs=false"
 endef
 
 define CRIO_BIN_INSTALL_TARGET_CMDS
