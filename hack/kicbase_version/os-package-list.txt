@@ -29,7 +29,7 @@ ii  debconf                         1.5.79ubuntu1                           all 
 ii  debianutils                     5.5-1ubuntu2                            amd64        Miscellaneous utilities specific to Debian
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.3                       amd64        GNU privacy guard - network certificate management service
-ii  distro-info-data                0.52ubuntu0.8                           all          information about the distributions' releases (data files)
+ii  distro-info-data                0.52ubuntu0.9                           all          information about the distributions' releases (data files)
 ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
 ii  docker-buildx-plugin            0.23.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
 ii  docker-ce                       5:28.1.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
@@ -37,7 +37,7 @@ ii  docker-ce-cli                   5:28.1.1-1~ubuntu.22.04~jammy           amd6
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
-ii  ethtool                         1:5.16-1ubuntu0.1                       amd64        display or change Ethernet device settings
+ii  ethtool                         1:5.16-1ubuntu0.2                       amd64        display or change Ethernet device settings
 ii  findutils                       4.8.0-1ubuntu3                          amd64        utilities for finding files--find, xargs
 ii  gcc-12-base:amd64               12.3.0-1ubuntu1~22.04                   amd64        GCC, the GNU Compiler Collection (base package)
 ii  gir1.2-glib-2.0:amd64           1.72.0-1                                amd64        Introspection data for GLib, GObject, Gio and GModule
@@ -148,8 +148,8 @@ ii  libnghttp2-14:amd64             1.43.0-1ubuntu0.2                       amd6
 ii  libnl-3-200:amd64               3.5.0-0.1                               amd64        library for dealing with netlink sockets
 ii  libnpth0:amd64                  1.6-3build2                             amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2build2                           amd64        Public client interface for NIS(YP) and NIS+
-ii  libnvidia-container-tools       1.17.5-1                                amd64        NVIDIA container runtime library (command-line tools)
-ii  libnvidia-container1:amd64      1.17.5-1                                amd64        NVIDIA container runtime library
+ii  libnvidia-container-tools       1.17.6-1                                amd64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:amd64      1.17.6-1                                amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.0-6build1                          amd64        library for loading and coordinating access to PKCS#11 modules - runtime
 ii  libpackagekit-glib2-18:amd64    1.2.5-2ubuntu3                          amd64        Library for accessing PackageKit using GLib
 ii  libpam-modules:amd64            1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules for PAM
@@ -196,7 +196,7 @@ ii  libunwind8:amd64                1.3.2-2build2.1                         amd6
 ii  libuuid1:amd64                  2.37.2-4ubuntu3.4                       amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.43.0-1ubuntu0.1                       amd64        asynchronous event notification library - runtime library
 ii  libwrap0:amd64                  7.6.q-31build2                          amd64        Wietse Venema's TCP wrappers library
-ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.6                  amd64        GNOME XML library
+ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.7                  amd64        GNOME XML library
 ii  libxmlb2:amd64                  0.3.6-2build1                           amd64        Binary XML library
 ii  libxtables12:amd64              1.8.7-1ubuntu5.2                        amd64        netfilter xtables library
 ii  libxxhash0:amd64                0.8.1-1                                 amd64        shared library for xxhash
@@ -216,11 +216,11 @@ ii  ncurses-bin                     6.3-2ubuntu0.1                          amd6
 ii  netbase                         6.3                                     all          Basic TCP/IP networking system
 ii  netcat-openbsd                  1.218-4ubuntu1                          amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
-ii  nvidia-container-toolkit        1.17.5-1                                amd64        NVIDIA Container toolkit
-ii  nvidia-container-toolkit-base   1.17.5-1                                amd64        NVIDIA Container Toolkit Base
-ii  openssh-client                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) client, for secure access to remote machines
-ii  openssh-server                  1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) server, for secure access from remote machines
-ii  openssh-sftp-server             1:8.9p1-3ubuntu0.11                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
+ii  nvidia-container-toolkit        1.17.6-1                                amd64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base   1.17.6-1                                amd64        NVIDIA Container Toolkit Base
+ii  openssh-client                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) client, for secure access to remote machines
+ii  openssh-server                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) server, for secure access from remote machines
+ii  openssh-sftp-server             1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
 ii  openssl                         3.0.2-0ubuntu1.19                       amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  packagekit                      1.2.5-2ubuntu3                          amd64        Provides a package management service
 ii  passwd                          1:4.8.1-2ubuntu2.2                      amd64        change and administer password and group data
