@@ -32,11 +32,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
+	discoveryv1ac "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/gentype"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -46,10 +49,10 @@ import (
 
 // Mock Kubernetes client getter - NOT THREAD SAFE
 type MockClientGetter struct {
-	servicesMap  map[string]typed_core.ServiceInterface
-	endpointsMap map[string]typed_core.EndpointsInterface
-	secretsMap   map[string]typed_core.SecretInterface
-	Fake         fake.FakeCoreV1
+	servicesMap     map[string]typed_core.ServiceInterface
+	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
+	secretsMap      map[string]typed_core.SecretInterface
+	Fake            fake.FakeCoreV1
 }
 
 // Force GetCoreClient to fail
@@ -60,9 +63,9 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
-		servicesMap:  m.servicesMap,
-		endpointsMap: m.endpointsMap,
-		secretsMap:   m.secretsMap}, nil
+		servicesMap:     m.servicesMap,
+		endpointSliceMap: m.endpointSliceMap,
+		secretsMap:      m.secretsMap}, nil
 }
 
 func (m *MockCoreClient) Secrets(namespace string) typed_core.SecretInterface {
@@ -92,9 +95,9 @@ func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface 
 // Mock Kubernetes client - NOT THREAD SAFE
 type MockCoreClient struct {
 	fake.FakeCoreV1
-	servicesMap  map[string]typed_core.ServiceInterface
-	endpointsMap map[string]typed_core.EndpointsInterface
-	secretsMap   map[string]typed_core.SecretInterface
+	servicesMap     map[string]typed_core.ServiceInterface
+	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
+	secretsMap      map[string]typed_core.SecretInterface
 }
 
 var secretsNamespaces = map[string]typed_core.SecretInterface{
@@ -178,71 +181,84 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 	},
 }
 
-var endpointNamespaces = map[string]typed_core.EndpointsInterface{
-	"default": defaultNamespaceEndpointInterface,
+var endpointSliceNamespaces = map[string]typed_discovery.EndpointSliceInterface{
+	"default": defaultNamespaceEndpointSliceInterface,
 }
 
-var defaultNamespaceEndpointInterface = &MockEndpointsInterface{}
+var defaultNamespaceEndpointSliceInterface = &MockEndpointSliceInterface{}
 
-func (m *MockCoreClient) Endpoints(namespace string) typed_core.EndpointsInterface {
-	return m.endpointsMap[namespace]
+func (m *MockCoreClient) DiscoveryV1() typed_discovery.DiscoveryV1Interface {
+	return &MockDiscoveryV1Interface{
+		endpointSliceMap: m.endpointSliceMap,
+	}
 }
 
-type MockEndpointsInterface struct {
-	*gentype.FakeClientWithListAndApply[*core.Endpoints, *core.EndpointsList, *corev1.EndpointsApplyConfiguration]
+type MockDiscoveryV1Interface struct {
+	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
+}
+
+func (m *MockDiscoveryV1Interface) RESTClient() interface{} {
+	return nil
+}
+
+func (m *MockDiscoveryV1Interface) EndpointSlices(namespace string) typed_discovery.EndpointSliceInterface {
+	return m.endpointSliceMap[namespace]
+}
+
+type MockEndpointSliceInterface struct {
+	*gentype.FakeClientWithListAndApply[*discoveryv1.EndpointSlice, *discoveryv1.EndpointSliceList, *discoveryv1ac.EndpointSliceApplyConfiguration]
 	fake.FakeCoreV1
-	Endpoints *core.Endpoints
+	EndpointSlice *discoveryv1.EndpointSlice
 }
 
-var endpointMap = map[string]*core.Endpoints{
-	"no-subsets": {},
+var endpointSliceMap = map[string]*discoveryv1.EndpointSlice{
+	"no-endpoints": {},
 	"not-ready": {
-		Subsets: []core.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []core.EndpointAddress{},
-				NotReadyAddresses: []core.EndpointAddress{
-					{IP: "1.1.1.1"},
-					{IP: "2.2.2.2"},
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &[]bool{false}[0],
 				},
+				Addresses: []string{"1.1.1.1", "2.2.2.2"},
 			},
 		},
 	},
 	"one-ready": {
-		Subsets: []core.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []core.EndpointAddress{
-					{IP: "1.1.1.1"},
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &[]bool{true}[0],
 				},
-				NotReadyAddresses: []core.EndpointAddress{
-					{IP: "2.2.2.2"},
+				Addresses: []string{"1.1.1.1"},
+			},
+			{
+				Conditions: discoveryv1.EndpointConditions{
+					Ready: &[]bool{false}[0],
 				},
+				Addresses: []string{"2.2.2.2"},
 			},
 		},
 	},
 	"mock-dashboard": {
-		Subsets: []core.EndpointSubset{
+		Ports: []discoveryv1.EndpointPort{
 			{
-				Ports: []core.EndpointPort{
-					{
-						Name: "port1",
-						Port: int32(11111),
-					},
-					{
-						Name: "port2",
-						Port: int32(22222),
-					},
-				},
+				Name: &[]string{"port1"}[0],
+				Port: &[]int32{11111}[0],
+			},
+			{
+				Name: &[]string{"port2"}[0],
+				Port: &[]int32{22222}[0],
 			},
 		},
 	},
 }
 
-func (e MockEndpointsInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Endpoints, error) {
-	endpoint, ok := endpointMap[name]
+func (e MockEndpointSliceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*discoveryv1.EndpointSlice, error) {
+	endpointSlice, ok := endpointSliceMap[name]
 	if !ok {
-		return nil, errors.New("Endpoint not found")
+		return nil, errors.New("EndpointSlice not found")
 	}
-	return endpoint, nil
+	return endpointSlice, nil
 }
 
 type MockServiceInterface struct {
