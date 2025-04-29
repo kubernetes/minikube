@@ -92,7 +92,7 @@ func TestMultiNode(t *testing.T) {
 // validateMultiNodeStart makes sure a 2 node cluster can start
 func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a 2 node cluster with the --nodes param
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2", "-v=8", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory=2200", "--nodes=2", "-v=5", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
@@ -117,7 +117,7 @@ func validateMultiNodeStart(ctx context.Context, t *testing.T, profile string) {
 // validateAddNodeToMultiNode uses the minikube node add command to add a node to an existing cluster
 func validateAddNodeToMultiNode(ctx context.Context, t *testing.T, profile string) {
 	// Add a node to the current cluster
-	addArgs := []string{"node", "add", "-p", profile, "-v", "3", "--alsologtostderr"}
+	addArgs := []string{"node", "add", "-p", profile, "-v=5", "--alsologtostderr"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
 		t.Fatalf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
@@ -279,7 +279,7 @@ func validateStopRunningNode(ctx context.Context, t *testing.T, profile string) 
 // validateStartNodeAfterStop tests the minikube node start command on an existing stopped node
 func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile string) {
 	// Start the node back up
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "-v=7", "--alsologtostderr"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "node", "start", ThirdNodeName, "-v=5", "--alsologtostderr"))
 	if err != nil {
 		t.Log(rr.Stderr.String())
 		t.Errorf("node start returned an error. args %q: %v", rr.Command(), err)
@@ -287,7 +287,7 @@ func validateStartNodeAfterStop(ctx context.Context, t *testing.T, profile strin
 
 	// Make sure minikube status shows 3 running hosts
 	minikubeStatus := func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=7", "--alsologtostderr"))
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-v=5", "--alsologtostderr"))
 		return err
 	}
 	if err := retry.Expo(minikubeStatus, 1*time.Second, 60*time.Second); err != nil {
@@ -323,7 +323,7 @@ func validateRestartKeepsNodes(ctx context.Context, t *testing.T, profile string
 		t.Errorf("failed to run minikube stop. args %q : %v", rr.Command(), err)
 	}
 
-	_, err = Run(t, exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"))
+	_, err = Run(t, exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=true", "-v=5", "--alsologtostderr"))
 	if err != nil {
 		t.Errorf("failed to run minikube start. args %q : %v", rr.Command(), err)
 	}
@@ -372,7 +372,7 @@ func validateStopMultiNodeCluster(ctx context.Context, t *testing.T, profile str
 // validateRestartMultiNodeCluster verifies a soft restart on a multinode cluster works
 func validateRestartMultiNodeCluster(ctx context.Context, t *testing.T, profile string) {
 	// Restart a full cluster with minikube start
-	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=8", "--alsologtostderr"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "-v=5", "--alsologtostderr"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
