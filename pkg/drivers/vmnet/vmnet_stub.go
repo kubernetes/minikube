@@ -18,6 +18,11 @@ limitations under the License.
 
 package vmnet
 
-func HelperAvailable() bool {
-	return false
+import (
+	"fmt"
+	"runtime"
+)
+
+func ValidateHelper() error {
+	return fmt.Errorf("vmnet-helper is not available on %q", runtime.GOOS)
 }

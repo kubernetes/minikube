@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/log"
@@ -57,16 +58,29 @@ type interfaceInfo struct {
 	MACAddress string `json:"vmnet_mac_address"`
 }
 
-// HelperAvailable tells if vmnet-helper executable is installed and configured
-// correctly.
-func HelperAvailable() bool {
-	version, err := exec.Command("sudo", "--non-interactive", executablePath, "--version").Output()
-	if err != nil {
-		log.Debugf("Failed to run vmnet-helper: %w", err)
-		return false
+// ValidateHelper returns an error if vmnet-helper is not installed or the
+// vmnet-helper sudoers rule does not allow running vment-helper with the
+// required options.
+func ValidateHelper() error {
+	// Is it installed?
+	if _, err := os.Stat(executablePath); err != nil {
+		return err
 	}
-	log.Debugf("Using vmnet-helper version %q", version)
-	return true
+	// Can we run it via sudo?
+	// - We need to run without a password
+	// - We need to pass file descriptor using --close-from
+	// See https://github.com/nirs/vmnet-helper/tree/main/sudoers.d
+	out, err := exec.Command("sudo", "--non-interactive", "--close-from=4", executablePath, "--version").Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			// If we could run sudo, err.Stderr include helpful info.
+			return fmt.Errorf("failed to run vmnet-helper via sudo: %s: %s", exitErr, exitErr.Stderr)
+		}
+		return fmt.Errorf("failed to run vmnet-helper with sudo: %w", err)
+	}
+	version := strings.TrimSpace(string(out))
+	log.Debugf("Validated vmnet-helper version %q", version)
+	return nil
 }
 
 // Start the vmnet-helper child process, creating the vmnet interface for the

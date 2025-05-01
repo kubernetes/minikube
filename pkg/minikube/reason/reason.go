@@ -563,4 +563,14 @@ var (
 		  minikube start{{.profile}} --driver vfkit --network nat`),
 		Style: style.SeeNoEvil,
 	}
+	NotConfiguredVmnetHelper = Kind{
+		ID:       "NOT_CONFIGURED_VMNET_HELPER",
+		ExitCode: ExProgramConfig,
+		Advice: translate.T(`vmnet-helper is not configured correctly.
+
+		Please install a vmnnet-helper sudoers rule using these instructions:
+
+		https://github.com/nirs/vmnet-helper#granting-permission-to-run-vmnet-helper`),
+		Style: style.SeeNoEvil,
+	}
 )

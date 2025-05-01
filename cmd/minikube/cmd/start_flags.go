@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -519,8 +520,12 @@ func validateVfkitNetwork(n string) string {
 		// always available
 	case "vmnet-shared":
 		// "vment-shared" provides access between machines, with lower performance compared to "nat".
-		if !vmnet.HelperAvailable() {
-			exit.Message(reason.NotFoundVmnetHelper, "\n\n")
+		if err := vmnet.ValidateHelper(); err != nil {
+			klog.Errorf("Failed to validate %q network: %s", n, err)
+			if errors.Is(err, os.ErrNotExist) {
+				exit.Message(reason.NotFoundVmnetHelper, "\n\n")
+			}
+			exit.Message(reason.NotConfiguredVmnetHelper, "\n\n")
 		}
 	case "":
 		// Default to nat since it is always available and provides the best performance.
