@@ -30,6 +30,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -197,7 +198,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(noKubernetes, false, "If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)")
 	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	startCmd.Flags().Bool(forceSystemd, false, "If set, force the container runtime to use systemd as cgroup manager. Defaults to false.")
-	startCmd.Flags().String(network, "", "network to run minikube with. Now it is used by docker/podman and KVM drivers. If left empty, minikube will create a new network.")
+	startCmd.Flags().String(network, "", "network to run minikube with. Used by docker/podman, qemu, kvm, and vfkit drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().String(trace, "", "Send trace events. Options include: [gcp]")
 	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)")
@@ -469,9 +470,15 @@ func getCNIConfig(cmd *cobra.Command) string {
 
 func getNetwork(driverName string) string {
 	n := viper.GetString(network)
-	if !driver.IsQEMU(driverName) {
-		return n
+	if driver.IsQEMU(driverName) {
+		return validateQemuNetwork(n)
+	} else if driver.IsVFKit(driverName) {
+		return validateVfkitNetwork(n)
 	}
+	return n
+}
+
+func validateQemuNetwork(n string) string {
 	switch n {
 	case "socket_vmnet":
 		if runtime.GOOS != "darwin" {
@@ -503,6 +510,27 @@ func getNetwork(driverName string) string {
 	return n
 }
 
+func validateVfkitNetwork(n string) string {
+	if runtime.GOOS != "darwin" {
+		exit.Message(reason.Usage, "The vfkit driver is only supported on macOS")
+	}
+	switch n {
+	case "nat":
+		// always available
+	case "vmnet-shared":
+		// "vment-shared" provides access between machines, with lower performance compared to "nat".
+		if !vmnet.HelperAvailable() {
+			exit.Message(reason.NotFoundVmnetHelper, "\n\n")
+		}
+	case "":
+		// Default to nat since it is always available and provides the best performance.
+		n = "nat"
+	default:
+		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
+	}
+	return n
+}
+
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
 func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
 	var cc config.ClusterConfig
@@ -513,8 +541,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("With --network-plugin=cni, you will need to provide your own CNI. See --cni flag as a user-friendly alternative")
 	}
 
-	if !(driver.IsKIC(drvName) || driver.IsKVM(drvName) || driver.IsQEMU(drvName)) && viper.GetString(network) != "" {
-		out.WarningT("--network flag is only valid with the docker/podman, KVM and Qemu drivers, it will be ignored")
+	if viper.GetString(network) != "" && !driver.SupportsNetworkFlag(drvName) {
+		out.WarningT("--network flag is only valid with the docker/podman, qemu, kvm, and vfkit drivers, it will be ignored")
 	}
 
 	validateHANodeCount(cmd)
