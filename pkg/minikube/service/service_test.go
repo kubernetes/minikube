@@ -39,8 +39,9 @@ import (
 	discoveryv1ac "k8s.io/client-go/applyconfigurations/discovery/v1"
 	"k8s.io/client-go/gentype"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
-	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	typed_discovery "k8s.io/client-go/kubernetes/typed/discovery/v1"
+	"k8s.io/client-go/rest"
 	testing_fake "k8s.io/client-go/testing"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -49,10 +50,9 @@ import (
 
 // Mock Kubernetes client getter - NOT THREAD SAFE
 type MockClientGetter struct {
-	servicesMap     map[string]typed_core.ServiceInterface
+	servicesMap      map[string]typed_core.ServiceInterface
 	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
-	secretsMap      map[string]typed_core.SecretInterface
-	Fake            fake.FakeCoreV1
+	secretsMap       map[string]typed_core.SecretInterface
 }
 
 // Force GetCoreClient to fail
@@ -63,129 +63,30 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
-		servicesMap:     m.servicesMap,
+		servicesMap:      m.servicesMap,
 		endpointSliceMap: m.endpointSliceMap,
-		secretsMap:      m.secretsMap}, nil
-}
-
-func (m *MockCoreClient) Secrets(namespace string) typed_core.SecretInterface {
-	return &MockSecretInterface{
-		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration](
-			fake.FakeCoreV1{Fake: &testing_fake.Fake{}}.Fake,
-			namespace,
-			core.SchemeGroupVersion.WithResource("secrets"),
-			core.SchemeGroupVersion.WithKind("Secret"),
-			func() *core.Secret { return &core.Secret{} },
-			func() *core.SecretList { return &core.SecretList{} },
-			func(dst, src *core.SecretList) { dst.ListMeta = src.ListMeta },
-			func(list *core.SecretList) []*core.Secret { return gentype.ToPointerSlice(list.Items) },
-			func(list *core.SecretList, items []*core.Secret) { list.Items = gentype.FromPointerSlice(items) },
-		),
-		Fake: fake.FakeCoreV1{},
-		SecretsList: &core.SecretList{
-			Items: []core.Secret{},
-		},
-	}
-}
-
-func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
-	return m.servicesMap[namespace]
+		secretsMap:       m.secretsMap}, nil
 }
 
 // Mock Kubernetes client - NOT THREAD SAFE
 type MockCoreClient struct {
 	fake.FakeCoreV1
-	servicesMap     map[string]typed_core.ServiceInterface
+	servicesMap      map[string]typed_core.ServiceInterface
 	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
-	secretsMap      map[string]typed_core.SecretInterface
+	secretsMap       map[string]typed_core.SecretInterface
 }
 
-var secretsNamespaces = map[string]typed_core.SecretInterface{
-	"default": defaultNamespaceSecretsInterface,
+func (m *MockCoreClient) Secrets(namespace string) typed_core.SecretInterface {
+	return m.secretsMap[namespace]
 }
 
-var defaultNamespaceSecretsInterface = &MockSecretInterface{
-	SecretsList: &core.SecretList{
-		Items: []core.Secret{
-			{},
-		},
-	},
+func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
+	svc := m.servicesMap[namespace]
+	if mockSvc, ok := svc.(*MockServiceInterface); ok && mockSvc.Fake == nil {
+		mockSvc.Fake = &testing_fake.Fake{}
+	}
+	return svc
 }
-
-var serviceNamespaces = map[string]typed_core.ServiceInterface{
-	"default": defaultNamespaceServiceInterface,
-}
-
-var serviceNamespaceOther = map[string]typed_core.ServiceInterface{
-	"default": nondefaultNamespaceServiceInterface,
-}
-
-var nondefaultNamespaceServiceInterface = &MockServiceInterface{
-	ServiceList: &core.ServiceList{
-		Items: []core.Service{
-			{
-				ObjectMeta: meta.ObjectMeta{
-					Name:      "non-namespace-dashboard-no-ports",
-					Namespace: "cannot_be_found_namespace",
-					Labels:    map[string]string{"mock": "mock"},
-				},
-				Spec: core.ServiceSpec{
-					Ports: []core.ServicePort{},
-				},
-			},
-		},
-	},
-}
-
-var defaultNamespaceServiceInterface = &MockServiceInterface{
-	ServiceList: &core.ServiceList{
-		Items: []core.Service{
-			{
-				ObjectMeta: meta.ObjectMeta{
-					Name:      "mock-dashboard",
-					Namespace: "default",
-					Labels:    map[string]string{"mock": "mock"},
-				},
-				Spec: core.ServiceSpec{
-					Ports: []core.ServicePort{
-						{
-							Name:     "port1",
-							NodePort: int32(1111),
-							Port:     int32(11111),
-							TargetPort: intstr.IntOrString{
-								IntVal: int32(11111),
-							},
-						},
-						{
-							Name:     "port2",
-							NodePort: int32(2222),
-							Port:     int32(22222),
-							TargetPort: intstr.IntOrString{
-								IntVal: int32(22222),
-							},
-						},
-					},
-				},
-			},
-			{
-				ObjectMeta: meta.ObjectMeta{
-					Name:      "mock-dashboard-no-ports",
-					Namespace: "default",
-					Labels:    map[string]string{"mock": "mock"},
-				},
-				Spec: core.ServiceSpec{
-					Ports: []core.ServicePort{},
-				},
-			},
-		},
-	},
-}
-
-var endpointSliceNamespaces = map[string]typed_discovery.EndpointSliceInterface{
-	"default": defaultNamespaceEndpointSliceInterface,
-}
-
-var defaultNamespaceEndpointSliceInterface = &MockEndpointSliceInterface{}
 
 func (m *MockCoreClient) DiscoveryV1() typed_discovery.DiscoveryV1Interface {
 	return &MockDiscoveryV1Interface{
@@ -197,7 +98,7 @@ type MockDiscoveryV1Interface struct {
 	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
 }
 
-func (m *MockDiscoveryV1Interface) RESTClient() interface{} {
+func (m *MockDiscoveryV1Interface) RESTClient() rest.Interface {
 	return nil
 }
 
@@ -207,23 +108,168 @@ func (m *MockDiscoveryV1Interface) EndpointSlices(namespace string) typed_discov
 
 type MockEndpointSliceInterface struct {
 	*gentype.FakeClientWithListAndApply[*discoveryv1.EndpointSlice, *discoveryv1.EndpointSliceList, *discoveryv1ac.EndpointSliceApplyConfiguration]
-	fake.FakeCoreV1
+	Fake          *testing_fake.Fake
 	EndpointSlice *discoveryv1.EndpointSlice
 }
 
-var endpointSliceMap = map[string]*discoveryv1.EndpointSlice{
-	"no-endpoints": {},
-	"not-ready": {
-		Endpoints: []discoveryv1.Endpoint{
-			{
-				Conditions: discoveryv1.EndpointConditions{
-					Ready: &[]bool{false}[0],
+func (s *MockServiceInterface) ProxyGet(scheme, name, port, path string, params map[string]string) rest.ResponseWrapper {
+	return s.Fake.InvokesProxy(
+		testing_fake.NewProxyGetAction(core.SchemeGroupVersion.WithResource("services"), s.namespace, scheme, name, port, path, params),
+	)
+}
+
+type MockServiceInterface struct {
+	*gentype.FakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration]
+	Fake        *testing_fake.Fake
+	ServiceList *core.ServiceList
+	namespace   string
+}
+
+type MockSecretInterface struct {
+	*gentype.FakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration]
+	Fake        *testing_fake.Fake
+	SecretsList *core.SecretList
+}
+
+var secretsNamespaces = map[string]typed_core.SecretInterface{
+	"default": &MockSecretInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration](
+			&testing_fake.Fake{},
+			"default",
+			core.SchemeGroupVersion.WithResource("secrets"),
+			core.SchemeGroupVersion.WithKind("Secret"),
+			func() *core.Secret { return &core.Secret{} },
+			func() *core.SecretList { return &core.SecretList{} },
+			func(dst, src *core.SecretList) { dst.ListMeta = src.ListMeta },
+			func(list *core.SecretList) []*core.Secret { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.SecretList, items []*core.Secret) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake: &testing_fake.Fake{},
+		SecretsList: &core.SecretList{
+			Items: []core.Secret{},
+		},
+	},
+}
+
+var serviceNamespaces = map[string]typed_core.ServiceInterface{
+	"default": &MockServiceInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration](
+			&testing_fake.Fake{},
+			"default",
+			core.SchemeGroupVersion.WithResource("services"),
+			core.SchemeGroupVersion.WithKind("Service"),
+			func() *core.Service { return &core.Service{} },
+			func() *core.ServiceList { return &core.ServiceList{} },
+			func(dst, src *core.ServiceList) { dst.ListMeta = src.ListMeta },
+			func(list *core.ServiceList) []*core.Service { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.ServiceList, items []*core.Service) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake:      &testing_fake.Fake{},
+		namespace: "default",
+		ServiceList: &core.ServiceList{
+			Items: []core.Service{
+
+				{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "mock-dashboard",
+						Namespace: "default",
+						Labels:    map[string]string{"mock": "mock"},
+					},
+					Spec: core.ServiceSpec{
+						Ports: []core.ServicePort{
+							{
+								Name:     "port1",
+								NodePort: int32(1111),
+								Port:     int32(11111),
+								TargetPort: intstr.IntOrString{
+									IntVal: int32(11111),
+								},
+							},
+							{
+								Name:     "port2",
+								NodePort: int32(2222),
+								Port:     int32(22222),
+								TargetPort: intstr.IntOrString{
+									IntVal: int32(22222),
+								},
+							},
+						},
+					},
 				},
-				Addresses: []string{"1.1.1.1", "2.2.2.2"},
+				{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "mock-dashboard-no-ports",
+						Namespace: "default",
+						Labels:    map[string]string{"mock": "mock"},
+					},
+					Spec: core.ServiceSpec{
+						Ports: []core.ServicePort{},
+					},
+				},
 			},
 		},
 	},
-	"one-ready": {
+}
+
+var serviceNamespaceOther = map[string]typed_core.ServiceInterface{
+	"default": &MockServiceInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration](
+			&testing_fake.Fake{},
+			"default",
+			core.SchemeGroupVersion.WithResource("services"),
+			core.SchemeGroupVersion.WithKind("Service"),
+			func() *core.Service { return &core.Service{} },
+			func() *core.ServiceList { return &core.ServiceList{} },
+			func(dst, src *core.ServiceList) { dst.ListMeta = src.ListMeta },
+			func(list *core.ServiceList) []*core.Service { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.ServiceList, items []*core.Service) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake:      &testing_fake.Fake{},
+		namespace: "default",
+		ServiceList: &core.ServiceList{
+			Items: []core.Service{
+				{
+					ObjectMeta: meta.ObjectMeta{
+						Name:      "non-namespace-dashboard-no-ports",
+						Namespace: "cannot_be_found_namespace",
+						Labels:    map[string]string{"mock": "mock"},
+					},
+					Spec: core.ServiceSpec{
+						Ports: []core.ServicePort{},
+					},
+				},
+			},
+		},
+	},
+}
+
+var endpointSliceNamespaces = map[string]typed_discovery.EndpointSliceInterface{
+	"default": &MockEndpointSliceInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*discoveryv1.EndpointSlice, *discoveryv1.EndpointSliceList, *discoveryv1ac.EndpointSliceApplyConfiguration](
+			&testing_fake.Fake{},
+			"default",
+			discoveryv1.SchemeGroupVersion.WithResource("endpointslices"),
+			discoveryv1.SchemeGroupVersion.WithKind("EndpointSlice"),
+			func() *discoveryv1.EndpointSlice { return &discoveryv1.EndpointSlice{} },
+			func() *discoveryv1.EndpointSliceList { return &discoveryv1.EndpointSliceList{} },
+			func(dst, src *discoveryv1.EndpointSliceList) { dst.ListMeta = src.ListMeta },
+			func(list *discoveryv1.EndpointSliceList) []*discoveryv1.EndpointSlice {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *discoveryv1.EndpointSliceList, items []*discoveryv1.EndpointSlice) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		Fake: &testing_fake.Fake{},
+	},
+}
+
+var endpointSliceMap = map[string]*discoveryv1.EndpointSlice{
+	"mock-dashboard": {
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "mock-dashboard",
+			Namespace: "default",
+		},
 		Endpoints: []discoveryv1.Endpoint{
 			{
 				Conditions: discoveryv1.EndpointConditions{
@@ -231,15 +277,7 @@ var endpointSliceMap = map[string]*discoveryv1.EndpointSlice{
 				},
 				Addresses: []string{"1.1.1.1"},
 			},
-			{
-				Conditions: discoveryv1.EndpointConditions{
-					Ready: &[]bool{false}[0],
-				},
-				Addresses: []string{"2.2.2.2"},
-			},
 		},
-	},
-	"mock-dashboard": {
 		Ports: []discoveryv1.EndpointPort{
 			{
 				Name: &[]string{"port1"}[0],
@@ -251,9 +289,19 @@ var endpointSliceMap = map[string]*discoveryv1.EndpointSlice{
 			},
 		},
 	},
+	"mock-dashboard-no-ports": {
+		ObjectMeta: meta.ObjectMeta{
+			Name:      "mock-dashboard-no-ports",
+			Namespace: "default",
+		},
+	},
 }
 
-func (e MockEndpointSliceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*discoveryv1.EndpointSlice, error) {
+func (e *MockEndpointSliceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*discoveryv1.EndpointSlice, error) {
+	if e.Fake == nil {
+		e.Fake = &testing_fake.Fake{}
+	}
+
 	endpointSlice, ok := endpointSliceMap[name]
 	if !ok {
 		return nil, errors.New("EndpointSlice not found")
@@ -261,20 +309,7 @@ func (e MockEndpointSliceInterface) Get(_ context.Context, name string, _ meta.G
 	return endpointSlice, nil
 }
 
-type MockServiceInterface struct {
-	*gentype.FakeClientWithListAndApply[*core.Service, *core.ServiceList, *corev1.ServiceApplyConfiguration]
-	fake.FakeCoreV1
-	typed_core.ServiceExpansion
-	ServiceList *core.ServiceList
-}
-
-type MockSecretInterface struct {
-	*gentype.FakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration]
-	Fake        fake.FakeCoreV1
-	SecretsList *core.SecretList
-}
-
-func (s MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
+func (s *MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*core.ServiceList, error) {
 	serviceList := &core.ServiceList{
 		Items: []core.Service{},
 	}
@@ -293,7 +328,7 @@ func (s MockServiceInterface) List(_ context.Context, opts meta.ListOptions) (*c
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
+func (s *MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
@@ -303,9 +338,39 @@ func (s MockServiceInterface) Get(_ context.Context, name string, _ meta.GetOpti
 	return nil, errors.New("Service not found")
 }
 
-func (s MockServiceInterface) Create(_ context.Context, service *core.Service, _ meta.CreateOptions) (*core.Service, error) {
+func (s *MockServiceInterface) Create(_ context.Context, service *core.Service, _ meta.CreateOptions) (*core.Service, error) {
 	s.ServiceList.Items = append(s.ServiceList.Items, *service)
 	return service, nil
+}
+
+func initializeMockObjects() {
+	// Initialize Fake field in serviceNamespaces
+	for _, svc := range serviceNamespaces {
+		if mockSvc, ok := svc.(*MockServiceInterface); ok && mockSvc.Fake == nil {
+			mockSvc.Fake = &testing_fake.Fake{}
+		}
+	}
+
+	// Initialize Fake field in serviceNamespaceOther
+	for _, svc := range serviceNamespaceOther {
+		if mockSvc, ok := svc.(*MockServiceInterface); ok && mockSvc.Fake == nil {
+			mockSvc.Fake = &testing_fake.Fake{}
+		}
+	}
+
+	// Initialize Fake field in endpointSliceNamespaces
+	for _, es := range endpointSliceNamespaces {
+		if mockES, ok := es.(*MockEndpointSliceInterface); ok && mockES.Fake == nil {
+			mockES.Fake = &testing_fake.Fake{}
+		}
+	}
+
+	// Initialize Fake field in secretsNamespaces
+	for _, secret := range secretsNamespaces {
+		if mockSecret, ok := secret.(*MockSecretInterface); ok && mockSecret.Fake == nil {
+			mockSecret.Fake = &testing_fake.Fake{}
+		}
+	}
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
@@ -333,11 +398,17 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 }
 
 func TestPrintURLsForService(t *testing.T) {
+	// Initialize all mock objects before the test
+	initializeMockObjects()
+
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
+
 	client := &MockCoreClient{
-		servicesMap:  serviceNamespaces,
-		endpointsMap: endpointNamespaces,
+		FakeCoreV1:       fake.FakeCoreV1{Fake: &testing_fake.Fake{}},
+		servicesMap:      serviceNamespaces,
+		endpointSliceMap: endpointSliceNamespaces,
 	}
+
 	var tests = []struct {
 		description    string
 		serviceName    string
@@ -398,7 +469,6 @@ func TestPrintURLsForService(t *testing.T) {
 }
 
 func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
-
 	var tests = []struct {
 		description                     string
 		bareURLString                   string
@@ -455,6 +525,9 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 }
 
 func TestGetServiceURLs(t *testing.T) {
+	// Initialize all mock objects before the test
+	initializeMockObjects()
+
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
@@ -510,8 +583,8 @@ func TestGetServiceURLs(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
 			}
 			urls, err := GetServiceURLs(test.api, "minikube", test.namespace, defaultTemplate)
 			if err != nil && !test.err {
@@ -528,6 +601,9 @@ func TestGetServiceURLs(t *testing.T) {
 }
 
 func TestGetServiceURLsForService(t *testing.T) {
+	// Initialize all mock objects before the test
+	initializeMockObjects()
+
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
@@ -578,8 +654,8 @@ func TestGetServiceURLsForService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
 			}
 			svcURL, err := GetServiceURLsForService(test.api, "minikube", test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
@@ -715,9 +791,9 @@ func TestGetServiceListByLabel(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
-				secretsMap:   secretsNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
+				secretsMap:       secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
 			svcs, err := GetServiceListByLabel("minikube", test.ns, test.name, test.label)
@@ -765,9 +841,9 @@ func TestCheckService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
-				secretsMap:   secretsNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
+				secretsMap:       secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
 			err := CheckService("minikube", test.ns, test.name)
@@ -804,9 +880,9 @@ func TestDeleteSecret(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
-				secretsMap:   secretsNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
+				secretsMap:       secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
 			err := DeleteSecret("minikube", test.ns, test.name)
@@ -843,9 +919,9 @@ func TestCreateSecret(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
-				secretsMap:   secretsNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
+				secretsMap:       secretsNamespaces,
 			}
 			getCoreClientFail = test.failedGetClient
 			err := CreateSecret("minikube", test.ns, test.name, map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"})
@@ -860,6 +936,9 @@ func TestCreateSecret(t *testing.T) {
 }
 
 func TestWaitAndMaybeOpenService(t *testing.T) {
+	// Initialize all mock objects before the test
+	initializeMockObjects()
+
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
@@ -882,15 +961,6 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 		https       bool
 		err         bool
 	}{
-		/*	{
-			description: "no host",
-			api: &tests.mockapi{
-				fakestore: tests.fakestore{
-					hosts: make(map[string]*host.host),
-				},
-			},
-			err: true,
-		}, */
 		{
 			description: "correctly return serviceURLs, https, no url mode",
 			namespace:   "default",
@@ -953,15 +1023,18 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaces,
-				endpointsMap: endpointNamespaces,
+				servicesMap:      serviceNamespaces,
+				endpointSliceMap: endpointSliceNamespaces,
 			}
 
 			go func() {
-				// wait for the delayed mock service to be created
 				time.Sleep(2 * time.Second)
-
-				_, _ = serviceNamespaces[test.namespace].Create(context.Background(), &core.Service{
+				// Make sure the fake field is initialized for the service interface
+				svcInterface := serviceNamespaces[test.namespace]
+				if mockSvc, ok := svcInterface.(*MockServiceInterface); ok && mockSvc.Fake == nil {
+					mockSvc.Fake = &testing_fake.Fake{}
+				}
+				_, _ = svcInterface.Create(context.Background(), &core.Service{
 					ObjectMeta: meta.ObjectMeta{
 						Name:      "mock-dashboard-delayed",
 						Namespace: "default",
@@ -992,24 +1065,22 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			}
 
 			if test.urlMode {
-				// check the size of the url slices
 				if len(urlList) != len(test.expected) {
 					t.Fatalf("WaitForService returned [%d] urls while expected is [%d] url", len(urlList), len(test.expected))
 				}
-
-				// check content of the expected url
 				for i, v := range test.expected {
 					if v != urlList[i] {
 						t.Fatalf("WaitForService returned [%s] urls while expected is [%s] url", urlList[i], v)
 					}
 				}
 			}
-
 		})
 	}
 }
 
 func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
+	initializeMockObjects()
+
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
@@ -1045,8 +1116,8 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
-				servicesMap:  serviceNamespaceOther,
-				endpointsMap: endpointNamespaces,
+				servicesMap:      serviceNamespaceOther,
+				endpointSliceMap: endpointSliceNamespaces,
 			}
 			_, err := WaitForService(test.api, "minikube", test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
 			if test.err && err == nil {
@@ -1055,7 +1126,6 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 			if !test.err && err != nil {
 				t.Fatalf("WaitForService not expected to fail but got err: %v", err)
 			}
-
 		})
 	}
 }
