@@ -48,7 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-// Mock Kubernetes client getter - NOT THREAD SAFE
+// MockClientGetter is a mock Kubernetes client getter - NOT THREAD SAFE
 type MockClientGetter struct {
 	servicesMap      map[string]typed_core.ServiceInterface
 	endpointSliceMap map[string]typed_discovery.EndpointSliceInterface
@@ -63,9 +63,11 @@ func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, er
 		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
+		FakeCoreV1:       fake.FakeCoreV1{Fake: &testing_fake.Fake{}},
 		servicesMap:      m.servicesMap,
 		endpointSliceMap: m.endpointSliceMap,
-		secretsMap:       m.secretsMap}, nil
+		secretsMap:       m.secretsMap,
+	}, nil
 }
 
 // Mock Kubernetes client - NOT THREAD SAFE
@@ -136,6 +138,23 @@ var secretsNamespaces = map[string]typed_core.SecretInterface{
 		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration](
 			&testing_fake.Fake{},
 			"default",
+			core.SchemeGroupVersion.WithResource("secrets"),
+			core.SchemeGroupVersion.WithKind("Secret"),
+			func() *core.Secret { return &core.Secret{} },
+			func() *core.SecretList { return &core.SecretList{} },
+			func(dst, src *core.SecretList) { dst.ListMeta = src.ListMeta },
+			func(list *core.SecretList) []*core.Secret { return gentype.ToPointerSlice(list.Items) },
+			func(list *core.SecretList, items []*core.Secret) { list.Items = gentype.FromPointerSlice(items) },
+		),
+		Fake: &testing_fake.Fake{},
+		SecretsList: &core.SecretList{
+			Items: []core.Secret{},
+		},
+	},
+	"foo": &MockSecretInterface{
+		FakeClientWithListAndApply: gentype.NewFakeClientWithListAndApply[*core.Secret, *core.SecretList, *corev1.SecretApplyConfiguration](
+			&testing_fake.Fake{},
+			"foo",
 			core.SchemeGroupVersion.WithResource("secrets"),
 			core.SchemeGroupVersion.WithKind("Secret"),
 			func() *core.Secret { return &core.Secret{} },
