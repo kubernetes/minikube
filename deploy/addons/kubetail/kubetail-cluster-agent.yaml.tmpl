@@ -5,11 +5,11 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-agent"
 data:
-  config.yaml: |    
+  config.yaml: |
     cluster-agent:
       addr: :50051
       logging:
@@ -29,9 +29,82 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-agent"
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cluster-api
+  labels:    
+    app.kubernetes.io/name: "kubetail"
+    app.kubernetes.io/version: "0.10.1"
+    app.kubernetes.io/instance: "kubetail"
+    app.kubernetes.io/component: "cluster-api"
+  annotations:    
+rules:
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cluster-api
+  labels:    
+    app.kubernetes.io/name: "kubetail"
+    app.kubernetes.io/version: "0.10.1"
+    app.kubernetes.io/instance: "kubetail"
+    app.kubernetes.io/component: "cluster-api"
+  annotations:    
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-cluster-api
+subjects:
+- kind: ServiceAccount
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kubetail-system
+  name: kubetail-cluster-api
+  labels:    
+    app.kubernetes.io/name: "kubetail"
+    app.kubernetes.io/version: "0.10.1"
+    app.kubernetes.io/instance: "kubetail"
+    app.kubernetes.io/component: "cluster-api"
+  annotations:    
+rules:
+- apiGroups: [discovery.k8s.io]
+  resources: [endpointslices]
+  verbs: [list, watch]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kubetail-system
+  name: kubetail-cluster-api
+  labels:    
+    app.kubernetes.io/name: "kubetail"
+    app.kubernetes.io/version: "0.10.1"
+    app.kubernetes.io/instance: "kubetail"
+    app.kubernetes.io/component: "cluster-api"
+  annotations:    
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubetail-cluster-api
+subjects:
+- kind: ServiceAccount
+  name: kubetail-cluster-api
+  namespace: kubetail-system
 ---
 kind: DaemonSet
 apiVersion: apps/v1
@@ -40,7 +113,7 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-agent"
 spec:
@@ -53,7 +126,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: "kubetail"
-        app.kubernetes.io/version: "0.9.2"
+        app.kubernetes.io/version: "0.10.1"
         app.kubernetes.io/instance: "kubetail"
         app.kubernetes.io/component: "cluster-agent"
     spec:
@@ -130,7 +203,7 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-agent"
 spec:
@@ -147,7 +220,7 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-agent"
 spec:

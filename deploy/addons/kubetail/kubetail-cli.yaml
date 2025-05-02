@@ -5,7 +5,7 @@ metadata:
   namespace: kubetail-system
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cli"
 ---
@@ -15,10 +15,16 @@ metadata:
   name: kubetail-cli
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cli"
 rules:
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
+  verbs: [get, list, watch]
 - apiGroups: [""]
   resources: [pods/log]
   verbs: [list, watch]
@@ -29,7 +35,7 @@ metadata:
   name: kubetail-cli
   labels:
     app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.9.2"
+    app.kubernetes.io/version: "0.10.1"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cli"
 roleRef:
