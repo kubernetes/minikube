@@ -4,20 +4,24 @@ metadata:
   name: kubetail-cli
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cli"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-cli
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cli"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
 rules:
 - apiGroups: [""]
   resources: [nodes]
@@ -34,10 +38,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-cli
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cli"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

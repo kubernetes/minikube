@@ -4,10 +4,12 @@ metadata:
   name: kubetail-dashboard
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 data:
   config.yaml: |
     dashboard:
@@ -60,20 +62,24 @@ metadata:
   name: kubetail-dashboard
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-dashboard
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 rules:
 - apiGroups: [""]
   resources: [namespaces, nodes]
@@ -87,10 +93,12 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kubetail-dashboard
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -106,11 +114,12 @@ metadata:
   namespace: kubetail-system
   name: kubetail-dashboard
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
-  annotations:    
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 rules:
 - apiGroups: [discovery.k8s.io]
   resources: [endpointslices]
@@ -122,10 +131,12 @@ metadata:
   namespace: kubetail-system
   name: kubetail-dashboard
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -141,33 +152,35 @@ metadata:
   name: kubetail-dashboard
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 spec:
   replicas: 1
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app.kubernetes.io/name: "kubetail"
-      app.kubernetes.io/instance: "kubetail"
-      app.kubernetes.io/component: "dashboard"
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: dashboard
   strategy:
     type: RollingUpdate
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: "kubetail"
+        app.kubernetes.io/name: kubetail
         app.kubernetes.io/version: "0.10.1"
-        app.kubernetes.io/instance: "kubetail"
-        app.kubernetes.io/component: "dashboard"
+        app.kubernetes.io/instance: kubetail
+        app.kubernetes.io/component: dashboard
     spec:
       automountServiceAccountToken: true
       serviceAccountName: kubetail-dashboard
       containers:
       - name: kubetail-dashboard
-        image: {{.CustomRegistries.Kubetail  | default .ImageRepository | default .Registries.Kubetail }}{{.Images.KubetailDashboard}}
+        image: {{.CustomRegistries.Kubetail | default .ImageRepository | default .Registries.Kubetail }}{{.Images.KubetailDashboard}}
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -221,16 +234,18 @@ metadata:
   name: kubetail-dashboard
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
 spec:
   type: ClusterIP
   selector:
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "dashboard"
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: dashboard
   ports:
   - name: http
     protocol: TCP

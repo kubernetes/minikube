@@ -4,10 +4,12 @@ metadata:
   name: kubetail-cluster-agent
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 data:
   config.yaml: |
     cluster-agent:
@@ -28,83 +30,12 @@ metadata:
   name: kubetail-cluster-agent
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-cluster-api
-  labels:    
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-api"
-  annotations:    
-rules:
-- apiGroups: [""]
-  resources: [nodes]
-  verbs: [get, list, watch]
-- apiGroups: ["", apps, batch]
-  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
-  verbs: [get, list, watch]
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: kubetail-cluster-api
-  labels:    
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-api"
-  annotations:    
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubetail-cluster-api
-subjects:
-- kind: ServiceAccount
-  name: kubetail-cluster-api
-  namespace: kubetail-system
----
-kind: Role
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  namespace: kubetail-system
-  name: kubetail-cluster-api
-  labels:    
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-api"
-  annotations:    
-rules:
-- apiGroups: [discovery.k8s.io]
-  resources: [endpointslices]
-  verbs: [list, watch]
----
-kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  namespace: kubetail-system
-  name: kubetail-cluster-api
-  labels:    
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-api"
-  annotations:    
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: kubetail-cluster-api
-subjects:
-- kind: ServiceAccount
-  name: kubetail-cluster-api
-  namespace: kubetail-system
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 ---
 kind: DaemonSet
 apiVersion: apps/v1
@@ -112,23 +43,25 @@ metadata:
   name: kubetail-cluster-agent
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: "kubetail"
-      app.kubernetes.io/instance: "kubetail"
-      app.kubernetes.io/component: "cluster-agent"
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: cluster-agent
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: "kubetail"
+        app.kubernetes.io/name: kubetail
         app.kubernetes.io/version: "0.10.1"
-        app.kubernetes.io/instance: "kubetail"
-        app.kubernetes.io/component: "cluster-agent"
+        app.kubernetes.io/instance: kubetail
+        app.kubernetes.io/component: cluster-agent
     spec:
       automountServiceAccountToken: true
       serviceAccountName: kubetail-cluster-agent
@@ -202,16 +135,18 @@ metadata:
   name: kubetail-cluster-agent
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 spec:
   clusterIP: None
   selector:
-    app.kubernetes.io/name: "kubetail"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 ---
 kind: NetworkPolicy
 apiVersion: networking.k8s.io/v1
@@ -219,20 +154,22 @@ metadata:
   name: kubetail-cluster-agent
   namespace: kubetail-system
   labels:
-    app.kubernetes.io/name: "kubetail"
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
     app.kubernetes.io/version: "0.10.1"
-    app.kubernetes.io/instance: "kubetail"
-    app.kubernetes.io/component: "cluster-agent"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: "kubetail"
-      app.kubernetes.io/instance: "kubetail"
-      app.kubernetes.io/component: "cluster-agent"
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: cluster-agent
   ingress:
   - from:
     - podSelector:
         matchLabels:
-          app.kubernetes.io/name: "kubetail"
-          app.kubernetes.io/instance: "kubetail"
-          app.kubernetes.io/component: "cluster-api"
+          app.kubernetes.io/name: kubetail
+          app.kubernetes.io/instance: kubetail
+          app.kubernetes.io/component: cluster-api
