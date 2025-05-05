@@ -20,7 +20,7 @@ However, there is a global flag `--user` that will set the user who ran the comm
 ## What does the flag do?
 
 Assuming the OS user is `johndoe`, running `minikube start` will add the following to the audit log:
-```
+```text
 |---------------|--------------------------|-----------------------------|--------------|----------------|-------------------------------|-------------------------------|
 |    Command    |          Args            |           Profile           |     User     |    Version     |          Start Time           |           End Time            |
 |---------------|--------------------------|-----------------------------|--------------|----------------|-------------------------------|-------------------------------|
@@ -30,7 +30,7 @@ Assuming the OS user is `johndoe`, running `minikube start` will add the followi
 As you can see, minikube pulled the OS user and listed them as the user for the command.
 
 Running the same command with `--user=mary` appended to the command will add the following to the audit log:
-```
+```text
 |---------------|--------------------------|-----------------------------|--------------|----------------|-------------------------------|-------------------------------|
 |    Command    |          Args            |           Profile           |     User     |    Version     |          Start Time           |           End Time            |
 |---------------|--------------------------|-----------------------------|--------------|----------------|-------------------------------|-------------------------------|
@@ -49,7 +49,7 @@ Here you can see that passing `--user=mary` overwrote the OS user with `mary` as
 If you are using minikube in a script or plugin it is recommended to add `--user=your_script_name` to all operations.
 
 Example:
-```
+```shell
 minikube start --user=plugin_name
 minikube profile list --user=plugin_name
 minikube stop --user=plugin_name
