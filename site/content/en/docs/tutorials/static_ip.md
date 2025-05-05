@@ -29,7 +29,7 @@ Use the `--static-ip` flag on `minikube start` to set the static IP.
 
 **Note:** You cannot add a static IP to an existing cluster, you have to delete and recreate the cluster with the flag.
 
-```
+```shell
 $ minikube start --driver docker --static-ip 192.168.200.200
 😄  minikube v1.28.0 on Darwin 13.1 (arm64)
 ✨  Using the docker driver based on user configuration
