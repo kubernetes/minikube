@@ -26,13 +26,13 @@ $ minikube start -n 2
 
 - Enable `storage-provisioner-rancher` addon:
 
-```
+```shell
 $ minikube addons enable storage-provisioner-rancher
 ```
 
 - You should be able to see Pod in the `local-path-storage` namespace:
 
-```
+```shell
 $ kubectl get pods -n local-path-storage
 NAME                                     READY   STATUS    RESTARTS   AGE
 local-path-provisioner-7f58b4649-hcbk9   1/1     Running   0          38s
@@ -40,7 +40,7 @@ local-path-provisioner-7f58b4649-hcbk9   1/1     Running   0          38s
 
 - The `local-path` StorageClass should be marked as `default`:
 
-```
+```shell
 $ kubectl get sc
 NAME                   PROVISIONER                RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 local-path (default)   rancher.io/local-path      Delete          WaitForFirstConsumer   false                  107s
@@ -49,7 +49,7 @@ standard               k8s.io/minikube-hostpath   Delete          Immediate     
 
 - The following `yaml` creates PVC and Pod that creates file with content on second node (minikube-m02):
 
-```
+```yaml
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -83,13 +83,13 @@ spec:
         claimName: test-pvc
 ```
 
-```
+```shell
 $ kubectl get pvc
 NAME       STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 test-pvc   Bound    pvc-f07e253b-fea7-433a-b0ac-1bcea3f77076   64Mi       RWO            local-path     5m19s
 ```
 
-```
+```shell
 $ kubectl get pods -o wide
 NAME              READY   STATUS      RESTARTS   AGE     IP           NODE           NOMINATED NODE   READINESS GATES
 test-local-path   0/1     Completed   0          5m19s   10.244.1.5   minikube-m02   <none>           <none>
@@ -97,7 +97,7 @@ test-local-path   0/1     Completed   0          5m19s   10.244.1.5   minikube-m
 
 - On the second node we are able to see created file with content `local-path-provisioner`:
 
-```
+```shell
 $ minikube ssh -n minikube-m02 "cat /opt/local-path-provisioner/pvc-f07e253b-fea7-433a-b0ac-1bcea3f77076_default_test-pvc/file1"
 local-path-provisioner
 ```
