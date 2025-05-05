@@ -39,8 +39,6 @@ While a minikube HA cluster will continue to operate (although in degraded mode)
 
 ```shell
 lsmod | grep ip_vs
-```
-```
 ip_vs_rr               12288  1
 ip_vs                 233472  3 ip_vs_rr
 nf_conntrack          217088  9 xt_conntrack,nf_nat,nf_conntrack_tftp,nft_ct,xt_nat,nf_nat_tftp,nf_conntrack_netlink,xt_MASQUERADE,ip_vs
@@ -52,8 +50,6 @@ libcrc32c              12288  5 nf_conntrack,nf_nat,btrfs,nf_tables,ip_vs
 
 ```shell
 minikube start --ha --driver=docker --container-runtime=containerd --profile ha-demo
-```
-```
 😄  [ha-demo] minikube v1.32.0 on Opensuse-Tumbleweed 20240311
 ✨  Using the docker driver based on user configuration
 📌  Using Docker driver with root privileges
@@ -93,8 +89,6 @@ minikube start --ha --driver=docker --container-runtime=containerd --profile ha-
 
 ```shell
 kubectl get nodes -owide
-```
-```
 NAME          STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION    CONTAINER-RUNTIME
 ha-demo       Ready    control-plane   4m21s   v1.28.4   192.168.49.2   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ha-demo-m02   Ready    control-plane   4m      v1.28.4   192.168.49.3   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
@@ -105,8 +99,6 @@ ha-demo-m03   Ready    control-plane   3m37s   v1.28.4   192.168.49.4   <none>  
 
 ```shell
 minikube profile list
-```
-```
 |---------|-----------|------------|----------------|------|---------|--------|-------|--------|
 | Profile | VM Driver |  Runtime   |       IP       | Port | Version | Status | Nodes | Active |
 |---------|-----------|------------|----------------|------|---------|--------|-------|--------|
@@ -118,8 +110,6 @@ minikube profile list
 
 ```shell
 minikube status -p ha-demo
-```
-```
 ha-demo
 type: Control Plane
 host: Running
@@ -147,7 +137,7 @@ kubeconfig: Configured
 ```shell
 kubectl config view --context ha-demo
 ```
-```
+```yaml
 apiVersion: v1
 clusters:
 - cluster:
@@ -186,8 +176,6 @@ users:
 
 ```shell
 minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec sudo {} --kubeconfig=/var/lib/minikube/kubeconfig logs -n kube-system pod/kube-vip-ha-demo \; -quit'
-```
-```
 time="2024-03-14T21:38:34Z" level=info msg="Starting kube-vip.io [v0.7.1]"
 time="2024-03-14T21:38:34Z" level=info msg="namespace [kube-system], Mode: [ARP], Features(s): Control Plane:[true], Services:[false]"
 time="2024-03-14T21:38:34Z" level=info msg="prometheus HTTP server started"
@@ -206,8 +194,6 @@ time="2024-03-14T21:38:48Z" level=info msg="Added backend for [192.168.49.254:84
 
 ```shell
 minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec sudo {} --kubeconfig=/var/lib/minikube/kubeconfig logs -n kube-system pod/kube-vip-ha-demo-m02 \; -quit'
-```
-```
 time="2024-03-14T21:38:25Z" level=info msg="Starting kube-vip.io [v0.7.1]"
 time="2024-03-14T21:38:25Z" level=info msg="namespace [kube-system], Mode: [ARP], Features(s): Control Plane:[true], Services:[false]"
 time="2024-03-14T21:38:25Z" level=info msg="prometheus HTTP server started"
@@ -219,8 +205,6 @@ time="2024-03-14T21:38:34Z" level=info msg="Node [ha-demo] is assuming leadershi
 
 ```shell
 minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec sudo {} --kubeconfig=/var/lib/minikube/kubeconfig logs -n kube-system pod/kube-vip-ha-demo-m03 \; -quit'
-```
-```
 time="2024-03-14T21:38:48Z" level=info msg="Starting kube-vip.io [v0.7.1]"
 time="2024-03-14T21:38:48Z" level=info msg="namespace [kube-system], Mode: [ARP], Features(s): Control Plane:[true], Services:[false]"
 time="2024-03-14T21:38:48Z" level=info msg="prometheus HTTP server started"
@@ -234,8 +218,6 @@ time="2024-03-14T21:38:48Z" level=info msg="Node [ha-demo] is assuming leadershi
 
 ```shell
 minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec sudo {} --kubeconfig=/var/lib/minikube/kubeconfig exec -ti pod/etcd-ha-demo -n kube-system -- /bin/sh -c "ETCDCTL_API=3 etcdctl member list --write-out=table --cacert=/var/lib/minikube/certs/etcd/ca.crt --cert=/var/lib/minikube/certs/etcd/server.crt --key=/var/lib/minikube/certs/etcd/server.key" \; -quit'
-```
-```
 +------------------+---------+-------------+---------------------------+---------------------------+------------+
 |        ID        | STATUS  |    NAME     |        PEER ADDRS         |       CLIENT ADDRS        | IS LEARNER |
 +------------------+---------+-------------+---------------------------+---------------------------+------------+
@@ -249,8 +231,6 @@ minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec
 
 ```shell
 minikube node delete m02 -p ha-demo
-```
-```
 🔥  Deleting node m02 from cluster ha-demo
 ✋  Stopping node "ha-demo-m02"  ...
 🛑  Powering off "ha-demo-m02" via SSH ...
@@ -259,16 +239,12 @@ minikube node delete m02 -p ha-demo
 ```
 ```shell
 kubectl get nodes -owide
-```
-```
 NAME          STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION    CONTAINER-RUNTIME
 ha-demo       Ready    control-plane   7m16s   v1.28.4   192.168.49.2   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ha-demo-m03   Ready    control-plane   6m32s   v1.28.4   192.168.49.4   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ```
 ```shell
 minikube profile list
-```
-```
 |---------|-----------|------------|----------------|------|---------|----------|-------|--------|
 | Profile | VM Driver |  Runtime   |       IP       | Port | Version |  Status  | Nodes | Active |
 |---------|-----------|------------|----------------|------|---------|----------|-------|--------|
@@ -280,8 +256,6 @@ minikube profile list
 
 ```shell
 minikube node add --control-plane -p ha-demo
-```
-```
 😄  Adding node m04 to cluster ha-demo as [worker control-plane]
 👍  Starting "ha-demo-m04" control-plane node in "ha-demo" cluster
 🚜  Pulling base image v0.0.42-1710284843-18375 ...
@@ -290,19 +264,17 @@ minikube node add --control-plane -p ha-demo
 🔎  Verifying Kubernetes components...
 🏄  Successfully added m04 to ha-demo!
 ```
+
 ```shell
 kubectl get nodes -owide
-```
-```
 NAME          STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION    CONTAINER-RUNTIME
 ha-demo       Ready    control-plane   8m34s   v1.28.4   192.168.49.2   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ha-demo-m03   Ready    control-plane   7m50s   v1.28.4   192.168.49.4   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ha-demo-m04   Ready    control-plane   36s     v1.28.4   192.168.49.5   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ```
+
 ```shell
 minikube profile list
-```
-```
 |---------|-----------|------------|----------------|------|---------|--------|-------|--------|
 | Profile | VM Driver |  Runtime   |       IP       | Port | Version | Status | Nodes | Active |
 |---------|-----------|------------|----------------|------|---------|--------|-------|--------|
@@ -314,8 +286,6 @@ minikube profile list
 
 ```shell
 minikube node add -p ha-demo
-```
-```
 😄  Adding node m05 to cluster ha-demo as [worker]
 👍  Starting "ha-demo-m05" worker node in "ha-demo" cluster
 🚜  Pulling base image v0.0.42-1710284843-18375 ...
@@ -327,8 +297,6 @@ minikube node add -p ha-demo
 
 ```shell
 kubectl get nodes -owide
-```
-```
 NAME          STATUS   ROLES           AGE     VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION    CONTAINER-RUNTIME
 ha-demo       Ready    control-plane   9m35s   v1.28.4   192.168.49.2   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
 ha-demo-m03   Ready    control-plane   8m51s   v1.28.4   192.168.49.4   <none>        Ubuntu 22.04.4 LTS   6.7.7-1-default   containerd://1.6.28
@@ -388,13 +356,11 @@ spec:
       targetPort: http
 EOF
 ```
-```
+```text
 deployment.apps/hello created
 ```
 ```shell
 kubectl rollout status deployment/hello
-```
-```
 deployment "hello" successfully rolled out
 ```
 
@@ -402,8 +368,6 @@ deployment "hello" successfully rolled out
 
 ```shell
 kubectl get pods -owide
-```
-```
 NAME                     READY   STATUS    RESTARTS   AGE   IP           NODE          NOMINATED NODE   READINESS GATES
 hello-7bf57d9696-64v6m   1/1     Running   0          18s   10.244.3.2   ha-demo-m04   <none>           <none>
 hello-7bf57d9696-7gtlk   1/1     Running   0          18s   10.244.2.2   ha-demo-m03   <none>           <none>
@@ -414,8 +378,6 @@ hello-7bf57d9696-99qsw   1/1     Running   0          18s   10.244.0.4   ha-demo
 
 ```shell
 minikube service list -p ha-demo
-```
-```
 |-------------|------------|--------------|---------------------------|
 |  NAMESPACE  |    NAME    | TARGET PORT  |            URL            |
 |-------------|------------|--------------|---------------------------|
@@ -429,8 +391,6 @@ minikube service list -p ha-demo
 
 ```shell
 curl  http://192.168.49.2:31000
-```
-```
 Hello from hello-7bf57d9696-99qsw (10.244.0.4)
 
 curl  http://192.168.49.2:31000
