@@ -19,7 +19,7 @@ To make it easier to access your host, minikube v1.10 adds a hostname entry `hos
 
 You can use `minikube ssh` to confirm connectivity:
 
-```
+```sh
                          _             _
             _         _ ( )           ( )
   ___ ___  (_)  ___  (_)| |/')  _   _ | |_      __  
