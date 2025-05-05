@@ -70,12 +70,12 @@ if ! which socat &>/dev/null; then
 fi
 
 # cri-dockerd is required for Kubernetes v1.24+ with none driver
-CRI_DOCKERD_VERSION="0.3.15"
+CRI_DOCKERD_VERSION="0.4.0"
 if [[ $(cri-dockerd --version 2>&1) != *"$CRI_DOCKERD_VERSION"* ]]; then
   echo "WARNING: expected version of cri-dockerd is not installed. will try to install."
   sudo systemctl stop cri-docker.socket || true
   sudo systemctl stop cri-docker.service || true
-  CRI_DOCKERD_COMMIT="c1c566e0cc84abe6972f0bf857ecd8fe306258d9"
+  CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
   CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
   sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
