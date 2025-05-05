@@ -18,13 +18,13 @@ $ minikube start
 ### Enabling storage-provisioner-gluster
 To enable this addon, simply run:
 
-```
+```shell
 $ minikube addons enable storage-provisioner-gluster
 ```
 
 Within one minute, the addon manager should pick up the change and you should see several Pods in the `storage-gluster` namespace:
 
-```
+```shell
 $ kubectl -n storage-gluster get pods
 NAME                                      READY     STATUS              RESTARTS   AGE
 glusterfile-provisioner-dbcbf54fc-726vv   1/1       Running             0          1m
@@ -34,7 +34,7 @@ heketi-79997b9d85-42c49                   0/1       ContainerCreating   0       
 
 Some of the Pods need a little more time to get up an running than others, but in a few minutes everything should have been deployed and all Pods should be `READY`:
 
-```
+```shell
 $ kubectl -n storage-gluster get pods
 NAME                                      READY     STATUS    RESTARTS   AGE
 glusterfile-provisioner-dbcbf54fc-726vv   1/1       Running   0          5m
@@ -44,7 +44,7 @@ heketi-79997b9d85-42c49                   1/1       Running   1          4m
 
 Once the Pods have status `Running`, the `glusterfile` StorageClass should have been marked as `default`:
 
-```
+```shell
 $ kubectl get sc
 NAME                    PROVISIONER               AGE
 glusterfile (default)   gluster.org/glusterfile   3m
@@ -55,7 +55,7 @@ The storage in the Gluster environment is limited to 10 GiB. This is because the
 
 The following `yaml` creates a PVC, starts a CentOS developer Pod that generates a website and deploys an NGINX webserver that provides access to the website:
 
-```
+```yaml
 ---
 #
 # Minimal PVC where a developer can build a website.
@@ -128,7 +128,7 @@ Because the PVC has been created with the `ReadWriteMany` accessMode, both Pods 
 
 The above configuration does not expose the website on the Minikube VM. One way to see the contents of the website is to SSH into the Minikube VM and fetch the website there:
 
-```
+```shell
 $ kubectl get pods -o wide
 NAME            READY     STATUS      RESTARTS   AGE       IP           NODE
 centos-webdev   0/1       Completed   0          1m        172.17.0.9   minikube
