@@ -219,7 +219,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
         curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg &&\
         echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v${CRIO_VERSION}/deb/ /" |  tee /etc/apt/sources.list.d/cri-o.list && \
-        clean-install software-properties-common cri-o ; fi
+        clean-install software-properties-common cri-o cri-o-runc; fi
 
 # install NVIDIA container toolkit
 RUN export ARCH=$(dpkg --print-architecture) && \
