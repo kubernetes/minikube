@@ -19,7 +19,8 @@ ii  conntrack                       1:1.4.6-2build2                         amd6
 ii  containerd.io                   1.7.27-1                                amd64        An open and reliable container runtime
 ii  containernetworking-plugins     0.9.1+ds1-1ubuntu0.1                    amd64        standard networking plugins - binaries
 ii  coreutils                       8.32-4.1ubuntu1.2                       amd64        GNU core utilities
-ii  cri-o                           1.32.3-1.1                              amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o                           1.32.4-1.1                              amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o-runc                      1.1.12~0                                amd64        Open Container Project - runtime
 ii  criu                            4.1-1                                   amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                               amd64        OCI runtime written in C
 ii  curl                            7.81.0-1ubuntu1.20                      amd64        command line tool for transferring data with URL syntax
