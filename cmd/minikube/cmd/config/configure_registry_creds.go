@@ -10,21 +10,22 @@ import (
 )
 
 // Top level configs for RegistryCreds addons
-type RegistryCredsAddonConfig struct {
+type registryCredsAddonConfig struct {
 	EnableAWSEcr string                         `json:"enableAWSEcr"`
-	EcrConfigs   RegistryCredsAddonConfigAWSEcr `json:"awsEcrConfigs"`
+	EcrConfigs   registryCredsAddonConfigAWSEcr `json:"awsEcrConfigs"`
 
 	EnableGCR  string                      `json:"enableGCR"`
-	GcrConfigs RegistryCredsAddonConfigGCR `json:"gcrConfigs"`
+	GcrConfigs registryCredsAddonConfigGCR `json:"gcrConfigs"`
 
 	EnableDockerRegistry string                         `json:"enableDockerRegistry"`
-	DockerConfigs        RegistryCredsAddonConfigDocker `json:"dockerConfigs"`
+	DockerConfigs        registryCredsAddonConfigDocker `json:"dockerConfigs"`
 
 	EnableACR  string                      `json:"enableACR"`
-	AcrConfigs RegistryCredsAddonConfigACR `json:"acrConfigs"`
+	AcrConfigs registryCredsAddonConfigACR `json:"acrConfigs"`
 }
 
-type RegistryCredsAddonConfigAWSEcr struct {
+// Registry Creds addon config for AWS ECR
+type registryCredsAddonConfigAWSEcr struct {
 	AccessID     string `json:"awsAccessID"`
 	AccessKey    string `json:"awsAccessKey"`
 	SessionToken string `json:"awsSessionToken"`
@@ -33,25 +34,28 @@ type RegistryCredsAddonConfigAWSEcr struct {
 	Role         string `json:"awsRole"`
 }
 
-type RegistryCredsAddonConfigGCR struct {
+// Registry Creds addon config for GCR
+type registryCredsAddonConfigGCR struct {
 	GcrPath string `json:"gcrPath"`
 	GcrURL  string `json:"gcrURL"`
 }
 
-type RegistryCredsAddonConfigDocker struct {
+// Registry Creds addon config for Docker Registry
+type registryCredsAddonConfigDocker struct {
 	DockerServer string `json:"dockerServer"`
 	DockerUser   string `json:"dockerUser"`
 	DockerPass   string `json:"dockerPass"`
 }
 
-type RegistryCredsAddonConfigACR struct {
+// Registry Creds addon config for Docker Azure container registry
+type registryCredsAddonConfigACR struct {
 	AcrURL      string `json:"acrURL"`
 	AcrClientID string `json:"acrClientID"`
 	AcrPassword string `json:"acrPassword"`
 }
 
 // Processes registry-creds addon config from configFile if it exists otherwise resorts to default behavior
-func processRegistryCredsConfig(profile string, addonConfig *AddonConfig) {
+func processRegistryCredsConfig(profile string, ac *addonConfig) {
 	// Default values
 	awsAccessID := "MINIKUBE_DEFAULT_VALUE"
 	awsAccessKey := "MINIKUBE_DEFAULT_VALUE"
@@ -68,7 +72,7 @@ func processRegistryCredsConfig(profile string, addonConfig *AddonConfig) {
 	acrClientID := "MINIKUBE_DEFAULT_VALUE"
 	acrPassword := "MINIKUBE_DEFAULT_VALUE"
 
-	regCredsConf := &addonConfig.RegistryCreds
+	regCredsConf := &ac.RegistryCreds
 	awsEcrAction := regCredsConf.EnableAWSEcr // regCredsConf. "enableAWSEcr")
 	if awsEcrAction == "prompt" || awsEcrAction == "" {
 		enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)

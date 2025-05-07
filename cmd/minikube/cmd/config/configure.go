@@ -46,8 +46,8 @@ var posResponses = []string{"yes", "y"}
 var negResponses = []string{"no", "n"}
 
 // Typed addon configs
-type AddonConfig struct {
-	RegistryCreds RegistryCredsAddonConfig `json:"registry-creds"`
+type addonConfig struct {
+	RegistryCreds registryCredsAddonConfig `json:"registry-creds"`
 }
 
 var addonsConfigureCmd = &cobra.Command{
@@ -129,23 +129,28 @@ func init() {
 }
 
 // Helper method to load a config file for addons
-func loadAddonConfigFile(addon, configFilePath string) (addonConfig *AddonConfig) {
+func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 	type configFile struct {
-		Addons AddonConfig `json:"addons"`
+		Addons addonConfig `json:"addons"`
 	}
 	var config configFile
 
 	if configFilePath != "" {
 		out.Ln("Reading %s configs from %s", addon, configFilePath)
-		if confData, err := os.ReadFile(configFilePath); err != nil && errors.Is(err, os.ErrNotExist) {
+		confData, err := os.ReadFile(configFilePath)
+		if err != nil && errors.Is(err, os.ErrNotExist) { // file does not exist
 			klog.Warningf("config file (%s) does not exist: %v", configFilePath, err)
 			exit.Message(reason.Usage, "config file does not exist")
-		} else if err != nil {
+		}
+
+		if err != nil { // file cannot be opened
 			klog.Errorf("error opening config file (%s): %v", configFilePath, err)
 			// err = errors2.Wrapf(err, "config file (%s) does not exist", configFilePath)
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error opening config file: %s", configFilePath))
-		} else if err = json.Unmarshal(confData, &config); err != nil {
+		}
+
+		if err = json.Unmarshal(confData, &config); err != nil {
 			// err = errors2.Wrapf(err, "error reading config file (%s)", configFilePath)
 			klog.Errorf("error reading config file (%s): %v", configFilePath, err)
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
@@ -158,7 +163,7 @@ func loadAddonConfigFile(addon, configFilePath string) (addonConfig *AddonConfig
 }
 
 // Processes metallb addon config from configFile if it exists otherwise resorts to default behavior
-func processMetalLBConfig(profile string, _ *AddonConfig) {
+func processMetalLBConfig(profile string, _ *addonConfig) {
 	_, cfg := mustload.Partial(profile)
 
 	validator := func(s string) bool {
@@ -180,7 +185,7 @@ func processMetalLBConfig(profile string, _ *AddonConfig) {
 }
 
 // Processes ingress addon config from configFile if it exists otherwise resorts to default behavior
-func processIngressConfig(profile string, _ *AddonConfig) {
+func processIngressConfig(profile string, _ *addonConfig) {
 	_, cfg := mustload.Partial(profile)
 
 	validator := func(s string) bool {
@@ -204,7 +209,7 @@ func processIngressConfig(profile string, _ *AddonConfig) {
 }
 
 // Processes auto-pause addon config from configFile if it exists otherwise resorts to default behavior
-func processAutoPauseConfig(profile string, _ *AddonConfig) {
+func processAutoPauseConfig(profile string, _ *addonConfig) {
 	lapi, cfg := mustload.Partial(profile)
 	intervalInput := AskForStaticValue("-- Enter interval time of auto-pause-interval (ex. 1m0s): ")
 	intervalTime, err := time.ParseDuration(intervalInput)
@@ -246,7 +251,7 @@ func processAutoPauseConfig(profile string, _ *AddonConfig) {
 }
 
 // Processes registry-aliases addon config from configFile if it exists otherwise resorts to default behavior
-func processRegistryAliasesConfig(profile string, _ *AddonConfig) {
+func processRegistryAliasesConfig(profile string, _ *addonConfig) {
 	_, cfg := mustload.Partial(profile)
 	validator := func(s string) bool {
 		format := regexp.MustCompile(`^([a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)+(\ [a-zA-Z0-9-_]+\.[a-zA-Z0-9-_]+)*$`)
