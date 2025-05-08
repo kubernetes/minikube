@@ -6,7 +6,7 @@ on:
     - cron: "0 10 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.23.4'
+  GO_VERSION: '1.24.0'
 permissions:
   contents: read
 
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump nvidia-device-plugin version
@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpNvidiaDevicePlugin.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from ${{ steps.bumpNvidiaDevicePlugin.outputs.OLD_VERSION }} to ${{ steps.bumpNvidiaDevicePlugin.outputs.NEW_VERSION }}'

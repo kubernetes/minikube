@@ -20,8 +20,10 @@ package detect
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"golang.org/x/sys/unix"
 )
@@ -62,8 +64,29 @@ func IsNinePSupported() bool {
 	if runtime.GOOS != "linux" {
 		return true
 	}
-	_, err := os.Stat(getModuleRoot() + "/kernel/fs/9p")
-	return err == nil
+
+	if _, err := os.Stat(getModuleRoot() + "/kernel/fs/9p"); err == nil {
+		return true
+	}
+	// Try modprobe check (silent)
+	cmd := exec.Command("modprobe", "-q", "9p")
+	if err := cmd.Run(); err == nil {
+		return true
+	}
+	// Check if module is already loaded
+	loaded, err := is9PModuleLoaded()
+	if err == nil && loaded {
+		return true
+	}
+	return false
+}
+func is9PModuleLoaded() (bool, error) {
+	cmd := exec.Command("lsmod")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(string(out), "9p"), nil
 }
 
 func getModuleRoot() string {

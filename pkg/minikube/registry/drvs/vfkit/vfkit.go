@@ -22,10 +22,13 @@ import (
 	"crypto/rand"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/google/uuid"
 
 	"k8s.io/minikube/pkg/drivers/vfkit"
+	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -51,24 +54,50 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	mac, err := generateMACAddress()
-	if err != nil {
-		return nil, fmt.Errorf("generating MAC address: %v", err)
+	var mac string
+	var helper *vmnet.Helper
+
+	machineName := config.MachineName(cfg, n)
+	storePath := localpath.MiniPath()
+
+	switch cfg.Network {
+	case "nat", "":
+		// We generate a random mac address.
+		var err error
+		mac, err = generateMACAddress()
+		if err != nil {
+			return nil, fmt.Errorf("generating MAC address: %v", err)
+		}
+	case "vmnet-shared":
+		// We generate a random UUID (or use a user provided one). vment-helper
+		// will obtain a mac address from the vmnet framework using the UUID.
+		u := cfg.UUID
+		if u == "" {
+			u = uuid.NewString()
+		}
+		helper = &vmnet.Helper{
+			MachineDir:  filepath.Join(storePath, "machines", machineName),
+			InterfaceID: u,
+		}
+	default:
+		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)
 	}
 
 	return &vfkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: config.MachineName(cfg, n),
-			StorePath:   localpath.MiniPath(),
+			MachineName: machineName,
+			StorePath:   storePath,
 			SSHUser:     "docker",
 		},
 		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
-		MACAddress:     mac,
 		Cmdline:        "",
 		ExtraDisks:     cfg.ExtraDisks,
+		Network:        cfg.Network,
+		MACAddress:     mac,
+		VmnetHelper:    helper,
 	}, nil
 }
 
