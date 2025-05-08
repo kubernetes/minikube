@@ -400,7 +400,7 @@ var Addons = map[string]*Addon{
 			"registry-proxy.yaml",
 			"0640"),
 	}, false, "registry", "minikube", "", "", map[string]string{
-		"KubeRegistryProxy": "k8s-minikube/kube-registry-proxy:0.0.8@sha256:60ab3508367ad093b4b891231572577371a29f838d61e64d7f7d093d961c862c",
+		"KubeRegistryProxy": "k8s-minikube/kube-registry-proxy:0.0.9@sha256:f832bbe1d48c62de040bd793937eaa0c05d2f945a55376a99c80a4dd9961aeb1",
 		"Registry":          "registry:3.0.0@sha256:1fc7de654f2ac1247f0b67e8a459e273b0993be7d2beda1f3f56fbf1001ed3e7",
 	}, map[string]string{
 		"KubeRegistryProxy": "gcr.io",
