@@ -32,8 +32,11 @@ import (
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
@@ -76,11 +79,31 @@ func ValidateHelper() error {
 	cmd := exec.Command("sudo", "--non-interactive", executablePath, "--version")
 	stdout, err := cmd.Output()
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			stderr := strings.TrimSpace(string(exitErr.Stderr))
-			err = fmt.Errorf("%w: %s", err, stderr)
+		// Can we interact with the user?
+		if !viper.GetBool("interactive") {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr := strings.TrimSpace(string(exitErr.Stderr))
+				err = fmt.Errorf("%w: %s", err, stderr)
+			}
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
 		}
-		return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+
+		// We can fall back to intereactive sudo this time, but the user should
+		// configure a sudoers rule.
+		out.ErrT(style.Tip, "Unable to run vmnet-helper without a password")
+		out.ErrT(style.Indent, "To configure vment-helper to run without a password, please check the documentation:")
+		out.ErrT(style.Indent, "https://github.com/nirs/vmnet-helper/#granting-permission-to-run-vmnet-helper")
+
+		// Authenticate the user, updateing the user's cached credentials.
+		cmd = exec.Command("sudo", executablePath, "--version")
+		stdout, err = cmd.Output()
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr := strings.TrimSpace(string(exitErr.Stderr))
+				err = fmt.Errorf("%w: %s", err, stderr)
+			}
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+		}
 	}
 
 	version := strings.TrimSpace(string(stdout))
