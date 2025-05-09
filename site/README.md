@@ -1,7 +1,7 @@
 
 [Docsy](https://github.com/google/docsy) is a Hugo theme for technical documentation sites, providing easy site navigation, structure, and more. This **Minikube project** uses the Docsy theme for [Minikube Website](https://minikube.sigs.k8s.io/docs/).
 
-You can find detailed theme instructions in the Docsy user guide: https://docsydocs.netlify.com/docs/
+You can find detailed theme instructions in the Docsy user guide: https://www.docsy.dev/docs/
 
 
 ## Running the website locally
