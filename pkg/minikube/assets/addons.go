@@ -610,9 +610,9 @@ var Addons = map[string]*Addon{
 			"volcano-deployment.yaml",
 			"0640"),
 	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.11.1@sha256:cc1176ecd37e6ff68dc42ae0fe9479f76fa83c92337e22f00047bd39eb1d3281",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.11.1@sha256:17168ad7c5df85db878d5170ed9a0c3938872b9ddef545bfb06922abc12e9cbf",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.11.1@sha256:b50b31efb47d3ac8f724575b8e3d0fa3d79ab2229c9fcc4b3ac7dd3866ed56de",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.11.2@sha256:e3dd5fc9c8af79bfa2182ccd4f48ba0a87c2047d3bdd59dd415288bf19c80ddc",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.11.2@sha256:ef164e8b3061838a315442ad9ffeb9699a636a73123c5269665fd7aeab06757c",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.11.2@sha256:5b77f6b38127db41afe4a38bbf585fa2ea5555998459d34f4f1691233f506121",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
