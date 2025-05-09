@@ -20,14 +20,14 @@ $ minikube start --container-runtime=containerd  \
 ### Enabling gVisor
 To enable this addon, simply run:
 
-```
+```shell
 $ minikube addons enable gvisor
 ```
 
 Within one minute, the addon manager should pick up the change and you should
 see the `gvisor` pod and `gvisor` [Runtime Class](https://kubernetes.io/docs/concepts/containers/runtime-class/):
 
-```
+```shell
 $ kubectl get pod,runtimeclass gvisor -n kube-system
 NAME         READY   STATUS    RESTARTS   AGE
 pod/gvisor   1/1     Running   0          2m52s
@@ -43,7 +43,7 @@ Once the pod has status `Running`, gVisor is enabled in minikube.
 To run a pod in gVisor, add the `gvisor` runtime class to the Pod spec in your
 Kubernetes yaml:
 
-```
+```yaml
 runtimeClassName: gvisor
 ```
 
@@ -65,14 +65,14 @@ spec:
 
 To disable gVisor, run:
 
-```
+```shell
 $ minikube addons disable gvisor
 ```
 
 Within one minute, the addon manager should pick up the change.
 Once the `gvisor` pod has status `Terminating`, or has been deleted, the gvisor addon should be disabled.
 
-```
+```shell
 $ kubectl get pod gvisor -n kube-system
 NAME      READY     STATUS        RESTARTS   AGE
 gvisor    1/1       Terminating   0          5m

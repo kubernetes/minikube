@@ -14,7 +14,7 @@ We defined and named all images used by an addon, you could view them by command
 minikube addons images efk
 ```
 
-```
+```shell
     ▪ efk has following images:
 |----------------------|------------------------------|-------------------|
 |      IMAGE NAME      |        DEFAULT IMAGE         | DEFAULT REGISTRY  |
@@ -46,7 +46,7 @@ The format is `IMAGE_NAME=CUSTOM_VALUE`, separated by commas, where the `IMAGE_N
 minikube addons enable efk --images="Kibana=kibana/kibana:5.6.2-custom" --registries="Kibana=,Elasticsearch=192.168.10.2:5555,FluentdElasticsearch=192.168.10.2:5555"
 ```
 
-```
+```shell
     ▪ Using image 192.168.10.2:5555/elasticsearch:v5.6.2
     ▪ Using image 192.168.10.2:5555/fluentd-elasticsearch:v2.0.2
     ▪ Using image alpine:3.6
