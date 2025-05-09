@@ -39,6 +39,7 @@ import (
 const (
 	pidfileName    = "vmnet-helper.pid"
 	logfileName    = "vmnet-helper.log"
+	sockfileName   = "vmnet-helper.sock"
 	executablePath = "/opt/vmnet-helper/bin/vmnet-helper"
 )
 
@@ -72,7 +73,7 @@ func ValidateHelper() error {
 	}
 
 	// Can we run it as root without a password?
-	cmd := exec.Command("sudo", "--non-interactive", "--close-from=4", executablePath, "--version")
+	cmd := exec.Command("sudo", "--non-interactive", executablePath, "--version")
 	stdout, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -88,19 +89,16 @@ func ValidateHelper() error {
 }
 
 // Start the vmnet-helper child process, creating the vmnet interface for the
-// machine. sock is a connected unix datagram socket to pass the helper child
-// process.
-func (h *Helper) Start(sock *os.File) error {
+// machine. The helper will create a unix datagram socket at the specfied path.
+// The client (e.g. vfkit) will connect to this socket.
+func (h *Helper) Start(socketPath string) error {
 	cmd := exec.Command(
 		"sudo",
 		"--non-interactive",
-		"--close-from", fmt.Sprintf("%d", sock.Fd()+1),
 		executablePath,
-		"--fd", fmt.Sprintf("%d", sock.Fd()),
+		"--socket", socketPath,
 		"--interface-id", h.InterfaceID,
 	)
-
-	cmd.ExtraFiles = []*os.File{sock}
 
 	// Create vmnet-helper in a new process group so it is not harmed when
 	// terminating the minikube process group.
@@ -229,6 +227,10 @@ func (h *Helper) GetState() (state.State, error) {
 		return state.Stopped, nil
 	}
 	return state.Running, nil
+}
+
+func (h *Helper) SocketPath() string {
+	return filepath.Join(h.MachineDir, sockfileName)
 }
 
 func (h *Helper) openLogfile() (*os.File, error) {
