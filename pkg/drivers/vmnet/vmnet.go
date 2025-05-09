@@ -27,11 +27,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/process"
+	"k8s.io/minikube/pkg/minikube/reason"
 )
 
 const (
@@ -57,16 +59,32 @@ type interfaceInfo struct {
 	MACAddress string `json:"vmnet_mac_address"`
 }
 
-// HelperAvailable tells if vmnet-helper executable is installed and configured
-// correctly.
-func HelperAvailable() bool {
-	version, err := exec.Command("sudo", "--non-interactive", executablePath, "--version").Output()
-	if err != nil {
-		log.Debugf("Failed to run vmnet-helper: %w", err)
-		return false
+// ValidateHelper checks if vmnet-helper is installed and we can run it as root.
+// The returned error.Kind can be used to provide a suggestion for resolving the
+// issue.
+func ValidateHelper() error {
+	// Is it installed?
+	if _, err := os.Stat(executablePath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+		}
+		return &Error{Kind: reason.HostPathStat, Err: err}
 	}
-	log.Debugf("Using vmnet-helper version %q", version)
-	return true
+
+	// Can we run it as root without a password?
+	cmd := exec.Command("sudo", "--non-interactive", "--close-from=4", executablePath, "--version")
+	stdout, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr := strings.TrimSpace(string(exitErr.Stderr))
+			err = fmt.Errorf("%w: %s", err, stderr)
+		}
+		return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+	}
+
+	version := strings.TrimSpace(string(stdout))
+	log.Debugf("Validated vmnet-helper version %q", version)
+	return nil
 }
 
 // Start the vmnet-helper child process, creating the vmnet interface for the
