@@ -132,43 +132,43 @@ linters:
         - elseif
         - regexpMust
         - deprecatedComment
-        # enabled-checks:
-        #   # Below used to be enabled, but we do not pass anymore
-        #   # - paramTypeCombine
-        #   # - octalLiteral
-        #   # - unnamedResult
-        #   # - equalFold
-        #   # - sloppyReassign
-        #   # - emptyStringTest
-        #   # - hugeParam
-        #   # - appendCombine
-        #   # - stringXbytes
-        #   # - ptrToRefParam
-        #   # - commentedOutCode
-        #   # - rangeValCopy
-        #   # - methodExprCall
-        #   # - yodaStyleExpr
-        #   # - typeUnparen
-  #   # We enabled these and we pass
-  #   - nilValReturn
-  #   - weakCond
-  #   - indexAlloc
-  #   - rangeExprCopy
-  #   - boolExprSimplify
-  #   - commentedOutImport
-  #   - docStub
-  #   - emptyFallthrough
-  #   - hexLiteral
-  #   - typeAssertChain
-  #   - unlabelStmt
-  #   - builtinShadow
-  #   - importShadow
-  #   - initClause
-  #   - nestingReduce
-  #   - unnecessaryBlock
+      enabled-checks:
+      # Below used to be enabled, but we do not pass anymore
+      # - paramTypeCombine
+      # - octalLiteral
+      # - unnamedResult
+      # - equalFold
+      # - sloppyReassign
+      # - emptyStringTest
+      # - hugeParam
+      # - appendCombine
+      # - stringXbytes
+      # - ptrToRefParam
+      # - commentedOutCode
+      # - rangeValCopy
+      # - methodExprCall
+      # - yodaStyleExpr
+      # - typeUnparen
 
-  ####### The content below is the content skipped by regular expression in the first version, 
-  ####### which has been gradually replaced by the detailed configuration above.
+      ##### TODO: fix and enable these
+      # We enabled these and we pass
+      - nilValReturn
+      # - weakCond # pkg/minikube/config/profile.go:61:9: weakCond: suspicious `cc.Nodes != nil && cc.Nodes[0].Name == node.Name`; nil check may not be enough, check for len (gocritic)
+      - indexAlloc
+      - rangeExprCopy
+      - boolExprSimplify
+      - commentedOutImport
+      # - docStub         # pkg/minikube/tunnel/kic/service_tunnel.go:51:1: docStub: silencing go lint doc-comment warnings is unadvised (gocritic)
+      - emptyFallthrough
+      - hexLiteral
+      - typeAssertChain
+      - unlabelStmt
+      # - builtinShadow # cmd/minikube/cmd/delete.go:89:7: builtinShadow: shadowing of predeclared identifier: error (gocritic) 
+      # - importShadow # pkg/storage/storage_provisioner.go:60:2: importShadow: shadow of imported package 'path' (gocritic)
+      - initClause
+      # - nestingReduce # pkg/minikube/tunnel/registry.go:94:3: nestingReduce: invert if cond, replace body with `continue`, move old body after the statement (gocritic)
+      - unnecessaryBlock
+
   exclusions:
     paths:
       # we generally dont wanna touch or lint the Third_party code, it is basically like a fork for code that we can not import.
@@ -177,17 +177,9 @@ linters:
       # Skip test files
       - '(.+)_test\.go'
     rules:
-      - path: 'third_party/kubeadm/app/constants/constants.go'
-        text: "redefines-builtin-id: redefinition of the built-in function .*"
-        linter: revive
-      - path: '(.+)\.go$'
-        text: "unnecessary conversion"
-        linter: unconvert
+      # I think this check is meaningless.
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
-        linter: errcheck
-      - path: '(.+)\.go$'
-        text: "Error return value is not checked"
         linter: errcheck
       # This code is doubtful and I don't understand it. Location: Line 456
       - path: 'cmd/minikube/cmd/docker-env.go'
