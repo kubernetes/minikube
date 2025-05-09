@@ -110,7 +110,14 @@ func (s *Systemd) Restart(svc string) error {
 	if err := s.daemonReload(); err != nil {
 		return err
 	}
-	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "restart", svc))
+	// some services declare a realitive small restart-limit in their .service configuration
+	// so we reset reset-failed counter to override the limit
+	// and always force restart the service
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "reset-failed", svc))
+	if err != nil {
+		return err
+	}
+	_, err = s.r.RunCmd(exec.Command("sudo", "systemctl", "restart", svc))
 	return s.appendJournalctlLogsOnFailure(svc, err)
 }
 

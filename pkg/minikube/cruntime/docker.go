@@ -197,9 +197,14 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 			return err
 		}
 
-		// try to restart service if stopped, intentionally continue on any error
-		if !r.Init.Active(service) {
+		_ = r.Init.Restart(service)
+		// try to restart service if stopped, restart until it works
+		for !r.Init.Active(service) {
+			fmt.Println("stuck")
+			time.Sleep(5 * time.Second)
 			_ = r.Init.Restart(service)
+			time.Sleep(5 * time.Second)
+
 		}
 	}
 
