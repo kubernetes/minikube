@@ -27,16 +27,22 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
+	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/style"
 )
 
 const (
 	pidfileName    = "vmnet-helper.pid"
 	logfileName    = "vmnet-helper.log"
+	sockfileName   = "vmnet-helper.sock"
 	executablePath = "/opt/vmnet-helper/bin/vmnet-helper"
 )
 
@@ -57,32 +63,65 @@ type interfaceInfo struct {
 	MACAddress string `json:"vmnet_mac_address"`
 }
 
-// HelperAvailable tells if vmnet-helper executable is installed and configured
-// correctly.
-func HelperAvailable() bool {
-	version, err := exec.Command("sudo", "--non-interactive", executablePath, "--version").Output()
-	if err != nil {
-		log.Debugf("Failed to run vmnet-helper: %w", err)
-		return false
+// ValidateHelper checks if vmnet-helper is installed and we can run it as root.
+// The returned error.Kind can be used to provide a suggestion for resolving the
+// issue.
+func ValidateHelper() error {
+	// Is it installed?
+	if _, err := os.Stat(executablePath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return &Error{Kind: reason.NotFoundVmnetHelper, Err: err}
+		}
+		return &Error{Kind: reason.HostPathStat, Err: err}
 	}
-	log.Debugf("Using vmnet-helper version %q", version)
-	return true
+
+	// Can we run it as root without a password?
+	cmd := exec.Command("sudo", "--non-interactive", executablePath, "--version")
+	stdout, err := cmd.Output()
+	if err != nil {
+		// Can we interact with the user?
+		if !viper.GetBool("interactive") {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr := strings.TrimSpace(string(exitErr.Stderr))
+				err = fmt.Errorf("%w: %s", err, stderr)
+			}
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+		}
+
+		// We can fall back to intereactive sudo this time, but the user should
+		// configure a sudoers rule.
+		out.ErrT(style.Tip, "Unable to run vmnet-helper without a password")
+		out.ErrT(style.Indent, "To configure vment-helper to run without a password, please check the documentation:")
+		out.ErrT(style.Indent, "https://github.com/nirs/vmnet-helper/#granting-permission-to-run-vmnet-helper")
+
+		// Authenticate the user, updateing the user's cached credentials.
+		cmd = exec.Command("sudo", executablePath, "--version")
+		stdout, err = cmd.Output()
+		if err != nil {
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr := strings.TrimSpace(string(exitErr.Stderr))
+				err = fmt.Errorf("%w: %s", err, stderr)
+			}
+			return &Error{Kind: reason.NotConfiguredVmnetHelper, Err: err}
+		}
+	}
+
+	version := strings.TrimSpace(string(stdout))
+	log.Debugf("Validated vmnet-helper version %q", version)
+	return nil
 }
 
 // Start the vmnet-helper child process, creating the vmnet interface for the
-// machine. sock is a connected unix datagram socket to pass the helper child
-// process.
-func (h *Helper) Start(sock *os.File) error {
+// machine. The helper will create a unix datagram socket at the specfied path.
+// The client (e.g. vfkit) will connect to this socket.
+func (h *Helper) Start(socketPath string) error {
 	cmd := exec.Command(
 		"sudo",
 		"--non-interactive",
-		"--close-from", fmt.Sprintf("%d", sock.Fd()+1),
 		executablePath,
-		"--fd", fmt.Sprintf("%d", sock.Fd()),
+		"--socket", socketPath,
 		"--interface-id", h.InterfaceID,
 	)
-
-	cmd.ExtraFiles = []*os.File{sock}
 
 	// Create vmnet-helper in a new process group so it is not harmed when
 	// terminating the minikube process group.
@@ -211,6 +250,10 @@ func (h *Helper) GetState() (state.State, error) {
 		return state.Stopped, nil
 	}
 	return state.Running, nil
+}
+
+func (h *Helper) SocketPath() string {
+	return filepath.Join(h.MachineDir, sockfileName)
 }
 
 func (h *Helper) openLogfile() (*os.File, error) {

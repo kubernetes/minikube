@@ -221,25 +221,18 @@ func (d *Driver) Create() error {
 }
 
 func (d *Driver) Start() error {
-	var helperSock, vfkitSock *os.File
-	var err error
+	var socketPath string
 
 	if d.VmnetHelper != nil {
-		helperSock, vfkitSock, err = vmnet.Socketpair()
-		if err != nil {
-			return err
-		}
-		defer helperSock.Close()
-		defer vfkitSock.Close()
-
-		if err := d.VmnetHelper.Start(helperSock); err != nil {
+		socketPath = d.VmnetHelper.SocketPath()
+		if err := d.VmnetHelper.Start(socketPath); err != nil {
 			return err
 		}
 
 		d.MACAddress = d.VmnetHelper.GetMACAddress()
 	}
 
-	if err := d.startVfkit(vfkitSock); err != nil {
+	if err := d.startVfkit(socketPath); err != nil {
 		return err
 	}
 
@@ -252,9 +245,9 @@ func (d *Driver) Start() error {
 	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
 }
 
-// startVfkit starts the vfkit child process. If vfkitSock is non nil, vfkit is
-// connected to the vmnet network via the socket instead of "nat" network.
-func (d *Driver) startVfkit(vfkitSock *os.File) error {
+// startVfkit starts the vfkit child process. If socketPath is not empty, vfkit
+// is connected to the vmnet network via the socket instead of "nat" network.
+func (d *Driver) startVfkit(socketPath string) error {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
 
 	var startCmd []string
@@ -267,10 +260,10 @@ func (d *Driver) startVfkit(vfkitSock *os.File) error {
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-blk,path=%s", isoPath))
 
-	if vfkitSock != nil {
+	if socketPath != "" {
 		// The guest will be able to access other guests in the vmnet network.
 		startCmd = append(startCmd,
-			"--device", fmt.Sprintf("virtio-net,fd=%d,mac=%s", vfkitSock.Fd(), d.MACAddress))
+			"--device", fmt.Sprintf("virtio-net,unixSocketPath=%s,mac=%s", socketPath, d.MACAddress))
 	} else {
 		// The guest will not be able to access other guests.
 		startCmd = append(startCmd,

@@ -554,13 +554,23 @@ var (
 		ExitCode: ExProgramNotFound,
 		Advice: translate.T(`vmnet-helper was not found on the system, resolve by:
 
-		Option 1) Installing vment-helper:
+		Option 1) Installing vmnet-helper:
 
 		  https://github.com/nirs/vmnet-helper#installation
 
 		Option 2) Using the nat network:
 
 		  minikube start{{.profile}} --driver vfkit --network nat`),
+		Style: style.SeeNoEvil,
+	}
+	NotConfiguredVmnetHelper = Kind{
+		ID:       "NOT_CONFIGURED_VMNET_HELPER",
+		ExitCode: ExProgramConfig,
+		Advice: translate.T(`Configure vmnet-helper to run without a password.
+
+		Please install a vmnet-helper sudoers rule using these instructions:
+
+		https://github.com/nirs/vmnet-helper#granting-permission-to-run-vmnet-helper`),
 		Style: style.SeeNoEvil,
 	}
 )
