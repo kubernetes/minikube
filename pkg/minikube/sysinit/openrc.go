@@ -120,6 +120,10 @@ func (s *OpenRC) Disable(_ string) error {
 	return nil
 }
 
+func (s *OpenRC) ResetFailed(_ string) error {
+	return nil
+}
+
 // DisableNow does Disable + Stop
 func (s *OpenRC) DisableNow(svc string) error {
 	// supposed to do disable + stop

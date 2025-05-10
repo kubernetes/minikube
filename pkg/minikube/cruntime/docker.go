@@ -167,6 +167,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		return err
 	}
 
+	_ = r.Init.ResetFailed("docker")
 	if err := r.Init.Restart("docker"); err != nil {
 		return err
 	}
@@ -197,11 +198,12 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 			return err
 		}
 
+		_ = r.Init.ResetFailed(service)
 		_ = r.Init.Restart(service)
 		// try to restart service if stopped, restart until it works
 		for !r.Init.Active(service) {
-			fmt.Println("stuck")
 			time.Sleep(5 * time.Second)
+			_ = r.Init.ResetFailed(service)
 			_ = r.Init.Restart(service)
 			time.Sleep(5 * time.Second)
 
@@ -213,6 +215,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 
 // Restart restarts Docker on a host
 func (r *Docker) Restart() error {
+	_ = r.Init.ResetFailed("docker")
 	return r.Init.Restart("docker")
 }
 
