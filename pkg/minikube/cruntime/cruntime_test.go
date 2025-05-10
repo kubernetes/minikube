@@ -572,7 +572,9 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 		case "disable":
 		case "mask":
 		case "unmask":
+		case "reset-failed":
 			f.t.Logf("fake systemctl: %s %s: %v", svc, action, state)
+
 		default:
 			return out, fmt.Errorf("unimplemented fake action: %q", action)
 		}

@@ -25,7 +25,10 @@ PODMAN_BIN_ENV = \
 	CGO_ENABLED=1 \
 	GOPATH="$(PODMAN_GOPATH)" \
 	PATH=$(PODMAN_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=$(PODMAN_GOARCH)
+	GOARCH=$(PODMAN_GOARCH) \
+	GOPROXY="https://proxy.golang.org,direct" \
+	GOSUMDB='sum.golang.org'\
+	GOOS=linux
 
 define PODMAN_USERS
 	- -1 podman -1 - - - - -

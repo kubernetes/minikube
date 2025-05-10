@@ -65,6 +65,9 @@ type Manager interface {
 	// Reload restarts a service
 	Reload(string) error
 
+	// ResetFailed reset the fail counter of a service
+	ResetFailed(string) error
+
 	// Stop stops a service
 	Stop(string) error
 

@@ -16,7 +16,10 @@ DOCKER_BUILDX_AARCH64_ENV = \
         GOPATH="$(DOCKER_BUILDX_AARCH64_GOPATH)" \
         GOBIN="$(DOCKER_BUILDX_AARCH64_GOPATH)/bin" \
         PATH=$(DOCKER_BUILDX_AARCH64_GOPATH)/bin:$(BR_PATH) \
-        GOARCH=arm64
+        GOARCH=arm64 \
+	GOPROXY="https://proxy.golang.org,direct" \
+	GOSUMDB='sum.golang.org'\
+	GOOS=linux
 
 DOCKER_BUILDX_AARCH64_COMPILE_SRC = $(DOCKER_BUILDX_AARCH64_GOPATH)/src/github.com/docker/buildx
 
