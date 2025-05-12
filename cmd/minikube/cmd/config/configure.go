@@ -159,7 +159,7 @@ func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 
 		return &config.Addons
 	}
-	return
+	return nil
 }
 
 // Processes metallb addon config from configFile if it exists otherwise resorts to default behavior
