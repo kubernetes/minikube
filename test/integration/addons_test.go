@@ -336,13 +336,13 @@ func validateRegistryCredsAddon(ctx context.Context, t *testing.T, profile strin
 
 	base64OfDefaultValue := base64.StdEncoding.EncodeToString([]byte("changeme"))
 	expected := []string{
-		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_PASSWORD: %s", base64OfDefaultValue),
-		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_SERVER: %s", base64OfDefaultValue),
-		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_USER: %s", base64OfDefaultValue),
+		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_PASSWORD: %s", base64OfDefaultValue)
+		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_SERVER: %s", base64OfDefaultValue)
+		fmt.Sprintf("DOCKER_PRIVATE_REGISTRY_USER: %s", base64OfDefaultValue)
 
-		"ACR_CLIENT_ID: TUlOSUtVQkVfREVGQVVMVF9WQUxVRQ==",
-		"ACR_PASSWORD: TUlOSUtVQkVfREVGQVVMVF9WQUxVRQ==",
-		"ACR_URL: TUlOSUtVQkVfREVGQVVMVF9WQUxVRQ==",
+		fmt.Sprintf("ACR_CLIENT_ID: %s", base64OfDefaultValue)
+		fmt.Sprintf("ACR_PASSWORD: %s", base64OfDefaultValue)
+		fmt.Sprintf("ACR_URL: %s", base64OfDefaultValue)
 
 		"AWS_ACCESS_KEY_ID: dGVzdF9hd3NfYWNjZXNzaWQ=",
 		"AWS_SECRET_ACCESS_KEY: dGVzdF9hd3NfYWNjZXNza2V5",
