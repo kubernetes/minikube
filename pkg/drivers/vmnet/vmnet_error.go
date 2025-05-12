@@ -1,7 +1,5 @@
-//go:build !darwin
-
 /*
-Copyright 2024 The Kubernetes Authors All rights reserved.
+Copyright 2025 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +16,13 @@ limitations under the License.
 
 package vmnet
 
-import (
-	"fmt"
-	"runtime"
+import "k8s.io/minikube/pkg/minikube/reason"
 
-	"k8s.io/minikube/pkg/minikube/reason"
-)
+type Error struct {
+	Kind reason.Kind
+	Err  error
+}
 
-func ValidateHelper() error {
-	return &Error{Kind: reason.Usage, Err: fmt.Errorf("vmnet-helper is not available on %q", runtime.GOOS)}
+func (e Error) Error() string {
+	return e.Err.Error()
 }
