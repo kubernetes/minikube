@@ -9,6 +9,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/service"
 )
 
+const configDefaultValue = "changeme"
+
 // Top level configs for RegistryCreds addons
 type registryCredsAddonConfig struct {
 	EnableAWSEcr string                         `json:"enableAWSEcr"`
@@ -57,20 +59,20 @@ type registryCredsAddonConfigACR struct {
 // Processes registry-creds addon config from configFile if it exists otherwise resorts to default behavior
 func processRegistryCredsConfig(profile string, ac *addonConfig) {
 	// Default values
-	awsAccessID := "MINIKUBE_DEFAULT_VALUE"
-	awsAccessKey := "MINIKUBE_DEFAULT_VALUE"
+	awsAccessID := configDefaultValue
+	awsAccessKey := configDefaultValue
 	awsSessionToken := ""
-	awsRegion := "MINIKUBE_DEFAULT_VALUE"
-	awsAccount := "MINIKUBE_DEFAULT_VALUE"
-	awsRole := "MINIKUBE_DEFAULT_VALUE"
-	gcrApplicationDefaultCredentials := "MINIKUBE_DEFAULT_VALUE"
-	dockerServer := "MINIKUBE_DEFAULT_VALUE"
-	dockerUser := "MINIKUBE_DEFAULT_VALUE"
-	dockerPass := "MINIKUBE_DEFAULT_VALUE"
+	awsRegion := configDefaultValue
+	awsAccount := configDefaultValue
+	awsRole := configDefaultValue
+	gcrApplicationDefaultCredentials := configDefaultValue
+	dockerServer := configDefaultValue
+	dockerUser := configDefaultValue
+	dockerPass := configDefaultValue
 	gcrURL := "https://gcr.io"
-	acrURL := "MINIKUBE_DEFAULT_VALUE"
-	acrClientID := "MINIKUBE_DEFAULT_VALUE"
-	acrPassword := "MINIKUBE_DEFAULT_VALUE"
+	acrURL := configDefaultValue
+	acrClientID := configDefaultValue
+	acrPassword := configDefaultValue
 
 	regCredsConf := &ac.RegistryCreds
 	awsEcrAction := regCredsConf.EnableAWSEcr // regCredsConf. "enableAWSEcr")
