@@ -118,6 +118,8 @@ More information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/dock
 
 From your host, you can push a Docker image directly to minikube. This image will be cached and automatically pulled into all future minikube clusters created on the machine
 
+Note: "minikube cache" will be deprecated in upcoming versions, please switch to "[minikube image load](/docs/handbook/pushing/#7-loading-directly-to-in-cluster-container-runtime)"
+
 ```shell
 minikube cache add alpine:latest
 ```
