@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // KubernetesContainerPrefix is the prefix of each Kubernetes container
@@ -201,13 +202,17 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		_ = r.Init.ResetFailed(service)
 		_ = r.Init.Restart(service)
 		// try to restart service if stopped, restart until it works
-		for !r.Init.Active(service) {
-			time.Sleep(5 * time.Second)
-			_ = r.Init.ResetFailed(service)
-			_ = r.Init.Restart(service)
-			time.Sleep(5 * time.Second)
-
-		}
+		retry.Expo(
+			func() error {
+				if !r.Init.Active(service) {
+					r.Init.ResetFailed(service)
+					r.Init.Restart(service)
+					return fmt.Errorf("cri-docker not running")
+				}
+				return nil
+			},
+			1*time.Second, time.Minute, 5,
+		)
 	}
 
 	return nil
