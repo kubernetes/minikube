@@ -82,16 +82,15 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.64.5
+GOLINT_VERSION ?= v2.1.5
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
 GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
-GOLINT_OPTIONS = --timeout 7m \
+GOLINT_OPTIONS = \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain'
+	  --config .golangci.yaml
 
 export GO111MODULE := on
 
@@ -524,8 +523,11 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
-	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
+	docker run --rm -v `pwd`:/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	golangci-lint run ${GOLINT_OPTIONS} ./..." 
+	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
+	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
+	# add it under "linters.settings.exclusions.paths" in the ".golangci.yaml" file.
 else
 lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
