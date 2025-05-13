@@ -53,6 +53,12 @@ Configures the addon w/ADDON_NAME within minikube (example: minikube addons conf
 minikube addons configure ADDON_NAME [flags]
 ```
 
+### Options
+
+```
+  -f, --config-file string   An optional configuration file to read addon specific configs from instead of being prompted each time.
+```
+
 ### Options inherited from parent commands
 
 ```
