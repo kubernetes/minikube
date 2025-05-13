@@ -510,7 +510,7 @@ var Addons = map[string]*Addon{
 			"logviewer-rbac.yaml",
 			"0640"),
 	}, false, "logviewer", "3rd party (unknown)", "", "", map[string]string{
-		"LogViewer": "ivans3/minikube-log-viewer:latest@sha256:75854f45305cc47d17b04c6c588fa60777391761f951e3a34161ddf1f1b06405",
+		"LogViewer": "ivans3/minikube-log-viewer:v1@sha256:e4a607c159c8c28a9c21dec0c1fc90e0165309c272f40b16c5d4088954cd17a9",
 	}, map[string]string{
 		"LogViewer": "docker.io",
 	}),
