@@ -491,6 +491,8 @@ minikube was unable to safely downgrade installed Kubernetes version
 
 "NOT_FOUND_VMNET_HELPER" (Exit code ExProgramNotFound)  
 
+"NOT_CONFIGURED_VMNET_HELPER" (Exit code ExProgramConfig)  
+
 ## Error Codes
 
 
