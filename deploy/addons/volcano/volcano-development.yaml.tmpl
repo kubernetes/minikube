@@ -131,6 +131,11 @@ spec:
       labels:
         app: volcano-admission
     spec:
+      securityContext:
+        seLinuxOptions:
+          level: s0:c123,c456
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccount: volcano-admission
       priorityClassName: system-cluster-critical
       containers:
@@ -156,6 +161,15 @@ spec:
               readOnly: true
             - mountPath: /admission.local.config/configmap
               name: admission-config
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - DAC_OVERRIDE
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       volumes:
         - name: admission-certs
           secret:
@@ -226,6 +240,11 @@ spec:
   backoffLimit: 3
   template:
     spec:
+      securityContext:
+        seLinuxOptions:
+          level: s0:c123,c456
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccountName: volcano-admission-init
       priorityClassName: system-cluster-critical
       restartPolicy: Never
@@ -235,6 +254,15 @@ spec:
           imagePullPolicy: Always
           command: ["./gen-admission-secret.sh", "--service", "volcano-admission-service", "--namespace",
                     "volcano-system", "--secret", "volcano-admission-secret"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - DAC_OVERRIDE
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
 ---
 # Source: volcano/templates/batch_v1alpha1_job.yaml
 apiVersion: apiextensions.k8s.io/v1
@@ -4453,6 +4481,11 @@ spec:
       labels:
         app: volcano-controller
     spec:
+      securityContext:
+        seLinuxOptions:
+          level: s0:c123,c456
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccount: volcano-controllers
       priorityClassName: system-cluster-critical
       containers:
@@ -4471,6 +4504,15 @@ spec:
             - -v=4
             - 2>&1
           imagePullPolicy: Always
+          securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                add:
+                - DAC_OVERRIDE
+                drop:
+                - ALL
+              runAsNonRoot: true
+              runAsUser: 1000
 ---
 # Source: volcano/templates/scheduler.yaml
 apiVersion: v1
@@ -4630,6 +4672,11 @@ spec:
       labels:
         app: volcano-scheduler
     spec:
+      securityContext:
+        seLinuxOptions:
+          level: s0:c123,c456
+        seccompProfile:
+          type: RuntimeDefault
       serviceAccount: volcano-scheduler
       priorityClassName: system-cluster-critical
       containers:
@@ -4656,6 +4703,15 @@ spec:
               mountPath: /volcano.scheduler
             - name: klog-sock
               mountPath: /tmp/klog-socks
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+              - DAC_OVERRIDE
+              drop:
+              - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
       volumes:
         - name: scheduler-config
           configMap:
