@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
   inputs:
     make_targets:
+      type: string
       description: "Comma-separated list of make targets to run (e.g., update-buildkit-version,update-cni-plugins-version)"
       required: true
       default: "update-buildkit-version,update-cni-plugins-version,update-containerd-version,update-cri-o-version,update-crictl-version,update-crun-version,update-docker-version,update-docker-buildx-version,update-golang-version,update-nerdctl-version,update-nerdctld-version,update-runc-version,update-ubuntu-version"
