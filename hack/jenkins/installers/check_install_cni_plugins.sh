@@ -16,7 +16,7 @@
 
 set -eux -o pipefail
 
-CNI_PLUGIN_VERSION="v1.2.0"
+CNI_PLUGIN_VERSION="v1.7.1"
 CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
 CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
 
