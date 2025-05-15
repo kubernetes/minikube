@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
@@ -51,17 +50,17 @@ var (
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 		"hack/jenkins/installers/check_install_cni_plugins.sh": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION="v[0-9.]+"`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 	}
@@ -72,24 +71,24 @@ type Data struct {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
-	defer cancel()
+	//ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
+	//defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "containernetworking", "plugins")
-	if err != nil {
-		klog.Fatalf("Unable to get stable version: %v", err)
-	}
+	//stable, _, _, err := update.GHReleases(ctx, "containernetworking", "plugins")
+	//if err != nil {
+	//	klog.Fatalf("Unable to get stable version: %v", err)
+	//}
 
-	data := Data{Version: stable.Tag}
+	data := Data{Version: "v9.9.3"}
 
 	update.Apply(schema, data)
 
-	if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-latest-aarch64"); err != nil {
-		klog.Fatalf("failed to update hash files: %v", err)
-	}
-	if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins-latest"); err != nil {
-		klog.Fatalf("failed to update hash files: %v", err)
-	}
+	// if err := updateHashFile(data.Version, "arm64", "aarch64/package/cni-plugins-latest-aarch64"); err != nil {
+	// 	klog.Fatalf("failed to update hash files: %v", err)
+	// }
+	// if err := updateHashFile(data.Version, "amd64", "x86_64/package/cni-plugins-latest"); err != nil {
+	// 	klog.Fatalf("failed to update hash files: %v", err)
+	// }
 }
 
 func updateHashFile(version, arch, packagePath string) error {
