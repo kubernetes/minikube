@@ -51,17 +51,17 @@ var (
 		},
 		".github/workflows/pr.yml": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 		".github/workflows/master.yml": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION\s*=\s*["\\]*v[0-9.]+["\\]*`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 		"hack/jenkins/installers/check_install_cni_plugins.sh": {
 			Replace: map[string]string{
-				`CNI_PLUGIN_VERSION=\"v[0-9.]+\"`: `CNI_PLUGIN_VERSION=\"{{.Version}}\"`,
+				`CNI_PLUGIN_VERSION="v[0-9.]+"`: `CNI_PLUGIN_VERSION="{{.Version}}"`,
 			},
 		},
 	}
