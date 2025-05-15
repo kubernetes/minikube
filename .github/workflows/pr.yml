@@ -12,7 +12,7 @@ on:
       - "!deploy/iso/**"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
+  GO_VERSION: '1.24.2'
 permissions:
   contents: read
 
@@ -565,7 +565,7 @@ jobs:
       - name: Install container networking plugins
         shell: bash
         run: |
-          CNI_PLUGIN_VERSION="v1.5.1"
+          CNI_PLUGIN_VERSION=\"v1.7.1\"
           CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
 

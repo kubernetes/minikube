@@ -115,7 +115,7 @@ ii  libkmod2:amd64                  29-1ubuntu1                             amd6
 ii  libkrb5-3:amd64                 1.19.2-2ubuntu0.6                       amd64        MIT Kerberos runtime libraries
 ii  libkrb5support0:amd64           1.19.2-2ubuntu0.6                       amd64        MIT Kerberos runtime libraries - Support library
 ii  libksba8:amd64                  1.6.0-2ubuntu0.2                        amd64        X.509 and CMS support library
-ii  libldap-2.5-0:amd64             2.5.18+dfsg-0ubuntu0.22.04.3            amd64        OpenLDAP libraries
+ii  libldap-2.5-0:amd64             2.5.19+dfsg-0ubuntu0.22.04.1            amd64        OpenLDAP libraries
 ii  liblmdb0:amd64                  0.9.24-1build2                          amd64        Lightning Memory-Mapped Database shared library
 ii  liblz4-1:amd64                  1.9.3-2build2                           amd64        Fast LZ compression algorithm library - runtime
 ii  liblzma5:amd64                  5.2.5-2ubuntu1                          amd64        XZ-format compression library
