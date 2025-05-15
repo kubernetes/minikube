@@ -43,7 +43,6 @@ Requires macOS 10.15 or later and [socket_vmnet](https://github.com/lima-vm/sock
 ### Install socket_vmnet via [brew](https://brew.sh/)
 ```shell
 brew install socket_vmnet
-brew tap homebrew/services
 HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
 ```
 
