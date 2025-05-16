@@ -1,7 +1,6 @@
 module k8s.io/minikube
 
-go 1.23.4
-toolchain go1.24.1
+go 1.24.2
 
 require (
 	cloud.google.com/go/storage v1.52.0
