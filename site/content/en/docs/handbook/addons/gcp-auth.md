@@ -24,7 +24,7 @@ Once the addon is enabled, pods in your cluster will be configured with environm
 minikube start
 ```
 
-```
+```shell
 😄  minikube v1.12.0 on Darwin 10.15.5
 ✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
 👍  Starting control plane node minikube in cluster minikube
@@ -41,7 +41,7 @@ minikube start
 minikube addons enable gcp-auth
 ```
 
-```
+```shell
 🔎  Verifying gcp-auth addon...
 📌  Your GCP credentials will now be mounted into every pod created in the minikube cluster.
 📌  If you don't want credential mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.
@@ -61,14 +61,15 @@ minikube addons enable gcp-auth
 kubectl apply -f test.yaml
 ```
 
-```
+```shell
 deployment.apps/pytest created
 ```
 
 Everything should work as expected. You can run `kubectl describe` on your pods to see the environment variables we inject.
 
 As explained in the output above, if you have a pod you don't want to inject with your credentials, all you need to do is add the `gcp-auth-skip-secret` label:
-<pre>
+
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -90,7 +91,7 @@ spec:
         image: local-pytest
         ports:
           - containerPort: 80
-</pre>
+```
 
 
 ## Refreshing existing pods

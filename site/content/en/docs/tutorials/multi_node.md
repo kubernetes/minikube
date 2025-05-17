@@ -24,8 +24,6 @@ Default [host-path volume provisioner]({{< ref "/docs/handbook/persistent_volume
 
 ```shell
 minikube start --nodes 2 -p multinode-demo
-```
-```
 😄  [multinode-demo] minikube v1.18.1 on Opensuse-Tumbleweed
 ✨  Automatically selected the docker driver
 👍  Starting control plane node multinode-demo in cluster multinode-demo
@@ -53,8 +51,6 @@ minikube start --nodes 2 -p multinode-demo
 
 ```shell
 kubectl get nodes
-```
-```
 NAME                 STATUS   ROLES                  AGE   VERSION
 multinode-demo       Ready    control-plane,master   99s   v1.20.2
 multinode-demo-m02   Ready    <none>                 73s   v1.20.2
@@ -64,9 +60,6 @@ multinode-demo-m02   Ready    <none>                 73s   v1.20.2
 
 ```shell
 minikube status -p multinode-demo
-```
-
-```
 multinode-demo
 type: Control Plane
 host: Running
@@ -84,14 +77,10 @@ kubelet: Running
 
 ```shell
 kubectl apply -f hello-deployment.yaml
-```
-```
 deployment.apps/hello created
 ```
 ```shell
 kubectl rollout status deployment/hello
-```
-```
 deployment "hello" successfully rolled out
 ```
 
@@ -99,8 +88,6 @@ deployment "hello" successfully rolled out
 
 ```shell
 kubectl apply -f hello-svc.yaml
-```
-```
 service/hello created
 ```
 
@@ -108,8 +95,6 @@ service/hello created
 
 ```shell
 kubectl get pods -o wide
-```
-```
 NAME                     READY   STATUS    RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
 hello-695c67cf9c-bzrzk   1/1     Running   0          22s   10.244.1.2   multinode-demo-m02   <none>           <none>
 hello-695c67cf9c-frcvw   1/1     Running   0          22s   10.244.0.3   multinode-demo       <none>           <none>
@@ -119,8 +104,6 @@ hello-695c67cf9c-frcvw   1/1     Running   0          22s   10.244.0.3   multino
 
 ```shell
 minikube service list -p multinode-demo
-```
-```
 |-------------|------------|--------------|---------------------------|
 |  NAMESPACE  |    NAME    | TARGET PORT  |            URL            |
 |-------------|------------|--------------|---------------------------|
@@ -134,8 +117,6 @@ minikube service list -p multinode-demo
 
 ```shell
 curl  http://192.168.49.2:31000
-```
-```
 Hello from hello-695c67cf9c-frcvw (10.244.0.3)
 
 curl  http://192.168.49.2:31000
@@ -154,7 +135,7 @@ Hello from hello-695c67cf9c-frcvw (10.244.0.3)
 {{% tabs %}}
 {{% tab hello-deployment.yaml %}}
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -190,7 +171,7 @@ spec:
 ```
 {{% /tab %}}
 {{% tab hello-svc.yaml %}}
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:

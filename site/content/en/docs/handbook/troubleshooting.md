@@ -27,7 +27,9 @@ find $TMPDIR -mtime -1 -type f -name "*minikube*" -ls  2>/dev/null
 
 For instance after running `minikube start`, the above command will show:
 
-`-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube_start_dc950831e1a232e0318a6d6ca82aaf4f4a8a048b_0.log`
+```text
+-rw-r--r-- 1 user  grp  718 Aug 18 12:40 /var/folders/n1/qxvd9kc/T//minikube_start_dc950831e1a232e0318a6d6ca82aaf4f4a8a048b_0.log
+```
 
 These are plain text log files: you may rename them to "<filename>.log" and then drag/drop them into a GitHub issue for further analysis by the minikube team. You can quickly inspect the final lines of any of these logs via:
   
@@ -37,7 +39,7 @@ tail -n 10 <filename>
 
 for example, this shows:
 
-```
+```text
 I0818 12:40:17.027317   63501 out.go:197] Setting ErrFile to fd 2...
 I0818 12:40:17.027321   63501 out.go:231] isatty.IsTerminal(2) = true
 I0818 12:40:17.027423   63501 root.go:272] Updating PATH: /Users/tstromberg/.minikube/bin
