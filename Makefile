@@ -36,9 +36,9 @@ RPM_REVISION ?= 0
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
 GO_VERSION ?= 1.24.0
-# set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
+# set GOTOOLCHAIN to GO_VERSION excluding the patch version to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
-export GOTOOLCHAIN := go$(GO_VERSION)
+export GOTOOLCHAIN := go$(shell echo $(GO_VERSION) | cut -d '.' -f 1-2)
 # update this only by running `make update-golang-version`
 GO_K8S_VERSION_PREFIX ?= v1.33.0
 
@@ -524,9 +524,9 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
 	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
-	golangci-lint run ${GOLINT_OPTIONS} ./..." 
-	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
-	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
+	golangci-lint run ${GOLINT_OPTIONS} ./..."
+	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit"
+	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory,
 	# add it under "linters.settings.exclusions.paths" in the ".golangci.yaml" file.
 else
 lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
