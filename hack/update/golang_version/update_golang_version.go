@@ -36,6 +36,11 @@ var (
 	}
 
 	schema = map[string]update.Item{
+		"go.mod": {
+			Replace: map[string]string{
+				`go 1\.\d+\.\d+`: `go {{.StableVersion}}`, // Match and replace only the Go version
+			},
+		},
 		"Makefile": {
 			Replace: map[string]string{
 				// searching for 1.* so it does NOT match "KVM_GO_VERSION ?= $(GO_VERSION:.0=)" in the Makefile
@@ -75,7 +80,6 @@ var (
 type Data struct {
 	StableVersion string
 	K8SVersion    string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
-
 }
 
 func main() {
