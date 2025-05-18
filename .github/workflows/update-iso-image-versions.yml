@@ -1,6 +1,14 @@
 name: "update-iso-image-versions"
 on:
   workflow_dispatch:
+    inputs:
+      make_targets:
+        type: string
+        description: "Comma-separated list of make targets to run (e.g., update-buildkit-version,update-cni-plugins-version)"
+        required: true
+        # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
+        # default: "update-buildkit-version,update-cni-plugins-version,update-containerd-version,update-cri-o-version,update-crictl-version,update-crun-version,update-docker-version,update-docker-buildx-version,update-golang-version,update-nerdctl-version,update-nerdctld-version,update-runc-version,update-ubuntu-version"
+        default: "update-buildkit-version,update-cni-plugins-version,update-crun-version,update-docker-version,update-golang-version,update-runc-version,update-ubuntu-version"
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.24.0'
@@ -11,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
           go-version: ${{env.GO_VERSION}}
       - name: Bump versions
@@ -30,20 +38,12 @@ jobs:
           OLD_NERDCTLD=$(DEP=nerdctld make get-dependency-version)
           OLD_RUNC=$(DEP=runc make get-dependency-version)
           OLD_UBUNTU=$(DEP=ubuntu make get-dependency-version)
-          make update-buildkit-version
-          make update-cni-plugins-version
-          # make update-containerd-version
-          # Uncomment after crictl/cri-o issue resolved: https://github.com/kubernetes/minikube/issues/18359
-          # make update-cri-o-version
-          # make update-crictl-version
-          make update-crun-version
-          make update-docker-version
-          # make update-docker-buildx-version
-          make update-golang-version
-          # make update-nerdctl-version
-          # make update-nerdctld-version
-          make update-runc-version
-          make update-ubuntu-version
+          TARGETS="${{ inputs.make_targets }}"
+          IFS=',' read -ra TARGET_ARRAY <<< "$TARGETS"
+          for TARGET in "${TARGET_ARRAY[@]}"; do
+            echo "Running make $TARGET"
+            make $TARGET
+          done
           NEW_BUILDKIT=$(DEP=buildkit make get-dependency-version)
           NEW_CNI_PLUGINS=$(DEP=cni-plugins make get-dependency-version)
           NEW_CONTAINERD=$(DEP=containerd make get-dependency-version)

@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.35.0
+ISO_VERSION ?= v1.35.0-1747341198-20771
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -47,9 +47,9 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2023.02.9
+BUILDROOT_BRANCH ?= 2025.02
 # the go version on the line below is for the ISO
-GOLANG_OPTIONS = GO_VERSION=1.21.6 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GO_VERSION=1.23.4 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -59,7 +59,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
 # source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= gcr.io/k8s-minikube/xcgo:go1.22.2
+HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -82,16 +82,15 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
-GOLINT_VERSION ?= v1.64.5
+GOLINT_VERSION ?= v2.1.5
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
 GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
-GOLINT_OPTIONS = --timeout 7m \
+GOLINT_OPTIONS = \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable gofmt,goimports,gocritic,revive,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain'
+	  --config .golangci.yaml
 
 export GO111MODULE := on
 
@@ -104,7 +103,7 @@ $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube:Z -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
@@ -190,7 +189,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -342,13 +341,13 @@ out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube-iso-$*
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
 iso_in_docker:
-	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
@@ -524,8 +523,11 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
-	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
+	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	golangci-lint run ${GOLINT_OPTIONS} ./..." 
+	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
+	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
+	# add it under "linters.settings.exclusions.paths" in the ".golangci.yaml" file.
 else
 lint: out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
@@ -655,7 +657,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
 		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
+		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	$(if $(quiet),@echo "  GO       $@")

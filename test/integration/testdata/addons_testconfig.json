@@ -1,0 +1,32 @@
+	{
+    "addons": {
+      "registry-creds": {
+        "enableAWSEcr": "enable",
+        "awsEcrConfigs": {
+          "awsAccessID": "test_aws_accessid",
+          "awsAccessKey": "test_aws_accesskey",
+          "awsSessionToken": "test_aws_session_token",
+          "awsRegion": "test_aws_region",
+          "awsAccount": "test_aws_account",
+          "awsRole": "test_aws_role"
+        },
+        "enableGCR": "enable",
+        "gcrConfigs": {
+          "gcrPath": "./testdata/gcp-creds.json",
+          "gcrURL": "https://gcr.io"
+        },
+        "enableDockerRegistry": "disable",
+        "dockerConfigs": {
+          "dockerServer": "test_docker_server",
+          "dockerUser": "test_docker_user",
+          "dockerPass": "test_docker_password"
+        },
+        "enableACR": "disable",
+        "acrConfigs": {
+          "acrURL": "test_acr_url",
+          "acrClientID": "test_acr_clientid",
+          "acrPassword": "test_acr_password"
+        }
+      }
+    }
+  }

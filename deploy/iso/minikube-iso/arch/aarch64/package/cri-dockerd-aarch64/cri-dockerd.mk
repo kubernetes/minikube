@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-CRI_DOCKERD_AARCH64_VER = 0.3.15
-CRI_DOCKERD_AARCH64_REV = c1c566e
-CRI_DOCKERD_AARCH64_VERSION = c1c566e0cc84abe6972f0bf857ecd8fe306258d9
+CRI_DOCKERD_AARCH64_VER = 0.4.0
+CRI_DOCKERD_AARCH64_REV = b9b8893
+CRI_DOCKERD_AARCH64_VERSION = b9b889355f3002c01db294427964e454dfbc3feb
 CRI_DOCKERD_AARCH64_SITE = https://github.com/Mirantis/cri-dockerd/archive
 CRI_DOCKERD_AARCH64_SOURCE = $(CRI_DOCKERD_AARCH64_VERSION).tar.gz
 
@@ -18,7 +18,10 @@ CRI_DOCKERD_AARCH64_ENV = \
 	GO111MODULE=on \
 	GOPATH="$(CRI_DOCKERD_AARCH64_GOPATH)" \
 	PATH=$(CRI_DOCKERD_AARCH64_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=arm64
+	GOARCH=arm64 \
+	GOPROXY="https://proxy.golang.org,direct" \
+	GOSUMDB='sum.golang.org'\
+	GOOS=linux
 
 CRI_DOCKERD_AARCH64_COMPILE_SRC = $(CRI_DOCKERD_AARCH64_GOPATH)/src/github.com/Mirantis/cri-dockerd
 CRI_DOCKERD_AARCH64_BUILDFLAGS = "-ldflags '-X github.com/Mirantis/cri-dockerd/version.Version=$(CRI_DOCKERD_AARCH64_VER) -X github.com/Mirantis/cri-dockerd/version.GitCommit=$(CRI_DOCKERD_AARCH64_REV)'"

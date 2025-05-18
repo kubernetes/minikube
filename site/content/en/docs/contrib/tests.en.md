@@ -24,6 +24,9 @@ tests addons that require no special environment in parallel
 #### validateIngressAddon
 tests the ingress addon by deploying a default nginx pod
 
+#### validateRegistryCredsAddon
+tests the registry-creds addon by trying to load its configs
+
 #### validateRegistryAddon
 tests the registry addon
 

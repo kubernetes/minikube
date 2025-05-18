@@ -173,6 +173,11 @@ func IsQEMU(name string) bool {
 	return name == QEMU2 || name == QEMU
 }
 
+// IsVFKit checks if the driver is vfkit
+func IsVFKit(name string) bool {
+	return name == VFKit
+}
+
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
 	if IsKIC(name) || BareMetal(name) {
@@ -204,6 +209,11 @@ func IsVMware(name string) bool {
 // IsHyperV check if the driver is Hyper-V
 func IsHyperV(name string) bool {
 	return name == HyperV
+}
+
+// SupportsNetworkFlag reutuns if driver supports the --network flag
+func SupportsNetworkFlag(name string) bool {
+	return IsKIC(name) || IsKVM(name) || IsQEMU(name) || IsVFKit(name)
 }
 
 // AllowsPreload returns if preload is allowed for the driver

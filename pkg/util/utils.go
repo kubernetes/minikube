@@ -21,9 +21,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/blang/semver/v4"
 	units "github.com/docker/go-units"
@@ -124,42 +122,4 @@ func RemoveDuplicateStrings(initial []string) []string {
 		result = append(result, v)
 	}
 	return result
-}
-
-// MaskProxyPassword masks the password in a proxy URL
-func MaskProxyPassword(proxyURL string) string {
-	// Proxy variable values SHOULD have a value like
-	// https(s)://<whatever>
-	parts := strings.Split(proxyURL, "://")
-	if len(parts) == 2 {
-		proxyAddress := parts[1]
-		// Let's store the username, the URL and an optional port address
-		pattern := `([^:]+):.+(@[\w\.]+)(:\d+)?`
-		re := regexp.MustCompile(pattern)
-		matches := re.FindStringSubmatch(proxyAddress)
-		mask := "*****"
-		switch len(matches) {
-		case 4:
-			return fmt.Sprintf("%s://%s:%s%s%s", parts[0], matches[1], mask, matches[2], matches[3])
-		case 3:
-			return fmt.Sprintf("%s//%s:%s@%s", parts[0], matches[1], mask, matches[2])
-		}
-	}
-	return proxyURL
-}
-
-// MaskProxyPasswordWithKey masks the password in a proxy URL specified by a key-value pair
-func MaskProxyPasswordWithKey(v string) string {
-	parts := strings.Split(v, "=")
-	// Is it an attribution variable?
-	if len(parts) == 2 {
-		key := strings.ToUpper(parts[0])
-		// Is it a proxy setting?
-		if key == "HTTP_PROXY" || key == "HTTPS_PROXY" {
-			proxyValue := parts[1]
-			maskedProxyValue := MaskProxyPassword(proxyValue)
-			return key + "=" + maskedProxyValue
-		}
-	}
-	return v
 }

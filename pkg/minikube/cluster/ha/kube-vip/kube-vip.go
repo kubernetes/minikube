@@ -86,7 +86,7 @@ spec:
     - name: lb_port
       value: "{{ .Port }}"
     {{- end}}
-    image: ghcr.io/kube-vip/kube-vip:v0.8.10
+    image: ghcr.io/kube-vip/kube-vip:v0.9.1
     imagePullPolicy: IfNotPresent
     name: kube-vip
     resources: {}
