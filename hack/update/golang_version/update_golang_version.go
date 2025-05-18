@@ -38,7 +38,7 @@ var (
 	schema = map[string]update.Item{
 		"go.mod": {
 			Replace: map[string]string{
-				`go 1\.\d+\.\d+`: `go {{.StableVersion}}`, // Match and replace only the Go version
+				`go 1\.\d+\.\d+`: `go {{.MajorMinor}}`, // Match and replace only the major.minor Go version
 			},
 		},
 		"Makefile": {
@@ -79,6 +79,7 @@ var (
 // Data holds stable Golang version - in full and in <major>.<minor> format
 type Data struct {
 	StableVersion string
+	MajorMinor    string // Major.minor version (e.g., 1.24.0)
 	K8SVersion    string // as of v1.23.0 Kubernetes uses k8s version in golang image name because: https://github.com/kubernetes/kubernetes/pull/103692#issuecomment-908659826
 }
 
@@ -95,8 +96,13 @@ func main() {
 		klog.Warningf("Golang stable version is a release candidate, skipping: %s", stable)
 		return
 	}
-	data := Data{StableVersion: stable, K8SVersion: k8sVersion}
-	klog.Infof("Golang stable version: %s", data.StableVersion)
+	// Derive major.minor version (e.g., 1.24.0 from 1.24.2)
+	majorMinor := stable
+	if parts := strings.Split(stable, "."); len(parts) >= 3 {
+		majorMinor = fmt.Sprintf("%s.%s.0", parts[0], parts[1])
+	}
+	data := Data{StableVersion: stable, MajorMinor: majorMinor, K8SVersion: k8sVersion}
+	klog.Infof("Golang stable version: %s, MajorMinor: %s", data.StableVersion, data.MajorMinor)
 
 	update.Apply(schema, data)
 
