@@ -79,9 +79,9 @@ require (
 	gonum.org/v1/plot v0.16.0
 	google.golang.org/api v0.229.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.32.2
+	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.32.2
+	k8s.io/client-go v0.33.1
 	k8s.io/cluster-bootstrap v0.0.0
 	k8s.io/component-base v0.32.2
 	k8s.io/klog/v2 v2.130.1
@@ -157,7 +157,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/gookit/color v1.5.2 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
+	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
