@@ -2,6 +2,8 @@ module k8s.io/minikube
 
 go 1.24.0
 
+toolchain go1.24.1
+
 require (
 	cloud.google.com/go/storage v1.52.0
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.14
