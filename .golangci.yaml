@@ -151,7 +151,7 @@ linters:
       ##### TODO: fix and enable these
       # We enabled these and we pass
       - nilValReturn
-      # - weakCond # pkg/minikube/config/profile.go:61:9: weakCond: suspicious `cc.Nodes != nil && cc.Nodes[0].Name == node.Name`; nil check may not be enough, check for len (gocritic)
+      - weakCond 
       - indexAlloc
       - rangeExprCopy
       - boolExprSimplify

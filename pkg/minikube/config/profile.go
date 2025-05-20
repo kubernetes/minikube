@@ -58,7 +58,7 @@ func ControlPlanes(cc ClusterConfig) []Node {
 func IsPrimaryControlPlane(cc ClusterConfig, node Node) bool {
 	// TODO (prezha): find where, for "none" driver, we set first (ie, primary control-plane) node name to "m01" - that should not happen but it's happening before pr #17909
 	// return node.ControlPlane && node.Name == ""
-	return cc.Nodes != nil && cc.Nodes[0].Name == node.Name
+	return len(cc.Nodes) > 0 && cc.Nodes[0].Name == node.Name
 }
 
 // IsValid checks if the profile has the essential info needed for a profile
