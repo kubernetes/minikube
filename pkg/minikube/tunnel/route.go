@@ -105,7 +105,7 @@ func (t *routingTable) Equal(other *routingTable) bool {
 	for i := range *t {
 		routesEqual := (*t)[i].route.Equal((*other)[i].route)
 		linesEqual := (*t)[i].line == ((*other)[i].line)
-		if !(routesEqual && linesEqual) {
+		if !routesEqual || !linesEqual {
 			return false
 		}
 	}

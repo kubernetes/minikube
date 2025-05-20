@@ -30,7 +30,7 @@ linters:
         # - "-QF1012"
         # 3 occurrences.
         # Apply De Morgan’s law https://staticcheck.dev/docs/checks#QF1001
-        - "-QF1001"
+        # - "-QF1001"
         # 9 occurrences.
         # Convert if/else-if chain to tagged switch https://staticcheck.dev/docs/checks#QF1003
         - "-QF1003"
