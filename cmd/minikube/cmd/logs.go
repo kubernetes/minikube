@@ -63,7 +63,7 @@ var logsCmd = &cobra.Command{
 	Short: "Returns logs to debug a local Kubernetes cluster",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(_ *cobra.Command, _ []string) {
-		var logOutput *os.File = os.Stdout
+		logOutput := os.Stdout
 		var err error
 
 		if fileOutput != "" {

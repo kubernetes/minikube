@@ -23,6 +23,7 @@ linters:
         - "-ST1020"
         - "-ST1021"
         - "-ST1022"
+        - "-QF1008"
         ##### TODO: fix and enable these
         # 4 occurrences.
         # Use fmt.Fprintf(x, ...) instead of x.Write(fmt.Sprintf(...)) https://staticcheck.dev/docs/checks#QF1012
@@ -35,11 +36,8 @@ linters:
         - "-QF1003"
         # 1 occurrence.
         # could omit type *os.File from declaration; it will be inferred from the right-hand side
-        - "-QF1011"
-        ##### These have been vetted to be disabled.
-        # 19 occurrences. Omit embedded fields from selector expression https://staticcheck.dev/docs/checks#QF1008
-        # Usefulness is questionable.
-        - "-QF1008"
+        # - "-QF1011"
+        
     revive:
       enable-all-rules: true
       rules:
