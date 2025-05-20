@@ -27,7 +27,7 @@ linters:
         ##### TODO: fix and enable these
         # 4 occurrences.
         # Use fmt.Fprintf(x, ...) instead of x.Write(fmt.Sprintf(...)) https://staticcheck.dev/docs/checks#QF1012
-        - "-QF1012"
+        # - "-QF1012"
         # 3 occurrences.
         # Apply De Morgan’s law https://staticcheck.dev/docs/checks#QF1001
         - "-QF1001"

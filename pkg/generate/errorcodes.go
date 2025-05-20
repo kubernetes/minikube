@@ -83,7 +83,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 
 					// This is the numeric code of the error, e.g. 80 for ExGuest Error
 					code := s.Value
-					buf.WriteString(fmt.Sprintf("%s: %s  \n", code, currentError))
+					fmt.Fprintf(buf, "%s: %s  \n", code, currentError)
 				}
 				return true
 			})
@@ -100,7 +100,7 @@ func ErrorCodes(docPath string, pathsToCheck []string) error {
 					currentNode = id.Name
 					if strings.HasPrefix(currentNode, "Ex") && currentNode != "ExitCode" {
 						// We have all the info we're going to get on this error, print it out
-						buf.WriteString(fmt.Sprintf("%s (Exit code %v)  \n", currentID, currentNode))
+						fmt.Fprintf(buf, "%s (Exit code %v)  \n", currentID, currentNode)
 						if currentComment != "" {
 							buf.WriteString(currentComment + "  \n")
 						}

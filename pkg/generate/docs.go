@@ -97,17 +97,17 @@ func GenMarkdownCustom(cmd *cobra.Command, w io.Writer) error {
 	buf.WriteString(long + "\n\n")
 
 	if cmd.Runnable() {
-		buf.WriteString(fmt.Sprintf("```shell\n%s\n```\n\n", cmd.UseLine()))
+		fmt.Fprintf(buf, "```shell\n%s\n```\n\n", cmd.UseLine())
 	}
 
 	if len(cmd.Aliases) > 0 {
 		buf.WriteString("### Aliases\n\n")
-		buf.WriteString(fmt.Sprintf("%s\n\n", cmd.Aliases))
+		fmt.Fprintf(buf, "%s\n\n", cmd.Aliases)
 	}
 
 	if len(cmd.Example) > 0 {
 		buf.WriteString("### Examples\n\n")
-		buf.WriteString(fmt.Sprintf("```\n%s\n```\n\n", cmd.Example))
+		fmt.Fprintf(buf, "```\n%s\n```\n\n", cmd.Example)
 	}
 
 	if err := printOptions(buf, cmd); err != nil {
