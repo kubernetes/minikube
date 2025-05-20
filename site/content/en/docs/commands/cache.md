@@ -15,7 +15,7 @@ Add an image into minikube as a local cache, or delete, reload the cached images
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -51,13 +51,13 @@ minikube cache add [flags]
 
 ### Options
 
-```
+```text
       --all   Add image to cache for all running minikube clusters
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -93,7 +93,7 @@ minikube cache delete [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -130,7 +130,7 @@ minikube cache help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -166,14 +166,14 @@ minikube cache list [flags]
 
 ### Options
 
-```
+```text
       --format string   Go template format string for the cache list output.  The format for Go templates can be found here: https://pkg.go.dev/text/template
                         For the list of accessible variables for the template, see the struct values here: https://pkg.go.dev/k8s.io/minikube/cmd/minikube/cmd#CacheListTemplate (default "{{.CacheImage}}\n")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -209,7 +209,7 @@ minikube cache reload [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

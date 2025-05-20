@@ -48,7 +48,7 @@ minikube config SUBCOMMAND [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -88,13 +88,13 @@ minikube config defaults PROPERTY_NAME [flags]
 
 ### Options
 
-```
+```text
   -o, --output string   Output format. Accepted values: [json, yaml]
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -130,7 +130,7 @@ minikube config get PROPERTY_NAME [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -167,7 +167,7 @@ minikube config help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -204,7 +204,7 @@ minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -240,7 +240,7 @@ minikube config unset PROPERTY_NAME [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -276,14 +276,14 @@ minikube config view [flags]
 
 ### Options
 
-```
+```text
       --format string   Go template format string for the config view output.  The format for Go templates can be found here: https://pkg.go.dev/text/template
                         For the list of accessible variables for the template, see the struct values here: https://pkg.go.dev/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate (default "- {{.ConfigKey}}: {{.ConfigValue}}\n")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

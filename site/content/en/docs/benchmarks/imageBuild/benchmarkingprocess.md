@@ -40,7 +40,7 @@ Between runs the cache and existing image is left alone, only the Go binary is c
 
 
 ## How are the benchmarks conducted?
-```
+```text
 // Pseudo code of running docker-env benchmark
 
 startMinikube() // minikube start --container-runtime=docker

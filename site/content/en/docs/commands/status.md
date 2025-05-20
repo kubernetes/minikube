@@ -21,7 +21,7 @@ minikube status [flags]
 
 ### Options
 
-```
+```text
   -f, --format string         Go template format string for the status output.  The format for Go templates can be found here: https://pkg.go.dev/text/template
                               For the list accessible variables for the template, see the struct values here: https://pkg.go.dev/k8s.io/minikube/cmd/minikube/cmd#Status (default "{{.Name}}\ntype: Control Plane\nhost: {{.Host}}\nkubelet: {{.Kubelet}}\napiserver: {{.APIServer}}\nkubeconfig: {{.Kubeconfig}}\n{{- if .TimeToStop }}\ntimeToStop: {{.TimeToStop}}\n{{- end }}\n{{- if .DockerEnv }}\ndocker-env: {{.DockerEnv}}\n{{- end }}\n{{- if .PodManEnv }}\npodman-env: {{.PodManEnv}}\n{{- end }}\n\n")
   -l, --layout string         output layout (EXPERIMENTAL, JSON only): 'nodes' or 'cluster' (default "nodes")
@@ -32,7 +32,7 @@ minikube status [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

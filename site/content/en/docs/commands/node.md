@@ -19,7 +19,7 @@ minikube node [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -55,7 +55,7 @@ minikube node add [flags]
 
 ### Options
 
-```
+```text
       --control-plane       If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.
       --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
       --worker              If set, added node will be available as worker. Defaults to true. (default true)
@@ -63,7 +63,7 @@ minikube node add [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -99,7 +99,7 @@ minikube node delete [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -136,7 +136,7 @@ minikube node help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -172,7 +172,7 @@ minikube node list [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -208,13 +208,13 @@ minikube node start [flags]
 
 ### Options
 
-```
+```text
       --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -250,7 +250,7 @@ minikube node stop [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

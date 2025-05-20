@@ -19,7 +19,7 @@ minikube pause [flags]
 
 ### Options
 
-```
+```text
   -A, --all-namespaces       If set, pause all namespaces
   -n, --namespaces strings   namespaces to pause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
   -o, --output string        Format to print stdout in. Options include: [text,json] (default "text")
@@ -27,7 +27,7 @@ minikube pause [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

@@ -19,7 +19,7 @@ minikube service [flags] SERVICE
 
 ### Options
 
-```
+```text
       --all                Forwards all services in a namespace (defaults to "false")
       --format string      Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --https              Open the service URL with https instead of http (defaults to "false")
@@ -31,7 +31,7 @@ minikube service [flags] SERVICE
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -68,7 +68,7 @@ minikube service help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -105,14 +105,14 @@ minikube service list [flags]
 
 ### Options
 
-```
+```text
   -n, --namespace string   The services namespace
   -o, --output string      The output format. One of 'json', 'table' (default "table")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

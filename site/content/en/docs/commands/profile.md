@@ -19,7 +19,7 @@ minikube profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikub
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -56,7 +56,7 @@ minikube profile help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -92,14 +92,14 @@ minikube profile list [flags]
 
 ### Options
 
-```
+```text
   -l, --light           If true, returns list of profiles faster by skipping validating the status of the cluster.
   -o, --output string   The output format. One of 'json', 'table' (default "table")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

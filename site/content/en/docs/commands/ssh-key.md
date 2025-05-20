@@ -19,13 +19,13 @@ minikube ssh-key [flags]
 
 ### Options
 
-```
+```text
   -n, --node string   The node to get ssh-key path. Defaults to the primary control plane.
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")

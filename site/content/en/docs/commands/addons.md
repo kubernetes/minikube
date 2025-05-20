@@ -19,7 +19,7 @@ minikube addons SUBCOMMAND [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -61,7 +61,7 @@ minikube addons configure ADDON_NAME [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -97,7 +97,7 @@ minikube addons disable ADDON_NAME [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -139,7 +139,7 @@ minikube addons enable dashboard
 
 ### Options
 
-```
+```text
       --force               If true, will perform potentially dangerous operations. Use with discretion.
       --images string       Images used by this addon. Separated by commas.
       --refresh             If true, pods might get deleted and restarted on addon enable
@@ -148,7 +148,7 @@ minikube addons enable dashboard
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -185,7 +185,7 @@ minikube addons help [command] [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -227,13 +227,13 @@ minikube addons images ingress
 
 ### Options
 
-```
+```text
   -o, --output string   minikube addons images ADDON_NAME --output OUTPUT. table, json (default "table")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -269,14 +269,14 @@ minikube addons list [flags]
 
 ### Options
 
-```
+```text
   -d, --docs            If true, print web links to addons' documentation if using --output=list (default).
   -o, --output string   minikube addons list --output OUTPUT. json, list (default "list")
 ```
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
@@ -312,7 +312,7 @@ minikube addons open ADDON_NAME [flags]
 
 ### Options
 
-```
+```text
       --format string   Format to output addons URL in.  This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --https           Open the addons URL with https instead of http
       --interval int    The time interval for each check that wait performs in seconds (default 1)
@@ -322,7 +322,7 @@ minikube addons open ADDON_NAME [flags]
 
 ### Options inherited from parent commands
 
-```
+```text
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
