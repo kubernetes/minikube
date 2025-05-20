@@ -86,8 +86,8 @@ type DeletionError struct {
 	Errtype typeOfError
 }
 
-func (error DeletionError) Error() string {
-	return error.Err.Error()
+func (deletionError DeletionError) Error() string {
+	return deletionError.Err.Error()
 }
 
 var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
