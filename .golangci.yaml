@@ -33,7 +33,7 @@ linters:
         # - "-QF1001"
         # 9 occurrences.
         # Convert if/else-if chain to tagged switch https://staticcheck.dev/docs/checks#QF1003
-        - "-QF1003"
+        #- "-QF1003"
         # 1 occurrence.
         # could omit type *os.File from declaration; it will be inferred from the right-hand side
         # - "-QF1011"

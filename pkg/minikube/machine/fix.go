@@ -253,10 +253,12 @@ func machineExistsMessage(s state.State, err error, msg string) (bool, error) {
 }
 
 func machineExistsDocker(s state.State, err error) (bool, error) {
-	if s == state.Error {
+
+	switch s {
+	case state.Error:
 		// if the kic image is not present on the host machine, when user cancel `minikube start`, state.Error will be return
 		return false, constants.ErrMachineMissing
-	} else if s == state.None {
+	case state.None:
 		// if the kic image is present on the host machine, when user cancel `minikube start`, state.None will be return
 		return false, constants.ErrMachineMissing
 	}
