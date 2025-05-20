@@ -14,7 +14,7 @@ We defined and named all images used by an addon, you could view them by command
 minikube addons images efk
 ```
 
-```shell
+```text
     ▪ efk has following images:
 |----------------------|------------------------------|-------------------|
 |      IMAGE NAME      |        DEFAULT IMAGE         | DEFAULT REGISTRY  |
