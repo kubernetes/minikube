@@ -156,7 +156,7 @@ linters:
       - rangeExprCopy
       - boolExprSimplify
       - commentedOutImport
-      # - docStub         # pkg/minikube/tunnel/kic/service_tunnel.go:51:1: docStub: silencing go lint doc-comment warnings is unadvised (gocritic)
+      - docStub         # pkg/minikube/tunnel/kic/service_tunnel.go:51:1: docStub: silencing go lint doc-comment warnings is unadvised (gocritic)
       - emptyFallthrough
       - hexLiteral
       - typeAssertChain
