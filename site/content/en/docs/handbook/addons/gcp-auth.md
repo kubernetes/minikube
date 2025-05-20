@@ -22,9 +22,6 @@ Once the addon is enabled, pods in your cluster will be configured with environm
 
 ```shell
 minikube start
-```
-
-```shell
 😄  minikube v1.12.0 on Darwin 10.15.5
 ✨  Automatically selected the docker driver. Other choices: hyperkit, virtualbox
 👍  Starting control plane node minikube in cluster minikube
@@ -39,9 +36,6 @@ minikube start
 
 ```shell
 minikube addons enable gcp-auth
-```
-
-```shell
 🔎  Verifying gcp-auth addon...
 📌  Your GCP credentials will now be mounted into every pod created in the minikube cluster.
 📌  If you don't want credential mounted into a specific pod, add a label with the `gcp-auth-skip-secret` key to your pod configuration.
@@ -59,9 +53,6 @@ minikube addons enable gcp-auth
 
 ```shell
 kubectl apply -f test.yaml
-```
-
-```shell
 deployment.apps/pytest created
 ```
 
