@@ -91,17 +91,18 @@ func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 		// tunnels simultaneously. It is possible that an old tunnel
 		// from an old profile has duplicated route information so we
 		// need to check both machine name and route information.
-		if tunnel.MachineName == t.MachineName && t.Route.Equal(tunnel.Route) {
-			isRunning, err := checkIfRunning(t.Pid)
-			if err != nil {
-				return fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, err)
-			}
-			if isRunning {
-				return errorTunnelAlreadyExists(t)
-			}
-			tunnels[i] = tunnel
-			alreadyExists = true
+		if tunnel.MachineName != t.MachineName || !tunnel.Route.Equal(t.Route) {
+			continue
 		}
+		isRunning, err := checkIfRunning(t.Pid)
+		if err != nil {
+			return fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, err)
+		}
+		if isRunning {
+			return errorTunnelAlreadyExists(t)
+		}
+		tunnels[i] = tunnel
+		alreadyExists = true
 	}
 
 	if !alreadyExists {

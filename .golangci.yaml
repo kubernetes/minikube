@@ -164,7 +164,7 @@ linters:
       - builtinShadow # cmd/minikube/cmd/delete.go:89:7: builtinShadow: shadowing of predeclared identifier: error (gocritic) 
       - importShadow 
       - initClause
-      # - nestingReduce # pkg/minikube/tunnel/registry.go:94:3: nestingReduce: invert if cond, replace body with `continue`, move old body after the statement (gocritic)
+      - nestingReduce 
       - unnecessaryBlock
 
   exclusions:

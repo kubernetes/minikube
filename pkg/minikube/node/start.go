@@ -760,7 +760,8 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 	optSeen := false
 	warnedOnce := false
 	for _, k := range proxy.EnvVars {
-		if v := os.Getenv(k); v != "" {
+		v := os.Getenv(k)
+		if v != "" {
 			if !optSeen {
 				out.Styled(style.Internet, "Found network options:")
 				optSeen = true
