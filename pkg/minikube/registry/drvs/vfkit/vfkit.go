@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
@@ -41,13 +42,17 @@ const (
 )
 
 func init() {
+	priority := registry.Unknown
+	if runtime.GOOS == "darwin" {
+		priority = registry.Preferred
+	}
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.VFKit,
 		Init:     func() drivers.Driver { return vfkit.NewDriver("", "") },
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Experimental,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -104,7 +109,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	_, err := exec.LookPath("vfkit")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Run 'brew tap cfergeau/crc && brew install vfkit'", Doc: docURL}
+		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
 }
