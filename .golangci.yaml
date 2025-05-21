@@ -179,7 +179,3 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
-      # This code is doubtful and I don't understand it. Location: Line 456
-      - path: 'cmd/minikube/cmd/docker-env.go'
-        text: "useless-break: useless break in case clause"
-        linter: revive

@@ -462,7 +462,6 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 		switch outputFormat {
 		case "":
 			// shell "none"
-			break
 		case "text":
 			for k, v := range envVars {
 				_, err := fmt.Fprintf(w, "%s=%s\n", k, v)
@@ -509,7 +508,6 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 		switch outputFormat {
 		case "":
 			// shell "none"
-			break
 		case "text":
 			for _, n := range vars {
 				_, err := fmt.Fprintf(w, "%s\n", n)
