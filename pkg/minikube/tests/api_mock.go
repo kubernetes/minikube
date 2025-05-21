@@ -137,10 +137,10 @@ func (api *MockAPI) Remove(name string) error {
 }
 
 // Save saves a host to disk.
-func (api *MockAPI) Save(host *host.Host) error {
+func (api *MockAPI) Save(hostInfo *host.Host) error {
 	api.SaveCalled = true
-	api.Logf("MockAPI.Save: %+v", host)
-	return api.FakeStore.Save(host)
+	api.Logf("MockAPI.Save: %+v", hostInfo)
+	return api.FakeStore.Save(hostInfo)
 }
 
 // GetMachinesDir returns the directory to store machines in.

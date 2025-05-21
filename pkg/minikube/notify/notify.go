@@ -96,21 +96,21 @@ func maybePrintBetaUpdateText(betaReleasesURL string, localVersion semver.Versio
 	return true
 }
 
-func printUpdateTextCommon(version semver.Version) {
+func printUpdateTextCommon(ver semver.Version) {
 	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 		klog.Errorf("write time failed: %v", err)
 	}
-	url := "https://github.com/kubernetes/minikube/releases/tag/v" + version.String()
-	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": version, "url": url})
+	url := "https://github.com/kubernetes/minikube/releases/tag/v" + ver.String()
+	out.Styled(style.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": ver, "url": url})
 }
 
-func printUpdateText(version semver.Version) {
-	printUpdateTextCommon(version)
+func printUpdateText(ver semver.Version) {
+	printUpdateTextCommon(ver)
 	out.Styled(style.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
 }
 
-func printBetaUpdateText(version semver.Version) {
-	printUpdateTextCommon(version)
+func printBetaUpdateText(ver semver.Version) {
+	printUpdateTextCommon(ver)
 	out.Styled(style.Tip, "To disable beta notices, run: 'minikube config set WantBetaUpdateNotification false'")
 	out.Styled(style.Tip, "To disable update notices in general, run: 'minikube config set WantUpdateNotification false'\n")
 }
@@ -248,14 +248,14 @@ func timeFromFileIfExists(path string) time.Time {
 }
 
 // DownloadURL returns a URL to get minikube binary version ver for platform os/arch
-func DownloadURL(ver, os, arch string) string {
-	if ver == "" || strings.HasSuffix(ver, "-unset") || os == "" || arch == "" {
+func DownloadURL(ver, osName, arch string) string {
+	if ver == "" || strings.HasSuffix(ver, "-unset") || osName == "" || arch == "" {
 		return "https://github.com/kubernetes/minikube/releases"
 	}
 	sfx := ""
-	if os == "windows" {
+	if osName == "windows" {
 		sfx = ".exe"
 	}
 	return fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/minikube-%s-%s%s",
-		ver, os, arch, sfx)
+		ver, osName, arch, sfx)
 }

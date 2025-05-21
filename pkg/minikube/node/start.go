@@ -522,8 +522,8 @@ func cgroupDriver(cc config.ClusterConfig) string {
 	return detect.CgroupDriver()
 }
 
-func pathExists(runner cruntime.CommandRunner, path string) (bool, error) {
-	_, err := runner.RunCmd(exec.Command("stat", path))
+func pathExists(runner cruntime.CommandRunner, p string) (bool, error) {
+	_, err := runner.RunCmd(exec.Command("stat", p))
 	if err == nil {
 		return true, nil
 	}
@@ -624,18 +624,18 @@ func setupKubeadm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 
 // setupKubeconfig generates kubeconfig.
 func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, clusterName string) *kubeconfig.Settings {
-	host := cc.KubernetesConfig.APIServerHAVIP
+	hostIP := cc.KubernetesConfig.APIServerHAVIP
 	port := cc.APIServerPort
 	if !config.IsHA(cc) || driver.NeedsPortForward(cc.Driver) {
 		var err error
-		if host, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
+		if hostIP, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
 	}
-	addr := fmt.Sprintf("https://%s", net.JoinHostPort(host, strconv.Itoa(port)))
+	addr := fmt.Sprintf("https://%s", net.JoinHostPort(hostIP, strconv.Itoa(port)))
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.ReplaceAll(addr, host, cc.KubernetesConfig.APIServerName)
+		addr = strings.ReplaceAll(addr, hostIP, cc.KubernetesConfig.APIServerName)
 	}
 
 	kcs := &kubeconfig.Settings{
@@ -654,29 +654,29 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) (runner command.Runner, preExists bool, machineAPI libmachine.API, hostInfo *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
+		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists, err = startHostInternal(m, cfg, node, delOnFail)
+	hostInfo, preExists, err = startHostInternal(m, cfg, node, delOnFail)
 	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
+		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to start host")
 	}
-	runner, err = machine.CommandRunner(host)
+	runner, err = machine.CommandRunner(hostInfo)
 	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
+		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(hostInfo, runner, cfg.KubernetesConfig.ImageRepository)
 	if err != nil {
-		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
+		return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to validate network")
 	}
 
-	if driver.IsQEMU(host.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
+	if driver.IsQEMU(hostInfo.Driver.DriverName()) && network.IsBuiltinQEMU(cfg.Network) {
 		apiServerPort, err := getPort()
 		if err != nil {
-			return runner, preExists, m, host, errors.Wrap(err, "Failed to find apiserver port")
+			return runner, preExists, m, hostInfo, errors.Wrap(err, "Failed to find apiserver port")
 		}
 		cfg.APIServerPort = apiServerPort
 	}
@@ -687,7 +687,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node, delOnFail bool) 
 		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 
-	return runner, preExists, m, host, err
+	return runner, preExists, m, hostInfo, err
 }
 
 // getPort asks the kernel for a free open port that is ready to use
@@ -707,9 +707,9 @@ func getPort() (int, error) {
 
 // startHostInternal starts a new minikube host using a VM or None
 func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.Node, delOnFail bool) (*host.Host, bool, error) {
-	host, exists, err := machine.StartHost(api, cc, n)
+	hostInfo, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists, nil
+		return hostInfo, exists, nil
 	}
 	klog.Warningf("error starting host: %v", err)
 	// NOTE: People get very cranky if you delete their preexisting VM. Only delete new ones.
@@ -722,7 +722,7 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 
 	if err, ff := errors.Cause(err).(*oci.FailFastError); ff {
 		klog.Infof("will skip retrying to create machine because error is not retriable: %v", err)
-		return host, exists, err
+		return hostInfo, exists, err
 	}
 
 	out.ErrT(style.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
@@ -739,15 +739,15 @@ func startHostInternal(api libmachine.API, cc *config.ClusterConfig, n *config.N
 		}
 	}
 
-	host, exists, err = machine.StartHost(api, cc, n)
+	hostInfo, exists, err = machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists, nil
+		return hostInfo, exists, nil
 	}
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
 	out.ErrT(style.Sad, `Failed to start {{.driver}} {{.driver_type}}. Running "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "delete"), "error": err})
-	return host, exists, err
+	return hostInfo, exists, err
 }
 
 // validateNetwork tries to catch network problems as soon as possible
@@ -847,9 +847,9 @@ func tryRegistry(r command.Runner, driverName, imageRepository, ip string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
-	proxy := os.Getenv("HTTPS_PROXY")
-	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = append([]string{"-x", proxy}, opts...)
+	httpsProxy := os.Getenv("HTTPS_PROXY")
+	if httpsProxy != "" && !strings.HasPrefix(httpsProxy, "localhost") && !strings.HasPrefix(httpsProxy, "127.0") {
+		opts = append([]string{"-x", httpsProxy}, opts...)
 	}
 
 	if imageRepository == "" {
@@ -931,16 +931,16 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 
 	// get current coredns configmap via kubectl
 	get := fmt.Sprintf("sudo %s --kubeconfig=%s -n kube-system get configmap coredns -o yaml", kubectl, kubecfg)
-	out, err := runner.RunCmd(exec.Command("/bin/bash", "-c", get))
+	rest, err := runner.RunCmd(exec.Command("/bin/bash", "-c", get))
 	if err != nil {
 		klog.Errorf("failed to get current CoreDNS ConfigMap: %v", err)
 		return err
 	}
-	cm := strings.TrimSpace(out.Stdout.String())
+	cm := strings.TrimSpace(rest.Stdout.String())
 
 	// check if this specific host entry already exists in coredns configmap, so not to duplicate/override it
-	host := regexp.MustCompile(fmt.Sprintf(`(?smU)^ *hosts {.*%s.*}`, name))
-	if host.MatchString(cm) {
+	hostInfo := regexp.MustCompile(fmt.Sprintf(`(?smU)^ *hosts {.*%s.*}`, name))
+	if hostInfo.MatchString(cm) {
 		klog.Infof("CoreDNS already contains %q host record, skipping...", name)
 		return nil
 	}
@@ -956,8 +956,8 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 	}
 
 	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
-	logs := regexp.MustCompile(`(?smU)^ *log *$`)
-	if !logs.MatchString(cm) {
+	regex := regexp.MustCompile(`(?smU)^ *log *$`)
+	if !regex.MatchString(cm) {
 		// inject log plugin into coredns configmap
 		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
 	}

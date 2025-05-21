@@ -162,7 +162,7 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 }
 
 // GenerateZshCompletion generates the completion for the zsh shell
-func GenerateZshCompletion(out io.Writer, cmd *cobra.Command) error {
+func GenerateZshCompletion(w io.Writer, cmd *cobra.Command) error {
 	zshAutoloadTag := `#compdef minikube
 `
 
@@ -300,17 +300,17 @@ __minikube_convert_bash_to_zsh() {
 	<<'BASH_COMPLETION_EOF'
 `
 
-	_, err := out.Write([]byte(zshAutoloadTag))
+	_, err := w.Write([]byte(zshAutoloadTag))
 	if err != nil {
 		return err
 	}
 
-	_, err = out.Write([]byte(boilerPlate))
+	_, err = w.Write([]byte(boilerPlate))
 	if err != nil {
 		return err
 	}
 
-	_, err = out.Write([]byte(zshInitialization))
+	_, err = w.Write([]byte(zshInitialization))
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ __minikube_convert_bash_to_zsh() {
 	if err != nil {
 		return errors.Wrap(err, "Error generating zsh completion")
 	}
-	_, err = out.Write(buf.Bytes())
+	_, err = w.Write(buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ BASH_COMPLETION_EOF
 }
 __minikube_bash_source <(__minikube_convert_bash_to_zsh)
 `
-	_, err = out.Write([]byte(zshTail))
+	_, err = w.Write([]byte(zshTail))
 	if err != nil {
 		return err
 	}

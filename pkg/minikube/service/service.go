@@ -66,8 +66,8 @@ func init() {
 }
 
 // GetCoreClient returns a core client
-func (k *K8sClientGetter) GetCoreClient(context string) (typed_core.CoreV1Interface, error) {
-	client, err := kapi.Client(context)
+func (k *K8sClientGetter) GetCoreClient(ctx string) (typed_core.CoreV1Interface, error) {
+	client, err := kapi.Client(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "client")
 	}
@@ -288,8 +288,8 @@ func WaitForService(api libmachine.API, cname string, namespace string, service 
 	}
 
 	for _, bareURLString := range serviceURL.URLs {
-		url, _ := OptionallyHTTPSFormattedURLString(bareURLString, https)
-		urlList = append(urlList, url)
+		urlString, _ := OptionallyHTTPSFormattedURLString(bareURLString, https)
+		urlList = append(urlList, urlString)
 	}
 	return urlList, nil
 }
@@ -314,7 +314,7 @@ func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key
 }
 
 // CreateSecret creates or modifies secrets
-func CreateSecret(cname string, namespace, name string, dataValues map[string]string, labels map[string]string) error {
+func CreateSecret(cname string, namespace, name string, dataValues map[string]string, labelData map[string]string) error {
 	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return &retry.RetriableError{Err: err}
@@ -344,7 +344,7 @@ func CreateSecret(cname string, namespace, name string, dataValues map[string]st
 	secretObj := &core.Secret{
 		ObjectMeta: meta.ObjectMeta{
 			Name:   name,
-			Labels: labels,
+			Labels: labelData,
 		},
 		Data: data,
 		Type: core.SecretTypeOpaque,

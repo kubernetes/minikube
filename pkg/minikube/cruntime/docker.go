@@ -285,9 +285,9 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 		Tag        string `json:"Tag"`
 		Size       string `json:"Size"`
 	}
-	images := strings.Split(rr.Stdout.String(), "\n")
+	imgs := strings.Split(rr.Stdout.String(), "\n")
 	result := []ListImage{}
-	for _, img := range images {
+	for _, img := range imgs {
 		if img == "" {
 			continue
 		}
@@ -313,9 +313,9 @@ func (r *Docker) ListImages(ListImagesOptions) ([]ListImage, error) {
 }
 
 // LoadImage loads an image into this runtime
-func (r *Docker) LoadImage(path string) error {
-	klog.Infof("Loading image: %s", path)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", path))
+func (r *Docker) LoadImage(imgPath string) error {
+	klog.Infof("Loading image: %s", imgPath)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cat %s | docker load", imgPath))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker")
 	}
@@ -336,9 +336,9 @@ func (r *Docker) PullImage(name string) error {
 }
 
 // SaveImage saves an image from this runtime
-func (r *Docker) SaveImage(name string, path string) error {
-	klog.Infof("Saving image %s: %s", name, path)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, path))
+func (r *Docker) SaveImage(name string, imagePath string) error {
+	klog.Infof("Saving image %s: %s", name, imagePath)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker save '%s' | sudo tee %s >/dev/null", name, imagePath))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "saveimage docker")
 	}
@@ -625,11 +625,11 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
+	imgs, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if dockerImagesPreloaded(r.Runner, images) {
+	if dockerImagesPreloaded(r.Runner, imgs) {
 		klog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -688,7 +688,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 }
 
 // dockerImagesPreloaded returns true if all images have been preloaded
-func dockerImagesPreloaded(runner command.Runner, images []string) bool {
+func dockerImagesPreloaded(runner command.Runner, imgs []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
 		klog.Warning(err)
@@ -703,7 +703,7 @@ func dockerImagesPreloaded(runner command.Runner, images []string) bool {
 	klog.Infof("Got preloaded images: %s", rr.Output())
 
 	// Make sure images == imgs
-	for _, i := range images {
+	for _, i := range imgs {
 		i = image.TrimDockerIO(i)
 		if _, ok := preloadedImages[i]; !ok {
 			klog.Infof("%s wasn't preloaded", i)
@@ -760,8 +760,8 @@ func dockerBoundToContainerd(runner command.Runner) bool {
 }
 
 // ImagesPreloaded returns true if all images have been preloaded
-func (r *Docker) ImagesPreloaded(images []string) bool {
-	return dockerImagesPreloaded(r.Runner, images)
+func (r *Docker) ImagesPreloaded(imgs []string) bool {
+	return dockerImagesPreloaded(r.Runner, imgs)
 }
 
 const (

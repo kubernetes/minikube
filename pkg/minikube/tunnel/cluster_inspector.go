@@ -80,10 +80,10 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	return hostState, route, nil
 }
 
-func getRoute(host *host.Host, clusterConfig config.ClusterConfig) (*Route, error) {
-	hostDriverIP, err := host.Driver.GetIP()
+func getRoute(hostInfo *host.Host, clusterConfig config.ClusterConfig) (*Route, error) {
+	hostDriverIP, err := hostInfo.Driver.GetIP()
 	if err != nil {
-		return nil, errors.Wrapf(err, "error getting host IP for %s", host.Name)
+		return nil, errors.Wrapf(err, "error getting host IP for %s", hostInfo.Name)
 	}
 
 	_, ipNet, err := net.ParseCIDR(clusterConfig.KubernetesConfig.ServiceCIDR)

@@ -71,8 +71,8 @@ func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) e
 }
 
 // GetStoragev1 return storage v1 interface for client
-func GetStoragev1(context string) (storagev1.StorageV1Interface, error) {
-	client, err := kapi.Client(context)
+func GetStoragev1(ctx string) (storagev1.StorageV1Interface, error) {
+	client, err := kapi.Client(ctx)
 	if err != nil {
 		return nil, err
 	}

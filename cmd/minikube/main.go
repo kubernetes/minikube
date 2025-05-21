@@ -156,13 +156,13 @@ func checkLogFileMaxSize(file string, maxSizeKB int64) bool {
 // logFileName generates a default logfile name in the form minikube_<argv[1]>_<hash>_<count>.log from args
 func logFileName(dir string, logIdx int64) string {
 	h := sha1.New()
-	user, err := user.Current()
+	userInfo, err := user.Current()
 	if err != nil {
 		klog.Warningf("Unable to get username to add to log filename hash: %v", err)
 	} else {
-		_, err := h.Write([]byte(user.Username))
+		_, err := h.Write([]byte(userInfo.Username))
 		if err != nil {
-			klog.Warningf("Unable to add username %s to log filename hash: %v", user.Username, err)
+			klog.Warningf("Unable to add username %s to log filename hash: %v", userInfo.Username, err)
 		}
 	}
 	for _, s := range pflag.Args() {

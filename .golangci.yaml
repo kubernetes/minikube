@@ -162,7 +162,7 @@ linters:
       - typeAssertChain
       - unlabelStmt
       - builtinShadow # cmd/minikube/cmd/delete.go:89:7: builtinShadow: shadowing of predeclared identifier: error (gocritic) 
-      # - importShadow # pkg/storage/storage_provisioner.go:60:2: importShadow: shadow of imported package 'path' (gocritic)
+      - importShadow 
       - initClause
       # - nestingReduce # pkg/minikube/tunnel/registry.go:94:3: nestingReduce: invert if cond, replace body with `continue`, move old body after the statement (gocritic)
       - unnecessaryBlock

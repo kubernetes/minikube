@@ -412,7 +412,7 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 	return nil
 }
 
-func addHostAliasCommand(name string, record string, sudo bool, path string) *exec.Cmd {
+func addHostAliasCommand(name string, record string, sudo bool, destPath string) *exec.Cmd {
 	sudoCmd := "sudo"
 	if !sudo { // for testing
 		sudoCmd = ""
@@ -421,9 +421,9 @@ func addHostAliasCommand(name string, record string, sudo bool, path string) *ex
 	script := fmt.Sprintf(
 		`{ grep -v $'\t%s$' "%s"; echo "%s"; } > /tmp/h.$$; %s cp /tmp/h.$$ "%s"`,
 		name,
-		path,
+		destPath,
 		record,
 		sudoCmd,
-		path)
+		destPath)
 	return exec.Command("/bin/bash", "-c", script)
 }

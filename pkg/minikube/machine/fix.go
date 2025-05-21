@@ -209,12 +209,12 @@ func ensureSyncedGuestClock(h hostRunner, drv string) error {
 // guestClockDelta returns the approximate difference between the host and guest system clock
 // NOTE: This does not currently take into account ssh latency.
 func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
-	out, err := h.RunSSHCommand("date +%s.%N")
+	rest, err := h.RunSSHCommand("date +%s.%N")
 	if err != nil {
 		return 0, errors.Wrap(err, "get clock")
 	}
-	klog.Infof("guest clock: %s", out)
-	ns := strings.Split(strings.TrimSpace(out), ".")
+	klog.Infof("guest clock: %s", rest)
+	ns := strings.Split(strings.TrimSpace(rest), ".")
 	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
 	if err != nil {
 		return 0, errors.Wrap(err, "atoi")
@@ -232,8 +232,8 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 
 // adjustGuestClock adjusts the guest system clock to be nearer to the host system clock
 func adjustGuestClock(h hostRunner, t time.Time) error {
-	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
-	klog.Infof("clock set: %s (err=%v)", out, err)
+	rest, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
+	klog.Infof("clock set: %s (err=%v)", rest, err)
 	return err
 }
 
