@@ -201,7 +201,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(network, "", "network to run minikube with. Used by docker/podman, qemu, kvm, and vfkit drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().String(trace, "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, and vfkit drivers)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, vfkit, and krunkit drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
@@ -488,6 +488,8 @@ func getNetwork(driverName string) string {
 		return validateQemuNetwork(n)
 	} else if driver.IsVFKit(driverName) {
 		return validateVfkitNetwork(n)
+	} else if driver.IsKrunkit(driverName) {
+		return validateKrunkitNetwork(n)
 	}
 	return n
 }
@@ -542,6 +544,17 @@ func validateVfkitNetwork(n string) string {
 		n = "nat"
 	default:
 		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
+	}
+	return n
+}
+
+func validateKrunkitNetwork(n string) string {
+	if runtime.GOOS != "darwin" && runtime.GOARCH != "arm64" {
+		exit.Message(reason.Usage, "The krunkit driver is only supported on macOS arm64 machines")
+	}
+	if err := vmnet.ValidateHelper(); err != nil {
+		vmnetErr := err.(*vmnet.Error)
+		exit.Message(vmnetErr.Kind, "The krunkit driver requires vment-helper: {{.reason}}", out.V{"reason": err})
 	}
 	return n
 }
@@ -1011,7 +1024,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

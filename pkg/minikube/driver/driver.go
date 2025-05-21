@@ -63,6 +63,8 @@ const (
 	Parallels = "parallels"
 	// VFKit driver
 	VFKit = "vfkit"
+	// Krunkit driver
+	Krunkit = "krunkit"
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
@@ -176,6 +178,11 @@ func IsQEMU(name string) bool {
 // IsVFKit checks if the driver is vfkit
 func IsVFKit(name string) bool {
 	return name == VFKit
+}
+
+// IsKrunkit checks if the driver is vfkit
+func IsKrunkit(name string) bool {
+	return name == Krunkit
 }
 
 // IsVM checks if the driver is a VM
