@@ -552,15 +552,11 @@ var (
 	NotFoundVmnetHelper = Kind{
 		ID:       "NOT_FOUND_VMNET_HELPER",
 		ExitCode: ExProgramNotFound,
-		Advice: translate.T(`vmnet-helper was not found on the system, resolve by:
+		Advice: translate.T(`vmnet-helper was not found on the system.
 
-		Option 1) Installing vmnet-helper:
+		Please install vmnet-helper using these instrunctions:
 
-		  https://github.com/nirs/vmnet-helper#installation
-
-		Option 2) Using the nat network:
-
-		  minikube start{{.profile}} --driver vfkit --network nat`),
+		https://github.com/nirs/vmnet-helper#installation`),
 		Style: style.SeeNoEvil,
 	}
 	NotConfiguredVmnetHelper = Kind{
