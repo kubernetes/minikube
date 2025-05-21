@@ -33,6 +33,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [QEMU]({{<ref "qemu.md">}}) - VM
 * [Podman]({{<ref "podman.md">}}) - VM + Container (experimental)
 * [VFkit]({{<ref "vfkit.md">}}) - VM (preferred)
+* [Krunkit]({{<ref "krunkit.md">}}) - VM (experimental)
 * [SSH]({{<ref "ssh.md">}}) - remote ssh
 
 ## Windows
