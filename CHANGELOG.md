@@ -1,7 +1,5 @@
 # Release Notes
 
-# Release Notes
-
 ## Version 1.36.0 - 2025-05-22
 
 Features
