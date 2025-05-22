@@ -582,6 +582,7 @@
 	"Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:": "注意，您在此终端上的 {{.driver_name}} 驱动上已激活 podman-env：",
 	"Number of CPUs allocated to the minikube VM": "分配给 minikube 虚拟机的 CPU 的数量",
 	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "创建并附加到 minikube VM 的额外磁盘数（当前仅支持 hyperkit、kvm2 和 qemu2 驱动程序）",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, and vfkit drivers)": "",
 	"Number of lines back to go within the log": "在日志中回退的行数",
 	"OS release is {{.pretty_name}}": "操作系统版本是 {{.pretty_name}}",
 	"One of 'text', 'yaml' or 'json'.": "可选项：'text','yaml' 或 'json'。",
