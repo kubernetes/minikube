@@ -33,7 +33,6 @@ JOB_NAME="VFkit_macOS"
 EXTRA_TEST_ARGS=""
 EXTERNAL="yes"
 
-brew tap cfergeau/crc
 brew install vfkit
 
 source common.sh
