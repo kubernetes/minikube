@@ -7,6 +7,7 @@ Features
 * New flag "-f" to allow passing a config file for addon configure command. [#20255](https://github.com/kubernetes/minikube/pull/20255)
 * vfkit: bump to Preferred driver on macOs [#20808](https://github.com/kubernetes/minikube/pull/20808)
 * vfkit: new network option "--network vment-shared' for vfkit driver [#20501](https://github.com/kubernetes/minikube/pull/20501)
+
 Bug Fixes:
 * fix bootpd check on macOS >= 15 [#20400](https://github.com/kubernetes/minikube/pull/20400)
 * fix bug in parsing proxies with dashes [#20648](https://github.com/kubernetes/minikube/pull/20648)
@@ -18,7 +19,8 @@ Improvements:
 * vfkit: Graceful shutdown on stop [#20504](https://github.com/kubernetes/minikube/pull/20504)
 * vfkit: More robust state management [#20506](https://github.com/kubernetes/minikube/pull/20506)
 * vfkit vmnet: support running without sudoers configuration [#20719](https://github.com/kubernetes/minikube/pull/20719)
-* Revert "fix --wait's failure to work on coredns pods"" [#20313](https://github.com/kubernetes/minikube/pull/20313)																									"
+* Revert "fix --wait's failure to work on coredns pods" [#20313](https://github.com/kubernetes/minikube/pull/20313)
+
 Languages:
 * Add Indonesian translation [#20494](https://github.com/kubernetes/minikube/pull/20494)
 * Add more french translation [#20361](https://github.com/kubernetes/minikube/pull/20361)
@@ -76,7 +78,6 @@ Thank you to our contributors for this release!
 
 Thank you to our PR reviewers for this release!
 
-
 - medyagh (64 comments)
 - nirs (23 comments)
 - cfergeau (12 comments)
@@ -91,7 +92,7 @@ Thank you to our triage members for this release!
 - afbjorklund (14 comments)
 - medyagh (13 comments)
 
-Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.35.0/) for this release!
+Check out our [contributions leaderboard](https://minikube.sigs.k8s.io/docs/contrib/leaderboard/v1.36.0/) for this release!
 
 
 ## Version 1.35.0 - 2025-01-15
