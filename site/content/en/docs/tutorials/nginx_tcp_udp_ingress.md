@@ -202,6 +202,16 @@ Connected to 192.168.99.179.
 Escape character is '^]'
 ```
 
+You can chat with the redis service:
+
+```text
+SET minikube:1 "it works!"
++OK
+GET minikube:1
+$9
+it works!
+```
+
 To exit telnet enter the `Ctrl` key and `]` at the same time. Then type `quit` and press enter.
 
 If you were not able to connect please review your steps above.
