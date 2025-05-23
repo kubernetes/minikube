@@ -491,7 +491,7 @@ func ipFromAPI(conn *libvirt.Connect, domain, network string) (string, error) {
 		}
 	}
 
-	log.Debugf("unable to find current IP address of domain %s in network %s", domain, network)
+	log.Debugf("unable to find current IP address of domain %s in network %s (interfaces detected: %+v)", domain, network, ifaces)
 	return "", nil
 }
 
@@ -504,17 +504,16 @@ func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterf
 	defer func() { _ = dom.Free() }()
 
 	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
-	if ifs == nil {
+	if len(ifs) == 0 {
 		if err != nil {
-			log.Debugf("failed listing network interface addresses of domain %s(source=arp): %w", domain, err)
+			log.Debugf("failed listing network interface addresses of domain %s (source=arp): %v", domain, err)
 		} else {
-			log.Debugf("No network interface addresses found for domain %s(source=arp)", domain)
+			log.Debugf("no network interface addresses found for domain %s (source=arp)", domain)
 		}
 		log.Debugf("trying to list again with source=lease")
 
-		ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
-		if err != nil {
-			return nil, fmt.Errorf("failed listing network interface addresses of domain %s(source=lease): %w", domain, err)
+		if ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE); err != nil {
+			return nil, fmt.Errorf("failed listing network interface addresses of domain %s (source=lease): %w", domain, err)
 		}
 	}
 

@@ -342,8 +342,8 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 
 		return nil
 	}
-	if err := retry.Local(query, 1*time.Minute); err != nil {
-		return fmt.Errorf("domain %s didn't return IP after 1 minute", d.MachineName)
+	if err := retry.Local(query, 5*time.Minute); err != nil {
+		return fmt.Errorf("domain %s didn't return IP after 5 minutes", d.MachineName)
 	}
 
 	log.Info("reserving static IP address...")
