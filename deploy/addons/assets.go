@@ -39,10 +39,6 @@ var (
 	//go:embed storage-provisioner/storage-provisioner.yaml.tmpl
 	StorageProvisionerAssets embed.FS
 
-	// StorageProvisionerGlusterAssets assets for storage-provisioner-gluster addon
-	//go:embed storage-provisioner-gluster/*.tmpl storage-provisioner-gluster/*.yaml
-	StorageProvisionerGlusterAssets embed.FS
-
 	// StorageProvisionerRancherAssets assets for storage-provisioner-rancher addon
 	//go:embed storage-provisioner-rancher/*.tmpl
 	StorageProvisionerRancherAssets embed.FS

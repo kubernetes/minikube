@@ -37,9 +37,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	}
 
 	class := defaultStorageClassProvisioner
-	if name == "storage-provisioner-gluster" {
-		class = "glusterfile"
-	} else if name == "storage-provisioner-rancher" {
+	if name == "storage-provisioner-rancher" {
 		class = "local-path"
 	}
 
