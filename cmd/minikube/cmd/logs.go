@@ -77,22 +77,34 @@ var logsCmd = &cobra.Command{
 			if err != nil {
 				exit.Error(reason.Usage, "Failed to create file", err)
 			}
+			out.SetOutFile(logOutput)
+			defer out.SetOutFile(os.Stdout)
+			out.SetErrFile(logOutput)
+			defer out.SetErrFile(os.Stderr)
 		}
-		if lastStartOnly {
-			err := logs.OutputLastStart()
+
+		switch {
+		case lastStartOnly:
+			err = logs.OutputLastStart()
 			if err != nil {
 				klog.Errorf("failed to output last start logs: %v", err)
 			}
-			return
-		}
-		if auditLogs {
-			err := logs.OutputAudit(numberOfLines)
+		case auditLogs:
+			err = logs.OutputAudit(numberOfLines)
 			if err != nil {
-				klog.Errorf("failed to output audit logs: %v", err)
+				klog.Errorf("failed to output last start logs: %v", err)
 			}
-			return
+		default:
+			err = logs.OutputLastStart()
+			if err != nil {
+				klog.Errorf("failed to output last start logs: %v", err)
+			}
+			err = logs.OutputAudit(numberOfLines)
+			if err != nil {
+				klog.Errorf("failed to output last start logs: %v", err)
+			}
+			out.Styled(style.None, "")
 		}
-		logs.OutputOffline(numberOfLines, logOutput)
 
 		if shouldSilentFail() {
 			return
