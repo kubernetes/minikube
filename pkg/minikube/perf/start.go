@@ -63,12 +63,12 @@ func CompareMinikubeStart(ctx context.Context, binaries []*Binary) error {
 	return nil
 }
 
-func collectResults(ctx context.Context, binaries []*Binary, driver string, runtime string) (*resultManager, error) {
+func collectResults(ctx context.Context, binaries []*Binary, driver string, runtimeName string) (*resultManager, error) {
 	rm := newResultManager()
 	for run := 0; run < runs; run++ {
 		log.Printf("Executing run %d/%d...", run+1, runs)
 		for _, binary := range binaries {
-			r, err := timeMinikubeStart(ctx, binary, driver, runtime)
+			r, err := timeMinikubeStart(ctx, binary, driver, runtimeName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "timing run %d with %s", run, binary.Name())
 			}
@@ -97,9 +97,9 @@ func average(nums []float64) float64 {
 	return total / float64(len(nums))
 }
 
-func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string, runtime string) error {
+func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string, runtimeName string) error {
 	for _, b := range binaries {
-		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), fmt.Sprintf("--container-runtime=%s", runtime))
+		c := exec.CommandContext(ctx, b.path, "start", fmt.Sprintf("--driver=%s", driver), fmt.Sprintf("--container-runtime=%s", runtimeName))
 		c.Stderr = os.Stderr
 		log.Printf("Running: %v...", c.Args)
 		if err := c.Run(); err != nil {
@@ -115,8 +115,8 @@ func downloadArtifacts(ctx context.Context, binaries []*Binary, driver string, r
 }
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
-func timeMinikubeStart(ctx context.Context, binary *Binary, driver string, runtime string) (*result, error) {
-	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver), fmt.Sprintf("--container-runtime=%s", runtime))
+func timeMinikubeStart(ctx context.Context, binary *Binary, driver string, runtimeName string) (*result, error) {
+	startCmd := exec.CommandContext(ctx, binary.path, "start", fmt.Sprintf("--driver=%s", driver), fmt.Sprintf("--container-runtime=%s", runtimeName))
 	startCmd.Stderr = os.Stderr
 
 	r, err := timeCommandLogs(startCmd)
@@ -147,6 +147,6 @@ func skipIngress(driver string) bool {
 // We only want to run the tests if:
 // 1. It's a VM driver and docker container runtime
 // 2. It's docker driver with any container runtime
-func proceed(driver string, runtime string) bool {
-	return runtime == "docker" || driver == "docker"
+func proceed(driver string, runtimeName string) bool {
+	return runtimeName == "docker" || driver == "docker"
 }

@@ -35,12 +35,12 @@ func Status(api libmachine.API, machineName string) (string, error) {
 		return state.None.String(), nil
 	}
 
-	host, err := api.Load(machineName)
+	hostInfo, err := api.Load(machineName)
 	if err != nil {
 		return "", errors.Wrapf(err, "load")
 	}
 
-	s, err := host.Driver.GetState()
+	s, err := hostInfo.Driver.GetState()
 	if err != nil {
 		return "", errors.Wrap(err, "state")
 	}

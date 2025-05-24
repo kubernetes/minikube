@@ -159,7 +159,7 @@ func extractDriverVersion(s string) string {
 	return strings.TrimPrefix(v, "v")
 }
 
-func driverExists(driver string) bool {
-	_, err := exec.LookPath(driver)
+func driverExists(driverName string) bool {
+	_, err := exec.LookPath(driverName)
 	return err == nil
 }

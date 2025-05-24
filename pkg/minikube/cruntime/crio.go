@@ -271,9 +271,9 @@ func (r *CRIO) ListImages(ListImagesOptions) ([]ListImage, error) {
 }
 
 // LoadImage loads an image into this runtime
-func (r *CRIO) LoadImage(path string) error {
-	klog.Infof("Loading image: %s", path)
-	c := exec.Command("sudo", "podman", "load", "-i", path)
+func (r *CRIO) LoadImage(imgPath string) error {
+	klog.Infof("Loading image: %s", imgPath)
+	c := exec.Command("sudo", "podman", "load", "-i", imgPath)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio load image")
 	}
@@ -286,9 +286,9 @@ func (r *CRIO) PullImage(name string) error {
 }
 
 // SaveImage saves an image from this runtime
-func (r *CRIO) SaveImage(name string, path string) error {
-	klog.Infof("Saving image %s: %s", name, path)
-	c := exec.Command("sudo", "podman", "save", name, "-o", path)
+func (r *CRIO) SaveImage(name string, destPath string) error {
+	klog.Infof("Saving image %s: %s", name, destPath)
+	c := exec.Command("sudo", "podman", "save", name, "-o", destPath)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crio save image")
 	}
@@ -425,11 +425,11 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
+	imgs, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if crioImagesPreloaded(r.Runner, images) {
+	if crioImagesPreloaded(r.Runner, imgs) {
 		klog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -477,7 +477,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 }
 
 // crioImagesPreloaded returns true if all images have been preloaded
-func crioImagesPreloaded(runner command.Runner, images []string) bool {
+func crioImagesPreloaded(runner command.Runner, imgs []string) bool {
 	rr, err := runner.RunCmd(exec.Command("sudo", "crictl", "images", "--output", "json"))
 	if err != nil {
 		return false
@@ -491,7 +491,7 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 
 	// Make sure images == imgs
-	for _, i := range images {
+	for _, i := range imgs {
 		found := false
 		for _, ji := range jsonImages.Images {
 			for _, rt := range ji.RepoTags {
@@ -516,6 +516,6 @@ func crioImagesPreloaded(runner command.Runner, images []string) bool {
 }
 
 // ImagesPreloaded returns true if all images have been preloaded
-func (r *CRIO) ImagesPreloaded(images []string) bool {
-	return crioImagesPreloaded(r.Runner, images)
+func (r *CRIO) ImagesPreloaded(imgs []string) bool {
+	return crioImagesPreloaded(r.Runner, imgs)
 }

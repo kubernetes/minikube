@@ -157,12 +157,12 @@ func KubectlCommand(version, binaryURL string, args ...string) (*exec.Cmd, error
 		version = constants.DefaultKubernetesVersion
 	}
 
-	path, err := node.CacheKubectlBinary(version, binaryURL)
+	binary, err := node.CacheKubectlBinary(version, binaryURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return exec.Command(path, args...), nil
+	return exec.Command(binary, args...), nil
 }
 
 func init() {

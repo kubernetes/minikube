@@ -67,8 +67,8 @@ func LocalISOResource(isoURL string) string {
 }
 
 // fileURI returns a file:// URI for a path
-func fileURI(path string) string {
-	return "file://" + filepath.ToSlash(path)
+func fileURI(filePath string) string {
+	return "file://" + filepath.ToSlash(filePath)
 }
 
 // localISOPath returns where an ISO should be stored locally

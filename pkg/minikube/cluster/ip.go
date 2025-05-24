@@ -34,21 +34,21 @@ import (
 )
 
 // HostIP gets the ip address to be used for mapping host -> VM and VM -> host
-func HostIP(host *host.Host, clusterName string) (net.IP, error) {
-	switch host.DriverName {
+func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
+	switch hostInfo.DriverName {
 	case driver.Docker:
-		return oci.RoutableHostIPFromInside(oci.Docker, clusterName, host.Name)
+		return oci.RoutableHostIPFromInside(oci.Docker, clusterName, hostInfo.Name)
 	case driver.Podman:
-		return oci.RoutableHostIPFromInside(oci.Podman, clusterName, host.Name)
+		return oci.RoutableHostIPFromInside(oci.Podman, clusterName, hostInfo.Name)
 	case driver.SSH:
-		ip, err := host.Driver.GetIP()
+		ip, err := hostInfo.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return net.ParseIP(ip), nil
 	case driver.KVM2:
 		// `host.Driver.GetIP` returns dhcp lease info for a given network(=`virsh net-dhcp-leases minikube-net`)
-		vmIPString, err := host.Driver.GetIP()
+		vmIPString, err := hostInfo.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
@@ -59,7 +59,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.QEMU, driver.QEMU2:
-		ipString, err := host.Driver.GetIP()
+		ipString, err := hostInfo.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting IP address")
 		}
@@ -70,7 +70,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		// socket_vmnet network case
 		return net.ParseIP("192.168.105.1"), nil
 	case driver.HyperV:
-		v := reflect.ValueOf(host.Driver).Elem()
+		v := reflect.ValueOf(hostInfo.Driver).Elem()
 		var hypervVirtualSwitch string
 		// We don't have direct access to hyperv.Driver so use reflection to retrieve the virtual switch name
 		for i := 0; i < v.NumField(); i++ {
@@ -91,7 +91,7 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		return ip, nil
 	case driver.VirtualBox:
 		vBoxManageCmd := driver.VBoxManagePath()
-		out, err := exec.Command(vBoxManageCmd, "showvminfo", host.Name, "--machinereadable").Output()
+		out, err := exec.Command(vBoxManageCmd, "showvminfo", hostInfo.Name, "--machinereadable").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "vboxmanage")
 		}
@@ -126,11 +126,11 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 
 		return net.ParseIP(ip), nil
 	case driver.HyperKit:
-		vmIPString, _ := host.Driver.GetIP()
+		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil
 	case driver.VMware:
-		vmIPString, err := host.Driver.GetIP()
+		vmIPString, err := hostInfo.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM IP address")
 		}
@@ -140,28 +140,28 @@ func HostIP(host *host.Host, clusterName string) (net.IP, error) {
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.VFKit:
-		vmIPString, _ := host.Driver.GetIP()
+		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil
 	case driver.None:
 		return net.ParseIP("127.0.0.1"), nil
 	default:
-		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", host.DriverName)
+		return []byte{}, fmt.Errorf("HostIP not yet implemented for %q driver", hostInfo.DriverName)
 	}
 }
 
 // DriverIP gets the ip address of the current minikube cluster
 func DriverIP(api libmachine.API, machineName string) (net.IP, error) {
-	host, err := machine.LoadHost(api, machineName)
+	hostInfo, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		return nil, err
 	}
 
-	ipStr, err := host.Driver.GetIP()
+	ipStr, err := hostInfo.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
 	}
-	if driver.IsKIC(host.DriverName) {
+	if driver.IsKIC(hostInfo.DriverName) {
 		ipStr = oci.DefaultBindIPV4
 	}
 	ip := net.ParseIP(ipStr)

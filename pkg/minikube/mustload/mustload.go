@@ -132,7 +132,7 @@ func running(name string, first bool) []ClusterController {
 			continue
 		}
 
-		host, err := machine.LoadHost(api, machineName)
+		hostInfo, err := machine.LoadHost(api, machineName)
 		if err != nil {
 			if last {
 				exit.Message(reason.GuestLoadHost, `Unable to load control-plane node {{.name}} host: {{.err}}`, out.V{"name": machineName, "err": err})
@@ -141,7 +141,7 @@ func running(name string, first bool) []ClusterController {
 			continue
 		}
 
-		cr, err := machine.CommandRunner(host)
+		cr, err := machine.CommandRunner(hostInfo)
 		if err != nil {
 			if last {
 				exit.Message(reason.InternalCommandRunner, `Unable to get control-plane node {{.name}} host command runner: {{.err}}`, out.V{"name": machineName, "err": err})
@@ -150,7 +150,7 @@ func running(name string, first bool) []ClusterController {
 			continue
 		}
 
-		hostname, ip, port, err := driver.ControlPlaneEndpoint(cc, &cp, host.DriverName)
+		hostname, ip, port, err := driver.ControlPlaneEndpoint(cc, &cp, hostInfo.DriverName)
 		if err != nil {
 			if last {
 				exit.Message(reason.DrvCPEndpoint, `Unable to get control-plane node {{.name}} endpoint: {{.err}}`, out.V{"name": machineName, "err": err})
@@ -164,7 +164,7 @@ func running(name string, first bool) []ClusterController {
 			Config: cc,
 			CP: ControlPlane{
 				Runner:   cr,
-				Host:     host,
+				Host:     hostInfo,
 				Node:     &cp,
 				Hostname: hostname,
 				IP:       ip,
@@ -223,8 +223,8 @@ func Healthy(name string) ClusterController {
 
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
-	command := ExampleCmd(profile, action)
-	out.Styled(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": command})
+	cmd := ExampleCmd(profile, action)
+	out.Styled(style.Workaround, `To start a cluster, run: "{{.command}}"`, out.V{"command": cmd})
 	exit.Code(code)
 }
 

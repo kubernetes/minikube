@@ -579,8 +579,8 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 
 // canRead returns true if the file represented
 // by path exists and is readable, otherwise false.
-func canRead(path string) bool {
-	f, err := os.Open(path)
+func canRead(filePath string) bool {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return false
 	}

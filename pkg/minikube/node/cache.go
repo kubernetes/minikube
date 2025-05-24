@@ -282,12 +282,12 @@ func imagesInConfigFile() ([]string, error) {
 }
 
 func updateKicImageRepo(imgName string, repo string) string {
-	image := strings.TrimPrefix(imgName, "gcr.io/")
+	imageName := strings.TrimPrefix(imgName, "gcr.io/")
 	if repo == constants.AliyunMirror {
 		// for aliyun registry must strip namespace from image name, e.g.
 		//   registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-minikube/kicbase:v0.0.25 will not work
 		//   registry.cn-hangzhou.aliyuncs.com/google_containers/kicbase:v0.0.25 does work
-		image = strings.TrimPrefix(image, "k8s-minikube/")
+		imageName = strings.TrimPrefix(imageName, "k8s-minikube/")
 	}
-	return path.Join(repo, image)
+	return path.Join(repo, imageName)
 }

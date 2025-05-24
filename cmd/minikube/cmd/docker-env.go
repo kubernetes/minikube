@@ -462,7 +462,6 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 		switch outputFormat {
 		case "":
 			// shell "none"
-			break
 		case "text":
 			for k, v := range envVars {
 				_, err := fmt.Fprintf(w, "%s=%s\n", k, v)
@@ -472,11 +471,11 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 			}
 			return nil
 		case "json":
-			json, err := json.Marshal(envVars)
+			jsondata, err := json.Marshal(envVars)
 			if err != nil {
 				return err
 			}
-			_, err = w.Write(json)
+			_, err = w.Write(jsondata)
 			if err != nil {
 				return err
 			}
@@ -486,11 +485,11 @@ func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 			}
 			return nil
 		case "yaml":
-			yaml, err := yaml.Marshal(envVars)
+			yamldata, err := yaml.Marshal(envVars)
 			if err != nil {
 				return err
 			}
-			_, err = w.Write(yaml)
+			_, err = w.Write(yamldata)
 			if err != nil {
 				return err
 			}
@@ -509,7 +508,6 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 		switch outputFormat {
 		case "":
 			// shell "none"
-			break
 		case "text":
 			for _, n := range vars {
 				_, err := fmt.Fprintf(w, "%s\n", n)
@@ -519,11 +517,11 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 			}
 			return nil
 		case "json":
-			json, err := json.Marshal(vars)
+			jsondata, err := json.Marshal(vars)
 			if err != nil {
 				return err
 			}
-			_, err = w.Write(json)
+			_, err = w.Write(jsondata)
 			if err != nil {
 				return err
 			}
@@ -533,11 +531,11 @@ func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 			}
 			return nil
 		case "yaml":
-			yaml, err := yaml.Marshal(vars)
+			yamldata, err := yaml.Marshal(vars)
 			if err != nil {
 				return err
 			}
-			_, err = w.Write(yaml)
+			_, err = w.Write(yamldata)
 			if err != nil {
 				return err
 			}

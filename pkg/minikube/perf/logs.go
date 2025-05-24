@@ -51,13 +51,13 @@ func timeCommandLogs(cmd *exec.Cmd) (*result, error) {
 	var timings []float64
 
 	for scanner.Scan() {
-		log := scanner.Text()
+		logData := scanner.Text()
 		// this is the time it took to complete the previous log
 		timeTaken := time.Since(timer).Seconds()
-		klog.Infof("%f: %s", timeTaken, log)
+		klog.Infof("%f: %s", timeTaken, logData)
 
 		timer = time.Now()
-		logs = append(logs, log)
+		logs = append(logs, logData)
 		timings = append(timings, timeTaken)
 	}
 	// add the time it took to get from the final log to finishing the command
