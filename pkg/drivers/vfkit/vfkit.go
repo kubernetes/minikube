@@ -56,6 +56,7 @@ const (
 	isoFilename    = "boot2docker.iso"
 	pidFileName    = "vfkit.pid"
 	sockFilename   = "vfkit.sock"
+	serialFileName = "serial.log"
 	defaultSSHUser = "docker"
 )
 
@@ -67,7 +68,6 @@ type Driver struct {
 	DiskSize       int
 	CPU            int
 	Memory         int
-	Cmdline        string
 	ExtraDisks     int
 	Network        string        // "", "nat", "vmnet-shared"
 	MACAddress     string        // For network=nat, network=""
@@ -275,8 +275,11 @@ func (d *Driver) startVfkit(socketPath string) error {
 
 	startCmd = append(startCmd,
 		"--kernel", d.ResolveStorePath("bzimage"))
+
+	// Required to enable logging to vfkit.log.
 	startCmd = append(startCmd,
-		"--kernel-cmdline", d.Cmdline)
+		"--kernel-cmdline", "console=hvc0")
+
 	startCmd = append(startCmd,
 		"--initrd", d.ResolveStorePath("initrd"))
 
@@ -287,6 +290,10 @@ func (d *Driver) startVfkit(socketPath string) error {
 
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-blk,path=%s", d.diskPath()))
+
+	serialPath := d.ResolveStorePath(serialFileName)
+	startCmd = append(startCmd,
+		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", serialPath))
 
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
