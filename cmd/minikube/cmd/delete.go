@@ -86,8 +86,8 @@ type DeletionError struct {
 	Errtype typeOfError
 }
 
-func (error DeletionError) Error() string {
-	return error.Err.Error()
+func (deletionError DeletionError) Error() string {
+	return deletionError.Err.Error()
 }
 
 var hostAndDirsDeleter = func(api libmachine.API, cc *config.ClusterConfig, profileName string) error {
@@ -527,11 +527,11 @@ func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.N
 }
 
 // HandleDeletionErrors handles deletion errors from DeleteProfiles
-func HandleDeletionErrors(errors []error) {
-	if len(errors) == 1 {
-		handleSingleDeletionError(errors[0])
+func HandleDeletionErrors(errs []error) {
+	if len(errs) == 1 {
+		handleSingleDeletionError(errs[0])
 	} else {
-		handleMultipleDeletionErrors(errors)
+		handleMultipleDeletionErrors(errs)
 	}
 }
 
@@ -556,10 +556,10 @@ func handleSingleDeletionError(err error) {
 	}
 }
 
-func handleMultipleDeletionErrors(errors []error) {
+func handleMultipleDeletionErrors(errs []error) {
 	out.ErrT(style.Sad, "Multiple errors deleting profiles")
 
-	for _, err := range errors {
+	for _, err := range errs {
 		deletionError, ok := err.(DeletionError)
 
 		if ok {
@@ -706,14 +706,14 @@ var isMinikubeProcess = func(pid int) (bool, error) {
 // getPids opens the file at PATH and tries to read
 // one or more space separated pids
 func getPids(path string) ([]int, error) {
-	out, err := os.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "ReadFile")
 	}
-	klog.Infof("pidfile contents: %s", out)
+	klog.Infof("pidfile contents: %s", data)
 
 	pids := []int{}
-	strPids := strings.Fields(string(out))
+	strPids := strings.Fields(string(data))
 	for _, p := range strPids {
 		intPid, err := strconv.Atoi(p)
 		if err != nil {

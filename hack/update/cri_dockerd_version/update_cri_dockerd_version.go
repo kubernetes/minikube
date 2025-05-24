@@ -135,7 +135,7 @@ func updateHashFile(filePath, commit string, shaSum [sha256.Size]byte) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x %s.tar.gz\n", shaSum, commit)); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %x %s.tar.gz\n", shaSum, commit); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil

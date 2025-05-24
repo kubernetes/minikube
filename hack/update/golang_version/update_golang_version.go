@@ -154,7 +154,7 @@ func updateGoHashFile(version string) error {
 		return fmt.Errorf("failed to open go.hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256  %s  go%s.src.tar.gz\n", sha, version)); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256  %s  go%s.src.tar.gz\n", sha, version); err != nil {
 		return fmt.Errorf("failed to write to go.hash file: %v", err)
 	}
 	return nil

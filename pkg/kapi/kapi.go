@@ -48,21 +48,21 @@ var (
 )
 
 // ClientConfig returns the client configuration for a kubectl context
-func ClientConfig(context string) (*rest.Config, error) {
+func ClientConfig(ctx string) (*rest.Config, error) {
 	loader := clientcmd.NewDefaultClientConfigLoadingRules()
-	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, &clientcmd.ConfigOverrides{CurrentContext: context})
+	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, &clientcmd.ConfigOverrides{CurrentContext: ctx})
 	c, err := cc.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("client config: %v", err)
 	}
 	c = proxy.UpdateTransport(c)
-	klog.V(1).Infof("client config for %s: %+v", context, c)
+	klog.V(1).Infof("client config for %s: %+v", ctx, c)
 	return c, nil
 }
 
 // Client gets the Kubernetes client for a kubectl context name
-func Client(context string) (*kubernetes.Clientset, error) {
-	c, err := ClientConfig(context)
+func Client(ctx string) (*kubernetes.Clientset, error) {
+	c, err := ClientConfig(ctx)
 	if err != nil {
 		return nil, err
 	}

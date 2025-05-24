@@ -37,7 +37,7 @@ import (
 // deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
 // used as last effort clean up not returning errors, won't warn user.
 func deleteOrphanedKIC(ociBin string, name string) {
-	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
+	if ociBin != oci.Podman && ociBin != oci.Docker {
 		return
 	}
 
@@ -68,8 +68,8 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 		delAbandoned = deleteAbandoned[0]
 	}
 
-	host, err := api.Load(machineName)
-	if err != nil && host == nil && delAbandoned {
+	hostInfo, err := api.Load(machineName)
+	if err != nil && hostInfo == nil && delAbandoned {
 		deleteOrphanedKIC(oci.Docker, machineName)
 		deleteOrphanedKIC(oci.Podman, machineName)
 		// Keep going even if minikube does not know about the host
@@ -88,7 +88,7 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 	}
 
 	// some drivers need manual shut down before delete to avoid getting stuck.
-	if driver.NeedsShutdown(host.Driver.DriverName()) {
+	if driver.NeedsShutdown(hostInfo.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
 			klog.Warningf("stop host: %v", err)
 		}
@@ -96,8 +96,8 @@ func DeleteHost(api libmachine.API, machineName string, deleteAbandoned ...bool)
 		time.Sleep(1 * time.Second)
 	}
 
-	out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	return deleteHost(api, host, machineName)
+	out.Step(style.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": hostInfo.DriverName})
+	return deleteHost(api, hostInfo, machineName)
 }
 
 // delete removes a host and its local data files

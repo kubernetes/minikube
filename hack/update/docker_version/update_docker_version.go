@@ -95,7 +95,7 @@ func updateHashFile(version, arch, folderSuffix string) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x  docker-%s.tgz\n", sum, version)); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %x  docker-%s.tgz\n", sum, version); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil

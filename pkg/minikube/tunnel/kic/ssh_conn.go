@@ -130,20 +130,20 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 	usedPorts := make([]int, 0, len(svc.Spec.Ports))
 
 	for _, port := range svc.Spec.Ports {
-		freeport, err := freeport.GetFreePort()
+		freePort, err := freeport.GetFreePort()
 		if err != nil {
 			return nil, err
 		}
 
 		arg := fmt.Sprintf(
 			"-L %d:%s:%d",
-			freeport,
+			freePort,
 			svc.Spec.ClusterIP,
 			port.Port,
 		)
 
 		sshArgs = append(sshArgs, arg)
-		usedPorts = append(usedPorts, freeport)
+		usedPorts = append(usedPorts, freePort)
 	}
 
 	cmd := exec.Command("ssh", sshArgs...)

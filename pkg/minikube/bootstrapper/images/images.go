@@ -164,9 +164,11 @@ func auxiliary(mirror string) []string {
 func storageProvisioner(mirror string) string {
 	cv := version.GetStorageProvisionerVersion()
 	in := "k8s-minikube/storage-provisioner:" + cv
-	if mirror == "" {
+
+	switch mirror {
+	case "":
 		mirror = "gcr.io"
-	} else if mirror == constants.AliyunMirror {
+	case constants.AliyunMirror:
 		in = "storage-provisioner:" + cv
 	}
 	return path.Join(mirror, in)

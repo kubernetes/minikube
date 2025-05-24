@@ -23,23 +23,8 @@ linters:
         - "-ST1020"
         - "-ST1021"
         - "-ST1022"
-        ##### TODO: fix and enable these
-        # 4 occurrences.
-        # Use fmt.Fprintf(x, ...) instead of x.Write(fmt.Sprintf(...)) https://staticcheck.dev/docs/checks#QF1012
-        - "-QF1012"
-        # 3 occurrences.
-        # Apply De Morgan’s law https://staticcheck.dev/docs/checks#QF1001
-        - "-QF1001"
-        # 9 occurrences.
-        # Convert if/else-if chain to tagged switch https://staticcheck.dev/docs/checks#QF1003
-        - "-QF1003"
-        # 1 occurrence.
-        # could omit type *os.File from declaration; it will be inferred from the right-hand side
-        - "-QF1011"
-        ##### These have been vetted to be disabled.
-        # 19 occurrences. Omit embedded fields from selector expression https://staticcheck.dev/docs/checks#QF1008
-        # Usefulness is questionable.
         - "-QF1008"
+        
     revive:
       enable-all-rules: true
       rules:
@@ -150,23 +135,22 @@ linters:
       # - yodaStyleExpr
       # - typeUnparen
 
-      ##### TODO: fix and enable these
       # We enabled these and we pass
       - nilValReturn
-      # - weakCond # pkg/minikube/config/profile.go:61:9: weakCond: suspicious `cc.Nodes != nil && cc.Nodes[0].Name == node.Name`; nil check may not be enough, check for len (gocritic)
+      - weakCond 
       - indexAlloc
       - rangeExprCopy
       - boolExprSimplify
       - commentedOutImport
-      # - docStub         # pkg/minikube/tunnel/kic/service_tunnel.go:51:1: docStub: silencing go lint doc-comment warnings is unadvised (gocritic)
+      - docStub        
       - emptyFallthrough
       - hexLiteral
       - typeAssertChain
       - unlabelStmt
-      # - builtinShadow # cmd/minikube/cmd/delete.go:89:7: builtinShadow: shadowing of predeclared identifier: error (gocritic) 
-      # - importShadow # pkg/storage/storage_provisioner.go:60:2: importShadow: shadow of imported package 'path' (gocritic)
+      - builtinShadow  
+      - importShadow 
       - initClause
-      # - nestingReduce # pkg/minikube/tunnel/registry.go:94:3: nestingReduce: invert if cond, replace body with `continue`, move old body after the statement (gocritic)
+      - nestingReduce 
       - unnecessaryBlock
 
   exclusions:
@@ -181,7 +165,3 @@ linters:
       - path: '(.+)\.go$'
         text: "Error return value of `.*` is not checked"
         linter: errcheck
-      # This code is doubtful and I don't understand it. Location: Line 456
-      - path: 'cmd/minikube/cmd/docker-env.go'
-        text: "useless-break: useless break in case clause"
-        linter: revive

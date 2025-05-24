@@ -225,15 +225,15 @@ func (d *Driver) createNetwork() error {
 		log.Debugf("created network xml: %s", networkXML.String())
 
 		// define the network using our template
-		var network *libvirt.Network
-		network, err = conn.NetworkDefineXML(networkXML.String())
+		var libvirtNet *libvirt.Network
+		libvirtNet, err = conn.NetworkDefineXML(networkXML.String())
 		if err != nil {
 			return fmt.Errorf("defining private KVM network %s %s from xml %s: %w", d.PrivateNetwork, subnet.CIDR, networkXML.String(), err)
 		}
 
 		// and finally create & start it
 		log.Debugf("trying to create private KVM network %s %s...", d.PrivateNetwork, subnet.CIDR)
-		if err = network.Create(); err == nil {
+		if err = libvirtNet.Create(); err == nil {
 			log.Debugf("private KVM network %s %s created", d.PrivateNetwork, subnet.CIDR)
 			return nil
 		}
@@ -263,7 +263,7 @@ func (d *Driver) deleteNetwork() error {
 
 	// network: private
 	log.Debugf("Checking if network %s exists...", d.PrivateNetwork)
-	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
+	libvirtNet, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
 		if lvErr(err).Code == libvirt.ERR_NO_NETWORK {
 			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
@@ -271,7 +271,7 @@ func (d *Driver) deleteNetwork() error {
 		}
 		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
 	}
-	defer func() { _ = network.Free() }()
+	defer func() { _ = libvirtNet.Free() }()
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
 	err = d.checkDomains(conn)
@@ -283,18 +283,18 @@ func (d *Driver) deleteNetwork() error {
 
 	log.Debugf("Trying to delete network %s...", d.PrivateNetwork)
 	deleteFunc := func() error {
-		active, err := network.IsActive()
+		active, err := libvirtNet.IsActive()
 		if err != nil {
 			return err
 		}
 		if active {
 			log.Debugf("Destroying active network %s", d.PrivateNetwork)
-			if err := network.Destroy(); err != nil {
+			if err := libvirtNet.Destroy(); err != nil {
 				return err
 			}
 		}
 		log.Debugf("Undefining inactive network %s", d.PrivateNetwork)
-		return network.Undefine()
+		return libvirtNet.Undefine()
 	}
 	if err := retry.Local(deleteFunc, 10*time.Second); err != nil {
 		return errors.Wrap(err, "deleting network")
@@ -391,23 +391,23 @@ func (d *Driver) checkDomains(conn *libvirt.Connect) error {
 
 // addStaticIP appends new host's name, MAC and static IP address record to list of network DHCP leases.
 // It will return nil if host record already exists.
-func addStaticIP(conn *libvirt.Connect, network, hostname, mac, ip string) error {
-	l, err := dhcpLease(conn, network, hostname, mac, ip)
+func addStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) error {
+	l, err := dhcpLease(conn, networkName, hostname, mac, ip)
 	if err != nil {
-		return fmt.Errorf("failed looking up network %s for host DHCP lease {name: %q, mac: %q, ip: %q}: %w", network, hostname, mac, ip, err)
+		return fmt.Errorf("failed looking up network %s for host DHCP lease {name: %q, mac: %q, ip: %q}: %w", networkName, hostname, mac, ip, err)
 	}
 	if l != nil {
-		log.Debugf("skip adding static IP to network %s - found existing host DHCP lease matching {name: %q, mac: %q, ip: %q}", network, hostname, mac, ip)
+		log.Debugf("skip adding static IP to network %s - found existing host DHCP lease matching {name: %q, mac: %q, ip: %q}", networkName, hostname, mac, ip)
 		return nil
 	}
 
-	net, err := conn.LookupNetworkByName(network)
+	libvirtNet, err := conn.LookupNetworkByName(networkName)
 	if err != nil {
-		return fmt.Errorf("failed looking up network %s: %w", network, err)
+		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = net.Free() }()
+	defer func() { _ = libvirtNet.Free() }()
 
-	return net.Update(
+	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_ADD_LAST,
 		libvirt.NETWORK_SECTION_IP_DHCP_HOST,
 		-1,
@@ -417,23 +417,23 @@ func addStaticIP(conn *libvirt.Connect, network, hostname, mac, ip string) error
 
 // delStaticIP deletes static IP address record that matches given combination of host's name, MAC and IP from list of network DHCP leases.
 // It will return nil if record doesn't exist.
-func delStaticIP(conn *libvirt.Connect, network, hostname, mac, ip string) error {
-	l, err := dhcpLease(conn, network, hostname, mac, ip)
+func delStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) error {
+	l, err := dhcpLease(conn, networkName, hostname, mac, ip)
 	if err != nil {
-		return fmt.Errorf("failed looking up network %s for host DHCP lease {name: %q, mac: %q, ip: %q}: %w", network, hostname, mac, ip, err)
+		return fmt.Errorf("failed looking up network %s for host DHCP lease {name: %q, mac: %q, ip: %q}: %w", networkName, hostname, mac, ip, err)
 	}
 	if l == nil {
-		log.Debugf("skip deleting static IP from network %s - couldn't find host DHCP lease matching {name: %q, mac: %q, ip: %q}", network, hostname, mac, ip)
+		log.Debugf("skip deleting static IP from network %s - couldn't find host DHCP lease matching {name: %q, mac: %q, ip: %q}", networkName, hostname, mac, ip)
 		return nil
 	}
 
-	net, err := conn.LookupNetworkByName(network)
+	libvirtNet, err := conn.LookupNetworkByName(networkName)
 	if err != nil {
-		return fmt.Errorf("failed looking up network %s: %w", network, err)
+		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = net.Free() }()
+	defer func() { _ = libvirtNet.Free() }()
 
-	return net.Update(
+	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_DELETE,
 		libvirt.NETWORK_SECTION_IP_DHCP_HOST,
 		-1,
@@ -442,56 +442,56 @@ func delStaticIP(conn *libvirt.Connect, network, hostname, mac, ip string) error
 }
 
 // dhcpLease returns network DHCP lease that matches given combination of host's name, MAC and IP.
-func dhcpLease(conn *libvirt.Connect, network, hostname, mac, ip string) (lease *libvirt.NetworkDHCPLease, err error) {
+func dhcpLease(conn *libvirt.Connect, networkName, hostname, mac, ip string) (lease *libvirt.NetworkDHCPLease, err error) {
 	if hostname == "" && mac == "" && ip == "" {
 		return nil, nil
 	}
 
-	net, err := conn.LookupNetworkByName(network)
+	libvirtNet, err := conn.LookupNetworkByName(networkName)
 	if err != nil {
-		return nil, fmt.Errorf("failed looking up network %s: %w", network, err)
+		return nil, fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = net.Free() }()
+	defer func() { _ = libvirtNet.Free() }()
 
-	leases, err := net.GetDHCPLeases()
+	leases, err := libvirtNet.GetDHCPLeases()
 	if err != nil {
 		return nil, fmt.Errorf("failed getting host DHCP leases: %w", err)
 	}
 
 	for _, l := range leases {
 		if (hostname == "" || hostname == l.Hostname) && (mac == "" || mac == l.Mac) && (ip == "" || ip == l.IPaddr) {
-			log.Debugf("found host DHCP lease matching {name: %q, mac: %q, ip: %q} in network %s: %+v", hostname, mac, ip, network, l)
+			log.Debugf("found host DHCP lease matching {name: %q, mac: %q, ip: %q} in network %s: %+v", hostname, mac, ip, networkName, l)
 			return &l, nil
 		}
 	}
 
-	log.Debugf("unable to find host DHCP lease matching {name: %q, mac: %q, ip: %q} in network %s", hostname, mac, ip, network)
+	log.Debugf("unable to find host DHCP lease matching {name: %q, mac: %q, ip: %q} in network %s", hostname, mac, ip, networkName)
 	return nil, nil
 }
 
 // ipFromAPI returns current primary IP address of domain interface in network.
-func ipFromAPI(conn *libvirt.Connect, domain, network string) (string, error) {
-	mac, err := macFromXML(conn, domain, network)
+func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error) {
+	mac, err := macFromXML(conn, domain, networkName)
 	if err != nil {
 		return "", fmt.Errorf("failed getting MAC address: %w", err)
 	}
 
 	ifaces, err := ifListFromAPI(conn, domain)
 	if err != nil {
-		return "", fmt.Errorf("failed getting network %s interfaces using API of domain %s: %w", network, domain, err)
+		return "", fmt.Errorf("failed getting network %s interfaces using API of domain %s: %w", networkName, domain, err)
 	}
 	for _, i := range ifaces {
 		if i.Hwaddr == mac {
 			if i.Addrs != nil {
-				log.Debugf("domain %s has current primary IP address %s and MAC address %s in network %s", domain, i.Addrs[0].Addr, mac, network)
+				log.Debugf("domain %s has current primary IP address %s and MAC address %s in network %s", domain, i.Addrs[0].Addr, mac, networkName)
 				return i.Addrs[0].Addr, nil
 			}
-			log.Debugf("domain %s with MAC address %s doesn't have current IP address in network %s: %+v", domain, mac, network, i)
+			log.Debugf("domain %s with MAC address %s doesn't have current IP address in network %s: %+v", domain, mac, networkName, i)
 			return "", nil
 		}
 	}
 
-	log.Debugf("unable to find current IP address of domain %s in network %s (interfaces detected: %+v)", domain, network, ifaces)
+	log.Debugf("unable to find current IP address of domain %s in network %s (interfaces detected: %+v)", domain, networkName, ifaces)
 	return "", nil
 }
 
@@ -521,40 +521,40 @@ func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterf
 }
 
 // ipFromXML returns defined IP address of interface in network.
-func ipFromXML(conn *libvirt.Connect, domain, network string) (string, error) {
-	mac, err := macFromXML(conn, domain, network)
+func ipFromXML(conn *libvirt.Connect, domain, networkName string) (string, error) {
+	mac, err := macFromXML(conn, domain, networkName)
 	if err != nil {
 		return "", fmt.Errorf("failed getting MAC address: %w", err)
 	}
 
-	lease, err := dhcpLease(conn, network, "", mac, "")
+	lease, err := dhcpLease(conn, networkName, "", mac, "")
 	if err != nil {
-		return "", fmt.Errorf("failed looking up network %s for host DHCP lease {name: <any>, mac: %q, ip: <any>}: %w", network, mac, err)
+		return "", fmt.Errorf("failed looking up network %s for host DHCP lease {name: <any>, mac: %q, ip: <any>}: %w", networkName, mac, err)
 	}
 	if lease == nil {
-		log.Debugf("unable to find defined IP address of network %s interface with MAC address %s", network, mac)
+		log.Debugf("unable to find defined IP address of network %s interface with MAC address %s", networkName, mac)
 		return "", nil
 	}
 
-	log.Debugf("domain %s has defined IP address %s and MAC address %s in network %s", domain, lease.IPaddr, mac, network)
+	log.Debugf("domain %s has defined IP address %s and MAC address %s in network %s", domain, lease.IPaddr, mac, networkName)
 	return lease.IPaddr, nil
 }
 
 // macFromXML returns defined MAC address of interface in network from domain XML.
-func macFromXML(conn *libvirt.Connect, domain, network string) (string, error) {
+func macFromXML(conn *libvirt.Connect, domain, networkName string) (string, error) {
 	domIfs, err := ifListFromXML(conn, domain)
 	if err != nil {
-		return "", fmt.Errorf("failed getting network %s interfaces using XML of domain %s: %w", network, domain, err)
+		return "", fmt.Errorf("failed getting network %s interfaces using XML of domain %s: %w", networkName, domain, err)
 	}
 
 	for _, i := range domIfs {
-		if i.Source.Network == network {
-			log.Debugf("domain %s has defined MAC address %s in network %s", domain, i.Mac.Address, network)
+		if i.Source.Network == networkName {
+			log.Debugf("domain %s has defined MAC address %s in network %s", domain, i.Mac.Address, networkName)
 			return i.Mac.Address, nil
 		}
 	}
 
-	return "", fmt.Errorf("unable to get defined MAC address of network %s interface using XML of domain %s: network %s not found", network, domain, network)
+	return "", fmt.Errorf("unable to get defined MAC address of network %s interface using XML of domain %s: network %s not found", networkName, domain, networkName)
 }
 
 // ifListFromXML returns defined domain interfaces from domain XML.

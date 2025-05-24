@@ -92,7 +92,9 @@ func processRegistryCredsConfig(profile string, ac *addonConfig) {
 
 	regCredsConf := &ac.RegistryCreds
 	awsEcrAction := regCredsConf.EnableAWSEcr // regCredsConf. "enableAWSEcr")
-	if awsEcrAction == "prompt" || awsEcrAction == "" {
+
+	switch awsEcrAction {
+	case "prompt", "":
 		enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
 		if enableAWSECR {
 			awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
@@ -102,7 +104,7 @@ func processRegistryCredsConfig(profile string, ac *addonConfig) {
 			awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma separated list): ")
 			awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 		}
-	} else if awsEcrAction == "enable" {
+	case "enable":
 		out.Ln("Loading AWS ECR configs from: %s", addonConfigFile)
 		// Then read the configs
 		awsAccessID = regCredsConf.EcrConfigs.AccessID
@@ -111,15 +113,17 @@ func processRegistryCredsConfig(profile string, ac *addonConfig) {
 		awsRegion = regCredsConf.EcrConfigs.Region
 		awsAccount = regCredsConf.EcrConfigs.Account
 		awsRole = regCredsConf.EcrConfigs.Role
-	} else if awsEcrAction == "disable" {
+	case "disable":
 		out.Ln("Ignoring AWS ECR configs")
-	} else {
+	default:
 		out.Ln("Disabling AWS ECR.  Invalid value for enableAWSEcr (%s).  Must be one of 'disable', 'enable' or 'prompt'", awsEcrAction)
 	}
 
 	gcrPath := ""
 	gcrAction := regCredsConf.EnableGCR
-	if gcrAction == "prompt" || gcrAction == "" {
+
+	switch gcrAction {
+	case "prompt", "":
 		enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
 		if enableGCR {
 			gcrPath = AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
@@ -129,14 +133,14 @@ func processRegistryCredsConfig(profile string, ac *addonConfig) {
 				gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
 			}
 		}
-	} else if gcrAction == "enable" {
+	case "enable":
 		out.Ln("Loading GCR configs from: %s", addonConfigFile)
 		// Then read the configs
 		gcrPath = regCredsConf.GcrConfigs.GcrPath
 		gcrURL = regCredsConf.GcrConfigs.GcrURL
-	} else if gcrAction == "disable" {
+	case "disable":
 		out.Ln("Ignoring GCR configs")
-	} else {
+	default:
 		out.Ln("Disabling GCR.  Invalid value for enableGCR (%s).  Must be one of 'disable', 'enable' or 'prompt'", gcrAction)
 	}
 
@@ -152,40 +156,44 @@ func processRegistryCredsConfig(profile string, ac *addonConfig) {
 	}
 
 	dockerRegistryAction := regCredsConf.EnableDockerRegistry
-	if dockerRegistryAction == "prompt" || dockerRegistryAction == "" {
+
+	switch dockerRegistryAction {
+	case "prompt", "":
 		enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
 		if enableDR {
 			dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
 			dockerUser = AskForStaticValue("-- Enter docker registry username: ")
 			dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 		}
-	} else if dockerRegistryAction == "enable" {
+	case "enable":
 		out.Ln("Loading Docker Registry configs from: %s", addonConfigFile)
 		dockerServer = regCredsConf.DockerConfigs.DockerServer
 		dockerUser = regCredsConf.DockerConfigs.DockerUser
 		dockerPass = regCredsConf.DockerConfigs.DockerPass
-	} else if dockerRegistryAction == "disable" {
+	case "disable":
 		out.Ln("Ignoring Docker Registry configs")
-	} else {
+	default:
 		out.Ln("Disabling Docker Registry.  Invalid value for enableDockerRegistry (%s).  Must be one of 'disable', 'enable' or 'prompt'", dockerRegistryAction)
 	}
 
 	acrAction := regCredsConf.EnableACR
-	if acrAction == "prompt" || acrAction == "" {
+
+	switch acrAction {
+	case "prompt", "":
 		enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
 		if enableACR {
 			acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
 			acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
 			acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 		}
-	} else if acrAction == "enable" {
+	case "enable":
 		out.Ln("Loading ACR configs from: ", addonConfigFile)
 		acrURL = regCredsConf.AcrConfigs.AcrURL
 		acrClientID = regCredsConf.AcrConfigs.AcrClientID
 		acrPassword = regCredsConf.AcrConfigs.AcrPassword
-	} else if acrAction == "disable" {
+	case "disable":
 		out.Ln("Ignoring ACR configs")
-	} else {
+	default:
 		out.Stringf("Disabling ACR.  Invalid value for enableACR (%s).  Must be one of 'disable', 'enable' or 'prompt'", acrAction)
 	}
 

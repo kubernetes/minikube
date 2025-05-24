@@ -313,7 +313,7 @@ func removePid(path string, pid string) error {
 
 	// we found the correct file
 	// we're reading the pids...
-	out, err := os.ReadFile(pidPath)
+	data, err := os.ReadFile(pidPath)
 	if err != nil {
 		return errors.Wrap(err, "readFile")
 	}
@@ -321,7 +321,7 @@ func removePid(path string, pid string) error {
 	pids := []string{}
 	// we're splitting the mount-pids file content into a slice of strings
 	// so that we can compare each to the PID we're looking for
-	strPids := strings.Fields(string(out))
+	strPids := strings.Fields(string(data))
 	for _, p := range strPids {
 		// If we find the PID, we don't add it to the slice
 		if p == pid {

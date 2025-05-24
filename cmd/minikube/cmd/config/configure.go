@@ -133,7 +133,7 @@ func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 	type configFile struct {
 		Addons addonConfig `json:"addons"`
 	}
-	var config configFile
+	var cf configFile
 
 	if configFilePath != "" {
 		out.Ln("Reading %s configs from %s", addon, configFilePath)
@@ -150,14 +150,14 @@ func loadAddonConfigFile(addon, configFilePath string) (ac *addonConfig) {
 				fmt.Sprintf("error opening config file: %s", configFilePath))
 		}
 
-		if err = json.Unmarshal(confData, &config); err != nil {
+		if err = json.Unmarshal(confData, &cf); err != nil {
 			// err = errors2.Wrapf(err, "error reading config file (%s)", configFilePath)
 			klog.Errorf("error reading config file (%s): %v", configFilePath, err)
 			exit.Message(reason.Kind{ExitCode: reason.ExProgramConfig, Advice: "provide a valid config file"},
 				fmt.Sprintf("error reading config file: %v", err))
 		}
 
-		return &config.Addons
+		return &cf.Addons
 	}
 	return nil
 }
