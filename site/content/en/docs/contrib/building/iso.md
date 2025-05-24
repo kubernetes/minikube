@@ -10,6 +10,9 @@ The minikube ISO is booted by each hypervisor to provide a stable minimal Linux 
 
 ## Prerequisites
 
+* Machine with x86\_64 CPU
+* Ubuntu 22.04.5 LTS (Jammy Jellyfish)
+* docker
 * A recent GNU Make distribution (>=4.0)
 * A recent Go distribution (>=1.22.0)
 * If you are on Windows or Mac, you'll need Docker to be installed.
@@ -25,29 +28,58 @@ cd minikube
 ## Building
 
 ### Building in Docker
-To build for x86
+
+To build for x86:
+
 ```shell
 $ make buildroot-image
-$ make out/minikube-amd64.iso
+$ make minikube-iso-x86_64
 ```
 
-To build for ARM
+To build for ARM:
+
 ```shell
 $ make buildroot-image
-$ make out/minikube-arm64.iso
+$ make minikube-iso-aarch64
 ```
 
-The build will occur inside a docker container. 
+The build will occur inside a docker container.
 The bootable ISO image will be available in `out/minikube-<arch>.iso`.
 
-### Building on Baremetal
-If you want to do this on baremetal, replace `make out/minikube-<arch>.iso` with `IN_DOCKER=1 make out/minikube-<arch>.iso`.
+### Building without docker
 
-* Prerequisite build tools to install:
+Install required tools:
+
 ```shell
-sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
-    unzip bc gcc-multilib automake libtool locales
+sudo apt-get install \
+    automake \
+    bc \
+    build-essential \
+    cpio \
+    gcc-multilib \
+    genisoimage \
+    git \
+    gnupg2 \
+    libtool \
+    locales \
+    p7zip-full \
+    python2 \
+    unzip \
+    wget \
 ```
+
+Install Go using these instructions:
+https://go.dev/doc/install
+
+To build without docker run:
+
+```shell
+IN_DOCKER=1 make minikube-iso-<arch>
+```
+
+> [!IMPORTANT]
+> Some external projects will try to use docker even when building
+> without docker. You must install docker on the build host.
 
 ## Using a local ISO image
 
