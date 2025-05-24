@@ -1,0 +1,54 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kubetail-cli
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cli
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
+rules:
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
+  verbs: [get, list, watch]
+- apiGroups: [""]
+  resources: [pods/log]
+  verbs: [list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cli
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cli
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-cli
+subjects:
+- kind: ServiceAccount
+  name: kubetail-cli
+  namespace: kubetail-system

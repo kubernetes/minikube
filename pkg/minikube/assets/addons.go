@@ -798,6 +798,21 @@ var Addons = map[string]*Addon{
 		map[string]string{
 			"Yakd": "docker.io",
 		}),
+	"kubetail": NewAddon([]*BinAsset{
+		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-namespace.yaml", vmpath.GuestAddonsDir, "kubetail-namespace.yaml", "0640"),
+		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-dashboard.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-dashboard.yaml", "0640"),
+		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cluster-api.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-cluster-api.yaml", "0640"),
+		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cluster-agent.yaml.tmpl", vmpath.GuestAddonsDir, "kubetail-cluster-agent.yaml", "0640"),
+		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cli.yaml", vmpath.GuestAddonsDir, "kubetail-cli.yaml", "0640"),
+	}, false, "kubetail", "3rd party (kubetail.com)", "amorey", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubetail/",
+		map[string]string{
+			"KubetailDashboard":    "kubetail/kubetail-dashboard:0.4.5@sha256:a4fd0c6425dee63a08e0df5dc9f9d3cf1074ae1fd2304a4ad35a80de210f0627",
+			"KubetailClusterAPI":   "kubetail/kubetail-cluster-api:0.2.4@sha256:31bc1263e48c18eb9ba299753678cf357bc6b3f4f365bddb8dfe0a21489ec9aa",
+			"KubetailClusterAgent": "kubetail/kubetail-cluster-agent:0.2.2@sha256:8c1ec1f874e7211fd781bb0e8f4a1cdc862d9687faae74a03db8aeb098633904",
+		},
+		map[string]string{
+			"Kubetail": "docker.io",
+		}),
 }
 
 // parseMapString creates a map based on `str` which is encoded as <key1>=<value1>,<key2>=<value2>,...
