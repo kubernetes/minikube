@@ -307,10 +307,48 @@ func (d *Driver) Start() error {
 		}
 	}()
 
+	// >>> debug
+	domXML, err := dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE | libvirt.DOMAIN_XML_INACTIVE)
+	if err != nil {
+		log.Debugf("failed to get domain XML pre-create (inactive): %v", lvErr(err))
+	} else {
+		log.Debugf("domain XML pre-create (inactive): %s", domXML)
+	}
+
+	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
+	if err != nil {
+		log.Debugf("failed to get domain XML pre-create: %v", lvErr(err))
+	} else {
+		log.Debugf("domain XML pre-create: %s", domXML)
+	}
+	// <<< debug
+
 	log.Info("creating domain...")
 	if err := dom.Create(); err != nil {
 		return errors.Wrap(err, "creating domain")
 	}
+
+	// >>> debug
+	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
+	if err != nil {
+		log.Debugf("failed to get domain XML post-create: %v", lvErr(err))
+	} else {
+		log.Debugf("domain XML post-create: %s", domXML)
+	}
+
+	log.Info("waiting for domain to start...")
+	if err := d.waitForRunningState(1 * time.Minute); err != nil {
+		return errors.Wrap(err, "waiting for domain to start")
+	}
+	log.Info("domain is now running")
+
+	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
+	if err != nil {
+		log.Debugf("failed to get domain XML post-start: %v", lvErr(err))
+	} else {
+		log.Debugf("domain XML post-start: %s", domXML)
+	}
+	// <<< debug
 
 	log.Info("waiting for IP...")
 	if err := d.waitForStaticIP(conn); err != nil {
@@ -322,6 +360,27 @@ func (d *Driver) Start() error {
 		return errors.Wrap(err, "waiting for SSH")
 	}
 
+	return nil
+}
+
+// waitForRunningState waits maxTime for the domain to reach a running state.
+func (d *Driver) waitForRunningState(maxTime time.Duration) error {
+	query := func() error {
+		s, err := d.GetState()
+		if err != nil {
+			return fmt.Errorf("failed getting domain state: %w", err)
+		}
+
+		if s == state.Running {
+			return nil
+		}
+
+		return fmt.Errorf("current domain state: %q", s)
+	}
+	if err := retry.Local(query, maxTime); err != nil {
+		// return s, fmt.Errorf("timed out waiting for domain to start, current state is %q", s)
+		return fmt.Errorf("domain didn't start after %v: %w", maxTime, err)
+	}
 	return nil
 }
 
@@ -343,7 +402,7 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 		return nil
 	}
 	if err := retry.Local(query, 1*time.Minute); err != nil {
-		return fmt.Errorf("domain %s didn't return IP after 1 minutes", d.MachineName)
+		return fmt.Errorf("domain %s didn't return IP after 1 minute", d.MachineName)
 	}
 
 	log.Info("reserving static IP address...")
@@ -426,7 +485,7 @@ func (d *Driver) Create() error {
 	}
 	defer func() {
 		if err := dom.Free(); err != nil {
-			log.Errorf("unable to free domain: %v", err)
+			log.Errorf("unable to free domain %s: %v", d.MachineName, err)
 		}
 	}()
 

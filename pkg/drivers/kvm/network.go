@@ -86,7 +86,11 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "checking network %s", name)
 	}
-	defer func() { _ = n.Free() }()
+	defer func() {
+		if err := n.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", name, err)
+		}
+	}()
 
 	// always ensure autostart is set on the network
 	autostart, err := n.GetAutostart()
@@ -104,10 +108,36 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "checking network status for %s", name)
 	}
+
+	// >>> debug
+	netXML, err := n.GetXMLDesc(libvirt.NETWORK_XML_INACTIVE)
+	if err != nil {
+		log.Debugf("failed to get network XML pre-create (inactive): %v", lvErr(err))
+	} else {
+		log.Debugf("network XML pre-create (inactive): %s", netXML)
+	}
+
+	netXML, err = n.GetXMLDesc(0)
+	if err != nil {
+		log.Debugf("failed to get network XML pre-create: %v", lvErr(err))
+	} else {
+		log.Debugf("network XML pre-create: %s", netXML)
+	}
+	// <<< debug
+
 	if !active {
+		log.Debugf("network %s is not active, trying to start it...", name)
 		if err := n.Create(); err != nil {
 			return errors.Wrapf(err, "starting network %s", name)
 		}
+		// >>> debug
+		netXML, err = n.GetXMLDesc(0)
+		if err != nil {
+			log.Debugf("failed to get network XML post-create: %v", lvErr(err))
+		} else {
+			log.Debugf("network XML post-create: %s", netXML)
+		}
+		// <<< debug
 	}
 	return nil
 }
@@ -180,7 +210,9 @@ func (d *Driver) createNetwork() error {
 	}
 	log.Debugf("found existing %s KVM network", d.Network)
 	if netd != nil {
-		_ = netd.Free()
+		if err := netd.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", d.Network, err)
+		}
 	}
 
 	// network: private
@@ -188,7 +220,9 @@ func (d *Driver) createNetwork() error {
 	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	defer func() {
 		if netp != nil {
-			_ = netp.Free()
+			if err := netp.Free(); err != nil {
+				log.Errorf("unable to free network %s: %v", d.PrivateNetwork, err)
+			}
 		}
 	}()
 	if err == nil {
@@ -271,7 +305,12 @@ func (d *Driver) deleteNetwork() error {
 		}
 		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if err := libvirtNet.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", d.PrivateNetwork, err)
+		}
+	}()
+
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
 	err = d.checkDomains(conn)
@@ -405,7 +444,11 @@ func addStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) e
 	if err != nil {
 		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if err := libvirtNet.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", networkName, err)
+		}
+	}()
 
 	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_ADD_LAST,
@@ -431,7 +474,11 @@ func delStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) e
 	if err != nil {
 		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if err := libvirtNet.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", networkName, err)
+		}
+	}()
 
 	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_DELETE,
@@ -451,7 +498,11 @@ func dhcpLease(conn *libvirt.Connect, networkName, hostname, mac, ip string) (le
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if err := libvirtNet.Free(); err != nil {
+			log.Errorf("unable to free network %s: %v", networkName, err)
+		}
+	}()
 
 	leases, err := libvirtNet.GetDHCPLeases()
 	if err != nil {
@@ -501,7 +552,11 @@ func ifListFromAPI(conn *libvirt.Connect, domain, mac string) ([]libvirt.DomainI
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, err)
 	}
-	defer func() { _ = dom.Free() }()
+	defer func() {
+		if err := dom.Free(); err != nil {
+			log.Errorf("unable to free domain %s: %v", domain, err)
+		}
+	}()
 
 	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
 	if len(ifs) == 0 {
@@ -604,7 +659,11 @@ func ifListFromXML(conn *libvirt.Connect, domain string) ([]kvmIface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, err)
 	}
-	defer func() { _ = dom.Free() }()
+	defer func() {
+		if err := dom.Free(); err != nil {
+			log.Errorf("unable to free domain %s: %v", domain, err)
+		}
+	}()
 
 	domXML, err := dom.GetXMLDesc(0)
 	if err != nil {
