@@ -476,7 +476,7 @@ func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error
 		return "", fmt.Errorf("failed getting MAC address: %w", err)
 	}
 
-	ifaces, err := ifListFromAPI(conn, domain)
+	ifaces, err := ifListFromAPI(conn, domain, mac)
 	if err != nil {
 		return "", fmt.Errorf("failed getting network %s interfaces using API of domain %s: %w", networkName, domain, err)
 	}
@@ -496,24 +496,65 @@ func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error
 }
 
 // ifListFromAPI returns current domain interfaces.
-func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterface, error) {
+func ifListFromAPI(conn *libvirt.Connect, domain, mac string) ([]libvirt.DomainInterface, error) {
 	dom, err := conn.LookupDomainByName(domain)
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, err)
 	}
 	defer func() { _ = dom.Free() }()
 
-	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
+	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
 	if len(ifs) == 0 {
 		if err != nil {
-			log.Debugf("failed listing network interface addresses of domain %s (source=arp): %v", domain, err)
+			log.Debugf("failed listing network interface addresses of domain %s (source=lease): %v", domain, err)
 		} else {
-			log.Debugf("no network interface addresses found for domain %s (source=arp)", domain)
-		}
-		log.Debugf("trying to list again with source=lease")
+			log.Debugf("no network interface addresses found for domain %s (source=lease)", domain)
 
-		if ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE); err != nil {
-			return nil, fmt.Errorf("failed listing network interface addresses of domain %s (source=lease): %w", domain, err)
+			// debug >>>
+			log.Debug("Listing all connection network interfaces...")
+			ifcs, err := conn.ListAllInterfaces(0)
+			if err != nil {
+				log.Debugf("failed listing all connection network interfaces: %v", err)
+			} else {
+				for _, i := range ifcs {
+					name, err := i.GetName()
+					if err != nil {
+						log.Debugf("failed getting name of connection interface: %v", err)
+					}
+					mac, err := i.GetMACString()
+					if err != nil {
+						log.Debugf("failed getting MAC address of connection interface: %v", err)
+					}
+					active, err := i.IsActive()
+					if err != nil {
+						log.Debugf("failed checking if connection interface is active: %v", err)
+					}
+					log.Debugf("detected connection interface: {name: %s, mac: %s, active: %t}", name, mac, active)
+				}
+			}
+
+			log.Debug("Lookup connection interface with MAC address %q...", mac)
+
+			ifc, err := conn.LookupInterfaceByMACString(mac)
+			if err != nil {
+				log.Debugf("failed looking up connection interface with MAC address %q: %v", mac, err)
+			} else {
+				name, err := ifc.GetName()
+				if err != nil {
+					log.Debugf("failed getting name of connection interface with MAC address %q: %v", mac, err)
+				}
+				active, err := ifc.IsActive()
+				if err != nil {
+					log.Debugf("failed checking if connection interface with MAC address %q is active: %v", mac, err)
+				}
+				log.Debugf("detected connection interface with MAC address %q {name: %s, active: %t}", mac, name, active)
+			}
+			// <<< debug
+		}
+		log.Debugf("trying to list again with source=arp")
+
+		if ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP); err != nil {
+			return nil, fmt.Errorf("failed listing network interface addresses of domain %s (source=arp): %w", domain, err)
 		}
 	}
 
