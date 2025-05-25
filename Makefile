@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0
+ISO_VERSION ?= v1.36.0-1748058812-20770
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.24.0
+GO_VERSION ?= 1.24.2
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
@@ -103,7 +103,7 @@ $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube:Z -w /minikube python python")
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
@@ -189,7 +189,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -341,13 +341,13 @@ out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube-iso-$*
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
 iso_in_docker:
-	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
@@ -365,7 +365,6 @@ drivers: docker-machine-driver-hyperkit \
 	 docker-machine-driver-kvm2 \
 	 out/docker-machine-driver-kvm2-amd64
 
-
 .PHONY: docker-machine-driver-hyperkit
 docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
 
@@ -374,7 +373,7 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
 integration: out/minikube$(IS_EXE) ## Trigger minikube integration test, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=180m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test, logs to ./out/testout_COMMIT.txt
@@ -382,7 +381,7 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Tr
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing, logs to ./out/testout_COMMIT.txt
-	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=90m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
+	go test -ldflags="${MINIKUBE_LDFLAGS}" -v -test.timeout=180m $(INTEGRATION_TESTS_TO_RUN) --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS) 2>&1 | tee "./out/testout_$(COMMIT_SHORT).txt"
 
 .PHONY: functional
 functional: integration-functional-only
@@ -523,7 +522,7 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	docker run --rm -v `pwd`:/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} ./..." 
 	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
 	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
@@ -657,7 +656,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
 		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
+		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	$(if $(quiet),@echo "  GO       $@")
