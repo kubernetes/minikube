@@ -29,6 +29,7 @@ var supportedDrivers = func() []string {
 		return []string{
 			QEMU2,
 			VFKit,
+			Krunkit,
 			Parallels,
 			Docker,
 			Podman,
