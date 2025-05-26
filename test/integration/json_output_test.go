@@ -43,7 +43,7 @@ func TestJSONOutput(t *testing.T) {
 	}{
 		{
 			command: "start",
-			args:    append([]string{"--memory=2200", "--wait=true"}, StartArgs()...),
+			args:    append([]string{"--memory=3072", "--wait=true"}, StartArgs()...),
 		}, {
 			command: "pause",
 		}, {
@@ -155,7 +155,7 @@ func TestErrorJSONOutput(t *testing.T) {
 
 	// force a failure via --driver=fail so that we can make sure errors
 	// are printed as expected
-	startArgs := []string{"start", "-p", profile, "--memory=2200", "--output=json", "--wait=true", "--driver=fail"}
+	startArgs := []string{"start", "-p", profile, "--memory=3072", "--output=json", "--wait=true", "--driver=fail"}
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err == nil {

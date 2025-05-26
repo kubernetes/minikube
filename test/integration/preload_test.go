@@ -36,7 +36,7 @@ func TestPreload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "--wait=true", "--preload=false"}
+	startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
 	startArgs = append(startArgs, StartArgs()...)
 	k8sVersion := "v1.24.4"
 	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
@@ -61,7 +61,7 @@ func TestPreload(t *testing.T) {
 	}
 
 	// re-start the cluster and check if image is preserved
-	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1", "--wait=true"}
+	startArgs = []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {

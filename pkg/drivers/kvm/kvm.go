@@ -141,11 +141,11 @@ func (d *Driver) GetURL() (string, error) {
 func (d *Driver) PreCommandCheck() error {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt connection")
+		return fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
@@ -167,7 +167,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
-			log.Errorf("unable to close domain: %v", err)
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
@@ -225,11 +225,11 @@ func (d *Driver) GetIP() (string, error) {
 
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return "", errors.Wrap(err, "getting libvirt connection")
+		return "", fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
@@ -265,7 +265,7 @@ func (d *Driver) Kill() error {
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
-			log.Errorf("unable to close domain: %v", err)
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
@@ -303,52 +303,26 @@ func (d *Driver) Start() error {
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
-			log.Errorf("unable to close domain: %v", err)
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
-	// >>> debug
-	domXML, err := dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE | libvirt.DOMAIN_XML_INACTIVE)
+	domXML, err := dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
 	if err != nil {
-		log.Debugf("failed to get domain XML pre-create (inactive): %v", lvErr(err))
+		log.Debugf("failed to get domain XML: %v", lvErr(err))
 	} else {
-		log.Debugf("domain XML pre-create (inactive): %s", domXML)
+		log.Debugf("starting domain XML:\n%s", domXML)
 	}
 
-	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
-	if err != nil {
-		log.Debugf("failed to get domain XML pre-create: %v", lvErr(err))
-	} else {
-		log.Debugf("domain XML pre-create: %s", domXML)
-	}
-	// <<< debug
-
-	log.Info("creating domain...")
 	if err := dom.Create(); err != nil {
 		return errors.Wrap(err, "creating domain")
 	}
 
-	// >>> debug
-	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
-	if err != nil {
-		log.Debugf("failed to get domain XML post-create: %v", lvErr(err))
-	} else {
-		log.Debugf("domain XML post-create: %s", domXML)
-	}
-
 	log.Info("waiting for domain to start...")
-	if err := d.waitForRunningState(1 * time.Minute); err != nil {
+	if err := d.waitForDomainState(state.Running, 1*time.Minute); err != nil {
 		return errors.Wrap(err, "waiting for domain to start")
 	}
 	log.Info("domain is now running")
-
-	domXML, err = dom.GetXMLDesc(libvirt.DOMAIN_XML_SECURE)
-	if err != nil {
-		log.Debugf("failed to get domain XML post-start: %v", lvErr(err))
-	} else {
-		log.Debugf("domain XML post-start: %s", domXML)
-	}
-	// <<< debug
 
 	log.Info("waiting for IP...")
 	if err := d.waitForStaticIP(conn); err != nil {
@@ -363,23 +337,23 @@ func (d *Driver) Start() error {
 	return nil
 }
 
-// waitForRunningState waits maxTime for the domain to reach a running state.
-func (d *Driver) waitForRunningState(maxTime time.Duration) error {
+// waitForDomainState waits maxTime for the domain to reach a target state.
+func (d *Driver) waitForDomainState(targetState state.State, maxTime time.Duration) error {
 	query := func() error {
-		s, err := d.GetState()
+		currentState, err := d.GetState()
 		if err != nil {
 			return fmt.Errorf("failed getting domain state: %w", err)
 		}
 
-		if s == state.Running {
+		if currentState == targetState {
 			return nil
 		}
 
-		return fmt.Errorf("current domain state: %q", s)
+		log.Debugf("current domain state is %q, will retry", currentState.String())
+		return fmt.Errorf("last domain state: %q", currentState.String())
 	}
 	if err := retry.Local(query, maxTime); err != nil {
-		// return s, fmt.Errorf("timed out waiting for domain to start, current state is %q", s)
-		return fmt.Errorf("domain didn't start after %v: %w", maxTime, err)
+		return fmt.Errorf("timed out waiting %v for domain to reach %q state: %w", maxTime, targetState.String(), err)
 	}
 	return nil
 }
@@ -417,7 +391,7 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	log.Info("creating KVM machine...")
+	log.Info("creating domain...")
 
 	log.Info("creating network...")
 	if err := d.createNetwork(); err != nil {
@@ -477,15 +451,16 @@ func (d *Driver) Create() error {
 		log.Errorf("unable to ensure permissions on %s: %v", store, err)
 	}
 
-	log.Info("creating domain...")
-
-	dom, err := d.createDomain()
+	log.Info("defining domain...")
+	dom, err := d.defineDomain()
 	if err != nil {
-		return errors.Wrap(err, "creating domain")
+		return errors.Wrap(err, "defining domain")
 	}
 	defer func() {
-		if err := dom.Free(); err != nil {
-			log.Errorf("unable to free domain %s: %v", d.MachineName, err)
+		if dom == nil {
+			log.Warnf("nil domain, cannot free")
+		} else if err := dom.Free(); err != nil {
+			log.Errorf("failed freeing %s domain: %v", d.MachineName, lvErr(err))
 		}
 	}()
 
@@ -493,7 +468,7 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "starting domain")
 	}
 
-	log.Infof("KVM machine creation complete")
+	log.Infof("domain creation complete")
 	return nil
 }
 
@@ -529,28 +504,29 @@ func ensureDirPermissions(store string) error {
 
 // Stop a host gracefully or forcefully otherwise.
 func (d *Driver) Stop() error {
+	log.Info("stopping domain...")
+
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "getting domain state")
+		return fmt.Errorf("getting domain state: %w", err)
 	}
 
 	if s == state.Stopped {
+		log.Info("domain already stopped, nothing to do")
 		return nil
 	}
 
-	log.Info("stopping domain...")
-
 	dom, conn, err := d.getDomain()
 	if err != nil {
-		return errors.Wrap(err, "getting domain")
+		return fmt.Errorf("getting domain: %w", err)
 	}
 	defer func() {
 		if err := closeDomain(dom, conn); err != nil {
-			log.Errorf("unable to close domain: %v", err)
+			log.Errorf("failed closing domain: %v", err)
 		}
 	}()
 
-	log.Info("gracefully shutting down domain...")
+	log.Info("gracefully shutting domain down...")
 
 	// ref: https://libvirt.org/html/libvirt-libvirt-domain.html#virDomainShutdownFlags
 	// note: "The order in which the hypervisor tries each shutdown method is undefined, and a hypervisor is not required to support all methods."
@@ -567,52 +543,25 @@ func (d *Driver) Stop() error {
 	}
 
 	if err := dom.Shutdown(); err != nil {
-		return errors.Wrap(err, "gracefully shutting down domain")
+		return fmt.Errorf("gracefully shutting domain down: %w", err)
 	}
 
-	if s, err = d.waitForStopState(90, "graceful shutdown"); err == nil {
-		log.Info("domain gracefully shutdown")
+	if err = d.waitForDomainState(state.Stopped, 90*time.Second); err == nil {
+		log.Info("domain gracefully shut down")
 		return nil
 	}
 
-	// could not get domain state
-	if s == state.None {
-		return err
-	}
+	log.Warn("failed graceful domain shut down, will try to force-stop")
 
-	// at this point shutdown failed, so we try with a little bit of force
-	log.Warn("waiting for domain graceful shutdown failed, will try to force-stop")
 	if err := d.Kill(); err != nil {
-		log.Warnf("force-stopping domain request failed: %v", err)
+		return fmt.Errorf("force-stopping domain request failed: %w", err)
 	}
 
-	if s, err := d.waitForStopState(30, "force-stop"); err != nil {
-		return fmt.Errorf("unable to stop domain %s, current state is %q", d.MachineName, s.String())
+	if err = d.waitForDomainState(state.Stopped, 30*time.Second); err == nil {
+		log.Info("domain force-stopped")
+		return nil
 	}
-
-	log.Info("domain force-stopped")
-
-	return nil
-}
-
-// waitForStopState waits maxsec for the domain to reach a stopped state.
-func (d *Driver) waitForStopState(maxsec int, method string) (state.State, error) {
-	var s state.State
-	var err error
-	for i := 0; i < maxsec; i++ {
-		if s, err = d.GetState(); err != nil {
-			return s, errors.Wrap(err, "getting domain state")
-		}
-
-		if s == state.Stopped {
-			return state.Stopped, nil
-		}
-
-		log.Infof("waiting for domain %s %d/%d", method, i, maxsec)
-		time.Sleep(1 * time.Second)
-	}
-
-	return s, fmt.Errorf("timed out waiting for domain %s, current state is %q", method, s)
+	return fmt.Errorf("unable to stop domain: %w", err)
 }
 
 // Remove a host
@@ -621,11 +570,11 @@ func (d *Driver) Remove() error {
 
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt connection")
+		return fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 

@@ -62,7 +62,7 @@ func TestSkaffold(t *testing.T) {
 	}
 	t.Logf("skaffold version: %s", rr.Stdout.Bytes())
 
-	args := append([]string{"start", "-p", profile, "--memory=2600"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())

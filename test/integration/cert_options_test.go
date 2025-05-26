@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
@@ -38,7 +39,7 @@ func TestCertOptions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--memory=2048", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
 	// We can safely override --apiserver-name with
 	if NeedsPortForward() {
@@ -107,31 +108,31 @@ func TestCertOptions(t *testing.T) {
 
 }
 
-// // TestCertExpiration makes sure minikube can start after its profile certs have expired.
-// // It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
-// // It also makes sure minikube prints a cert expiration warning to the user.
-// func TestCertExpiration(t *testing.T) {
-// 	MaybeParallel(t)
+// TestCertExpiration makes sure minikube can start after its profile certs have expired.
+// It does this by configuring minikube certs to expire after 3 minutes, then waiting 3 minutes, then starting again.
+// It also makes sure minikube prints a cert expiration warning to the user.
+func TestCertExpiration(t *testing.T) {
+	MaybeParallel(t)
 
-// 	profile := UniqueProfileName("cert-expiration")
-// 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
-// 	defer CleanupWithLogs(t, profile, cancel)
+	profile := UniqueProfileName("cert-expiration")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
+	defer CleanupWithLogs(t, profile, cancel)
 
-// 	args := append([]string{"start", "-p", profile, "--memory=2048", "--cert-expiration=3m"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", "--cert-expiration=3m"}, StartArgs()...)
 
-// 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-// 	if err != nil {
-// 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
-// 	}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
+	}
 
-// 	// Now wait 3 minutes for the certs to expire and make sure minikube starts properly
-// 	time.Sleep(time.Minute * 3)
-// 	args = append([]string{"start", "-p", profile, "--memory=2048", "--cert-expiration=8760h"}, StartArgs()...)
-// 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-// 	if err != nil {
-// 		t.Errorf("failed to start minikube after cert expiration: %q : %v", rr.Command(), err)
-// 	}
-// 	if !strings.Contains(rr.Output(), "expired") {
-// 		t.Errorf("minikube start output did not warn about expired certs: %v", rr.Output())
-// 	}
-// }
+	// Now wait 3 minutes for the certs to expire and make sure minikube starts properly
+	time.Sleep(time.Minute * 3)
+	args = append([]string{"start", "-p", profile, "--memory=3072", "--cert-expiration=8760h"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed to start minikube after cert expiration: %q : %v", rr.Command(), err)
+	}
+	if !strings.Contains(rr.Output(), "expired") {
+		t.Errorf("minikube start output did not warn about expired certs: %v", rr.Output())
+	}
+}
