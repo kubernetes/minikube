@@ -54,6 +54,7 @@ import (
 
 const (
 	isoFilename        = "boot2docker.iso"
+	serialFileName     = "serial.log"
 	privateNetworkName = "docker-machines"
 
 	defaultSSHUser = "docker"
@@ -463,6 +464,10 @@ func (d *Driver) Start() error {
 			"-device",
 			"virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=config-2")
 	}
+
+	serialPath := d.ResolveStorePath(serialFileName)
+	startCmd = append(startCmd,
+		"-serial", fmt.Sprintf("file:%s", serialPath))
 
 	for i := 0; i < d.ExtraDisks; i++ {
 		// use a higher index for extra disks to reduce ID collision with current or future
