@@ -325,7 +325,7 @@ func (d *Driver) Start() error {
 	log.Info("domain is now running")
 
 	log.Info("waiting for IP...")
-	if err := d.waitForStaticIP(conn); err != nil {
+	if err := d.waitForStaticIP(conn, 30*time.Second); err != nil {
 		return errors.Wrap(err, "waiting for IP")
 	}
 
@@ -359,7 +359,7 @@ func (d *Driver) waitForDomainState(targetState state.State, maxTime time.Durati
 }
 
 // waitForStaticIP waits for IP address of domain that has been created & starting and then makes that IP static.
-func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
+func (d *Driver) waitForStaticIP(conn *libvirt.Connect, maxTime time.Duration) error {
 	query := func() error {
 		sip, err := ipFromAPI(conn, d.MachineName, d.PrivateNetwork)
 		if err != nil {
@@ -375,8 +375,8 @@ func (d *Driver) waitForStaticIP(conn *libvirt.Connect) error {
 
 		return nil
 	}
-	if err := retry.Local(query, 1*time.Minute); err != nil {
-		return fmt.Errorf("domain %s didn't return IP after 1 minute", d.MachineName)
+	if err := retry.Local(query, maxTime); err != nil {
+		return fmt.Errorf("domain %s didn't return IP after %v", d.MachineName, maxTime)
 	}
 
 	log.Info("reserving static IP address...")
