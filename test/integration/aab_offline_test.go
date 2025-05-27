@@ -43,7 +43,7 @@ func TestOffline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=2048", "--wait=true"}
+	startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--memory=3072", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
