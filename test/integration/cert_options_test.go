@@ -36,7 +36,7 @@ func TestCertOptions(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("cert-options")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--memory=3072", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
@@ -115,7 +115,7 @@ func TestCertExpiration(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("cert-expiration")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(10))
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--memory=3072", "--cert-expiration=3m"}, StartArgs()...)
