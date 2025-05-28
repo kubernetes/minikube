@@ -61,8 +61,8 @@ const (
 	hostOnlyCIDR            = "host-only-cidr"
 	containerRuntime        = "container-runtime"
 	criSocket               = "cri-socket"
-	networkPlugin           = "network-plugin"
-	enableDefaultCNI        = "enable-default-cni"
+	networkPlugin           = "network-plugin"     // deprecated, use --cni instead
+	enableDefaultCNI        = "enable-default-cni" // deprecated, use --cni=bridge instead
 	cniFlag                 = "cni"
 	hypervVirtualSwitch     = "hyperv-virtual-switch"
 	hypervUseExternalSwitch = "hyperv-use-external-switch"
@@ -236,6 +236,16 @@ func initDriverFlags() {
 	if err := startCmd.Flags().MarkHidden("vm-driver"); err != nil {
 		klog.Warningf("Failed to hide vm-driver flag: %v\n", err)
 	}
+	// Hide the deprecated flag from help text so new users dont use it (still will be processed)
+	if err := startCmd.Flags().MarkHidden(enableDefaultCNI); err != nil {
+		klog.Warningf("Failed to hide %s flag: %v\n", enableDefaultCNI, err)
+	}
+
+	// Hide the deprecated flag from help text so new users dont use it (still will be processed)
+	if err := startCmd.Flags().MarkHidden(networkPlugin); err != nil {
+		klog.Warningf("Failed to hide %s flag: %v\n", networkPlugin, err)
+	}
+
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 	startCmd.Flags().Bool("vm", false, "Filter to use only VM Drivers")
 
