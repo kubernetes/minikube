@@ -61,8 +61,8 @@ const (
 	hostOnlyCIDR            = "host-only-cidr"
 	containerRuntime        = "container-runtime"
 	criSocket               = "cri-socket"
-	networkPlugin           = "network-plugin"
-	enableDefaultCNI        = "enable-default-cni"
+	networkPlugin           = "network-plugin"     // deprecated, use --cni instead
+	enableDefaultCNI        = "enable-default-cni" // deprecated, use --cni=bridge instead
 	cniFlag                 = "cni"
 	hypervVirtualSwitch     = "hyperv-virtual-switch"
 	hypervUseExternalSwitch = "hyperv-use-external-switch"
@@ -163,7 +163,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
 	startCmd.Flags().String(cpus, "2", fmt.Sprintf("Number of CPUs allocated to Kubernetes. Use %q to use the maximum number of CPUs. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
-	startCmd.Flags().String(memory, "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
+	startCmd.Flags().StringP(memory, "m", "", fmt.Sprintf("Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use %q to use the maximum amount of memory. Use %q to not specify a limit (Docker/Podman only)", constants.MaxResources, constants.NoLimit))
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -232,6 +232,20 @@ func initKubernetesFlags() {
 func initDriverFlags() {
 	startCmd.Flags().StringP("driver", "d", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
 	startCmd.Flags().String("vm-driver", "", "DEPRECATED, use `driver` instead.")
+	// Hide the deprecated vm-driver flag from help text
+	if err := startCmd.Flags().MarkHidden("vm-driver"); err != nil {
+		klog.Warningf("Failed to hide vm-driver flag: %v\n", err)
+	}
+	// Hide the deprecated flag from help text so new users dont use it (still will be processed)
+	if err := startCmd.Flags().MarkHidden(enableDefaultCNI); err != nil {
+		klog.Warningf("Failed to hide %s flag: %v\n", enableDefaultCNI, err)
+	}
+
+	// Hide the deprecated flag from help text so new users dont use it (still will be processed)
+	if err := startCmd.Flags().MarkHidden(networkPlugin); err != nil {
+		klog.Warningf("Failed to hide %s flag: %v\n", networkPlugin, err)
+	}
+
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 	startCmd.Flags().Bool("vm", false, "Filter to use only VM Drivers")
 
