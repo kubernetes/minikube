@@ -325,7 +325,7 @@ func (d *Driver) Start() error {
 	log.Info("domain is now running")
 
 	log.Info("waiting for IP...")
-	if err := d.waitForStaticIP(conn, 1*time.Minute); err != nil {
+	if err := d.waitForStaticIP(conn, 2*time.Minute); err != nil {
 		return errors.Wrap(err, "waiting for IP")
 	}
 
