@@ -73,19 +73,19 @@ func CacheImagesForBootstrapper(imageRepository, version string) error {
 }
 
 // LoadCachedImages loads previously cached images into the container runtime
-func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string, overwrite bool) error {
+func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []string, cacheDir string, overwrite bool) error {
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 
 	// Skip loading images if images already exist
-	if !overwrite && cr.ImagesPreloaded(images) {
+	if !overwrite && cr.ImagesPreloaded(imgs) {
 		klog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
 
-	klog.Infof("LoadCachedImages start: %s", images)
+	klog.Infof("LoadCachedImages start: %s", imgs)
 	start := time.Now()
 
 	defer func() {
@@ -102,19 +102,19 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 		}
 	}
 
-	for _, image := range images {
-		image := image
+	for _, img := range imgs {
+		img := img
 		g.Go(func() error {
 			// Put a ten second limit on deciding if an image needs transfer
 			// because it takes much less than that time to just transfer the image.
 			// This is needed because if running in offline mode, we can spend minutes here
 			// waiting for i/o timeout.
-			err := timedNeedsTransfer(imgClient, image, cr, 10*time.Second)
+			err := timedNeedsTransfer(imgClient, img, cr, 10*time.Second)
 			if err == nil {
 				return nil
 			}
-			klog.Infof("%q needs transfer: %v", image, err)
-			return transferAndLoadCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
+			klog.Infof("%q needs transfer: %v", img, err)
+			return transferAndLoadCachedImage(runner, cc.KubernetesConfig, img, cacheDir)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -172,10 +172,10 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 // LoadLocalImages loads images into the container runtime
 func LoadLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string) error {
 	var g errgroup.Group
-	for _, image := range images {
-		image := image
+	for _, img := range images {
+		img := img
 		g.Go(func() error {
-			return transferAndLoadImage(runner, cc.KubernetesConfig, image, image)
+			return transferAndLoadImage(runner, cc.KubernetesConfig, img, img)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -353,10 +353,10 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 
 	var g errgroup.Group
 
-	for _, image := range images {
-		image := image
+	for _, img := range images {
+		img := img
 		g.Go(func() error {
-			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, image, cacheDir)
+			return transferAndSaveCachedImage(runner, cc.KubernetesConfig, img, cacheDir)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -369,10 +369,10 @@ func SaveCachedImages(cc *config.ClusterConfig, runner command.Runner, images []
 // SaveLocalImages saves images from the container runtime
 func SaveLocalImages(cc *config.ClusterConfig, runner command.Runner, images []string, output string) error {
 	var g errgroup.Group
-	for _, image := range images {
-		image := image
+	for _, img := range images {
+		img := img
 		g.Go(func() error {
-			return transferAndSaveImage(runner, cc.KubernetesConfig, output, image)
+			return transferAndSaveImage(runner, cc.KubernetesConfig, output, img)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -527,8 +527,8 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 }
 
 // pullImages pulls images to the container run time
-func pullImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("pullImages start: %s", images)
+func pullImages(crMgr cruntime.Manager, imgs []string) error {
+	klog.Infof("pullImages start: %s", imgs)
 	start := time.Now()
 
 	defer func() {
@@ -537,10 +537,10 @@ func pullImages(cruntime cruntime.Manager, images []string) error {
 
 	var g errgroup.Group
 
-	for _, image := range images {
-		image := image
+	for _, img := range imgs {
+		img := img
 		g.Go(func() error {
-			return cruntime.PullImage(image)
+			return crMgr.PullImage(img)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -588,11 +588,11 @@ func PullImages(images []string, profile *config.Profile) error {
 			if err != nil {
 				return err
 			}
-			cruntime, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
 				return errors.Wrap(err, "error creating container runtime")
 			}
-			err = pullImages(cruntime, images)
+			err = pullImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
 				klog.Warningf("Failed to pull images for profile %s %v", pName, err.Error())
@@ -608,8 +608,8 @@ func PullImages(images []string, profile *config.Profile) error {
 }
 
 // removeImages removes images from the container run time
-func removeImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("removeImages start: %s", images)
+func removeImages(crMgr cruntime.Manager, imgs []string) error {
+	klog.Infof("removeImages start: %s", imgs)
 	start := time.Now()
 
 	defer func() {
@@ -618,10 +618,10 @@ func removeImages(cruntime cruntime.Manager, images []string) error {
 
 	var g errgroup.Group
 
-	for _, image := range images {
-		image := image
+	for _, img := range imgs {
+		img := img
 		g.Go(func() error {
-			return cruntime.RemoveImage(image)
+			return crMgr.RemoveImage(img)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -669,11 +669,11 @@ func RemoveImages(images []string, profile *config.Profile) error {
 			if err != nil {
 				return err
 			}
-			cruntime, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
 				return errors.Wrap(err, "error creating container runtime")
 			}
-			err = removeImages(cruntime, images)
+			err = removeImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
 				klog.Warningf("Failed to remove images for profile %s %v", pName, err.Error())
@@ -757,19 +757,19 @@ func ListImages(profile *config.Profile, format string) error {
 		}
 		renderImagesTable(data)
 	case "json":
-		json, err := json.Marshal(uniqueImages)
+		jsondata, err := json.Marshal(uniqueImages)
 		if err != nil {
 			klog.Warningf("Error marshalling images list: %v", err.Error())
 			return nil
 		}
-		fmt.Printf("%s\n", json)
+		fmt.Printf("%s\n", jsondata)
 	case "yaml":
-		yaml, err := yaml.Marshal(uniqueImages)
+		yamldata, err := yaml.Marshal(uniqueImages)
 		if err != nil {
 			klog.Warningf("Error marshalling images list: %v", err.Error())
 			return nil
 		}
-		fmt.Printf("%s\n", yaml)
+		fmt.Printf("%s\n", yamldata)
 	default:
 		res := []string{}
 		for _, item := range uniqueImages {
@@ -892,11 +892,11 @@ func TagImage(profile *config.Profile, source string, target string) error {
 			if err != nil {
 				return err
 			}
-			cruntime, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
 				return errors.Wrap(err, "error creating container runtime")
 			}
-			err = cruntime.TagImage(source, target)
+			err = crMgr.TagImage(source, target)
 			if err != nil {
 				failed = append(failed, m)
 				klog.Warningf("Failed to tag image for profile %s %v", pName, err.Error())
@@ -912,8 +912,8 @@ func TagImage(profile *config.Profile, source string, target string) error {
 }
 
 // pushImages pushes images from the container run time
-func pushImages(cruntime cruntime.Manager, images []string) error {
-	klog.Infof("pushImages start: %s", images)
+func pushImages(crMgr cruntime.Manager, imgs []string) error {
+	klog.Infof("pushImages start: %s", imgs)
 	start := time.Now()
 
 	defer func() {
@@ -922,10 +922,10 @@ func pushImages(cruntime cruntime.Manager, images []string) error {
 
 	var g errgroup.Group
 
-	for _, image := range images {
-		image := image
+	for _, img := range imgs {
+		img := img
 		g.Go(func() error {
-			return cruntime.PushImage(image)
+			return crMgr.PushImage(img)
 		})
 	}
 	if err := g.Wait(); err != nil {
@@ -973,11 +973,11 @@ func PushImages(images []string, profile *config.Profile) error {
 			if err != nil {
 				return err
 			}
-			cruntime, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
+			crMgr, err := cruntime.New(cruntime.Config{Type: c.KubernetesConfig.ContainerRuntime, Runner: runner})
 			if err != nil {
 				return errors.Wrap(err, "error creating container runtime")
 			}
-			err = pushImages(cruntime, images)
+			err = pushImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
 				klog.Warningf("Failed to push image for profile %s %v", pName, err.Error())

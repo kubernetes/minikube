@@ -172,7 +172,7 @@ func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) {
 
 // init initialises primary control-plane using kubeadm.
 func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	ver, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
@@ -195,7 +195,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		"Swap",       // For "none" users who have swap configured
 		"NumCPU",     // For "none" users who have too few CPUs
 	}
-	if version.GE(semver.MustParse("1.20.0")) {
+	if ver.GE(semver.MustParse("1.20.0")) {
 		ignore = append(ignore,
 			"Mem", // For "none" users who have too little memory
 		)
@@ -719,7 +719,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		// and by that time we would exit completely, so we wait until kubelet begins restarting pods
 		klog.Info("waiting for restarted kubelet to initialise ...")
 		start := time.Now()
-		wait := func() error {
+		waitFunc := func() error {
 			pods, err := client.CoreV1().Pods(meta.NamespaceSystem).List(context.Background(), meta.ListOptions{LabelSelector: "tier=control-plane"})
 			if err != nil {
 				return err
@@ -731,7 +731,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 			}
 			return fmt.Errorf("kubelet not initialised")
 		}
-		_ = retry.Expo(wait, 250*time.Millisecond, 1*time.Minute)
+		_ = retry.Expo(waitFunc, 250*time.Millisecond, 1*time.Minute)
 		klog.Infof("kubelet initialised")
 		klog.Infof("duration metric: took %s waiting for restarted kubelet to initialise ...", time.Since(start))
 	}
@@ -784,11 +784,11 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
 	// avoid "Found multiple CRI endpoints on the host. Please define which one do you wish to use by setting the 'criSocket' field in the kubeadm configuration file: unix:///var/run/containerd/containerd.sock, unix:///var/run/cri-dockerd.sock" error
-	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	ver, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing Kubernetes version")
 	}
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket, KubernetesVersion: version})
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c, Socket: cc.KubernetesConfig.CRISocket, KubernetesVersion: ver})
 	if err != nil {
 		klog.Errorf("cruntime: %v", err)
 	}
@@ -840,11 +840,11 @@ func StopKubernetes(runner command.Runner, cr cruntime.Manager) {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
+	ver, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
-	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket, KubernetesVersion: version})
+	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket, KubernetesVersion: ver})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
@@ -852,7 +852,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
 	sp := cr.SocketPath()
 	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
-	if version.LT(semver.MustParse("1.11.0")) {
+	if ver.LT(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
 	}
 
@@ -874,12 +874,12 @@ func (k *Bootstrapper) SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCm
 func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	klog.Infof("updating cluster %+v ...", cfg)
 
-	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	imgs, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	ver, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing Kubernetes version")
 	}
@@ -887,7 +887,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		Type:              cfg.KubernetesConfig.ContainerRuntime,
 		Runner:            k.c,
 		Socket:            cfg.KubernetesConfig.CRISocket,
-		KubernetesVersion: version,
+		KubernetesVersion: ver,
 	})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -903,7 +903,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadCachedImages(&cfg, k.c, images, detect.ImageCacheDir(), false); err != nil {
+		if err := machine.LoadCachedImages(&cfg, k.c, imgs, detect.ImageCacheDir(), false); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}

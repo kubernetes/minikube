@@ -282,7 +282,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 		}
 	}
 
-	kubeconfig, err := startWithDriver(cmd, starter, existing)
+	configInfo, err := startWithDriver(cmd, starter, existing)
 	if err != nil {
 		node.ExitIfFatal(err, useForce)
 		exit.Error(reason.GuestStart, "failed to start node", err)
@@ -294,7 +294,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 		}
 	}
 
-	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Node.ContainerRuntime, starter.Cfg.Name); err != nil {
+	if err := showKubectlInfo(configInfo, starter.Node.KubernetesVersion, starter.Node.ContainerRuntime, starter.Cfg.Name); err != nil {
 		klog.Errorf("kubectl info: %v", err)
 	}
 }
@@ -363,11 +363,11 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	if driver.IsVM(driverName) && !driver.IsSSH(driverName) {
-		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
+		urlString, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
 		}
-		cc.MinikubeISO = url
+		cc.MinikubeISO = urlString
 	}
 
 	var existingAddons map[string]bool
@@ -462,9 +462,9 @@ func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
 	// start primary control-plane node
-	kubeconfig, err := node.Start(starter)
+	configInfo, err := node.Start(starter)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
+		configInfo, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
 			return nil, err
 		}
@@ -512,7 +512,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 
 	pause.RemovePausedFile(starter.Runner)
 
-	return kubeconfig, nil
+	return configInfo, nil
 }
 
 func warnAboutMultiNodeCNI() {
@@ -528,14 +528,14 @@ func updateDriver(driverName string) {
 	}
 }
 
-func displayVersion(version string) {
+func displayVersion(ver string) {
 	prefix := ""
 	if ClusterFlagValue() != constants.DefaultClusterName {
 		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
 	register.Reg.SetStep(register.InitialSetup)
-	out.Step(style.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
+	out.Step(style.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": ver, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
@@ -631,7 +631,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 
 		// Re-generate the cluster config, just in case the failure was related to an old config format
 		cc := updateExistingConfigFromFlags(cmd, &existing)
-		var kubeconfig *kubeconfig.Settings
+		var configInfo *kubeconfig.Settings
 		for _, n := range cc.Nodes {
 			r, p, m, h, err := node.Provision(&cc, &n, false)
 			s := node.Starter{
@@ -650,14 +650,14 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 
 			k, err := node.Start(s)
 			if n.ControlPlane {
-				kubeconfig = k
+				configInfo = k
 			}
 			if err != nil {
 				// Ok we failed again, let's bail
 				return nil, err
 			}
 		}
-		return kubeconfig, nil
+		return configInfo, nil
 	}
 	// Don't delete the cluster unless they ask
 	return nil, originalErr
@@ -902,12 +902,12 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
-	name := ds.Name
-	os := detect.RuntimeOS()
+	driverName := ds.Name
+	osName := detect.RuntimeOS()
 	arch := detect.RuntimeArch()
-	klog.Infof("validating driver %q against %+v", name, existing)
-	if !driver.Supported(name) {
-		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": name, "os": os, "arch": arch})
+	klog.Infof("validating driver %q against %+v", driverName, existing)
+	if !driver.Supported(driverName) {
+		exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": driverName, "os": osName, "arch": arch})
 	}
 
 	// if we are only downloading artifacts for a driver, we can stop validation here
@@ -916,7 +916,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	}
 
 	st := ds.State
-	klog.Infof("status for %s: %+v", name, st)
+	klog.Infof("status for %s: %+v", driverName, st)
 
 	if st.NeedsImprovement {
 		out.Styled(style.Improvement, `For improved {{.driver}} performance, {{.fix}}`, out.V{"driver": driver.FullName(ds.Name), "fix": translate.T(st.Fix)})
@@ -924,7 +924,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 
 	if ds.Priority == registry.Obsolete {
 		exit.Message(reason.Kind{
-			ID:       fmt.Sprintf("PROVIDER_%s_OBSOLETE", strings.ToUpper(name)),
+			ID:       fmt.Sprintf("PROVIDER_%s_OBSOLETE", strings.ToUpper(driverName)),
 			Advice:   translate.T(st.Fix),
 			ExitCode: reason.ExProviderUnsupported,
 			URL:      st.Doc,
@@ -943,23 +943,23 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 
 	if !st.Installed {
 		exit.Message(reason.Kind{
-			ID:       fmt.Sprintf("PROVIDER_%s_NOT_FOUND", strings.ToUpper(name)),
+			ID:       fmt.Sprintf("PROVIDER_%s_NOT_FOUND", strings.ToUpper(driverName)),
 			Advice:   translate.T(st.Fix),
 			ExitCode: reason.ExProviderNotFound,
 			URL:      st.Doc,
 			Style:    style.Shrug,
-		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": name, "error": st.Error})
+		}, `The '{{.driver}}' provider was not found: {{.error}}`, out.V{"driver": driverName, "error": st.Error})
 	}
 
 	id := st.Reason
 	if id == "" {
-		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(name))
+		id = fmt.Sprintf("PROVIDER_%s_ERROR", strings.ToUpper(driverName))
 	}
 
 	code := reason.ExProviderUnavailable
 
 	if !st.Running {
-		id = fmt.Sprintf("PROVIDER_%s_NOT_RUNNING", strings.ToUpper(name))
+		id = fmt.Sprintf("PROVIDER_%s_NOT_RUNNING", strings.ToUpper(driverName))
 		code = reason.ExProviderNotRunning
 	}
 
@@ -1515,15 +1515,15 @@ func defaultRuntime() string {
 }
 
 // if container runtime is not docker, check that cni is not disabled
-func validateCNI(cmd *cobra.Command, runtime string) {
-	if runtime == constants.Docker {
+func validateCNI(cmd *cobra.Command, runtimeName string) {
+	if runtimeName == constants.Docker {
 		return
 	}
 	if cmd.Flags().Changed(cniFlag) && strings.ToLower(viper.GetString(cniFlag)) == "false" {
 		if viper.GetBool(force) {
-			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+			out.WarnReason(reason.Usage, "You have chosen to disable the CNI but the \"{{.name}}\" container runtime requires CNI", out.V{"name": runtimeName})
 		} else {
-			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtime})
+			exit.Message(reason.Usage, "The \"{{.name}}\" container runtime requires CNI", out.V{"name": runtimeName})
 		}
 	}
 }
@@ -2004,16 +2004,16 @@ func validateBareMetal(drvName string) {
 	if err != nil {
 		klog.Warningf("failed getting Kubernetes version: %v", err)
 	}
-	version, _ := util.ParseKubernetesVersion(kubeVer)
-	if version.GTE(semver.MustParse("1.18.0-beta.1")) {
+	ver, _ := util.ParseKubernetesVersion(kubeVer)
+	if ver.GTE(semver.MustParse("1.18.0-beta.1")) {
 		if _, err := exec.LookPath("conntrack"); err != nil {
-			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
+			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": ver.String()})
 		}
 	}
 	// crictl is required starting with Kubernetes 1.24, for all runtimes since the removal of dockershim
-	if version.GTE(semver.MustParse("1.24.0-alpha.0")) {
+	if ver.GTE(semver.MustParse("1.24.0-alpha.0")) {
 		if _, err := exec.LookPath("crictl"); err != nil {
-			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path", out.V{"k8sVersion": version.String()})
+			exit.Message(reason.GuestMissingConntrack, "Sorry, Kubernetes {{.k8sVersion}} requires crictl to be installed in root's path", out.V{"k8sVersion": ver.String()})
 		}
 	}
 }
@@ -2062,24 +2062,24 @@ func startNerdctld() {
 	runner := co.CP.Runner
 
 	// and set 777 to these files
-	if out, err := runner.RunCmd(exec.Command("sudo", "chmod", "777", "/usr/local/bin/nerdctl", "/usr/local/bin/nerdctld")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed setting permission for nerdctl: %s", out.Output()), err)
+	if rest, err := runner.RunCmd(exec.Command("sudo", "chmod", "777", "/usr/local/bin/nerdctl", "/usr/local/bin/nerdctld")); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed setting permission for nerdctl: %s", rest.Output()), err)
 	}
 
 	// sudo systemctl start nerdctld.socket
-	if out, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.socket")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.socket: %s", out.Output()), err)
+	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.socket")); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.socket: %s", rest.Output()), err)
 	}
 	// sudo systemctl start nerdctld.service
-	if out, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.service")); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.service: %s", out.Output()), err)
+	if rest, err := runner.RunCmd(exec.Command("sudo", "systemctl", "start", "nerdctld.service")); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to enable nerdctld.service: %s", rest.Output()), err)
 	}
 
 	// set up environment variable on remote machine. docker client uses 'non-login & non-interactive shell' therefore the only way is to modify .bashrc file of user 'docker'
 	// insert this at 4th line
 	envSetupCommand := exec.Command("/bin/bash", "-c", "sed -i '4i export DOCKER_HOST=unix:///run/nerdctld.sock' .bashrc")
-	if out, err := runner.RunCmd(envSetupCommand); err != nil {
-		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", out.Output()), err)
+	if rest, err := runner.RunCmd(envSetupCommand); err != nil {
+		exit.Error(reason.StartNerdctld, fmt.Sprintf("Failed to set up DOCKER_HOST: %s", rest.Output()), err)
 	}
 }
 

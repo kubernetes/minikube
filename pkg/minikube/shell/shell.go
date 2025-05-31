@@ -165,11 +165,11 @@ func Detect() (string, error) {
 }
 
 func (c EnvConfig) getShell() shellData {
-	shell, ok := shellConfigMap[c.Shell]
+	shellData, ok := shellConfigMap[c.Shell]
 	if !ok {
-		shell = defaultShell
+		shellData = defaultShell
 	}
-	return shell
+	return shellData
 }
 
 func generateUsageHint(ec EnvConfig, usgPlz, usgCmd string) string {

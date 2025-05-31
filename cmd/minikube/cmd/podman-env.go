@@ -253,10 +253,10 @@ func podmanUnsetScript(ec PodmanEnvConfig, w io.Writer) error {
 
 // podmanBridge returns the command to use in a var for accessing the podman varlink bridge over ssh
 func podmanBridge(client *ssh.ExternalClient) string {
-	command := []string{client.BinaryPath}
-	command = append(command, client.BaseArgs...)
-	command = append(command, "--", "sudo", "varlink", "-A", `\'podman varlink \\\$VARLINK_ADDRESS\'`, "bridge")
-	return strings.Join(command, " ")
+	cmd := []string{client.BinaryPath}
+	cmd = append(cmd, client.BaseArgs...)
+	cmd = append(cmd, "--", "sudo", "varlink", "-A", `\'podman varlink \\\$VARLINK_ADDRESS\'`, "bridge")
+	return strings.Join(cmd, " ")
 }
 
 // podmanURL returns the url to use in a var for accessing the podman socket over ssh

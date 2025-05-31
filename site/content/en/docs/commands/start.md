@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.46-1747341282-20771@sha256:9700c7322fd333e81ca413938873a2d16f481e6b48fcba28fa96ff378022ba63")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase:v0.0.47@sha256:6ed579c9292b4370177b7ef3c42cc4b4a6dcd0735a1814916cbc22c8bf38412b")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -48,12 +48,11 @@ minikube start [flags]
   -d, --driver string                     Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
-      --enable-default-cni                DEPRECATED: Replaced by --cni=bridge
       --extra-config ExtraOption          A set of key=value pairs that describe configuration that may be passed to different components.
                                           		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
                                           		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
                                           		Valid kubeadm parameters: ignore-preflight-errors, dry-run, kubeconfig, kubeconfig-dir, node-name, cri-socket, experimental-upload-certs, certificate-key, rootfs, skip-phases, pod-network-cidr
-      --extra-disks int                   Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)
+      --extra-disks int                   Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, and vfkit drivers)
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use systemd as cgroup manager. Defaults to false.
@@ -74,14 +73,14 @@ minikube start [flags]
       --interactive                       Allow user prompts for more information (default true)
       --iso-url strings                   Locations to fetch the minikube ISO from. The list depends on the machine architecture.
       --keep-context                      This will keep the existing kubectl context and will create a minikube context.
-      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.33.0, 'latest' for v1.33.0). Defaults to 'stable'.
+      --kubernetes-version string         The Kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for v1.33.1, 'latest' for v1.33.1). Defaults to 'stable'.
       --kvm-gpu                           Enable experimental NVIDIA GPU support in minikube
       --kvm-hidden                        Hide the hypervisor signature from the guest in minikube (kvm2 driver only)
       --kvm-network string                The KVM default network name. (kvm2 driver only) (default "default")
       --kvm-numa-count int                Simulate numa node count in minikube, supported numa node count range is 1-8 (kvm2 driver only) (default 1)
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
-      --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory. Use "no-limit" to not specify a limit (Docker/Podman only)
+  -m, --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory. Use "no-limit" to not specify a limit (Docker/Podman only)
       --mount                             This will start the mount daemon and automatically mount files into minikube.
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
       --mount-gid string                  Default group id used for the mount (default "docker")
@@ -96,7 +95,6 @@ minikube start [flags]
       --nat-nic-type string               NIC Type used for nat network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
       --network string                    network to run minikube with. Used by docker/podman, qemu, kvm, and vfkit drivers. If left empty, minikube will create a new network.
-      --network-plugin string             DEPRECATED: Replaced by --cni
       --nfs-share strings                 Local folders to share with Guest via NFS mounts (hyperkit driver only)
       --nfs-shares-root string            Where to root the NFS Shares, defaults to /nfsshares (hyperkit driver only) (default "/nfsshares")
       --no-kubernetes                     If set, minikube VM/container will start without starting or configuring Kubernetes. (only works on new clusters)
@@ -119,7 +117,6 @@ minikube start [flags]
       --trace string                      Send trace events. Options include: [gcp]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
-      --vm-driver driver                  DEPRECATED, use driver instead.
       --wait strings                      comma separated list of Kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running,node_ready,kubelet,extra" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes or host to be healthy. (default 6m0s)
 ```

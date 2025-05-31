@@ -191,9 +191,10 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		runArgs = append(runArgs, "--ip", p.IP)
 	}
 
-	if p.GPUs == "all" || p.GPUs == "nvidia" {
+	switch p.GPUs {
+	case "all", "nvidia":
 		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
-	} else if p.GPUs == "amd" {
+	case "amd":
 		/* https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/docker.html
 		 * "--security-opt seccomp=unconfined" is also required but included above.
 		 */

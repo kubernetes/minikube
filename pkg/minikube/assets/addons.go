@@ -277,11 +277,11 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "ingress", "Kubernetes", "", "https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/", map[string]string{
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L445
-		"IngressController": "ingress-nginx/controller:v1.11.3@sha256:d56f135b6462cfc476447cfe564b83a45e8bb7da2774963b00d12161112270b7",
+		"IngressController": "ingress-nginx/controller:v1.12.2@sha256:03497ee984628e95eca9b2279e3f3a3c1685dd48635479e627d219f00c8eefa9",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L552
-		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
+		"KubeWebhookCertgenCreate": "ingress-nginx/kube-webhook-certgen:v1.5.3@sha256:2cf4ebfa82a37c357455458f6dfc334aea1392d508270b2517795a9933a02524",
 		// https://github.com/kubernetes/ingress-nginx/blob/3476232f5c38383dd157ddaff3b4c7cebd57284e/deploy/static/provider/kind/deploy.yaml#L601
-		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
+		"KubeWebhookCertgenPatch": "ingress-nginx/kube-webhook-certgen:v1.5.3@sha256:2cf4ebfa82a37c357455458f6dfc334aea1392d508270b2517795a9933a02524",
 	}, map[string]string{
 		"IngressController":        "registry.k8s.io",
 		"KubeWebhookCertgenCreate": "registry.k8s.io",
@@ -322,7 +322,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
 		"Kong":        "kong:3.9.0@sha256:0f5de480cfa95c612dcedf707272c13900e8d10e435b5e5bf57d950c87620268",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.4.4@sha256:cf74e0e1e54a5a96d7b48e1c02120369953d66126ff5763398372bce925b5d8e",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.4.5@sha256:770676763f40edf8f9d0ccad74ddc114877dc4aaf018a964cdd164afa10effb3",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -334,7 +334,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.33.0@sha256:f737259db1fb8d90b18bcacd6233291ce22c31ac452ca71dc7aad48e90f85ac1",
+		"Kubectl": "bitnami/kubectl:1.33.1@sha256:35f792b0f0b8b3072bb01cd50a23d2dc1ba2488eed70a1a951a1789a8e3bc994",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
@@ -597,7 +597,7 @@ var Addons = map[string]*Addon{
 			"gcp-auth-webhook.yaml",
 			"0640"),
 	}, false, "gcp-auth", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/gcp-auth/", map[string]string{
-		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.4.4@sha256:a9f03b34a3cbfbb26d103a14046ab2c5130a80c3d69d526ff8063d2b37b9fd3f",
+		"KubeWebhookCertgen": "ingress-nginx/kube-webhook-certgen:v1.5.3@sha256:2cf4ebfa82a37c357455458f6dfc334aea1392d508270b2517795a9933a02524",
 		"GCPAuthWebhook":     "k8s-minikube/gcp-auth-webhook:v0.1.3@sha256:94f0c448171b974aab7b4a96d00feb5799b1d69827a738a4f8b4b30c17fb74e7",
 	}, map[string]string{
 		"GCPAuthWebhook":     "gcr.io",
@@ -769,7 +769,7 @@ var Addons = map[string]*Addon{
 	"cloud-spanner": NewAddon([]*BinAsset{
 		MustBinAsset(addons.CloudSpanner, "cloud-spanner/deployment.yaml.tmpl", vmpath.GuestAddonsDir, "deployment.yaml", "0640"),
 	}, false, "cloud-spanner", "Google", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/cloud-spanner/", map[string]string{
-		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.33@sha256:ac7c1208f1137c76bbaed95464f7757010b4583f0282dbd0f721001a9f499e19",
+		"CloudSpanner": "cloud-spanner-emulator/emulator:1.5.34@sha256:f98725ceb484500d858d17916ea4a04e2a83184b5a080a87113770e82c177744",
 	}, map[string]string{
 		"CloudSpanner": "gcr.io",
 	}),
@@ -781,7 +781,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.1@sha256:af31e2b7c7f89834c4e5219860def7ac2e49a207b3d4e8610d5a26772b7738e5",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.2@sha256:037160a36de0f060fc21cc0cb2f795d980282ff1471b55530433ca4350b24c4f",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}),

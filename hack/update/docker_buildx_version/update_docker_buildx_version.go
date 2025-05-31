@@ -105,7 +105,7 @@ func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := f.WriteString(fmt.Sprintf("sha256 %x  %s.tar.gz\n", shaSum, version)); err != nil {
+	if _, err := fmt.Fprintf(f, "sha256 %x  %s.tar.gz\n", shaSum, version); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil

@@ -486,6 +486,7 @@
 	"Noticed you have an activated podman-env on {{.driver_name}} driver in this terminal:": "Vous avez remarqué que vous avez un pilote podman-env activé sur {{.driver_name}} dans ce terminal :",
 	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit and kvm2 drivers)": "Nombre de disques supplémentaires créés et attachés à la machine virtuelle minikube (actuellement implémenté uniquement pour les pilotes hyperkit et kvm2)",
 	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, and qemu2 drivers)": "Nombre de disques supplémentaires créés et attachés à la machine virtuelle minikube (actuellement uniquement implémenté pour les pilotes hyperkit, kvm2 et qemu2)",
+	"Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, and vfkit drivers)": "",
 	"Number of lines back to go within the log": "Nombre de lignes à remonter dans le journal",
 	"OS release is {{.pretty_name}}": "La version du système d'exploitation est {{.pretty_name}}",
 	"One of 'text', 'yaml' or 'json'.": "Un parmi 'text', 'yaml' ou 'json'.",

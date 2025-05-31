@@ -184,9 +184,9 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path := vname + s[3:]
+	p := vname + s[3:]
 
-	return path, nil
+	return p, nil
 }
 
 func getWindowsVolumeNameCmd(d string) (string, error) {

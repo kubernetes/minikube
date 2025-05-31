@@ -95,9 +95,9 @@ func trySSHPowerOff(h *host.Host) error {
 		err := oci.ShutDown(h.DriverName, h.Name)
 		klog.Infof("shutdown container: err=%v", err)
 	} else {
-		out, err := h.RunSSHCommand("sudo poweroff")
+		rest, err := h.RunSSHCommand("sudo poweroff")
 		// poweroff always results in an error, since the host disconnects.
-		klog.Infof("poweroff result: out=%s, err=%v", out, err)
+		klog.Infof("poweroff result: out=%s, err=%v", rest, err)
 	}
 	return nil
 }

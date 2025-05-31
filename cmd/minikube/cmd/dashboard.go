@@ -157,7 +157,7 @@ func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, p
 	klog.Infof("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
 
-	var out []byte
+	var outData []byte
 	for {
 		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
 		if err != nil {
@@ -170,10 +170,10 @@ func kubectlProxy(kubectlVersion string, binaryURL string, contextName string, p
 			klog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
 			break
 		}
-		out = append(out, r)
+		outData = append(outData, r)
 	}
-	klog.Infof("proxy stdout: %s", string(out))
-	return cmd, hostPortRe.FindString(string(out)), nil
+	klog.Infof("proxy stdout: %s", string(outData))
+	return cmd, hostPortRe.FindString(string(outData)), nil
 }
 
 // readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
@@ -203,9 +203,9 @@ func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, er
 }
 
 // dashboardURL generates a URL for accessing the dashboard service
-func dashboardURL(proxy string, ns string, svc string) string {
+func dashboardURL(addr string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", proxy, ns, svc)
+	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", addr, ns, svc)
 }
 
 // checkURL checks if a URL returns 200 HTTP OK

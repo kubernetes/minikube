@@ -42,7 +42,7 @@ import (
 var buildRoot = path.Join(vmpath.GuestPersistentDir, "build")
 
 // BuildImage builds image to all profiles
-func BuildImage(path string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string) error {
+func BuildImage(srcPath string, file string, tag string, push bool, env []string, opt []string, profiles []*config.Profile, allNodes bool, nodeName string) error {
 	api, err := NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "api")
@@ -52,12 +52,12 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 	succeeded := []string{}
 	failed := []string{}
 
-	u, err := url.Parse(path)
+	u, err := url.Parse(srcPath)
 	if err == nil && u.Scheme == "file" {
-		path = u.Path
+		srcPath = u.Path
 	}
 	remote := err == nil && u.Scheme != ""
-	if runtime.GOOS == "windows" && filepath.VolumeName(path) != "" {
+	if runtime.GOOS == "windows" && filepath.VolumeName(srcPath) != "" {
 		remote = false
 	}
 
@@ -116,9 +116,9 @@ func BuildImage(path string, file string, tag string, push bool, env []string, o
 					return err
 				}
 				if remote {
-					err = buildImage(cr, c.KubernetesConfig, path, file, tag, push, env, opt)
+					err = buildImage(cr, c.KubernetesConfig, srcPath, file, tag, push, env, opt)
 				} else {
-					err = transferAndBuildImage(cr, c.KubernetesConfig, path, file, tag, push, env, opt)
+					err = transferAndBuildImage(cr, c.KubernetesConfig, srcPath, file, tag, push, env, opt)
 				}
 				if err != nil {
 					failed = append(failed, m)

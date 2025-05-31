@@ -281,9 +281,9 @@ func (r *Containerd) ListImages(ListImagesOptions) ([]ListImage, error) {
 }
 
 // LoadImage loads an image into this runtime
-func (r *Containerd) LoadImage(path string) error {
-	klog.Infof("Loading image: %s", path)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
+func (r *Containerd) LoadImage(imagePath string) error {
+	klog.Infof("Loading image: %s", imagePath)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", imagePath)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images import")
 	}
@@ -296,9 +296,9 @@ func (r *Containerd) PullImage(name string) error {
 }
 
 // SaveImage save an image from this runtime
-func (r *Containerd) SaveImage(name string, path string) error {
-	klog.Infof("Saving image %s: %s", name, path)
-	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", path, name)
+func (r *Containerd) SaveImage(name string, destPath string) error {
+	klog.Infof("Saving image %s: %s", name, destPath)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "export", destPath, name)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ctr images export")
 	}
@@ -526,11 +526,11 @@ func (r *Containerd) Preload(cc config.ClusterConfig) error {
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
 	// If images already exist, return
-	images, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
+	imgs, err := images.Kubeadm(cc.KubernetesConfig.ImageRepository, k8sVersion)
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if containerdImagesPreloaded(r.Runner, images) {
+	if containerdImagesPreloaded(r.Runner, imgs) {
 		klog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -583,7 +583,7 @@ func (r *Containerd) Restart() error {
 }
 
 // containerdImagesPreloaded returns true if all images have been preloaded
-func containerdImagesPreloaded(runner command.Runner, images []string) bool {
+func containerdImagesPreloaded(runner command.Runner, imgs []string) bool {
 	var rr *command.RunResult
 
 	imageList := func() (err error) {
@@ -604,7 +604,7 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 
 	// Make sure images == imgs
-	for _, i := range images {
+	for _, i := range imgs {
 		found := false
 		for _, ji := range jsonImages.Images {
 			for _, rt := range ji.RepoTags {
@@ -629,6 +629,6 @@ func containerdImagesPreloaded(runner command.Runner, images []string) bool {
 }
 
 // ImagesPreloaded returns true if all images have been preloaded
-func (r *Containerd) ImagesPreloaded(images []string) bool {
-	return containerdImagesPreloaded(r.Runner, images)
+func (r *Containerd) ImagesPreloaded(imgs []string) bool {
+	return containerdImagesPreloaded(r.Runner, imgs)
 }

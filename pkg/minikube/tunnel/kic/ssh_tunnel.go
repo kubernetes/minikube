@@ -32,7 +32,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/tunnel"
 )
 
-// SSHTunnel ...
+// SSHTunnel manages and reconciles SSH tunnels for Kubernetes Services
+// (specifically type LoadBalancer) and Ingress resources. It periodically
+// checks the cluster state and creates, maintains, or removes tunnels as needed.
 type SSHTunnel struct {
 	ctx                  context.Context
 	sshPort              string
@@ -45,7 +47,13 @@ type SSHTunnel struct {
 	connsToStop          map[string]*sshConn
 }
 
-// NewSSHTunnel ...
+// NewSSHTunnel creates and returns a new SSHTunnel instance.
+// ctx is the context that controls the lifecycle of the tunnel manager.
+// sshPort is the port number of the SSH server to connect to.
+// sshKey is the path to the SSH private key file for authentication.
+// bindAddress is the local address on which the tunnels will listen.
+// v1Core is a Kubernetes CoreV1 client interface for interacting with Services.
+// v1Networking is a Kubernetes NetworkingV1 client interface for interacting with Ingresses.
 func NewSSHTunnel(ctx context.Context, sshPort, sshKey, bindAddress string, v1Core typed_core.CoreV1Interface, v1Networking typed_networking.NetworkingV1Interface) *SSHTunnel {
 	return &SSHTunnel{
 		ctx:                  ctx,
@@ -60,7 +68,12 @@ func NewSSHTunnel(ctx context.Context, sshPort, sshKey, bindAddress string, v1Co
 	}
 }
 
-// Start ...
+// Start begins the main reconciliation loop for the SSHTunnel.
+// This loop periodically scans for Kubernetes Services (type LoadBalancer)
+// and Ingresses, creating or tearing down SSH tunnels as necessary.
+// This method blocks until the provided context (t.ctx) is canceled.
+// It returns any error associated with context cancellation or initial setup.
+// Runtime errors during the tunnel management loop are logged via klog.
 func (t *SSHTunnel) Start() error {
 	for {
 		select {

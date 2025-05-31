@@ -164,9 +164,11 @@ func auxiliary(mirror string) []string {
 func storageProvisioner(mirror string) string {
 	cv := version.GetStorageProvisionerVersion()
 	in := "k8s-minikube/storage-provisioner:" + cv
-	if mirror == "" {
+
+	switch mirror {
+	case "":
 		mirror = "gcr.io"
-	} else if mirror == constants.AliyunMirror {
+	case constants.AliyunMirror:
 		in = "storage-provisioner:" + cv
 	}
 	return path.Join(mirror, in)
@@ -179,7 +181,7 @@ func KindNet(repo string) string {
 	if repo == "" {
 		repo = "docker.io/kindest"
 	}
-	return path.Join(repo, "kindnetd:v20250214-acbabc1a")
+	return path.Join(repo, "kindnetd:v20250512-df8de77b")
 }
 
 // all calico images are from https://github.com/projectcalico/calico/blob/master/manifests/calico.yaml

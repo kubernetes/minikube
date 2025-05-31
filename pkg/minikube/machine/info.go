@@ -193,11 +193,11 @@ func cachedCPUInfo() ([]cpu.InfoStat, error) {
 }
 
 // ParseMemFree parses the output of the `free -m` command
-func parseMemFree(out string) (int64, error) {
+func parseMemFree(s string) (int64, error) {
 	//             total        used        free      shared  buff/cache   available
 	//Mem:           1987         706         194           1        1086        1173
 	//Swap:             0           0           0
-	outlines := strings.Split(out, "\n")
+	outlines := strings.Split(s, "\n")
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)
@@ -217,10 +217,10 @@ func parseMemFree(out string) (int64, error) {
 }
 
 // ParseDiskFree parses the output of the `df -m` command
-func parseDiskFree(out string) (int64, error) {
+func parseDiskFree(s string) (int64, error) {
 	// Filesystem     1M-blocks  Used Available Use% Mounted on
 	// /dev/sda1          39643  3705     35922  10% /
-	outlines := strings.Split(out, "\n")
+	outlines := strings.Split(s, "\n")
 	l := len(outlines)
 	for _, line := range outlines[1 : l-1] {
 		parsedLine := strings.Fields(line)

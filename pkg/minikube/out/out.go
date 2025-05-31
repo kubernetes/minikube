@@ -107,8 +107,8 @@ func Styled(st style.Enum, format string, a ...V) {
 		Infof(format, a...)
 		return
 	}
-	outStyled, spinner := stylized(st, useColor, format, a...)
-	if spinner {
+	outStyled, useSpinner := stylized(st, useColor, format, a...)
+	if useSpinner {
 		spinnerString(outStyled)
 	} else {
 		String(outStyled)
@@ -116,12 +116,12 @@ func Styled(st style.Enum, format string, a ...V) {
 }
 
 func boxedCommon(printFunc func(format string, a ...interface{}), cfg box.Config, title string, format string, a ...V) {
-	box := box.New(cfg)
+	b := box.New(cfg)
 	if !useColor {
-		box.Config.Color = nil
+		b.Config.Color = nil
 	}
 	str := Sprintf(style.None, format, a...)
-	printFunc(box.String(title, strings.TrimSpace(str)))
+	printFunc(b.String(title, strings.TrimSpace(str)))
 }
 
 // Boxed writes a stylized and templated message in a box to stdout using the default style config

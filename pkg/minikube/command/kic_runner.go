@@ -44,10 +44,10 @@ type kicRunner struct {
 }
 
 // NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
-func NewKICRunner(containerNameOrID string, oci string) Runner {
+func NewKICRunner(containerNameOrID string, ociName string) Runner {
 	return &kicRunner{
 		nameOrID: containerNameOrID,
-		ociBin:   oci, // docker or podman
+		ociBin:   ociName, // docker or podman
 	}
 }
 
@@ -271,8 +271,8 @@ func copyToPodman(src string, dest string) error {
 		defer file.Close()
 		parts := strings.Split(dest, ":")
 		container := parts[0]
-		path := parts[1]
-		cmd := exec.Command(oci.Podman, "exec", "-i", container, "tee", path)
+		containerPath := parts[1]
+		cmd := exec.Command(oci.Podman, "exec", "-i", container, "tee", containerPath)
 		cmd.Stdin = file
 		klog.Infof("Run: %v", cmd)
 		if err := cmd.Run(); err != nil {
