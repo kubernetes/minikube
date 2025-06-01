@@ -70,7 +70,14 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 func (d *Driver) defineDomain() (*libvirt.Domain, error) {
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
 	var domainXML bytes.Buffer
-	if err := tmpl.Execute(&domainXML, d); err != nil {
+	dlog := struct {
+		Driver
+		ConsoleLogPath string
+	}{
+		Driver:         *d,
+		ConsoleLogPath: consoleLogPath(*d),
+	}
+	if err := tmpl.Execute(&domainXML, dlog); err != nil {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 	conn, err := getConnection(d.ConnectionURI)
