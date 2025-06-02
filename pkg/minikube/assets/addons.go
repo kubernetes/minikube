@@ -334,7 +334,7 @@ var Addons = map[string]*Addon{
 			"pod.yaml",
 			"0640"),
 	}, false, "kubevirt", "3rd party (KubeVirt)", "", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubevirt/", map[string]string{
-		"Kubectl": "bitnami/kubectl:1.33.1@sha256:35f792b0f0b8b3072bb01cd50a23d2dc1ba2488eed70a1a951a1789a8e3bc994",
+		"Kubectl": "bitnami/kubectl:1.33.1@sha256:393d2a3f53a54e8deda3a1fe38ce04d6b5244d4cc8f621c47866e23ff07dfcd5",
 	}, map[string]string{
 		"Kubectl": "docker.io",
 	}),
