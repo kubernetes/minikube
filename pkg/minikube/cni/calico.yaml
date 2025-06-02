@@ -1628,6 +1628,13 @@ spec:
                 description: FlowLogGoldmaneServer is the flow server endpoint to
                   which flow data should be published.
                 type: string
+              flowLogsLocalReporter:
+                description: 'FlowLogsLocalReporter configures local unix socket for
+                  reporting flow data from each node. [Default: Disabled]'
+                enum:
+                - Disabled
+                - Enabled
+                type: string
               flowLogsPolicyEvaluationMode:
                 description: |-
                   Continuous - Felix evaluates active flows on a regular basis to determine the rule
@@ -1871,18 +1878,18 @@ spec:
               logSeverityFile:
                 description: 'LogSeverityFile is the log severity above which logs
                   are sent to the log file. [Default: Info]'
-                pattern: ^(?i)(Debug|Info|Warning|Error|Fatal)?$
+                pattern: ^(?i)(Trace|Debug|Info|Warning|Error|Fatal)?$
                 type: string
               logSeverityScreen:
                 description: 'LogSeverityScreen is the log severity above which logs
                   are sent to the stdout. [Default: Info]'
-                pattern: ^(?i)(Debug|Info|Warning|Error|Fatal)?$
+                pattern: ^(?i)(Trace|Debug|Info|Warning|Error|Fatal)?$
                 type: string
               logSeveritySys:
                 description: |-
                   LogSeveritySys is the log severity above which logs are sent to the syslog. Set to None for no logging to syslog.
                   [Default: Info]
-                pattern: ^(?i)(Debug|Info|Warning|Error|Fatal)?$
+                pattern: ^(?i)(Trace|Debug|Info|Warning|Error|Fatal)?$
                 type: string
               maxIpsetSize:
                 description: |-
