@@ -2236,10 +2236,10 @@ func startHTTPProxy(t *testing.T) (*http.Server, error) {
 
 func startMinikubeWithProxy(ctx context.Context, t *testing.T, profile string, proxyEnv string, addr string) {
 	// Use more memory so that we may reliably fit MySQL and nginx
-	memoryFlag := "--memory=4000"
+	memoryFlag := "--memory=4096"
 	// to avoid failure for mysq/pv on virtualbox on darwin on free github actions,
 	if detect.GithubActionRunner() && VirtualboxDriver() {
-		memoryFlag = "--memory=6000"
+		memoryFlag = "--memory=6144"
 	}
 	// passing --api-server-port so later verify it didn't change in soft start.
 	startArgs := append([]string{"start", "-p", profile, memoryFlag, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=all"}, StartArgsWithContext(ctx)...)

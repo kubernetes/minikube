@@ -95,7 +95,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072"}, legacyStartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		c := exec.CommandContext(ctx, tf.Name(), args...)
@@ -126,7 +126,7 @@ func TestRunningBinaryUpgrade(t *testing.T) {
 		t.Fatalf("legacy %s start failed: %v", desiredLegacyVersion, err)
 	}
 
-	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("upgrade from %s to HEAD failed: %s: %v", desiredLegacyVersion, rr.Command(), err)
@@ -158,7 +158,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 	defer os.Remove(tf.Name())
 
 	t.Run("Upgrade", func(t *testing.T) {
-		args := append([]string{"start", "-p", profile, "--memory=2200"}, legacyStartArgs()...)
+		args := append([]string{"start", "-p", profile, "--memory=3072"}, legacyStartArgs()...)
 		rr := &RunResult{}
 		r := func() error {
 			c := exec.CommandContext(ctx, tf.Name(), args...)
@@ -194,7 +194,7 @@ func TestStoppedBinaryUpgrade(t *testing.T) {
 			t.Errorf("failed to stop cluster: %s: %v", rr.Command(), err)
 		}
 
-		args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+		args = append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1"}, StartArgs()...)
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil {
 			t.Fatalf("upgrade from %s to HEAD failed: %s: %v", desiredLegacyVersion, rr.Command(), err)
@@ -218,7 +218,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube HEAD with oldest k8s version: %s: %v", rr.Command(), err)
@@ -239,7 +239,7 @@ func TestKubernetesUpgrade(t *testing.T) {
 		t.Errorf("FAILED: status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to upgrade with newest k8s version. args: %s : %v", rr.Command(), err)
@@ -265,13 +265,13 @@ func TestKubernetesUpgrade(t *testing.T) {
 	}
 
 	t.Logf("Attempting to downgrade Kubernetes (should fail)")
-	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
 	if rr, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err == nil {
 		t.Fatalf("downgrading Kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Command())
 	}
 
 	t.Logf("Attempting restart after unsuccessful downgrade")
-	args = append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("start after failed upgrade: %s: %v", rr.Command(), err)
@@ -303,7 +303,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	args := append([]string{"start", "-p", profile, "--memory=2200"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072"}, StartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -325,7 +325,7 @@ func TestMissingContainerUpgrade(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
-	args = append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed missing container upgrade from %s. args: %s : %v", legacyVersion, rr.Command(), err)

@@ -27,16 +27,16 @@ const domainTmpl = `
     <acpi/>
     <apic/>
     <pae/>
-    {{if .Hidden}}
+    {{- if .Hidden}}
     <kvm>
       <hidden state='on'/>
     </kvm>
-    {{end}}
+    {{- end}}
   </features>
   <cpu mode='host-passthrough'>
-  {{if gt .NUMANodeCount 1}}
+  {{- if gt .NUMANodeCount 1}}
   {{.NUMANodeXML}}
-  {{end}}
+  {{- end}}
   </cpu>
   <os>
     <type machine='virt-4.2' arch='aarch64'>hvm</type>
@@ -75,12 +75,12 @@ const domainTmpl = `
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
     </rng>
-    {{if .GPU}}
+    {{- if .GPU}}
     {{.DevicesXML}}
-    {{end}}
-    {{if gt .ExtraDisks 0}}
+    {{- end}}
+    {{- if gt .ExtraDisks 0}}
     {{.ExtraDisksXML}}
-    {{end}}
+    {{- end}}
   </devices>
 </domain>
 `

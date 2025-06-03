@@ -39,7 +39,7 @@ func TestCertOptions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--memory=2048", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
 	// We can safely override --apiserver-name with
 	if NeedsPortForward() {
@@ -118,7 +118,7 @@ func TestCertExpiration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--memory=2048", "--cert-expiration=3m"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", "--cert-expiration=3m"}, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -127,7 +127,7 @@ func TestCertExpiration(t *testing.T) {
 
 	// Now wait 3 minutes for the certs to expire and make sure minikube starts properly
 	time.Sleep(time.Minute * 3)
-	args = append([]string{"start", "-p", profile, "--memory=2048", "--cert-expiration=8760h"}, StartArgs()...)
+	args = append([]string{"start", "-p", profile, "--memory=3072", "--cert-expiration=8760h"}, StartArgs()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start minikube after cert expiration: %q : %v", rr.Command(), err)

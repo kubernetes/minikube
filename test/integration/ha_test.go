@@ -97,7 +97,7 @@ func TestMultiControlPlane(t *testing.T) {
 // validateHAStartCluster ensures ha (multi-control plane) cluster can start.
 func validateHAStartCluster(ctx context.Context, t *testing.T, profile string) {
 	// start ha (multi-control plane) cluster
-	startArgs := append([]string{"-p", profile, "start", "--ha", "--memory", "2200", "--wait", "true", "--alsologtostderr", "-v", "5"}, StartArgs()...)
+	startArgs := append([]string{"-p", profile, "start", "--ha", "--memory", "3072", "--wait", "true", "--alsologtostderr", "-v", "5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("failed to fresh-start ha (multi-control plane) cluster. args %q : %v", rr.Command(), err)
