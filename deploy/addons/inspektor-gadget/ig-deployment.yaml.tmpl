@@ -28,8 +28,6 @@ data:
       docker-socketpath: /run/docker.sock
       podman-socketpath: /run/podman/podman.sock
       operator:
-        ebpf:
-          enable-bpfstats: false
         oci:
           verify-image: true
           public-keys:
@@ -180,6 +178,13 @@ spec:
                 - -liveness
             periodSeconds: 5
             timeoutSeconds: 2
+          startupProbe:
+            exec:
+              command:
+                - /bin/gadgettracermanager
+                - -liveness
+            failureThreshold: 12
+            periodSeconds: 5
           env:
             - name: NODE_NAME
               valueFrom:
