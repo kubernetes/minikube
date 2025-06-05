@@ -1,0 +1,238 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+data:
+  config.yaml: |
+    cluster-api:
+      addr: :8080
+      cluster-agent-dispatch-url: "kubernetes://kubetail-cluster-agent:50051"
+      base-path: /
+      csrf:
+        cookie:
+          domain: null
+          http-only: true
+          max-age: 43200
+          name: kubetail_cluster_api_csrf
+          path: /
+          same-site: strict
+          secure: false
+        enabled: true
+        field-name: csrf_token
+        secret: ${KUBETAIL_CLUSTER_API_CSRF_SECRET}
+      gin-mode: release
+      logging:
+        access-log:
+          enabled: true
+          hide-health-checks: true
+        enabled: true
+        format: json
+        level: info
+      tls:
+        cert-file: null
+        enabled: false
+        key-file: null
+---
+kind: ServiceAccount
+apiVersion: v1
+automountServiceAccountToken: true
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: "kubetail"
+    app.kubernetes.io/component: "cluster-api"
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cluster-api
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+rules:
+- apiGroups: [""]
+  resources: [nodes]
+  verbs: [get, list, watch]
+- apiGroups: ["", apps, batch]
+  resources: [cronjobs, daemonsets, deployments, jobs, pods, replicasets, statefulsets]
+  verbs: [get, list, watch]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kubetail-cluster-api
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubetail-cluster-api
+subjects:
+- kind: ServiceAccount
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kubetail-system
+  name: kubetail-cluster-api
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+rules:
+- apiGroups: [discovery.k8s.io]
+  resources: [endpointslices]
+  verbs: [list, watch]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kubetail-system
+  name: kubetail-cluster-api
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubetail-cluster-api
+subjects:
+- kind: ServiceAccount
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: cluster-api
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubetail
+        app.kubernetes.io/version: "0.11.5"
+        app.kubernetes.io/instance: kubetail
+        app.kubernetes.io/component: cluster-api
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: kubetail-cluster-api
+      containers:
+      - name: kubetail-cluster-api
+        image: {{.CustomRegistries.Kubetail  | default .ImageRepository | default .Registries.Kubetail }}{{.Images.KubetailClusterAPI}}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 1000
+          runAsUser: 1000
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: KUBETAIL_CLUSTER_API_CSRF_SECRET
+          value: "DUMMY"
+        args:
+        - --config=/etc/kubetail/config.yaml
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: http
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail-cluster-api
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-api
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-api
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8080
+    targetPort: http
+    appProtocol: http

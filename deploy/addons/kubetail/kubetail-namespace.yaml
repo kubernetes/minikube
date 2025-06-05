@@ -1,0 +1,7 @@
+apiVersion: v1 
+kind: Namespace 
+metadata:
+  name: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile

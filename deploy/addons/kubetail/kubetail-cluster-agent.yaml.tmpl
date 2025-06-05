@@ -1,0 +1,175 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+data:
+  config.yaml: |
+    cluster-agent:
+      addr: :50051
+      logging:
+        enabled: true
+        format: json
+        level: info
+      tls:
+        cert-file: null
+        enabled: false
+        key-file: null
+---
+kind: ServiceAccount
+apiVersion: v1
+automountServiceAccountToken: true
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: cluster-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubetail
+        app.kubernetes.io/version: "0.11.5"
+        app.kubernetes.io/instance: kubetail
+        app.kubernetes.io/component: cluster-agent
+    spec:
+      automountServiceAccountToken: true
+      serviceAccountName: kubetail-cluster-agent
+      securityContext:
+        fsGroup: 0
+      containers:
+      - name: kubetail-cluster-agent
+        image: {{.CustomRegistries.Kubetail  | default .ImageRepository | default .Registries.Kubetail }}{{.Images.KubetailClusterAgent}}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - DAC_READ_SEARCH
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 1000
+          runAsUser: 1000
+        imagePullPolicy: IfNotPresent
+        args:
+        - --config=/etc/kubetail/config.yaml
+        ports:
+        - name: grpc
+          protocol: TCP
+          containerPort: 50051
+        livenessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 5
+          timeoutSeconds: 30
+          periodSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          grpc:
+            port: 50051
+          initialDelaySeconds: 5
+          timeoutSeconds: 30
+          periodSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /etc/kubetail
+          readOnly: true
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: kubetail-cluster-agent
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Exists
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/control-plane
+        operator: Exists
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+---
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: kubetail-cluster-agent
+  namespace: kubetail-system
+  labels:
+    kubernetes.io/minikube-addons: kubetail
+    addonmanager.kubernetes.io/mode: Reconcile
+    app.kubernetes.io/name: kubetail
+    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/instance: kubetail
+    app.kubernetes.io/component: cluster-agent
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kubetail
+      app.kubernetes.io/instance: kubetail
+      app.kubernetes.io/component: cluster-agent
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: kubetail
+          app.kubernetes.io/instance: kubetail
+          app.kubernetes.io/component: cluster-api
