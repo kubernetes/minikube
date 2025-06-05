@@ -14,7 +14,8 @@
 
 FROM ubuntu:22.04
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN export DEBIAN_FRONTEND=noninteractive && apt-get update && apt-get install -y --no-install-recommends \
+		ca-certificates \
 		gcc \
 		libc6-dev \
 		make \
