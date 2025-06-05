@@ -199,7 +199,7 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 	t.SetAutoWrapText(false)
 	t.SetHeader(headers)
 	t.SetAutoFormatHeaders(false)
-	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	t.SetBorder(true)
 	t.SetCenterSeparator("|")
 	t.AppendBulk(c)
 	t.Render()

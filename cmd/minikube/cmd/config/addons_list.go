@@ -97,7 +97,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetAutoFormatHeaders(true)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetBorder(true)
 	table.SetCenterSeparator("|")
 
 	// Create table header
