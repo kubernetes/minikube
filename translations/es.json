@@ -388,6 +388,7 @@
 	"If true, only download and cache files for later use - don't install or start anything.": "Si el valor es \"true\", los archivos solo se descargan y almacenan en caché (no se instala ni inicia nada).",
 	"If true, pods might get deleted and restarted on addon enable": "",
 	"If true, print web links to addons' documentation if using --output=list (default).": "",
+	"If true, returns a detailed list of profiles.": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "",
 	"If you are running minikube within a VM, consider using --driver=none:": "",

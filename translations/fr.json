@@ -386,6 +386,7 @@
 	"If true, only download and cache files for later use - don't install or start anything.": "Si la valeur est \"true\", téléchargez les fichiers et mettez-les en cache uniquement pour une utilisation future. Ne lancez pas d'installation et ne commencez aucun processus.",
 	"If true, pods might get deleted and restarted on addon enable": "Si vrai, les pods peuvent être supprimés et redémarrés lors addon enable",
 	"If true, print web links to addons' documentation if using --output=list (default).": "Si vrai, affiche les liens Web vers la documentation des addons si vous utilisez --output=list (défaut).",
+	"If true, returns a detailed list of profiles.": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "Si vrai, renvoie la liste des profils plus rapidement en ignorant la validation de l'état du cluster.",
 	"If true, the added node will be marked for work. Defaults to true.": "Si vrai, le nœud ajouté sera marqué pour le travail. La valeur par défaut est true.",
 	"If true, the node added will also be a control plane in addition to a worker.": "Si vrai, le nœud ajouté sera également un plan de contrôle en plus d'un travailleur.",
