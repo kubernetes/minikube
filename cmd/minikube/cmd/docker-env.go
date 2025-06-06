@@ -433,9 +433,12 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 
 var podmanEnvCmd = &cobra.Command{
 	Use:   "podman-env",
-	Short: "Configure environment to use minikube's Podman service (The podman-env command is planned for removal because its functionality is now compatibly handled by docker-env.)",
+	Short: "Configure environment to use minikube's Podman service (DEPRECATED: use 'docker-env')",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.(The podman-env command is planned for removal because its functionality is now compatibly handled by docker-env, Please check: https://github.com/kubernetes/minikube/issues/20828)`,
-	Run:   dockerEnvCmd.Run,
+	Run:   func(cmd *cobra.Command, args []string) {
+		out.WarningT("The 'podman-env' command is deprecated and will be removed in a future version. Please use 'docker-env', which now supports all runtimes.")
+		dockerEnvCmd.Run(cmd, args)
+	},
 }
 
 // DockerEnvConfig encapsulates all external inputs into shell generation for Docker
