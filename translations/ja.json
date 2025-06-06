@@ -370,6 +370,7 @@
 	"If true, only download and cache files for later use - don't install or start anything.": "true の場合、後の使用のためのファイルのダウンロードとキャッシュ保存のみ行われます。インストールも起動も行いません",
 	"If true, pods might get deleted and restarted on addon enable": "true の場合、有効なアドオンの Pod は削除され、再起動されます",
 	"If true, print web links to addons' documentation if using --output=list (default).": "true の場合、--output=list (default) を利用することでアドオンのドキュメントへの web リンクを表示します",
+	"If true, returns a detailed list of profiles.": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "true の場合、クラスター状態の検証を省略することにより高速にプロファイル一覧を返します。",
 	"If true, the added node will be marked for work. Defaults to true.": "true の場合、追加されたノードはワーカー用としてマークされます。デフォルトは true です。",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "true の場合、潜在的に危険な操作を行うことになります。慎重に使用してください。",
