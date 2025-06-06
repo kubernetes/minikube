@@ -89,7 +89,7 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 		}
 	}
 	t := tablewriter.NewWriter(os.Stdout)
-	t.SetHeaders([]string{"Command", binaries[0].Name(), binaries[1].Name()})
+	t.SetHeader([]string{"Command", binaries[0].Name(), binaries[1].Name()})
 	for _, v := range table {
 		// Add warning sign if PR average is 5 seconds higher than average at HEAD
 		if len(v) >= 3 {
