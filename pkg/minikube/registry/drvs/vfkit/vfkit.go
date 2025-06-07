@@ -98,7 +98,6 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		DiskSize:       cfg.DiskSize,
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
-		Cmdline:        "",
 		ExtraDisks:     cfg.ExtraDisks,
 		Network:        cfg.Network,
 		MACAddress:     mac,
