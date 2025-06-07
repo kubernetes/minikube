@@ -238,6 +238,7 @@ func PrintServiceList(writer io.Writer, data [][]string) {
 	table.SetHeader([]string{"Namespace", "Name", "Target Port", "URL"})
 	table.SetBorder(true)
 	table.SetCenterSeparator("|")
+	table.SetColumnAlignment([]int{0, 0, 0, 0})
 	table.AppendBulk(data)
 	table.Render()
 }
