@@ -21,6 +21,7 @@ package krunkit
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,6 +55,7 @@ const (
 	driverName     = "krunkit"
 	isoFileName    = "boot2docker.iso"
 	pidFileName    = "krunkit.pid"
+	sockFileName   = "krunkit.sock"
 	logFileName    = "krunkit.log"
 	serialFileName = "serial.log"
 	logLevelInfo   = "3"
@@ -447,14 +449,16 @@ func (d *Driver) isoPath() string {
 	return d.ResolveStorePath(isoFileName)
 }
 
+func (d *Driver) sockfilePath() string {
+	return d.ResolveStorePath(sockFileName)
+}
+
 func (d *Driver) restfulURI() string {
-	// TODO: use unused port or a unix socket when supported.
-	// https://github.com/containers/krunkit/issues/47
-	return "tcp://localhost:8081"
+	return fmt.Sprintf("unix://%s", d.sockfilePath())
 }
 
 func (d *Driver) vmStateURI() string {
-	return d.restfulURI() + "/vm/state"
+	return "http://_/vm/state"
 }
 
 // Make a boot2docker VM disk image.
@@ -511,13 +515,24 @@ func (d *Driver) generateDiskImage(size int) error {
 	return nil
 }
 
+func httpUnixClient(path string) http.Client {
+	return http.Client{
+		Transport: &http.Transport{
+			DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+				return net.Dial("unix", path)
+			},
+		},
+	}
+}
+
 type VMState struct {
 	State string `json:"state"`
 }
 
 func (d *Driver) GetkrunkitState() (string, error) {
 	var vmstate VMState
-	response, err := http.Get(d.vmStateURI())
+	httpc := httpUnixClient(d.sockfilePath())
+	response, err := httpc.Get(d.vmStateURI())
 	if err != nil {
 		return "", err
 	}
@@ -537,7 +552,8 @@ func (d *Driver) SetKrunkititState(state string) error {
 	if err != nil {
 		return err
 	}
-	_, err = http.Post(d.vmStateURI(), "application/json", bytes.NewReader(data))
+	httpc := httpUnixClient(d.sockfilePath())
+	_, err = httpc.Post(d.vmStateURI(), "application/json", bytes.NewReader(data))
 	if err != nil {
 		return err
 	}
