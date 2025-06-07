@@ -139,7 +139,11 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
 		}
 		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
-	case driver.VFKit:
+	case driver.VFKit, driver.Krunkit:
+		// TODO: check why we need this and test with:
+		// - vfkkit+nat
+		// - vfkit+vmnet-shared
+		// - krunkit+vmnet-shared
 		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil

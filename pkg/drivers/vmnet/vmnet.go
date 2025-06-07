@@ -55,6 +55,11 @@ type Helper struct {
 	// will obtain the same MAC address from vmnet.
 	InterfaceID string
 
+	// Offloading is required for krunkit, doss not work with vfkit.
+	// We must use this until libkrun add support for disabling offloading:
+	// https://github.com/containers/libkrun/issues/264
+	Offloading bool
+
 	// Set when vmnet interface is started.
 	macAddress string
 }
@@ -115,13 +120,18 @@ func ValidateHelper() error {
 // machine. The helper will create a unix datagram socket at the specfied path.
 // The client (e.g. vfkit) will connect to this socket.
 func (h *Helper) Start(socketPath string) error {
-	cmd := exec.Command(
-		"sudo",
+	args := []string{
 		"--non-interactive",
 		executablePath,
 		"--socket", socketPath,
 		"--interface-id", h.InterfaceID,
-	)
+	}
+
+	if h.Offloading {
+		args = append(args, "--enable-tso", "--enable-checksum-offload")
+	}
+
+	cmd := exec.Command("sudo", args...)
 
 	// Create vmnet-helper in a new process group so it is not harmed when
 	// terminating the minikube process group.
