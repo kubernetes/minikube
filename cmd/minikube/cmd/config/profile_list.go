@@ -141,7 +141,7 @@ func renderProfilesTable(ps [][]string) {
 			"Nodes", "Active Profile", "Active Kubecontext"})
 	}
 	table.SetAutoFormatHeaders(false)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetBorder(true)
 	table.SetCenterSeparator("|")
 	table.AppendBulk(ps)
 	table.Render()

@@ -46,7 +46,7 @@ func cpuMarkdownTable(categories []plotter.Values, names []string) {
 	t.SetAutoWrapText(false)
 	t.SetHeader(headers)
 	t.SetAutoFormatHeaders(false)
-	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	t.SetBorder(true)
 	t.SetCenterSeparator("|")
 	t.AppendBulk(c)
 	t.Render()

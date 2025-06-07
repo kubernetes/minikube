@@ -48,7 +48,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/moby/patternmatcher v0.6.0
-	github.com/olekukonko/tablewriter v0.0.5
+	github.com/olekukonko/tablewriter v1.0.7
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/runc v1.2.6
 	github.com/otiai10/copy v1.14.1
@@ -195,6 +195,8 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect
+	github.com/olekukonko/ll v0.0.8 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/otiai10/mint v1.6.3 // indirect
