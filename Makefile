@@ -339,8 +339,8 @@ iso-menuconfig-%: iso-prepare-% ## Configure buildroot configuration
 
 # Change the kernel configuration for the minikube ISO
 linux-menuconfig-%:  ## Configure Linux kernel configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ savedefconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-savedefconfig
 	cp $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/$*/linux_$*_defconfig
 
 out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
