@@ -79,7 +79,6 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v2.1.5
@@ -341,7 +340,7 @@ iso-menuconfig-%: iso-prepare-% ## Configure buildroot configuration
 linux-menuconfig-%:  ## Configure Linux kernel configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-savedefconfig
-	cp $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/$*/linux_$*_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-update-defconfig
 
 out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
