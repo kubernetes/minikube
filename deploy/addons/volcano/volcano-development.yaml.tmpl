@@ -5425,8 +5425,7 @@ spec:
                         rule: has(self.exactMatch) || has(self.regexMatch) || has(self.labelMatch)
                       - message: Only one of ExactMatch, RegexMatch, or LabelMatch
                           can be specified
-                        rule: '(has(self.exactMatch) ? 1 : 0) + (has(self.regexMatch)
-                          ? 1 : 0) + (has(self.labelMatch) ? 1 : 0) <= 1'
+                        rule: (has(self.exactMatch) ? 1 : 0) + (has(self.regexMatch) ? 1 : 0) + (has(self.labelMatch) ? 1 : 0) <= 1
                     type:
                       description: Type specifies the member type.
                       enum:
