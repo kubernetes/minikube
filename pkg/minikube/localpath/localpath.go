@@ -17,6 +17,7 @@ limitations under the License.
 package localpath
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path"
@@ -190,25 +191,20 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 }
 
 func getWindowsVolumeNameCmd(d string) (string, error) {
-	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
+	psCommand := `Get-CimInstance -ClassName Win32_Volume -Filter "DriveLetter = '` + d + `:'" | Select-Object -ExpandProperty DeviceID`
 
-	stdout, err := cmd.Output()
+	cmd := exec.Command("powershell", "-Command", psCommand)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
 
-	outs := strings.Split(strings.ReplaceAll(string(stdout), "\r", ""), "\n")
-
-	var vname string
-	for _, l := range outs {
-		s := strings.TrimSpace(l)
-		if strings.HasPrefix(s, `\\?\Volume{`) && strings.HasSuffix(s, `}\`) {
-			vname = s
-			break
-		}
-	}
-
-	if vname == "" {
+	vname := strings.TrimSpace(out.String())
+	if !strings.HasPrefix(vname, `\\?\Volume{`) || !strings.HasSuffix(vname, `}\`) {
 		return "", errors.New("failed to get a volume GUID")
 	}
 
