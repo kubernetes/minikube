@@ -96,9 +96,9 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	sort.Strings(addonNames)
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(true)
-	table.SetBorder(true)
-	table.SetCenterSeparator("|")
+	table.SetAutoFormatHeaders(1)
+	table.SetBorders(true)
+	table.SetColumnSeparator("|")
 
 	// Create table header
 	var tHeader []string
@@ -110,7 +110,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
 	}
-	table.SetHeader(tHeader)
+	table.Header(tHeader)
 
 	// Create table data
 	var tData [][]string
@@ -136,7 +136,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		}
 		tData = append(tData, temp)
 	}
-	table.AppendBulk(tData)
+	table.Bulk(tData)
 
 	table.Render()
 

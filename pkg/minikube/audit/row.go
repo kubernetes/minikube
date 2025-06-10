@@ -124,11 +124,11 @@ func rowsToASCIITable(rows []row, headers []string) string {
 	}
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetHeader(headers)
-	t.SetAutoFormatHeaders(false)
-	t.SetBorder(true)
-	t.SetCenterSeparator("|")
-	t.AppendBulk(c)
+	t.Header(headers)
+	t.SetAutoFormatHeaders(0)
+	t.SetBorders(true)
+	t.SetColumnSeparator("|")
+	t.Bulk(c)
 	t.Render()
 	return b.String()
 }
