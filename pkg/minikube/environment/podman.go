@@ -36,9 +36,9 @@ var podmanEnv2Tmpl = fmt.Sprintf(
 	constants.PodmanContainerHostEnv,
 	constants.PodmanContainerSSHKeyEnv,
 	constants.ExistingContainerHostEnv,
-	constants.MinikubeActivePodmanEnv) // Using unified constant
+	constants.MinikubeActivePodmanEnv) 
 
-// PodmanConfigurator 为 Podman 实现 EnvConfigurator 接口。
+// PodmanConfigurator implements the EnvConfigurator interface for Podman.
 type PodmanConfigurator struct {
 	profile  string
 	varlink  bool
@@ -49,7 +49,7 @@ type PodmanConfigurator struct {
 	keypath  string
 }
 
-// NewPodmanConfigurator 创建一个新的 Podman 环境配置器。
+// NewPodmanConfigurator creates a new Podman environment configurator.
 func NewPodmanConfigurator(co *mustload.ClusterController) (*PodmanConfigurator, error) {
 	r := co.CP.Runner
 	varlink, err := isVarlinkAvailable(r)
@@ -80,7 +80,7 @@ func NewPodmanConfigurator(co *mustload.ClusterController) (*PodmanConfigurator,
 	}, nil
 }
 
-// Vars 实现了 EnvConfigurator 接口。
+// Vars implements the EnvConfigurator interface.
 func (p *PodmanConfigurator) Vars() (map[string]string, error) {
 	var env map[string]string
 	if p.varlink {
@@ -103,7 +103,7 @@ func (p *PodmanConfigurator) Vars() (map[string]string, error) {
 	return env, nil
 }
 
-// UnsetVars 实现了 EnvConfigurator 接口。
+// UnsetVars implements the EnvConfigurator interface.
 func (p *PodmanConfigurator) UnsetVars() ([]string, error) {
 	vars := []string{constants.MinikubeActivePodmanEnv}
 	if p.varlink {
@@ -114,7 +114,7 @@ func (p *PodmanConfigurator) UnsetVars() ([]string, error) {
 	return vars, nil
 }
 
-// DisplayScript 实现了 EnvConfigurator 接口。
+// DisplayScript implements the EnvConfigurator interface.
 func (p *PodmanConfigurator) DisplayScript(sh shell.Config, w io.Writer) error {
 	vars, err := p.Vars()
 	if err != nil {
@@ -128,7 +128,7 @@ func (p *PodmanConfigurator) DisplayScript(sh shell.Config, w io.Writer) error {
 	return shell.SetScript(w, tmpl, cfg)
 }
 
-// --- Podman 的辅助函数 ---
+// PodmanShellConfig represents the shell configuration of Podman
 type PodmanShellConfig struct {
 	shell.Config
 	VarlinkBridge         string

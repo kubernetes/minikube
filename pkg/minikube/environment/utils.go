@@ -1,6 +1,6 @@
 package environment
 import "os"
-// GetNoProxyVar 获取 no_proxy 环境变量，优先使用小写。
+// GetNoProxyVar gets the no_proxy environment variable, lowercase preferred.
 func GetNoProxyVar() (string, string) {
 	noProxyVar := "no_proxy"
 	noProxyValue := os.Getenv("no_proxy")

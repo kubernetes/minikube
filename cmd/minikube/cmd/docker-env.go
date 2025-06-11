@@ -66,7 +66,8 @@ This is useful for building images directly inside the unified container runtime
 		
 		if driverName == driver.Podman || cr == constants.CRIO {
 			ec, err = environment.NewPodmanConfigurator(co)
-		} else { // Docker and Containerd runtimes
+		} else { 
+			// Docker and Containerd runtimes
 			// The constructor now handles the containerd ssh-agent logic internally
 			ec, err = environment.NewDockerConfigurator(co, sshHost, noProxy)
 		}
@@ -85,7 +86,6 @@ This is useful for building images directly inside the unified container runtime
 			return
 		}
 
-		// --- Pre-flight checks ---
 		if driverName == driver.None {
 			exit.Message(reason.EnvDriverConflict, `'none' driver does not support this command`)
 		}
@@ -96,7 +96,6 @@ This is useful for building images directly inside the unified container runtime
 			exit.Message(reason.Usage, err.Error())
 		}
 		
-		// This logic needs to happen *after* the configurator is created, which might have started the agent
 		if co.Config.KubernetesConfig.ContainerRuntime == constants.Containerd {
 			sshAdd = true 
 		}

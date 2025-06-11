@@ -5,14 +5,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-// EnvConfigurator 是任何环境配置逻辑都必须实现的接口。
+// EnvConfigurator is the interface that any environment configuration logic must implement.
 type EnvConfigurator interface {
-	// Vars 返回需要被设置的环境变量的 map。
+	// Vars returns a map of environment variables that need to be set.
 	Vars() (map[string]string, error)
 
-	// UnsetVars 返回需要被取消设置的环境变量名称列表。
+	// UnsetVars returns a list of environment variable names that need to be unset.
 	UnsetVars() ([]string, error)
 
-	// DisplayScript 生成需要显示的、用于设置环境变量的脚本。
+	// DisplayScript generates a script that needs to be displayed and is used to set environment variables.
 	DisplayScript(sh shell.Config, w io.Writer) error
 }

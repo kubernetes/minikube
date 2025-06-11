@@ -69,7 +69,7 @@ var dockerEnvSSHTmpl = fmt.Sprintf(
 	constants.SSHAuthSock,
 	constants.SSHAgentPID)
 
-// DockerConfigurator 为 Docker 和 Containerd 运行时实现 EnvConfigurator 接口。
+// DockerConfigurator implements the EnvConfigurator interface for Docker and Containerd runtimes.
 type DockerConfigurator struct {
 	profile     string
 	useSSH      bool
@@ -85,7 +85,7 @@ type DockerConfigurator struct {
 	sshAgentPID int
 }
 
-// NewDockerConfigurator 创建一个新的 Docker 环境配置器。
+// NewDockerConfigurator creates a new Docker environment configurator.
 func NewDockerConfigurator(co *mustload.ClusterController, useSSH bool, noProxy bool) (*DockerConfigurator, error) {
 	cr := co.Config.KubernetesConfig.ContainerRuntime
 	cname := co.Config.Name
@@ -139,7 +139,7 @@ func NewDockerConfigurator(co *mustload.ClusterController, useSSH bool, noProxy 
 	}, nil
 }
 
-// Vars 实现了 EnvConfigurator 接口。
+// Vars implements the EnvConfigurator interface.
 func (d *DockerConfigurator) Vars() (map[string]string, error) {
 	agentPID := strconv.Itoa(d.sshAgentPID)
 	if agentPID == "0" {
@@ -184,7 +184,7 @@ func (d *DockerConfigurator) Vars() (map[string]string, error) {
 	return env, nil
 }
 
-// UnsetVars 实现了 EnvConfigurator 接口。
+// UnsetVars implements the EnvConfigurator interface.
 func (d *DockerConfigurator) UnsetVars() ([]string, error) {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,
@@ -204,7 +204,7 @@ func (d *DockerConfigurator) UnsetVars() ([]string, error) {
 	return vars, nil
 }
 
-// DisplayScript 实现了 EnvConfigurator 接口。
+// DisplayScript implements the EnvConfigurator interface.
 func (d *DockerConfigurator) DisplayScript(sh shell.Config, w io.Writer) error {
 	vars, err := d.Vars()
 	if err != nil {
@@ -218,7 +218,7 @@ func (d *DockerConfigurator) DisplayScript(sh shell.Config, w io.Writer) error {
 	return shell.SetScript(w, tmpl, cfg)
 }
 
-// --- Docker 的辅助函数 ---
+// DockerShellConfig represents the shell configuration of Docker 
 type DockerShellConfig struct {
 	shell.Config
 	DockerCertPath         string
