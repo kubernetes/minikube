@@ -198,13 +198,48 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
-	err := cmd.Run()
+	psErr := cmd.Run()
+	if psErr == nil {
+		vname := strings.TrimSpace(out.String())
+		if strings.HasPrefix(vname, `\\?\Volume{`) && strings.HasSuffix(vname, `}\`) {
+			return vname, nil
+		}
+		// PowerShell succeeded but returned invalid output, try WMIC
+		wmicResult, wmicErr := getWindowsVolumeNameWMIC(d)
+		if wmicErr != nil {
+			return "", errors.Wrapf(wmicErr, "PowerShell returned invalid volume GUID format, WMIC also failed")
+		}
+		return wmicResult, nil
+	}
+
+	// PowerShell failed, fall back to WMIC
+	wmicResult, wmicErr := getWindowsVolumeNameWMIC(d)
+	if wmicErr != nil {
+		return "", errors.Wrapf(wmicErr, "PowerShell failed (%v), WMIC also failed", psErr)
+	}
+	return wmicResult, nil
+}
+
+func getWindowsVolumeNameWMIC(d string) (string, error) {
+	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
+
+	stdout, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
 
-	vname := strings.TrimSpace(out.String())
-	if !strings.HasPrefix(vname, `\\?\Volume{`) || !strings.HasSuffix(vname, `}\`) {
+	outs := strings.Split(strings.ReplaceAll(string(stdout), "\r", ""), "\n")
+
+	var vname string
+	for _, l := range outs {
+		s := strings.TrimSpace(l)
+		if strings.HasPrefix(s, `\\?\Volume{`) && strings.HasSuffix(s, `}\`) {
+			vname = s
+			break
+		}
+	}
+
+	if vname == "" {
 		return "", errors.New("failed to get a volume GUID")
 	}
 
