@@ -17,6 +17,7 @@ limitations under the License.
 package localpath
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
 	"path"
@@ -190,6 +191,36 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 }
 
 func getWindowsVolumeNameCmd(d string) (string, error) {
+	psCommand := `Get-CimInstance -ClassName Win32_Volume -Filter "DriveLetter = '` + d + `:'" | Select-Object -ExpandProperty DeviceID`
+
+	cmd := exec.Command("powershell", "-Command", psCommand)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	psErr := cmd.Run()
+	if psErr == nil {
+		vname := strings.TrimSpace(out.String())
+		if strings.HasPrefix(vname, `\\?\Volume{`) && strings.HasSuffix(vname, `}\`) {
+			return vname, nil
+		}
+		// PowerShell succeeded but returned invalid output, try WMIC
+		wmicResult, wmicErr := getWindowsVolumeNameWMIC(d)
+		if wmicErr != nil {
+			return "", errors.Wrapf(wmicErr, "PowerShell returned invalid volume GUID format, WMIC also failed")
+		}
+		return wmicResult, nil
+	}
+
+	// PowerShell failed, fall back to WMIC
+	wmicResult, wmicErr := getWindowsVolumeNameWMIC(d)
+	if wmicErr != nil {
+		return "", errors.Wrapf(wmicErr, "PowerShell failed (%v), WMIC also failed", psErr)
+	}
+	return wmicResult, nil
+}
+
+func getWindowsVolumeNameWMIC(d string) (string, error) {
 	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
 
 	stdout, err := cmd.Output()
