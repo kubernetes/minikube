@@ -31,9 +31,9 @@ ii  debianutils                     5.5-1ubuntu2                            amd6
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.3                       amd64        GNU privacy guard - network certificate management service
 ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.23.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
-ii  docker-ce                       5:28.1.1-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
-ii  docker-ce-cli                   5:28.1.1-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
+ii  docker-buildx-plugin            0.24.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  docker-ce                       5:28.2.2-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
+ii  docker-ce-cli                   5:28.2.2-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
 ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system utilities
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
@@ -96,7 +96,7 @@ ii  libffi8:amd64                   3.4.2-4                                 amd6
 ii  libfido2-1:amd64                1.10.0-1                                amd64        library for generating and verifying FIDO 2.0 objects
 ii  libgcc-s1:amd64                 12.3.0-1ubuntu1~22.04                   amd64        GCC support library
 ii  libgcrypt20:amd64               1.9.4-3ubuntu3                          amd64        LGPL Crypto library - runtime library
-ii  libglib2.0-0:amd64              2.72.4-0ubuntu2.4                       amd64        GLib library of C routines
+ii  libglib2.0-0:amd64              2.72.4-0ubuntu2.5                       amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg-3ubuntu1                   amd64        Multiprecision arithmetic library
 ii  libgnutls30:amd64               3.7.3-4ubuntu1.6                        amd64        GNU TLS library - main runtime library
 ii  libgpg-error0:amd64             1.43-3                                  amd64        GnuPG development runtime library
@@ -137,8 +137,8 @@ ii  libnghttp2-14:amd64             1.43.0-1ubuntu0.2                       amd6
 ii  libnl-3-200:amd64               3.5.0-0.1                               amd64        library for dealing with netlink sockets
 ii  libnpth0:amd64                  1.6-3build2                             amd64        replacement for GNU Pth using system threads
 ii  libnsl2:amd64                   1.3.0-2build2                           amd64        Public client interface for NIS(YP) and NIS+
-ii  libnvidia-container-tools       1.17.6-1                                amd64        NVIDIA container runtime library (command-line tools)
-ii  libnvidia-container1:amd64      1.17.6-1                                amd64        NVIDIA container runtime library
+ii  libnvidia-container-tools       1.17.8-1                                amd64        NVIDIA container runtime library (command-line tools)
+ii  libnvidia-container1:amd64      1.17.8-1                                amd64        NVIDIA container runtime library
 ii  libp11-kit0:amd64               0.24.0-6build1                          amd64        library for loading and coordinating access to PKCS#11 modules - runtime
 ii  libpam-modules:amd64            1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules for PAM
 ii  libpam-modules-bin              1.4.0-11ubuntu2.5                       amd64        Pluggable Authentication Modules for PAM - helper binaries
@@ -164,17 +164,17 @@ ii  libsemanage-common              3.3-1build2                             all 
 ii  libsemanage2:amd64              3.3-1build2                             amd64        SELinux policy management library
 ii  libsepol2:amd64                 3.3-1build1                             amd64        SELinux library for manipulating binary security policies
 ii  libsmartcols1:amd64             2.37.2-4ubuntu3.4                       amd64        smart column output alignment library
-ii  libsqlite3-0:amd64              3.37.2-2ubuntu0.3                       amd64        SQLite 3 shared library
+ii  libsqlite3-0:amd64              3.37.2-2ubuntu0.4                       amd64        SQLite 3 shared library
 ii  libss2:amd64                    1.46.5-2ubuntu1.2                       amd64        command-line interface parsing library
 ii  libssh-4:amd64                  0.9.6-2ubuntu0.22.04.3                  amd64        tiny C SSH library (OpenSSL flavor)
 ii  libssl3:amd64                   3.0.2-0ubuntu1.19                       amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                12.3.0-1ubuntu1~22.04                   amd64        GNU Standard C++ Library v3
-ii  libsystemd0:amd64               249.11-0ubuntu3.15                      amd64        systemd utility library
+ii  libsystemd0:amd64               249.11-0ubuntu3.16                      amd64        systemd utility library
 ii  libtasn1-6:amd64                4.18.0-4ubuntu0.1                       amd64        Manage ASN.1 structures (runtime)
 ii  libtinfo6:amd64                 6.3-2ubuntu0.1                          amd64        shared low-level terminfo library for terminal handling
 ii  libtirpc-common                 1.3.2-2ubuntu0.1                        all          transport-independent RPC library - common files
 ii  libtirpc3:amd64                 1.3.2-2ubuntu0.1                        amd64        transport-independent RPC library
-ii  libudev1:amd64                  249.11-0ubuntu3.15                      amd64        libudev shared library
+ii  libudev1:amd64                  249.11-0ubuntu3.16                      amd64        libudev shared library
 ii  libunistring2:amd64             1.0-1                                   amd64        Unicode string library for C
 ii  libuuid1:amd64                  2.37.2-4ubuntu3.4                       amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.43.0-1ubuntu0.1                       amd64        asynchronous event notification library - runtime library
@@ -196,8 +196,8 @@ ii  ncurses-bin                     6.3-2ubuntu0.1                          amd6
 ii  netbase                         6.3                                     all          Basic TCP/IP networking system
 ii  netcat-openbsd                  1.218-4ubuntu1                          amd64        TCP/IP swiss army knife
 ii  nfs-common                      1:2.6.1-1ubuntu1.2                      amd64        NFS support files common to client and server
-ii  nvidia-container-toolkit        1.17.6-1                                amd64        NVIDIA Container toolkit
-ii  nvidia-container-toolkit-base   1.17.6-1                                amd64        NVIDIA Container Toolkit Base
+ii  nvidia-container-toolkit        1.17.8-1                                amd64        NVIDIA Container toolkit
+ii  nvidia-container-toolkit-base   1.17.8-1                                amd64        NVIDIA Container Toolkit Base
 ii  openssh-client                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
@@ -210,7 +210,7 @@ ii  podman                          3.4.4+ds1-1ubuntu1.22.04.3              amd6
 ii  procps                          2:3.3.17-6ubuntu2.1                     amd64        /proc file system utilities
 ii  python3                         3.10.6-1~22.04.1                        amd64        interactive high-level object-oriented language (default python3 version)
 ii  python3-minimal                 3.10.6-1~22.04.1                        amd64        minimal subset of the Python language (default python3 version)
-ii  python3-pkg-resources           59.6.0-1.2ubuntu0.22.04.2               all          Package Discovery and Resource Access using pkg_resources
+ii  python3-pkg-resources           59.6.0-1.2ubuntu0.22.04.3               all          Package Discovery and Resource Access using pkg_resources
 ii  python3-protobuf                3.12.4-1ubuntu7.22.04.2                 amd64        Python 3 bindings for protocol buffers
 ii  python3-six                     1.16.0-3ubuntu1                         all          Python 2 and 3 compatibility library (Python 3 interface)
 ii  python3.10                      3.10.12-1~22.04.9                       amd64        Interactive high-level object-oriented language (version 3.10)
@@ -222,13 +222,13 @@ ii  sed                             4.8-1ubuntu2                            amd6
 ii  sensible-utils                  0.0.17                                  all          Utilities for sensible alternative selection
 ii  socat                           1.7.4.1-3ubuntu4                        amd64        multipurpose relay for bidirectional data transfer
 ii  sudo                            1.9.9-1ubuntu2.4                        amd64        Provide limited super user privileges to specific users
-ii  systemd                         249.11-0ubuntu3.15                      amd64        system and service manager
+ii  systemd                         249.11-0ubuntu3.16                      amd64        system and service manager
 ii  sysvinit-utils                  3.01-1ubuntu1                           amd64        System-V-like utilities
 ii  tar                             1.34+dfsg-1ubuntu0.1.22.04.2            amd64        GNU version of the tar archiving utility
-ii  tzdata                          2025b-0ubuntu0.22.04                    all          time zone and daylight-saving time data
+ii  tzdata                          2025b-0ubuntu0.22.04.1                  all          time zone and daylight-saving time data
 ii  ubuntu-keyring                  2021.03.26                              all          GnuPG keys of the Ubuntu archive
 ii  ucf                             3.0043                                  all          Update Configuration File(s): preserve user changes to config files
-ii  udev                            249.11-0ubuntu3.15                      amd64        /dev/ and hotplug management daemon
+ii  udev                            249.11-0ubuntu3.16                      amd64        /dev/ and hotplug management daemon
 ii  usrmerge                        25ubuntu2                               all          Convert the system to the merged /usr directories scheme
 ii  util-linux                      2.37.2-4ubuntu3.4                       amd64        miscellaneous system utilities
 ii  vim-common                      2:8.2.3995-1ubuntu2.24                  all          Vi IMproved - Common files
