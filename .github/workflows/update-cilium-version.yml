@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'CNI: Update cilium from ${{ steps.bumpCilium.outputs.OLD_VERSION }} to ${{ steps.bumpCilium.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The cilium project released a [new version](https://github.com/cilium/cilium)
 

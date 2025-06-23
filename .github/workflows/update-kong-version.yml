@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon kong: Update kong image from ${{ steps.bumpKong.outputs.OLD_VERSION }} to ${{ steps.bumpKong.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The [kong](https://github.com/Kong/kong) project released a new kong image
 

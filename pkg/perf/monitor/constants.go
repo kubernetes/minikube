@@ -20,8 +20,8 @@ const (
 	// GithubAccessTokenEnvVar is the env var name to use
 	GithubAccessTokenEnvVar = "GITHUB_ACCESS_TOKEN"
 
-	// OkToTestLabel is the github label for ok-to-test
-	OkToTestLabel = "ok-to-test"
+	// OkToTestLabel is the github label for ok-to-full-test
+	OkToTestLabel = "ok-to-full-test"
 
 	// GithubOwner is the owner of the github repository
 	GithubOwner = "kubernetes"

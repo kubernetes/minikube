@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon yakd: Update marcnuri/yakd image from ${{ steps.bumpYakd.outputs.OLD_VERSION }} to ${{ steps.bumpYakd.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The [yakd](https://github.com/manusa/yakd) project released a new yakd image
 

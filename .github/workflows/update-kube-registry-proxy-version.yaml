@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon registry: Update kube-registry-proxy image from ${{ steps.bumpKubeRegistryProxy.outputs.OLD_VERSION }} to ${{ steps.bumpKubeRegistryProxy.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The kube-registry-proxy project released a [new version](https://github.com/spowelljr/kube-registry-proxy)
 

@@ -42,7 +42,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon Volcano: Update volcano images from ${{ steps.bumpVolcano.outputs.OLD_VERSION }} to ${{ steps.bumpVolcano.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The [Volcano](https://github.com/volcano-sh/volcano) project made a new release
 

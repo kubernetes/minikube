@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon metrics-server: Update metrics-server/metrics-server image from ${{ steps.bumpMetricsServer.outputs.OLD_VERSION }} to ${{ steps.bumpMetricsServer.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The metrics-server project released a [new version](https://github.com/kubernetes-sigs/metrics-server)
 

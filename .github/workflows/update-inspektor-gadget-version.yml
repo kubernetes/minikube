@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon inspektor-gadget: Update inspektor-gadget image from ${{ steps.bumpInspektorGadget.outputs.OLD_VERSION }} to ${{ steps.bumpInspektorGadget.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The inspektor-gadget project released a [new version](https://github.com/inspektor-gadget/inspektor-gadget)
 

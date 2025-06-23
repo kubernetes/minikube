@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon ingress: Update ingress-nginx/controller image from ${{ steps.bumpIngress.outputs.OLD_VERSION }} to ${{ steps.bumpIngress.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The ingress-nginx project released a [new version](https://github.com/kubernetes/ingress-nginx)
 

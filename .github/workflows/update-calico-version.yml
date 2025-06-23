@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'CNI: Update calico from ${{ steps.bumpCalico.outputs.OLD_VERSION }} to ${{ steps.bumpCalico.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The calico project released a [new version](https://github.com/projectcalico/calico)
 

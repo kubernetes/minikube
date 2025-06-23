@@ -40,7 +40,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'CNI: Update kindnetd from ${{ steps.bumpKindnetd.outputs.OLD_VERSION }} to ${{ steps.bumpKindnetd.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             A new version of the kind/kindnetd image was released
 

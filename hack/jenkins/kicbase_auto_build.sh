@@ -138,5 +138,5 @@ else
 	git remote add minikube-bot git@github.com:minikube-bot/minikube.git
 	git push -f minikube-bot ${branch}
 
-	gh pr create --fill --base master --head minikube-bot:${branch} -l "ok-to-test"
+	gh pr create --fill --base master --head minikube-bot:${branch} -l "ok-to-full-test"
 fi

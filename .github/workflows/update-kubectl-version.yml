@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon kubevirt: Update bitnami/kubectl image from ${{ steps.bumpKubectl.outputs.OLD_VERSION }} to ${{ steps.bumpKubectl.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The [bitnami](https://github.com/bitnami/containers) project released a new bitnami/kubectl image
 

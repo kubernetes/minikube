@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from ${{ steps.bumpCloudSpannerEmulator.outputs.OLD_VERSION }} to ${{ steps.bumpCloudSpannerEmulator.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The cloud-spanner-emulator project released a [new version](https://github.com/GoogleCloudPlatform/cloud-spanner-emulator)
 

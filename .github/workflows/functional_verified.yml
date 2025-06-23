@@ -31,7 +31,7 @@ jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
-    if: contains(github.event.pull_request.labels.*.name, 'ok-to-test')
+    if: contains(github.event.pull_request.labels.*.name, 'ok-to-full-test')
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

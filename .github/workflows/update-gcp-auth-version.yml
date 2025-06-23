@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'Addon gcp-auth: Update k8s-minikube/gcp-auth-webhook image from ${{ steps.bumpGCPAuth.outputs.OLD_VERSION }} to ${{ steps.bumpGCPAuth.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The gcp-auth-webhook project released a [new version](https://github.com/GoogleContainerTools/gcp-auth-webhook)
 

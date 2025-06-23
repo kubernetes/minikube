@@ -41,7 +41,7 @@ jobs:
           base: master
           delete-branch: true
           title: 'HA (multi-control plane): Update kube-vip from ${{ steps.bumpKubeVip.outputs.OLD_VERSION }} to ${{ steps.bumpKubeVip.outputs.NEW_VERSION }}'
-          labels: ok-to-test
+          labels: ok-to-full-test
           body: |
             The kube-vip project released a [new version](https://github.com/kube-vip/kube-vip)
 
