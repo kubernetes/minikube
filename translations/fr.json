@@ -1155,7 +1155,7 @@
 	"using metrics-server addon, heapster is deprecated": "utilisation du module metrics-server, heapster est obsolète",
 	"version json failure": "échec de la version du JSON",
 	"version yaml failure": "échec de la version du YAML",
-	"vmnet-helper was not found on the system, resolve by:\n\n\t\tOption 1) Installing vmnet-helper:\n\n\t\t  https://github.com/nirs/vmnet-helper#installation\n\n\t\tOption 2) Using the nat network:\n\n\t\t  minikube start{{.profile}} --driver vfkit --network nat": "",
+	"vmnet-helper was not found on the system, resolve by:\n\n\t\tOption 1) Installing vmnet-helper:\n\n\t\t  https://github.com/nirs/vmnet-helper#installation\n\n\t\tOption 2) Using the nat network:\n\n\t\t  minikube start{{.profile}} --driver vfkit --network nat": "vmnet-helper n'a pas été trouvé sur le système, résolvez le problème par :\n\n\t\tOption 1) Installation de vmnet-helper :\n\n\t\t https://github.com/nirs/vmnet-helper#installation\n\n\t\tOption 2) Utilisation du réseau NAT :\n\n\t\t minikube start{{.profile}} --driver vfkit --network nat",
 	"yaml encoding failure": "échec de l'encodage yaml",
 	"zsh completion failed": "complétion de zsh en échec",
 	"zsh completion.": "complétion zsh.",
