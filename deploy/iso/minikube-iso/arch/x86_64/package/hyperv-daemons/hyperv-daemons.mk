@@ -5,7 +5,7 @@
 ################################################################################
 
 HYPERV_DAEMONS_VERSION = $(call qstrip,$(BR2_LINUX_KERNEL_VERSION))
-HYPERV_DAEMONS_SITE = https://www.kernel.org/pub/linux/kernel/v5.x
+HYPERV_DAEMONS_SITE = https://www.kernel.org/pub/linux/kernel/v6.x
 HYPERV_DAEMONS_SOURCE = linux-$(HYPERV_DAEMONS_VERSION).tar.xz
 
 define HYPERV_DAEMONS_BUILD_CMDS
@@ -14,8 +14,8 @@ endef
 
 define HYPERV_DAEMONS_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
-		$(@D)/tools/hv/hv_fcopy_daemon \
-		$(TARGET_DIR)/usr/sbin/hv_fcopy_daemon
+		$(@D)/tools/hv/hv_fcopy_uio_daemon \
+		$(TARGET_DIR)/usr/sbin/hv_fcopy_uio_daemon
 
 	$(INSTALL) -D -m 0755 \
 		$(@D)/tools/hv/hv_kvp_daemon \
@@ -37,8 +37,8 @@ endef
 
 define HYPERV_DAEMONS_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(HYPERV_DAEMONS_PKGDIR)/70-hv_fcopy.rules \
-		$(TARGET_DIR)/etc/udev/rules.d/70-hv_fcopy.rules
+		$(HYPERV_DAEMONS_PKGDIR)/70-hv_fcopy_uio.rules \
+		$(TARGET_DIR)/etc/udev/rules.d/70-hv_fcopy_uio.rules
 	$(INSTALL) -D -m 644 \
 		$(HYPERV_DAEMONS_PKGDIR)/70-hv_kvp.rules \
 		$(TARGET_DIR)/etc/udev/rules.d/70-hv_kvp.rules
@@ -47,8 +47,8 @@ define HYPERV_DAEMONS_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/etc/udev/rules.d/70-hv_vss.rules
 
 	$(INSTALL) -D -m 644 \
-		$(HYPERV_DAEMONS_PKGDIR)/hv_fcopy_daemon.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/hv_fcopy_daemon.service
+		$(HYPERV_DAEMONS_PKGDIR)/hv_fcopy_uio_daemon.service \
+		$(TARGET_DIR)/usr/lib/systemd/system/hv_fcopy_uio_daemon.service
 	$(INSTALL) -D -m 644 \
 		$(HYPERV_DAEMONS_PKGDIR)/hv_kvp_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_kvp_daemon.service
@@ -56,8 +56,8 @@ define HYPERV_DAEMONS_INSTALL_INIT_SYSTEMD
 		$(HYPERV_DAEMONS_PKGDIR)/hv_vss_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_vss_daemon.service
 
-	ln -fs /usr/lib/systemd/system/hv_fcopy_daemon.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/hv_fcopy_daemon.service
+	ln -fs /usr/lib/systemd/system/hv_fcopy_uio_daemon.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/hv_fcopy_uio_daemon.service
 	ln -fs /usr/lib/systemd/system/hv_kvp_daemon.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/hv_kvp_daemon.service
 	ln -fs /usr/lib/systemd/system/hv_vss_daemon.service \
