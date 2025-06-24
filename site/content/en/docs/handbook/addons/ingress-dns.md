@@ -291,9 +291,23 @@ Do not use .local as this is a reserved TLD for mDNS and bind9 DNS servers
 
 #### mDNS reloading
 Each time a file is created or a change is made to a file in `/etc/resolver` you may need to run the following to reload Mac OS mDNS resolver.
+For macOS versions prior to Big Sur, you can reload the mDNS resolver using the following legacy commands:
+
 ```bash
 sudo launchctl unload -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
 sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.plist
+```
+However, if you're using a newer macOS version (Big Sur and beyond), running the legacy commands may result in the following error:
+
+```bash
+Load failed: 5: Input/output error
+Try running `launchctl bootstrap` as root for richer errors.
+```
+In this case, the recommended approach is to use the following commands instead:
+
+```bash
+sudo launchctl enable system/com.apple.mDNSResponder.reloaded
+sudo launchctl disable system/com.apple.mDNSResponder.reloaded
 ```
 
 ## TODO

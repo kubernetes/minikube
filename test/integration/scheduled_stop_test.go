@@ -124,7 +124,7 @@ func TestScheduledStopUnix(t *testing.T) {
 }
 
 func startMinikube(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile, "--memory=2048"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("starting minikube: %v\n%s", err, rr.Output())

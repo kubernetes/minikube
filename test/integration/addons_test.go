@@ -101,7 +101,7 @@ func TestAddons(t *testing.T) {
 		// so we override that here to let minikube auto-detect appropriate cgroup driver
 		os.Setenv(constants.MinikubeForceSystemdEnv, "")
 
-		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4000", "--alsologtostderr", "--addons=registry", "--addons=registry-creds", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
+		args := append([]string{"start", "-p", profile, "--wait=true", "--memory=4096", "--alsologtostderr", "--addons=registry", "--addons=registry-creds", "--addons=metrics-server", "--addons=volumesnapshots", "--addons=csi-hostpath-driver", "--addons=gcp-auth", "--addons=cloud-spanner", "--addons=inspektor-gadget", "--addons=nvidia-device-plugin", "--addons=yakd", "--addons=volcano", "--addons=amd-gpu-device-plugin"}, StartArgs()...)
 		if !NoneDriver() {
 			args = append(args, "--addons=ingress", "--addons=ingress-dns", "--addons=storage-provisioner-rancher")
 		}

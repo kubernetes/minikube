@@ -39,13 +39,13 @@ const networkTmpl = `
 <network>
   <name>{{.Name}}</name>
   <dns enable='no'/>
-  {{with .Parameters}}
+  {{- with .Parameters}}
   <ip address='{{.Gateway}}' netmask='{{.Netmask}}'>
     <dhcp>
       <range start='{{.ClientMin}}' end='{{.ClientMax}}'/>
     </dhcp>
   </ip>
-  {{end}}
+  {{- end}}
 </network>
 `
 
@@ -84,9 +84,15 @@ const firstSubnetAddr = "192.168.39.0"
 func setupNetwork(conn *libvirt.Connect, name string) error {
 	n, err := conn.LookupNetworkByName(name)
 	if err != nil {
-		return errors.Wrapf(err, "checking network %s", name)
+		return fmt.Errorf("failed looking up network %s: %w", name, lvErr(err))
 	}
-	defer func() { _ = n.Free() }()
+	defer func() {
+		if n == nil {
+			log.Warnf("nil network, cannot free")
+		} else if err := n.Free(); err != nil {
+			log.Errorf("failed freeing %s network: %v", name, lvErr(err))
+		}
+	}()
 
 	// always ensure autostart is set on the network
 	autostart, err := n.GetAutostart()
@@ -104,7 +110,9 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	if err != nil {
 		return errors.Wrapf(err, "checking network status for %s", name)
 	}
+
 	if !active {
+		log.Debugf("network %s is not active, trying to start it...", name)
 		if err := n.Create(); err != nil {
 			return errors.Wrapf(err, "starting network %s", name)
 		}
@@ -116,11 +124,11 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 func (d *Driver) ensureNetwork() error {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt connection")
+		return fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
@@ -164,11 +172,11 @@ func (d *Driver) createNetwork() error {
 
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt connection")
+		return fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
@@ -176,23 +184,34 @@ func (d *Driver) createNetwork() error {
 	// It is assumed that the libvirt/kvm installation has already created this network
 	netd, err := conn.LookupNetworkByName(d.Network)
 	if err != nil {
-		return errors.Wrapf(err, "%s KVM network doesn't exist", d.Network)
+		return fmt.Errorf("failed looking up network %s, cannot continue: %w", d.Network, lvErr(err))
 	}
-	log.Debugf("found existing %s KVM network", d.Network)
-	if netd != nil {
-		_ = netd.Free()
+	log.Debugf("found existing %s network", d.Network)
+
+	if netdXML, err := netd.GetXMLDesc(0); err != nil {
+		log.Debugf("failed getting %s network XML: %v", d.Network, lvErr(err))
+	} else {
+		log.Debug(netdXML)
+	}
+
+	if err := netd.Free(); err != nil {
+		log.Errorf("failed freeing %s network: %v", d.Network, lvErr(err))
 	}
 
 	// network: private
 	// Only create the private network if it does not already exist
-	netp, err := conn.LookupNetworkByName(d.PrivateNetwork)
-	defer func() {
-		if netp != nil {
-			_ = netp.Free()
+	if netp, err := conn.LookupNetworkByName(d.PrivateNetwork); err == nil {
+		log.Warnf("found existing %s private network, skipping creation", d.PrivateNetwork)
+
+		if netpXML, err := netp.GetXMLDesc(0); err != nil {
+			log.Debugf("failed getting %s private network XML: %v", d.PrivateNetwork, lvErr(err))
+		} else {
+			log.Debug(netpXML)
 		}
-	}()
-	if err == nil {
-		log.Debugf("found existing private KVM network %s", d.PrivateNetwork)
+
+		if err := netp.Free(); err != nil {
+			log.Errorf("failed freeing %s private network: %v", d.PrivateNetwork, lvErr(err))
+		}
 		return nil
 	}
 
@@ -203,7 +222,7 @@ func (d *Driver) createNetwork() error {
 		var subnet *network.Parameters
 		subnet, err = network.FreeSubnet(subnetAddr, 11, 20)
 		if err != nil {
-			log.Debugf("failed to find free subnet for private KVM network %s after %d attempts: %v", d.PrivateNetwork, 20, err)
+			log.Debugf("failed finding free subnet for private network %s after %d attempts: %v", d.PrivateNetwork, 20, err)
 			return fmt.Errorf("un-retryable: %w", err)
 		}
 
@@ -220,37 +239,42 @@ func (d *Driver) createNetwork() error {
 		tmpl := template.Must(template.New("network").Parse(networkTmpl))
 		var networkXML bytes.Buffer
 		if err = tmpl.Execute(&networkXML, tryNet); err != nil {
-			return fmt.Errorf("executing private KVM network template: %w", err)
+			return fmt.Errorf("executing private network template: %w", err)
 		}
-		log.Debugf("created network xml: %s", networkXML.String())
 
 		// define the network using our template
-		var libvirtNet *libvirt.Network
-		libvirtNet, err = conn.NetworkDefineXML(networkXML.String())
+		log.Debugf("defining private network:\n%s", networkXML.String())
+		libvirtNet, err := conn.NetworkDefineXML(networkXML.String())
 		if err != nil {
-			return fmt.Errorf("defining private KVM network %s %s from xml %s: %w", d.PrivateNetwork, subnet.CIDR, networkXML.String(), err)
+			return fmt.Errorf("defining private network %s %s from xml %s: %w", d.PrivateNetwork, subnet.CIDR, networkXML.String(), err)
 		}
 
 		// and finally create & start it
-		log.Debugf("trying to create private KVM network %s %s...", d.PrivateNetwork, subnet.CIDR)
+		log.Debugf("creating private network %s %s...", d.PrivateNetwork, subnet.CIDR)
 		if err = libvirtNet.Create(); err == nil {
-			log.Debugf("private KVM network %s %s created", d.PrivateNetwork, subnet.CIDR)
+			log.Debugf("private network %s %s created", d.PrivateNetwork, subnet.CIDR)
+			if netpXML, err := libvirtNet.GetXMLDesc(0); err != nil {
+				log.Debugf("failed getting %s private network XML: %v", d.PrivateNetwork, lvErr(err))
+			} else {
+				log.Debug(netpXML)
+			}
+
 			return nil
 		}
-		log.Debugf("failed to create private KVM network %s %s, will retry: %v", d.PrivateNetwork, subnet.CIDR, err)
+		log.Debugf("failed creating private network %s %s, will retry: %v", d.PrivateNetwork, subnet.CIDR, err)
 		subnetAddr = subnet.IP
 	}
-	return fmt.Errorf("failed to create private KVM network %s: %w", d.PrivateNetwork, err)
+	return fmt.Errorf("failed creating private network %s: %w", d.PrivateNetwork, err)
 }
 
 func (d *Driver) deleteNetwork() error {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "getting libvirt connection")
+		return fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
@@ -271,7 +295,14 @@ func (d *Driver) deleteNetwork() error {
 		}
 		return errors.Wrapf(err, "failed looking up network %s", d.PrivateNetwork)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if libvirtNet == nil {
+			log.Warnf("nil network, cannot free")
+		} else if err := libvirtNet.Free(); err != nil {
+			log.Errorf("failed freeing %s network: %v", d.PrivateNetwork, lvErr(err))
+		}
+	}()
+
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
 	err = d.checkDomains(conn)
@@ -405,7 +436,13 @@ func addStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) e
 	if err != nil {
 		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if libvirtNet == nil {
+			log.Warnf("nil network, cannot free")
+		} else if err := libvirtNet.Free(); err != nil {
+			log.Errorf("failed freeing %s network: %v", networkName, lvErr(err))
+		}
+	}()
 
 	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_ADD_LAST,
@@ -431,7 +468,13 @@ func delStaticIP(conn *libvirt.Connect, networkName, hostname, mac, ip string) e
 	if err != nil {
 		return fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if libvirtNet == nil {
+			log.Warnf("nil network, cannot free")
+		} else if err := libvirtNet.Free(); err != nil {
+			log.Errorf("failed freeing %s network: %v", networkName, lvErr(err))
+		}
+	}()
 
 	return libvirtNet.Update(
 		libvirt.NETWORK_UPDATE_COMMAND_DELETE,
@@ -451,7 +494,13 @@ func dhcpLease(conn *libvirt.Connect, networkName, hostname, mac, ip string) (le
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up network %s: %w", networkName, err)
 	}
-	defer func() { _ = libvirtNet.Free() }()
+	defer func() {
+		if libvirtNet == nil {
+			log.Warnf("nil network, cannot free")
+		} else if err := libvirtNet.Free(); err != nil {
+			log.Errorf("failed freeing %s network: %v", networkName, lvErr(err))
+		}
+	}()
 
 	leases, err := libvirtNet.GetDHCPLeases()
 	if err != nil {
@@ -491,7 +540,7 @@ func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error
 		}
 	}
 
-	log.Debugf("unable to find current IP address of domain %s in network %s", domain, networkName)
+	log.Debugf("unable to find current IP address of domain %s in network %s (interfaces detected: %+v)", domain, networkName, ifaces)
 	return "", nil
 }
 
@@ -499,22 +548,27 @@ func ipFromAPI(conn *libvirt.Connect, domain, networkName string) (string, error
 func ifListFromAPI(conn *libvirt.Connect, domain string) ([]libvirt.DomainInterface, error) {
 	dom, err := conn.LookupDomainByName(domain)
 	if err != nil {
-		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, err)
+		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, lvErr(err))
 	}
-	defer func() { _ = dom.Free() }()
-
-	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP)
-	if ifs == nil {
-		if err != nil {
-			log.Debugf("failed listing network interface addresses of domain %s(source=arp): %w", domain, err)
-		} else {
-			log.Debugf("No network interface addresses found for domain %s(source=arp)", domain)
+	defer func() {
+		if dom == nil {
+			log.Warnf("nil domain, cannot free")
+		} else if err := dom.Free(); err != nil {
+			log.Errorf("failed freeing %s domain: %v", domain, lvErr(err))
 		}
-		log.Debugf("trying to list again with source=lease")
+	}()
 
-		ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+	ifs, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+	if len(ifs) == 0 {
 		if err != nil {
-			return nil, fmt.Errorf("failed listing network interface addresses of domain %s(source=lease): %w", domain, err)
+			log.Debugf("failed listing network interface addresses of domain %s (source=lease): %v", domain, lvErr(err))
+		} else {
+			log.Debugf("no network interface addresses found for domain %s (source=lease)", domain)
+		}
+		log.Debugf("trying to list again with source=arp")
+
+		if ifs, err = dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_ARP); err != nil {
+			return nil, fmt.Errorf("failed listing network interface addresses of domain %s (source=arp): %w", domain, lvErr(err))
 		}
 	}
 
@@ -564,7 +618,13 @@ func ifListFromXML(conn *libvirt.Connect, domain string) ([]kvmIface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed looking up domain %s: %w", domain, err)
 	}
-	defer func() { _ = dom.Free() }()
+	defer func() {
+		if dom == nil {
+			log.Warnf("nil domain, cannot free")
+		} else if err := dom.Free(); err != nil {
+			log.Errorf("failed freeing %s domain: %v", domain, lvErr(err))
+		}
+	}()
 
 	domXML, err := dom.GetXMLDesc(0)
 	if err != nil {

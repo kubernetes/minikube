@@ -21,6 +21,9 @@ minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. min
 
 minikube runs the latest stable release of Kubernetes, with support for standard Kubernetes features like:
 
+### Remote Docker Support
+* **Cross-architecture remote Docker contexts** - Run ARM64 minikube on macOS to manage x86_64 Docker hosts via SSH or TCP
+
 * [LoadBalancer](https://minikube.sigs.k8s.io/docs/handbook/accessing/#loadbalancer-access) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
 * [NodePorts](https://minikube.sigs.k8s.io/docs/handbook/accessing/#nodeport-access) - using `minikube service`
@@ -37,6 +40,29 @@ As well as developer-friendly features:
 * [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia/) - for machine learning
 * [AMD GPU support](https://minikube.sigs.k8s.io/docs/tutorials/amd/) - for machine learning
 * [Filesystem mounts](https://minikube.sigs.k8s.io/docs/handbook/mount/)
+
+## Remote Docker Support
+
+minikube supports running against remote Docker daemons, including cross-architecture scenarios. This allows you to:
+
+* Run minikube on ARM64 macOS while managing Kubernetes clusters on x86_64 Linux Docker hosts
+* Use SSH or TCP connections to remote Docker daemons
+* Automatically detect and download the correct architecture binaries for the remote host
+
+### Usage
+
+Configure a remote Docker context and minikube will automatically detect and use it:
+
+```bash
+# Create a remote Docker context via SSH
+docker context create remote-host --docker "host=ssh://user@remote-host"
+docker context use remote-host
+
+# Start minikube - it will automatically use the remote context
+minikube start --driver=docker
+```
+
+minikube will detect the remote architecture and download the appropriate Kubernetes binaries (kubelet, kubeadm, kubectl) for the target platform.
 
 **For more information, see the official [minikube website](https://minikube.sigs.k8s.io)**
 

@@ -27,16 +27,16 @@ const domainTmpl = `
     <acpi/>
     <apic/>
     <pae/>
-    {{if .Hidden}}
+    {{- if .Hidden}}
     <kvm>
       <hidden state='on'/>
     </kvm>
-    {{end}}
+    {{- end}}
   </features>
   <cpu mode='host-passthrough'>
-  {{if gt .NUMANodeCount 1}}
+  {{- if gt .NUMANodeCount 1}}
   {{.NUMANodeXML}}
-  {{end}}
+  {{- end}}
   </cpu>
   <os>
     <type>hvm</type>
@@ -55,6 +55,7 @@ const domainTmpl = `
       <source file='{{.DiskPath}}'/>
       <target dev='hda' bus='virtio'/>
     </disk>
+    <controller type='virtio-serial'/>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
       <model type='virtio'/>
@@ -65,19 +66,23 @@ const domainTmpl = `
     </interface>
     <serial type='pty'>
       <target port='0'/>
+      <log file='{{.ConsoleLogPath}}' append='on'/>
     </serial>
     <console type='pty'>
       <target type='serial' port='0'/>
     </console>
+    <console type='pty'>
+      <target type="virtio" port="1"/>
+    </console>
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
     </rng>
-    {{if .GPU}}
+    {{- if .GPU}}
     {{.DevicesXML}}
-    {{end}}
-    {{if gt .ExtraDisks 0}}
+    {{- end}}
+    {{- if gt .ExtraDisks 0}}
     {{.ExtraDisksXML}}
-    {{end}}
+    {{- end}}
   </devices>
 </domain>
 `

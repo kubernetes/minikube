@@ -45,6 +45,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -159,7 +160,23 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.BareMetal(h.Driver.DriverName()) {
 		return command.NewExecRunner(true), nil
 	}
+	
+	// For Docker driver with remote context, use docker exec instead of SSH
+	isRemote := oci.IsRemoteDockerContext()
+	klog.Infof("CommandRunner debug: driver=%s, isRemoteContext=%v", h.DriverName, isRemote)
+	
+	if h.DriverName == driver.Docker && isRemote {
+		klog.Infof("Using DockerExecRunner for remote Docker context (container: %s)", h.Name)
+		return command.NewDockerExecRunner(h.Name), nil
+	}
+	
+	// For Docker driver (KIC), use KIC runner instead of SSH
+	if h.DriverName == driver.Docker {
+		klog.Infof("Using KICRunner for Docker driver (container: %s)", h.Name)
+		return command.NewKICRunner(h.Name, "docker"), nil
+	}
 
+	klog.Infof("Using SSHRunner for driver: %s", h.DriverName)
 	return command.NewSSHRunner(h.Driver), nil
 }
 
@@ -231,6 +248,11 @@ func (api *LocalClient) Create(h *host.Host) error {
 			func() error {
 				// Skippable because we don't reconfigure Docker?
 				if driver.BareMetal(h.Driver.DriverName()) {
+					return nil
+				}
+				// Skip SSH provisioning for Docker driver with remote contexts
+				if h.Driver.DriverName() == "docker" && oci.IsRemoteDockerContext() {
+					klog.Infof("Skipping SSH provisioning for remote Docker context")
 					return nil
 				}
 				return provisionDockerMachine(h)

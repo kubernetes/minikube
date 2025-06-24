@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0
+ISO_VERSION ?= v1.36.0-1749153077-20895
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -103,7 +103,7 @@ $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube:Z -w /minikube python python")
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
@@ -189,7 +189,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -341,13 +341,32 @@ out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube-iso-$*
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
+# Build ISO on remote frank server (169.254.1.1)
+.PHONY: iso-remote-%
+iso-remote-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause ## Build ISO on remote frank server
+	@echo "Building minikube ISO on frank (169.254.1.1) for architecture: $*"
+	@echo "Building auto-pause binary locally first..."
+	@make deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
+	@echo "Syncing source code to frank..."
+	@rsync -av --delete --exclude 'out/' --exclude '.git/' --exclude 'test-results/' --exclude '.idea/' --exclude '*.swp' . 169.254.1.1:~/minikube-build/
+	@echo "Building ISO on frank (auto-pause already built)..."
+	@ssh 169.254.1.1 "cd ~/minikube-build && export GO111MODULE=on && touch deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause && make minikube-iso-$* HOSTCC=/usr/bin/gcc-13 HOSTCXX=/usr/bin/g++-13"
+	@echo "Copying ISO back from frank..."
+	@scp 169.254.1.1:~/minikube-build/out/minikube-$*.iso out/
+	@echo "ISO build complete: out/minikube-$*.iso"
+
+# Convenience targets for remote ISO builds
+.PHONY: iso-remote-amd64 iso-remote-arm64
+iso-remote-amd64: iso-remote-x86_64
+iso-remote-arm64: iso-remote-aarch64
+
 iso_in_docker:
-	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
@@ -523,7 +542,7 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	docker run --rm -v `pwd`:/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} ./..." 
 	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
 	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
@@ -657,7 +676,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
 		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
+		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	$(if $(quiet),@echo "  GO       $@")

@@ -353,6 +353,7 @@
 	"If true, only download and cache files for later use - don't install or start anything.": "Jika true, hanya mengunduh dan menyimpan file untuk digunakan nanti - tidak menginstal atau memulai apa pun.",
 	"If true, pods might get deleted and restarted on addon enable": "Jika true, pod mungkin akan dihapus dan dimulai ulang saat addon diaktifkan.",
 	"If true, print web links to addons' documentation if using --output=list (default).": "Jika true, tampilkan tautan dokumentasi addons jika menggunakan --output=list (default).",
+	"If true, returns a detailed list of profiles.": "",
 	"If true, returns list of profiles faster by skipping validating the status of the cluster.": "Jika true, mengembalikan daftar profil lebih cepat dengan melewati validasi status klaster.",
 	"If true, will perform potentially dangerous operations. Use with discretion.": "Jika true, akan melakukan operasi yang berpotensi berbahaya. Gunakan dengan bijak.",
 	"If you are running minikube within a VM, consider using --driver=none:": "Jika anda menjalankan minikube di dalam VM, pertimbangkan untuk menggunakan --driver=none:",

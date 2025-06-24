@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"html/template"
+	"text/template"
 	"io"
 	"os"
 	"path"

@@ -96,6 +96,31 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() (retState registry.State) {
+	// Check Docker context configuration first
+	if err := oci.ValidateRemoteDockerContext(); err != nil {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_CONTEXT_INVALID",
+			Error:     errors.Wrap(err, "invalid Docker context configuration"),
+			Installed: true,
+			Healthy:   false,
+			Fix:       "Check your Docker context configuration with 'docker context ls' and 'docker context inspect'",
+			Doc:       docURL,
+		}
+	}
+
+	// Check if using remote Docker context and warn about limitations
+	if oci.IsRemoteDockerContext() {
+		klog.Infof("Using remote Docker context - some minikube features may have limitations")
+		
+		if oci.IsSSHDockerContext() {
+			klog.Infof("Using SSH Docker context - ensure SSH keys are properly configured")
+			// Additional SSH-specific validation could be added here
+			if state := validateSSHDockerSetup(); state.Error != nil {
+				return state
+			}
+		}
+	}
+
 	version, state := dockerVersionOrState()
 	if state.Error != nil {
 		return state
@@ -370,4 +395,50 @@ func dockerNotRunning(s string) string {
 	}
 
 	return ""
+}
+
+// validateSSHDockerSetup validates SSH Docker context setup
+func validateSSHDockerSetup() registry.State {
+	ctx, err := oci.GetCurrentContext()
+	if err != nil {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_SSH_CONTEXT_ERROR",
+			Error:     errors.Wrap(err, "failed to get Docker context"),
+			Installed: true,
+			Healthy:   false,
+			Doc:       docURL,
+		}
+	}
+
+	if !ctx.IsSSH {
+		return registry.State{Installed: true, Healthy: true} // Not SSH, no validation needed
+	}
+
+	// Check if ssh-agent is running (basic check)
+	if os.Getenv("SSH_AUTH_SOCK") == "" {
+		return registry.State{
+			Reason:           "PROVIDER_DOCKER_SSH_NO_AGENT",
+			Error:            errors.New("SSH Docker context requires ssh-agent to be running"),
+			Installed:        true,
+			Healthy:          false,
+			NeedsImprovement: true,
+			Fix:              "Start ssh-agent and add your SSH key: 'eval $(ssh-agent)' and 'ssh-add ~/.ssh/id_rsa'",
+			Doc:              docURL,
+		}
+	}
+
+	// Test basic SSH connectivity (optional - could be expensive)
+	// For now, just validate the context configuration
+	if err := oci.ValidateRemoteDockerContext(); err != nil {
+		return registry.State{
+			Reason:    "PROVIDER_DOCKER_SSH_INVALID",
+			Error:     errors.Wrap(err, "SSH Docker context validation failed"),
+			Installed: true,
+			Healthy:   false,
+			Fix:       "Check your SSH Docker context configuration with 'docker context inspect'",
+			Doc:       docURL,
+		}
+	}
+
+	return registry.State{Installed: true, Healthy: true}
 }

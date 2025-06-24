@@ -91,7 +91,7 @@ func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: start minikube with Kubernetes.
-	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -108,7 +108,7 @@ func validateStartWithStopK8s(ctx context.Context, t *testing.T, profile string)
 	defer PostMortemLogs(t, profile)
 
 	// docs: start minikube with no Kubernetes.
-	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
@@ -132,7 +132,7 @@ func validateStartNoK8S(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
 	// docs: start minikube with no Kubernetes.
-	args := append([]string{"start", "-p", profile, "--no-kubernetes"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)

@@ -239,7 +239,7 @@ func validateFalseCNI(ctx context.Context, t *testing.T, profile string) {
 		cr = "crio"
 	}
 
-	startArgs := []string{"start", "-p", profile, "--memory=2048", "--alsologtostderr", "--cni=false"}
+	startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--cni=false"}
 	startArgs = append(startArgs, StartArgs()...)
 
 	mkCmd := exec.CommandContext(ctx, Target(), startArgs...)

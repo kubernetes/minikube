@@ -29,7 +29,9 @@ import (
 func AdjustResourceLimits(c command.Runner) error {
 	rr, err := c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
 	if err != nil {
-		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
+		// In container environments (KIC), oom_adj adjustment may not be possible or necessary
+		klog.V(3).Infof("Skipping oom_adj adjustment (container environment or kube-apiserver not found): %v", err)
+		return nil
 	}
 	klog.Infof("apiserver oom_adj: %s", rr.Stdout.String())
 	// oom_adj is already a negative number

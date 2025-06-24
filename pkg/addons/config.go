@@ -105,6 +105,11 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:      "kubetail",
+		set:       SetBool,
+		callbacks: []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:      "kubevirt",
 		set:       SetBool,
 		callbacks: []setFn{EnableOrDisableAddon},

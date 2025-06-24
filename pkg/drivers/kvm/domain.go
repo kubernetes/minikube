@@ -31,12 +31,12 @@ import (
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting libvirt connection")
+		return nil, nil, fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "looking up domain")
+		return nil, nil, fmt.Errorf("failed looking up domain: %w", lvErr(err))
 	}
 
 	return dom, conn, nil
@@ -45,13 +45,17 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 func getConnection(connectionURI string) (*libvirt.Connect, error) {
 	conn, err := libvirt.NewConnect(connectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "connecting to libvirt socket")
+		return nil, fmt.Errorf("failed connecting to libvirt socket: %w", lvErr(err))
 	}
 
 	return conn, nil
 }
 
 func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
+	if dom == nil {
+		return fmt.Errorf("nil domain, cannot close")
+	}
+
 	if err := dom.Free(); err != nil {
 		return err
 	}
@@ -62,25 +66,31 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 	return err
 }
 
-func (d *Driver) createDomain() (*libvirt.Domain, error) {
-	// create the XML for the domain using our domainTmpl template
+// defineDomain defines the XML for the domain using our domainTmpl template
+func (d *Driver) defineDomain() (*libvirt.Domain, error) {
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
 	var domainXML bytes.Buffer
-	if err := tmpl.Execute(&domainXML, d); err != nil {
+	dlog := struct {
+		Driver
+		ConsoleLogPath string
+	}{
+		Driver:         *d,
+		ConsoleLogPath: consoleLogPath(*d),
+	}
+	if err := tmpl.Execute(&domainXML, dlog); err != nil {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting libvirt connection")
+		return nil, fmt.Errorf("failed opening libvirt connection: %w", err)
 	}
 	defer func() {
 		if _, err := conn.Close(); err != nil {
-			log.Errorf("unable to close libvirt connection: %v", err)
+			log.Errorf("failed closing libvirt connection: %v", lvErr(err))
 		}
 	}()
 
-	log.Infof("define libvirt domain using xml: %v", domainXML.String())
-	// define the domain in libvirt using the generated XML
+	log.Infof("defining domain using XML: %v", domainXML.String())
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "error defining domain xml: %s", domainXML.String())

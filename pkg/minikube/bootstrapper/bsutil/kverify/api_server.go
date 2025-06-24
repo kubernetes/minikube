@@ -30,6 +30,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
@@ -42,10 +43,53 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/retry"
 	kconst "k8s.io/minikube/third_party/kubeadm/app/constants"
 )
+
+// Certificate cache for performance optimization
+var (
+	certCache     *x509.CertPool
+	certCacheMu   sync.RWMutex
+	certCachePath string
+)
+
+// getCachedCertPool returns a cached certificate pool or loads it from disk
+func getCachedCertPool() (*x509.CertPool, error) {
+	currentPath := localpath.CACert()
+	
+	certCacheMu.RLock()
+	if certCache != nil && certCachePath == currentPath {
+		defer certCacheMu.RUnlock()
+		return certCache, nil
+	}
+	certCacheMu.RUnlock()
+	
+	// Need to load certificate
+	certCacheMu.Lock()
+	defer certCacheMu.Unlock()
+	
+	// Double-check in case another goroutine loaded it
+	if certCache != nil && certCachePath == currentPath {
+		return certCache, nil
+	}
+	
+	cert, err := os.ReadFile(currentPath)
+	if err != nil {
+		return nil, err
+	}
+	
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(cert)
+	
+	certCache = pool
+	certCachePath = currentPath
+	klog.V(3).Infof("Cached CA certificate from %s", currentPath)
+	
+	return pool, nil
+}
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
 func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
@@ -161,6 +205,37 @@ func WaitForAPIServerStatus(cr command.Runner, to time.Duration, hostname string
 	return st, err
 }
 
+// APIServerStatusFromContainer checks API server status from within the container
+// This is useful for remote Docker contexts where we can't reach the API server from the host
+func APIServerStatusFromContainer(cr command.Runner, hostname string, port int) (state.State, error) {
+	klog.Infof("Checking apiserver status from within container...")
+
+	// First check if the process is running
+	_, err := APIServerPID(cr)
+	if err != nil {
+		klog.Warningf("stopped: unable to get apiserver pid: %v", err)
+		return state.Stopped, nil
+	}
+
+	// Check health endpoint from within the container
+	url := fmt.Sprintf("https://%s:%d/healthz", hostname, port)
+	cmd := exec.Command("curl", "-k", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "5", url)
+	rr, err := cr.RunCmd(cmd)
+	if err != nil {
+		klog.Warningf("health check failed: %v", err)
+		return state.Stopped, nil
+	}
+
+	statusCode := strings.TrimSpace(rr.Stdout.String())
+	if statusCode == "200" {
+		klog.Infof("apiserver healthz check returned %s", statusCode)
+		return state.Running, nil
+	}
+
+	klog.Warningf("apiserver healthz returned status code %s", statusCode)
+	return state.Error, nil
+}
+
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	klog.Infof("Checking apiserver status ...")
@@ -237,7 +312,14 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 		return nil
 	}
 
-	err = retry.Local(check, 15*time.Second)
+	// Use optimized retry durations for faster fail-fast behavior
+	retryDuration := 10 * time.Second // Reduced from 15s for faster local checks
+	if oci.IsRemoteDockerContext() && oci.IsSSHDockerContext() {
+		retryDuration = 25 * time.Second // Reduced from 45s but still longer for SSH tunnels
+		klog.Infof("Using extended retry duration (%v) for SSH tunnel connection", retryDuration)
+	}
+
+	err = retry.Local(check, retryDuration)
 
 	// Don't propagate 'Stopped' upwards as an error message, as clients may interpret the err
 	// as an inability to get status. We need it for retry.Local, however.
@@ -251,18 +333,39 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 func apiServerHealthzNow(hostname string, port int) (state.State, error) {
 	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(hostname, fmt.Sprint(port)))
 	klog.Infof("Checking apiserver healthz at %s ...", url)
-	cert, err := os.ReadFile(localpath.CACert())
+	
+	// Fast fail for basic connectivity issues 
+	// Skip for SSH tunnel contexts where direct TCP may not work
+	skipTCPCheck := (hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1") ||
+		(oci.IsRemoteDockerContext() && oci.IsSSHDockerContext())
+	
+	if !skipTCPCheck {
+		conn, err := net.DialTimeout("tcp", net.JoinHostPort(hostname, fmt.Sprint(port)), 1*time.Second)
+		if err != nil {
+			klog.Infof("TCP connection failed, API server likely stopped: %v", err)
+			return state.Stopped, nil
+		}
+		conn.Close()
+	}
+	
+	pool, err := getCachedCertPool()
 	if err != nil {
 		klog.Infof("ca certificate: %v", err)
 		return state.Stopped, err
 	}
-	pool := x509.NewCertPool()
-	pool.AppendCertsFromPEM(cert)
 	tr := &http.Transport{
 		Proxy:           nil, // Avoid using a proxy to speak to a local host
 		TLSClientConfig: &tls.Config{RootCAs: pool},
 	}
-	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+	
+	// Use optimized timeouts for faster fail-fast behavior
+	timeout := 3 * time.Second // Reduced from 5s for faster local checks
+	if oci.IsRemoteDockerContext() && oci.IsSSHDockerContext() {
+		timeout = 8 * time.Second // Reduced from 15s but still longer for SSH tunnels
+		klog.Infof("Using extended HTTP timeout (%v) for SSH tunnel connection", timeout)
+	}
+	
+	client := &http.Client{Transport: tr, Timeout: timeout}
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {

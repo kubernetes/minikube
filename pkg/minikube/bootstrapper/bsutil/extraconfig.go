@@ -19,12 +19,15 @@ package bsutil
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"sort"
 	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -180,11 +183,59 @@ func newComponentOptions(opts config.ExtraOptionSlice, version semver.Version, f
 // optionPairsForComponent generates a map of value pairs for a k8s component
 func optionPairsForComponent(component string, cp config.Node) map[string]string {
 	if component == Apiserver {
+		// Default SANs: localhost, 127.0.0.1, and container IP
+		sans := []string{"127.0.0.1", "localhost", cp.IP}
+		
+		// For remote Docker contexts, add the remote host IP to certificate SANs
+		if oci.IsRemoteDockerContext() {
+			if remoteIP := getRemoteDockerHostIP(); remoteIP != "" && net.ParseIP(remoteIP) != nil {
+				sans = append(sans, remoteIP)
+				klog.V(2).Infof("Added remote Docker host %s to API server certificate SANs", remoteIP)
+			} else if remoteIP != "" {
+				klog.Warningf("Skipping invalid remote Docker host IP %q for certificate SANs", remoteIP)
+			}
+		}
+		
+		// Convert to quoted JSON array format
+		quotedSANs := make([]string, len(sans))
+		for i, san := range sans {
+			quotedSANs[i] = fmt.Sprintf(`"%s"`, san)
+		}
+		
 		return map[string]string{
-			"certSANs": fmt.Sprintf(`["127.0.0.1", "localhost", "%s"]`, cp.IP),
+			"certSANs": fmt.Sprintf(`[%s]`, strings.Join(quotedSANs, ", ")),
 		}
 	}
 	return nil
+}
+
+// getRemoteDockerHostIP returns the IP address of the remote Docker host for TLS contexts
+func getRemoteDockerHostIP() string {
+	ctx, err := oci.GetCurrentContext()
+	if err != nil {
+		klog.V(3).Infof("Failed to get Docker context: %v", err)
+		return ""
+	}
+	
+	if !ctx.IsRemote || ctx.Host == "" {
+		return ""
+	}
+	
+	// Parse the host URL to extract the hostname/IP
+	u, err := url.Parse(ctx.Host)
+	if err != nil {
+		klog.V(3).Infof("Failed to parse Docker host URL %q: %v", ctx.Host, err)
+		return ""
+	}
+	
+	hostname := u.Hostname()
+	if hostname == "" {
+		klog.V(3).Infof("No hostname found in Docker host URL %q", ctx.Host)
+		return ""
+	}
+	
+	klog.V(3).Infof("Extracted remote Docker host IP: %s from %s", hostname, ctx.Host)
+	return hostname
 }
 
 // kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must

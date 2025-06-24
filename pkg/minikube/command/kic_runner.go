@@ -131,12 +131,59 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 }
 
-func (k *kicRunner) StartCmd(_ *exec.Cmd) (*StartedCmd, error) {
-	return nil, fmt.Errorf("kicRunner does not support StartCmd - you could be the first to add it")
+func (k *kicRunner) StartCmd(cmd *exec.Cmd) (*StartedCmd, error) {
+	args := []string{
+		"exec",
+		"-d", // detached mode for StartCmd
+		"--privileged",
+	}
+	if cmd.Stdin != nil {
+		args = append(args, "-i")
+	}
+	// if the command is hooked to another processes's output we want a tty
+	if isTerminal(cmd.Stderr) || isTerminal(cmd.Stdout) {
+		args = append(args, "-t")
+	}
+
+	for _, env := range cmd.Env {
+		args = append(args, "-e", env)
+	}
+	
+	// append container name to docker arguments. all subsequent args
+	// appended will be passed to the container instead of docker
+	args = append(args, k.nameOrID)
+	args = append(args, cmd.Args...)
+	
+	oc := exec.Command(k.ociBin, args...)
+	oc.Stdin = cmd.Stdin
+	oc.Stdout = cmd.Stdout
+	oc.Stderr = cmd.Stderr
+	oc.Env = cmd.Env
+
+	rr := &RunResult{Args: cmd.Args}
+	sc := &StartedCmd{cmd: oc, rr: rr}
+	
+	klog.Infof("Start: %v", rr.Command())
+	
+	oc = oci.PrefixCmd(oc)
+	klog.Infof("Args: %v", oc.Args)
+	
+	err := oc.Start()
+	return sc, err
 }
 
-func (k *kicRunner) WaitCmd(_ *StartedCmd) (*RunResult, error) {
-	return nil, fmt.Errorf("kicRunner does not support WaitCmd - you could be the first to add it")
+func (k *kicRunner) WaitCmd(sc *StartedCmd) (*RunResult, error) {
+	err := sc.cmd.Wait()
+	
+	if exitError, ok := err.(*exec.ExitError); ok {
+		sc.rr.ExitCode = exitError.ExitCode()
+	}
+	
+	if err == nil {
+		return sc.rr, nil
+	}
+	
+	return sc.rr, fmt.Errorf("%s: %v", sc.rr.Command(), err)
 }
 
 func (k *kicRunner) ReadableFile(_ string) (assets.ReadableFile, error) {

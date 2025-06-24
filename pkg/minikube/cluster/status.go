@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -353,6 +355,18 @@ func GetState(sts []*Status, profile string, cc *config.ClusterConfig) State {
 	return cs
 }
 
+// isTunnelWorking checks if the SSH tunnel endpoint is accessible
+func isTunnelWorking(hostname string, port int) bool {
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(hostname, fmt.Sprintf("%d", port)), 2*time.Second)
+	if err != nil {
+		klog.V(3).Infof("Tunnel connectivity check failed: %v", err)
+		return false
+	}
+	conn.Close()
+	klog.V(3).Infof("Tunnel connectivity check passed for %s:%d", hostname, port)
+	return true
+}
+
 // NodeStatus looks up the status of a node
 func NodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 	controlPlane := n.ControlPlane
@@ -411,19 +425,41 @@ func NodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		return st, err
 	}
 
-	// Check storage
-	p, err := machine.DiskUsed(cr, "/var")
-	if err != nil {
-		klog.Errorf("failed to get storage capacity of /var: %v", err)
-		st.Host = state.Error.String()
-		return st, err
+	// Run parallel checks for better performance
+	type checkResult struct {
+		diskUsage int
+		diskErr   error
+		kubelet   state.State
 	}
-	if p >= 99 {
+	
+	resultCh := make(chan checkResult, 1)
+	
+	// Run storage and kubelet checks in parallel
+	go func() {
+		var result checkResult
+		
+		// Check storage concurrently
+		result.diskUsage, result.diskErr = machine.DiskUsed(cr, "/var")
+		
+		// Check kubelet status concurrently  
+		result.kubelet = kverify.ServiceStatus(cr, "kubelet")
+		
+		resultCh <- result
+	}()
+	
+	// Get results from parallel checks
+	result := <-resultCh
+	
+	if result.diskErr != nil {
+		klog.Errorf("failed to get storage capacity of /var: %v", result.diskErr)
+		st.Host = state.Error.String()
+		return st, result.diskErr
+	}
+	if result.diskUsage >= 99 {
 		st.Host = codeNames[InsufficientStorage]
 	}
-
-	stk := kverify.ServiceStatus(cr, "kubelet")
-	st.Kubelet = stk.String()
+	
+	st.Kubelet = result.kubelet.String()
 	if cc.ScheduledStop != nil {
 		initiationTime := time.Unix(cc.ScheduledStop.InitiationTime, 0)
 		st.TimeToStop = time.Until(initiationTime.Add(cc.ScheduledStop.Duration)).String()
@@ -459,8 +495,75 @@ func NodeStatus(api libmachine.API, cc config.ClusterConfig, n config.Node) (*St
 		st.Kubeconfig = Misconfigured
 	}
 
+	// For remote Docker contexts, adjust endpoint based on context type
+	if driver.IsKIC(cc.Driver) && oci.IsRemoteDockerContext() {
+		klog.Infof("Remote Docker context detected: SSH=%v", oci.IsSSHDockerContext())
+		
+		// Get kubeconfig endpoint for both SSH and TLS contexts
+		kcEndpoint, kcPort, err := kubeconfig.Endpoint(cc.Name, kubeconfig.PathFromEnv())
+		
+		if oci.IsSSHDockerContext() {
+			// SSH context: ensure tunnel is up before proceeding
+			if err == nil && (kcEndpoint == "localhost" || kcEndpoint == "127.0.0.1" || kcEndpoint == "::1") {
+				// Verify tunnel is actually working before using it
+				if !isTunnelWorking(kcEndpoint, kcPort) {
+					klog.Warningf("SSH tunnel endpoint %s:%d not accessible, attempting to establish tunnel", kcEndpoint, kcPort)
+					tunnelEndpoint, cleanup, setupErr := oci.SetupAPIServerTunnel(cc.APIServerPort)
+					if setupErr != nil {
+						klog.Errorf("Failed to setup API server tunnel: %v", setupErr)
+						// Fall back to container check
+						sta, err := kverify.APIServerStatusFromContainer(cr, hostname, port)
+						if err != nil {
+							klog.Errorln("Error checking API server from container:", err)
+							st.APIServer = state.Error.String()
+						} else {
+							klog.Infof("API server status from container: %s", sta.String())
+							st.APIServer = sta.String()
+						}
+						return st, nil
+					}
+					if tunnelEndpoint != "" && cleanup != nil {
+						// Note: We don't defer cleanup here since status is a quick check
+						// The tunnel will be managed by the tunnel manager's lifecycle
+						klog.Infof("Successfully established SSH tunnel: %s", tunnelEndpoint)
+						// Re-get endpoint after tunnel setup
+						kcEndpoint, kcPort, err = kubeconfig.Endpoint(cc.Name, kubeconfig.PathFromEnv())
+						if err != nil {
+							klog.Errorf("Failed to get kubeconfig endpoint after tunnel setup: %v", err)
+							st.APIServer = state.Error.String()
+							return st, nil
+						}
+					}
+				}
+				hostname = kcEndpoint
+				port = kcPort
+				klog.Infof("Using SSH tunnel endpoint: %s:%d", hostname, port)
+			} else {
+				klog.Infof("No tunnel endpoint found (got %s:%d), checking API server from container", hostname, port)
+				sta, err := kverify.APIServerStatusFromContainer(cr, hostname, port)
+				if err != nil {
+					klog.Errorln("Error checking API server from container:", err)
+					st.APIServer = state.Error.String()
+				} else {
+					klog.Infof("API server status from container: %s", sta.String())
+					st.APIServer = sta.String()
+				}
+				return st, nil
+			}
+		} else {
+			// TLS context: use remote endpoint from kubeconfig
+			if err == nil {
+				hostname = kcEndpoint
+				port = kcPort
+				klog.Infof("Using TLS remote endpoint: %s:%d", hostname, port)
+			} else {
+				klog.Warningf("Failed to get kubeconfig endpoint for TLS context: %v", err)
+			}
+		}
+	}
+
 	sta, err := kverify.APIServerStatus(cr, hostname, port)
-	klog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+	klog.Infof("%s apiserver status = %s (err=%v)", name, sta, err)
 
 	if err != nil {
 		klog.Errorln("Error apiserver status:", err)
