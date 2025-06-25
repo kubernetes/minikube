@@ -182,7 +182,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Uint16(mountPortFlag, defaultMountPort, mountPortDescription)
 	startCmd.Flags().String(mountTypeFlag, defaultMountType, mountTypeDescription)
 	startCmd.Flags().String(mountUID, defaultMountUID, mountUIDDescription)
-	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
+	startCmd.Flags().StringSlice(config.AddonListFlag, nil, "Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "DEPRECATED: Replaced by --cni")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "DEPRECATED: Replaced by --cni=bridge")
