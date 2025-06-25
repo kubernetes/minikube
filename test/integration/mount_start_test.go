@@ -93,7 +93,7 @@ func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
 	// We have to increment this because if you have two mounts with the same port, when you kill one cluster the mount will break for the other
 	mountStartPort++
 
-	args := []string{"start", "-p", profile, "--memory=2048", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID, "--no-kubernetes"}
+	args := []string{"start", "-p", profile, "--memory=3072", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID, "--no-kubernetes"}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {

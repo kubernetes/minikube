@@ -53,10 +53,12 @@ import (
 )
 
 const (
-	isoFilename    = "boot2docker.iso"
-	pidFileName    = "vfkit.pid"
-	sockFilename   = "vfkit.sock"
-	defaultSSHUser = "docker"
+	isoFilename     = "boot2docker.iso"
+	pidFileName     = "vfkit.pid"
+	sockFilename    = "vfkit.sock"
+	serialFileName  = "serial.log"
+	efiVarsFileName = "vfkit.efivars"
+	defaultSSHUser  = "docker"
 )
 
 // Driver is the machine driver for vfkit (Virtualization.framework)
@@ -67,7 +69,6 @@ type Driver struct {
 	DiskSize       int
 	CPU            int
 	Memory         int
-	Cmdline        string
 	ExtraDisks     int
 	Network        string        // "", "nat", "vmnet-shared"
 	MACAddress     string        // For network=nat, network=""
@@ -189,12 +190,6 @@ func (d *Driver) Create() error {
 	if err := b2dutils.CopyIsoToMachineDir(d.Boot2DockerURL, d.MachineName); err != nil {
 		return err
 	}
-	isoPath := d.ResolveStorePath(isoFilename)
-
-	log.Info("Extracting Kernel...")
-	if err := d.extractKernel(isoPath); err != nil {
-		return err
-	}
 
 	log.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
@@ -256,9 +251,10 @@ func (d *Driver) startVfkit(socketPath string) error {
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
 		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()))
-	var isoPath = filepath.Join(machineDir, isoFilename)
+
+	efiVarsPath := d.ResolveStorePath(efiVarsFileName)
 	startCmd = append(startCmd,
-		"--device", fmt.Sprintf("virtio-blk,path=%s", isoPath))
+		"--bootloader", fmt.Sprintf("efi,variable-store=%s,create", efiVarsPath))
 
 	if socketPath != "" {
 		// The guest will be able to access other guests in the vmnet network.
@@ -273,20 +269,21 @@ func (d *Driver) startVfkit(socketPath string) error {
 	startCmd = append(startCmd,
 		"--device", "virtio-rng")
 
+	var isoPath = filepath.Join(machineDir, isoFilename)
 	startCmd = append(startCmd,
-		"--kernel", d.ResolveStorePath("bzimage"))
+		"--device", fmt.Sprintf("virtio-blk,path=%s", isoPath))
+
 	startCmd = append(startCmd,
-		"--kernel-cmdline", d.Cmdline)
-	startCmd = append(startCmd,
-		"--initrd", d.ResolveStorePath("initrd"))
+		"--device", fmt.Sprintf("virtio-blk,path=%s", d.diskPath()))
 
 	for i := 0; i < d.ExtraDisks; i++ {
 		startCmd = append(startCmd,
 			"--device", fmt.Sprintf("virtio-blk,path=%s", pkgdrivers.ExtraDiskPath(d.BaseDriver, i)))
 	}
 
+	serialPath := d.ResolveStorePath(serialFileName)
 	startCmd = append(startCmd,
-		"--device", fmt.Sprintf("virtio-blk,path=%s", d.diskPath()))
+		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", serialPath))
 
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
@@ -408,22 +405,6 @@ func (d *Driver) Restart() error {
 		}
 	}
 	return d.Start()
-}
-
-func (d *Driver) extractKernel(isoPath string) error {
-	for _, f := range []struct {
-		pathInIso string
-		destPath  string
-	}{
-		{"/boot/bzimage", "bzimage"},
-		{"/boot/initrd", "initrd"},
-	} {
-		fullDestPath := d.ResolveStorePath(f.destPath)
-		if err := pkgdrivers.ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (d *Driver) killVfkit() error {

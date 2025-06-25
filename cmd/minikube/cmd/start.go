@@ -1098,8 +1098,8 @@ func suggestMemoryAllocation(sysLimit, containerLimit, nodes int) int {
 		return mem
 	}
 
-	const fallback = 2200
-	maximum := 6000
+	const fallback = 3072
+	maximum := 6144
 
 	if sysLimit > 0 && fallback > sysLimit {
 		return sysLimit
