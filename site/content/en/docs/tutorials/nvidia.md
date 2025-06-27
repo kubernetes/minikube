@@ -30,7 +30,9 @@ date: 2018-01-02
   sudo sysctl -p
   ```
 
-- Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on your host machine
+- Install NVIDIA support using one of:
+  - Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on your host machine
+  - Enable [NVIDIA CDI resources](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/cdi-support.html) on your host machine.
 
 - Configure Docker:
   ```shell
@@ -45,10 +47,15 @@ date: 2018-01-02
   ```
   This will make sure minikube does any required setup or addon installs now that the nvidia runtime is available.
   
-- Start minikube:
-  ```shell
-  minikube start --driver docker --container-runtime docker --gpus all
-  ```
+- Start minikube with one of:
+  - The NVIDIA Container Toolkit
+    ```shell
+    minikube start --driver docker --container-runtime docker --gpus all
+    ```
+  - NVIDIA CDI resources
+    ```shell
+    minikube start --driver docker --container-runtime docker --gpus nvidia.com
+    ```
 
 {{% /tab %}}
 {{% tab none %}}
