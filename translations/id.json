@@ -186,6 +186,7 @@
 	"Enable addons. see `minikube addons list` for a list of valid addon names.": "Aktifkan addons. gunakan `minikube addons list` untuk melihat daftar addon yang valid",
 	"Enable experimental NVIDIA GPU support in minikube": "Aktifkan dukungan GPU NVIDIA eksperimental di minikube",
 	"Enable host resolver for NAT DNS requests (virtualbox driver only)": "Aktifkan host resolver untuk permintaan DNS NAT (khusus driver virtualbox)",
+	"Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.": "",
 	"Enable or disable a minikube addon": "Aktfikan atau nonaktifkan minikube addon",
 	"Enable proxy for NAT DNS requests (virtualbox driver only)": "Aktifkan proxy untuk permintaan DNS NAT (khusus driver virtualbox)",
 	"Enabled addons: {{.addons}}": "Aktifkan addons: {{.addons}}",
