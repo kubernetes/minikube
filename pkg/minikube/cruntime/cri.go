@@ -184,7 +184,7 @@ func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 	return nil
 }
 
-// criCRIContainers kills a list of containers using crictl
+// killCRIContainers kills a list of containers using crictl
 func killCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
 		return nil
