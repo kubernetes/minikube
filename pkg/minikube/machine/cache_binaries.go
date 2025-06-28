@@ -17,8 +17,10 @@ limitations under the License.
 package machine
 
 import (
+	"os/exec"
 	"path"
 	"runtime"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -27,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
 
 // isExcluded returns whether `binary` is expected to be excluded, based on `excludedBinaries`.
@@ -42,9 +45,70 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 	return false
 }
 
+// getTargetArchitecture returns the target architecture for binary downloads.
+// For remote Docker contexts, it queries the remote daemon's architecture.
+// For local contexts, it uses the local machine's architecture.
+func getTargetArchitecture() string {
+	// Check if we're using a remote Docker context
+	if oci.IsRemoteDockerContext() {
+		klog.Infof("Detected remote Docker context, querying remote daemon architecture")
+		
+		// Directly get the architecture from Docker daemon
+		dockerArch := getDockerArchitecture()
+		if dockerArch != "" {
+			klog.Infof("Using remote Docker daemon architecture: %s", dockerArch)
+			return dockerArch
+		}
+		
+		klog.Warningf("Could not determine remote architecture, falling back to local architecture")
+	}
+	
+	return runtime.GOARCH
+}
+
+// getDockerArchitecture queries Docker daemon for its architecture and converts to Go format
+func getDockerArchitecture() string {
+	// Use direct Docker call to get the architecture
+	dockerArch, err := getDockerArchitectureDirect()
+	if err != nil {
+		klog.Warningf("Failed to get Docker architecture directly: %v", err)
+		return ""
+	}
+	
+	// Convert Docker architecture names to Go architecture names
+	switch dockerArch {
+	case "x86_64":
+		return "amd64"
+	case "aarch64", "arm64":
+		return "arm64"
+	case "armv7l":
+		return "arm"
+	default:
+		klog.Warningf("Unknown Docker architecture %q, falling back to local architecture", dockerArch)
+		return runtime.GOARCH
+	}
+}
+
+// getDockerArchitectureDirect directly queries Docker for architecture info
+func getDockerArchitectureDirect() (string, error) {
+	cmd := exec.Command("docker", "system", "info", "--format", "{{.Architecture}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", errors.Wrap(err, "running docker system info")
+	}
+	
+	arch := strings.TrimSpace(string(output))
+	klog.Infof("Docker daemon architecture: %s", arch)
+	return arch, nil
+}
+
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
 func CacheBinariesForBootstrapper(version string, excludeBinaries []string, binariesURL string) error {
 	binaries := bootstrapper.GetCachedBinaryList()
+	
+	// Get the target architecture (local or remote)
+	targetArch := getTargetArchitecture()
+	klog.Infof("Caching binaries for architecture: %s", targetArch)
 
 	var g errgroup.Group
 	for _, bin := range binaries {
@@ -53,7 +117,7 @@ func CacheBinariesForBootstrapper(version string, excludeBinaries []string, bina
 		}
 		bin := bin // https://go.dev/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH, binariesURL); err != nil {
+			if _, err := download.Binary(bin, version, "linux", targetArch, binariesURL); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil

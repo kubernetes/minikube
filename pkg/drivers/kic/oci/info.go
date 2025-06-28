@@ -75,6 +75,36 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 	return *cachedSysInfo, err
 }
 
+// DaemonArch returns the architecture of the OCI daemon
+func DaemonArch(ociBin string) (string, error) {
+	if ociBin == Podman {
+		p, err := podmanSystemInfo()
+		if err != nil {
+			return "", errors.Wrap(err, "getting podman system info")
+		}
+		return normalizeArch(p.Host.Arch), nil
+	}
+	d, err := dockerSystemInfo()
+	if err != nil {
+		return "", errors.Wrap(err, "getting docker system info")
+	}
+	return normalizeArch(d.Architecture), nil
+}
+
+// normalizeArch converts architecture names to Go's GOARCH format
+func normalizeArch(arch string) string {
+	switch arch {
+	case "x86_64":
+		return "amd64"
+	case "aarch64":
+		return "arm64"
+	case "armhf":
+		return "arm"
+	default:
+		return arch
+	}
+}
+
 // dockerSysInfo represents the output of docker system info --format '{{json .}}'
 type dockerSysInfo struct {
 	ID                string      `json:"ID"`

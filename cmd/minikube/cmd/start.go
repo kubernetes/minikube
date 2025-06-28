@@ -41,8 +41,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"github.com/shirou/gopsutil/v3/cpu"
-	gopshost "github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/cpu"
+	gopshost "github.com/shirou/gopsutil/v4/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/text/cases"
@@ -113,10 +113,11 @@ func init() {
 
 // startCmd represents the start command
 var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Starts a local Kubernetes cluster",
-	Long:  "Starts a local Kubernetes cluster",
-	Run:   runStart,
+	Use:     "start",
+	Aliases: []string{"create"},
+	Short:   "Starts a local Kubernetes cluster",
+	Long:    "Starts a local Kubernetes cluster",
+	Run:     runStart,
 }
 
 // platform generates a user-readable platform message
@@ -135,7 +136,12 @@ func platform() string {
 
 	vsys, vrole, err := gopshost.Virtualization()
 	if err != nil {
-		klog.Warningf("gopshost.Virtualization returned error: %v", err)
+		// Only log if it's a real error, not just "not implemented yet"
+		if !strings.Contains(err.Error(), "not implemented yet") {
+			klog.Warningf("gopshost.Virtualization returned error: %v", err)
+		} else {
+			klog.V(3).Infof("Virtualization detection not implemented for this platform (harmless)")
+		}
 	} else {
 		klog.Infof("virtualization: %s %s", vsys, vrole)
 	}
@@ -728,6 +734,14 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+		return ds, nil, true
+	}
+
+	// Check for remote Docker context and auto-select docker driver
+	if oci.IsRemoteDockerContext() {
+		ds := driver.Status("docker")
+		out.Step(style.Sparkle, `Detected a remote Docker context, using the {{.driver}} driver`, out.V{"driver": ds.String()})
+		out.Infof("For remote Docker connections, you may need to run 'minikube tunnel-ssh' for API server access")
 		return ds, nil, true
 	}
 

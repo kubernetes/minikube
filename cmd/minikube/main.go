@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -49,13 +48,10 @@ import (
 
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	_ "k8s.io/minikube/pkg/provision"
-
-	dconfig "github.com/docker/cli/cli/config"
-	ddocker "github.com/docker/cli/cli/context/docker"
-	dstore "github.com/docker/cli/cli/context/store"
 )
 
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
@@ -74,6 +70,14 @@ func main() {
 	defer klog.Flush()
 
 	propagateDockerContextToEnv()
+
+	// Set up cleanup handlers for SSH tunnels and TLS paths
+	defer func() {
+		if oci.IsRemoteDockerContext() {
+			oci.CleanupAllTunnels()
+			oci.CleanupTLSPaths()
+		}
+	}()
 
 	// Don't parse flags when running as kubectl
 	_, callingCmd := filepath.Split(os.Args[0])
@@ -262,47 +266,29 @@ func propagateDockerContextToEnv() {
 		// Already explicitly set
 		return
 	}
-	currentContext := os.Getenv("DOCKER_CONTEXT")
-	if currentContext == "" {
-		dockerConfigDir := dconfig.Dir()
-		if _, err := os.Stat(dockerConfigDir); err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				klog.Warning(err)
-			}
-			return
-		}
-		cf, err := dconfig.Load(dockerConfigDir)
-		if err != nil {
-			klog.Warningf("Unable to load the current Docker config from %q: %v", dockerConfigDir, err)
-			return
-		}
-		currentContext = cf.CurrentContext
-	}
-	if currentContext == "" {
-		return
-	}
-	storeConfig := dstore.NewConfig(
-		func() interface{} { return &ddocker.EndpointMeta{} },
-		dstore.EndpointTypeGetter(ddocker.DockerEndpoint, func() interface{} { return &ddocker.EndpointMeta{} }),
-	)
-	st := dstore.New(dconfig.ContextStoreDir(), storeConfig)
-	md, err := st.GetMetadata(currentContext)
+
+	// Use the new Docker context helper
+	ctx, err := oci.GetCurrentContext()
 	if err != nil {
-		klog.Warningf("Unable to resolve the current Docker CLI context %q: %v", currentContext, err)
-		klog.Warningf("Try running `docker context use %s` to resolve the above error", currentContext)
+		klog.Warningf("Unable to get current Docker context: %v", err)
 		return
 	}
-	dockerEP, ok := md.Endpoints[ddocker.DockerEndpoint]
-	if !ok {
-		// No warning (the context is not for Docker)
-		return
+
+	// Don't override DOCKER_HOST - let Docker CLI handle context natively
+	// Log information about remote Docker usage
+	if ctx.IsRemote {
+		klog.V(2).Infof("Using remote Docker context: %s (host: %s)", ctx.Name, ctx.Host)
+		if ctx.IsSSH {
+			klog.V(3).Infof("Docker context uses SSH connection")
+		}
 	}
-	dockerEPMeta, ok := dockerEP.(ddocker.EndpointMeta)
-	if !ok {
-		klog.Warningf("expected docker.EndpointMeta, got %T", dockerEP)
-		return
-	}
-	if dockerEPMeta.Host != "" {
-		os.Setenv("DOCKER_HOST", dockerEPMeta.Host)
+
+	// Handle TLS configuration for remote Docker
+	if ctx.IsRemote && !ctx.IsSSH {
+		if ctx.TLSData != nil {
+			klog.V(3).Infof("Using TLS-secured remote Docker daemon at %s", ctx.Host)
+		} else {
+			klog.Warningf("Remote Docker context %q may require TLS certificates", ctx.Name)
+		}
 	}
 }

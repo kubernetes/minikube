@@ -346,6 +346,25 @@ else
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
+# Build ISO on remote frank server (169.254.1.1)
+.PHONY: iso-remote-%
+iso-remote-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause ## Build ISO on remote frank server
+	@echo "Building minikube ISO on frank (169.254.1.1) for architecture: $*"
+	@echo "Building auto-pause binary locally first..."
+	@make deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause
+	@echo "Syncing source code to frank..."
+	@rsync -av --delete --exclude 'out/' --exclude '.git/' --exclude 'test-results/' --exclude '.idea/' --exclude '*.swp' . 169.254.1.1:~/minikube-build/
+	@echo "Building ISO on frank (auto-pause already built)..."
+	@ssh 169.254.1.1 "cd ~/minikube-build && export GO111MODULE=on && touch deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/usr/bin/auto-pause && make minikube-iso-$* HOSTCC=/usr/bin/gcc-13 HOSTCXX=/usr/bin/g++-13"
+	@echo "Copying ISO back from frank..."
+	@scp 169.254.1.1:~/minikube-build/out/minikube-$*.iso out/
+	@echo "ISO build complete: out/minikube-$*.iso"
+
+# Convenience targets for remote ISO builds
+.PHONY: iso-remote-amd64 iso-remote-arm64
+iso-remote-amd64: iso-remote-x86_64
+iso-remote-arm64: iso-remote-aarch64
+
 iso_in_docker:
 	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
