@@ -20,7 +20,7 @@ minikube start [flags]
 ### Options
 
 ```
-      --addons minikube addons list       Enable addons. see minikube addons list for a list of valid addon names.
+      --addons minikube addons list       Enable one or more addons, in a comma-separated format. See minikube addons list for a list of valid addon names.
       --apiserver-ips ipSlice             A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine (default [])
       --apiserver-name string             The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine (default "minikubeCA")
       --apiserver-names strings           A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
