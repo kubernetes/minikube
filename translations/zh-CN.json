@@ -241,6 +241,7 @@
 	"Enable experimental NVIDIA GPU support in minikube": "在 minikube 中启用实验性 NVIDIA GPU 支持",
 	"Enable host resolver for NAT DNS requests (virtualbox driver only)": "为 NAT DNS 请求启用主机解析器（仅限 virtualbox 驱动程序）",
 	"Enable istio needs {{.minMem}} MB of memory and {{.minCpus}} CPUs.": "启用 istio 需要至少 {{.minMem}} MB 内存 以及 {{.minCpus}} CPUs",
+	"Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.": "",
 	"Enable or disable a minikube addon": "启用或禁用 minikube 插件",
 	"Enable proxy for NAT DNS requests (virtualbox driver only)": "为 NAT DNS 请求启用代理（仅限 virtualbox 驱动程序）",
 	"Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \\\"--network-plugin=cni\\": "启用默认 CNI 插件 (/etc/cni/net.d/k8s.conf)。与“--network-plugin=cni”结合使用",
