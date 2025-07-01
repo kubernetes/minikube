@@ -221,7 +221,7 @@ ii  rsync                           3.2.7-0ubuntu0.22.04.4                  amd6
 ii  sed                             4.8-1ubuntu2                            amd64        GNU stream editor for filtering/transforming text
 ii  sensible-utils                  0.0.17                                  all          Utilities for sensible alternative selection
 ii  socat                           1.7.4.1-3ubuntu4                        amd64        multipurpose relay for bidirectional data transfer
-ii  sudo                            1.9.9-1ubuntu2.4                        amd64        Provide limited super user privileges to specific users
+ii  sudo                            1.9.9-1ubuntu2.5                        amd64        Provide limited super user privileges to specific users
 ii  systemd                         249.11-0ubuntu3.16                      amd64        system and service manager
 ii  sysvinit-utils                  3.01-1ubuntu1                           amd64        System-V-like utilities
 ii  tar                             1.34+dfsg-1ubuntu0.1.22.04.2            amd64        GNU version of the tar archiving utility
