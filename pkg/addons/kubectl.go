@@ -45,6 +45,10 @@ func kubectlCommand(ctx context.Context, cc *config.ClusterConfig, files []strin
 	if force {
 		args = append(args, "--force")
 	}
+	if enable {
+		// Skip validation for addon apply to avoid OpenAPI download issues
+		args = append(args, "--validate=false")
+	}
 	if !enable {
 		// --ignore-not-found just ignores when we try to delete a resource that is already gone,
 		// like a completed job with a ttlSecondsAfterFinished

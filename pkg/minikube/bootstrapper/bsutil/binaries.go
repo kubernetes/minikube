@@ -35,16 +35,91 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 )
+
+// getTargetArchitecture returns the target architecture for binary downloads.
+// For remote Docker contexts, it queries the remote daemon's architecture.
+// For local contexts, it uses the local machine's architecture.
+func getTargetArchitecture() string {
+	// Check if we're using a remote Docker context
+	if oci.IsRemoteDockerContext() {
+		klog.Infof("Detected remote Docker context, querying remote daemon architecture")
+
+		// Get Docker daemon architecture directly
+		dockerArch, err := getDockerArchitectureDirect()
+		if err != nil {
+			klog.Warningf("Failed to get Docker architecture directly, falling back to local architecture: %v", err)
+			return runtime.GOARCH
+		}
+
+		// Convert Docker architecture names to Go architecture names
+		switch dockerArch {
+		case "x86_64":
+			return "amd64"
+		case "aarch64", "arm64":
+			return "arm64"
+		case "armv7l":
+			return "arm"
+		default:
+			klog.Warningf("Unknown Docker architecture %q, falling back to local architecture", dockerArch)
+			return runtime.GOARCH
+		}
+	}
+
+	return runtime.GOARCH
+}
+
+// getDockerArchitectureDirect directly queries Docker for architecture info
+func getDockerArchitectureDirect() (string, error) {
+	cmd := exec.Command("docker", "system", "info", "--format", "{{.Architecture}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", errors.Wrap(err, "running docker system info")
+	}
+
+	arch := strings.TrimSpace(string(output))
+	klog.Infof("Docker daemon architecture: %s", arch)
+	return arch, nil
+}
 
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager, binariesURL string) error {
+	// Get the target architecture (local or remote)
+	targetArch := getTargetArchitecture()
+	klog.Infof("Target architecture for binaries: %s", targetArch)
+
+	// Check if binaries exist and are the correct architecture
 	ok, err := binariesExist(cfg, c)
-	if err == nil && ok {
-		klog.Info("Found k8s binaries, skipping transfer")
+	if err == nil && ok && !oci.IsRemoteDockerContext() {
+		// For local contexts, trust existing binaries
+		klog.Info("Found k8s binaries for local context, skipping transfer")
 		return nil
 	}
-	klog.Infof("Didn't find k8s binaries: %v\nInitiating transfer...", err)
+
+	if err == nil && ok && oci.IsRemoteDockerContext() {
+		// For remote contexts, verify architecture of existing binaries
+		klog.Info("Found k8s binaries, but using remote context - verifying architecture...")
+		needRedownload := false
+
+		// Check if we can run kubelet --version to verify it's the right architecture
+		dir := binRoot(cfg.KubernetesVersion)
+		kubeletPath := path.Join(dir, "kubelet")
+		rr, err := c.RunCmd(exec.Command("sudo", kubeletPath, "--version"))
+		if err != nil {
+			klog.Warningf("Existing kubelet binary failed to run (likely wrong architecture): %v", err)
+			needRedownload = true
+		} else {
+			klog.Infof("Existing kubelet works: %s", rr.Stdout.String())
+		}
+
+		if !needRedownload {
+			return nil
+		}
+		klog.Info("Need to re-download binaries for correct architecture")
+	}
+
+	klog.Infof("Didn't find k8s binaries or need correct architecture: %v\nInitiating transfer...", err)
 
 	dir := binRoot(cfg.KubernetesVersion)
 	_, err = c.RunCmd(exec.Command("sudo", "mkdir", "-p", dir))
@@ -52,11 +127,13 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 		return err
 	}
 
+	klog.Infof("Transferring binaries for architecture: %s", targetArch)
+
 	var g errgroup.Group
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
-			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH, binariesURL)
+			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", targetArch, binariesURL)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}

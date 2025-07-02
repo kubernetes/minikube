@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -38,6 +39,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -618,7 +621,19 @@ func (r *Docker) configureDocker(driver string) error {
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(cc config.ClusterConfig) error {
-	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
+	// Get target architecture for preload
+	arch := runtime.GOARCH
+	if driver.IsKIC(cc.Driver) && oci.IsRemoteDockerContext() {
+		// For remote Docker contexts, use the Docker daemon's architecture
+		if daemonArch, err := oci.DaemonArch(oci.Docker); err != nil {
+			klog.Warningf("Failed to detect Docker daemon architecture, using local arch: %v", err)
+		} else {
+			arch = daemonArch
+			klog.Infof("Using Docker daemon architecture for preload: %s", arch)
+		}
+	}
+
+	if !download.PreloadExistsWithArch(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver, arch) {
 		return nil
 	}
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
@@ -639,7 +654,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 		klog.Infof("error saving reference store: %v", err)
 	}
 
-	tarballPath := download.TarballPath(k8sVersion, cRuntime)
+	tarballPath := download.TarballPathWithArch(k8sVersion, cRuntime, arch)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
 	dest := path.Join(targetDir, targetName)

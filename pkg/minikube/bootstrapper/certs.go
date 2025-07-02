@@ -151,7 +151,7 @@ func SetupCerts(k8s config.ClusterConfig, n config.Node, pcpCmd command.Runner, 
 		// generate kubeconfig for control-plane node
 		kcs := &kubeconfig.Settings{
 			ClusterName:          n.Name,
-			ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(n.Port))),
+			ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(n.Port))),
 			ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
 			ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
 			CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),

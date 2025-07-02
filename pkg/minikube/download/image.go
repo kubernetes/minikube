@@ -35,6 +35,7 @@ import (
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -43,12 +44,16 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-var (
-	defaultPlatform = v1.Platform{
-		Architecture: runtime.GOARCH,
-		OS:           "linux",
+// GetDockerDaemonArch returns the architecture of the Docker daemon
+func GetDockerDaemonArch() string {
+	// Try to get the Docker daemon architecture if using Docker
+	daemonArch, err := oci.DaemonArch(oci.Docker)
+	if err != nil {
+		klog.V(3).Infof("Failed to detect Docker daemon architecture, using local arch: %v", err)
+		return runtime.GOARCH
 	}
-)
+	return daemonArch
+}
 
 // imagePathInCache returns path in local cache directory
 func imagePathInCache(img string) string {
@@ -101,7 +106,7 @@ func ImageExistsInDaemon(img string) bool {
 	return true
 }
 
-// isImageCorrectArch returns true if the image arch is the same as the binary
+// isImageCorrectArch returns true if the image arch is the same as the Docker daemon's
 // arch. This is needed to resolve
 // https://github.com/kubernetes/minikube/pull/19205
 func isImageCorrectArch(img string) (bool, error) {
@@ -117,7 +122,8 @@ func isImageCorrectArch(img string) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get config for %s: %v", img, err)
 	}
-	return cfg.Architecture == runtime.GOARCH, nil
+	// Use Docker daemon architecture instead of runtime.GOARCH
+	return cfg.Architecture == GetDockerDaemonArch(), nil
 }
 
 // ImageToCache downloads img (if not present in cache) and writes it to the local cache directory
@@ -157,7 +163,12 @@ func ImageToCache(img string) error {
 		return errors.Wrap(err, "parsing tag")
 	}
 	klog.V(3).Infof("Getting image %v", ref)
-	i, err := remote.Image(ref, remote.WithPlatform(defaultPlatform))
+	// Use Docker daemon architecture if available
+	platform := v1.Platform{
+		Architecture: GetDockerDaemonArch(),
+		OS:           "linux",
+	}
+	i, err := remote.Image(ref, remote.WithPlatform(platform))
 	if err != nil {
 		if strings.Contains(err.Error(), "GitHub Docker Registry needs login") {
 			ErrGithubNeedsLogin := errors.New(err.Error())
@@ -229,11 +240,16 @@ func ImageToCache(img string) error {
 // GHKicbaseTarballToCache try to download the tarball of kicbase from github release.
 // This is the last resort, in case of all docker registry is not available.
 func GHKicbaseTarballToCache(kicBaseVersion string) (string, error) {
+	return GHKicbaseTarballToCacheForArch(kicBaseVersion, runtime.GOARCH)
+}
+
+// GHKicbaseTarballToCacheForArch downloads the kicbase tarball for a specific architecture
+func GHKicbaseTarballToCacheForArch(kicBaseVersion string, arch string) (string, error) {
 	imageName := fmt.Sprintf("kicbase/stable:%s", kicBaseVersion)
 	f := imagePathInCache(imageName)
 	fileLock := f + ".lock"
 
-	kicbaseArch := runtime.GOARCH
+	kicbaseArch := arch
 	if kicbaseArch == "arm" {
 		kicbaseArch = "armv7"
 	}
@@ -309,7 +325,7 @@ func CacheToDaemon(img string) (string, error) {
 		return "", err
 	}
 
-	platform := fmt.Sprintf("linux/%s", runtime.GOARCH)
+	platform := fmt.Sprintf("linux/%s", GetDockerDaemonArch())
 	cmd := exec.Command("docker", "pull", "--platform", platform, "--quiet", img)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		klog.Warningf("failed to pull image digest (expected if offline): %s: %v", output, err)

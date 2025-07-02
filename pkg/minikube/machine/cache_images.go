@@ -37,6 +37,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v2"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -96,7 +97,7 @@ func LoadCachedImages(cc *config.ClusterConfig, runner command.Runner, imgs []st
 
 	var imgClient *client.Client
 	if cr.Name() == "Docker" {
-		imgClient, err = client.NewClientWithOpts(client.FromEnv) // image client
+		imgClient, err = createDockerClient() // image client
 		if err != nil {
 			klog.Infof("couldn't get a local image daemon which might be ok: %v", err)
 		}
@@ -990,4 +991,22 @@ func PushImages(images []string, profile *config.Profile) error {
 	klog.Infof("succeeded pushing in: %s", strings.Join(succeeded, " "))
 	klog.Infof("failed pushing in: %s", strings.Join(failed, " "))
 	return nil
+}
+
+// createDockerClient creates a Docker client that respects remote Docker contexts
+func createDockerClient() (*client.Client, error) {
+	// Get context-aware environment variables
+	env, err := oci.GetContextEnvironment()
+	if err != nil {
+		klog.V(3).Infof("Failed to get context environment, using default: %v", err)
+		return client.NewClientWithOpts(client.FromEnv)
+	}
+
+	// Apply the context environment to this process
+	for key, value := range env {
+		os.Setenv(key, value)
+	}
+
+	// Create client with the updated environment
+	return client.NewClientWithOpts(client.FromEnv)
 }

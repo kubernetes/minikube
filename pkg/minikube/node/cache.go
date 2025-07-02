@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"strings"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/detect"
 
 	"github.com/pkg/errors"
@@ -52,14 +53,28 @@ const (
 // BeginCacheKubernetesImages caches images required for Kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string, driverName string) {
 	// TODO: remove imageRepository check once #7695 is fixed
-	if imageRepository == "" && download.PreloadExists(k8sVersion, cRuntime, driverName) {
-		klog.Info("Caching tarball of preloaded images")
-		err := download.Preload(k8sVersion, cRuntime, driverName)
-		if err == nil {
-			klog.Infof("Finished verifying existence of preloaded tar for %s on %s", k8sVersion, cRuntime)
-			return // don't cache individual images if preload is successful.
+	if imageRepository == "" {
+		// Detect target architecture for Docker driver
+		arch := runtime.GOARCH
+		if driver.IsDocker(driverName) {
+			if daemonArch, err := oci.DaemonArch(oci.Docker); err != nil {
+				klog.Warningf("Failed to detect Docker daemon architecture, using local arch: %v", err)
+			} else {
+				arch = daemonArch
+				klog.Infof("Detected Docker daemon architecture for preload: %s", arch)
+			}
 		}
-		klog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
+
+		// Check for architecture-specific preload
+		if download.PreloadExistsWithArch(k8sVersion, cRuntime, driverName, arch) {
+			klog.Info("Caching tarball of preloaded images")
+			err := download.PreloadWithArch(k8sVersion, cRuntime, driverName, arch)
+			if err == nil {
+				klog.Infof("Finished verifying existence of preloaded tar for %s on %s (%s)", k8sVersion, cRuntime, arch)
+				return // don't cache individual images if preload is successful.
+			}
+			klog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
+		}
 	}
 
 	if !viper.GetBool(cacheImages) {
@@ -109,7 +124,18 @@ func CacheKubectlBinary(k8sVersion, binaryURL string) (string, error) {
 // doCacheBinaries caches Kubernetes binaries in the foreground
 func doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL string) error {
 	existingBinaries := constants.KubernetesReleaseBinaries
-	if !download.PreloadExists(k8sVersion, containerRuntime, driverName) {
+
+	// Detect target architecture for Docker driver
+	arch := runtime.GOARCH
+	if driver.IsDocker(driverName) {
+		if daemonArch, err := oci.DaemonArch(oci.Docker); err != nil {
+			klog.Warningf("Failed to detect Docker daemon architecture, using local arch: %v", err)
+		} else {
+			arch = daemonArch
+		}
+	}
+
+	if !download.PreloadExistsWithArch(k8sVersion, containerRuntime, driverName, arch) {
 		existingBinaries = nil
 	}
 	return machine.CacheBinariesForBootstrapper(k8sVersion, existingBinaries, binariesURL)
@@ -137,6 +163,15 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 				}
 			}
 		}()
+
+		// For remote Docker contexts, skip local caching and let the remote daemon pull
+		if driver.IsDocker(cc.Driver) && oci.IsRemoteDockerContext() {
+			klog.Infof("Using remote Docker context, skipping local cache for kicbase image")
+			// The image will be pulled directly on the remote daemon when creating the container
+			finalImg = baseImg
+			return nil
+		}
+
 		// first we try to download the kicbase image (and fall back images) from docker registry
 		var err error
 		for _, img := range append([]string{baseImg}, kic.FallbackImages...) {
@@ -188,7 +223,20 @@ func beginDownloadKicBaseImage(g *errgroup.Group, cc *config.ClusterConfig, down
 		out.Ln("")
 
 		kicbaseVersion := strings.Split(kic.Version, "-")[0]
-		_, err = download.GHKicbaseTarballToCache(kicbaseVersion)
+
+		// Detect Docker daemon architecture for remote contexts
+		arch := runtime.GOARCH
+		if driver.IsDocker(cc.Driver) {
+			daemonArch, archErr := oci.DaemonArch(oci.Docker)
+			if archErr != nil {
+				klog.Warningf("Failed to detect Docker daemon architecture, using local arch: %v", archErr)
+			} else {
+				arch = daemonArch
+				klog.Infof("Detected Docker daemon architecture: %s", arch)
+			}
+		}
+
+		_, err = download.GHKicbaseTarballToCacheForArch(kicbaseVersion, arch)
 		if err != nil {
 			klog.Infof("failed to download kicbase from github")
 			return fmt.Errorf("failed to download kic base image or any fallback image")
