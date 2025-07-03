@@ -309,6 +309,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	}
 
 	virtualBoxMacOS13PlusWarning(driverName)
+	hyperkitDeprecationWarning(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 	if driverName == oci.Docker {
@@ -415,6 +416,15 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
 `, out.V{"driver": suggestedDriver})
+}
+
+// hyperkitDeprecationWarning prints a deprecation warning for the hyperkit driver
+func hyperkitDeprecationWarning(driverName string) {
+	if !driver.IsHyperKit(driverName) {
+		return
+	}
+	out.WarningT(`The 'hyperkit' driver is deprecated and will be removed in a future release.
+    Please consider using an alternative driver such as 'docker', 'qemu', or 'vfkit'.`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {

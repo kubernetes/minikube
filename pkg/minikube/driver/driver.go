@@ -211,6 +211,11 @@ func IsHyperV(name string) bool {
 	return name == HyperV
 }
 
+// IsHyperKit check if the driver is HyperKit
+func IsHyperKit(name string) bool {
+	return name == HyperKit
+}
+
 // SupportsNetworkFlag reutuns if driver supports the --network flag
 func SupportsNetworkFlag(name string) bool {
 	return IsKIC(name) || IsKVM(name) || IsQEMU(name) || IsVFKit(name)
