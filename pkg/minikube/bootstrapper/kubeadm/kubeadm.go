@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -58,6 +59,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/out/register"
@@ -254,6 +256,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 
 	if err := k.applyCNI(cfg, true); err != nil {
 		return errors.Wrap(err, "apply cni")
+	}
+
+	// For remote Docker contexts, update the kubeconfig to use the correct endpoint
+	if driver.IsKIC(cfg.Driver) && oci.IsRemoteDockerContext() {
+		if err := k.updateKubeconfigForRemoteDocker(cfg); err != nil {
+			klog.Warningf("Failed to update kubeconfig for remote Docker: %v", err)
+		}
 	}
 
 	wg.Add(3)
@@ -903,7 +912,20 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadCachedImages(&cfg, k.c, imgs, detect.ImageCacheDir(), false); err != nil {
+		// Get the correct architecture for image cache
+		cacheDir := detect.ImageCacheDir()
+		if driver.IsKIC(cfg.Driver) && oci.IsRemoteDockerContext() {
+			// For remote Docker contexts, use the Docker daemon's architecture
+			if daemonArch, err := oci.DaemonArch(oci.Docker); err != nil {
+				klog.Warningf("Failed to detect Docker daemon architecture for images, using local arch: %v", err)
+			} else {
+				// Replace the architecture part of the cache directory
+				cacheDir = filepath.Join(localpath.MakeMiniPath("cache", "images"), daemonArch)
+				klog.Infof("Using Docker daemon architecture for image cache: %s", daemonArch)
+			}
+		}
+
+		if err := machine.LoadCachedImages(&cfg, k.c, imgs, cacheDir, false); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
@@ -1098,6 +1120,36 @@ func (k *Bootstrapper) labelAndUntaintNode(cfg config.ClusterConfig, n config.No
 	return nil
 }
 
+// updateKubeconfigForRemoteDocker updates the kubeconfig file inside the container to use the correct endpoint for remote Docker contexts
+func (k *Bootstrapper) updateKubeconfigForRemoteDocker(cfg config.ClusterConfig) error {
+	klog.Infof("Updating kubeconfig for remote Docker context")
+
+	// For both SSH and TLS contexts, the kubeconfig inside the container should always use localhost
+	// because the API server is running inside the same container.
+	// Only the host's kubeconfig (updated elsewhere) needs to use the remote Docker host IP.
+
+	// No need to update the container's kubeconfig - it should already use 127.0.0.1:8443
+	klog.Infof("Keeping 127.0.0.1:8443 endpoint for kubeconfig inside container (API server is local)")
+
+	// Verify that the kubeconfig inside the container is using 127.0.0.1 (not localhost to avoid IPv6)
+	kubeconfigPath := path.Join(vmpath.GuestPersistentDir, "kubeconfig")
+	checkCmd := fmt.Sprintf(`grep -q "server: https://127.0.0.1:8443" %s`, kubeconfigPath)
+
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", checkCmd)); err != nil {
+		// If not using 127.0.0.1, fix it
+		klog.Infof("Fixing kubeconfig inside container to use 127.0.0.1:8443 (avoiding IPv6)")
+		sedCmd := fmt.Sprintf(`sudo sed -i 's|server: https://[^/]*|server: https://127.0.0.1:8443|g' %s`, kubeconfigPath)
+
+		rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", sedCmd))
+		if err != nil {
+			return errors.Wrapf(err, "fixing kubeconfig endpoint: %s", rr.Output())
+		}
+	}
+
+	klog.Infof("Kubeconfig inside container correctly uses 127.0.0.1:8443")
+	return nil
+}
+
 // elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
@@ -1122,6 +1174,25 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			klog.Infof("rbac %q already exists not need to re-create.", rbacName)
 		} else {
+			// For SSH contexts, connection refused might mean the tunnel isn't up yet
+			if driver.IsKIC(cfg.Driver) && oci.IsRemoteDockerContext() && oci.IsSSHDockerContext() &&
+				strings.Contains(rr.Output(), "connection refused") {
+				klog.Warning("Connection refused for SSH context, ensuring SSH tunnel is established")
+				// Try to ensure SSH access for the container
+				if err := oci.EnsureContainerSSHAccess(cfg.Name); err != nil {
+					klog.Warningf("Failed to ensure SSH access: %v", err)
+				}
+				// Retry the command once
+				rr2, err2 := k.c.RunCmd(cmd)
+				if err2 == nil {
+					return nil
+				}
+				if strings.Contains(rr2.Output(), "Error from server (AlreadyExists)") {
+					klog.Infof("rbac %q already exists not need to re-create.", rbacName)
+					return nil
+				}
+				return errors.Wrapf(err2, "apply sa after tunnel retry")
+			}
 			return errors.Wrapf(err, "apply sa")
 		}
 	}
