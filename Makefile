@@ -1285,3 +1285,8 @@ generate-licenses:
 update-kube-vip-version:
 	(cd hack/update/kube_vip_version && \
 	 go run update_kube_vip_version.go)
+
+.PHONY: update-portainer-version
+update-portainer-version:
+	(cd hack/update/portainer_version && \
+	 go run update_portainer_version.go)
