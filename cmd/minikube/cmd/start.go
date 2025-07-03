@@ -406,7 +406,7 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
-	suggestedDriver := driver.HyperKit
+	suggestedDriver := driver.VFKit
 	if runtime.GOARCH == "arm64" {
 		suggestedDriver = driver.QEMU
 	}
@@ -424,7 +424,7 @@ func hyperkitDeprecationWarning(driverName string) {
 		return
 	}
 	out.WarningT(`The 'hyperkit' driver is deprecated and will be removed in a future release.
-    Please consider using an alternative driver such as 'docker', 'qemu', or 'vfkit'.`)
+    Please consider using an alternative driver such as vfkit, qemu, or docker`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
