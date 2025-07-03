@@ -160,6 +160,28 @@ jobs:
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Run Integration Test On Newest K8s Version
+        if: contains(github.event.pull_request.labels.*.name, 'new-version-test')
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker"  -test.run TestFunctionalNewestKubernetes -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout_newest.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -254,6 +276,28 @@ jobs:
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --container-runtime=containerd" -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Run Integration Test On Newest K8s Version
+        if: contains(github.event.pull_request.labels.*.name, 'new-version-test')
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --container-runtime=containerd" -test.run TestFunctionalNewestKubernetes -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -378,6 +422,28 @@ jobs:
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Run Integration Test On Newest K8s Version
+        if: contains(github.event.pull_request.labels.*.name, 'new-version-test')
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=docker --rootless --container-runtime=containerd" -test.run TestFunctionalNewestKubernetes -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout_newest.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate HTML Report
         shell: bash
         run: |
@@ -477,6 +543,28 @@ jobs:
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=podman -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Run Integration Test On NewestVersion
+        if: contains(github.event.pull_request.labels.*.name, 'new-version-test')
+        continue-on-error: false
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--vm-driver=podman -v=6 --alsologtostderr" -test.run TestFunctionalNewestKubernetes -test.timeout=15m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout_newest.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -599,6 +687,26 @@ jobs:
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--driver=none" -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctional -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - name: Run Integration Test On Newest K8s Version
+        if: contains(github.event.pull_request.labels.*.name, 'new-version-test')
+        continue-on-error: true
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-linux-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args="--driver=none" -test.timeout=10m -test.v -timeout-multiplier=1.5 -test.run TestFunctionalNewestKubernetes -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout_newest.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
