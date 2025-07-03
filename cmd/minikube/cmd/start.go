@@ -406,16 +406,12 @@ func virtualBoxMacOS13PlusWarning(driverName string) {
 	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
 		return
 	}
-	suggestedDriver := driver.VFKit
-	if runtime.GOARCH == "arm64" {
-		suggestedDriver = driver.QEMU
-	}
-	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as docker or {{.driver}}.
+	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
+    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
+    https://minikube.sigs.k8s.io/docs/drivers/qemu/
     https://minikube.sigs.k8s.io/docs/drivers/docker/
-    https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}/
-
     For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
-`, out.V{"driver": suggestedDriver})
+`)
 }
 
 // hyperkitDeprecationWarning prints a deprecation warning for the hyperkit driver
@@ -424,7 +420,11 @@ func hyperkitDeprecationWarning(driverName string) {
 		return
 	}
 	out.WarningT(`The 'hyperkit' driver is deprecated and will be removed in a future release.
-    Please consider using an alternative driver such as vfkit, qemu, or docker`)
+    You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
+    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
+    https://minikube.sigs.k8s.io/docs/drivers/qemu/
+    https://minikube.sigs.k8s.io/docs/drivers/docker/
+	`)
 }
 
 func validateBuiltImageVersion(r command.Runner, driverName string) {
