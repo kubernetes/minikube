@@ -1239,6 +1239,10 @@ update-headlamp-version:
 update-kube-vip-version:
 	cd hack && go run update/kube_vip_version/update_kube_vip_version.go
 
+.PHONY: update-portainer-version
+update-portainer-version:
+	 go run hack/update/portainer_version/update_portainer_version.go
+
 # used by update- Targets to get before/after versions of tools it updates
 # example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
