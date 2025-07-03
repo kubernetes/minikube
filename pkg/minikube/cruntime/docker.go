@@ -595,7 +595,7 @@ func (r *Docker) configureDocker(driver string) error {
 	}
 
 	switch r.GPUs {
-	case "all", "nvidia":
+	case "all", "nvidia", "nvidia.com":
 		assets.Addons["nvidia-device-plugin"].EnableByDefault()
 		daemonConfig.DefaultRuntime = "nvidia"
 		runtimes := &dockerDaemonRuntimes{}
