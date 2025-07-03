@@ -235,10 +235,11 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 // "Namespace", "Name" and "URL" columns to a writer
 func PrintServiceList(writer io.Writer, data [][]string) {
 	table := tablewriter.NewWriter(writer)
-	table.SetHeader([]string{"Namespace", "Name", "Target Port", "URL"})
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetCenterSeparator("|")
-	table.AppendBulk(data)
+	table.Header([]string{"Namespace", "Name", "Target Port", "URL"})
+	table.SetBorders(true)
+	table.SetColumnSeparator("|")
+	table.SetColumnAlignment([]int{0, 0, 0, 0})
+	table.Bulk(data)
 	table.Render()
 }
 
