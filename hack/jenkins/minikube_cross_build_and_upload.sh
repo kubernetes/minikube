@@ -41,7 +41,7 @@ declare -rx DEB_VER="$(make deb_version)"
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
 docker system prune -a --volumes -f
-docker login -u minikubebot -p $DOCKERHUB_READONLY_TOKEN
+echo $DOCKERHUB_READONLY_TOKEN | docker login -u minikubebot --password-stdin
 make -j 16 \
   all \
   minikube-darwin-arm64 \
