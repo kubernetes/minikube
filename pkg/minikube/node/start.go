@@ -956,11 +956,15 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 		sed = fmt.Sprintf("sed -e '/^        hosts {.*/a \\           %s %s'", ip, name)
 	}
 
-	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
-	regex := regexp.MustCompile(`(?smU)^ *log *$`)
-	if !regex.MatchString(cm) {
-		// inject log plugin into coredns configmap
-		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
+	if cc.DisableCoreDNSLog {
+		sed = fmt.Sprintf("%s -e '/^        log *$/d'", sed)
+	} else {
+		// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
+		regex := regexp.MustCompile(`(?smU)^ *log *$`)
+		if !regex.MatchString(cm) {
+			// inject log plugin into coredns configmap
+			sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
+		}
 	}
 
 	// replace coredns configmap via kubectl
