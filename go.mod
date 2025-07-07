@@ -79,11 +79,11 @@ require (
 	gonum.org/v1/plot v0.16.0
 	google.golang.org/api v0.234.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.33.1
-	k8s.io/apimachinery v0.33.1
-	k8s.io/client-go v0.33.1
+	k8s.io/api v0.33.2
+	k8s.io/apimachinery v0.33.2
+	k8s.io/client-go v0.33.2
 	k8s.io/cluster-bootstrap v0.0.0
-	k8s.io/component-base v0.33.1
+	k8s.io/component-base v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubectl v0.33.1
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
