@@ -207,6 +207,7 @@
 	"Enable addons. see `minikube addons list` for a list of valid addon names.": "Habilitar complementos. Mira `minikube addons list` para una lista de complementos válidos.",
 	"Enable experimental NVIDIA GPU support in minikube": "Permite habilitar la compatibilidad experimental con GPUs NVIDIA en minikube",
 	"Enable host resolver for NAT DNS requests (virtualbox driver only)": "Permite habilitar la resolución del host en las solicitudes DNS con traducción de direcciones de red (NAT) aplicada (solo con el controlador de Virtualbox)",
+	"Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.": "",
 	"Enable or disable a minikube addon": "Habilita o deshabilita un complemento de minikube",
 	"Enable proxy for NAT DNS requests (virtualbox driver only)": "Permite habilitar el uso de proxies en las solicitudes de DNS con traducción de direcciones de red (NAT) aplicada (solo con el controlador de Virtualbox)",
 	"Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \\\"--network-plugin=cni\\": "Permite habilitar el complemento CNI predeterminado (/etc/cni/net.d/k8s.conf). Se utiliza junto con \"--network-plugin=cni",
