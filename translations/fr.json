@@ -207,7 +207,7 @@
 	"Enable addons. see `minikube addons list` for a list of valid addon names.": "Activer les modules. Voir `minikube addons list` pour une liste de noms de modules valides.",
 	"Enable experimental NVIDIA GPU support in minikube": "Active l'assistance expérimentale du GPU NVIDIA dans minikube.",
 	"Enable host resolver for NAT DNS requests (virtualbox driver only)": "Active le résolveur d'hôte pour les requêtes DNS NAT (pilote VirtualBox uniquement).",
-	"Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.": "",
+	"Enable one or more addons, in a comma-separated format. See `minikube addons list` for a list of valid addon names.": "Activez un ou plusieurs modules complémentaires, séparés par des virgules. Voir `minikube addons list` pour obtenir la liste des noms de modules complémentaires valides.",
 	"Enable or disable a minikube addon": "Activer ou désactiver un module minikube",
 	"Enable proxy for NAT DNS requests (virtualbox driver only)": "Active le proxy pour les requêtes DNS NAT (pilote VirtualBox uniquement).",
 	"Enabled addons: {{.addons}}": "Modules activés: {{.addons}}",
