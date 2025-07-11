@@ -77,7 +77,7 @@ func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 		return
 	}
 
-	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountString})
+	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountStrings})
 	path := os.Args[0]
 	profile := viper.GetString("profile")
 
