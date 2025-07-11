@@ -102,7 +102,8 @@ func generateMountArgs(profile string, cc config.ClusterConfig) []string {
 		mountDebugVal = 1
 	}
 
-	args := []string{"mount", cc.MountString}
+	args := []string{"mount"}
+	args = append(args, cc.MountStrings...)
 	flags := []struct {
 		name  string
 		value string

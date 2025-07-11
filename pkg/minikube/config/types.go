@@ -89,7 +89,7 @@ type ClusterConfig struct {
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration
 	Mount                   bool
-	MountString             string
+	MountStrings            []string
 	Mount9PVersion          string
 	MountGID                string
 	MountIP                 string

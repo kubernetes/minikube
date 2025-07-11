@@ -23,23 +23,23 @@ import (
 func TestParseMountString(t *testing.T) {
 	testCases := []struct {
 		Name          string
-		MountString   string
+		MountStrings  []string
 		ExpectErr     bool
 		ExpectedMount Mount
 	}{
 		{
-			Name:        "basic linux",
-			MountString: "/foo:/bar",
-			ExpectErr:   false,
+			Name:         "basic linux",
+			MountStrings: []string{"/foo:/bar"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				HostPath:      "/foo",
 				ContainerPath: "/bar",
 			},
 		},
 		{
-			Name:        "linux read only",
-			MountString: "/foo:/bar:ro",
-			ExpectErr:   false,
+			Name:         "linux read only",
+			MountStrings: []string{"/foo:/bar:ro"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				HostPath:      "/foo",
 				ContainerPath: "/bar",
@@ -47,18 +47,18 @@ func TestParseMountString(t *testing.T) {
 			},
 		},
 		{
-			Name:        "windows style",
-			MountString: "C:\\Windows\\Path:/foo",
-			ExpectErr:   false,
+			Name:         "windows style",
+			MountStrings: []string{"C:\\Windows\\Path:/foo"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				HostPath:      "C:\\Windows\\Path",
 				ContainerPath: "/foo",
 			},
 		},
 		{
-			Name:        "windows style read/write",
-			MountString: "C:\\Windows\\Path:/foo:rw",
-			ExpectErr:   false,
+			Name:         "windows style read/write",
+			MountStrings: []string{"C:\\Windows\\Path:/foo:rw"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				HostPath:      "C:\\Windows\\Path",
 				ContainerPath: "/foo",
@@ -66,17 +66,17 @@ func TestParseMountString(t *testing.T) {
 			},
 		},
 		{
-			Name:        "container only",
-			MountString: "/foo",
-			ExpectErr:   false,
+			Name:         "container only",
+			MountStrings: []string{"/foo"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				ContainerPath: "/foo",
 			},
 		},
 		{
-			Name:        "selinux relabel & bidirectional propagation",
-			MountString: "/foo:/bar/baz:Z,rshared",
-			ExpectErr:   false,
+			Name:         "selinux relabel & bidirectional propagation",
+			MountStrings: []string{"/foo:/bar/baz:Z,rshared"},
+			ExpectErr:    false,
 			ExpectedMount: Mount{
 				HostPath:       "/foo",
 				ContainerPath:  "/bar/baz",
@@ -85,9 +85,9 @@ func TestParseMountString(t *testing.T) {
 			},
 		},
 		{
-			Name:        "invalid mount option",
-			MountString: "/foo:/bar:Z,bat",
-			ExpectErr:   true,
+			Name:         "invalid mount option",
+			MountStrings: []string{"/foo:/bar:Z,bat"},
+			ExpectErr:    true,
 			ExpectedMount: Mount{
 				HostPath:       "/foo",
 				ContainerPath:  "/bar",
@@ -96,14 +96,14 @@ func TestParseMountString(t *testing.T) {
 		},
 		{
 			Name:          "empty spec",
-			MountString:   "",
+			MountStrings:  []string{""},
 			ExpectErr:     false,
 			ExpectedMount: Mount{},
 		},
 		{
-			Name:        "relative container path",
-			MountString: "/foo/bar:baz/bat:private",
-			ExpectErr:   true,
+			Name:         "relative container path",
+			MountStrings: []string{"/foo/bar:baz/bat:private"},
+			ExpectErr:    true,
 			ExpectedMount: Mount{
 				HostPath:      "/foo/bar",
 				ContainerPath: "baz/bat",
@@ -113,15 +113,17 @@ func TestParseMountString(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		mount, err := ParseMountString(tc.MountString)
-		if err != nil && !tc.ExpectErr {
-			t.Errorf("Unexpected error for \"%s\": %v", tc.Name, err)
-		}
-		if err == nil && tc.ExpectErr {
-			t.Errorf("Expected error for \"%s\" but didn't get any: %v %v", tc.Name, mount, err)
-		}
-		if mount != tc.ExpectedMount {
-			t.Errorf("Unexpected mount for \"%s\":\n expected %+v\ngot %+v", tc.Name, tc.ExpectedMount, mount)
+		for _, mountString := range tc.MountStrings {
+			mount, err := ParseMountString(mountString)
+			if err != nil && !tc.ExpectErr {
+				t.Errorf("Unexpected error for \"%s\": %v", tc.Name, err)
+			}
+			if err == nil && tc.ExpectErr {
+				t.Errorf("Expected error for \"%s\" but didn't get any: %v %v", tc.Name, mount, err)
+			}
+			if mount != tc.ExpectedMount {
+				t.Errorf("Unexpected mount for \"%s\":\n expected %+v\ngot %+v", tc.Name, tc.ExpectedMount, mount)
+			}
 		}
 	}
 }
