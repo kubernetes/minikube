@@ -4,6 +4,14 @@ description: >
   Configure environment to use minikube's Podman service
 ---
 
+## Requirements
+
+- **Podman version 4.9.2 or newer is required.**
+- Support for Podman v3 and varlink-based communication has been removed. The `podman-env` command now configures your environment to use the Podman REST API socket, as required by Podman v4+.
+
+{{% pageinfo color="warning" %}}
+**Note:** If you are using an older version of Podman, please upgrade to at least v4.9.2 to use `minikube podman-env`. Legacy varlink-based workflows are no longer supported.
+{{% /pageinfo %}}
 
 ## minikube podman-env
 
@@ -30,7 +38,7 @@ minikube podman-env [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
-  -h, --help                             
+  -h, --help
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
       --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
