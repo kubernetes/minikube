@@ -269,14 +269,33 @@ func runStart(cmd *cobra.Command, _ []string) {
 	validateBuiltImageVersion(starter.Runner, ds.Name)
 
 	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetBool(createMount) {
-		old := ""
-		if len(existing.ContainerVolumeMounts) > 0 {
-			old = existing.ContainerVolumeMounts[0]
+		isSameMount := func(old, new []string) bool {
+			if len(old) != len(new) {
+				return false
+			}
+
+			mountmap := make(map[string]int)
+			for _, item := range old {
+				mountmap[item]++
+			}
+
+			for _, item := range new {
+				cnt, exists := mountmap[item]
+				if !exists || cnt == 0 {
+					return false
+				}
+				mountmap[item]--
+			}
+
+			return true
 		}
-		if mount := viper.GetString(mountString); old != mount {
+
+		old := existing.ContainerVolumeMounts
+		new := getMountStrings()
+		if !isSameMount(old, new) {
 			exit.Message(reason.GuestMountConflict, "Sorry, {{.driver}} does not allow mounts to be changed after container creation (previous mount: '{{.old}}', new mount: '{{.new}})'", out.V{
 				"driver": existing.Driver,
-				"new":    mount,
+				"new":    new,
 				"old":    old,
 			})
 		}
