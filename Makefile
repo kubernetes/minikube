@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0-1749153077-20895
+ISO_VERSION ?= v1.36.0-1751445739-20995
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -59,7 +59,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
 # source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy
+HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy-v2
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -79,7 +79,6 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v2.1.5
@@ -103,7 +102,7 @@ $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube:Z -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
@@ -189,7 +188,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -302,20 +301,7 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
-	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
-	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
-		mkdir -p $(BUILD_DIR); \
-		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
-		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
-		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
-		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-	fi;
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
@@ -325,29 +311,48 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
                 mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
         fi;
 
+.PHONY: iso-prepare-%
+iso-prepare-%: buildroot
+	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
+	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+
+.PHONY: buildroot
+buildroot:
+	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
+		mkdir -p $(BUILD_DIR); \
+		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
+		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
+		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
+	fi;
+
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
-iso-menuconfig-%: ## Configure buildroot configuration
+iso-menuconfig-%: iso-prepare-% ## Configure buildroot configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* savedefconfig
 
 # Change the kernel configuration for the minikube ISO
-linux-menuconfig-%:  ## Configure Linux kernel configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ savedefconfig
-	cp $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/$*/linux_$*_defconfig
+linux-menuconfig-%: iso-prepare-% ## Configure Linux kernel configuration
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-savedefconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-update-defconfig
 
 out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube-iso-$*
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
 iso_in_docker:
-	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
@@ -523,7 +528,7 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v `pwd`:/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} ./..." 
 	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
 	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
@@ -657,7 +662,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
 		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
+		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	$(if $(quiet),@echo "  GO       $@")
@@ -1266,6 +1271,11 @@ update-yakd-version:
 update-kube-registry-proxy-version:
 	(cd hack/update/kube_registry_proxy_version && \
 	 go run update_kube_registry_proxy_version.go)
+
+.PHONY: update-headlamp-version
+update-headlamp-version:
+	(cd hack/update/headlamp_version && \
+	 go run update_headlamp_version.go)
 
 .PHONY: get-dependency-verison
 get-dependency-version:

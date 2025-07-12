@@ -33,7 +33,7 @@ func WritePidfile(path string, pid int) error {
 	return os.WriteFile(path, []byte(data), pidfileMode)
 }
 
-// ReadPid reads a pid from path.
+// ReadPidfile reads a pid from path.
 func ReadPidfile(path string) (int, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

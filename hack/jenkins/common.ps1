@@ -34,6 +34,7 @@ rm -Force testout*
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
 $gcs_bucket="minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:ROOT_JOB_ID"
 $env:MINIKUBE_SUPPRESS_DOCKER_PERFORMANCE="true"
+$ProgressPreference = 'SilentlyContinue'
 
 # Docker's kubectl breaks things, and comes earlier in the path than the regular kubectl. So download the expected kubectl and replace Docker's version.
 $KubeVersion = (Invoke-WebRequest -Uri 'https://dl.k8s.io/release/stable.txt' -UseBasicParsing).Content
@@ -69,7 +70,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/installers/check
 
 # Download gopogh and gotestsum
 go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
-go install gotest.tools/gotestsum@v1.12.2
+go install gotest.tools/gotestsum@v1.12.3
 # temporary: remove the old install of gopogh & gotestsum as it's taking priority over our current install, preventing updating
 if (Test-Path "C:\Go") {
     Remove-Item "C:\Go" -Recurse -Force
