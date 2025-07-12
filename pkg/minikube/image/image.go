@@ -37,6 +37,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -66,9 +67,37 @@ func UseRemote(use bool) {
 	useRemote = use
 }
 
+// createDockerClientForImage creates a Docker client that respects remote Docker contexts
+func createDockerClientForImage() (*client.Client, error) {
+	// Get context-aware environment variables
+	env, err := oci.GetContextEnvironment()
+	if err != nil {
+		klog.V(3).Infof("Failed to get context environment, using default: %v", err)
+		return client.NewClientWithOpts(client.FromEnv)
+	}
+
+	// Apply the context environment to this process
+	for key, value := range env {
+		os.Setenv(key, value)
+	}
+
+	// Create client with the updated environment
+	return client.NewClientWithOpts(client.FromEnv)
+}
+
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
+	// If no client provided, create a context-aware one
+	if imgClient == nil {
+		var err error
+		imgClient, err = createDockerClientForImage()
+		if err != nil {
+			klog.Infof("couldn't create Docker client: %v", err)
+			return ""
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	imgClient.NegotiateAPIVersion(ctx)

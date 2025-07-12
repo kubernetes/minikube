@@ -632,6 +632,38 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
 	}
+
+	// Check if we're using a remote SSH Docker context and automatically set up SSH tunnel
+	if driver.IsKIC(cc.Driver) && oci.IsRemoteDockerContext() && oci.IsSSHDockerContext() {
+		klog.Infof("Remote SSH Docker context detected, automatically setting up API server tunnel")
+
+		// Set up SSH tunnel for API server access
+		tunnelEndpoint, _, err := oci.SetupAPIServerTunnel(port)
+		if err != nil {
+			klog.Warningf("Failed to setup automatic SSH tunnel: %v", err)
+			out.WarningT("Failed to automatically create SSH tunnel for API server access. You may need to run 'minikube tunnel-ssh' manually.")
+		} else if tunnelEndpoint != "" {
+			// Successfully created tunnel, update address to use it
+			klog.Infof("Automatically created SSH tunnel for API server: %s", tunnelEndpoint)
+			addr := tunnelEndpoint
+
+			kcs := &kubeconfig.Settings{
+				ClusterName:          clusterName,
+				Namespace:            cc.KubernetesConfig.Namespace,
+				ClusterServerAddress: addr,
+				ClientCertificate:    localpath.ClientCert(cc.Name),
+				ClientKey:            localpath.ClientKey(cc.Name),
+				CertificateAuthority: localpath.CACert(),
+				KeepContext:          cc.KeepContext,
+				EmbedCerts:           cc.EmbedCerts,
+			}
+
+			kcs.SetPath(kubeconfig.PathFromEnv())
+			return kcs
+		}
+	}
+
+	// Default behavior for non-SSH or if tunnel creation failed
 	addr := fmt.Sprintf("https://%s", net.JoinHostPort(hostIP, strconv.Itoa(port)))
 
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {

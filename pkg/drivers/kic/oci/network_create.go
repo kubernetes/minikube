@@ -210,10 +210,13 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 
 	rr, err := dockerInspectGetter(name)
 	if err != nil {
-		logDockerNetworkInspect(Docker, name)
 		if isNetworkNotFound(rr.Output()) {
+			// Network not found is an expected case, no need for verbose logging
+			klog.V(4).Infof("network %q not found (expected for new networks)", name)
 			return info, ErrNetworkNotFound
 		}
+		// Only log debugging info for unexpected errors
+		logDockerNetworkInspect(Docker, name)
 		return info, err
 	}
 
@@ -251,11 +254,13 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 	var info = netInfo{name: name}
 	rr, err := podmanInspectGetter(name)
 	if err != nil {
-		logDockerNetworkInspect(Podman, name)
 		if strings.Contains(rr.Output(), "no such network") {
-
+			// Network not found is an expected case, no need for verbose logging
+			klog.V(4).Infof("network %q not found (expected for new networks)", name)
 			return info, ErrNetworkNotFound
 		}
+		// Only log debugging info for unexpected errors
+		logDockerNetworkInspect(Podman, name)
 		return info, err
 	}
 
@@ -281,12 +286,12 @@ func podmanNetworkInspect(name string) (netInfo, error) {
 
 func logDockerNetworkInspect(ociBin string, name string) {
 	cmd := exec.Command(ociBin, "network", "inspect", name)
-	klog.Infof("running %v to gather additional debugging logs...", cmd.Args)
+	klog.V(3).Infof("running %v to gather additional debugging logs...", cmd.Args)
 	rr, err := runCmd(cmd)
 	if err != nil {
-		klog.Infof("error running %v: %v", rr.Args, err)
+		klog.V(3).Infof("error running %v: %v", rr.Args, err)
 	}
-	klog.Infof("output of %v: %v", rr.Args, rr.Output())
+	klog.V(3).Infof("output of %v: %v", rr.Args, rr.Output())
 }
 
 // RemoveNetwork removes a network
