@@ -21,8 +21,9 @@ import (
 	"strings"
 	"time"
 
+	"minikube-hack/update"
+
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/hack/update"
 )
 
 var (
