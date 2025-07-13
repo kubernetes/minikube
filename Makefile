@@ -1032,28 +1032,23 @@ help:
 
 .PHONY: update-golang-version
 update-golang-version:
-	(cd hack/update/golang_version && \
-	 go run update_golang_version.go)
+	 go run hack/update/golang_version/update_golang_version.go
 
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
-	@(cd hack/update/kubernetes_version && \
-	 go run update_kubernetes_version.go)
+	 go run hack/update/kubernetes_version/update_kubernetes_version.go
 
 .PHONY: update-golint-version
 update-golint-version:
-	(cd hack/update/golint_version && \
-	 go run update_golint_version.go)
+	 go run hack/update/golint_version/update_golint_version.go
 
 .PHONY: update-preload-version
 update-preload-version:
-	(cd hack/update/preload_version && \
-	 go run update_preload_version.go)
+	 go run hack/update/preload_version/update_preload_version.go
 
 .PHONY: update-kubeadm-constants
 update-kubeadm-constants:
-	(cd hack/update/kubeadm_constants && \
-	 go run update_kubeadm_constants.go)
+	go run hack/update/kubeadm_constants/update_kubeadm_constants.go
 	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 
 .PHONY: stress
@@ -1074,213 +1069,171 @@ time-to-k8s-benchmark:
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
-	(cd hack/update/gopogh_version && \
-	 go run update_gopogh_version.go)
+	go run hack/update/gopogh_version/update_gopogh_version.go
 
 .PHONY: update-gotestsum-version
 update-gotestsum-version:
-	(cd hack/update/gotestsum_version && \
-	 go run update_gotestsum_version.go)
+	go run hack/update/gotestsum_version/update_gotestsum_version.go
 
 .PHONY: update-gh-version
 update-gh-version:
-	(cd hack/update/gh_version && \
-	 go run update_gh_version.go)
+	go run hack/update/gh_version/update_gh_version.go
 
 .PHONY: update-docsy-version
 update-docsy-version:
-	@(cd hack/update/docsy_version && \
-	  go run update_docsy_version.go)
+	go run hack/update/docsy_version/update_docsy_version.go
 
 .PHONY: update-hugo-version
 update-hugo-version:
-	(cd hack/update/hugo_version && \
-	 go run update_hugo_version.go)
+	go run hack/update/hugo_version/update_hugo_version.go
 
 .PHONY: update-cloud-spanner-emulator-version
 update-cloud-spanner-emulator-version:
-	(cd hack/update/cloud_spanner_emulator_version && \
-	 go run update_cloud_spanner_emulator_version.go)
+	go run hack/update/cloud_spanner_emulator_version/update_cloud_spanner_emulator_version.go
 
 .PHONY: update-containerd-version
 update-containerd-version:
-	(cd hack/update/containerd_version && \
-	 go run update_containerd_version.go)
+	go run hack/update/containerd_version/update_containerd_version.go
 
 .PHONY: update-buildkit-version
 update-buildkit-version:
-	(cd hack/update/buildkit_version && \
-	 go run update_buildkit_version.go)
+	go run hack/update/buildkit_version/update_buildkit_version.go
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
-	(cd hack/update/cri-o_version && \
-	 go run update_cri-o_version.go)
+	go run hack/update/cri-o_version/update_cri-o_version.go
 
 .PHONY: update-crun-version
 update-crun-version:
-	(cd hack/update/crun_version && \
-	 go run update_crun_version.go)
+	go run hack/update/crun_version/update_crun_version.go
 
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
-	(cd hack/update/metrics_server_version && \
-	 go run update_metrics_server_version.go)
+	go run hack/update/metrics_server_version/update_metrics_server_version.go
 
 .PHONY: update-runc-version
 update-runc-version:
-	(cd hack/update/runc_version && \
-	 go run update_runc_version.go)
+	go run hack/update/runc_version/update_runc_version.go
 
 .PHONY: update-docker-version
 update-docker-version:
-	(cd hack/update/docker_version && \
-	 go run update_docker_version.go)
+	go run hack/update/docker_version/update_docker_version.go
 
 .PHONY: update-ubuntu-version
 update-ubuntu-version:
-	(cd hack/update/ubuntu_version && \
-	 go run update_ubuntu_version.go)
+	go run hack/update/ubuntu_version/update_ubuntu_version.go)
 
 .PHONY: update-cni-plugins-version
 update-cni-plugins-version:
-	(cd hack/update/cni_plugins_version && \
-	 go run update_cni_plugins_version.go)
+	go run hack/update/cni_plugins_version/update_cni_plugins_version.go
 
 .PHONY: update-gcp-auth-version
 update-gcp-auth-version:
-	(cd hack/update/gcp_auth_version && \
-	 go run update_gcp_auth_version.go)
+	go run hack/update/gcp_auth_version/update_gcp_auth_version.go
 
 .PHONY: update-kubernetes-versions-list
 update-kubernetes-versions-list:
-	(cd hack/update/kubernetes_versions_list && \
-	 go run update_kubernetes_versions_list.go)
+	go run hack/update/kubernetes_versions_list/update_kubernetes_versions_list.go
 
 .PHONY: update-ingress-version
 update-ingress-version:
-	(cd hack/update/ingress_version && \
-	 go run update_ingress_version.go)
+	go run hack/update/ingress_version/update_ingress_version.go
 
 .PHONY: update-flannel-version
 update-flannel-version:
-	(cd hack/update/flannel_version && \
-	 go run update_flannel_version.go)
+	go run hack/update/flannel_version/update_flannel_version.go
 
 .PHONY: update-inspektor-gadget-version
 update-inspektor-gadget-version:
-	(cd hack/update/inspektor_gadget_version && \
-	 go run update_inspektor_gadget_version.go)
+	go run hack/update/inspektor_gadget_version/update_inspektor_gadget_version.go
 
 .PHONY: update-calico-version
 update-calico-version:
-	(cd hack/update/calico_version && \
-	 go run update_calico_version.go)
+	go run hack/update/calico_version/update_calico_version.go
 
 .PHONY: update-cri-dockerd-version
 update-cri-dockerd-version:
-	(cd hack/update/cri_dockerd_version && \
-	 go run update_cri_dockerd_version.go)
+	go run hack/update/cri_dockerd_version/update_cri_dockerd_version.go
 
 .PHONY: update-go-github-version
 update-go-github-version:
-	(cd hack/update/go_github_version && \
-	 go run update_go_github_version.go)
+	go run hack/update/go_github_version/update_go_github_version.go
 
 .PHONY: update-docker-buildx-version
 update-docker-buildx-version:
-	(cd hack/update/docker_buildx_version && \
-	 go run update_docker_buildx_version.go)
+	go run hack/update/docker_buildx_version/update_docker_buildx_version.go
 
 .PHONY: update-nerdctl-version
 update-nerdctl-version:
-	(cd hack/update/nerdctl_version && \
-	 go run update_nerdctl_version.go)
+	go run hack/update/nerdctl_version/update_nerdctl_version.go
 
 .PHONY: update-crictl-version
 update-crictl-version:
-	(cd hack/update/crictl_version && \
-	 go run update_crictl_version.go)
+	go run hack/update/crictl_version/update_crictl_version.go
 
 .PHONY: update-kindnetd-version
 update-kindnetd-version:
-	(cd hack/update/kindnetd_version && \
-	 go run update_kindnetd_version.go)
+	go run hack/update/kindnetd_version/update_kindnetd_version.go
 
 .PHONY: update-istio-operator-version
 update-istio-operator-version:
-	(cd hack/update/istio_operator_version && \
-	 go run update_istio_operator_version.go)
+	go run hack/update/istio_operator_version/update_istio_operator_version.go
 
 .PHONY: update-registry-version
 update-registry-version:
-	(cd hack/update/registry_version && \
-	 go run update_registry_version.go)
+	go run hack/update/registry_version/update_registry_version.go
 
 .PHONY: update-volcano-version
 update-volcano-version:
-	(cd hack/update/volcano_version && \
-	 go run update_volcano_version.go)
+	go run hack/update/volcano_version/update_volcano_version.go
 
 .PHONY: update-kong-version
 update-kong-version:
-	(cd hack/update/kong_version && \
-	 go run update_kong_version.go)
+	go run hack/update/kong_version/update_kong_version.go
 
 .PHONY: update-kong-ingress-controller-version
 update-kong-ingress-controller-version:
-	(cd hack/update/kong_ingress_controller_version && \
-	 go run update_kong_ingress_controller_version.go)
+	go run hack/update/kong_ingress_controller_version/update_kong_ingress_controller_version.go
 
 .PHONY: update-nvidia-device-plugin-version
 update-nvidia-device-plugin-version:
-	(cd hack/update/nvidia_device_plugin_version && \
-	 go run update_nvidia_device_plugin_version.go)
+	go run hack/update/nvidia_device_plugin_version/update_nvidia_device_plugin_version.go
 
 .PHONY: update-amd-gpu-device-plugin-version
 update-amd-gpu-device-plugin-version:
-	(cd hack/update/amd_device_plugin_version && \
-	 go run update_amd_device_plugin_version.go)
+	go run hack/update/amd_device_plugin_version/update_amd_device_plugin_version.go
 
 .PHONY: update-nerdctld-version
 update-nerdctld-version:
-	(cd hack/update/nerdctld_version && \
-	 go run update_nerdctld_version.go)
+	go run hack/update/nerdctld_version/update_nerdctld_version.go
 
 .PHONY: update-kubectl-version
 update-kubectl-version:
-	(cd hack/update/kubectl_version && \
-	 go run update_kubectl_version.go)
+	go run hack/update/kubectl_version/update_kubectl_version.go
 
 .PHONY: update-site-node-version
 update-site-node-version:
-	(cd hack/update/site_node_version && \
-	 go run update_site_node_version.go)
+	go run hack/update/site_node_version/update_site_node_version.go
 
 .PHONY: update-cilium-version
 update-cilium-version:
-	(cd hack/update/cilium_version && \
-	 go run update_cilium_version.go)
+	go run hack/update/cilium_version/update_cilium_version.go
 
 .PHONY: update-yakd-version
 update-yakd-version:
-	(cd hack/update/yakd_version && \
-	 go run update_yakd_version.go)
+	go run hack/update/yakd_version/update_yakd_version.go
 
 .PHONY: update-kube-registry-proxy-version
 update-kube-registry-proxy-version:
-	(cd hack/update/kube_registry_proxy_version && \
-	 go run update_kube_registry_proxy_version.go)
+	go run hack/update/kube_registry_proxy_version/update_kube_registry_proxy_version.go
 
 .PHONY: update-headlamp-version
 update-headlamp-version:
-	(cd hack/update/headlamp_version && \
-	 go run update_headlamp_version.go)
+	go run hack/update/headlamp_version/update_headlamp_version.go
 
 .PHONY: get-dependency-verison
 get-dependency-version:
-	@(cd hack/update/get_version && \
-	  go run get_version.go)
+	go run hack/update/get_version/get_version.go
 
 .PHONY: generate-licenses
 generate-licenses:
@@ -1288,5 +1241,4 @@ generate-licenses:
 
 .PHONY: update-kube-vip-version
 update-kube-vip-version:
-	(cd hack/update/kube_vip_version && \
-	 go run update_kube_vip_version.go)
+	go run hack/update/kube_vip_version/update_kube_vip_version.go
