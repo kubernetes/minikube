@@ -1022,6 +1022,10 @@ compare: out/mkcmp out/minikube
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
 
 
+.PHONY: generate-licenses
+generate-licenses:
+	./hack/generate_licenses.sh
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
@@ -1231,14 +1235,11 @@ update-kube-registry-proxy-version:
 update-headlamp-version:
 	go run hack/update/headlamp_version/update_headlamp_version.go
 
-.PHONY: get-dependency-verison
-get-dependency-version:
-	go run hack/update/get_version/get_version.go
-
-.PHONY: generate-licenses
-generate-licenses:
-	./hack/generate_licenses.sh
-
 .PHONY: update-kube-vip-version
 update-kube-vip-version:
 	go run hack/update/kube_vip_version/update_kube_vip_version.go
+
+# used by update- Targets to get before/after versions of tools it updates
+.PHONY: get-dependency-verison
+get-dependency-version:
+	go run hack/update/get_version/get_version.go
