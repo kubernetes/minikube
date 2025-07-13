@@ -64,5 +64,3 @@ test/integration/testdata/minikube-linux-amd64-latest-stable
 hack/legacy_fill_db/gopogh_filldb_log.txt
 hack/legacy_fill_db/out/output_summary.json
 hack/legacy_fill_db/out/output.html
-
-hack/go-licenses
