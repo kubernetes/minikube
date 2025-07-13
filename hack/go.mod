@@ -1,6 +1,7 @@
 module minikube-hack
 
-go 1.24.3
+go 1.24.0
+toolchain go1.24.1
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
