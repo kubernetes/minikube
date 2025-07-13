@@ -22,10 +22,11 @@ import (
 	"strings"
 	"time"
 
+	"minikube-hack/update"
+
 	"github.com/google/go-github/v73/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
-	"k8s.io/minikube/hack/update"
 )
 
 const (
