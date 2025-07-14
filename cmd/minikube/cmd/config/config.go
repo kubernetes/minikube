@@ -172,6 +172,10 @@ var settings = []Setting{
 		name: config.MaxAuditEntries,
 		set:  SetInt,
 	},
+	{
+		name: config.DefaultDNSDomain,
+		set:  SetString,
+	},
 }
 
 // ConfigCmd represents the config command

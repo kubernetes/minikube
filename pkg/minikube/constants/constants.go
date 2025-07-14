@@ -79,7 +79,7 @@ const (
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
 	// ClusterDNSDomain is the default DNS domain
-	ClusterDNSDomain = "cluster.local"
+	DefaultDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
 	// HostAlias is a DNS alias to the container/VM host IP

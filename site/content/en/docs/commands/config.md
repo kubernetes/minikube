@@ -41,7 +41,7 @@ Configurable fields:
  * native-ssh
  * rootless
  * MaxAuditEntries
-
+ * default-dns-domain - the default cluster top-level domain name (default "cluster.local")
 ```shell
 minikube config SUBCOMMAND [flags]
 ```
@@ -49,8 +49,7 @@ minikube config SUBCOMMAND [flags]
 ### Options inherited from parent commands
 
 ```
-      --add_dir_header                   If true, adds the file directory to the header of the log messages
-      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
+      --add_dir_header                   If true, adds the file directory to the header of the lo      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
   -h, --help                             
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
@@ -69,6 +68,17 @@ minikube config SUBCOMMAND [flags]
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
+### What the config fields mean
+
+#### default-dns-domain - the default cluster top-level domain name
+
+The default is "cluster.local". This configuration field will only affect a newly started cluster.
+When restarting a cluster with the `start` subcommand, this configuration field will not change a domain
+name for that cluster.
+
+You can override this setting by using the `--dns-domain` flagfor the `start` subcommand. The `--dns-domain`
+can also change the domain name when restarting a cluster.
 
 ## minikube config defaults
 
@@ -306,4 +316,3 @@ minikube config view [flags]
   -v, --v Level                          number for the log level verbosity
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
-
