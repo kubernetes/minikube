@@ -17,103 +17,143 @@ limitations under the License.
 package oci
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestParseMountString(t *testing.T) {
 	testCases := []struct {
 		Name          string
-		MountStrings  []string
+		MountStrings  string
 		ExpectErr     bool
-		ExpectedMount Mount
+		ExpectedMount []Mount
 	}{
 		{
 			Name:         "basic linux",
-			MountStrings: []string{"/foo:/bar"},
+			MountStrings: "/foo:/bar",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				HostPath:      "/foo",
-				ContainerPath: "/bar",
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "/foo",
+					ContainerPath: "/bar",
+				},
 			},
 		},
 		{
 			Name:         "linux read only",
-			MountStrings: []string{"/foo:/bar:ro"},
+			MountStrings: "/foo:/bar:ro",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				HostPath:      "/foo",
-				ContainerPath: "/bar",
-				Readonly:      true,
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "/foo",
+					ContainerPath: "/bar",
+					Readonly:      true,
+				},
 			},
 		},
 		{
 			Name:         "windows style",
-			MountStrings: []string{"C:\\Windows\\Path:/foo"},
+			MountStrings: "C:\\Windows\\Path:/foo",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				HostPath:      "C:\\Windows\\Path",
-				ContainerPath: "/foo",
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "C:\\Windows\\Path",
+					ContainerPath: "/foo",
+				},
 			},
 		},
 		{
 			Name:         "windows style read/write",
-			MountStrings: []string{"C:\\Windows\\Path:/foo:rw"},
+			MountStrings: "C:\\Windows\\Path:/foo:rw",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				HostPath:      "C:\\Windows\\Path",
-				ContainerPath: "/foo",
-				Readonly:      false,
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "C:\\Windows\\Path",
+					ContainerPath: "/foo",
+					Readonly:      false,
+				},
 			},
 		},
 		{
 			Name:         "container only",
-			MountStrings: []string{"/foo"},
+			MountStrings: "/foo",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				ContainerPath: "/foo",
+			ExpectedMount: []Mount{
+				{
+					ContainerPath: "/foo",
+				},
 			},
 		},
 		{
 			Name:         "selinux relabel & bidirectional propagation",
-			MountStrings: []string{"/foo:/bar/baz:Z,rshared"},
+			MountStrings: "/foo:/bar/baz:Z,rshared",
 			ExpectErr:    false,
-			ExpectedMount: Mount{
-				HostPath:       "/foo",
-				ContainerPath:  "/bar/baz",
-				SelinuxRelabel: true,
-				Propagation:    MountPropagationBidirectional,
+			ExpectedMount: []Mount{
+				{
+					HostPath:       "/foo",
+					ContainerPath:  "/bar/baz",
+					SelinuxRelabel: true,
+					Propagation:    MountPropagationBidirectional,
+				},
 			},
 		},
 		{
 			Name:         "invalid mount option",
-			MountStrings: []string{"/foo:/bar:Z,bat"},
+			MountStrings: "/foo:/bar:Z,bat",
 			ExpectErr:    true,
-			ExpectedMount: Mount{
-				HostPath:       "/foo",
-				ContainerPath:  "/bar",
-				SelinuxRelabel: true,
+			ExpectedMount: []Mount{
+				{
+					HostPath:       "/foo",
+					ContainerPath:  "/bar",
+					SelinuxRelabel: true,
+				},
 			},
 		},
 		{
 			Name:          "empty spec",
-			MountStrings:  []string{""},
+			MountStrings:  "",
 			ExpectErr:     false,
-			ExpectedMount: Mount{},
+			ExpectedMount: []Mount{{}},
 		},
 		{
 			Name:         "relative container path",
-			MountStrings: []string{"/foo/bar:baz/bat:private"},
+			MountStrings: "/foo/bar:baz/bat:private",
 			ExpectErr:    true,
-			ExpectedMount: Mount{
-				HostPath:      "/foo/bar",
-				ContainerPath: "baz/bat",
-				Propagation:   MountPropagationNone,
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "/foo/bar",
+					ContainerPath: "baz/bat",
+					Propagation:   MountPropagationNone,
+				},
+			},
+		},
+		{
+			Name:         "multi mount string",
+			MountStrings: "/foo:/foo:ro;/bar:/bar:Z,rshared",
+			ExpectErr:    false,
+			ExpectedMount: []Mount{
+				{
+					HostPath:      "/foo",
+					ContainerPath: "/foo",
+					Readonly:      true,
+				},
+				{
+					HostPath:       "/bar",
+					ContainerPath:  "/bar",
+					SelinuxRelabel: true,
+					Propagation:    MountPropagationBidirectional,
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		for _, mountString := range tc.MountStrings {
+		mountStrings := strings.Split(tc.MountStrings, ";")
+		if len(mountStrings) != len(tc.ExpectedMount) {
+			t.Errorf("Unexpected length error for \"%s\":\n expected %d\ngot %d", tc.Name, len(tc.ExpectedMount), len(mountStrings))
+		}
+
+		for id, mountString := range mountStrings {
 			mount, err := ParseMountString(mountString)
 			if err != nil && !tc.ExpectErr {
 				t.Errorf("Unexpected error for \"%s\": %v", tc.Name, err)
@@ -121,7 +161,7 @@ func TestParseMountString(t *testing.T) {
 			if err == nil && tc.ExpectErr {
 				t.Errorf("Expected error for \"%s\" but didn't get any: %v %v", tc.Name, mount, err)
 			}
-			if mount != tc.ExpectedMount {
+			if mount != tc.ExpectedMount[id] {
 				t.Errorf("Unexpected mount for \"%s\":\n expected %+v\ngot %+v", tc.Name, tc.ExpectedMount, mount)
 			}
 		}
