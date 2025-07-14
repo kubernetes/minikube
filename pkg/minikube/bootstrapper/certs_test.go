@@ -36,7 +36,7 @@ func TestSetupCerts(t *testing.T) {
 		CertExpiration: constants.DefaultCertExpiration,
 		KubernetesConfig: config.KubernetesConfig{
 			APIServerName: constants.APIServerName,
-			DNSDomain:     constants.ClusterDNSDomain,
+			DNSDomain:     constants.DefaultClusterDNSDomain,
 			ServiceCIDR:   constants.DefaultServiceCIDR,
 		},
 	}
