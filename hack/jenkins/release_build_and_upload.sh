@@ -84,10 +84,10 @@ COMMIT=$(echo "$BUILT_VERSION" | grep '^commit:' | awk '{print $2}')
 
 if echo "$COMMIT" | grep -q dirty; then
   echo "'minikube version' reports dirty commit: $COMMIT"
-  echo ""
+  echo "------------------------------------------------------------------------"
   echo "The following uncommitted changes are causing the build to be dirty:"
   git status --porcelain
-  echo ""
+  echo "------------------------------------------------------------------------"
   echo "To fix this, commit or stash the above changes."
   exit 1
 fi
