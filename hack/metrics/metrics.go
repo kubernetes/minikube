@@ -27,7 +27,6 @@ import (
 	"time"
 
 	_ "cloud.google.com/go/storage"
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/pkg/errors"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
