@@ -46,6 +46,8 @@ require (
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v1.0.8
+	github.com/onsi/ginkgo v1.14.0
+	github.com/onsi/gomega v1.35.1
 	github.com/opencontainers/cgroups v0.0.1
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/otiai10/copy v1.14.1
@@ -59,6 +61,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.20.1
+	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	go.opentelemetry.io/otel v1.37.0
 	go.opentelemetry.io/otel/sdk v1.37.0
@@ -181,6 +184,7 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect
 	github.com/olekukonko/ll v0.0.8 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
@@ -208,6 +212,8 @@ require (
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/vbatts/tar-split v0.11.6 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
+	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
+	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zeebo/errs v1.4.0 // indirect
@@ -229,6 +235,7 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/cli-runtime v0.33.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
