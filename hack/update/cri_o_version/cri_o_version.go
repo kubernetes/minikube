@@ -35,7 +35,7 @@ import (
 const cxTimeout = 5 * time.Minute
 
 var (
-	schema = map[string]update.Item{
+	crioSchema = map[string]update.Item{
 		"deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk": {
 			Replace: map[string]string{
 				`CRIO_BIN_VERSION = .*`: `CRIO_BIN_VERSION = {{.Version}}`,
@@ -50,13 +50,13 @@ var (
 	}
 )
 
-type Data struct {
+type CrioData struct {
 	Version   string
 	MMVersion string
 	Commit    string
 }
 
-func main() {
+func detectCrio() (CrioData, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cxTimeout)
 	defer cancel()
 
@@ -66,17 +66,20 @@ func main() {
 	}
 	mmVersion := strings.TrimPrefix(semver.MajorMinor(stable.Tag), "v")
 
-	data := Data{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}
+	return CrioData{Version: stable.Tag, MMVersion: mmVersion, Commit: stable.Commit}, err
+}
 
-	update.Apply(schema, data)
+func (data CrioData) updateCrio() {
 
-	if err := updateHashFile(data.Version); err != nil {
+	update.Apply(crioSchema, data)
+
+	if err := updateCrioHashFile(data.Version); err != nil {
 		klog.Fatalf("failed to update hash file: %v", err)
 	}
 }
 
 func updateHashFile(version string) error {
-	filePath := "../deploy/iso/minikube-iso/package/crio-bin/crio-bin.hash"
+	filePath := "../../../deploy/iso/minikube-iso/package/crio-bin/crio-bin.hash"
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
@@ -108,7 +111,7 @@ func updateHashFile(version string) error {
 		return fmt.Errorf("failed to open hash file: %v", err)
 	}
 	defer f.Close()
-	if _, err := fmt.Fprintf(f, "sha256 %x %s.tar.gz\n", sum, version); err != nil {
+	if _, err := f.WriteString(fmt.Sprintf("sha256 %x %s.tar.gz\n", sum, version)); err != nil {
 		return fmt.Errorf("failed to write to hash file: %v", err)
 	}
 	return nil
