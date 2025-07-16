@@ -64,9 +64,6 @@ func printAddonImagesTable(addon string) {
 			var tData [][]string
 			table := tablewriter.NewWriter(os.Stdout)
 			table.Header([]string{"Image Name", "Default Image", "Default Registry"})
-			table.SetAutoFormatHeaders(1)
-			table.SetBorders(true)
-			table.SetColumnSeparator("|")
 
 			for imageName, defaultImage := range conf.Images {
 				tData = append(tData, []string{imageName, defaultImage, conf.Registries[imageName]})
