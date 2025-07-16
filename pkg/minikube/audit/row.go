@@ -122,13 +122,13 @@ func rowsToASCIITable(rows []row, headers []string) string {
 	for _, r := range rows {
 		c = append(c, r.toFields())
 	}
+
 	b := new(bytes.Buffer)
-	t := tablewriter.NewWriter(b)
+	t := tablewriter.NewTable(b)
+
 	t.Header(headers)
-	t.SetAutoFormatHeaders(0)
-	t.SetBorders(true)
-	t.SetColumnSeparator("|")
 	t.Bulk(c)
 	t.Render()
+
 	return b.String()
 }

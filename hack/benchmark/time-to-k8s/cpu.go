@@ -30,10 +30,11 @@ import (
 var fields = []string{"CPU Utilization(%)", "CPU Time(seconds)"}
 
 func cpuMarkdownTable(categories []plotter.Values, names []string) {
-
-	// categories row is the either cpu pct or time, col is process name
+	// Prepare headers
 	headers := append([]string{""}, names...)
-	c := [][]string{}
+
+	// Prepare rows
+	var c [][]string
 	for i, values := range categories {
 		row := []string{fields[i]}
 		for _, value := range values {
@@ -41,15 +42,14 @@ func cpuMarkdownTable(categories []plotter.Values, names []string) {
 		}
 		c = append(c, row)
 	}
+
+	// Create and render table
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetAutoWrapText(false)
 	t.Header(headers)
-	t.SetAutoFormatHeaders(0)
-	t.SetBorders(true)
-	t.SetColumnSeparator("|")
 	t.Bulk(c)
 	t.Render()
+
 	data.CPUMarkdown = b.String()
 }
 

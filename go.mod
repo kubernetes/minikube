@@ -48,7 +48,7 @@ require (
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/moby/patternmatcher v0.6.0
-	github.com/olekukonko/tablewriter v1.0.7
+	github.com/olekukonko/tablewriter v1.0.8
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/opencontainers/runc v1.2.6
 	github.com/otiai10/copy v1.14.1

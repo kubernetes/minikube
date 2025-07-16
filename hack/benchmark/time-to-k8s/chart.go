@@ -179,9 +179,12 @@ func values(apps map[string]runs) ([]plotter.Values, []plotter.Values, []plotter
 }
 
 func outputMarkdownTable(categories []plotter.Values, totals []float64, names []string) {
+
 	headers := append([]string{""}, names...)
-	c := [][]string{}
+
+	var c [][]string
 	fields := []string{"Command Exec", "API Server Answering", "Kubernetes SVC", "DNS SVC", "App Running", "DNS Answering"}
+
 	for i, values := range categories {
 		row := []string{fields[i]}
 		for _, value := range values {
@@ -189,20 +192,19 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 		}
 		c = append(c, row)
 	}
+
 	totalStrings := []string{"Total"}
 	for _, t := range totals {
 		totalStrings = append(totalStrings, fmt.Sprintf("%.3f", t))
 	}
 	c = append(c, totalStrings)
+
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetAutoWrapText(false)
 	t.Header(headers)
-	t.SetAutoFormatHeaders(0)
-	t.SetBorders(true)
-	t.SetColumnSeparator("|")
 	t.Bulk(c)
 	t.Render()
+
 	data.TimeMarkdown = b.String()
 }
 
