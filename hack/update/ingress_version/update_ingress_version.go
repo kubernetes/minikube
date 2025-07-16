@@ -29,7 +29,7 @@ import (
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 
-	"k8s.io/minikube/hack/update"
+	"minikube-hack/update"
 )
 
 const (

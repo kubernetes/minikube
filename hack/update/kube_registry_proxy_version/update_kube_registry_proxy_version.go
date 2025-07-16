@@ -24,7 +24,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"k8s.io/minikube/hack/update"
+	"minikube-hack/update"
 )
 
 var schema = map[string]update.Item{

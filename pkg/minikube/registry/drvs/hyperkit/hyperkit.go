@@ -53,7 +53,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Preferred,
+		Priority: registry.Deprecated,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
