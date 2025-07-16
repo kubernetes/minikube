@@ -1105,7 +1105,7 @@ update-buildkit-version:
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
-	cd hack && go run update/cri-o_version/update_cri-o_version.go
+	cd hack && go run update/cri-o_version
 
 .PHONY: update-crun-version
 update-crun-version:

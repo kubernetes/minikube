@@ -2,6 +2,7 @@
 Description=Container Runtime Interface for OCI (CRI-O)
 Documentation=https://github.com/cri-o/cri-o
 Wants=network-online.target
+Before=kubelet.service
 After=network-online.target minikube-automount.service
 Requires=minikube-automount.service
 
@@ -22,6 +23,9 @@ LimitCORE=infinity
 OOMScoreAdjust=-999
 TimeoutStartSec=0
 Restart=on-abnormal
+RestartSec=10
+WatchdogSec=60s
 
 [Install]
 WantedBy=multi-user.target
+Alias=cri-o.service
