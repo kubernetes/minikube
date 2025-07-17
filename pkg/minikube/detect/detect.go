@@ -116,8 +116,9 @@ func NestedVM() bool {
 	if runtime.GOOS != "darwin" {
 		c := exec.Command("sysctl", "-n", "kern.hv_vmm_present")
 		o, err := c.Output()
+		klog.Warningf("output of check for nested VM: %s", string(o))
 		if err != nil {
-			return false
+			klog.Warningf("failed to check for nested VM: %v", err)
 		}
 		return strings.TrimSpace(string(o)) == "1"
 	}
