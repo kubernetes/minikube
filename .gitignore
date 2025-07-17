@@ -7,7 +7,6 @@
 .cache
 _obj
 _test
-vendor
 
 #Don't ignore arch linux .SRCINFO
 !.SRCINFO
