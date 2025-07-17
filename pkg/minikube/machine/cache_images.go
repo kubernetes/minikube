@@ -844,13 +844,10 @@ func humanImageSize(imageSize string) string {
 
 // renderImagesTable renders pretty table for images list
 func renderImagesTable(images [][]string) {
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Image", "Tag", "Image ID", "Size"})
-	table.SetAutoFormatHeaders(false)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("|")
-	table.AppendBulk(images)
+	// Simplest version with default formatting
+	table := tablewriter.NewTable(os.Stdout)
+	table.Header([]string{"Image", "Tag", "Image ID", "Size"})
+	table.Bulk(images)
 	table.Render()
 }
 
