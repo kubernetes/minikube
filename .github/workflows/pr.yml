@@ -463,7 +463,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          ./minikube-darwin-amd64 start --driver=vfkit --no-kubernetes --alsologtostderr -v=6 --wait-timeout=10m
+          ./minikube-darwin-amd64 start --driver=vfkit --no-kubernetes --alsologtostderr -v=6 --wait-timeout=25m
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
