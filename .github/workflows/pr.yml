@@ -116,6 +116,12 @@ jobs:
         shell: bash
         run: |
           echo "--------------------------"
+          grep -i hypervisor /proc/cpuinfo || true
+          echo "--------------------------"
+          systemd-detect-virt || true
+          echo "--------------------------"
+          virt-what || true
+          echo "--------------------------"
           docker version || true
           echo "--------------------------"
           docker info || true
@@ -434,6 +440,7 @@ jobs:
           sysctl hw.model
           sysctl -n kern.hv_vmm_present
           sysctl -n kern.hv_support
+          system_profiler SPHardwareDataType
       - name: Install Tools
         shell: bash
         run: |

@@ -111,6 +111,19 @@ func GithubActionRunner() bool {
 	return os.Getenv("GITHUB_ACTIONS") == "true"
 }
 
+// NestedVM returns true if the current machine is running a nested VM
+func NestedVM() bool {
+	if runtime.GOOS != "darwin" {
+		c := exec.Command("sysctl", "-n", "kern.hv_vmm_present")
+		o, err := c.Output()
+		if err != nil {
+			return false
+		}
+		return strings.TrimSpace(string(o)) == "1"
+	}
+	return false
+}
+
 // ImageCacheDir returns the path in the minikube home directory to the container image cache for the current architecture
 func ImageCacheDir() string {
 	return filepath.Join(localpath.MakeMiniPath("cache", "images"), runtime.GOARCH)

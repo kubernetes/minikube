@@ -44,6 +44,7 @@ import (
 	"k8s.io/klog/v2"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/vmnet"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -309,7 +310,13 @@ func (d *Driver) setupIP(mac string) error {
 		return nil
 	}
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
-	for i := 0; i < 600; i++ {
+	mutliplier := 1
+	if detect.NestedVM() { // will help with running in Free github action VMs
+		mutliplier = 3
+		log.Debugf("Detected running inside a nested VM, increasing retry times by %d times", mutliplier)
+	}
+
+	for i := 0; i < 60*mutliplier; i++ {
 		log.Debugf("Attempt %d", i)
 		err = getIP()
 		if err == nil {
