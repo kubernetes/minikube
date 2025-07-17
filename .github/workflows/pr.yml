@@ -434,22 +434,22 @@ jobs:
       - name: Install Tools
         shell: bash
         run: |
-          brew install vfkit
+          # brew install vfkit
           brew install meson qemu cdrtools coreutils tree
           fw=/usr/libexec/ApplicationFirewall/socketfilterfw
           sudo $fw --remove /usr/libexec/bootpd
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
-      - name: Install vmnet-helper
-        shell: bash
-        run: |
-          tag="$(curl -fsSL https://api.github.com/repos/nirs/vmnet-helper/releases/latest | jq -r .tag_name)"
-          machine="$(uname -m)"
-          archive="vmnet-helper-$tag-$machine.tar.gz"
-          curl -LOf "https://github.com/nirs/vmnet-helper/releases/download/$tag/$archive"
-          sudo tar xvf "$archive" -C / opt/vmnet-helper
-          rm "$archive"
-          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/  
+      # - name: Install vmnet-helper
+      #   shell: bash
+      #   run: |
+      #     tag="$(curl -fsSL https://api.github.com/repos/nirs/vmnet-helper/releases/latest | jq -r .tag_name)"
+      #     machine="$(uname -m)"
+      #     archive="vmnet-helper-$tag-$machine.tar.gz"
+      #     curl -LOf "https://github.com/nirs/vmnet-helper/releases/download/$tag/$archive"
+      #     sudo tar xvf "$archive" -C / opt/vmnet-helper
+      #     rm "$archive"
+      #     sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/  
       - name: Install Socket vmnet
         run: |
           brew install socket_vmnet
