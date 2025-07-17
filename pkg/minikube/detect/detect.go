@@ -113,7 +113,7 @@ func GithubActionRunner() bool {
 
 // NestedVM returns true if the current machine is running a nested VM
 func NestedVM() bool {
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS == "darwin" {
 		c := exec.Command("sysctl", "-n", "kern.hv_vmm_present")
 		o, err := c.Output()
 		klog.Warningf("output of check for nested VM: %s", string(o))

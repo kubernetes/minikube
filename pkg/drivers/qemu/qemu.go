@@ -521,6 +521,8 @@ func (d *Driver) Start() error {
 		if detect.NestedVM() { // will help with running in Free github action VMs
 			multiplier = 3
 			log.Debugf("Detected running inside a nested VM, increasing retry times by %d times", multiplier)
+		} else {
+			log.Debugf("Detected NOT running inside a nested VM")
 		}
 
 		for i := 0; i < 60*multiplier; i++ {
