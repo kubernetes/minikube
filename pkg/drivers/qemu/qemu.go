@@ -518,13 +518,9 @@ func (d *Driver) Start() error {
 		}
 		// Implement a retry loop because IP address isn't added to dhcp leases file immediately
 		multiplier := 1
-		if detect.NestedVM() { // will help with running in Free github action VMs
-			multiplier = 3
-			log.Debugf("Detected running inside a nested VM, increasing retry times by %d times", multiplier)
-		} else {
-			log.Debugf("Detected NOT running inside a nested VM")
+		if detect.NestedVM() {
+			multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
 		}
-
 		for i := 0; i < 60*multiplier; i++ {
 			log.Debugf("Attempt %d", i)
 			err = getIP()
