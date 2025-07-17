@@ -434,9 +434,6 @@ jobs:
       - name: Install Tools
         shell: bash
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install kubectl /usr/local/bin/kubectl
-          kubectl version --client=true
           brew install vfkit
           fw=/usr/libexec/ApplicationFirewall/socketfilterfw
           sudo $fw --remove /usr/libexec/bootpd
