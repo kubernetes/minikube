@@ -435,17 +435,25 @@ jobs:
         shell: bash
         run: |
           brew install vfkit
+          brew install meson qemu cdrtools coreutils tree
           fw=/usr/libexec/ApplicationFirewall/socketfilterfw
           sudo $fw --remove /usr/libexec/bootpd
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
-          # install vmnet-helper
+      - name: Install vmnet-helper
+        shell: bash
+        run: |
           tag="$(curl -fsSL https://api.github.com/repos/nirs/vmnet-helper/releases/latest | jq -r .tag_name)"
           machine="$(uname -m)"
           archive="vmnet-helper-$tag-$machine.tar.gz"
           curl -LOf "https://github.com/nirs/vmnet-helper/releases/download/$tag/$archive"
           sudo tar xvf "$archive" -C / opt/vmnet-helper
-          rm "$archive"   
+          rm "$archive"
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/  
+      - name: Install Socket vmnet
+        run: |
+          brew install socket_vmnet
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Download Binaries
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
@@ -463,7 +471,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          ./minikube-darwin-amd64 start --driver=vfkit --no-kubernetes --alsologtostderr -v=6 --wait-timeout=25m
+          ./minikube-darwin-amd64 start --driver=qemu --network socket_vmnet --no-kubernetes --alsologtostderr -v=6 --wait-timeout=25m
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
