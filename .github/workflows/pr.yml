@@ -413,7 +413,70 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-
+  smoke_vfkit_macos:
+    permissions:
+      contents: none
+    needs: [build_minikube_test_binaries]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "smoke_vfkit_macos"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    runs-on: macos-13
+    steps:
+      - name: info block
+        shell: bash
+        run: |
+          sysctl -n hw.memsize
+          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
+          sysctl -n hw.ncpu
+          sysctl -n machdep.cpu.brand_string
+      - name: Install Tools
+        shell: bash
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -sSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
+          brew install vfkit
+          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
+          sudo $fw --remove /usr/libexec/bootpd
+          sudo $fw --add /usr/libexec/bootpd
+          sudo $fw --unblock /usr/libexec/bootpd
+          # install vmnet-helper
+          tag="$(curl -fsSL https://api.github.com/repos/nirs/vmnet-helper/releases/latest | jq -r .tag_name)"
+          machine="$(uname -m)"
+          archive="vmnet-helper-$tag-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/download/$tag/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          rm "$archive"   
+      - name: Download Binaries
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: minikube_binaries
+          path: minikube_binaries
+      - name: Run Integration Test
+        continue-on-error: true
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
+        run: |
+          cd minikube_binaries
+          mkdir -p report
+          mkdir -p testhome
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          MINIKUBE_HOME=$(pwd)/testhome ./minikube-macos-amd64 delete --all --purge
+          START_TIME=$(date -u +%s)
+          ./minikube-macos-amd64 start --driver=vfkit --no-kubernetes --alsologtostderr -v=6 --wait-timeout=10m
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: smoke_vfkit_macos
+          path: minikube_binaries/report
   functional_podman_ubuntu:
     permissions:
       contents: none
@@ -668,7 +731,7 @@ jobs:
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
-          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
+          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/          
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: all_reports
