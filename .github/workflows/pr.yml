@@ -431,6 +431,9 @@ jobs:
           echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
           sysctl -n hw.ncpu
           sysctl -n machdep.cpu.brand_string
+          sysctl hw.model
+          sysctl -n kern.hv_vmm_present
+          sysctl -n kern.hv_support
       - name: Install Tools
         shell: bash
         run: |
@@ -471,7 +474,7 @@ jobs:
           chmod a+x minikube-*
           MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          ./minikube-darwin-amd64 start --driver=qemu --network socket_vmnet --no-kubernetes --alsologtostderr -v=6 --wait-timeout=25m
+          ./minikube-darwin-amd64 start --driver=qemu --network socket_vmnet --alsologtostderr -v=6 --wait-timeout=25m
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
