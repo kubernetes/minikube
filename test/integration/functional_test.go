@@ -986,7 +986,8 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Run `minikube start --dry-run --memory 250MB`
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsWithContext(ctx)...)
+	// using StartArgsSkipMemoryWithContext to skip memory-related flags to avoid duplicate memory flag in this test
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsSkipMemoryWithContext(ctx)...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -1028,7 +1029,7 @@ func validateInternationalLanguage(ctx context.Context, t *testing.T, profile st
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsWithContext(ctx)...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr"}, StartArgsSkipMemoryWithContext(ctx)...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	// docs: Set environment variable `LC_ALL=fr` to enable minikube translation to French
 	c.Env = append(os.Environ(), "LC_ALL=fr")
@@ -1038,11 +1039,7 @@ func validateInternationalLanguage(ctx context.Context, t *testing.T, profile st
 
 	wantCode := reason.ExInsufficientMemory
 	if rr.ExitCode != wantCode {
-		if HyperVDriver() {
-			t.Skip("skipping this error on HyperV till this issue is solved https://github.com/kubernetes/minikube/issues/9785")
-		} else {
-			t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
-		}
+		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}
 	// docs: Make sure the dry-run output message is in French
 	if !strings.Contains(rr.Stdout.String(), "Utilisation du pilote") {

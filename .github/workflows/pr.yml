@@ -535,64 +535,6 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi  
-  smoke_vfkit_macos:
-    permissions:
-      contents: none
-    needs: [build_minikube_test_binaries]
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "smoke_vfkit_macos"
-      GOPOGH_RESULT: ""
-      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    runs-on: macos-13
-    steps:
-      - name: info block
-        shell: bash
-        run: |
-          sysctl -n hw.memsize
-          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
-          sysctl -n hw.ncpu
-          sysctl -n machdep.cpu.brand_string
-          sysctl hw.model
-          sysctl -n kern.hv_vmm_present
-          sysctl -n kern.hv_support
-          system_profiler SPHardwareDataType
-      - name: Install Tools
-        shell: bash
-        run: |
-          brew install meson qemu cdrtools coreutils tree
-          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
-          sudo $fw --remove /usr/libexec/bootpd
-          sudo $fw --add /usr/libexec/bootpd
-          sudo $fw --unblock /usr/libexec/bootpd
-      - name: Install Socket vmnet
-        run: |
-          brew install socket_vmnet
-          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
-      - name: Download Binaries
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: minikube_binaries
-          path: minikube_binaries
-      - name: Run Integration Test
-        continue-on-error: true
-        # bash {0} to allow test to continue to next step. in case of
-        shell: bash {0}
-        run: |
-          cd minikube_binaries
-          mkdir -p report
-          mkdir -p testhome
-          chmod a+x e2e-*
-          chmod a+x minikube-*
-          MINIKUBE_HOME=$(pwd)/testhome ./minikube-darwin-amd64 delete --all --purge
-          START_TIME=$(date -u +%s)
-          ./minikube-darwin-amd64 start --driver=qemu --network socket_vmnet --alsologtostderr -v=6 --wait-timeout=25m
-          END_TIME=$(date -u +%s)
-          TIME_ELAPSED=$(($END_TIME-$START_TIME))
-          min=$((${TIME_ELAPSED}/60))
-          sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED="${min} min $sec seconds "
-          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
   functional_podman_ubuntu:
     permissions:
       contents: none
