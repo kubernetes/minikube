@@ -41,6 +41,7 @@ Configurable fields:
  * native-ssh
  * rootless
  * MaxAuditEntries
+ * DefaultClusterDNSDomain
 
 ```shell
 minikube config SUBCOMMAND [flags]

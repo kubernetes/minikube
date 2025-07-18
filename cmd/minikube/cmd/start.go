@@ -161,6 +161,8 @@ func runStart(cmd *cobra.Command, _ []string) {
 	}
 	defer pkgtrace.Cleanup()
 
+	viper.SetDefault(config.DefaultClusterDNSDomain, constants.DefaultClusterDNSDomain)
+
 	displayVersion(version.GetVersion())
 	go download.CleanUpOlderPreloads()
 
