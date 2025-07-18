@@ -482,6 +482,8 @@ jobs:
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
+          set -x
+          pwd
           cd minikube_binaries
           chmod a+x e2e-*
           chmod a+x minikube-*
@@ -491,7 +493,7 @@ jobs:
 
           MINIKUBE_HOME=/tmp/th ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$/tmp/th/kubeconfig MINIKUBE_HOME=/tmp/th ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=qemu --wait-timeout=15m --network socket_vmnet"  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$/tmp/th/kubeconfig MINIKUBE_HOME=/tmp/th ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=qemu --memory=max--wait-timeout=15m --network socket_vmnet"  -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
