@@ -429,6 +429,17 @@ SSH_AGENT_PID: "29228"
 	}
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
+			origDetector := DockerBackendDetector
+			defer func() { DockerBackendDetector = origDetector }()
+
+			// If this is the podman scenario, mock the backend detector
+			if tc.config.profile == "podmandriver" {
+				DockerBackendDetector = func(_ func(string, ...string) ([]byte, error)) (string, error) {
+					return "podman", nil
+				}
+				tc.config.driver = "docker" // initial value, will be overridden by detector
+			}
+
 			tc.config.EnvConfig.Shell = tc.shell
 			// set global variable
 			outputFormat = tc.output
@@ -454,6 +465,36 @@ SSH_AGENT_PID: "29228"
 
 		})
 	}
+
+	// Add a Podman scenario test case
+	t.Run("podmandriver", func(t *testing.T) {
+		origDetector := DockerBackendDetector
+		defer func() { DockerBackendDetector = origDetector }()
+		DockerBackendDetector = func(_ func(string, ...string) ([]byte, error)) (string, error) {
+			return "podman", nil
+		}
+		config := DockerEnvConfig{profile: "podmandriver", driver: "docker", hostIP: "127.0.0.1", port: 32842, certsDir: "/certs"}
+		config.EnvConfig.Shell = "bash"
+		var b []byte
+		buf := bytes.NewBuffer(b)
+		if err := dockerSetScript(config, buf); err != nil {
+			t.Errorf("setScript(%+v) error: %v", config, err)
+		}
+		got := buf.String()
+		// Podman should still output the same envs, but may add "existing" envs if present in the environment.
+		// For this test, just check the main envs are present.
+		wantSet := `export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:32842"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="podmandriver"
+
+# To point your shell to minikube's docker-daemon, run:
+# eval $(minikube -p podmandriver docker-env)
+`
+		if diff := cmp.Diff(wantSet, got); diff != "" {
+			t.Errorf("setScript(podmandriver) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", diff, got, got)
+		}
+	})
 }
 
 func TestValidDockerProxy(t *testing.T) {
