@@ -77,7 +77,7 @@ func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 		return
 	}
 
-	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountString})
+	out.Step(style.Mounting, "Creating mount {{.name}} ...", out.V{"name": cc.MountStrings})
 	path := os.Args[0]
 	profile := viper.GetString("profile")
 
@@ -102,7 +102,8 @@ func generateMountArgs(profile string, cc config.ClusterConfig) []string {
 		mountDebugVal = 1
 	}
 
-	args := []string{"mount", cc.MountString}
+	args := []string{"mount"}
+	args = append(args, cc.MountStrings...)
 	flags := []struct {
 		name  string
 		value string

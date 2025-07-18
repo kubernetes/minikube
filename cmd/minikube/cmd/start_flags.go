@@ -173,7 +173,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().StringP(containerRuntime, "c", constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start, in a semicolon-separated format(eg. /foo:/foo;/bar:/bar:Z,rshared).")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
 	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
 	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
@@ -492,6 +492,15 @@ func getNetwork(driverName string) string {
 	return n
 }
 
+func getMountStrings() []string {
+	mountStrings := strings.Split(viper.GetString(mountString), ";")
+	if !validateMountStrings(mountStrings) {
+		exit.Message(reason.Usage, "The mount-string contains duplicate items.")
+	}
+
+	return mountStrings
+}
+
 func validateQemuNetwork(n string) string {
 	switch n {
 	case "socket_vmnet":
@@ -544,6 +553,17 @@ func validateVfkitNetwork(n string) string {
 		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
 	}
 	return n
+}
+
+func validateMountStrings(mountStrings []string) bool {
+	mountmap := make(map[string]bool)
+	for _, mountstring := range mountStrings {
+		if _, exists := mountmap[mountstring]; exists {
+			return false
+		}
+		mountmap[mountstring] = true
+	}
+	return true
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
@@ -613,7 +633,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		ExtraDisks:              viper.GetInt(extraDisks),
 		CertExpiration:          viper.GetDuration(certExpiration),
 		Mount:                   viper.GetBool(createMount),
-		MountString:             viper.GetString(mountString),
+		MountStrings:            getMountStrings(),
 		Mount9PVersion:          viper.GetString(mount9PVersion),
 		MountGID:                viper.GetString(mountGID),
 		MountIP:                 viper.GetString(mountIPFlag),
@@ -653,7 +673,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
 	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
-		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
+		cc.ContainerVolumeMounts = getMountStrings()
 	}
 
 	if driver.IsKIC(drvName) {
@@ -692,6 +712,10 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		if runtime.GOOS == "linux" && si.DockerOS == "Docker Desktop" {
 			out.WarningT("For an improved experience it's recommended to use Docker Engine instead of Docker Desktop.\nDocker Engine installation instructions: https://docs.docker.com/engine/install/#server")
 		}
+	}
+
+	if cmd.Flags().Changed(mountString) {
+		cc.MountStrings = getMountStrings()
 	}
 
 	return cc
@@ -865,7 +889,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
 	updateBoolFromFlag(cmd, &cc.Mount, createMount)
-	updateStringFromFlag(cmd, &cc.MountString, mountString)
 	updateStringFromFlag(cmd, &cc.Mount9PVersion, mount9PVersion)
 	updateStringFromFlag(cmd, &cc.MountGID, mountGID)
 	updateStringFromFlag(cmd, &cc.MountIP, mountIPFlag)
