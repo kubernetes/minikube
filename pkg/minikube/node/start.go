@@ -218,8 +218,8 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 		go addons.Enable(&wg, starter.Cfg, list, enabledAddons)
 	}
 
-	// discourage use of the virtualbox driver
-	if starter.Cfg.Driver == driver.VirtualBox && viper.GetBool(config.WantVirtualBoxDriverWarning) {
+	// discourage use of the virtualbox driver, but only if it was manually selected
+	if starter.Cfg.Driver == driver.VirtualBox && !starter.Cfg.DriverAutoSelected && viper.GetBool(config.WantVirtualBoxDriverWarning) {
 		warnVirtualBox()
 	}
 
