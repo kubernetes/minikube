@@ -77,6 +77,9 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet          
+      - name: Download only (iso/image)
+        run:
+          ./out/minikube start --download-only --driver=${{ matrix.driver }} 
       - name: Start minikube (1st boot)
         run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr
       - name: Stop minikube
