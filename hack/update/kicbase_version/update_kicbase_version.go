@@ -50,7 +50,7 @@ import (
 
 	"k8s.io/klog/v2"
 
-	"minikube-hack/update"
+	"k8s.io/minikube/hack/update"
 )
 
 const (
