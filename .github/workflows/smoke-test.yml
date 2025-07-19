@@ -87,6 +87,4 @@ jobs:
       - name: Start minikube again (2nd boot)
         run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr
       - name: delete minikube 
-        run: |
-          set -ex
-          ./out/minikube delete --alsologtostderr
+        run: ./out/minikube delete --alsologtostderr
