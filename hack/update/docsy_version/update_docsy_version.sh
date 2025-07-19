@@ -24,6 +24,6 @@ fi
 readonly version=$1
 
 git submodule update --init
-pushd ../../../site/themes/docsy/
+pushd ../site/themes/docsy/
 git checkout "$1"
 popd

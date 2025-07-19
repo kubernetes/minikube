@@ -98,7 +98,7 @@ func updateHashFile(version, arch, packagePath string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/crictl-bin.hash", packagePath)
+	filePath := fmt.Sprintf("../deploy/iso/minikube-iso/arch/%s/crictl-bin.hash", packagePath)
 	b, err = os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)

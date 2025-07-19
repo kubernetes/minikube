@@ -101,7 +101,7 @@ func updateYAML(version string) {
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
-	if err := os.WriteFile("../../../deploy/addons/volcano/volcano-development.yaml.tmpl", yaml, 0644); err != nil {
+	if err := os.WriteFile("../deploy/addons/volcano/volcano-development.yaml.tmpl", yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }
