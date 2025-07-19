@@ -43,7 +43,7 @@ func main() {
 		klog.Fatalf("Unable to get Docsy stable version: %v", err)
 	}
 
-	if err := exec.CommandContext(ctx, "./update_docsy_version.sh", stable).Run(); err != nil {
+	if err := exec.CommandContext(ctx, "update/docsy_version/update_docsy_version.sh", stable).Run(); err != nil {
 		klog.Fatalf("failed to update docsy commit: %v", err)
 	}
 
