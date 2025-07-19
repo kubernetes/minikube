@@ -212,3 +212,29 @@ func MacOS13Plus() bool {
 	}
 	return major >= 13
 }
+
+// NestedVM returns true if the current machine is running a nested VM (like in MacOs in Github Action)
+func NestedVM() bool {
+	if runtime.GOOS == "linux" {
+		c := exec.Command("systemd-detect-virt", "--quiet")
+		_, err := c.Output()
+		if err == nil {
+			klog.Infof("nested VM detected")
+			return true
+		}
+		return false // On a bare-metal system, it exits with code 1 and outputs "none".
+
+	}
+
+	if runtime.GOOS == "darwin" {
+		c := exec.Command("sysctl", "-n", "kern.hv_vmm_present")
+		o, err := c.Output()
+		if err != nil {
+			klog.Warningf("Failed to check for nested VM: %v", err)
+			return false
+		}
+		klog.Infof("nested VM detected, %s", o)
+		return true
+	}
+	return false
+}
