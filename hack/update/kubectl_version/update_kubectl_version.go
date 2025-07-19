@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"minikube-hack/update"
+	"k8s.io/minikube/hack/update"
 
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
