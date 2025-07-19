@@ -29,7 +29,7 @@ import (
 	"text/template"
 	"time"
 
-	"minikube-hack/update"
+	"k8s.io/minikube/hack/update"
 
 	"github.com/google/go-github/v73/github"
 	"golang.org/x/mod/semver"
