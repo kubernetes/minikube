@@ -214,6 +214,7 @@ func MacOS13Plus() bool {
 }
 
 // NestedVM returns true if the current machine is running a nested VM (like in MacOs in Github Action)
+// this func tries its best but not guaranteed to be 100% accurate, and if not sure will return false (default behaviour).
 func NestedVM() bool {
 	if runtime.GOOS == "linux" {
 		c := exec.Command("systemd-detect-virt", "--quiet")
