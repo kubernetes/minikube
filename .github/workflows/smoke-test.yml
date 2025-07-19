@@ -20,6 +20,13 @@ jobs:
       matrix:
         os: [macos-13]
         driver: [qemu, vfkit]
+        include:
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
     steps:
       - name: Info Block
         shell: bash
@@ -51,11 +58,17 @@ jobs:
           sudo $fw --remove /usr/libexec/bootpd
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
-      - name: Install vfkit
+      - name: Install vfkit and vmnet-helper
         if: matrix.driver == 'vfkit'
         run: |
           brew update
           brew install vfkit
+          machine="$(uname -m)"
+          archive="vmnet-helper-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          rm "$archive"
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
       - name: Install qemu and socket_vmnet 
         if: matrix.driver == 'qemu'
         run: |
@@ -66,7 +79,7 @@ jobs:
       - name: Start minikube (1st boot)
         run: |
           set -ex
-          ./out/minikube start --driver=${{ matrix.driver }} --memory 8gb --no-kubernetes --alsologtostderr
+          ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --memory 8gb --no-kubernetes --alsologtostderr
       - name: Stop minikube
         run: |
           set -ex
@@ -74,8 +87,8 @@ jobs:
       - name: Start minikube again (2nd boot)
         run: |
           set -ex
-          ./out/minikube start --driver=${{ matrix.driver }} --no-kubernetes --alsologtostderr
+          ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --no-kubernetes --alsologtostderr
       - name: delete minikube 
         run: |
           set -ex
-          ./out/minikube --delete --alsologtostderr
+          ./out/minikube delete --alsologtostderr
