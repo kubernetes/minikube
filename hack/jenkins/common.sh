@@ -145,6 +145,9 @@ case "${DRIVER}" in
   vfkit)
     echo "vfkit:     $(vfkit --version)"
   ;;
+  krunkit)
+    echo "krunkit:   $(krunkit --version)"
+  ;;
 esac
 
 echo ""
