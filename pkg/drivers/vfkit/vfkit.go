@@ -56,6 +56,7 @@ const (
 	isoFilename     = "boot2docker.iso"
 	pidFileName     = "vfkit.pid"
 	sockFilename    = "vfkit.sock"
+	logFileName     = "vfkit.log"
 	serialFileName  = "serial.log"
 	efiVarsFileName = "vfkit.efivars"
 	defaultSSHUser  = "docker"
@@ -250,7 +251,8 @@ func (d *Driver) startVfkit(socketPath string) error {
 	startCmd = append(startCmd,
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
-		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()))
+		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()),
+		"--log-level", "debug")
 
 	efiVarsPath := d.ResolveStorePath(efiVarsFileName)
 	startCmd = append(startCmd,
@@ -292,6 +294,13 @@ func (d *Driver) startVfkit(socketPath string) error {
 	// Create vfkit in a new process group, so minikube caller can use killpg
 	// to terminate the entire process group without harming the vfkit process.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	logfile, err := d.openLogfile()
+	if err != nil {
+		return fmt.Errorf("failed to open vfkit logfile: %w", err)
+	}
+	defer logfile.Close()
+	cmd.Stderr = logfile
 
 	if err := cmd.Start(); err != nil {
 		return err
@@ -335,6 +344,11 @@ func (d *Driver) setupIP(mac string) error {
 
 func isBootpdError(err error) bool {
 	return strings.Contains(err.Error(), "could not find an IP address")
+}
+
+func (d *Driver) openLogfile() (*os.File, error) {
+	logfile := d.ResolveStorePath(logFileName)
+	return os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 }
 
 func (d *Driver) stopVfkit() error {
