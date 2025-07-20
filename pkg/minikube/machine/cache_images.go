@@ -33,6 +33,7 @@ import (
 	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v2"
@@ -845,13 +846,19 @@ func humanImageSize(imageSize string) string {
 // renderImagesTable renders pretty table for images list
 func renderImagesTable(images [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Image", "Tag", "Image ID", "Size"})
-	table.SetAutoFormatHeaders(false)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("|")
-	table.AppendBulk(images)
-	table.Render()
+	table.Header("Image", "Tag", "Image ID", "Size")
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithRowAlignment(tw.AlignLeft),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
+	if err := table.Bulk(images); err != nil {
+		klog.Warningf("error rendering images table: %v", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Warningf("error rendering images table: %v", err)
+	}
 }
 
 // TagImage tags image in all nodes in profile

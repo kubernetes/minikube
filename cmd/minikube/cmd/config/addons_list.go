@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -96,9 +97,12 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	sort.Strings(addonNames)
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(true)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetCenterSeparator("|")
+
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
 
 	// Create table header
 	var tHeader []string
@@ -110,7 +114,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
 	}
-	table.SetHeader(tHeader)
+	table.Header(tHeader)
 
 	// Create table data
 	var tData [][]string
@@ -136,10 +140,12 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		}
 		tData = append(tData, temp)
 	}
-	table.AppendBulk(tData)
-
-	table.Render()
-
+	if err := table.Bulk(tData); err != nil {
+		klog.Error("Error rendering table (bulk)", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Error("Error rendering table", err)
+	}
 	v, _, err := config.ListProfiles()
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
