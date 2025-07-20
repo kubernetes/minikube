@@ -88,9 +88,9 @@ jobs:
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Minikube Download only (iso/image)
         run:
-          ./out/minikube start --download-only --driver=${{ matrix.driver }}
+          ./out/minikube start --download-only --driver ${{ matrix.driver }}
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes --alsologtostderr
+        run: ./out/minikube start --driver ${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes --alsologtostderr
       - name: Stop minikube
         run: ./out/minikube stop
       - name: Start minikube again (2nd boot)
