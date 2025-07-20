@@ -30,6 +30,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -234,10 +235,19 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 // PrintServiceList prints a list of services as a table which has
 // "Namespace", "Name" and "URL" columns to a writer
 func PrintServiceList(writer io.Writer, data [][]string) {
-	table := tablewriter.NewTable(writer)
-	table.Header([]string{"Namespace", "Name", "Target Port", "URL"})
-	table.Bulk(data)
-	table.Render()
+	table := tablewriter.NewWriter(writer)
+	table.Header("Namespace", "Name", "Target Port", "URL")
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
+	if err := table.Bulk(data); err != nil {
+		klog.Error("Error while printing service list: ", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Error("Error rendering service list table: ", err)
+	}
 }
 
 // SVCNotFoundError error type handles 'service not found' scenarios
