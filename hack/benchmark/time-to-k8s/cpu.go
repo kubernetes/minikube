@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -30,11 +31,10 @@ import (
 var fields = []string{"CPU Utilization(%)", "CPU Time(seconds)"}
 
 func cpuMarkdownTable(categories []plotter.Values, names []string) {
-	// Prepare headers
-	headers := append([]string{""}, names...)
 
-	// Prepare rows
-	var c [][]string
+	// categories row is the either cpu pct or time, col is process name
+	headers := append([]string{""}, names...)
+	c := [][]string{}
 	for i, values := range categories {
 		row := []string{fields[i]}
 		for _, value := range values {
@@ -42,14 +42,20 @@ func cpuMarkdownTable(categories []plotter.Values, names []string) {
 		}
 		c = append(c, row)
 	}
-
-	// Create and render table
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
 	t.Header(headers)
-	t.Bulk(c)
-	t.Render()
-
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
+	if err := t.Bulk(c); err != nil {
+		fmt.Printf("error writing table: %v\n", err)
+	}
+	if err := t.Render(); err != nil {
+		fmt.Printf("error rendering table: %v\n", err)
+	}
 	data.CPUMarkdown = b.String()
 }
 
