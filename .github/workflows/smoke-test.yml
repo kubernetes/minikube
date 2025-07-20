@@ -39,6 +39,26 @@ jobs:
           system_profiler SPHardwareDataType
           sw_vers
           ifconfig
+      - name: Info Block (linux)
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+            uname -a
+            grep MemTotal /proc/meminfo
+            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
+            nproc
+            grep 'model name' /proc/cpuinfo | head -n1
+            # System model (requires `dmidecode`, may need sudo)
+            sudo dmidecode -s system-product-name
+            systemd-detect-virt
+            # Check if KVM is available (can show virtualization support)
+            egrep -c '(vmx|svm)' /proc/cpuinfo
+            # Detailed hardware info (like `system_profiler`)
+            sudo lshw -short
+            cat /etc/os-release
+            ip addr show
+            ifconfig
+            docker version
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
