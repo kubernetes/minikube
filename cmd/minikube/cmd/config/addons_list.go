@@ -24,8 +24,9 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
-	// "k8s.io/klog/v2"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -89,58 +90,67 @@ var stringFromStatus = func(addonStatus bool) string {
 }
 
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
-	// Get and sort addon names
 	addonNames := make([]string, 0, len(assets.Addons))
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
 
-	// Create table with default formatting (matches "Simple Tables" example in docs)
 	table := tablewriter.NewWriter(os.Stdout)
 
-	// Set table header
-	var headers []string
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
+
+	// Create table header
+	var tHeader []string
 	if cc == nil {
-		headers = []string{"Addon Name", "Maintainer"}
+		tHeader = []string{"Addon Name", "Maintainer"}
 	} else {
-		headers = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
 	}
 	if printDocs {
-		headers = append(headers, "Docs")
+		tHeader = append(tHeader, "Docs")
 	}
-	table.Header(headers)
+	table.Header(tHeader)
 
-	// Prepare table data
-	var data [][]string
+	// Create table data
+	var tData [][]string
+	var temp []string
 	for _, addonName := range addonNames {
-		addon := assets.Addons[addonName]
-		maintainer := addon.Maintainer
+		addonBundle := assets.Addons[addonName]
+		maintainer := addonBundle.Maintainer
 		if maintainer == "" {
 			maintainer = "3rd party (unknown)"
 		}
-
-		var row []string
+		docs := addonBundle.Docs
+		if docs == "" {
+			docs = "n/a"
+		}
 		if cc == nil {
-			row = []string{addonName, maintainer}
+			temp = []string{addonName, maintainer}
 		} else {
-			enabled := addon.IsEnabled(cc)
-			row = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			enabled := addonBundle.IsEnabled(cc)
+			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
 		}
-
 		if printDocs {
-			row = append(row, addon.Docs)
+			temp = append(temp, docs)
 		}
-
-		data = append(data, row)
+		tData = append(tData, temp)
 	}
-
-	// Add all data at once (matches Bulk example in docs)
-	table.Bulk(data)
-	table.Render()
-
-	// Show profile tip if needed
-	if profiles, _, err := config.ListProfiles(); err == nil && len(profiles) > 1 {
+	if err := table.Bulk(tData); err != nil {
+		klog.Error("Error rendering table (bulk)", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Error("Error rendering table", err)
+	}
+	v, _, err := config.ListProfiles()
+	if err != nil {
+		klog.Errorf("list profiles returned error: %v", err)
+	}
+	if len(v) > 1 {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
