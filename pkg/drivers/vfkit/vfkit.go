@@ -57,6 +57,7 @@ const (
 	isoFilename     = "boot2docker.iso"
 	pidFileName     = "vfkit.pid"
 	sockFilename    = "vfkit.sock"
+	logFileName     = "vfkit.log"
 	serialFileName  = "serial.log"
 	efiVarsFileName = "vfkit.efivars"
 	defaultSSHUser  = "docker"
@@ -251,7 +252,8 @@ func (d *Driver) startVfkit(socketPath string) error {
 	startCmd = append(startCmd,
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
-		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()))
+		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()),
+		"--log-level", "debug")
 
 	efiVarsPath := d.ResolveStorePath(efiVarsFileName)
 	startCmd = append(startCmd,
@@ -294,6 +296,13 @@ func (d *Driver) startVfkit(socketPath string) error {
 	// to terminate the entire process group without harming the vfkit process.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
+	logfile, err := d.openLogfile()
+	if err != nil {
+		return fmt.Errorf("failed to open vfkit logfile: %w", err)
+	}
+	defer logfile.Close()
+	cmd.Stderr = logfile
+
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -312,7 +321,7 @@ func (d *Driver) setupIP(mac string) error {
 	// Implement a retry loop because IP address isn't added to dhcp leases file immediately
 	multiplier := 1
 	if detect.NestedVM() {
-		multiplier = 3 // will help with running in Free github action Macos VMs (takes 112+ retries on average)
+		multiplier = 3 // will help with running in Free github action Macos VMs (takes 160+ retries on average)
 	}
 	for i := 0; i < 60*multiplier; i++ {
 		log.Debugf("Attempt %d", i)
@@ -340,6 +349,11 @@ func (d *Driver) setupIP(mac string) error {
 
 func isBootpdError(err error) bool {
 	return strings.Contains(err.Error(), "could not find an IP address")
+}
+
+func (d *Driver) openLogfile() (*os.File, error) {
+	logfile := d.ResolveStorePath(logFileName)
+	return os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 }
 
 func (d *Driver) stopVfkit() error {
