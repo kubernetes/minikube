@@ -7,10 +7,8 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
   permissions:
   contents: read
-
 jobs:
   minikube-vm-boot:
     name: Boot Smoke Test
@@ -23,11 +21,11 @@ jobs:
             os: macos-13
             network_flag: --network socket_vmnet
           - driver: docker
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             network_flag: ""
     steps:
       - name: Info Block (macos)
-        if: matrix.driver == 'macos-13'
+        if: contains(matrix.os, 'macos')
         shell: bash
         run: |
           uname -a
@@ -46,11 +44,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Download Dependencies
+      - name: Download Golang Dependencies
         run: go mod download
       - name: Build Binaries
         run: make
       - name: Ensure bootpd is enabled
+        if: contains(matrix.os, 'macos')
         shell: bash
         run: |
           set -x
@@ -59,34 +58,15 @@ jobs:
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
       - name: brew update
+        if: contains(matrix.os, 'macos')
         run:
           brew update
-      - name: Install docker tools
-        if: matrix.driver == 'docker'
-        run: |
-          brew install vfkit
-          machine="$(uname -m)"
-          archive="vmnet-helper-$machine.tar.gz"
-          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
-          sudo tar xvf "$archive" -C / opt/vmnet-helper
-          rm "$archive"
-          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
-      - name: Install vfkit and vmnet-helper
-        if: matrix.driver == 'vfkit'
-        run: |
-          brew install vfkit
-          machine="$(uname -m)"
-          archive="vmnet-helper-$machine.tar.gz"
-          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
-          sudo tar xvf "$archive" -C / opt/vmnet-helper
-          rm "$archive"
-          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
-      - name: Install qemu and socket_vmnet 
-        if: matrix.driver == 'qemu'
+      - name: Install qemu and socket_vmnet (macos)
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet          
-      - name: Download only (iso/image)
+      - name: Minikube Download only (iso/image)
         run:
           ./out/minikube start --download-only --driver=${{ matrix.driver }} 
       - name: Start minikube (1st boot)
