@@ -18,15 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13]
-        driver: [qemu, vfkit]
+        os: [macos-13,ubuntu-22.04]
+        driver: [qemu, docker]
         include:
           - driver: qemu
             os: macos-13
             network_flag: --network socket_vmnet
-          - driver: vfkit
-            os: macos-13
-            network_flag: --network vmnet-shared
     steps:
       - name: Info Block
         shell: bash
@@ -62,6 +59,16 @@ jobs:
       - name: brew update
         run:
           brew update
+      - name: Install docker tools
+        if: matrix.driver == 'docker'
+        run: |
+          brew install vfkit
+          machine="$(uname -m)"
+          archive="vmnet-helper-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          rm "$archive"
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
       - name: Install vfkit and vmnet-helper
         if: matrix.driver == 'vfkit'
         run: |
@@ -81,10 +88,10 @@ jobs:
         run:
           ./out/minikube start --download-only --driver=${{ matrix.driver }} 
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --force --alsologtostderr 
+        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr 
       - name: Stop minikube
         run: ./out/minikube stop
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --force --alsologtostderr
+        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr
       - name: delete minikube 
         run: ./out/minikube delete --alsologtostderr
