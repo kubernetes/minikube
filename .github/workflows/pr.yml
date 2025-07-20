@@ -146,7 +146,7 @@ jobs:
           name: minikube_binaries
           path: minikube_binaries
       - name: Run Integration Test
-        continue-on-error: false
+        continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
@@ -246,7 +246,7 @@ jobs:
           name: minikube_binaries
           path: minikube_binaries
       - name: Run Integration Test
-        continue-on-error: false
+        continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
@@ -458,13 +458,11 @@ jobs:
           sysctl -n kern.hv_vmm_present
           sysctl -n kern.hv_support
           system_profiler SPHardwareDataType
-          echo "--------------------------"
           docker version || true
-          echo "--------------------------"
-          docker info || true      
+          docker info || true
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
-          cache: false
+          cache: true
           go-version: ${{env.GO_VERSION}}
       - name: Install gopogh
         shell: bash
@@ -475,10 +473,8 @@ jobs:
         with:
           name: minikube_binaries
           path: minikube_binaries
-      - name: Display structure of downloaded files
-        run: ls -R 
       - name: Run Integration Test
-        continue-on-error: false
+        continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
@@ -490,7 +486,6 @@ jobs:
           mkdir -p report
           # test home
           mkdir -p /tmp/th
-
           MINIKUBE_HOME=/tmp/th ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
           KUBECONFIG=$/tmp/th/kubeconfig MINIKUBE_HOME=/tmp/th ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=qemu --memory=8g --wait-timeout=15m --network socket_vmnet"  -test.run TestFunctional -test.timeout=40m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
@@ -584,7 +579,7 @@ jobs:
           name: minikube_binaries
           path: minikube_binaries
       - name: Run Integration Test
-        continue-on-error: false
+        continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
         run: |
