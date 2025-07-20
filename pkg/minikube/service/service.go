@@ -239,8 +239,6 @@ func PrintServiceList(writer io.Writer, data [][]string) {
 	table.Header("Namespace", "Name", "Target Port", "URL")
 	table.Options(
 		tablewriter.WithHeaderAutoFormat(tw.On),
-		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
-		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
 	)
 	if err := table.Bulk(data); err != nil {
 		klog.Error("Error while printing service list: ", err)

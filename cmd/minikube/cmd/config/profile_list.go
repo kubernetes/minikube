@@ -143,8 +143,6 @@ func renderProfilesTable(ps [][]string) {
 	}
 	table.Options(
 		tablewriter.WithHeaderAutoFormat(tw.Off),
-		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
-		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
 	)
 	if err := table.Bulk(ps); err != nil {
 		klog.Error("Error while bulk render table: ", err)

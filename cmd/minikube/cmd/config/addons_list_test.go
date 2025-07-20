@@ -32,8 +32,8 @@ func TestAddonsList(t *testing.T) {
 		printDocs bool
 		want      int
 	}{
-		{"DisabledDocs", false, 9},
-		{"EnabledDocs", true, 12},
+		{"DisabledDocs", false, 3},
+		{"EnabledDocs", true, 4},
 	}
 
 	for _, tt := range tests {
@@ -57,17 +57,19 @@ func TestAddonsList(t *testing.T) {
 				if !buf.Scan() {
 					t.Fatalf("failed to read stdout")
 				}
-				pipeCount += strings.Count(buf.Text(), "|")
+				pipeCount += strings.Count(buf.Text(), "│")
 				got += buf.Text()
 			}
 			if err := buf.Err(); err != nil {
 				t.Errorf("failed to read stdout: %v", err)
 			}
-			// The lines we pull should look something like
-			// |------------|------------|(------|)
-			// | ADDON NAME | MAINTAINER |( DOCS |)
-			// |------------|------------|(------|)
-			// which has 9 or 12 pipes
+			// ┌─────────────────────────────┬────────────────────────────────────────┐
+			// │         ADDON NAME          │               MAINTAINER               │
+			// ├─────────────────────────────┼────────────────────────────────────────┤
+			// ┌─────────────────────────────┬────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────┐
+			// │         ADDON NAME          │               MAINTAINER               │                                     DOCS                                      │
+			// ├─────────────────────────────┼────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────┤
+
 			expected := tt.want
 			if pipeCount != expected {
 				t.Errorf("Expected header to have %d pipes; got = %d: %q", expected, pipeCount, got)

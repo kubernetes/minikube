@@ -100,8 +100,6 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 
 	table.Options(
 		tablewriter.WithHeaderAutoFormat(tw.On),
-		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
-		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
 	)
 
 	// Create table header

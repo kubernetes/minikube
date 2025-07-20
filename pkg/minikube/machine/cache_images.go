@@ -849,9 +849,7 @@ func renderImagesTable(images [][]string) {
 	table.Header("Image", "Tag", "Image ID", "Size")
 	table.Options(
 		tablewriter.WithHeaderAutoFormat(tw.Off),
-		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
 		tablewriter.WithRowAlignment(tw.AlignLeft),
-		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
 	)
 	if err := table.Bulk(images); err != nil {
 		klog.Warningf("error rendering images table: %v", err)
