@@ -30,6 +30,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -54,13 +55,12 @@ import (
 )
 
 const (
-	isoFilename     = "boot2docker.iso"
-	pidFileName     = "vfkit.pid"
-	sockFilename    = "vfkit.sock"
-	logFileName     = "vfkit.log"
-	serialFileName  = "serial.log"
-	efiVarsFileName = "vfkit.efivars"
-	defaultSSHUser  = "docker"
+	isoFilename    = "boot2docker.iso"
+	pidFileName    = "vfkit.pid"
+	sockFilename   = "vfkit.sock"
+	logFileName    = "vfkit.log"
+	serialFileName = "serial.log"
+	defaultSSHUser = "docker"
 )
 
 // Driver is the machine driver for vfkit (Virtualization.framework)
@@ -193,6 +193,10 @@ func (d *Driver) Create() error {
 		return err
 	}
 
+	if err := d.extractKernel(); err != nil {
+		return err
+	}
+
 	log.Info("Creating SSH key...")
 	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
 		return err
@@ -215,6 +219,15 @@ func (d *Driver) Create() error {
 
 	log.Info("Starting vfkit VM...")
 	return d.Start()
+}
+
+func (d *Driver) extractKernel() error {
+	log.Info("Extracting bzimage and initrd...")
+	isoPath := d.ResolveStorePath(isoFilename)
+	if err := pkgdrivers.ExtractFile(isoPath, "/boot/bzimage", d.kernelPath()); err != nil {
+		return err
+	}
+	return pkgdrivers.ExtractFile(isoPath, "/boot/initrd", d.initrdPath())
 }
 
 func (d *Driver) Start() error {
@@ -255,9 +268,20 @@ func (d *Driver) startVfkit(socketPath string) error {
 		"--restful-uri", fmt.Sprintf("unix://%s", d.sockfilePath()),
 		"--log-level", "debug")
 
-	efiVarsPath := d.ResolveStorePath(efiVarsFileName)
+	// On arm64 console= is required get boot messages in serial.log. On x86_64
+	// serial log is always empty.
+	var cmdline string
+	switch runtime.GOARCH {
+	case "arm64":
+		cmdline = "console=hvc0"
+	case "amd64":
+		cmdline = "console=ttyS0"
+	}
+
+	// TODO: Switch to --bootloader efi when x86_64 iso changed to EFI.
 	startCmd = append(startCmd,
-		"--bootloader", fmt.Sprintf("efi,variable-store=%s,create", efiVarsPath))
+		"--bootloader", fmt.Sprintf("linux,kernel=%s,initrd=%s,cmdline=\"%s\"",
+			d.kernelPath(), d.initrdPath(), cmdline))
 
 	if socketPath != "" {
 		// The guest will be able to access other guests in the vmnet network.
@@ -490,6 +514,14 @@ func (d *Driver) sshKeyPath() string {
 
 func (d *Driver) publicSSHKeyPath() string {
 	return d.sshKeyPath() + ".pub"
+}
+
+func (d *Driver) kernelPath() string {
+	return d.ResolveStorePath("bzimage")
+}
+
+func (d *Driver) initrdPath() string {
+	return d.ResolveStorePath("initrd")
 }
 
 func (d *Driver) diskPath() string {
