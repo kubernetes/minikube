@@ -23,7 +23,9 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -64,13 +66,23 @@ func printAddonImagesTable(addon string) {
 			var tData [][]string
 			table := tablewriter.NewWriter(os.Stdout)
 			table.Header([]string{"Image Name", "Default Image", "Default Registry"})
+			table.Header("Image Name", "Default Image", "Default Registry")
+			table.Options(
+				tablewriter.WithHeaderAutoFormat(tw.On),
+				tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+				tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+			)
 
 			for imageName, defaultImage := range conf.Images {
 				tData = append(tData, []string{imageName, defaultImage, conf.Registries[imageName]})
 			}
 
-			table.Bulk(tData)
-			table.Render()
+			if err := table.Bulk(tData); err != nil {
+				klog.Error("Error rendering table (bulk)", err)
+			}
+			if err := table.Render(); err != nil {
+				klog.Error("Error rendering table", err)
+			}
 		} else {
 			out.Infof("{{.name}} doesn't have images.", out.V{"name": addon})
 		}
