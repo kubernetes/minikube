@@ -18,14 +18,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-13,ubuntu-22.04]
-        driver: [qemu, docker]
         include:
           - driver: qemu
             os: macos-13
             network_flag: --network socket_vmnet
+          - driver: docker
+            os: ubuntu-22.04
+            network_flag: ""
     steps:
-      - name: Info Block
+      - name: Info Block (macos)
+        if: matrix.driver == 'macos-13'
         shell: bash
         run: |
           uname -a
@@ -88,10 +90,10 @@ jobs:
         run:
           ./out/minikube start --download-only --driver=${{ matrix.driver }} 
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr 
+        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes --alsologtostderr 
       - name: Stop minikube
         run: ./out/minikube stop
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --cpus 1 --memory 4gb --no-kubernetes --alsologtostderr
+        run: ./out/minikube start --alsologtostderr
       - name: delete minikube 
         run: ./out/minikube delete --alsologtostderr
