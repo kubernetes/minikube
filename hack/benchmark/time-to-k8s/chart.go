@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -179,12 +180,9 @@ func values(apps map[string]runs) ([]plotter.Values, []plotter.Values, []plotter
 }
 
 func outputMarkdownTable(categories []plotter.Values, totals []float64, names []string) {
-
 	headers := append([]string{""}, names...)
-
-	var c [][]string
+	c := [][]string{}
 	fields := []string{"Command Exec", "API Server Answering", "Kubernetes SVC", "DNS SVC", "App Running", "DNS Answering"}
-
 	for i, values := range categories {
 		row := []string{fields[i]}
 		for _, value := range values {
@@ -192,19 +190,25 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 		}
 		c = append(c, row)
 	}
-
 	totalStrings := []string{"Total"}
 	for _, t := range totals {
 		totalStrings = append(totalStrings, fmt.Sprintf("%.3f", t))
 	}
 	c = append(c, totalStrings)
-
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
 	t.Header(headers)
-	t.Bulk(c)
-	t.Render()
-
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
+		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
+	)
+	if err := t.Bulk(c); err != nil {
+		fmt.Fprintf(os.Stderr, "error writing table: %v\n", err)
+	}
+	if err := t.Render(); err != nil {
+		fmt.Fprintf(os.Stderr, "error rendering table: %v\n", err)
+	}
 	data.TimeMarkdown = b.String()
 }
 
