@@ -68,8 +68,8 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Ensure bootpd is enabled
-        if: contains(matrix.os, 'macos')
+      - name: Ensure bootpd is enabled (macos)
+        if: matrix.os == 'macos-13'
         shell: bash
         run: |
           set -x
@@ -77,12 +77,11 @@ jobs:
           sudo $fw --remove /usr/libexec/bootpd
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
-      - name: brew update
-        if: contains(matrix.os, 'macos')
-        run:
-          brew update
+      - name: Update brew (macos)
+        if: matrix.os == 'macosi-13'
+        run: brew update
       - name: Install qemu and socket_vmnet (macos)
-        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
+        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
