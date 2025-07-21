@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
+  LOG_ARGS: --v=8 --alsologtostderr
   permissions:
   contents: read
 jobs:
@@ -20,6 +21,9 @@ jobs:
           - driver: qemu
             os: macos-13
             network_flag: --network socket_vmnet
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
           - driver: docker
             os: ubuntu-24.04
             network_flag: ""
@@ -68,8 +72,8 @@ jobs:
         run: go mod download
       - name: Build Binaries
         run: make
-      - name: Ensure bootpd is enabled
-        if: contains(matrix.os, 'macos')
+      - name: Ensure bootpd is enabled (macos)
+        if: matrix.os == 'macos-13'
         shell: bash
         run: |
           set -x
@@ -77,23 +81,48 @@ jobs:
           sudo $fw --remove /usr/libexec/bootpd
           sudo $fw --add /usr/libexec/bootpd
           sudo $fw --unblock /usr/libexec/bootpd
-      - name: brew update
-        if: contains(matrix.os, 'macos')
-        run:
-          brew update
+      - name: Update brew (macos)
+        if: matrix.os == 'macos-13'
+        run: brew update
+      - name: Install tools (macos)
+        if: matrix.os == 'macos-13'
+        run: brew install tree
+      - name: Install vfkit and vmnet-helper (macos)
+        if: matrix.driver == 'vfkit'
+        run: |
+          brew install vfkit
+          machine="$(uname -m)"
+          archive="vmnet-helper-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
       - name: Install qemu and socket_vmnet (macos)
-        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
+        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
-          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet          
-      - name: Minikube Download only (iso/image)
-        run:
-          ./out/minikube start --download-only --driver=${{ matrix.driver }} 
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver=${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes --alsologtostderr 
+        run: |
+          ./out/minikube start \
+              --no-kubernetes \
+              --memory 4gb \
+              --driver ${{ matrix.driver }} \
+              ${{ matrix.network_flag }} \
+              ${{ env.LOG_ARGS }}
+      - name: Inspect minikube
+        if: always()
+        run: |
+          tree -h ~/.minikube
+          machine="$HOME/.minikube/machines/minikube"
+          machine_logs=$(find "$machine" -name "*.log")
+          minikube_logs="$HOME/.minikube/logs/lastStart.txt"
+          for f in $machine_logs $minikube_logs /var/db/dhcpd_leases; do
+            echo "==> $f <=="
+            head -n 1000 "$f" || true
+          done
       - name: Stop minikube
-        run: ./out/minikube stop
+        run: ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start --alsologtostderr
-      - name: delete minikube 
-        run: ./out/minikube delete --alsologtostderr
+        run: ./out/minikube start ${{ env.LOG_ARGS }}
+      - name: Delete minikube
+        run: ./out/minikube delete ${{ env.LOG_ARGS }}
