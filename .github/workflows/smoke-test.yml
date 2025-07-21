@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
+  LOG_ARGS: --v=8 --alsologtostderr
   permissions:
   contents: read
 jobs:
@@ -102,9 +103,9 @@ jobs:
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
       - name: Minikube Download only (iso/image)
         run:
-          ./out/minikube start --download-only --driver ${{ matrix.driver }}
+          ./out/minikube start --download-only --driver ${{ matrix.driver }} ${{ env.LOG_ARGS }}
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver ${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes --alsologtostderr
+        run: ./out/minikube start --driver ${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes ${{ env.LOG_ARGS }}
       - name: Inspect minikube
         if: always()
         run: |
@@ -117,8 +118,8 @@ jobs:
             head -n 1000 "$f" || true
           done
       - name: Stop minikube
-        run: ./out/minikube stop
+        run: ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
-        run: ./out/minikube start --alsologtostderr
+        run: ./out/minikube start ${{ env.LOG_ARGS }}
       - name: delete minikube
-        run: ./out/minikube delete --alsologtostderr
+        run: ./out/minikube delete ${{ env.LOG_ARGS }}
