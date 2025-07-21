@@ -200,8 +200,6 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 	t.Header(headers)
 	t.Options(
 		tablewriter.WithHeaderAutoFormat(tw.Off),
-		tablewriter.WithRendition(tw.Rendition{Borders: tw.Border{Left: tw.On, Top: tw.On, Right: tw.On, Bottom: tw.On}}),
-		tablewriter.WithSymbols(tw.NewSymbols(tw.StyleASCII)),
 	)
 	if err := t.Bulk(c); err != nil {
 		fmt.Fprintf(os.Stderr, "error writing table: %v\n", err)
