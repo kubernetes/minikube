@@ -69,6 +69,7 @@ func TestMachineType(t *testing.T) {
 		QEMU2:      "VM",
 		QEMU:       "VM",
 		VFKit:      "VM",
+		Krunkit:    "VM",
 		VirtualBox: "VM",
 		HyperKit:   "VM",
 		VMware:     "VM",
