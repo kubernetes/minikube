@@ -30,7 +30,7 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
       - name: Create PR
         if: ${{ steps.bumpHeadlamp.outputs.changes != '' }}
-        uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
         with:
           token: ${{ secrets.MINIKUBE_BOT_PAT }}
           commit-message: 'Addon Headlamp: Update Headlamp image from ${{ steps.bumpHeadlamp.outputs.OLD_VERSION }} to ${{ steps.bumpHeadlamp.outputs.NEW_VERSION }}'
