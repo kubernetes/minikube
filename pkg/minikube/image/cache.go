@@ -17,10 +17,13 @@ limitations under the License.
 package image
 
 import (
+	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -84,7 +87,6 @@ func SaveToDir(images []string, cacheDir string, overwrite bool) error {
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "caching images")
 	}
-	klog.Infoln("Successfully saved all images to host disk.")
 	return nil
 }
 
@@ -158,6 +160,36 @@ func saveToTarFile(iname, rawDest string, overwrite bool) error {
 	return nil
 }
 
+func saveImageWithDockerClient(f *os.File, ref name.Reference) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return errors.Wrap(err, "creating docker client")
+	}
+	defer cli.Close()
+
+	ctx := context.Background()
+
+	_, _, err = cli.ImageInspectWithRaw(ctx, ref.String())
+	if err != nil {
+		return errors.Wrapf(err, "inspect image %s via docker client", ref.String())
+	}
+
+	imageResponse, err := cli.ImageSave(ctx, []string{ref.String()})
+	if err != nil {
+		return errors.Wrapf(err, "saving image %s via docker client", ref.String())
+	}
+	defer imageResponse.Close()
+
+	// Copy image data stream to file
+	_, err = io.Copy(f, imageResponse)
+	if err != nil {
+		return errors.Wrapf(err, "copying image %s data to file", ref.String())
+	}
+
+	klog.Infof("Successfully saved image %s using Docker client", ref.String())
+	return nil
+}
+
 func writeImage(img v1.Image, dst string, ref name.Reference) error {
 	klog.Infoln("opening: ", dst)
 	f, err := os.CreateTemp(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
@@ -175,10 +207,27 @@ func writeImage(img v1.Image, dst string, ref name.Reference) error {
 		}
 	}()
 
-	err = tarball.Write(ref, img, f)
-	if err != nil {
-		return errors.Wrap(err, "write")
+	var imageSaved bool
+
+	// Using the Docker client to save the image for better performance
+	if useDaemon {
+		// Try to save the image using the Docker client
+		if err := saveImageWithDockerClient(f, ref); err != nil {
+			if !client.IsErrNotFound(err) {
+				return errors.Wrap(err, "docker save")
+			}
+			klog.Warningf("Failed to save image with Docker client: %v, falling back to tarball.Write", err)
+		} else {
+			imageSaved = true
+		}
 	}
+	// Fallback to saving the image using the tarball package
+	if !imageSaved {
+		if err := tarball.Write(ref, img, f); err != nil {
+			return errors.Wrap(err, "write")
+		}
+	}
+
 	err = f.Close()
 	if err != nil {
 		return errors.Wrap(err, "close")

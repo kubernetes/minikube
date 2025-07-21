@@ -169,7 +169,7 @@ func retrieveImage(ref name.Reference, imgName string) (v1.Image, string, error)
 }
 
 func retrieveDaemon(ref name.Reference) (v1.Image, error) {
-	img, err := daemon.Image(ref)
+	img, err := daemon.Image(ref) // uses bufferedOpener, which may consume a significant amount of memory
 	if err == nil {
 		klog.Infof("found %s locally: %+v", ref.Name(), img)
 		return img, nil
