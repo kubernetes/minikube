@@ -101,11 +101,14 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
-      - name: Minikube Download only (iso/image)
-        run:
-          ./out/minikube start --download-only --driver ${{ matrix.driver }} ${{ env.LOG_ARGS }}
       - name: Start minikube (1st boot)
-        run: ./out/minikube start --driver ${{ matrix.driver }} ${{ matrix.network_flag }} --memory 4gb --no-kubernetes ${{ env.LOG_ARGS }}
+        run: |
+          ./out/minikube start \
+              --no-kubernetes \
+              --memory 4gb \
+              --driver ${{ matrix.driver }} \
+              ${{ matrix.network_flag }} \
+              ${{ env.LOG_ARGS }}
       - name: Inspect minikube
         if: always()
         run: |
@@ -121,5 +124,5 @@ jobs:
         run: ./out/minikube stop ${{ env.LOG_ARGS }}
       - name: Start minikube again (2nd boot)
         run: ./out/minikube start ${{ env.LOG_ARGS }}
-      - name: delete minikube
+      - name: Delete minikube
         run: ./out/minikube delete ${{ env.LOG_ARGS }}
