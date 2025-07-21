@@ -1,5 +1,6 @@
 name: Publish to WinGet
 on:
+  workflow_dispatch:
   release:
     types: [released]
 permissions:
