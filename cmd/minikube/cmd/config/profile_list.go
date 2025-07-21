@@ -35,6 +35,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 
 	"k8s.io/klog/v2"
@@ -134,17 +135,21 @@ func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 func renderProfilesTable(ps [][]string) {
 	table := tablewriter.NewWriter(os.Stdout)
 	if isDetailed {
-		table.SetHeader([]string{"Profile", "Driver", "Runtime", "IP", "Port", "Version",
-			"Status", "Nodes", "Active Profile", "Active Kubecontext"})
+		table.Header("Profile", "Driver", "Runtime", "IP", "Port", "Version",
+			"Status", "Nodes", "Active Profile", "Active Kubecontext")
 	} else {
-		table.SetHeader([]string{"Profile", "Driver", "Runtime", "IP", "Version", "Status",
-			"Nodes", "Active Profile", "Active Kubecontext"})
+		table.Header("Profile", "Driver", "Runtime", "IP", "Version", "Status",
+			"Nodes", "Active Profile", "Active Kubecontext")
 	}
-	table.SetAutoFormatHeaders(false)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetCenterSeparator("|")
-	table.AppendBulk(ps)
-	table.Render()
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+	)
+	if err := table.Bulk(ps); err != nil {
+		klog.Error("Error while bulk render table: ", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Error("Error while rendering profile table: ", err)
+	}
 }
 
 func profilesToTableData(profiles []*config.Profile) [][]string {

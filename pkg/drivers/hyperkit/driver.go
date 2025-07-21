@@ -461,7 +461,7 @@ func (d *Driver) extractVSockPorts() ([]int, error) {
 }
 
 func (d *Driver) setupNFSShare() error {
-	user, err := user.Current()
+	u, err := user.Current()
 	if err != nil {
 		return err
 	}
@@ -478,7 +478,7 @@ func (d *Driver) setupNFSShare() error {
 		if !path.IsAbs(share) {
 			share = d.ResolveStorePath(share)
 		}
-		nfsConfig := fmt.Sprintf("%s %s -alldirs -mapall=%s", share, d.IPAddress, user.Username)
+		nfsConfig := fmt.Sprintf("%s %s -alldirs -mapall=%s", share, d.IPAddress, u.Username)
 
 		if _, err := nfsexports.Add("", d.nfsExportIdentifier(share), nfsConfig); err != nil {
 			if strings.Contains(err.Error(), "conflicts with existing export") {
@@ -506,8 +506,9 @@ func (d *Driver) setupNFSShare() error {
 	return nil
 }
 
-func (d *Driver) nfsExportIdentifier(path string) string {
-	return fmt.Sprintf("minikube-hyperkit %s-%s", d.MachineName, path)
+// p is path
+func (d *Driver) nfsExportIdentifier(p string) string {
+	return fmt.Sprintf("minikube-hyperkit %s-%s", d.MachineName, p)
 }
 
 func (d *Driver) sendSignal(s os.Signal) error {

@@ -314,7 +314,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	runImageList(ctx, t, profile, "ImageListShort", "short", "%s")
-	runImageList(ctx, t, profile, "ImageListTable", "table", "| %s")
+	runImageList(ctx, t, profile, "ImageListTable", "table", "│ %s")
 	runImageList(ctx, t, profile, "ImageListJson", "json", "[\"%s")
 	runImageList(ctx, t, profile, "ImageListYaml", "yaml", "- %s")
 

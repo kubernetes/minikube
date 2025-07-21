@@ -623,10 +623,11 @@ func (d *Driver) GetVFKitState() (string, error) {
 	return vmstate.State, nil
 }
 
-func (d *Driver) SetVFKitState(state string) error {
+// SetVFKitState sets the state of the vfkit VM, (s is the state)
+func (d *Driver) SetVFKitState(s string) error {
 	httpc := httpUnixClient(d.sockfilePath())
 	var vmstate VMState
-	vmstate.State = state
+	vmstate.State = s
 	data, err := json.Marshal(&vmstate)
 	if err != nil {
 		return err

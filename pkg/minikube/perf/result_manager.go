@@ -22,6 +22,7 @@ import (
 	"strconv"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 type resultManager struct {
@@ -89,7 +90,10 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 		}
 	}
 	t := tablewriter.NewWriter(os.Stdout)
-	t.SetHeader([]string{"Command", binaries[0].Name(), binaries[1].Name()})
+	t.Header("Command", binaries[0].Name(), binaries[1].Name())
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+	)
 	for _, v := range table {
 		// Add warning sign if PR average is 5 seconds higher than average at HEAD
 		if len(v) >= 3 {
@@ -103,7 +107,9 @@ func (rm *resultManager) summarizeResults(binaries []*Binary) {
 		t.Append(v)
 	}
 	fmt.Println("```")
-	t.Render()
+	if err := t.Render(); err != nil {
+		fmt.Println("Error rendering table:", err)
+	}
 	fmt.Println("```")
 	fmt.Println()
 
