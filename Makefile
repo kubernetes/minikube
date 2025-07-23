@@ -1069,7 +1069,7 @@ cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
 
 .PHONY: time-to-k8s-benchmark
 time-to-k8s-benchmark:
-	./hack/benchmark/time-to-k8s/time-to-k8s.sh
+	(cd hack/benchmark/time-to-k8s/ && ./time-to-k8s.sh)
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
@@ -1243,3 +1243,10 @@ update-kube-vip-version:
 .PHONY: get-dependency-verison
 get-dependency-version:
 	go run hack/update/get_version/get_version.go
+
+# gomodtidy runs go mod tidy everywhere needed
+.PHONY: gomodtidy
+gomodtidy:
+	go mod tidy
+	(cd hack && go mod tidy)
+	go work sync
