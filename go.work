@@ -4,5 +4,4 @@ use (
 	.
 	./hack
 	./hack/benchmark/image-build/minikube-image-benchmark
-	./hack/benchmark/time-to-k8s/time-to-k8s-repo/
 )
