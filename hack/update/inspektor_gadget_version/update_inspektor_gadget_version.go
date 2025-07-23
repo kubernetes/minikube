@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"time"
 
@@ -82,7 +83,8 @@ func updateDeploymentYAML(version string) {
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
-	if err := os.WriteFile("../../../deploy/addons/inspektor-gadget/ig-deployment.yaml.tmpl", yaml, 0644); err != nil {
+
+	if err := os.WriteFile(path.Join(update.FSRoot, "/deploy/addons/inspektor-gadget/ig-deployment.yaml.tmpl"), yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }
@@ -97,7 +99,8 @@ func updateCRDYAML(version string) {
 	if err != nil {
 		klog.Fatalf("failed to read body: %v", err)
 	}
-	if err := os.WriteFile("../../../deploy/addons/inspektor-gadget/ig-crd.yaml", yaml, 0644); err != nil {
+
+	if err := os.WriteFile(path.Join(update.FSRoot, "/deploy/addons/inspektor-gadget/ig-crd.yaml"), yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }

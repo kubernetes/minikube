@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"regexp"
 	"time"
 
@@ -101,7 +102,8 @@ func updateYAML(version string) {
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
-	if err := os.WriteFile("../../../deploy/addons/volcano/volcano-development.yaml.tmpl", yaml, 0644); err != nil {
+	filePath := path.Join(update.FSRoot, "/deploy/addons/volcano/volcano-development.yaml.tmpl")
+	if err := os.WriteFile(filePath, yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }

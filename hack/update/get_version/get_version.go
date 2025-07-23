@@ -19,7 +19,10 @@ package main
 import (
 	"log"
 	"os"
+	"path"
 	"regexp"
+
+	"k8s.io/minikube/hack/update"
 )
 
 const (
@@ -90,7 +93,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("regexp failed to compile: %v", err)
 	}
-	data, err := os.ReadFile("../../../" + dep.filePath)
+
+	data, err := os.ReadFile(path.Join(update.FSRoot, dep.filePath))
 	if err != nil {
 		log.Fatalf("failed to read file: %v", err)
 	}

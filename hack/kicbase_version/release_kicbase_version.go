@@ -48,11 +48,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 	"time"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/hack/update"
 
 	"github.com/pkg/errors"
 )
@@ -63,7 +65,7 @@ const (
 )
 
 var (
-	kicFile      = "../../pkg/drivers/kic/types.go"
+	kicFile      = path.Join(update.FSRoot, "/pkg/drivers/kic/types.go")
 	kicVersionRE = `Version = "(.*)"`
 
 	// keep list of registries in sync with those in kicFile

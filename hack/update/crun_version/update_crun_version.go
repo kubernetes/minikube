@@ -23,6 +23,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -79,7 +80,8 @@ func updateHashFiles(version string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePath := "../../../deploy/iso/minikube-iso/package/crun-latest/crun-latest.hash"
+
+	filePath := path.Join(update.FSRoot, "deploy/iso/minikube-iso/package/crun-latest/crun-latest.hash")
 	b, err = os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)

@@ -21,6 +21,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
 	"k8s.io/klog/v2"
@@ -131,7 +132,8 @@ func goVersions() (stable, k8sVersion string, err error) {
 }
 
 func updateGoHashFile(version string) error {
-	hashFilePath := "../../../deploy/iso/minikube-iso/go.hash"
+
+	hashFilePath := path.Join(update.FSRoot, "/deploy/iso/minikube-iso/go.hash")
 	b, err := os.ReadFile(hashFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
@@ -161,7 +163,7 @@ func updateGoHashFile(version string) error {
 }
 
 func addGitHubWorkflowFiles() {
-	files, err := os.ReadDir("../../../.github/workflows")
+	files, err := os.ReadDir(path.Join(update.FSRoot, "/.github/workflows"))
 	if err != nil {
 		klog.Fatalf("failed to read workflows dir: %v", err)
 	}
