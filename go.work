@@ -3,4 +3,5 @@ go 1.24.0
 use (
 	.
 	./hack
+	./hack/benchmark/image-build/minikube-image-benchmark
 )
