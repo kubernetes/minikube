@@ -31,7 +31,8 @@ run_benchmark() {
 }
 
 generate_chart() {
-        go run ./hack/benchmark/image-build/generate-chart.go --csv hack/benchmark/image-build/minikube-image-benchmark/out/results.csv  --past-runs record.json
+        cd ./hack/benchmark/image-build/minikube-image-benchmark
+        go run generate-chart.go --csv hack/benchmark/image-build/minikube-image-benchmark/out/results.csv  --past-runs record.json
 }
 
 copy() {
