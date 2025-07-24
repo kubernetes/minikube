@@ -81,6 +81,13 @@ func updateHashFiles(version string) error {
 	}
 	sum := sha256.Sum256(b)
 
+	klog.Infof("Current working directory: %s", func() string {
+		dir, err := os.Getwd()
+		if err != nil {
+			return fmt.Sprintf("error getting cwd: %v", err)
+		}
+		return dir
+	}())
 	filePath := path.Join(update.FSRoot, "deploy/iso/minikube-iso/package/crun-latest/crun-latest.hash")
 	b, err = os.ReadFile(filePath)
 	if err != nil {

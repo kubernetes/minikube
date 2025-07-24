@@ -30,16 +30,38 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
+	"os"
+	"path/filepath"
+
 	"k8s.io/klog/v2"
 )
 
-const (
-	// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
-	FSRoot = "./"
-)
+// root returns the absolute path to the root folder of the minikube repository.
+func rootDir() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		klog.Fatalf("Unable to get working directory: %v", err)
+	}
+	// Traverse up until we find the minikube root (containing go.mod)
+	for {
+		if _, err := os.Stat(filepath.Join(wd, "OWNERS")); err == nil {
+			klog.Info("Minikube root directory found:", wd)
+			return wd
+		}
+		parent := filepath.Dir(wd)
+		if parent == wd {
+			klog.Fatalf("Unable to find minikube root directory (go.mod not found)")
+		}
+		wd = parent
+	}
+}
+
+// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
+var FSRoot string
 
 // init klog and check general requirements
 func init() {
+	FSRoot = rootDir()
 	klog.InitFlags(nil)
 	if err := flag.Set("logtostderr", "false"); err != nil {
 		klog.Warningf("Unable to set flag value for logtostderr: %v", err)
