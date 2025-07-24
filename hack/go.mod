@@ -1,4 +1,4 @@
-module minikube-hack
+module k8s.io/minikube/hack
 
 go 1.24.0
 
