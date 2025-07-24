@@ -19,6 +19,7 @@ limitations under the License.
 package hyperkit
 
 import (
+	"slices"
 	"testing"
 )
 
@@ -72,15 +73,5 @@ func testEq(a, b []int) bool {
 		return false
 	}
 
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-
-	return true
+	return slices.Equal(a, b)
 }
