@@ -53,7 +53,7 @@ func updateYAML(version string) {
 		klog.Fatalf("failed to read body: %v", err)
 	}
 	yaml := regexp.MustCompile(`10\.244\.0\.0\/16`).ReplaceAll(body, []byte("{{ .PodCIDR }}"))
-	if err := os.WriteFile("../../../pkg/minikube/cni/flannel.yaml", yaml, 0644); err != nil {
+	if err := os.WriteFile("../pkg/minikube/cni/flannel.yaml", yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }

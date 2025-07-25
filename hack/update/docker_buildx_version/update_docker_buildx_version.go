@@ -92,7 +92,7 @@ func updateHashFiles(version string) error {
 }
 
 func updateHashFile(version, arch, folderSuffix string, shaSum [sha256.Size]byte) error {
-	filePath := fmt.Sprintf("../../../deploy/iso/minikube-iso/arch/%s/package/docker-buildx%s/docker-buildx.hash", arch, folderSuffix)
+	filePath := fmt.Sprintf("../deploy/iso/minikube-iso/arch/%s/package/docker-buildx%s/docker-buildx.hash", arch, folderSuffix)
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)

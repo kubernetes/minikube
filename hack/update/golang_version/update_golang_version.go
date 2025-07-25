@@ -131,7 +131,7 @@ func goVersions() (stable, k8sVersion string, err error) {
 }
 
 func updateGoHashFile(version string) error {
-	hashFilePath := "../../../deploy/iso/minikube-iso/go.hash"
+	hashFilePath := "../deploy/iso/minikube-iso/go.hash"
 	b, err := os.ReadFile(hashFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
@@ -161,7 +161,7 @@ func updateGoHashFile(version string) error {
 }
 
 func addGitHubWorkflowFiles() {
-	files, err := os.ReadDir("../../../.github/workflows")
+	files, err := os.ReadDir("../.github/workflows")
 	if err != nil {
 		klog.Fatalf("failed to read workflows dir: %v", err)
 	}
