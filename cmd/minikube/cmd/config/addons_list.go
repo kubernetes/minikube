@@ -22,7 +22,8 @@ import (
 	"os"
 	"sort"
 	"strings"
-
+    "github.com/fatih/color"
+	"github.com/olekukonko/tablewriter/renderer"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
@@ -96,27 +97,58 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	}
 	sort.Strings(addonNames)
 
-	table := tablewriter.NewWriter(os.Stdout)
-
-	table.Options(
-		tablewriter.WithHeaderAutoFormat(tw.On),
-	)
-
-	// Create table header
+	// Prepare table header
 	var tHeader []string
+	var numCols int
 	if cc == nil {
 		tHeader = []string{"Addon Name", "Maintainer"}
+		numCols = 2
 	} else {
 		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+		numCols = 4
 	}
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
+		numCols++
 	}
+
+	// Define color configuration
+	colorCfg := renderer.ColorizedConfig{
+		Header: renderer.Tint{
+			FG: renderer.Colors{color.FgHiGreen, color.Bold},
+		},
+		Column: renderer.Tint{
+			FG: renderer.Colors{color.FgCyan},
+			Columns: []renderer.Tint{
+				{FG: renderer.Colors{color.FgMagenta}}, // column 0
+				{},                                     // column 1 (default)
+				{FG: renderer.Colors{color.FgHiRed}},   // column 2
+			},
+		},
+		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
+	}
+
+	// Table config
+	cfg := tablewriter.Config{
+		Row: tw.CellConfig{
+			Formatting: tw.CellFormatting{AutoWrap: tw.WrapNormal},
+			Alignment:  tw.CellAlignment{Global: tw.AlignLeft},
+		},
+		Footer: tw.CellConfig{
+			Alignment: tw.CellAlignment{Global: tw.AlignRight},
+		},
+	}
+
+	table := tablewriter.NewTable(os.Stdout,
+		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
+		tablewriter.WithConfig(cfg),
+	)
+
 	table.Header(tHeader)
 
-	// Create table data
-	var tData [][]string
-	var temp []string
+	// Construct table rows
+	var rows [][]string
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -127,23 +159,27 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		if docs == "" {
 			docs = "n/a"
 		}
+
+		var row []string
 		if cc == nil {
-			temp = []string{addonName, maintainer}
+			row = []string{addonName, maintainer}
 		} else {
-			enabled := addonBundle.IsEnabled(cc)
-			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			isEnabled := addonBundle.IsEnabled(cc)
+			statusStr := fmt.Sprintf("%s %s", stringFromStatus(isEnabled), iconFromStatus(isEnabled))
+			row = []string{addonName, cc.Name, statusStr, maintainer}
 		}
 		if printDocs {
-			temp = append(temp, docs)
+			row = append(row, docs)
 		}
-		tData = append(tData, temp)
+		rows = append(rows, row)
 	}
-	if err := table.Bulk(tData); err != nil {
-		klog.Error("Error rendering table (bulk)", err)
-	}
+
+	table.Bulk(rows)
+
 	if err := table.Render(); err != nil {
 		klog.Error("Error rendering table", err)
 	}
+
 	v, _, err := config.ListProfiles()
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
@@ -152,6 +188,8 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
+
+
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonNames := make([]string, 0, len(assets.Addons))
