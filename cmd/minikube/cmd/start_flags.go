@@ -56,6 +56,7 @@ const (
 	humanReadableDiskSize   = "disk-size"
 	nfsSharesRoot           = "nfs-shares-root"
 	nfsShare                = "nfs-share"
+	virtiofsShare           = "virtiofs-share"
 	kubernetesVersion       = "kubernetes-version"
 	noKubernetes            = "no-kubernetes"
 	hostOnlyCIDR            = "host-only-cidr"
@@ -283,6 +284,9 @@ func initDriverFlags() {
 
 	// qemu
 	startCmd.Flags().String(qemuFirmwarePath, "", "Path to the qemu firmware file. Defaults: For Linux, the default firmware location. For macOS, the brew installation location. For Windows, C:\\Program Files\\qemu\\share")
+
+	// vfkit, krunkit
+	startCmd.Flags().StringSlice(virtiofsShare, []string{}, "Local folders to share with guest via Virtiofs mounts (vfkit and krunkit drivers only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -583,6 +587,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
 		NFSShare:                viper.GetStringSlice(nfsShare),
 		NFSSharesRoot:           viper.GetString(nfsSharesRoot),
+		VirtiofsShare:           viper.GetStringSlice(virtiofsShare),
 		DockerEnv:               config.DockerEnv,
 		DockerOpt:               config.DockerOpt,
 		InsecureRegistry:        insecureRegistry,
@@ -832,6 +837,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringSliceFromFlag(cmd, &cc.HyperkitVSockPorts, vsockPorts)
 	updateStringSliceFromFlag(cmd, &cc.NFSShare, nfsShare)
 	updateStringFromFlag(cmd, &cc.NFSSharesRoot, nfsSharesRoot)
+	updateStringSliceFromFlag(cmd, &cc.VirtiofsShare, virtiofsShare)
 	updateStringFromFlag(cmd, &cc.HostOnlyCIDR, hostOnlyCIDR)
 	updateStringFromFlag(cmd, &cc.HypervVirtualSwitch, hypervVirtualSwitch)
 	updateBoolFromFlag(cmd, &cc.HypervUseExternalSwitch, hypervUseExternalSwitch)
