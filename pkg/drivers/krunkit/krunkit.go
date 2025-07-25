@@ -71,6 +71,7 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	ExtraDisks     int
+	VirtiofsShares []*pkgdrivers.VirtiofsShare
 	MACAddress     string
 	VmnetHelper    vmnet.Helper
 }
@@ -207,8 +208,16 @@ func (d *Driver) Start() error {
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+		return err
+	}
 
-	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+	if len(d.VirtiofsShares) > 0 {
+		log.Infof("Mounting virtiofs shares ...")
+		pkgdrivers.MountVirtiofsShares(d, d.VirtiofsShares)
+	}
+
+	return nil
 }
 
 // startKrunkit starts the krunkit child process.
@@ -229,6 +238,11 @@ func (d *Driver) startKrunkit(socketPath string) error {
 	for i := 0; i < d.ExtraDisks; i++ {
 		args = append(args,
 			"--device", fmt.Sprintf("virtio-blk,path=%s", pkgdrivers.ExtraDiskPath(d.BaseDriver, i)))
+	}
+
+	for _, share := range d.VirtiofsShares {
+		args = append(args,
+			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", share.HostPath, share.MountTag))
 	}
 
 	log.Debugf("executing: krunkit %s", strings.Join(args, " "))
