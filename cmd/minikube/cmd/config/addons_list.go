@@ -23,8 +23,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -96,27 +96,24 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	}
 	sort.Strings(addonNames)
 
-	table := tablewriter.NewWriter(os.Stdout)
+	t := table.NewWriter()
+	t.SetStyle(table.StyleLight)
+	t.SetOutputMirror(os.Stdout)
+	t.Style().Options.SeparateRows = true
 
-	table.Options(
-		tablewriter.WithHeaderAutoFormat(tw.On),
-	)
-
-	// Create table header
-	var tHeader []string
+	// Header
+	var headers table.Row
 	if cc == nil {
-		tHeader = []string{"Addon Name", "Maintainer"}
+		headers = table.Row{"Addon Name", "Maintainer"}
 	} else {
-		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+		headers = table.Row{"Addon Name", "Profile", "Status", "Maintainer"}
 	}
 	if printDocs {
-		tHeader = append(tHeader, "Docs")
+		headers = append(headers, "Docs")
 	}
-	table.Header(tHeader)
+	t.AppendHeader(headers)
 
-	// Create table data
-	var tData [][]string
-	var temp []string
+	// Data
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -127,23 +124,37 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		if docs == "" {
 			docs = "n/a"
 		}
+
 		if cc == nil {
-			temp = []string{addonName, maintainer}
-		} else {
-			enabled := addonBundle.IsEnabled(cc)
-			temp = []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled)), maintainer}
+			t.AppendRow(table.Row{addonName, maintainer})
+			continue
 		}
+
+		enabled := addonBundle.IsEnabled(cc)
+		statusStr := fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled))
+
+		row := table.Row{addonName, cc.Name, statusStr, maintainer}
 		if printDocs {
-			temp = append(temp, docs)
+			row = append(row, docs)
 		}
-		tData = append(tData, temp)
+
+		if enabled {
+			// Color entire row green
+			for i := range row {
+				row[i] = text.FgGreen.Sprintf("%v", row[i])
+			}
+		}else {
+			// Color entire row red
+			for i := range row {
+				row[i] = text.FgRed.Sprintf("%v", row[i])
+			}
+		}
+		t.AppendRow(row)
 	}
-	if err := table.Bulk(tData); err != nil {
-		klog.Error("Error rendering table (bulk)", err)
-	}
-	if err := table.Render(); err != nil {
-		klog.Error("Error rendering table", err)
-	}
+
+	t.Render()
+
+	// Suggestion for multi-profile users
 	v, _, err := config.ListProfiles()
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
@@ -152,6 +163,8 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
+
+
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonNames := make([]string, 0, len(assets.Addons))
