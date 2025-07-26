@@ -22,10 +22,9 @@ import (
 	"os"
 	"sort"
 	"strings"
-    "github.com/fatih/color"
-	"github.com/olekukonko/tablewriter/renderer"
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
+
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -97,58 +96,24 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	}
 	sort.Strings(addonNames)
 
-	// Prepare table header
-	var tHeader []string
-	var numCols int
+	t := table.NewWriter()
+	t.SetStyle(table.StyleLight)
+	t.SetOutputMirror(os.Stdout)
+	t.Style().Options.SeparateRows = true
+
+	// Header
+	var headers table.Row
 	if cc == nil {
-		tHeader = []string{"Addon Name", "Maintainer"}
-		numCols = 2
+		headers = table.Row{"Addon Name", "Maintainer"}
 	} else {
-		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
-		numCols = 4
+		headers = table.Row{"Addon Name", "Profile", "Status", "Maintainer"}
 	}
 	if printDocs {
-		tHeader = append(tHeader, "Docs")
-		numCols++
+		headers = append(headers, "Docs")
 	}
+	t.AppendHeader(headers)
 
-	// Define color configuration
-	colorCfg := renderer.ColorizedConfig{
-		Header: renderer.Tint{
-			FG: renderer.Colors{color.FgHiGreen, color.Bold},
-		},
-		Column: renderer.Tint{
-			FG: renderer.Colors{color.FgCyan},
-			Columns: []renderer.Tint{
-				{FG: renderer.Colors{color.FgMagenta}}, // column 0
-				{},                                     // column 1 (default)
-				{FG: renderer.Colors{color.FgHiRed}},   // column 2
-			},
-		},
-		Border:    renderer.Tint{FG: renderer.Colors{color.FgWhite}},
-		Separator: renderer.Tint{FG: renderer.Colors{color.FgWhite}},
-	}
-
-	// Table config
-	cfg := tablewriter.Config{
-		Row: tw.CellConfig{
-			Formatting: tw.CellFormatting{AutoWrap: tw.WrapNormal},
-			Alignment:  tw.CellAlignment{Global: tw.AlignLeft},
-		},
-		Footer: tw.CellConfig{
-			Alignment: tw.CellAlignment{Global: tw.AlignRight},
-		},
-	}
-
-	table := tablewriter.NewTable(os.Stdout,
-		tablewriter.WithRenderer(renderer.NewColorized(colorCfg)),
-		tablewriter.WithConfig(cfg),
-	)
-
-	table.Header(tHeader)
-
-	// Construct table rows
-	var rows [][]string
+	// Data
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 		maintainer := addonBundle.Maintainer
@@ -160,26 +125,32 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			docs = "n/a"
 		}
 
-		var row []string
 		if cc == nil {
-			row = []string{addonName, maintainer}
-		} else {
-			isEnabled := addonBundle.IsEnabled(cc)
-			statusStr := fmt.Sprintf("%s %s", stringFromStatus(isEnabled), iconFromStatus(isEnabled))
-			row = []string{addonName, cc.Name, statusStr, maintainer}
+			t.AppendRow(table.Row{addonName, maintainer})
+			continue
 		}
+
+		enabled := addonBundle.IsEnabled(cc)
+		statusStr := fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled))
+
+		row := table.Row{addonName, cc.Name, statusStr, maintainer}
 		if printDocs {
 			row = append(row, docs)
 		}
-		rows = append(rows, row)
+
+		if enabled {
+			// Color entire row green
+			for i := range row {
+				row[i] = text.FgGreen.Sprintf("%v", row[i])
+			}
+		}
+
+		t.AppendRow(row)
 	}
 
-	table.Bulk(rows)
+	t.Render()
 
-	if err := table.Render(); err != nil {
-		klog.Error("Error rendering table", err)
-	}
-
+	// Suggestion for multi-profile users
 	v, _, err := config.ListProfiles()
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
