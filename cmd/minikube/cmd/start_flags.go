@@ -139,6 +139,7 @@ const (
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
+	disableCoreDNSLog       = "disable-coredns-log"
 	qemuFirmwarePath        = "qemu-firmware-path"
 	socketVMnetClientPath   = "socket-vmnet-client-path"
 	socketVMnetPath         = "socket-vmnet-path"
@@ -206,6 +207,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
+	startCmd.Flags().Bool(disableCoreDNSLog, false, "If set, disable CoreDNS verbose logging. Defaults to false.")
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
@@ -625,6 +627,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
+		DisableCoreDNSLog:       viper.GetBool(disableCoreDNSLog),
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
 		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
 		SocketVMnetPath:         detect.SocketVMNetPath(),
