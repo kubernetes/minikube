@@ -143,8 +143,12 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			for i := range row {
 				row[i] = text.FgGreen.Sprintf("%v", row[i])
 			}
+		}else {
+			// Color entire row red
+			for i := range row {
+				row[i] = text.FgRed.Sprintf("%v", row[i])
+			}
 		}
-
 		t.AppendRow(row)
 	}
 
