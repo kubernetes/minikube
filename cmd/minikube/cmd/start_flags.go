@@ -312,10 +312,12 @@ func ClusterFlagValue() string {
 }
 
 // generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
-func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string) (config.ClusterConfig, config.Node, error) {
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, rtime string, drvName string, driverAutoSelected bool) (config.ClusterConfig, config.Node, error) {
 	var cc config.ClusterConfig
 	if existing != nil {
 		cc = updateExistingConfigFromFlags(cmd, existing)
+		// Update the DriverAutoSelected flag based on current selection method
+		cc.DriverAutoSelected = driverAutoSelected
 
 		// identify appropriate cni then configure cruntime accordingly
 		if _, err := cni.New(&cc); err != nil {
@@ -323,7 +325,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 		}
 	} else {
 		klog.Info("no existing cluster config was found, will generate one from the flags ")
-		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName)
+		cc = generateNewConfigFromFlags(cmd, k8sVersion, rtime, drvName, driverAutoSelected)
 
 		cnm, err := cni.New(&cc)
 		if err != nil {
@@ -547,7 +549,7 @@ func validateVfkitNetwork(n string) string {
 }
 
 // generateNewConfigFromFlags generate a config.ClusterConfig based on flags
-func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string) config.ClusterConfig {
+func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime string, drvName string, driverAutoSelected bool) config.ClusterConfig {
 	var cc config.ClusterConfig
 
 	// networkPlugin cni deprecation warning
@@ -578,6 +580,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		CPUs:                    getCPUCount(drvName),
 		DiskSize:                getDiskSize(),
 		Driver:                  drvName,
+		DriverAutoSelected:      driverAutoSelected,
 		ListenAddress:           viper.GetString(listenAddress),
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
