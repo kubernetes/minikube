@@ -80,21 +80,25 @@ func (m *MountError) Error() string {
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
-func Mount(r mountRunner, source string, target string, c *MountConfig, pid int) error {
-	if err := Unmount(r, target); err != nil {
+func Mount(r mountRunner, source string, targets []string, c *MountConfig, pid int) error {
+	if err := Unmount(r, targets); err != nil {
 		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "umount")}
 	}
 
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s", target))); err != nil {
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
-	}
-
-	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
-	if err != nil {
-		if strings.Contains(rr.Stderr.String(), "Connection timed out") {
-			return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
+	for _, target := range targets {
+		if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s", target))); err != nil {
+			return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrap(err, "create folder pre-mount")}
 		}
-		return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
+
+		rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
+		if err != nil {
+			if strings.Contains(rr.Stderr.String(), "Connection timed out") {
+				return &MountError{ErrorType: MountErrorConnect, UnderlyingError: err}
+			}
+			return &MountError{ErrorType: MountErrorUnknown, UnderlyingError: errors.Wrapf(err, "mount with cmd %s ", rr.Command())}
+		}
+
+		klog.Infof("mount successful: %q", rr.Output())
 	}
 
 	profile := viper.GetString("profile")
@@ -102,7 +106,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig, pid int)
 		exit.Error(reason.HostMountPid, "Error writing mount pid", err)
 	}
 
-	klog.Infof("mount successful: %q", rr.Output())
+	klog.Infof("mount successful")
 	return nil
 }
 
@@ -171,12 +175,14 @@ func mntCmd(source string, target string, c *MountConfig) string {
 }
 
 // Unmount unmounts a path
-func Unmount(r mountRunner, target string) error {
-	// grep because findmnt will also display the parent!
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
-	if _, err := r.RunCmd(c); err != nil {
-		return errors.Wrap(err, "unmount")
+func Unmount(r mountRunner, targets []string) error {
+	for _, target := range targets {
+		// grep because findmnt will also display the parent!
+		c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
+		if _, err := r.RunCmd(c); err != nil {
+			return errors.Wrap(err, "unmount")
+		}
+		klog.Infof("unmount for %s ran successfully", target)
 	}
-	klog.Infof("unmount for %s ran successfully", target)
 	return nil
 }

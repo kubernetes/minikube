@@ -173,7 +173,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().StringP(containerRuntime, "c", constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start, in a semicolon-separated format(eg. /foo:/foo;/bar:/bar:Z,rshared).")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start, in a semicolon-separated format. (eg. /foo:/foo;/bar:/bar:Z,rshared)")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
 	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
 	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)

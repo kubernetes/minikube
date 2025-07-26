@@ -33,6 +33,7 @@ var Ebadoffset error = &Error{"bad offset in directory read", EINVAL}
 var Edirchange error = &Error{"cannot convert between files and directories", EINVAL}
 var Enouser error = &Error{"unknown user", EINVAL}
 var Enotimpl error = &Error{"not implemented", EINVAL}
+var Einvalidrootid error = &Error{"invalid root index", EINVAL}
 
 // Authentication operations. The file server should implement them if
 // it requires user authentication. The authentication in 9P2000 is

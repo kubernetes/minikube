@@ -54,7 +54,7 @@ func rewriteFlags(command *cobra.Command) error {
 			usage: "Used to specify the driver to run Kubernetes in. The list of available drivers depends on operating system.",
 		}, {
 			flag:  "mount-string",
-			usage: "The argument to pass the minikube mount command on start.",
+			usage: "The argument to pass the minikube mount command on start, in a semicolon-separated format. (eg. /foo:/foo;/bar:/bar:Z,rshared)",
 		}, {
 			flag:       "iso-url",
 			usage:      "Locations to fetch the minikube ISO from. The list depends on the machine architecture.",

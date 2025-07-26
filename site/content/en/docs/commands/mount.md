@@ -14,7 +14,11 @@ Mounts the specified directory into minikube
 Mounts the specified directory into minikube.
 
 ```shell
-minikube mount [flags] <source directory>:<target directory>
+minikube mount [flags] <source directory>:<target directory>[;<source directory>:<target directory>;...]
+
+Example:
+   minikube mount /hostdir1:/vmdir1
+   minikube mount "/hostdir1:/vmdir1;/hostdir2:/vmdir2"
 ```
 
 ### Options

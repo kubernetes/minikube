@@ -16,6 +16,7 @@ import (
 )
 
 type ufsFid struct {
+	root       string
 	path       string
 	file       *os.File
 	dirs       []os.FileInfo
@@ -27,7 +28,8 @@ type ufsFid struct {
 
 type Ufs struct {
 	Srv
-	Root string
+	Root    []string
+	RootIdx int
 }
 
 func toError(err error) *Error {
@@ -166,13 +168,18 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 		req.RespondError(Enoauth)
 		return
 	}
+	if ufs.RootIdx >= len(ufs.Root) {
+		req.RespondError(Einvalidrootid)
+		return
+	}
 
 	tc := req.Tc
 	fid := new(ufsFid)
 	// You can think of the ufs.Root as a 'chroot' of a sort.
 	// clients attach are not allowed to go outside the
 	// directory represented by ufs.Root
-	fid.path = path.Join(ufs.Root, tc.Aname)
+	fid.root = ufs.Root[ufs.RootIdx]
+	fid.path = path.Join(fid.root, tc.Aname)
 
 	req.Fid.Aux = fid
 	err := fid.stat()
@@ -181,6 +188,7 @@ func (ufs *Ufs) Attach(req *SrvReq) {
 		return
 	}
 
+	ufs.RootIdx += 1
 	qid := dir2Qid(fid.st)
 	req.RespondRattach(qid)
 }
@@ -203,6 +211,7 @@ func (*Ufs) Walk(req *SrvReq) {
 
 	nfid := req.Newfid.Aux.(*ufsFid)
 	wqids := make([]Qid, len(tc.Wname))
+	root := fid.root
 	path := fid.path
 	i := 0
 	for ; i < len(tc.Wname); i++ {
@@ -221,6 +230,7 @@ func (*Ufs) Walk(req *SrvReq) {
 		path = p
 	}
 
+	nfid.root = root
 	nfid.path = path
 	req.RespondRwalk(wqids[0:i])
 }

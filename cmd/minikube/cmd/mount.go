@@ -88,9 +88,10 @@ var supportedFilesystems = map[string]bool{nineP: true}
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
-	Use:   "mount [flags] <source directory>:<target directory>",
-	Short: "Mounts the specified directory into minikube",
-	Long:  `Mounts the specified directory into minikube.`,
+	Use:     "mount [flags] <source directory>:<target directory>[;<source directory>:<target directory>;...]",
+	Short:   "Mounts the specified directories into minikube",
+	Long:    `Mounts the specified directories into minikube.`,
+	Example: "minikube mount /hostdir1:/vmdir1\nminikube mount \"/hostdir1:/vmdir1;/hostdir2:/vmdir2\"",
 	Run: func(_ *cobra.Command, args []string) {
 		if isKill {
 			if err := killMountProcess(); err != nil {
@@ -104,22 +105,36 @@ var mountCmd = &cobra.Command{
 	minikube mount <source directory>:<target directory>   (example: "/host-home:/vm-home")`)
 		}
 		mountString := args[0]
-		idx := strings.LastIndex(mountString, ":")
-		if idx == -1 { // no ":" was present
-			exit.Message(reason.Usage, `mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, out.V{"value": mountString})
-		}
-		hostPath := mountString[:idx]
-		vmPath := mountString[idx+1:]
-		if _, err := os.Stat(hostPath); err != nil {
-			if os.IsNotExist(err) {
-				exit.Message(reason.HostPathMissing, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
-			} else {
-				exit.Error(reason.HostPathStat, "stat failed", err)
+		var hostPaths []string
+		var vmPaths []string
+		vmPathMap := make(map[string]string)
+		for _, item := range strings.Split(mountString, ";") {
+			paths := strings.Split(item, ":")
+			// no ":" was present
+			if len(paths) != 2 {
+				exit.Message(reason.Usage, `mount argument "{{.value}}" must be in form: <source directory>:<target directory>[;<source directory>:<target directory>;...]`, out.V{"value": mountString})
 			}
+
+			// check host and vm path
+			if _, err := os.Stat(paths[0]); err != nil {
+				if os.IsNotExist(err) {
+					exit.Message(reason.HostPathMissing, "Cannot find directory {{.path}} for mount", out.V{"path": paths[0]})
+				} else {
+					exit.Error(reason.HostPathStat, "stat failed", err)
+				}
+			}
+			if len(paths[1]) == 0 || !strings.HasPrefix(paths[1], "/") {
+				exit.Message(reason.Usage, "Target directory {{.path}} must be an absolute path", out.V{"path": paths[1]})
+			}
+			if _, exists := vmPathMap[paths[1]]; exists {
+				exit.Message(reason.Usage, "Target directory {{.path}} must be unique", out.V{"path": paths[1]})
+			}
+			vmPathMap[paths[1]] = paths[0]
+
+			hostPaths = append(hostPaths, paths[0])
+			vmPaths = append(vmPaths, paths[1])
 		}
-		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			exit.Message(reason.Usage, "Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
-		}
+
 		var debugVal int
 		if klog.V(1).Enabled() {
 			debugVal = 1 // ufs.StartServer takes int debug param
@@ -200,7 +215,7 @@ var mountCmd = &cobra.Command{
 		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
-		out.Step(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.Step(style.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPaths, "destinationPath": vmPaths})
 		out.Infof("Mount type:   {{.name}}", out.V{"name": cfg.Type})
 		out.Infof("User ID:      {{.userID}}", out.V{"userID": cfg.UID})
 		out.Infof("Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
@@ -216,7 +231,7 @@ var mountCmd = &cobra.Command{
 			go func(pid chan int) {
 				pid <- os.Getpid()
 				out.Styled(style.Fileserver, "Userspace file server: ")
-				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
+				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPaths)
 				out.Step(style.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}(pidchan)
@@ -228,8 +243,8 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				out.Step(style.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
-				err := cluster.Unmount(co.CP.Runner, vmPath)
+				out.Step(style.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPaths})
+				err := cluster.Unmount(co.CP.Runner, vmPaths)
 				if err != nil {
 					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
@@ -243,14 +258,14 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg, pid)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPaths, cfg, pid)
 		if err != nil {
 			if rtErr, ok := err.(*cluster.MountError); ok && rtErr.ErrorType == cluster.MountErrorConnect {
 				exit.Error(reason.GuestMountCouldNotConnect, "mount could not connect", rtErr)
 			}
 			exit.Error(reason.GuestMount, "mount failed", err)
 		}
-		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.Step(style.Success, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPaths, "destinationPath": vmPaths})
 		out.Ln("")
 		out.Styled(style.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()

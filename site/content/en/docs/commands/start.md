@@ -88,7 +88,7 @@ minikube start [flags]
       --mount-msize int                   The number of bytes to use for 9p packet payload (default 262144)
       --mount-options strings             Additional mount options, such as cache=fscache
       --mount-port uint16                 Specify the port that the mount should be setup on, where 0 means any free port.
-      --mount-string string               The argument to pass the minikube mount command on start.
+      --mount-string string               The argument to pass the minikube mount command on start, in a semicolon-separated format. (eg. /foo:/foo;/bar:/bar:Z,rshared)
       --mount-type string                 Specify the mount filesystem type (supported types: 9p) (default "9p")
       --mount-uid string                  Default user id used for the mount (default "docker")
       --namespace string                  The named space to activate after start (default "default")

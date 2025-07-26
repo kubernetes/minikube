@@ -185,7 +185,7 @@ func (u *Ufs) Wstat(req *SrvReq) {
 		// cwd.
 		var destpath string
 		if dir.Name[0] == '/' {
-			destpath = path.Join(u.Root, dir.Name)
+			destpath = path.Join(fid.root, dir.Name)
 			fmt.Printf("/ results in %s\n", destpath)
 		} else {
 			fiddir, _ := path.Split(fid.path)

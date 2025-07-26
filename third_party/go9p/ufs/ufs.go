@@ -11,11 +11,12 @@ import (
 	"k8s.io/minikube/third_party/go9p"
 )
 
-func StartServer(addrVal string, debugVal int, rootVal string) {
+func StartServer(addrVal string, debugVal int, rootVals []string) {
 	ufs := new(go9p.Ufs)
 	ufs.Dotu = true
 	ufs.Id = "ufs"
-	ufs.Root = rootVal
+	ufs.Root = rootVals
+	ufs.RootIdx = 0
 	ufs.Debuglevel = debugVal
 	ufs.Start(ufs)
 
