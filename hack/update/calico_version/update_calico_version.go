@@ -77,7 +77,7 @@ func updateYAML(version string) {
 	for re, repl := range replacements {
 		yaml = regexp.MustCompile(re).ReplaceAll(yaml, []byte(repl))
 	}
-	if err := os.WriteFile("../../../pkg/minikube/cni/calico.yaml", yaml, 0644); err != nil {
+	if err := os.WriteFile("../pkg/minikube/cni/calico.yaml", yaml, 0644); err != nil {
 		klog.Fatalf("failed to write to YAML file: %v", err)
 	}
 }
