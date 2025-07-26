@@ -58,6 +58,9 @@ const (
 	EmbedCerts = "EmbedCerts"
 	// MaxAuditEntries is the maximum number of audit entries to retain
 	MaxAuditEntries = "MaxAuditEntries"
+	// DefaultDnsDomain is the key for the default dns domain name when creating
+	// a cluster
+	DefaultClusterDNSDomain = "DefaultClusterDNSDomain"
 )
 
 var (

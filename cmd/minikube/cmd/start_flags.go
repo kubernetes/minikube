@@ -221,7 +221,7 @@ func initKubernetesFlags() {
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
 		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmCmdParam], ", "), strings.Join(bsutil.KubeadmExtraArgsAllowed[bsutil.KubeadmConfigParam], ",")))
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
-	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the Kubernetes cluster")
+	startCmd.Flags().String(dnsDomain, constants.DefaultClusterDNSDomain, "The cluster dns domain name used in the Kubernetes cluster")
 	startCmd.Flags().Int(apiServerPort, constants.APIServerPort, "The apiserver listening port")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringSliceVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
@@ -560,6 +560,13 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		out.WarningT("--network flag is only valid with the docker/podman, qemu, kvm, and vfkit drivers, it will be ignored")
 	}
 
+	// Set the cluster dns name to the dnsDomain flag. If the flag is not set, set it to
+	// the configured default.
+	defaultClusterDNSDomain := viper.GetString(dnsDomain)
+	if defaultClusterDNSDomain == constants.DefaultClusterDNSDomain {
+		defaultClusterDNSDomain = viper.GetString(config.DefaultClusterDNSDomain)
+	}
+
 	validateHANodeCount(cmd)
 
 	checkNumaCount(k8sVersion)
@@ -636,7 +643,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
-			DNSDomain:              viper.GetString(dnsDomain),
+			DNSDomain:              defaultClusterDNSDomain,
 			FeatureGates:           viper.GetString(featureGates),
 			ContainerRuntime:       rtime,
 			CRISocket:              viper.GetString(criSocket),
