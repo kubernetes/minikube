@@ -72,6 +72,7 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	ExtraDisks     int
+	VirtiofsShare  []string
 	Network        string        // "", "nat", "vmnet-shared"
 	MACAddress     string        // For network=nat, network=""
 	VmnetHelper    *vmnet.Helper // For network=vmnet-shared
@@ -311,6 +312,15 @@ func (d *Driver) startVfkit(socketPath string) error {
 	serialPath := d.ResolveStorePath(serialFileName)
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", serialPath))
+
+	for _, s := range d.VirtiofsShare {
+		vs, err := pkgdrivers.ParseVirtiofsShare(s)
+		if err != nil {
+			return err
+		}
+		startCmd = append(startCmd,
+			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", vs.SharedDir, vs.MountTag))
+	}
 
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())

@@ -71,6 +71,7 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	ExtraDisks     int
+	VirtiofsShare  []string
 	MACAddress     string
 	VmnetHelper    vmnet.Helper
 }
@@ -229,6 +230,15 @@ func (d *Driver) startKrunkit(socketPath string) error {
 	for i := 0; i < d.ExtraDisks; i++ {
 		args = append(args,
 			"--device", fmt.Sprintf("virtio-blk,path=%s", pkgdrivers.ExtraDiskPath(d.BaseDriver, i)))
+	}
+
+	for _, s := range d.VirtiofsShare {
+		vs, err := pkgdrivers.ParseVirtiofsShare(s)
+		if err != nil {
+			return err
+		}
+		args = append(args,
+			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", vs.SharedDir, vs.MountTag))
 	}
 
 	log.Debugf("executing: krunkit %s", strings.Join(args, " "))

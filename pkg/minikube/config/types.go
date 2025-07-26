@@ -63,6 +63,7 @@ type ClusterConfig struct {
 	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
 	NFSSharesRoot           string
+	VirtiofsShare           []string
 	UUID                    string // Only used by hyperkit to restore the mac address
 	NoVTXCheck              bool   // Only used by virtualbox
 	DNSProxy                bool   // Only used by virtualbox

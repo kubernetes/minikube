@@ -76,6 +76,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		VirtiofsShare:  cfg.VirtiofsShare,
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,

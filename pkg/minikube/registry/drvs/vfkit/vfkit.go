@@ -99,6 +99,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		VirtiofsShare:  cfg.VirtiofsShare,
 		Network:        cfg.Network,
 		MACAddress:     mac,
 		VmnetHelper:    helper,
