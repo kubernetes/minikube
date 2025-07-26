@@ -112,7 +112,7 @@ func updateHashFiles(commit string) error {
 		return fmt.Errorf("failed to read response body: %v", err)
 	}
 	sum := sha256.Sum256(b)
-	filePathBase := "../../../deploy/iso/minikube-iso/arch/"
+	filePathBase := "../deploy/iso/minikube-iso/arch/"
 	if err := updateHashFile(filePathBase+"aarch64/package/cri-dockerd-aarch64/cri-dockerd.hash", commit, sum); err != nil {
 		return fmt.Errorf("aarch64: %v", err)
 	}

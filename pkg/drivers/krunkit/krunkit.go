@@ -338,11 +338,11 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) StartDocker() error {
-	return fmt.Errorf("hosts without a driver cannot start docker")
+	return errors.New("hosts without a driver cannot start docker")
 }
 
 func (d *Driver) StopDocker() error {
-	return fmt.Errorf("hosts without a driver cannot stop docker")
+	return errors.New("hosts without a driver cannot stop docker")
 }
 
 func (d *Driver) GetDockerConfigDir() string {
@@ -441,10 +441,6 @@ func (d *Driver) pidfilePath() string {
 	return d.ResolveStorePath(pidFileName)
 }
 
-func (d *Driver) logfilePath() string {
-	return d.ResolveStorePath(logFileName)
-}
-
 func (d *Driver) serialPath() string {
 	return d.ResolveStorePath(serialFileName)
 }
@@ -534,9 +530,9 @@ type vmState struct {
 	State string `json:"state"`
 }
 
-func (d *Driver) setKrunkitState(state string) error {
+func (d *Driver) setKrunkitState(desired string) error {
 	var vmstate vmState
-	vmstate.State = state
+	vmstate.State = desired
 	log.Infof("Set krunkit state: %+v", vmstate)
 	data, err := json.Marshal(&vmstate)
 	if err != nil {

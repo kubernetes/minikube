@@ -35,7 +35,7 @@ import (
 
 const (
 	// FSRoot is a relative (to scripts in subfolders) root folder of local filesystem repo to update
-	FSRoot = "../../../"
+	FSRoot = "../"
 )
 
 // init klog and check general requirements
