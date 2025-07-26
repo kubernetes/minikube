@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"minikube-hack/update"
+	"k8s.io/minikube/hack/update"
 
 	"k8s.io/klog/v2"
 )
