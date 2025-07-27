@@ -33,6 +33,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
+	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/juju/clock v1.1.1
 	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
@@ -123,7 +124,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/fatih/color v1.18.0 // indirect
-	github.com/felixge/fgprof v0.9.3 // indirect
+	github.com/felixge/fgprof v0.9.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fvbommel/sortorder v1.1.0 // indirect
