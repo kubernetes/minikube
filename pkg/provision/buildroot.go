@@ -74,10 +74,9 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target  minikube-automount.service docker.socket
-Requires= minikube-automount.service docker.socket 
-StartLimitBurst=3
-StartLimitIntervalSec=60
+After=network-online.target nss-lookup.target docker.socket firewalld.service containerd.service time-set.target
+Wants=network-online.target containerd.service
+Requires=docker.socket
 
 [Service]
 Type=notify
@@ -94,18 +93,8 @@ Environment=DOCKER_RAMDISK=yes
 {{range .EngineOptions.Env}}Environment={{.}}
 {{end}}
 
-# This file is a systemd drop-in unit that inherits from the base dockerd configuration.
-# The base configuration already specifies an 'ExecStart=...' command. The first directive
-# here is to clear out that command inherited from the base configuration. Without this,
-# the command from the base configuration and the command specified here are treated as
-# a sequence of commands, which is not the desired behavior, nor is it valid -- systemd
-# will catch this invalid input and refuse to start the service with an error like:
-#  Service has more than one ExecStart= setting, which is only allowed for Type=oneshot services.
-
-# NOTE: default-ulimit=nofile is set to an arbitrary number for consistency with other
-# container runtimes. If left unlimited, it may result in OOM issues with MySQL.
 ExecStart=
-ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
+ExecStart=/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
 ExecReload=/bin/kill -s HUP \$MAINPID
 
 # Having non-zero Limit*s causes performance problems due to accounting overhead
@@ -117,13 +106,13 @@ LimitCORE=infinity
 # Uncomment TasksMax if your systemd version supports it.
 # Only systemd 226 and above support this version.
 TasksMax=infinity
-TimeoutStartSec=0
 
 # set delegate yes so that systemd does not reset the cgroups of docker containers
 Delegate=yes
 
 # kill only the docker process, not all processes in the cgroup
 KillMode=process
+OOMScoreAdjust=-500
 
 [Install]
 WantedBy=multi-user.target
