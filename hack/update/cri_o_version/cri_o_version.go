@@ -78,8 +78,8 @@ func (data CrioData) updateCrio() {
 	}
 }
 
-func updateHashFile(version string) error {
-	filePath := "../../../deploy/iso/minikube-iso/package/crio-bin/crio-bin.hash"
+func updateCrioHashFile(version string) error {
+	filePath := "../deploy/iso/minikube-iso/package/crio-bin/crio-bin.hash"
 	b, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read hash file: %v", err)
