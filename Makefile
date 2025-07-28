@@ -1246,7 +1246,7 @@ get-dependency-version:
 	@(cd hack && go run update/get_version/get_version.go)
 
 .PHONY: make-update-all
-update-all: ## Run all update-* targets
+update-all: ## Run all update-* targets one after another
 	@echo "Running all update-* targets..."
 	@targets=$(shell grep -Eo ^update-[^:]+ $(MAKEFILE_LIST)); \
 	for t in $$targets; do \
