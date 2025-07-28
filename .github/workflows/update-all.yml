@@ -24,6 +24,7 @@ jobs:
         id: bumpVersions
         run: |
           set -e
+          echo "Fetching current versions of dependencies before udpating them..."
           deps=$(grep -oP '^\s*"([^"]+)":' hack/update/get_version/get_version.go | sed -E 's/^\s*"//;s/":$//')
           for dep in $deps; do
             var=$(echo $dep | tr 'a-z-' 'A-Z_')
@@ -31,7 +32,10 @@ jobs:
             echo "OLD_${var}=$old" >> "$GITHUB_OUTPUT"
             eval "OLD_${var}=$old"
           done
-          make update-all
+          make update-all          
+          echo "------------------------------------------------------------------------------------------------------------------------"
+          echo "finished update-all now fetching current updated versions of dependencies to be used in the PR description..."
+          echo "------------------------------------------------------------------------------------------------------------------------"
           for dep in $deps; do
             var=$(echo $dep | tr 'a-z-' 'A-Z_')
             new=$(DEP=$dep make get-dependency-version | tail -n1)
