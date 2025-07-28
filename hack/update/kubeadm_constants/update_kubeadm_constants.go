@@ -31,7 +31,7 @@ import (
 
 	"minikube-hack/update"
 
-	"github.com/google/go-github/v73/github"
+	"github.com/google/go-github/v74/github"
 	"golang.org/x/mod/semver"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/constants"
