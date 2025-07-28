@@ -836,12 +836,12 @@ release-minikube: out/minikube checksum ## Minikube release
 release-notes:
 	hack/release_notes.sh
 
-.PHONY: update-leaderboard
-update-leaderboard:
+.PHONY: leaderboard
+leaderboard:
 	hack/update_contributions.sh
 
-.PHONY: update-yearly-leaderboard
-update-yearly-leaderboard:
+.PHONY: yearly-leaderboard
+yearly-leaderboard:
 	hack/yearly-leaderboard.sh
 
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-$(GOARCH)
