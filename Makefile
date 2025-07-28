@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0-1752940814-21089
+ISO_VERSION ?= v1.36.0-1753487480-21147
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -1240,6 +1240,7 @@ update-kube-vip-version:
 	cd hack && go run update/kube_vip_version/update_kube_vip_version.go
 
 # used by update- Targets to get before/after versions of tools it updates
+# example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
 get-dependency-version:
-	cd hack && go run update/get_version/get_version.go
+	@(cd hack && go run update/get_version/get_version.go)
