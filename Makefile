@@ -1026,6 +1026,11 @@ compare: out/mkcmp out/minikube
 generate-licenses:
 	./hack/generate_licenses.sh
 
+.PHONY: gomodtidy
+gomodtidy:
+	go mod tidy
+	(cd hack && gom mod tidy)
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
@@ -1246,9 +1251,6 @@ get-dependency-version:
 	@(cd hack && go run update/get_version/get_version.go)
 
 .PHONY: update-all
-update-all: ## Run all update-* targets one after another .
-	@echo "Running all update-* targets..."
-	@targets=$(shell grep -Eo ^update-[^:]+ $(MAKEFILE_LIST)); \
-	for t in $$targets; do \
-		$(MAKE) $$t; \
-	done
+update-all: gomodtidy ## Run all update-* targets one after another .
+	@echo "Running make update-all ..."
+	@$(MAKE) $(shell grep -Eo '^update-[^:]+' $(MAKEFILE_LIST))
