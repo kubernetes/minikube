@@ -223,11 +223,10 @@ func (d *Driver) Create() error {
 
 func (d *Driver) extractKernel() error {
 	log.Info("Extracting bzimage and initrd...")
-	isoPath := d.ResolveStorePath(isoFilename)
-	if err := pkgdrivers.ExtractFile(isoPath, "/boot/bzimage", d.kernelPath()); err != nil {
+	if err := pkgdrivers.ExtractFile(d.isoPath(), "/boot/bzimage", d.kernelPath()); err != nil {
 		return err
 	}
-	return pkgdrivers.ExtractFile(isoPath, "/boot/initrd", d.initrdPath())
+	return pkgdrivers.ExtractFile(d.isoPath(), "/boot/initrd", d.initrdPath())
 }
 
 func (d *Driver) Start() error {
@@ -258,8 +257,6 @@ func (d *Driver) Start() error {
 // startVfkit starts the vfkit child process. If socketPath is not empty, vfkit
 // is connected to the vmnet network via the socket instead of "nat" network.
 func (d *Driver) startVfkit(socketPath string) error {
-	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
-
 	var startCmd []string
 
 	startCmd = append(startCmd,
@@ -296,9 +293,8 @@ func (d *Driver) startVfkit(socketPath string) error {
 	startCmd = append(startCmd,
 		"--device", "virtio-rng")
 
-	var isoPath = filepath.Join(machineDir, isoFilename)
 	startCmd = append(startCmd,
-		"--device", fmt.Sprintf("virtio-blk,path=%s", isoPath))
+		"--device", fmt.Sprintf("virtio-blk,path=%s", d.isoPath()))
 
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-blk,path=%s", d.diskPath()))
@@ -514,6 +510,10 @@ func (d *Driver) sshKeyPath() string {
 
 func (d *Driver) publicSSHKeyPath() string {
 	return d.sshKeyPath() + ".pub"
+}
+
+func (d *Driver) isoPath() string {
+	return d.ResolveStorePath(isoFilename)
 }
 
 func (d *Driver) kernelPath() string {
