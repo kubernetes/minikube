@@ -1029,7 +1029,7 @@ generate-licenses:
 .PHONY: gomodtidy
 gomodtidy:
 	go mod tidy
-	(cd hack && gom mod tidy)
+	(cd hack && go mod tidy)
 
 .PHONY: help
 help:
