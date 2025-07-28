@@ -1240,6 +1240,7 @@ update-kube-vip-version:
 	cd hack && go run update/kube_vip_version/update_kube_vip_version.go
 
 # used by update- Targets to get before/after versions of tools it updates
+# example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
 get-dependency-version:
-	cd hack && go run update/get_version/get_version.go
+	@(cd hack && go run update/get_version/get_version.go)
