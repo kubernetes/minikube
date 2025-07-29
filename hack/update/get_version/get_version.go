@@ -90,7 +90,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("regexp failed to compile: %v", err)
 	}
-	data, err := os.ReadFile("../../../" + dep.filePath)
+	// because in the Makefile we run it as @(cd hack && go run update/get_version/get_version.go) we need ../
+	data, err := os.ReadFile("../" + dep.filePath)
 	if err != nil {
 		log.Fatalf("failed to read file: %v", err)
 	}
