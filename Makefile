@@ -1251,6 +1251,7 @@ get-dependency-version:
 	@(cd hack && go run update/get_version/get_version.go)
 
 .PHONY: update-all
-update-all: gomodtidy ## Run all update-* targets one after another .
+update-all: gomodtidy ## Run all update-* targets one after another .(ONLY USED FOR DEBUGGING CI)
+	@echo "this is only meant for debugging CI and check what verrsions been missing, please use individual update-* targets"
 	@echo "Running make update-all ..."
 	@$(MAKE) $(shell grep -Eo '^update-[^:]+' $(MAKEFILE_LIST))
