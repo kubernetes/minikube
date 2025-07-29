@@ -17,11 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"fmt"
-	"strings"
-	"time"
-
 	"minikube-hack/update"
 
 	"k8s.io/klog/v2"
@@ -41,20 +36,21 @@ type Data struct {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+	klog.Info(`this script needs to be fixed due to operator image deprecation by istio. See https://github.com/kubernetes/minikube/issues/21194`)
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "istio", "istio")
-	if err != nil {
-		klog.Fatalf("Unable to get stable version: %v", err)
-	}
-	version := strings.TrimPrefix(stable.Tag, "v")
-	sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/istio/operator:%s", version))
-	if err != nil {
-		klog.Fatalf("failed to get image SHA: %v", err)
-	}
+	// stable, _, _, err := update.GHReleases(ctx, "istio", "istio")
+	// if err != nil {
+	// 	klog.Fatalf("Unable to get stable version: %v", err)
+	// }
+	// version := strings.TrimPrefix(stable.Tag, "v")
+	// sha, err := update.GetImageSHA(fmt.Sprintf("docker.io/istio/operator:%s", version))
+	// if err != nil {
+	// 	klog.Fatalf("failed to get image SHA: %v", err)
+	// }
 
-	data := Data{Version: version, SHA: sha}
+	// data := Data{Version: version, SHA: sha}
 
-	update.Apply(schema, data)
+	// update.Apply(schema, data)
 }
