@@ -17,10 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"fmt"
-	"time"
-
 	"minikube-hack/update"
 
 	"k8s.io/klog/v2"
@@ -40,19 +36,20 @@ type Data struct {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
+	klog.Info("Skiping due till this is fixed https://github.com/kubernetes/minikube/issues/21195")
+	// ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	// defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "ROCm", "k8s-device-plugin")
-	if err != nil {
-		klog.Fatalf("Unable to get stable version: %v", err)
-	}
-	sha, err := update.GetImageSHA(fmt.Sprintf("rocm/k8s-device-plugin:%s", stable.Tag))
-	if err != nil {
-		klog.Fatalf("failed to get image SHA: %v", err)
-	}
+	// stable, _, _, err := update.GHReleases(ctx, "ROCm", "k8s-device-plugin")
+	// if err != nil {
+	// 	klog.Fatalf("Unable to get stable version: %v", err)
+	// }
+	// sha, err := update.GetImageSHA(fmt.Sprintf("rocm/k8s-device-plugin:%s", stable.Tag))
+	// if err != nil {
+	// 	klog.Fatalf("failed to get image SHA: %v", err)
+	// }
 
-	data := Data{Version: stable.Tag, SHA: sha}
+	// data := Data{Version: stable.Tag, SHA: sha}
 
-	update.Apply(schema, data)
+	// update.Apply(schema, data)
 }
