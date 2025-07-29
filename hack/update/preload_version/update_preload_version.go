@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"minikube-hack/update"
+	"k8s.io/minikube/hack/update"
 
 	"k8s.io/klog/v2"
 )
