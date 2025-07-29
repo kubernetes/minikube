@@ -23,8 +23,11 @@ jobs:
       - name: Bump all versions
         id: bumpVersions
         run: |
-          set -e
+          echo "------------------------------------------------------------------------------------------------------------------------"
+          echo "!!! WARNING This job is only meant to be used for deubugging purposes to test and verify the invidivual update mechanism and detect which components not been updated quikcly !!!"
+          echo "!!! WARNING do not use unless for maintainers debug !!!"
           echo "Fetching current versions of dependencies before udpating them..."
+          echo "------------------------------------------------------------------------------------------------------------------------"
           deps=$(grep -oP '^\s*"([^"]+)":' hack/update/get_version/get_version.go | sed -E 's/^\s*"//;s/":$//')
           for dep in $deps; do
             var=$(echo $dep | tr 'a-z-' 'A-Z_')
