@@ -130,6 +130,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		const (
 			green = "\033[32m"
 			reset = "\033[0m"
+			red   = "\033[31m"
 		)
 		if cc == nil {
 			temp = []string{addonName, maintainer}
@@ -139,7 +140,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 				status := fmt.Sprintf("%s%s %s%s", green, stringFromStatus(enabled), iconFromStatus(enabled), reset)
    				temp = []string{fmt.Sprintf("%s%s%s", green, addonName, reset), fmt.Sprintf("%s%s%s", green, cc.Name, reset),status, fmt.Sprintf("%s%s%s", green, maintainer, reset)}
 			}else{
-			    temp = []string{addonName,cc.Name,"",maintainer}
+			    temp = []string{fmt.Sprintf("%s%s", red, addonName), fmt.Sprintf("%s%s", red, cc.Name), fmt.Sprintf("%s%s", red,""), fmt.Sprintf("%s%s", red, maintainer)}
 			}
 		}
 		if printDocs {
