@@ -107,7 +107,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	if cc == nil {
 		tHeader = []string{"Addon Name", "Maintainer"}
 	} else {
-		tHeader = []string{"Addon Name", "Profile", "Status", "Maintainer"}
+		tHeader = []string{"Addon Name", "Enabled", "Maintainer"}
 	}
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
@@ -131,16 +131,17 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			green = "\033[32m"
 			reset = "\033[0m"
 			red   = "\033[31m"
+			grey  = "\033[90m"
 		)
 		if cc == nil {
 			temp = []string{addonName, maintainer}
 		} else {
 			enabled := addonBundle.IsEnabled(cc)
 			if enabled{
-				status := fmt.Sprintf("%s%s %s%s", green, stringFromStatus(enabled), iconFromStatus(enabled), reset)
-   				temp = []string{fmt.Sprintf("%s%s%s", green, addonName, reset), fmt.Sprintf("%s%s%s", green, cc.Name, reset),status, fmt.Sprintf("%s%s%s", green, maintainer, reset)}
+				status := fmt.Sprintf("%s%s%s", green, iconFromStatus(enabled), reset)
+   				temp = []string{fmt.Sprintf("%s%s%s", green, addonName, reset),status, fmt.Sprintf("%s%s%s", green, maintainer, reset)}
 			}else{
-			    temp = []string{fmt.Sprintf("%s%s", red, addonName), fmt.Sprintf("%s%s", red, cc.Name), fmt.Sprintf("%s%s", red,""), fmt.Sprintf("%s%s", red, maintainer)}
+			    temp = []string{fmt.Sprintf("%s%s", grey, addonName), fmt.Sprintf("%s%s", grey,""), fmt.Sprintf("%s%s", grey, maintainer)}
 			}
 		}
 		if printDocs {
