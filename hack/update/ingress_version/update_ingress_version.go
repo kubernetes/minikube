@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -87,6 +88,10 @@ func main() {
 func LatestControllerTag(ctx context.Context) (string, error) {
 	latest := "v0.0.0"
 	ghc := github.NewClient(nil)
+	if os.Getenv("GITHUB_TOKEN") != "" {
+		ghc = ghc.WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+	}
+
 	re := regexp.MustCompile(`controller-(.*)`)
 
 	// walk through the paginated list of up to ghSearchLimit newest releases

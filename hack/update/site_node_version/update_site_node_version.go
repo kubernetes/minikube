@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -67,6 +68,9 @@ func main() {
 
 func latestNodeVersionByMajor(ctx context.Context, major string) (string, error) {
 	ghc := github.NewClient(nil)
+	if os.Getenv("GITHUB_TOKEN") != "" {
+		ghc = ghc.WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+	}
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}

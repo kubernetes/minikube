@@ -63,6 +63,9 @@ func main() {
 	releases := []string{}
 
 	ghc := github.NewClient(nil)
+	if os.Getenv("GITHUB_TOKEN") != "" {
+		ghc = ghc.WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+	}
 
 	opts := &github.ListOptions{PerPage: 100}
 	for {

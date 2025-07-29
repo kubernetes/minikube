@@ -19,6 +19,7 @@ package update
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -44,6 +45,9 @@ type Release struct {
 // If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
 func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge Release, err error) {
 	ghc := github.NewClient(nil)
+	if os.Getenv("GITHUB_TOKEN") != "" {
+		ghc = ghc.WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+	}
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
