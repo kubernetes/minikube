@@ -46,7 +46,6 @@ func licensesTarballURL() string {
 
 // Licenses downloads the licenses tarball and extracts its contents to the specified directory.
 func Licenses(dir string) error {
-	fmt.Println("inside Licenses function")
 	url := licensesTarballURL()
 
 	resp, err := http.Get(url)
