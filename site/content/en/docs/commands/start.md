@@ -36,6 +36,7 @@ minikube start [flags]
       --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. Use "no-limit" to not specify a limit (Docker/Podman only) (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
+      --disable-coredns-log               If set, disable CoreDNS verbose logging. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
       --disable-metrics                   If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.
       --disable-optimizations             If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.

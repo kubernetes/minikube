@@ -341,6 +341,7 @@
 	"If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.": "Jika diatur, node yang ditambahkan akan menjadi control-plane. Nilai default adalah false. Saat ini hanya didukung untuk klaster HA (multi-control plane) yang sudah ada.",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "Jika diatur, secara otomatis memperbarui driver ke versi terbaru. Nilai default adalah true.",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "Jika diatur, hapus klaster saat ini jika proses start gagal, lalu coba lagi. Nilai default adalah false.",
+	"If set, disable CoreDNS verbose logging. Defaults to false.": "",
 	"If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.": "Jika diatur, menonaktifkan pelaporan metrik (penggunaan CPU dan memori), ini dapat mengurangi penggunaan CPU. Nilai default adalah false.",
 	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.": "Jika diatur, menonaktifkan optimasi yang diatur untuk Kubernetes lokal, termasuk mengurangi replika CoreDNS dari 2 menjadi 1. Nilai default adalah false.",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "Jika diatur, unduh tarball dari preloaded images jika tersedia untuk mempercepat waktu mulai. Nilai default adalah true.",

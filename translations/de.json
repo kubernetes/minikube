@@ -378,6 +378,7 @@
 	"If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.": "Falls gesetzt, wird der Node ein Control-Plane Node werden. Default: false. Derzeit nur für bereits bestehende HA (mehrere Control-Plane) Cluster unterstützt.",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "Falls gesetzt, werden alle Treiber automatisch auf die aktuellste Version geupdated. Default: true",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "Falls gesetzt, lösche den Cluster wenn der Start fehlschlägt und versuche erneut zu starten. Default: false",
+	"If set, disable CoreDNS verbose logging. Defaults to false.": "",
 	"If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.": "Falls gesetzt, werden Metric Reports (CPU und Speicher Verwendung) deaktiviert, dies kann die Verwendung der CPU verbessern. Default: false.",
 	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.": "Falls gesetzt werden Optimierungen des lokalen Kubernetes deaktiviert. Dies schließt einer Reduzierung der CoreDNS Replicas von 2 auf 1 mit ein. Default: false",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "Falls gesetzt, lade einen tarball von vorbereiteten Images herunter, falls vorhanden, um die Startzeit zu verbessern. Default: true",
