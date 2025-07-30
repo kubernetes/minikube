@@ -23,13 +23,14 @@ import (
 	"github.com/google/go-github/v73/github"
 
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/hack/update"
 )
 
 // recentK8sVersions returns the most recent k8s version, usually around 100.
 func recentK8sVersions() ([]string, error) {
 	const k8s = "kubernetes"
-	client := github.NewClient(nil)
-	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{PerPage: 100})
+	ghc := update.GHClient()
+	list, _, err := ghc.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{PerPage: 100})
 	if err != nil {
 		return nil, err
 	}
