@@ -52,7 +52,7 @@ type Data struct {
 func main() {
 	releases := []string{}
 
-	ghc := github.NewClient(nil)
+	ghc := update.GHClient()
 
 	opts := &github.ListOptions{PerPage: 100}
 	for {

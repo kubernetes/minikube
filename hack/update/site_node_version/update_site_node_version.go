@@ -66,7 +66,7 @@ func main() {
 }
 
 func latestNodeVersionByMajor(ctx context.Context, major string) (string, error) {
-	ghc := github.NewClient(nil)
+	ghc := update.GHClient()
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}

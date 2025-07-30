@@ -57,6 +57,14 @@ func main() {
 	if err := exec.Command("go", "mod", "tidy").Run(); err != nil {
 		klog.Fatalf("failed to run go mod tidy: %v", err)
 	}
+
+	// we need to run go mod tidy in the root folder too (since both minikube and hack use go-github)
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = ".."
+	if err := cmd.Run(); err != nil {
+		klog.Fatalf("failed to run go mod tidy in parent folder: %v", err)
+	}
+
 }
 
 func generateSchema() map[string]update.Item {
