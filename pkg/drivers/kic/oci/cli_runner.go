@@ -150,16 +150,6 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 		warnTime = 3 * time.Second
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), killTime)
-	defer cancel()
-
-	if warn { // convert exec.Command to with context
-		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
-		cmdWithCtx.Stdout = cmd.Stdout // copying the original command
-		cmdWithCtx.Stderr = cmd.Stderr
-		cmd = cmdWithCtx
-	}
-
 	rr := &RunResult{Args: cmd.Args}
 	klog.Infof("Run: %v", rr.Command())
 
@@ -182,31 +172,84 @@ func runCmd(cmd *exec.Cmd, warnSlow ...bool) (*RunResult, error) {
 	cmd.Stderr = errb
 
 	start := time.Now()
-	err := cmd.Run()
-	elapsed := time.Since(start)
-	if warn && !out.JSON && !suppressDockerMessage() {
-		if elapsed > warnTime {
-			warnLock.Lock()
-			_, ok := alreadyWarnedCmds[rr.Command()]
-			if !ok {
-				alreadyWarnedCmds[rr.Command()] = true
-			}
-			warnLock.Unlock()
+	var err error
 
-			if !ok {
-				out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": rr.Command(), "duration": elapsed})
-				// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
-				if cmd.Args[0] != "sudo" {
-					out.ErrT(style.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": cmd.Args[0]})
+	if warn {
+		// Use a more robust approach with proper timeout handling
+		ctx, cancel := context.WithTimeout(context.Background(), killTime)
+		defer cancel()
+
+		// Create command with context for proper cancellation
+		cmdWithCtx := exec.CommandContext(ctx, cmd.Args[0], cmd.Args[1:]...)
+		cmdWithCtx.Stdout = cmd.Stdout
+		cmdWithCtx.Stderr = cmd.Stderr
+		cmdWithCtx.Env = cmd.Env
+		cmdWithCtx.Dir = cmd.Dir
+
+		// Channel to track completion
+		done := make(chan error, 1)
+		var warnTimer *time.Timer
+
+		// Start the command in a goroutine
+		go func() {
+			done <- cmdWithCtx.Run()
+		}()
+
+		// Set up warning timer
+		if !out.JSON && !suppressDockerMessage() {
+			warnTimer = time.AfterFunc(warnTime, func() {
+				warnLock.Lock()
+				_, ok := alreadyWarnedCmds[rr.Command()]
+				if !ok {
+					alreadyWarnedCmds[rr.Command()] = true
+					warnLock.Unlock()
+
+					// Show immediate warning that the operation is slow
+					out.WarningT(`"{{.command}}" is taking an unusually long time to respond, please be patient.`, out.V{"command": rr.Command()})
+					// Don't show any restarting hint, when running podman locally (on linux, with sudo). Only when having a service.
+					if cmd.Args[0] != "sudo" {
+						out.ErrT(style.Tip, `If this continues to hang, consider restarting the {{.name}} service.`, out.V{"name": cmd.Args[0]})
+					}
+				} else {
+					warnLock.Unlock()
 				}
-			}
+			})
 		}
 
-		if ctx.Err() == context.DeadlineExceeded {
-			return rr, context.DeadlineExceeded
+		// Wait for completion or timeout
+		select {
+		case err = <-done:
+			// Command completed normally
+			if warnTimer != nil {
+				warnTimer.Stop()
+			}
+		case <-ctx.Done():
+			// Command timed out
+			if warnTimer != nil {
+				warnTimer.Stop()
+			}
+
+			// Kill the process if it's still running
+			if cmdWithCtx.Process != nil {
+				klog.Warningf("Killing slow %s process after %v timeout", rr.Command(), killTime)
+				cmdWithCtx.Process.Kill()
+			}
+
+			out.WarningT(`"{{.command}}" took too long to respond (>{{.duration}}) and was terminated.`, out.V{"command": rr.Command(), "duration": killTime})
+			if cmd.Args[0] != "sudo" {
+				out.ErrT(style.Tip, `Consider restarting the {{.name}} service if this problem persists.`, out.V{"name": cmd.Args[0]})
+			}
+
+			return rr, fmt.Errorf("command timed out after %v: %s", killTime, rr.Command())
 		}
+	} else {
+		// Run without timeout for non-critical operations
+		err = cmd.Run()
 	}
 
+	elapsed := time.Since(start)
+
+	// Log completion information
 	if ex, ok := err.(*exec.ExitError); ok {
 		klog.Warningf("%s returned with exit code %d", rr.Command(), ex.ExitCode())
 		rr.ExitCode = ex.ExitCode()
