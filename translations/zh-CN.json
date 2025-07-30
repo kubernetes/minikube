@@ -461,6 +461,7 @@
 	"If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.": "如果设置，则添加的节点将成为控制平面。默认值为 false。目前仅支持现有的 HA（多控制平面）集群。",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "如果设置为 true，将自动更新驱动到最新版本。默认为 true。",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "如果设置为 true，则在启动失败时删除当前群集，然后重试。默认为 false。",
+	"If set, disable CoreDNS verbose logging. Defaults to false.": "",
 	"If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.": "如果设置为 true，则禁用指标报告（CPU和内存使用率），这可以提高 CPU 利用率。默认为 false。",
 	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.": "如果设置为 true，则禁用为本地 Kubernetes 做设置的优化，包括将 CoreDNS 副本数从2减少到1。默认值为false。",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "如果设置为true，则在可用时下载预加载映像的tarball，以提高启动时间。默认为true。",

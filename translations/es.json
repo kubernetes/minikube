@@ -374,6 +374,7 @@
 	"If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.": "",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "",
+	"If set, disable CoreDNS verbose logging. Defaults to false.": "",
 	"If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.": "",
 	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.": "",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "",
