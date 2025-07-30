@@ -23,14 +23,22 @@ import (
 	"os"
 	"os/exec"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/version"
 )
 
 func Licenses(dir string) error {
-	resp, err := http.Get(fmt.Sprintf("https://storage.googleapis.com/minikube/releases/%s/licenses.tar.gz", version.GetVersion()))
+
+	resp, err := http.Get(fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/%s/licenses.tar.gz", version.GetVersion()))
 	if err != nil {
-		return fmt.Errorf("failed to download licenses: %v", err)
+		klog.Warning("Failed to download licenses from GitHub, falling back to Google Cloud Storage: ", err)
+		// TODO: remove this fallback for minikube 1.38.0
+		resp, err = http.Get(fmt.Sprintf("https://storage.googleapis.com/minikube/releases/%s/licenses.tar.gz", version.GetVersion()))
+		if err != nil {
+			return fmt.Errorf("failed to download licenses: %v", err)
+		}
 	}
+
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download request did not return a 200, received: %d", resp.StatusCode)
