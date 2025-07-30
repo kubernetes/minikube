@@ -69,6 +69,11 @@ func Licenses(dir string) error {
 		return fmt.Errorf("failed to copy downloaded content: %v", err)
 	}
 
+	// Create the directory if it doesn't exist
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %v", dir, err)
+	}
+
 	if err := exec.Command("tar", "-xvzf", tempFile.Name(), "-C", dir).Run(); err != nil {
 		return fmt.Errorf("failed to untar licenses: %v", err)
 	}
