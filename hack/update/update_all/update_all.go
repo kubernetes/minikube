@@ -68,7 +68,7 @@ func main() {
 			"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144eadm_auto_build
 			"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
 			"kicbase_version":               true, // This one is not related to auto updating, this is a tool used by kicbae_auto_build
-			"preload-version":               true, // This is an internal tool to bump the preload version, not a component update
+			"preload_version":               true, // This is an internal tool to bump the preload version, not a component update
 		}
 
 		if os := strings.ToLower(runtime.GOOS); os != "linux" { // kubeadm constants update job only works on linux
