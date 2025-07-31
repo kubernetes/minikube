@@ -18,6 +18,7 @@ func getVersion(component string) (string, error) {
 	err := cmd.Run()
 	if err != nil {
 		log.Printf("failed to get version for %s: %v", component, err)
+		log.Printf("command output: %s", out.String())
 		return "", err
 	}
 	return strings.TrimSpace(out.String()), nil
@@ -50,7 +51,14 @@ func main() {
 		}
 
 		component := d.Name()
-		if component == "get_version" || component == "update_all" || component == "k8s-lib" || component == "amd_device_gpu_plugin_version" {
+		blackList := map[string]bool{
+			"get_version":                   true,
+			"update_all":                    true,
+			"k8s-lib":                       true,
+			"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144
+			"docsy":                         true, // this one does not supprt get-dependency-verison
+		}
+		if blackList[component] {
 			continue
 		}
 
