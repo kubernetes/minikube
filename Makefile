@@ -1026,6 +1026,12 @@ compare: out/mkcmp out/minikube
 generate-licenses:
 	./hack/generate_licenses.sh
 
+.PHONY: gomodtidy
+gomodtidy: ## run go mod tidy everywhere needed
+	go mod tidy
+	(cd hack && go mod tidy)
+
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
