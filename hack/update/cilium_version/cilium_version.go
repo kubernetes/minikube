@@ -45,14 +45,20 @@ func main() {
 	version := strings.TrimPrefix(stable.Tag, "v")
 
 	// Add the cilium repo to helm
-	if err := exec.Command("helm", "repo", "add", "cilium", "https://helm.cilium.io/").Run(); err != nil {
-		klog.Fatal(err)
+	addRepoCmd := exec.Command("helm", "repo", "add", "cilium", "https://helm.cilium.io/")
+	if err := addRepoCmd.Run(); err != nil {
+		klog.Fatalf("failed to run command %v: %v", addRepoCmd.Args, err)
+	}
+
+	if err := exec.Command("helm", "repo", "update").Run(); err != nil {
+		klog.Fatalf("failed to update help repo %v", err)
 	}
 
 	// Generate the cilium YAML
-	yamlBytes, err := exec.Command("helm", "template", "cilium", "cilium/cilium", "--version", version, "--namespace", "kube-system").Output()
+	templateCmd := exec.Command("helm", "template", "cilium", "cilium/cilium", "--version", version, "--namespace", "kube-system")
+	yamlBytes, err := templateCmd.Output()
 	if err != nil {
-		klog.Fatal(err)
+		klog.Fatalf("failed to run command %v: %v", templateCmd.Args, err)
 	}
 	yaml := string(yamlBytes)
 
