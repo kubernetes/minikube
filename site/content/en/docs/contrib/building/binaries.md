@@ -33,8 +33,15 @@ You can also build platform specific executables like below:
 
 ## Compiling minikube using 
 
-M
+To build and compile minikube on your machine simply run
+```shell
+make
+```
+and minikube binary will be available in ./out/minikube
 
+## Alternative ways to build minikube 
+
+if you have issues runninng make due to tooling issue you can run the make in "docker"
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make
 ```
@@ -64,6 +71,28 @@ make test
 make clean
 make gomodtidy
 ```
+
+## Run Short intergration test (functional test)
+```shell
+make functional
+```
+
+To see HTML report of the fucntional test you can install [gopogh](https://github.com/medyagh/gopogh)
+and run 
+```shell
+make html_report
+```
+This will produce an html report in `./out/` folder
+
+### learn more about other make targets
+```shell
+make help
+```
+
+## Testing
+
+See the [Testing Guide](../testing.en.md) for information on testing minikube.
+
 
 
 ## Building the ISO
