@@ -1247,5 +1247,5 @@ get-dependency-version:
 
 # runs update on all hack/update/components only used for debugging purposes, not meant to be used regularly
 .PHONY: _update-all
-update-all:
+_update-all:
 	@(cd hack && go run update/update_all/update_all.go)
