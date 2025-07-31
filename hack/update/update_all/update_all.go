@@ -42,7 +42,9 @@ func main() {
 	i := 0
 	max := 100
 	for _, d := range dirs {
+		fmt.Println("iteration--->", i)
 		i++
+
 		if i > max {
 			log.Println("debug - skipping more than 100 components")
 			break
@@ -52,10 +54,11 @@ func main() {
 		}
 
 		component := d.Name()
-		notSupportBeforeAfterVersion := map[string]bool{
-			"docsy_version":      true, // this one does not supprt get-dependency-verison
-			"kubeadm_constants":  true, // this one does not supprt get-dependency-verison
-			"kubernetes_version": true, // this one does not supprt get-dependency-verison
+		notSupportBeforeAfterVersion := map[string]bool{ // this group of updates does not support before/after version check
+			"docsy_version":            true,
+			"kubeadm_constants":        true,
+			"kubernetes_version":       true,
+			"kubernetes_versions_list": true,
 		}
 
 		blackList := map[string]bool{
