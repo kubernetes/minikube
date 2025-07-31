@@ -57,6 +57,7 @@ func main() {
 			"k8s-lib":                       true,
 			"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144
 			"docsy_version":                 true, // this one does not supprt get-dependency-verison
+			"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
 		}
 		if blackList[component] {
 			continue
