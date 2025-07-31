@@ -31,9 +31,14 @@ You can also build platform specific executables like below:
     2. `make linux` will build the binary for Linux platform
     3. `make darwin` will build the binary for Darwin/Mac platform
 
-## Compiling minikube using Docker
+## Compiling minikube using 
 
-To cross-compile to/from different operating systems:
+M
+
+```shell
+MINIKUBE_BUILD_IN_DOCKER=y make
+```
+if you wanted to build binaries for all platforms  (cross-compile) to/from different operating systems:
 
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make cross
@@ -48,6 +53,18 @@ Start the cluster using your built minikube with:
 ```shell
 ./out/minikube start
 ```
+
+## Unit Test and lint
+```shell
+make test
+```
+
+## clean and go mod tidy
+```shell
+make clean
+make gomodtidy
+```
+
 
 ## Building the ISO
 
