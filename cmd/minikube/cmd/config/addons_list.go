@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 var addonListOutput string
@@ -127,21 +128,16 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		if docs == "" {
 			docs = "n/a"
 		}
-		const (
-			green = "\033[32m"
-			reset = "\033[0m"
-			red   = "\033[31m"
-			grey  = "\033[90m"
-		)
+		
 		if cc == nil {
 			temp = []string{addonName, maintainer}
 		} else {
 			enabled := addonBundle.IsEnabled(cc)
 			if enabled{
-				status := fmt.Sprintf("%s%s%s", green, iconFromStatus(enabled), reset)
-   				temp = []string{fmt.Sprintf("%s%s%s", green, addonName, reset),status, fmt.Sprintf("%s%s%s", green, maintainer, reset)}
+				status := fmt.Sprintf("%s%s%s", constants.Enabled, iconFromStatus(enabled), constants.Default)
+   				temp = []string{fmt.Sprintf("%s%s%s", constants.Enabled, addonName, constants.Default),status, fmt.Sprintf("%s%s%s", constants.Enabled, maintainer, constants.Default)}
 			}else{
-			    temp = []string{fmt.Sprintf("%s%s", grey, addonName), fmt.Sprintf("%s%s", grey,""), fmt.Sprintf("%s%s", grey, maintainer)}
+			    temp = []string{addonName,"",maintainer}
 			}
 		}
 		if printDocs {
