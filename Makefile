@@ -399,6 +399,11 @@ integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl te
 .PHONY: html_report
 html_report: ## Generate HTML  report out of the last ran integration test logs.
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
+	# install gopogh if not already installed
+	@if ! command -v gopogh >/dev/null 2>&1; then \
+		echo "gopogh not found, installing..."; \
+		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@latest; \
+	fi
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
 ifeq ($(GOOS),windows)
