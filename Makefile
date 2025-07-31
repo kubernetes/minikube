@@ -1203,9 +1203,10 @@ update-kong-ingress-controller-version:
 update-nvidia-device-plugin-version:
 	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
-.PHONY: update-amd-gpu-device-plugin-version
-update-amd-gpu-device-plugin-version:
-	cd hack && go run update/amd-gpu-device-plugin-version/amd_gpu_device_plugin_version.go
+# for amd gpu 
+.PHONY: update-amd-gpu-device-plugin-version 
+update-amd-device-plugin-version:
+	cd hack && go run update/amd_device_gpu_plugin_version/amd_device_gpu_plugin_version.go
 
 .PHONY: update-nerdctld-version
 update-nerdctld-version:
@@ -1238,7 +1239,7 @@ update-headlamp-version:
 .PHONY: update-kube-vip-version
 update-kube-vip-version:
 	cd hack && go run update/kube_vip_version/kube_vip_version.go
-	
+
 # used by update- Targets to get before/after versions of tools it updates
 # example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
