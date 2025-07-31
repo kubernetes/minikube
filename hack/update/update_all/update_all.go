@@ -51,6 +51,12 @@ func main() {
 		}
 
 		component := d.Name()
+		notSupportBeforeAfterVersion := map[string]bool{
+			"docsy_version":      true, // this one does not supprt get-dependency-verison
+			"kubeadm_constants":  true, // this one does not supprt get-dependency-verison
+			"kubernetes-version": true, // this one does not supprt get-dependency-verison
+		}
+
 		blackList := map[string]bool{
 			"get_version":                   true,
 			"update_all":                    true,
@@ -67,10 +73,13 @@ func main() {
 		}
 
 		fmt.Printf("Processing %s...\n", component)
+		oldVersion := "not supported"
+		if !notSupportBeforeAfterVersion[component] {
+			oldVersion, err = getVersion(component)
+			if err != nil {
+				log.Fatalf("Could not get old version for %s: %v", component, err)
+			}
 
-		oldVersion, err := getVersion(component)
-		if err != nil {
-			log.Fatalf("Could not get old version for %s: %v", component, err)
 		}
 
 		updateCmd := exec.Command("go", "run", filepath.Join(updateDir, component, fmt.Sprintf("%s.go", component)))
@@ -81,20 +90,22 @@ func main() {
 			log.Fatalf("Failed to update %s: %v", component, err)
 		}
 
-		newVersion, err := getVersion(component)
-		if err != nil {
-			log.Printf("Could not get new version for %s: %v", component, err)
-			continue
+		if !notSupportBeforeAfterVersion[component] {
+			newVersion, err := getVersion(component)
+			if err != nil {
+				log.Printf("Could not get new version for %s: %v", component, err)
+				continue
+			}
+			if oldVersion != newVersion {
+				change := fmt.Sprintf("- **%s:** `%s` -> `%s`", component, oldVersion, newVersion)
+				changes = append(changes, change)
+				fmt.Println(change)
+			} else {
+				fmt.Printf("No change for %s.\n", component)
+			}
+			fmt.Println()
 		}
 
-		if oldVersion != newVersion {
-			change := fmt.Sprintf("- **%s:** `%s` -> `%s`", component, oldVersion, newVersion)
-			changes = append(changes, change)
-			fmt.Println(change)
-		} else {
-			fmt.Printf("No change for %s.\n", component)
-		}
-		fmt.Println()
 	}
 
 	fmt.Println("---")
