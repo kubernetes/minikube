@@ -38,10 +38,11 @@ func main() {
 
 	var changes []string
 	i := 0
+	max := 100
 	for _, d := range dirs {
 		i++
-		if i > 3 {
-			log.Println("debug - skipping more than 3 components")
+		if i > max {
+			log.Println("debug - skipping more than 100 components")
 			break
 		}
 		if !d.IsDir() {
