@@ -49,7 +49,7 @@ func main() {
 		}
 
 		component := d.Name()
-		if component == "get_version" || component == "update_all" || component == "k8s-lib" || component == "amd-gpu-device-plugin-version" {
+		if component == "get_version" || component == "update_all" || component == "k8s-lib" || component == "amd_device_gpu_plugin_version" {
 			continue
 		}
 
@@ -65,8 +65,7 @@ func main() {
 		updateCmd.Stderr = os.Stderr
 
 		if err := updateCmd.Run(); err != nil {
-			log.Printf("Failed to update %s: %v", component, err)
-			continue
+			log.Fatalf("Failed to update %s: %v", component, err)
 		}
 
 		newVersion, err := getVersion(component)
