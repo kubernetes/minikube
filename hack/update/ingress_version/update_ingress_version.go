@@ -86,7 +86,7 @@ func main() {
 
 func LatestControllerTag(ctx context.Context) (string, error) {
 	latest := "v0.0.0"
-	ghc := github.NewClient(nil)
+	ghc := update.GHClient()
 	re := regexp.MustCompile(`controller-(.*)`)
 
 	// walk through the paginated list of up to ghSearchLimit newest releases

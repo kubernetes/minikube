@@ -27,7 +27,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-pause-interval duration      Duration of inactivity before the minikube VM is paused (default 1m0s) (default 1m0s)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.47-1752142599-21053@sha256:e2822af5ea7d0400a0ca62d493a67b98beb48d0f1795200b6d041019875ac577")
+      --base-image string                 The base image to use for docker/podman drivers. Intended for local development. (default "gcr.io/k8s-minikube/kicbase-builds:v0.0.47-1753871403-21198@sha256:df7d018c3a6a26c5bb83a41102cf6ee056f62471011edba5d602d02edb5f5d1d")
       --binary-mirror string              Location to fetch kubectl, kubelet, & kubeadm binaries from.
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --cert-expiration duration          Duration until minikube certificate expiration, defaults to three years (26280h). (default 26280h0m0s)
@@ -36,6 +36,7 @@ minikube start [flags]
       --cpus string                       Number of CPUs allocated to Kubernetes. Use "max" to use the maximum number of CPUs. Use "no-limit" to not specify a limit (Docker/Podman only) (default "2")
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
+      --disable-coredns-log               If set, disable CoreDNS verbose logging. Defaults to false.
       --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors
       --disable-metrics                   If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.
       --disable-optimizations             If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.

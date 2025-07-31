@@ -19,6 +19,7 @@ package update
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"golang.org/x/mod/semver"
@@ -43,7 +44,7 @@ type Release struct {
 // GHReleases returns greatest current stable release and greatest latest rc or beta pre-release from GitHub owner/repo repository, and any error occurred.
 // If latest pre-release version is lower than the current stable release, then it will return current stable release for both.
 func GHReleases(ctx context.Context, owner, repo string) (stable, latest, edge Release, err error) {
-	ghc := github.NewClient(nil)
+	ghc := GHClient()
 
 	// walk through the paginated list of up to ghSearchLimit newest releases
 	opts := &github.ListOptions{PerPage: ghListPerPage}
@@ -106,4 +107,13 @@ func StableVersion(ctx context.Context, owner, repo string) (string, error) {
 		return "", err
 	}
 	return stable.Tag, nil
+}
+
+// GHClient returns a GitHub client regardless of whether the GITHUB_TOKEN is set or not.
+func GHClient() *github.Client {
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return github.NewClient(nil)
+	}
+	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+
 }
