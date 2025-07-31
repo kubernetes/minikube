@@ -1033,28 +1033,6 @@ help:
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
-
-.PHONY: update-golang-version
-update-golang-version:
-	 cd hack && go run update/golang_version/update_golang_version.go
-
-.PHONY: update-kubernetes-version
-update-kubernetes-version:
-	 cd hack && go run update/kubernetes_version/update_kubernetes_version.go
-
-.PHONY: update-golint-version
-update-golint-version:
-	 cd hack && go run update/golint_version/update_golint_version.go
-
-.PHONY: update-preload-version
-update-preload-version:
-	 cd hack && go run update/preload_version/update_preload_version.go
-
-.PHONY: update-kubeadm-constants
-update-kubeadm-constants:
-	cd hack && go run update/kubeadm_constants/update_kubeadm_constants.go
-	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
-
 .PHONY: stress
 stress: ## run the stress tests
 	go test -test.v -test.timeout=2h ./test/stress -loops=10 | tee "./out/testout_$(COMMIT_SHORT).txt"
@@ -1071,6 +1049,26 @@ cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
 time-to-k8s-benchmark:
 	./hack/benchmark/time-to-k8s/time-to-k8s.sh
 
+.PHONY: update-golang-version
+update-golang-version:
+	 cd hack && go run update/golang_version/golang_version.go
+
+.PHONY: update-kubernetes-version
+update-kubernetes-version:
+	 cd hack && go run update/kubernetes_version/kubernetes_version.go
+
+.PHONY: update-golint-version
+update-golint-version:
+	 cd hack && go run update/golint_version/golint_version.go
+
+.PHONY: update-preload-version
+update-preload-version:
+	 cd hack && go run update/preload_version/preload_version.go
+
+.PHONY: update-kubeadm-constants
+update-kubeadm-constants:
+	cd hack && go run update/kubeadm_constants/update_kubeadm_constants.go
+	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
 	cd hack && go run update/gopogh_version/gopogh_version.go
