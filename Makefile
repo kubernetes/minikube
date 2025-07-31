@@ -1101,7 +1101,7 @@ update-containerd-version:
 
 .PHONY: update-buildkit-version
 update-buildkit-version:
-	cd hack && go run update/buildkit_version/update_buildkit_version.go
+	cd hack && go run update/buildkit_version/buildkit_version.go
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
@@ -1244,3 +1244,8 @@ update-kube-vip-version:
 .PHONY: get-dependency-verison
 get-dependency-version:
 	@(cd hack && go run update/get_version/get_version.go)
+
+# runs update on all hack/update/components only used for debugging purposes, not meant to be used regularly
+.PHONY: _update-all
+update-all:
+	@(cd hack && go run update/update_all/update_all.go)
