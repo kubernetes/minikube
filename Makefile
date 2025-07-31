@@ -1073,31 +1073,31 @@ time-to-k8s-benchmark:
 
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
-	cd hack && go run update/gopogh_version/update_gopogh_version.go
+	cd hack && go run update/gopogh_version/gopogh_version.go
 
 .PHONY: update-gotestsum-version
 update-gotestsum-version:
-	cd hack && go run update/gotestsum_version/update_gotestsum_version.go
+	cd hack && go run update/gotestsum_version/gotestsum_version.go
 
 .PHONY: update-gh-version
 update-gh-version:
-	cd hack && go run update/gh_version/update_gh_version.go
+	cd hack && go run update/gh_version/gh_version.go
 
 .PHONY: update-docsy-version
 update-docsy-version:
-	cd hack && go run update/docsy_version/update_docsy_version.go
+	cd hack && go run update/docsy_version/docsy_version.go
 
 .PHONY: update-hugo-version
 update-hugo-version:
-	cd hack && go run update/hugo_version/update_hugo_version.go
+	cd hack && go run update/hugo_version/hugo_version.go
 
 .PHONY: update-cloud-spanner-emulator-version
 update-cloud-spanner-emulator-version:
-	cd hack && go run update/cloud_spanner_emulator_version/update_cloud_spanner_emulator_version.go
+	cd hack && go run update/cloud_spanner_emulator_version/cloud_spanner_emulator_version.go
 
 .PHONY: update-containerd-version
 update-containerd-version:
-	cd hack && go run update/containerd_version/update_containerd_version.go
+	cd hack && go run update/containerd_version/containerd_version.go
 
 .PHONY: update-buildkit-version
 update-buildkit-version:
@@ -1105,140 +1105,140 @@ update-buildkit-version:
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
-	cd hack && go run update/cri-o_version/update_cri-o_version.go
+	cd hack && go run update/cri-o_version/cri_o_version.go
 
 .PHONY: update-crun-version
 update-crun-version:
-	cd hack && go run update/crun_version/update_crun_version.go
+	cd hack && go run update/crun_version/crun_version.go
 
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
-	cd hack && go run update/metrics_server_version/update_metrics_server_version.go
+	cd hack && go run update/metrics_server_version/metrics_server_version.go
 
 .PHONY: update-runc-version
 update-runc-version:
-	cd hack && go run update/runc_version/update_runc_version.go
+	cd hack && go run update/runc_version/runc_version.go
 
 .PHONY: update-docker-version
 update-docker-version:
-	cd hack && go run update/docker_version/update_docker_version.go
+	cd hack && go run update/docker_version/docker_version.go
 
 .PHONY: update-ubuntu-version
 update-ubuntu-version:
-	cd hack && go run update/ubuntu_version/update_ubuntu_version.go
+	cd hack && go run update/ubuntu_version/ubuntu_version.go
 
 .PHONY: update-cni-plugins-version
 update-cni-plugins-version:
-	cd hack && go run update/cni_plugins_version/update_cni_plugins_version.go
+	cd hack && go run update/cni_plugins_version/cni_plugins_version.go
 
 .PHONY: update-gcp-auth-version
 update-gcp-auth-version:
-	cd hack && go run update/gcp_auth_version/update_gcp_auth_version.go
+	cd hack && go run update/gcp_auth_version/gcp_auth_version.go
 
 .PHONY: update-kubernetes-versions-list
 update-kubernetes-versions-list:
-	cd hack && go run update/kubernetes_versions_list/update_kubernetes_versions_list.go
+	cd hack && go run update/kubernetes_versions_list/kubernetes_versions_list.go
 
 .PHONY: update-ingress-version
 update-ingress-version:
-	cd hack && go run update/ingress_version/update_ingress_version.go
+	cd hack && go run update/ingress_version/ingress_version.go
 
 .PHONY: update-flannel-version
 update-flannel-version:
-	cd hack && go run update/flannel_version/update_flannel_version.go
+	cd hack && go run update/flannel_version/flannel_version.go
 
 .PHONY: update-inspektor-gadget-version
 update-inspektor-gadget-version:
-	cd hack && go run update/inspektor_gadget_version/update_inspektor_gadget_version.go
+	cd hack && go run update/inspektor_gadget_version/inspektor_gadget_version.go
 
 .PHONY: update-calico-version
 update-calico-version:
-	cd hack && go run update/calico_version/update_calico_version.go
+	cd hack && go run update/calico_version/calico_version.go
 
 .PHONY: update-cri-dockerd-version
 update-cri-dockerd-version:
-	cd hack && go run update/cri_dockerd_version/update_cri_dockerd_version.go
+	cd hack && go run update/cri_dockerd_version/cri_dockerd_version.go
 
 .PHONY: update-go-github-version
 update-go-github-version:
-	cd hack && go run update/go_github_version/update_go_github_version.go
+	cd hack && go run update/go_github_version/go_github_version.go
 
 .PHONY: update-docker-buildx-version
 update-docker-buildx-version:
-	cd hack && go run update/docker_buildx_version/update_docker_buildx_version.go
+	cd hack && go run update/docker_buildx_version/docker_buildx_version.go
 
 .PHONY: update-nerdctl-version
 update-nerdctl-version:
-	cd hack && go run update/nerdctl_version/update_nerdctl_version.go
+	cd hack && go run update/nerdctl_version/nerdctl_version.go
 
 .PHONY: update-crictl-version
 update-crictl-version:
-	cd hack && go run update/crictl_version/update_crictl_version.go
+	cd hack && go run update/crictl_version/crictl_version.go
 
 .PHONY: update-kindnetd-version
 update-kindnetd-version:
-	cd hack && go run update/kindnetd_version/update_kindnetd_version.go
+	cd hack && go run update/kindnetd_version/kindnetd_version.go
 
 .PHONY: update-istio-operator-version
 update-istio-operator-version:
-	cd hack && go run update/istio_operator_version/update_istio_operator_version.go
+	cd hack && go run update/istio_operator_version/istio_operator_version.go
 
 .PHONY: update-registry-version
 update-registry-version:
-	cd hack && go run update/registry_version/update_registry_version.go
+	cd hack && go run update/registry_version/registry_version.go
 
 .PHONY: update-volcano-version
 update-volcano-version:
-	cd hack && go run update/volcano_version/update_volcano_version.go
+	cd hack && go run update/volcano_version/volcano_version.go
 
 .PHONY: update-kong-version
 update-kong-version:
-	cd hack && go run update/kong_version/update_kong_version.go
+	cd hack && go run update/kong_version/kong_version.go
 
 .PHONY: update-kong-ingress-controller-version
 update-kong-ingress-controller-version:
-	cd hack && go run update/kong_ingress_controller_version/update_kong_ingress_controller_version.go
+	cd hack && go run update/kong_ingress_controller_version/kong_ingress_controller_version.go
 
 .PHONY: update-nvidia-device-plugin-version
 update-nvidia-device-plugin-version:
-	cd hack && go run update/nvidia_device_plugin_version/update_nvidia_device_plugin_version.go
+	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
 .PHONY: update-amd-gpu-device-plugin-version
 update-amd-gpu-device-plugin-version:
-	cd hack && go run update/amd-gpu-device-plugin-version/amd-gpu-device-plugin-version.go
+	cd hack && go run update/amd-gpu-device-plugin-version/amd_gpu_device_plugin_version.go
 
 .PHONY: update-nerdctld-version
 update-nerdctld-version:
-	cd hack && go run update/nerdctld_version/update_nerdctld_version.go
+	cd hack && go run update/nerdctld_version/nerdctld_version.go
 
 .PHONY: update-kubectl-version
 update-kubectl-version:
-	cd hack && go run update/kubectl_version/update_kubectl_version.go
+	cd hack && go run update/kubectl_version/kubectl_version.go
 
 .PHONY: update-site-node-version
 update-site-node-version:
-	cd hack && go run update/site_node_version/update_site_node_version.go
+	cd hack && go run update/site_node_version/site_node_version.go
 
 .PHONY: update-cilium-version
 update-cilium-version:
-	cd hack && go run update/cilium_version/update_cilium_version.go
+	cd hack && go run update/cilium_version/cilium_version.go
 
 .PHONY: update-yakd-version
 update-yakd-version:
-	cd hack && go run update/yakd_version/update_yakd_version.go
+	cd hack && go run update/yakd_version/yakd_version.go
 
 .PHONY: update-kube-registry-proxy-version
 update-kube-registry-proxy-version:
-	cd hack && go run update/kube_registry_proxy_version/update_kube_registry_proxy_version.go
+	cd hack && go run update/kube_registry_proxy_version/kube_registry_proxy_version.go
 
 .PHONY: update-headlamp-version
 update-headlamp-version:
-	cd hack && go run update/headlamp_version/update_headlamp_version.go
+	cd hack && go run update/headlamp_version/headlamp_version.go
 
 .PHONY: update-kube-vip-version
 update-kube-vip-version:
-	cd hack && go run update/kube_vip_version/update_kube_vip_version.go
-
+	cd hack && go run update/kube_vip_version/kube_vip_version.go
+	
 # used by update- Targets to get before/after versions of tools it updates
 # example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
 .PHONY: get-dependency-verison
