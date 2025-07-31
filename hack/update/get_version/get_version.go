@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -82,6 +83,7 @@ func main() {
 	if depName == "" {
 		log.Fatalf("the environment variable 'DEP' needs to be set")
 	}
+	depName = standrizeComponentName(depName)
 	dep, ok := dependencies[depName]
 	if !ok {
 		log.Fatalf("%s is not a valid dependency", depName)
@@ -100,4 +102,13 @@ func main() {
 		log.Fatalf("less than 2 submatches found")
 	}
 	os.Stdout.Write(submatches[1])
+}
+
+// some components have _ or - in their names vs their make folders, standarizing for automation such as as update-all
+func standrizeComponentName(name string) string {
+	// Convert the component name to lowercase and replace underscores with hyphens
+	name = strings.ToLower(name)
+	name = strings.ReplaceAll(name, "_", "-")
+	name = strings.ReplaceAll(name, "-version", "")
+	return name
 }
