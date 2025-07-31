@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -54,19 +55,20 @@ func main() {
 		notSupportBeforeAfterVersion := map[string]bool{
 			"docsy_version":      true, // this one does not supprt get-dependency-verison
 			"kubeadm_constants":  true, // this one does not supprt get-dependency-verison
-			"kubernetes-version": true, // this one does not supprt get-dependency-verison
+			"kubernetes_version": true, // this one does not supprt get-dependency-verison
 		}
 
 		blackList := map[string]bool{
 			"get_version":                   true,
 			"update_all":                    true,
 			"k8s-lib":                       true,
-			"docsy_version":                 true, // this one does not supprt get-dependency-verison
-			"kubeadm_constants":             true, // this one does not supprt get-dependency-verison
-			"kubernetes-version":            true, // this one does not supprt get-dependency-verison
 			"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144eadm_auto_build
 			"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
 			"kicbase_version":               true, // This one is not related to auto updating, this is a tool used by kicbae_auto_build
+		}
+
+		if os := strings.ToLower(runtime.GOOS); os != "linux" { // kubeadm constants update job only works on linux
+			blackList["kubeadm_constants"] = true
 		}
 		if blackList[component] {
 			continue
