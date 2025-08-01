@@ -41,8 +41,6 @@ type Options struct {
 	Prefix string
 	// LowPrefix is the 7-bit compatible prefix we fallback to for less-awesome terminals
 	LowPrefix string
-	// OmitNewline omits a newline at the end of a message.
-	OmitNewline bool
 	// Spinner is a character to place at ending of message
 	Spinner bool
 }
@@ -84,7 +82,7 @@ var Config = map[Enum]Options{
 	URL:                {Prefix: "👉  ", LowPrefix: LowIndent},
 	Usage:              {Prefix: "💡  "},
 	Waiting:            {Prefix: "⌛  "},
-	WaitingWithSpinner: {Prefix: "⌛  ", OmitNewline: true, Spinner: true},
+	WaitingWithSpinner: {Prefix: "⌛  ", Spinner: true},
 	Unsupported:        {Prefix: "🚡  "},
 	Workaround:         {Prefix: "👉  ", LowPrefix: LowIndent},
 
@@ -113,11 +111,11 @@ var Config = map[Enum]Options{
 	Copying:          {Prefix: "✨  "},
 	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	DeletingHost:     {Prefix: "🔥  "},
-	Docker:           {Prefix: "🐳  ", OmitNewline: true, Spinner: true},
+	Docker:           {Prefix: "🐳  ", Spinner: true},
 	DryRun:           {Prefix: "🌵  "},
 	Enabling:         {Prefix: "🔌  "},
 	FileDownload:     {Prefix: "💾  "},
-	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
+	Fileserver:       {Prefix: "🚀  "},
 	HealthCheck:      {Prefix: "🔎  "},
 	Internet:         {Prefix: "🌐  "},
 	ISODownload:      {Prefix: "💿  "},
@@ -132,11 +130,11 @@ var Config = map[Enum]Options{
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
 	StartingSSH:      {Prefix: "🔗  "},
-	StartingVM:       {Prefix: "🔥  ", OmitNewline: true, Spinner: true},
-	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndentBullet, OmitNewline: true, Spinner: true},
+	StartingVM:       {Prefix: "🔥  ", Spinner: true},
+	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndentBullet, Spinner: true},
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},
-	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
+	VerifyingNoLine:  {Prefix: "🤔  "},
 	Verifying:        {Prefix: "🤔  "},
 	CNI:              {Prefix: "🔗  "},
 	Toolkit:          {Prefix: "🛠️   "},

@@ -35,9 +35,7 @@ func applyStyle(st style.Enum, useColor bool, format string) (string, bool) {
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
-	if !s.OmitNewline {
-		format += "\n"
-	}
+	format += "\n"
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
 	if !ok || JSON {
