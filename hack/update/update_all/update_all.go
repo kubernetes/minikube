@@ -11,92 +11,100 @@ import (
 	"strings"
 )
 
+var (
+	// These components do not support before/after version comparison
+	noVersionCheck = map[string]bool{
+		"docsy_version":            true,
+		"kubeadm_constants":        true,
+		"kubernetes_version":       true,
+		"kubernetes_versions_list": true,
+	}
+
+	// Skip these components from auto-updating
+	skipList = map[string]bool{
+		"get_version":                   true, // self (internal)
+		"update_all":                    true, // self
+		"k8s-lib":                       true, // not needed anymore (TODO: remove in future)
+		"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144eadm_auto_build
+		"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
+		"kicbase_version":               true, // This one is not related to auto updating, this is a tool used by kicbae_auto_build
+		"preload_version":               true, // This is an internal tool to bump the preload version, not a component update
+
+	}
+)
+
+func shouldSkip(component string) bool {
+	if runtime.GOOS != "linux" && component == "kubeadm_constants" { // kubeadm constants update job only works on linux
+		log.Printf("Skipping %s on non-linux OS: %s", component, runtime.GOOS)
+		return true
+	}
+	return skipList[component]
+}
+
 func getVersion(component string) (string, error) {
 	cmd := exec.Command("go", "run", "update/get_version/get_version.go")
 	cmd.Env = append(os.Environ(), fmt.Sprintf("DEP=%s", component))
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
+
+	if err := cmd.Run(); err != nil {
 		log.Printf("failed to get version for %s: %v", component, err)
 		log.Printf("command output: %s", out.String())
 		return "", err
 	}
+
 	return strings.TrimSpace(out.String()), nil
 }
 
 func main() {
-	updateDir := "update"
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println("starting the update all the current PWD is: ", path)
+	const updateDir = "update"
+	const maxUpdates = 100
 
-	dirs, err := os.ReadDir(updateDir)
+	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("failed to read directory %s: %v", updateDir, err)
+		log.Fatal(err)
+	}
+	log.Println("Starting update process in:", cwd)
+
+	entries, err := os.ReadDir(updateDir)
+	if err != nil {
+		log.Fatalf("Failed to read directory %s: %v", updateDir, err)
 	}
 
 	var changes []string
-	i := 0
-	max := 100
-	for _, d := range dirs {
-		fmt.Println("iteration--->", i)
-		i++
+	updatesRun := 0
 
-		if i > max {
-			log.Println("debug - skipping more than 100 components")
-			break
-		}
-		if !d.IsDir() {
+	for _, entry := range entries {
+		if !entry.IsDir() || updatesRun >= maxUpdates {
 			continue
 		}
 
-		component := d.Name()
-		notSupportBeforeAfterVersion := map[string]bool{ // this group of updates does not support before/after version check
-			"docsy_version":            true,
-			"kubeadm_constants":        true,
-			"kubernetes_version":       true,
-			"kubernetes_versions_list": true,
-		}
-
-		blackList := map[string]bool{
-			"get_version":                   true,
-			"update_all":                    true,
-			"k8s-lib":                       true,
-			"amd_device_gpu_plugin_version": true, // sem vers issue https://github.com/ROCm/k8s-device-plugin/issues/144eadm_auto_build
-			"istio_operator_version":        true, // till this is fixed https://github.com/istio/istio/issues/57185
-			"kicbase_version":               true, // This one is not related to auto updating, this is a tool used by kicbae_auto_build
-			"preload_version":               true, // This is an internal tool to bump the preload version, not a component update
-		}
-
-		if os := strings.ToLower(runtime.GOOS); os != "linux" { // kubeadm constants update job only works on linux
-			blackList["kubeadm_constants"] = true
-		}
-		if blackList[component] {
+		component := entry.Name()
+		if shouldSkip(component) {
 			continue
 		}
 
 		fmt.Printf("Processing %s...\n", component)
-		oldVersion := "not supported"
-		if !notSupportBeforeAfterVersion[component] {
+
+		var oldVersion string
+		if !noVersionCheck[component] {
 			oldVersion, err = getVersion(component)
 			if err != nil {
 				log.Fatalf("Could not get old version for %s: %v", component, err)
 			}
-
 		}
 
-		updateCmd := exec.Command("go", "run", filepath.Join(updateDir, component, fmt.Sprintf("%s.go", component)))
-		updateCmd.Stdout = os.Stdout
-		updateCmd.Stderr = os.Stderr
+		script := filepath.Join(updateDir, component, fmt.Sprintf("%s.go", component))
+		cmd := exec.Command("go", "run", script)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 
-		if err := updateCmd.Run(); err != nil {
+		if err := cmd.Run(); err != nil {
 			log.Fatalf("Failed to update %s: %v", component, err)
 		}
 
-		if !notSupportBeforeAfterVersion[component] {
+		if !noVersionCheck[component] {
 			newVersion, err := getVersion(component)
 			if err != nil {
 				log.Printf("Could not get new version for %s: %v", component, err)
@@ -112,12 +120,13 @@ func main() {
 			fmt.Println()
 		}
 
+		updatesRun++
 	}
 
 	fmt.Println("---")
-	fmt.Printf("Updated components summary:\n%s\n", strings.Join(changes, "\n"))
+	fmt.Println("Updated components summary:")
+	fmt.Println(strings.Join(changes, "\n"))
 
-	// Print a machine-readable summary for GitHub Actions
-	outputChanges := "updates<<EOF\n" + strings.Join(changes, "\n") + "\nEOF"
-	fmt.Println(outputChanges)
+	// Output machine-readable summary for GitHub Actions
+	fmt.Printf("updates<<EOF\n%s\nEOF\n", strings.Join(changes, "\n"))
 }
