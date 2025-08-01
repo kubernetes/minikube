@@ -71,7 +71,11 @@ func Licenses(dir string) error {
                         klog.Warningf("Failed to remove temp file %s: %v", tempFile.Name(), err)
                 }
         }()
-	defer tempFile.Close()
+	defer func() {
+                if err := tempFile.Close(); err != nil {
+                        klog.Warningf("Failed to close temp file %s: %v", tempFile.Name(), err)
+                }
+        }()
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
 		return fmt.Errorf("failed to copy downloaded content: %v", err)
