@@ -52,7 +52,11 @@ func Licenses(dir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to download licenses from %s: %v", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			klog.Warningf("Failed to close response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("download request to %s did not return a 200, received: %d", url, resp.StatusCode)
