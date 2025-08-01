@@ -40,7 +40,51 @@ var (
 	copyrightReal  = regexp.MustCompile(`Copyright \d{4}`)
 )
 
+// gitSubmodulePaths returns all paths defined in the .gitmodules file if it exists.
+// to prevent adding boilerplate for submouldes not part of minikube
+func gitSubmodulePaths(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "path =") || strings.HasPrefix(line, "path=") {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				p := strings.TrimSpace(parts[1])
+				if p != "" {
+					out = append(out, p)
+				}
+			}
+		}
+	}
+	return out, nil
+}
+
+// updateSkippedPaths appends git submodule paths to the skippedPaths regexp.
+func updateSkippedPaths() {
+	paths, err := gitSubmodulePaths(filepath.Join(*rootdir, ".gitmodules"))
+	if err != nil {
+		if *verbose {
+			log.Printf("unable to read .gitmodules: %v", err)
+		}
+		return
+	}
+	if len(paths) == 0 {
+		return
+	}
+	pattern := skippedPaths.String()
+	for _, p := range paths {
+		pattern += "|" + regexp.QuoteMeta(p)
+	}
+	skippedPaths = regexp.MustCompile(pattern)
+}
+
 func main() {
+	flag.Parse()
+	updateSkippedPaths()
 	refs, err := extensionToBoilerplate(*boilerplatedir)
 	if err != nil {
 		log.Fatal(err)
