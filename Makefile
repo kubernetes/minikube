@@ -1034,7 +1034,7 @@ generate-licenses:
 .PHONY: gomodtidy
 gomodtidy: ## run go mod tidy everywhere needed
 	go mod tidy
-	(cd hack && go mod tidy)
+	cd hack && go mod tidy
 
 
 .PHONY: help
