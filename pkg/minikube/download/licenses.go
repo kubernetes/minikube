@@ -66,7 +66,11 @@ func Licenses(dir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
+	defer func() {
+                if err := os.Remove(tempFile.Name()); err != nil {
+                        klog.Warningf("Failed to remove temp file %s: %v", tempFile.Name(), err)
+                }
+        }()
 	defer tempFile.Close()
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
