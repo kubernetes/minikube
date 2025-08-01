@@ -31,7 +31,7 @@ You can also build platform specific executables like below:
     2. `make linux` will build the binary for Linux platform
     3. `make darwin` will build the binary for Darwin/Mac platform
 
-## Compiling minikube using 
+## Build minikube
 
 To build and compile minikube on your machine simply run
 ```shell
@@ -39,13 +39,15 @@ make
 ```
 and minikube binary will be available in ./out/minikube
 
-## Alternative ways to build minikube 
+## build minikube in docker
 
 if you have issues runninng make due to tooling issue you can run the make in "docker"
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make
 ```
-if you wanted to build binaries for all platforms  (cross-compile) to/from different operating systems:
+
+## build binaries for other platforms
+if you wanted to build binaries for all platforms -linux,darwin,windows (cross-compile) to/from different operating systems:
 
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make cross
