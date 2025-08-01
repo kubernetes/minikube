@@ -78,7 +78,7 @@ func Licenses(dir string) error {
         }()
 
 	if _, err := io.Copy(tempFile, resp.Body); err != nil {
-		return fmt.Errorf("failed to copy downloaded content: %v", err)
+		return fmt.Errorf("failed to copy downloaded content from %s: %v", url, err)
 	}
 
 	// Create the directory if it doesn't exist
