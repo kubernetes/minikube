@@ -85,7 +85,7 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("Processing %s...\n", component)
+		log.Printf("Processing %s...\n", component)
 
 		var oldVersion string
 		if !noVersionCheck[component] {
