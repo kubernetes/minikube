@@ -74,8 +74,8 @@ var Config = map[Enum]Options{
 	Pause:              {Prefix: "⏸️  "},
 	Provisioning:       {Prefix: "🌱  "},
 	Ready:              {Prefix: "🏄  "},
-	Restarting:         {Prefix: "🔄  "},
-	Running:            {Prefix: "🏃  "},
+	Restarting:         {Prefix: "🔄  ", ShouldSpin: true},
+	Running:            {Prefix: "🏃  ", ShouldSpin: true}, // this is used when minikube start for a second time (already started)
 	Sparkle:            {Prefix: "✨  "},
 	Stopped:            {Prefix: "🛑  "},
 	Stopping:           {Prefix: "✋  "},
