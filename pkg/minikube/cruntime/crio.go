@@ -422,7 +422,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
-
+	out.Styled(style.SubStep, "Loading preloaded images...")
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
