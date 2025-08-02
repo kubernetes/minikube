@@ -41,8 +41,9 @@ type Options struct {
 	Prefix string
 	// LowPrefix is the 7-bit compatible prefix we fallback to for less-awesome terminals
 	LowPrefix string
-	// Spinner is a character to place at ending of message
-	Spinner bool
+	// ShouldSpin is a character to place at ending of message
+	ShouldSpin    bool
+	HideAfterSpin bool // Hide the prefix after spinning
 }
 
 // SpinnerCharacter is which of the spinner.CharSets to use
@@ -82,7 +83,7 @@ var Config = map[Enum]Options{
 	URL:                {Prefix: "👉  ", LowPrefix: LowIndent},
 	Usage:              {Prefix: "💡  "},
 	Waiting:            {Prefix: "⌛  "},
-	WaitingWithSpinner: {Prefix: "⌛  ", Spinner: true},
+	WaitingWithSpinner: {Prefix: "⌛  ", ShouldSpin: true},
 	Unsupported:        {Prefix: "🚡  "},
 	Workaround:         {Prefix: "👉  ", LowPrefix: LowIndent},
 
@@ -111,7 +112,7 @@ var Config = map[Enum]Options{
 	Copying:          {Prefix: "✨  "},
 	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	DeletingHost:     {Prefix: "🔥  "},
-	Docker:           {Prefix: "🐳  ", Spinner: true},
+	Docker:           {Prefix: "🐳  ", ShouldSpin: true},
 	DryRun:           {Prefix: "🌵  "},
 	Enabling:         {Prefix: "🔌  "},
 	FileDownload:     {Prefix: "💾  "},
@@ -130,8 +131,8 @@ var Config = map[Enum]Options{
 	Shutdown:         {Prefix: "🛑  "},
 	StartingNone:     {Prefix: "🤹  "},
 	StartingSSH:      {Prefix: "🔗  "},
-	StartingVM:       {Prefix: "🔥  ", Spinner: true},
-	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndentBullet, Spinner: true},
+	StartingVM:       {Prefix: "🔥  ", ShouldSpin: true},
+	SubStep:          {Prefix: "    ▪ ", LowPrefix: LowIndentBullet, ShouldSpin: true, HideAfterSpin: true},
 	Tip:              {Prefix: "💡  "},
 	Unmount:          {Prefix: "🔥  "},
 	VerifyingNoLine:  {Prefix: "🤔  "},
