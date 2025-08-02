@@ -91,7 +91,7 @@ func Step(st style.Enum, format string, a ...V) {
 		Infof(format, a...)
 		return
 	}
-	outStyled, _ := stylized(st, useColor, format, a...)
+	outStyled, _, _ := stylized(st, useColor, format, a...)
 	if JSON {
 		register.PrintStep(outStyled)
 		klog.Info(outStyled)
@@ -107,9 +107,9 @@ func Styled(st style.Enum, format string, a ...V) {
 		Infof(format, a...)
 		return
 	}
-	outStyled, useSpinner := stylized(st, useColor, format, a...)
+	outStyled, useSpinner, hideAfterSpin := stylized(st, useColor, format, a...)
 	if useSpinner {
-		spinnerString(outStyled)
+		spinnerString(outStyled, hideAfterSpin)
 	} else {
 		String(outStyled)
 	}
@@ -146,13 +146,13 @@ func BoxedWithConfig(cfg box.Config, st style.Enum, title string, text string, a
 
 // Sprintf is used for returning the string (doesn't write anything)
 func Sprintf(st style.Enum, format string, a ...V) string {
-	outStyled, _ := stylized(st, useColor, format, a...)
+	outStyled, _, _ := stylized(st, useColor, format, a...)
 	return outStyled
 }
 
 // Infof is used for informational logs (options, env variables, etc)
 func Infof(format string, a ...V) {
-	outStyled, _ := stylized(style.Option, useColor, format, a...)
+	outStyled, _, _ := stylized(style.Option, useColor, format, a...)
 	if JSON {
 		register.PrintInfo(outStyled)
 	}
@@ -214,6 +214,21 @@ func Output(file fdWriter, s string) {
 	}
 }
 
+// outputSpining writes a basic string with spinining
+func outputSpining(file fdWriter, s string, hideAfterSpin bool) {
+	spin.Writer = file
+	spin.Prefix = s
+	if hideAfterSpin {
+		spin.UpdateCharSet(spinner.CharSets[style.SpinnerSubStepCharacter])
+		spin.FinalMSG = ""
+	} else {
+		spin.UpdateCharSet(spinner.CharSets[style.SpinnerCharacter])
+		spin.FinalMSG = s + "\n"
+	}
+	spin.Start()
+
+}
+
 // Outputf writes a basic formatted string
 func Outputf(file fdWriter, format string, a ...interface{}) {
 	_, err := fmt.Fprintf(file, format, a...)
@@ -223,7 +238,7 @@ func Outputf(file fdWriter, format string, a ...interface{}) {
 }
 
 // spinnerString writes a basic formatted string to stdout with spinner character
-func spinnerString(s string) {
+func spinnerString(s string, hideAfterSpin bool) {
 	// Flush log buffer so that output order makes sense
 	klog.Flush()
 
@@ -237,9 +252,7 @@ func spinnerString(s string) {
 	if spin.Active() {
 		spin.Stop()
 	}
-	Output(outFile, s)
-	// Start spinning at the end of the printed line
-	spin.Start()
+	outputSpining(outFile, s, hideAfterSpin)
 }
 
 // Ln writes a basic formatted string with a newline to stdout
@@ -249,7 +262,7 @@ func Ln(format string, a ...interface{}) {
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(st style.Enum, format string, a ...V) {
-	errStyled, _ := stylized(st, useColor, format, a...)
+	errStyled, _, _ := stylized(st, useColor, format, a...)
 	Err(errStyled)
 }
 
@@ -316,7 +329,7 @@ func WarningT(format string, a ...V) {
 		if spin.Active() {
 			spin.Stop()
 		}
-		st, _ := stylized(style.Warning, useColor, format, a...)
+		st, _, _ := stylized(style.Warning, useColor, format, a...)
 		register.PrintWarning(st)
 		klog.Warning(st)
 		return

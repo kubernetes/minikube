@@ -111,16 +111,6 @@ func TestErrorSpam(t *testing.T) {
 			t.Logf("minikube stderr:\n%s", stderr)
 		}
 
-		steps := []string{
-			"Generating certificates and keys ...",
-			"Booting up control plane ...",
-			"Configuring RBAC rules ...",
-		}
-		for _, step := range steps {
-			if !strings.Contains(stdout, step) {
-				t.Errorf("missing kubeadm init sub-step %q", step)
-			}
-		}
 	})
 
 	logTests := []struct {
