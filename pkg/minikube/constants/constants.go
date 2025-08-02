@@ -113,8 +113,13 @@ const (
 	TestDiskAvailableEnv = "MINIKUBE_TEST_AVAILABLE_STORAGE"
 	// MinikubeRootlessEnv is used to force Rootless Docker/Podman driver
 	MinikubeRootlessEnv = "MINIKUBE_ROOTLESS"
-
+   
 	// scheduled stop constants
+	Enabled = "\033[32m"
+
+	Default = "\033[0m"
+
+	Disabled = "\033[31m" 
 
 	// ScheduledStopEnvFile is the environment file for scheduled-stop
 	ScheduledStopEnvFile = "/var/lib/minikube/scheduled-stop/environment"
