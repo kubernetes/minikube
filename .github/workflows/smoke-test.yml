@@ -24,6 +24,26 @@ jobs:
           - driver: vfkit
             os: macos-13
             network_flag: --network vmnet-shared
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 1
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 2
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 3
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 4
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 5
           - driver: docker
             os: ubuntu-24.04
             network_flag: ""
