@@ -214,8 +214,8 @@ func Output(file fdWriter, s string) {
 	}
 }
 
-// OutputSpining writes a basic string with spinining
-func OutputSpining(file fdWriter, s string, hideAfterSpin bool) {
+// outputSpining writes a basic string with spinining
+func outputSpining(file fdWriter, s string, hideAfterSpin bool) {
 	spin.Writer = file
 	spin.Prefix = s
 	if hideAfterSpin {
@@ -252,7 +252,7 @@ func spinnerString(s string, hideAfterSpin bool) {
 	if spin.Active() {
 		spin.Stop()
 	}
-	OutputSpining(outFile, s, hideAfterSpin)
+	outputSpining(outFile, s, hideAfterSpin)
 }
 
 // Ln writes a basic formatted string with a newline to stdout
