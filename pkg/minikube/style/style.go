@@ -49,6 +49,9 @@ type Options struct {
 // SpinnerCharacter is which of the spinner.CharSets to use
 const SpinnerCharacter = 9
 
+// SpinnerSubStepCharacter is Character to use for sub-steps in a spinner (it looks like a progress bar)
+const SpinnerSubStepCharacter = 35
+
 // Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var Config = map[Enum]Options{

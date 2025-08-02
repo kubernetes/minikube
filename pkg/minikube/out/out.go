@@ -219,8 +219,10 @@ func OutputSpining(file fdWriter, s string, hideAfterSpin bool) {
 	spin.Writer = file
 	spin.Prefix = s
 	if hideAfterSpin {
+		spin.UpdateCharSet(spinner.CharSets[style.SpinnerSubStepCharacter])
 		spin.FinalMSG = ""
 	} else {
+		spin.UpdateCharSet(spinner.CharSets[style.SpinnerCharacter])
 		spin.FinalMSG = s + "\n"
 	}
 	spin.Start()
