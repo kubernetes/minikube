@@ -106,6 +106,6 @@ func determineOutput(st style.Enum, format string, a ...V) {
 		ErrT(st, format, a...)
 		return
 	}
-	errStyled, _ := stylized(st, useColor, format, a...)
+	errStyled, _, _ := stylized(st, useColor, format, a...)
 	klog.Warning(errStyled)
 }

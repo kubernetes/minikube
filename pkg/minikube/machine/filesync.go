@@ -28,6 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -42,6 +44,8 @@ var guaranteed = map[string]bool{
 
 // syncLocalAssets syncs files from MINIKUBE_HOME into the cluster
 func syncLocalAssets(cr command.Runner) error {
+	out.Styled(style.SubStep, "Syncing local assets ...")
+
 	fs, err := localAssets()
 	defer func() {
 		for _, f := range fs {

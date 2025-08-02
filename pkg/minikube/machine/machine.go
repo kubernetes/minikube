@@ -29,6 +29,8 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/provision"
 	"k8s.io/minikube/pkg/util/retry"
@@ -100,7 +102,7 @@ func provisionDockerMachine(h *host.Host) error {
 	if err != nil {
 		return errors.Wrap(err, "fast detect")
 	}
-
+	out.Styled(style.SubStep, "Waiting for SSH server ...")
 	// avoid costly need to stop/power off/delete and then re-create docker machine due to the un-ready ssh server and hence errors like:
 	// 'error starting host: creating host: create: provisioning: ssh command error: command : sudo hostname minikube-m02 && echo "minikube-m02" | sudo tee /etc/hostname; err: exit status 255'
 	// so retry only on "exit status 255" ssh error and fall through in all other cases
