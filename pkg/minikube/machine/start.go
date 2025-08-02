@@ -122,6 +122,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 }
 
 func createHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*host.Host, error) {
+	out.Styled(style.SubStep, "Creating host {{.name}}...", out.V{"name": n.Name})
 	klog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -205,6 +206,8 @@ func postStartValidations(h *host.Host, drvName string) {
 	if !driver.IsKIC(drvName) {
 		return
 	}
+	out.Styled(style.SubStep, "Post start validation  ...")
+
 	r, err := CommandRunner(h)
 	if err != nil {
 		klog.Warningf("error getting command runner: %v", err)
@@ -320,6 +323,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	}
 
 	klog.Infof("creating required directories: %v", requiredDirectories)
+	out.Styled(style.SubStep, "Creating Dirs ...")
 
 	r, err := CommandRunner(h)
 	if err != nil {

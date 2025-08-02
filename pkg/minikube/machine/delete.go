@@ -121,6 +121,7 @@ func deleteHost(api libmachine.API, h *host.Host, machineName string) error {
 // demolish destroys a host by any means necessary - use only if state is inconsistent
 func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
 	machineName := config.MachineName(cc, n)
+	out.Styled(style.SubStep, "Demolishing {{.machine_name}}...", out.V{"machine_name": machineName})
 	klog.Infof("DEMOLISHING %s ...", machineName)
 
 	// This will probably fail

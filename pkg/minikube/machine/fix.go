@@ -191,6 +191,7 @@ func ensureSyncedGuestClock(h hostRunner, drv string) error {
 	if !driver.IsVM(drv) {
 		return nil
 	}
+	out.Styled(style.SubStep, "Syncing guest system clock ...")
 	d, err := guestClockDelta(h, time.Now())
 	if err != nil {
 		klog.Warningf("Unable to measure system clock delta: %v", err)
