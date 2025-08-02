@@ -72,6 +72,7 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	ExtraDisks     int
+	VirtiofsShares []*pkgdrivers.VirtiofsShare
 	Network        string        // "", "nat", "vmnet-shared"
 	MACAddress     string        // For network=nat, network=""
 	VmnetHelper    *vmnet.Helper // For network=vmnet-shared
@@ -250,8 +251,16 @@ func (d *Driver) Start() error {
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+		return err
+	}
 
-	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+	if len(d.VirtiofsShares) > 0 {
+		log.Infof("Mounting virtiofs shares ...")
+		pkgdrivers.MountVirtiofsShares(d, d.VirtiofsShares)
+	}
+
+	return nil
 }
 
 // startVfkit starts the vfkit child process. If socketPath is not empty, vfkit
@@ -307,6 +316,12 @@ func (d *Driver) startVfkit(socketPath string) error {
 	serialPath := d.ResolveStorePath(serialFileName)
 	startCmd = append(startCmd,
 		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", serialPath))
+
+	for _, share := range d.VirtiofsShares {
+		startCmd = append(startCmd,
+			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", share.HostPath, share.MountTag))
+
+	}
 
 	log.Debugf("executing: vfkit %s", strings.Join(startCmd, " "))
 	os.Remove(d.sockfilePath())
