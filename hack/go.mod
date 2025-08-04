@@ -18,7 +18,7 @@ require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.37.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.51.0
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/google/go-github/v73 v73.0.0
+	github.com/google/go-github/v74 v74.0.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/olekukonko/tablewriter v1.0.8
 	github.com/pkg/errors v0.9.1
