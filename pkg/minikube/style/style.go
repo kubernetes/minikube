@@ -50,7 +50,7 @@ type Options struct {
 const SpinnerCharacter = 9
 
 // SpinnerSubStepCharacter is Character to use for sub-steps in a spinner (it looks like a progress bar)
-const SpinnerSubStepCharacter = 35
+const SpinnerSubStepCharacter = 40
 
 // Config is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
