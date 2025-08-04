@@ -66,7 +66,7 @@ var (
 	// JSON is whether or not we should output stdout in JSON format. Set using SetJSON()
 	JSON = false
 	// spin is spinner showed at starting minikube
-	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond)
+	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond, spinner.WithWriter(outFile))
 	// defaultBoxCfg is the default style config for cli box output
 	defaultBoxCfg = box.Config{Py: 1, Px: 4, Type: "Round", Color: "Red"}
 )
@@ -356,6 +356,7 @@ func SetSilent(q bool) {
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
 	klog.Infof("Setting OutFile to fd %d ...", w.Fd())
+	spin.Writer = w
 	outFile = w
 	useColor = wantsColor(w)
 }
