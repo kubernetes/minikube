@@ -121,8 +121,6 @@ type DockerShellConfig struct {
 	SSHAgentPID string
 }
 
-// DockerBackendDetector is a function variable for backend detection, allowing injection/mocking in tests.
-var DockerBackendDetector = DetectDockerBackend
 var (
 	noProxy              bool
 	sshHost              bool
@@ -384,17 +382,6 @@ docker-cli install instructions: https://minikube.sigs.k8s.io/docs/tutorials/doc
 			sshAgentPID: co.Config.SSHAgentPID,
 		}
 
-		// Detect backend (docker vs podman) and set ec.driver accordingly.
-		// This allows robust detection and is injectable/mocked for tests.
-		backend, err := DockerBackendDetector(func(name string, args ...string) ([]byte, error) {
-			cmd := exec.Command(name, args...)
-			return cmd.CombinedOutput()
-		})
-		if err != nil {
-			klog.Warningf("Failed to detect Docker backend, defaulting to driver: %v", err)
-		} else {
-			ec.driver = backend
-		}
 
 		dockerPath, err := exec.LookPath("docker")
 		if err != nil {
@@ -600,8 +587,7 @@ func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	} else {
 		rt = envTCP
 	}
-	// Only add "existing" envs if the driver is podman
-	if ec.driver == "podman" && os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
+	if os.Getenv(constants.MinikubeActiveDockerdEnv) == "" {
 		for _, env := range constants.DockerDaemonEnvs {
 			if v := oci.InitialEnv(env); v != "" {
 				key := constants.MinikubeExistingPrefix + env
@@ -703,36 +689,4 @@ func init() {
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
 	dockerEnvCmd.Flags().StringVarP(&outputFormat, "output", "o", "", "One of 'text', 'yaml' or 'json'.")
 	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
-}
-	/*
-DetectDockerBackend probes the Docker CLI backend by running `docker info` and parsing the output
-for Podman signatures. Returns "docker" or "podman" as backend type.
-
-The detection logic looks for "Podman Engine" or "podman" in the "Server" or "Operating System" fields.
-The commandRunner argument allows injection/mocking for tests.
-*/
-func DetectDockerBackend(commandRunner func(name string, args ...string) ([]byte, error)) (string, error) {
-	output, err := commandRunner("docker", "info", "--format", "{{json .}}")
-	if err != nil {
-		return "", fmt.Errorf("failed to run docker info: %w", err)
-	}
-	// Try to parse as JSON and look for podman signatures
-	var info map[string]interface{}
-	if err := json.Unmarshal(output, &info); err == nil {
-		// Check "ServerVersion" or "OperatingSystem" fields for podman
-		if osField, ok := info["OperatingSystem"].(string); ok && strings.Contains(strings.ToLower(osField), "podman") {
-			return "podman", nil
-		}
-		if sv, ok := info["ServerVersion"].(string); ok && strings.Contains(strings.ToLower(sv), "podman") {
-			return "podman", nil
-		}
-		if sv, ok := info["Server"].(string); ok && strings.Contains(strings.ToLower(sv), "podman") {
-			return "podman", nil
-		}
-	}
-	// Fallback: look for "Podman" in raw output
-	if strings.Contains(strings.ToLower(string(output)), "podman") {
-		return "podman", nil
-	}
-	return "docker", nil
 }
