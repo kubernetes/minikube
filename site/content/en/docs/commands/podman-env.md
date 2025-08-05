@@ -7,23 +7,40 @@ description: >
 ## Requirements
 
 - **Podman version 4.9.2 or newer is required.**
-- Support for Podman v3 and varlink-based communication has been removed. The `podman-env` command now configures your environment to use the Podman REST API socket, as required by Podman v4+.
+- **Docker client is required** - `podman-env` uses Docker's client to communicate with Podman's Docker-compatible API.
+- The `podman-env` command configures Docker client environment variables to connect to minikube's Podman service via its Docker-compatible API.
 
-{{% pageinfo color="warning" %}}
-**Note:** If you are using an older version of Podman, please upgrade to at least v4.9.2 to use `minikube podman-env`. Legacy varlink-based workflows are no longer supported.
+{{% pageinfo color="info" %}}
+**Note:** This command sets up standard Docker environment variables (`DOCKER_HOST`, `DOCKER_TLS_VERIFY`, `DOCKER_CERT_PATH`) to connect to Podman's Docker-compatible socket. Use the regular `docker` command-line tool to interact with minikube's Podman service.
 {{% /pageinfo %}}
 
 ## minikube podman-env
 
-Configure environment to use minikube's Podman service
+Configure environment to use minikube's Podman service via Docker API compatibility
 
 ### Synopsis
 
-Sets up podman env variables; similar to '$(podman-machine env)'.
+Sets up Docker client env variables to use minikube's Podman Docker-compatible service.
 
 ```shell
 minikube podman-env [flags]
 ```
+
+### Usage
+
+After running `minikube podman-env`, you can use the regular Docker client to interact with minikube's Podman service:
+
+```shell
+# Configure your shell
+eval $(minikube podman-env)
+
+# Now use docker commands as usual - they will connect to Podman
+docker images
+docker build -t myapp .
+docker run myapp
+```
+
+This approach provides Docker API compatibility while using Podman as the container runtime inside minikube.
 
 ### Options
 

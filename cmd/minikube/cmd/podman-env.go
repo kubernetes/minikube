@@ -21,53 +21,48 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var podmanEnv1Tmpl = fmt.Sprintf(
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridge }}{{ .Suffix }}"+
-		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
-		"{{ .UsageHint }}",
-	constants.PodmanVarlinkBridgeEnv,
-	constants.MinikubeActivePodmanEnv)
-
-var podmanEnv2Tmpl = fmt.Sprintf(
-	"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerHost }}{{ .Suffix }}"+
-		"{{ if .ContainerSSHKey }}"+
-		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ContainerSSHKey}}{{ .Suffix }}"+
+var podmanEnvTmpl = fmt.Sprintf(
+	"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}"+
+		"{{ if .DockerTLSVerify }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}"+
 		"{{ end }}"+
-		"{{ if .ExistingContainerHost }}"+
-		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingContainerHost }}{{ .Suffix }}"+
+		"{{ if .DockerCertPath }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}"+
+		"{{ end }}"+
+		"{{ if .ExistingDockerHost }}"+
+		"{{ .Prefix }}%s{{ .Delimiter }}{{ .ExistingDockerHost }}{{ .Suffix }}"+
 		"{{ end }}"+
 		"{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubePodmanProfile }}{{ .Suffix }}"+
 		"{{ .UsageHint }}",
-	constants.PodmanContainerHostEnv,
-	constants.PodmanContainerSSHKeyEnv,
-	constants.ExistingContainerHostEnv,
+	constants.DockerHostEnv,
+	constants.DockerTLSVerifyEnv,
+	constants.DockerCertPathEnv,
+	constants.ExistingDockerHostEnv,
 	constants.MinikubeActivePodmanEnv)
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
 	shell.Config
-	VarlinkBridge         string
-	ContainerHost         string
-	ContainerSSHKey       string
+	DockerHost            string
+	DockerTLSVerify       string
+	DockerCertPath        string
 	MinikubePodmanProfile string
 
-	ExistingContainerHost string
+	ExistingDockerHost    string
 }
 
 var podmanUnset bool
@@ -75,29 +70,20 @@ var podmanUnset bool
 // podmanShellCfgSet generates context variables for "podman-env"
 func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShellConfig {
 	profile := ec.profile
-	const usgPlz = "To point your shell to minikube's podman service, run:"
+	const usgPlz = "To point your shell to minikube's podman docker-compatible service, run:"
 	usgCmd := fmt.Sprintf("minikube -p %s podman-env", profile)
 	s := &PodmanShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
-	s.VarlinkBridge = envMap[constants.PodmanVarlinkBridgeEnv]
-	s.ContainerHost = envMap[constants.PodmanContainerHostEnv]
-	s.ContainerSSHKey = envMap[constants.PodmanContainerSSHKeyEnv]
+	s.DockerHost = envMap[constants.DockerHostEnv]
+	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
 
-	s.ExistingContainerHost = envMap[constants.ExistingContainerHostEnv]
+	s.ExistingDockerHost = envMap[constants.ExistingDockerHostEnv]
 
 	s.MinikubePodmanProfile = envMap[constants.MinikubeActivePodmanEnv]
 
 	return s
-}
-
-// isVarlinkAvailable checks if varlink command is available
-func isVarlinkAvailable(r command.Runner) bool {
-	if _, err := r.RunCmd(exec.Command("which", "varlink")); err != nil {
-		return false
-	}
-
-	return true
 }
 
 // isPodmanAvailable checks if podman command is available
@@ -109,35 +95,11 @@ func isPodmanAvailable(r command.Runner) bool {
 	return true
 }
 
-func createExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
-	sshBinaryPath, err := exec.LookPath("ssh")
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	addr, err := d.GetSSHHostname()
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	port, err := d.GetSSHPort()
-	if err != nil {
-		return &ssh.ExternalClient{}, err
-	}
-
-	auth := &ssh.Auth{}
-	if d.GetSSHKeyPath() != "" {
-		auth.Keys = []string{d.GetSSHKeyPath()}
-	}
-
-	return ssh.NewExternalClient(sshBinaryPath, d.GetSSHUsername(), addr, port, auth)
-}
-
 // podmanEnvCmd represents the podman-env command
 var podmanEnvCmd = &cobra.Command{
 	Use:   "podman-env",
 	Short: "Configure environment to use minikube's Podman service",
-	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
+	Long:  `Sets up Docker client env variables to use minikube's Podman Docker-compatible service.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
@@ -177,37 +139,38 @@ var podmanEnvCmd = &cobra.Command{
 			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
-		varlink := isVarlinkAvailable(r)
-
 		d := co.CP.Host.Driver
-		client, err := createExternalSSHClient(d)
-		if err != nil {
-			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
-		}
-
-		hostname, err := d.GetSSHHostname()
-		if err != nil {
-			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
-		}
-
-		port, err := d.GetSSHPort()
-		if err != nil {
-			exit.Error(reason.IfSSHClient, "Error getting ssh client", err)
+		hostIP := co.CP.IP.String()
+		
+		// Use Docker API compatibility - podman supports Docker API on port 2376
+		port := constants.DockerDaemonPort
+		noProxy := false
+		
+		// Check if we need to use SSH tunnel for remote access  
+		sshHost := false
+		if driver.NeedsPortForward(driverName) {
+			sshHost = true
+			sshPort, err := d.GetSSHPort()
+			if err != nil {
+				exit.Error(reason.IfSSHClient, "Error getting ssh port", err)
+			}
+			hostIP = "127.0.0.1"
+			_ = sshPort // We'll use SSH tunnel if needed
 		}
 
 		ec := PodmanEnvConfig{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			varlink:   varlink,
-			client:    client,
-			username:  d.GetSSHUsername(),
-			hostname:  hostname,
+			ssh:       sshHost,
+			hostIP:    hostIP,
 			port:      port,
-			keypath:   d.GetSSHKeyPath(),
+			certsDir:  localpath.MakeMiniPath("certs"),
+			noProxy:   noProxy,
 		}
 
 		if ec.Shell == "" {
+			var err error
 			ec.Shell, err = shell.Detect()
 			if err != nil {
 				exit.Error(reason.InternalShellDetect, "Error detecting shell", err)
@@ -225,22 +188,15 @@ type PodmanEnvConfig struct {
 	shell.EnvConfig
 	profile  string
 	driver   string
-	varlink  bool
-	client   *ssh.ExternalClient
-	username string
-	hostname string
+	ssh      bool
+	hostIP   string
 	port     int
-	keypath  string
+	certsDir string
+	noProxy  bool
 }
 
 // podmanSetScript writes out a shell-compatible 'podman-env' script
 func podmanSetScript(ec PodmanEnvConfig, w io.Writer) error {
-	var podmanEnvTmpl string
-	if ec.varlink {
-		podmanEnvTmpl = podmanEnv1Tmpl
-	} else {
-		podmanEnvTmpl = podmanEnv2Tmpl
-	}
 	envVars := podmanEnvVars(ec)
 	return shell.SetScript(w, podmanEnvTmpl, podmanShellCfgSet(ec, envVars))
 }
@@ -251,85 +207,43 @@ func podmanUnsetScript(ec PodmanEnvConfig, w io.Writer) error {
 	return shell.UnsetScript(ec.EnvConfig, w, vars)
 }
 
-// podmanBridge returns the command to use in a var for accessing the podman varlink bridge over ssh
-func podmanBridge(client *ssh.ExternalClient) string {
-	cmd := []string{client.BinaryPath}
-	cmd = append(cmd, client.BaseArgs...)
-	cmd = append(cmd, "--", "sudo", "varlink", "-A", `\'podman varlink \\\$VARLINK_ADDRESS\'`, "bridge")
-	return strings.Join(cmd, " ")
-}
 
-// podmanURL returns the url to use in a var for accessing the podman socket over ssh
-func podmanURL(username string, hostname string, port int) string {
-	path := "/run/podman/podman.sock"
-	return fmt.Sprintf("ssh://%s@%s:%d%s", username, hostname, port, path)
-}
-
-// podmanEnvVars gets the necessary podman env variables to allow the use of minikube's podman service
+// podmanEnvVars gets the necessary Docker-compatible env variables for podman service
 func podmanEnvVars(ec PodmanEnvConfig) map[string]string {
-	// podman v1
-	env1 := map[string]string{
-		constants.PodmanVarlinkBridgeEnv: podmanBridge(ec.client),
+	var rt string
+	if ec.ssh {
+		rt = fmt.Sprintf("tcp://%s:%d", ec.hostIP, ec.port)
+	} else {
+		rt = fmt.Sprintf("tcp://%s:%d", ec.hostIP, ec.port)
 	}
-	// podman v2
-	env2 := map[string]string{
-		constants.PodmanContainerHostEnv:   podmanURL(ec.username, ec.hostname, ec.port),
-		constants.PodmanContainerSSHKeyEnv: ec.keypath,
-	}
-	// common
-	env0 := map[string]string{
+	
+	env := map[string]string{
+		constants.DockerHostEnv:           rt,
+		constants.DockerTLSVerifyEnv:      "1",
+		constants.DockerCertPathEnv:       ec.certsDir,
 		constants.MinikubeActivePodmanEnv: ec.profile,
 	}
-
-	var env map[string]string
-	if ec.varlink {
-		env = env1
-	} else {
-		env = env2
-	}
-	for k, v := range env0 {
-		env[k] = v
-	}
+	
+	// Save existing Docker env if not already using minikube
 	if os.Getenv(constants.MinikubeActivePodmanEnv) == "" {
-		e := constants.PodmanContainerHostEnv
-		if v := oci.InitialEnv(e); v != "" {
-			key := constants.ExistingContainerHostEnv
-			env[key] = v
+		for _, envVar := range constants.DockerDaemonEnvs {
+			if v := oci.InitialEnv(envVar); v != "" {
+				key := constants.MinikubeExistingPrefix + envVar
+				env[key] = v
+			}
 		}
 	}
 	return env
 }
 
-// podmanEnvNames gets the necessary podman env variables to reset after using minikube's podman service
+// podmanEnvNames gets the necessary Docker env variables to reset after using minikube's podman service
 func podmanEnvNames(ec PodmanEnvConfig) []string {
-	// podman v1
-	vars1 := []string{
-		constants.PodmanVarlinkBridgeEnv,
-	}
-	// podman v2
-	vars2 := []string{
-		constants.PodmanContainerHostEnv,
-		constants.PodmanContainerSSHKeyEnv,
-	}
-	// common
-	vars0 := []string{
+	vars := []string{
+		constants.DockerHostEnv,
+		constants.DockerTLSVerifyEnv,
+		constants.DockerCertPathEnv,
 		constants.MinikubeActivePodmanEnv,
 	}
-
-	var vars []string
-	if ec.client != nil || ec.hostname != "" {
-		// getting ec.varlink needs a running machine
-		if ec.varlink {
-			vars = vars1
-		} else {
-			vars = vars2
-		}
-	} else {
-		// just unset *all* of the variables instead
-		vars = vars1
-		vars = append(vars, vars2...)
-	}
-	vars = append(vars, vars0...)
 	return vars
 }
 

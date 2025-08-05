@@ -20,16 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/google/go-cmp/cmp"
 )
-
-func newFakeClient() *ssh.ExternalClient {
-	return &ssh.ExternalClient{
-		BaseArgs:   []string{"root@host"},
-		BinaryPath: "/usr/bin/ssh",
-	}
-}
 
 func TestGeneratePodmanScripts(t *testing.T) {
 	var tests = []struct {
@@ -41,38 +33,45 @@ func TestGeneratePodmanScripts(t *testing.T) {
 	}{
 		{
 			"bash",
-			PodmanEnvConfig{profile: "bash", driver: "kvm2", varlink: true, client: newFakeClient()},
+			PodmanEnvConfig{profile: "bash", driver: "kvm2", ssh: false, hostIP: "127.0.0.1", port: 2376, certsDir: "/certs", noProxy: false},
 			nil,
-			`export PODMAN_VARLINK_BRIDGE="/usr/bin/ssh root@host -- sudo varlink -A \'podman varlink \\\$VARLINK_ADDRESS\' bridge"
+			`export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
-# To point your shell to minikube's podman service, run:
+# To point your shell to minikube's podman docker-compatible service, run:
 # eval $(minikube -p bash podman-env)
 `,
-			`unset PODMAN_VARLINK_BRIDGE;
+			`unset DOCKER_HOST;
+unset DOCKER_TLS_VERIFY;
+unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_PODMAN;
 `,
 		},
 		{
 			"bash",
-			PodmanEnvConfig{profile: "bash", driver: "kvm2", client: newFakeClient(), username: "root", hostname: "host", port: 22},
+			PodmanEnvConfig{profile: "bash", driver: "kvm2", ssh: true, hostIP: "127.0.0.1", port: 2376, certsDir: "/certs", noProxy: false},
 			nil,
-			`export CONTAINER_HOST="ssh://root@host:22/run/podman/podman.sock"
+			`export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_TLS_VERIFY="1"
+export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
-# To point your shell to minikube's podman service, run:
+# To point your shell to minikube's podman docker-compatible service, run:
 # eval $(minikube -p bash podman-env)
 `,
-			`unset CONTAINER_HOST;
-unset CONTAINER_SSHKEY;
+			`unset DOCKER_HOST;
+unset DOCKER_TLS_VERIFY;
+unset DOCKER_CERT_PATH;
 unset MINIKUBE_ACTIVE_PODMAN;
 `,
 		},
 	}
+
 	for _, tc := range tests {
 		t.Run(tc.config.profile, func(t *testing.T) {
 			tc.config.EnvConfig.Shell = tc.shell
-			defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)
 			if err := podmanSetScript(tc.config, buf); err != nil {
