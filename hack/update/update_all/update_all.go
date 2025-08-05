@@ -29,7 +29,9 @@ import (
 
 var (
 	// These components do not support before/after version comparison
+	// TODO: add support before/after https://github.com/kubernetes/minikube/issues/21246
 	noVersionCheck = map[string]bool{
+		"site_node_version":        true,
 		"docsy_version":            true,
 		"kubeadm_constants":        true,
 		"kubernetes_version":       true,
