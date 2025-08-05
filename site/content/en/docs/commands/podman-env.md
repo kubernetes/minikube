@@ -42,6 +42,21 @@ docker run myapp
 
 This approach provides Docker API compatibility while using Podman as the container runtime inside minikube.
 
+### Building Images for Local Development
+
+You can build images directly in minikube and deploy them without a separate registry:
+
+```shell
+# Configure environment
+eval $(minikube podman-env)
+
+# Build image directly in minikube
+docker build -t my-local-app .
+
+# Deploy to Kubernetes without registry
+kubectl run my-app --image=my-local-app --image-pull-policy=Never
+```
+
 ### Options
 
 ```
