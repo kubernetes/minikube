@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/image"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
@@ -133,6 +134,7 @@ func (r *Docker) Active() bool {
 
 // Enable idempotently enables Docker on a host
 func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
+	out.Styled(style.SubStep, "starting container runtime...")
 	if inUserNamespace {
 		if err := CheckKernelCompatibility(r.Runner, 5, 11); err != nil {
 			// For using overlayfs
@@ -621,6 +623,7 @@ func (r *Docker) Preload(cc config.ClusterConfig) error {
 	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
+	out.Styled(style.SubStep, "Loading preloaded images...")
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 

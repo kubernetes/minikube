@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/sysinit"
 )
@@ -215,6 +216,7 @@ Environment="_CRIO_ROOTLESS=1"
 
 // Enable idempotently enables CRIO on a host
 func (r *CRIO) Enable(disOthers bool, cgroupDriver string, inUserNamespace bool) error {
+	out.Styled(style.SubStep, "starting container runtime...")
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			klog.Warningf("disableOthers: %v", err)
@@ -420,7 +422,7 @@ func (r *CRIO) Preload(cc config.ClusterConfig) error {
 	if !download.PreloadExists(cc.KubernetesConfig.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver) {
 		return nil
 	}
-
+	out.Styled(style.SubStep, "Loading preloaded images...")
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
 	cRuntime := cc.KubernetesConfig.ContainerRuntime
 
