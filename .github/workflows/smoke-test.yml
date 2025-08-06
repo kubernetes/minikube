@@ -67,6 +67,46 @@ jobs:
             os: macos-13
             network_flag: --network vmnet-shared
             iteration: 10
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 11
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 12
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 13
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 14
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 15
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 16
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 17
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 18
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 19
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+            iteration: 20
                     
     steps:
       - name: Info Block (macos)
