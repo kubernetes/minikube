@@ -461,6 +461,7 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 		if err != nil {
 			klog.Warningf("cannot ensure containerd is configured properly and reloaded for docker - cluster might be unstable: %v", err)
 		}
+		// wait for containerd socket is ready
 	}
 
 	disableOthers := !driver.BareMetal(cc.Driver)
