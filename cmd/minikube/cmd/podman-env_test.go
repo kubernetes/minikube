@@ -40,7 +40,7 @@ export DOCKER_TLS_VERIFY="1"
 export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
-# To point your shell to minikube's podman docker-compatible service, run:
+# To point your shell to minikube's Podman Docker-compatible service, run:
 # eval $(minikube -p bash podman-env)
 `,
 			`unset DOCKER_HOST;
@@ -58,7 +58,7 @@ export DOCKER_TLS_VERIFY="1"
 export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_PODMAN="bash"
 
-# To point your shell to minikube's podman docker-compatible service, run:
+# To point your shell to minikube's Podman Docker-compatible service, run:
 # eval $(minikube -p bash podman-env)
 `,
 			`unset DOCKER_HOST;

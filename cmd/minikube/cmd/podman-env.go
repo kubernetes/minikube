@@ -70,7 +70,7 @@ var podmanUnset bool
 // podmanShellCfgSet generates context variables for "podman-env"
 func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShellConfig {
 	profile := ec.profile
-	const usgPlz = "To point your shell to minikube's podman docker-compatible service, run:"
+	const usgPlz = "To point your shell to minikube's Podman Docker-compatible service, run:"
 	usgCmd := fmt.Sprintf("minikube -p %s podman-env", profile)
 	s := &PodmanShellConfig{
 		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
@@ -86,20 +86,13 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 	return s
 }
 
-// isPodmanAvailable checks if podman command is available
-func isPodmanAvailable(r command.Runner) bool {
-	if _, err := r.RunCmd(exec.Command("which", "podman")); err != nil {
-		return false
-	}
-
-	return true
-}
 
 // podmanEnvCmd represents the podman-env command
 var podmanEnvCmd = &cobra.Command{
 	Use:   "podman-env",
-	Short: "Configure environment to use minikube's Podman service",
-	Long:  `Sets up Docker client env variables to use minikube's Podman Docker-compatible service.`,
+	Short: "Configure environment to use minikube's Podman Docker-compatible service",
+	Long:  `Sets up Docker client env variables to use minikube's Podman Docker-compatible service.
+Uses Docker client against Podman's Docker API compatibility - no podman binary required.`,
 	Run: func(_ *cobra.Command, _ []string) {
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
@@ -136,14 +129,11 @@ var podmanEnvCmd = &cobra.Command{
 		}
 
 		r := co.CP.Runner
-		if ok := isPodmanAvailable(r); !ok {
-			exit.Message(reason.EnvPodmanUnavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
-		}
 
 		d := co.CP.Host.Driver
 		hostIP := co.CP.IP.String()
 		
-		// Use Docker API compatibility - podman supports Docker API on port 2376
+		// Use Docker API compatibility - Docker client connects to Docker-compatible API
 		port := constants.DockerDaemonPort
 		noProxy := false
 		
