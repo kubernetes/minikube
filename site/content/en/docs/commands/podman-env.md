@@ -6,7 +6,7 @@ description: >
 
 ## Requirements
 
-- **Podman version 4.9.2 or newer is required.**
+- **Recent Podman version with Docker API compatibility is required.**
 - **Docker client is required** - `podman-env` uses Docker's client to communicate with Podman's Docker-compatible API.
 - The `podman-env` command configures Docker client environment variables to connect to minikube's Podman service via its Docker-compatible API.
 
