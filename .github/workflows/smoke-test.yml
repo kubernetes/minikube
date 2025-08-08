@@ -21,6 +21,43 @@ jobs:
           - driver: qemu
             os: macos-13
             network_flag: --network socket_vmnet
+            iteration: 1
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 2
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 3
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 4
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 5
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 6
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 7
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 8
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 9
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+            iteration: 10
           - driver: vfkit
             os: macos-13
             network_flag: --network vmnet-shared
