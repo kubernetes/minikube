@@ -80,10 +80,11 @@ Documentation=https://docs.docker.com
 After=network-online.target minikube-automount.service nss-lookup.target docker.socket firewalld.service containerd.service time-set.target
 Wants=network-online.target containerd.service
 Requires=docker.socket
-
+StartLimitBurst=3
+StartLimitIntervalSec=60
 [Service]
 Type=notify
-Restart=on-failure
+Restart=always
 `
 	if noPivot {
 		klog.Warning("Using fundamentally insecure --no-pivot option")
