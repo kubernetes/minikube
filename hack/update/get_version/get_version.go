@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strings"
 )
 
 const (
@@ -33,11 +34,11 @@ type dependency struct {
 }
 
 var dependencies = map[string]dependency{
-	"amd-gpu-device-plugin":   {addonsFile, `rocm/k8s-device-plugin:(.*)@`},
+	"amd-device-gpu-plugin":   {addonsFile, `rocm/k8s-device-plugin:(.*)@`},
 	"buildkit":                {"deploy/iso/minikube-iso/arch/x86_64/package/buildkit-bin/buildkit-bin.mk", `BUILDKIT_BIN_VERSION = (.*)`},
 	"calico":                  {"pkg/minikube/bootstrapper/images/images.go", `calicoVersion = "(.*)"`},
 	"cilium":                  {"pkg/minikube/cni/cilium.yaml", `quay.io/cilium/cilium:(.*)@`},
-	"cloud-spanner":           {addonsFile, `cloud-spanner-emulator/emulator:(.*)@`},
+	"cloud-spanner-emulator":  {addonsFile, `cloud-spanner-emulator/emulator:(.*)@`},
 	"cni-plugins":             {"deploy/iso/minikube-iso/arch/x86_64/package/cni-plugins-latest/cni-plugins-latest.mk", `CNI_PLUGINS_LATEST_VERSION = (.*)`},
 	"containerd":              {"deploy/iso/minikube-iso/arch/x86_64/package/containerd-bin/containerd-bin.mk", `CONTAINERD_BIN_VERSION = (.*)`},
 	"cri-dockerd":             {dockerfile, `CRI_DOCKERD_VERSION="(.*)"`},
@@ -49,7 +50,7 @@ var dependencies = map[string]dependency{
 	"flannel":                 {"pkg/minikube/cni/flannel.yaml", `flannel:(.*)`},
 	"gcp-auth":                {addonsFile, `k8s-minikube/gcp-auth-webhook:(.*)@`},
 	"gh":                      {"hack/jenkins/installers/check_install_gh.sh", `GH_VERSION="(.*)"`},
-	"go":                      {"Makefile", `\nGO_VERSION \?= (.*)`},
+	"golang":                  {"Makefile", `\nGO_VERSION \?= (.*)`},
 	"go-github":               {"go.mod", `github\.com\/google\/go-github\/.* (.*)`},
 	"golint":                  {"Makefile", `GOLINT_VERSION \?= (.*)`},
 	"gopogh":                  {"hack/jenkins/installers/check_install_gopogh.sh", `github.com/medyagh/gopogh/cmd/gopogh@(.*)`},
@@ -82,6 +83,7 @@ func main() {
 	if depName == "" {
 		log.Fatalf("the environment variable 'DEP' needs to be set")
 	}
+	depName = standrizeComponentName(depName)
 	dep, ok := dependencies[depName]
 	if !ok {
 		log.Fatalf("%s is not a valid dependency", depName)
@@ -90,7 +92,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("regexp failed to compile: %v", err)
 	}
-	data, err := os.ReadFile("../../../" + dep.filePath)
+	// because in the Makefile we run it as @(cd hack && go run update/get_version/get_version.go) we need ../
+	data, err := os.ReadFile("../" + dep.filePath)
 	if err != nil {
 		log.Fatalf("failed to read file: %v", err)
 	}
@@ -99,4 +102,13 @@ func main() {
 		log.Fatalf("less than 2 submatches found")
 	}
 	os.Stdout.Write(submatches[1])
+}
+
+// some components have _ or - in their names vs their make folders, standarizing for automation such as as update-all
+func standrizeComponentName(name string) string {
+	// Convert the component name to lowercase and replace underscores with hyphens
+	name = strings.ToLower(name)
+	name = strings.ReplaceAll(name, "_", "-")
+	name = strings.ReplaceAll(name, "-version", "")
+	return name
 }

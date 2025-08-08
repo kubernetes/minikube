@@ -339,6 +339,7 @@
 	"If set, added node will become a control-plane. Defaults to false. Currently only supported for existing HA (multi-control plane) clusters.": "Εάν οριστεί, ο προστιθέμενος κόμβος θα γίνει επίπεδο ελέγχου. Προεπιλογή false. Προς το παρόν υποστηρίζεται μόνο για υπάρχοντα συμπλέγματα HA (multi-control plane).",
 	"If set, automatically updates drivers to the latest version. Defaults to true.": "Εάν οριστεί, ενημερώνει αυτόματα τους οδηγούς στην τελευταία έκδοση. Προεπιλογή true.",
 	"If set, delete the current cluster if start fails and try again. Defaults to false.": "Εάν οριστεί, διαγράφει το τρέχον σύμπλεγμα εάν η εκκίνηση αποτύχει και προσπαθεί ξανά. Προεπιλογή false.",
+	"If set, disable CoreDNS verbose logging. Defaults to false.": "",
 	"If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.": "Εάν οριστεί, απενεργοποιεί την αναφορά μετρήσεων (χρήση CPU και μνήμης), αυτό μπορεί να βελτιώσει τη χρήση της CPU. Προεπιλογή false.",
 	"If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.": "Εάν οριστεί, απενεργοποιεί τις βελτιστοποιήσεις που έχουν οριστεί για το τοπικό Kubernetes. Συμπεριλαμβανομένης της μείωσης των αντιγράφων CoreDNS από 2 σε 1. Προεπιλογή false.",
 	"If set, download tarball of preloaded images if available to improve start time. Defaults to true.": "Εάν οριστεί, γίνεται λήψη του tarball των προφορτωμένων images εάν είναι διαθέσιμο για βελτίωση του χρόνου εκκίνησης. Προεπιλογή true.",
