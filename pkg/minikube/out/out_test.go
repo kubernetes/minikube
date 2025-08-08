@@ -230,6 +230,7 @@ func TestDisplayGitHubIssueMessage(t *testing.T) {
 		pflag.Parse()
 		f := tests.NewFakeFile()
 		SetErrFile(f)
+		alreadyShoweddGitHubIssueMessage = false // Reset the flag for each test case
 		displayGitHubIssueMessage()
 		output := f.String()
 		if strings.Contains(output, msg) && !tt.shouldContainMessage {
