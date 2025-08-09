@@ -32,6 +32,7 @@ const (
 	mountGID   = "0"
 	mountMSize = "6543"
 	mountUID   = "0"
+	guestPath  = "/minikube-host"
 )
 
 var mountStartPort = 46463
@@ -55,14 +56,19 @@ func TestMountStart(t *testing.T) {
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
+		hostPath := t.TempDir()
+		startProfileWithMount := func(ctx context.Context, t *testing.T, profile string) {
+			validateStartWithMount(ctx, t, profile, hostPath)
+		}
+
 		tests := []struct {
 			name      string
 			validator validateFunc
 			profile   string
 		}{
-			{"StartWithMountFirst", validateStartWithMount, profile1},
+			{"StartWithMountFirst", startProfileWithMount, profile1},
 			{"VerifyMountFirst", validateMount, profile1},
-			{"StartWithMountSecond", validateStartWithMount, profile2},
+			{"StartWithMountSecond", startProfileWithMount, profile2},
 			{"VerifyMountSecond", validateMount, profile2},
 			{"DeleteFirst", validateDelete, profile1},
 			{"VerifyMountPostDelete", validateMount, profile2},
@@ -87,13 +93,23 @@ func TestMountStart(t *testing.T) {
 }
 
 // validateStartWithMount starts a cluster with mount enabled
-func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
+func validateStartWithMount(ctx context.Context, t *testing.T, profile string, hostPath string) {
 	defer PostMortemLogs(t, profile)
 
 	// We have to increment this because if you have two mounts with the same port, when you kill one cluster the mount will break for the other
 	mountStartPort++
 
-	args := []string{"start", "-p", profile, "--memory=3072", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID, "--no-kubernetes"}
+	args := []string{
+		"start",
+		"-p", profile,
+		"--memory=3072",
+		"--mount-string", fmt.Sprintf("%s:%s", hostPath, guestPath),
+		"--mount-gid", mountGID,
+		"--mount-msize", mountMSize,
+		"--mount-port", mountPort(),
+		"--mount-uid", mountUID,
+		"--no-kubernetes",
+	}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -110,7 +126,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	sshArgs := []string{"-p", profile, "ssh", "--"}
 
 	args := sshArgs
-	args = append(args, "ls", "/minikube-host")
+	args = append(args, "ls", guestPath)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("mount failed: %q : %v", rr.Command(), err)
