@@ -73,7 +73,7 @@ func configureMounts(wg *sync.WaitGroup, cc config.ClusterConfig) {
 	wg.Add(1)
 	defer wg.Done()
 
-	if !cc.Mount || driver.IsKIC(cc.Driver) {
+	if cc.MountString == "" || driver.IsKIC(cc.Driver) || driver.SupportsVirtiofsMounts(cc.Driver) {
 		return
 	}
 

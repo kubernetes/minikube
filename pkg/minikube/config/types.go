@@ -88,7 +88,6 @@ type ClusterConfig struct {
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration
-	Mount                   bool
 	MountString             string
 	Mount9PVersion          string
 	MountGID                string

@@ -67,20 +67,26 @@ This directory may then be referenced from a Kubernetes manifest, for example:
 
 Some hypervisors, have built-in host folder sharing. Driver mounts are reliable with good performance, but the paths are not predictable across operating systems or hypervisors:
 
-| Driver | OS | HostFolder | VM |
-| --- | --- | --- | --- |
-| VirtualBox | Linux | /home | /hosthome |
-| VirtualBox | macOS | /Users | /Users |
-| VirtualBox | Windows | C://Users | /c/Users |
-| VMware Fusion | macOS | /Users | /mnt/hgfs/Users |
-| KVM | Linux | Unsupported | |
-| HyperKit | macOS | Supported |  |
+| Driver         | OS      | Host         | Guest             |
+|----------------|---------|--------------|-------------------|
+| VirtualBox     | Linux   | /home        | /hosthome         |
+| VirtualBox     | macOS   | /Users       | /Users            |
+| VirtualBox     | Windows | C://Users    | /c/Users          |
+| VMware Fusion  | macOS   | /Users       | /mnt/hgfs/Users   |
+| Vfkit          | macOS   | configurable | configurable      |
+| Krunkit        | macOS   | configurable | configurable      |
+| KVM            | Linux   | unsupported  |                   |
+| HyperKit       | macOS   | configurable | configurable      |
 
-These mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
+Built-in mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
 
-HyperKit mounts can use the following flags:
-`--nfs-share=[]`: Local folders to share with Guest via NFS mounts
-`--nfs-shares-root='/nfsshares'`: Where to root the NFS Shares, defaults to /nfsshares
+Vfkit and Krunkit drivers can use the following start flags:
+- `--mount-string`: Local folder to share with guest via Virtiofs. The folder is
+  specified with a pair: `/host-path:/guest-path`.
+
+HyperKit driver can use the following start flags:
+- `--nfs-share=[]`: Local folders to share with Guest via NFS mounts
+- `--nfs-shares-root='/nfsshares'`: Where to root the NFS Shares, defaults to /nfsshares
 
 ## File Sync
 
