@@ -49,9 +49,10 @@ deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/version.json
 
 .DS_Store
 
+# Editor files
 /.idea
-
 /.vscode
+/.zed
 
 /test/integration/testdata/minikube-linux-amd64-latest-stable
 /test/integration/licenses
