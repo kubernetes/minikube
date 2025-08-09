@@ -32,7 +32,7 @@ brew install krunkit
 
 To use the krunkit driver you must install
 [vmnet-helper](https://github.com/nirs/vmnet-helper), see installation
-instructions bellow.
+instructions below.
 
 ### Install vment-helper
 

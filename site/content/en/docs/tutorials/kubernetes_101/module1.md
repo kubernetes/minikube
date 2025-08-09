@@ -22,7 +22,7 @@ Once minikube is installed, start the cluster, by running the *minikube start* c
 minikube start
 ```
 
-Great! You now have a runnning Kubernetes cluster in your terminal. minikube started a virtual environment for you, and a Kubernetes cluster is now running in that environment.
+Great! You now have a running Kubernetes cluster in your terminal. minikube started a virtual environment for you, and a Kubernetes cluster is now running in that environment.
 
 ## Step 2 - Cluster version
 

@@ -77,7 +77,7 @@ cp -r test/integration/testdata out/
 rm -rf out/buildroot
 
 # At this point, the out directory contains the jenkins scripts (populated by jenkins),
-# testdata, and our build output. Push the changes to GCS so that worker nodes can re-use them.
+# testdata, and our build output. Push the changes to GCS so that worker nodes can reuse them.
 
 # -d: delete remote files that don't exist (removed test files, for instance)
 # -J: gzip compression
