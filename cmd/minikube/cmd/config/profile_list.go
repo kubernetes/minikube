@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package config
 
 import (
@@ -23,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -37,8 +37,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
-
-	"k8s.io/klog/v2"
 )
 
 var (
@@ -73,21 +71,17 @@ func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error
 	} else {
 		validProfiles, invalidProfiles, err = config.ListProfiles()
 	}
-
 	return validProfiles, invalidProfiles, err
 }
 
 func printProfilesTable() {
 	validProfiles, invalidProfiles, err := listProfiles()
-
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
 	}
-
 	if len(validProfiles) == 0 {
 		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found.")
 	}
-
 	updateProfilesStatus(validProfiles)
 	renderProfilesTable(profilesToTableData(validProfiles))
 	warnInvalidProfiles(invalidProfiles)
@@ -100,13 +94,11 @@ func updateProfilesStatus(profiles []*config.Profile) {
 		}
 		return
 	}
-
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		klog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
-
 	for _, p := range profiles {
 		p.Status = profileStatus(p, api).StatusName
 	}
@@ -127,9 +119,7 @@ func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 			},
 		}
 	}
-	clusterStatus := cluster.GetState(statuses, ClusterFlagValue(), p.Config)
-
-	return clusterStatus
+	return cluster.GetState(statuses, ClusterFlagValue(), p.Config)
 }
 
 func renderProfilesTable(ps [][]string) {
@@ -166,9 +156,8 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			cpIP = cp.IP
 			cpPort = cp.Port
 		}
-
 		k8sVersion := p.Config.KubernetesConfig.KubernetesVersion
-		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
+		if k8sVersion == constants.NoKubernetesVersion {
 			k8sVersion = "N/A"
 		}
 		var c, k string
@@ -179,11 +168,70 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			k = "*"
 		}
 		if isDetailed {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			if p.Status == "OK" {
+				data = append(data, []string{
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Name, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.Driver, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, cpIP, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Enabled, cpPort, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, k8sVersion, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Status, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Enabled, len(p.Config.Nodes), constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, c, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, k, constants.Default),
+				})
+			} else if p.Status == "Broken" || p.Status == "Error"{
+				data = append(data, []string{
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Name, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Config.Driver, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, cpIP, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Disabled, cpPort, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, k8sVersion, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Status, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Disabled, len(p.Config.Nodes), constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, c, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, k, constants.Default),
+				})
+			} else {
+				data = append(data, []string{
+					p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+					cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status,
+					strconv.Itoa(len(p.Config.Nodes)), c, k,
+				})
+			}
 		} else {
-			data = append(data, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k})
+			if p.Status == "OK"{
+			   data = append(data, []string{
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Name, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.Driver, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, cpIP, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, k8sVersion, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, p.Status, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Enabled, len(p.Config.Nodes), constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, c, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Enabled, k, constants.Default),
+				})
+			}else if p.Status == "Broken" || p.Status == "Error"{
+				data = append(data, []string{
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Name, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Config.Driver, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, cpIP, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, k8sVersion, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, p.Status, constants.Default),
+					fmt.Sprintf("%s%d%s", constants.Disabled, len(p.Config.Nodes), constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, c, constants.Default),
+					fmt.Sprintf("%s%s%s", constants.Disabled, k, constants.Default),
+				})
+			} else{
+				data = append(data, []string{
+					p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+					cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k,
+				})
+			}
 		}
 	}
 	return data
@@ -193,12 +241,10 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 	if invalidProfiles == nil {
 		return
 	}
-
 	out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 	for _, p := range invalidProfiles {
 		out.ErrT(style.Empty, "\t "+p.Name)
 	}
-
 	out.ErrT(style.Tip, "You can delete them using the following command(s): ")
 	for _, p := range invalidProfiles {
 		out.Errf("\t $ minikube delete -p %s \n", p.Name)
@@ -208,8 +254,7 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := listProfiles()
 	updateProfilesStatus(validProfiles)
-
-	var body = map[string]interface{}{}
+	body := map[string]interface{}{}
 	if err == nil || config.IsNotExist(err) {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
