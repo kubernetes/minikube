@@ -29,7 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/util/retry"
 	"libvirt.org/go/libvirt"
 )
@@ -37,7 +37,7 @@ import (
 // Driver is the machine driver for KVM
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 
 	// How much memory, in MB, to allocate to the VM
 	Memory int
@@ -110,7 +110,7 @@ func NewDriver(hostName, storePath string) *Driver {
 			StorePath:   storePath,
 			SSHUser:     "docker",
 		},
-		CommonDriver:   &pkgdrivers.CommonDriver{},
+		CommonDriver:   &common.CommonDriver{},
 		PrivateNetwork: defaultPrivateNetworkName,
 		Network:        defaultNetworkName,
 		ConnectionURI:  qemusystem,
@@ -283,7 +283,7 @@ func (d *Driver) Kill() error {
 // Restart a host
 func (d *Driver) Restart() error {
 	log.Info("restarting domain...")
-	return pkgdrivers.Restart(d)
+	return common.Restart(d)
 }
 
 // Start a host
@@ -464,7 +464,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Infof("building disk image from %s", d.Boot2DockerURL)
-	if err := pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
+	if err := common.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "creating disk")
 	}
 
@@ -475,8 +475,8 @@ func (d *Driver) Create() error {
 		return errors.New("cannot create more than 20 extra disks")
 	}
 	for i := 0; i < d.ExtraDisks; i++ {
-		diskpath := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
-		if err := pkgdrivers.CreateRawDisk(diskpath, d.DiskSize); err != nil {
+		diskpath := common.ExtraDiskPath(d.BaseDriver, i)
+		if err := common.CreateRawDisk(diskpath, d.DiskSize); err != nil {
 			return errors.Wrap(err, "creating extra disks")
 		}
 		// Starting the logical names for the extra disks from hdd as the cdrom device is set to hdc.

@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package drivers
+package common
 
 import (
 	"testing"
 )
+
+const testISOPath = "testdata/test.iso"
 
 func TestExtractFile(t *testing.T) {
 	testDir := t.TempDir()
@@ -32,42 +34,42 @@ func TestExtractFile(t *testing.T) {
 	}{
 		{
 			name:          "all is right",
-			isoPath:       "iso_test.iso",
+			isoPath:       testISOPath,
 			srcPath:       "/test1.txt",
 			destPath:      testDir + "/test1.txt",
 			expectedError: false,
 		},
 		{
 			name:          "isoPath is error",
-			isoPath:       "tests.iso",
+			isoPath:       "testdata/missing.iso",
 			srcPath:       "/test1.txt",
 			destPath:      testDir + "/test1.txt",
 			expectedError: true,
 		},
 		{
 			name:          "srcPath is empty",
-			isoPath:       "iso_tests.iso",
+			isoPath:       testISOPath,
 			srcPath:       "",
 			destPath:      testDir + "/test1.txt",
 			expectedError: true,
 		},
 		{
 			name:          "srcPath is error",
-			isoPath:       "iso_tests.iso",
+			isoPath:       testISOPath,
 			srcPath:       "/t1.txt",
 			destPath:      testDir + "/test1.txt",
 			expectedError: true,
 		},
 		{
 			name:          "destPath is empty",
-			isoPath:       "iso_test.iso",
+			isoPath:       testISOPath,
 			srcPath:       "/test1.txt",
 			destPath:      "",
 			expectedError: true,
 		},
 		{
 			name:          "find files in a folder",
-			isoPath:       "./iso_test.iso",
+			isoPath:       testISOPath,
 			srcPath:       "/test2/test2.txt",
 			destPath:      testDir + "/test2.txt",
 			expectedError: false,

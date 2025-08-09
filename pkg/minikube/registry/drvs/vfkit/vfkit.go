@@ -28,8 +28,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/vfkit"
-	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
