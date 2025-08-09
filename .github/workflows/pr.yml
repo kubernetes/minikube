@@ -413,13 +413,13 @@ jobs:
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
-  functional_qemu_macos_intel:
+  functional_qemu_macos13_intel:
     permissions:
       contents: none
     needs: [build_minikube_test_binaries]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "functional_qemu_macos_intel"
+      JOB_NAME: "functional_qemu_macos13_intel"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: macos-13
@@ -486,7 +486,7 @@ jobs:
           mkdir -p /tmp/th
           MINIKUBE_HOME=/tmp/th ./minikube-darwin-amd64 delete --all --purge
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$/tmp/th/kubeconfig MINIKUBE_HOME=/tmp/th ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=qemu --memory=6g --cpus=max --wait-timeout=15m --network socket_vmnet"  -test.run TestFunctional -test.timeout=40m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$/tmp/th/kubeconfig MINIKUBE_HOME=/tmp/th ./e2e-darwin-amd64 -minikube-start-args="--vm-driver=qemu --wait-timeout=15m --network socket_vmnet"  -test.run TestFunctional -test.timeout=40m -test.v -timeout-multiplier=1.5 -binary=./minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -510,9 +510,9 @@ jobs:
           echo 'EOF' >> $GITHUB_ENV
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: functional_qemu_macos_intel
+          name: functional_qemu_macos13_intel
           path: minikube_binaries/report
-      - name: The End Result functional_qemu_macos_intel
+      - name: The End Result functional_qemu_macos13_intel
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
@@ -526,7 +526,7 @@ jobs:
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          if [ "$numPass" -lt 36 ];then echo "*** Failed to pass at least 36 ! ***";exit 2;fi
+          if [ "$numPass" -lt 56 ];then echo "*** Failed to pass at least 56 ! ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** Passed! ***";exit 0;fi
   functional_podman_ubuntu:
     permissions:
@@ -767,6 +767,7 @@ jobs:
         functional_docker_rootless_containerd_ubuntu,
         functional_podman_ubuntu,
         functional_baremetal_ubuntu22_04,
+        functional_qemu_macos13_intel,
       ]
     runs-on: ubuntu-22.04
     steps:
@@ -782,7 +783,7 @@ jobs:
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
-          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
+          cp -r ./functional_qemu_macos13_intel ./all_reports/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: all_reports
