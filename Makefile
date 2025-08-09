@@ -490,6 +490,7 @@ clean: ## Clean build
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
 	rm -rf /tmp/tmp.*.minikube_*
+	rm -rf test/integration/licenses
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md  ## Generate documentation
