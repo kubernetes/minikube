@@ -69,6 +69,8 @@ var (
 	spin = spinner.New(spinner.CharSets[style.SpinnerCharacter], 100*time.Millisecond, spinner.WithWriter(outFile))
 	// defaultBoxCfg is the default style config for cli box output
 	defaultBoxCfg = box.Config{Py: 1, Px: 4, Type: "Round", Color: "Red"}
+	// alreadyShoweddGitHubIssueMessage is used to prevent showing the GitHub issue message multiple times
+	alreadyShoweddGitHubIssueMessage = false
 )
 
 // MaxLogEntries controls the number of log entries to show for each source
@@ -477,6 +479,9 @@ func command() (string, error) {
 }
 
 func displayGitHubIssueMessage() {
+	if alreadyShoweddGitHubIssueMessage {
+		return
+	}
 	cmd, err := command()
 	if err != nil {
 		klog.Warningf("failed to get command: %v", err)
@@ -496,6 +501,7 @@ func displayGitHubIssueMessage() {
 	}
 
 	BoxedErr(msg)
+	alreadyShoweddGitHubIssueMessage = true
 }
 
 // applyTmpl applies formatting
