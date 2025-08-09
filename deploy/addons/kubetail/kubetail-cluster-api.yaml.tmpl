@@ -7,27 +7,18 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 data:
   config.yaml: |
     cluster-api:
       addr: :8080
-      cluster-agent-dispatch-url: "kubernetes://kubetail-cluster-agent:50051"
       base-path: /
+      cluster-agent:
+        dispatch-url: "kubernetes://kubetail-cluster-agent:50051"
       csrf:
-        cookie:
-          domain: null
-          http-only: true
-          max-age: 43200
-          name: kubetail_cluster_api_csrf
-          path: /
-          same-site: strict
-          secure: false
         enabled: true
-        field-name: csrf_token
-        secret: ${KUBETAIL_CLUSTER_API_CSRF_SECRET}
       gin-mode: release
       logging:
         access-log:
@@ -51,7 +42,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: "kubetail"
     app.kubernetes.io/component: "cluster-api"
 ---
@@ -63,7 +54,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 rules:
@@ -82,7 +73,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 roleRef:
@@ -103,7 +94,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 rules:
@@ -120,7 +111,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 roleRef:
@@ -141,7 +132,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 spec:
@@ -158,7 +149,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: kubetail
-        app.kubernetes.io/version: "0.11.5"
+        app.kubernetes.io/version: "0.13.3"
         app.kubernetes.io/instance: kubetail
         app.kubernetes.io/component: cluster-api
     spec:
@@ -176,9 +167,6 @@ spec:
           runAsGroup: 1000
           runAsUser: 1000
         imagePullPolicy: IfNotPresent
-        env:
-        - name: KUBETAIL_CLUSTER_API_CSRF_SECRET
-          value: "DUMMY"
         args:
         - --config=/etc/kubetail/config.yaml
         ports:
@@ -221,7 +209,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: cluster-api
 spec:

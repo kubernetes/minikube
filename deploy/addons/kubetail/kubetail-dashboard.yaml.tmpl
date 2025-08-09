@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 data:
@@ -21,17 +21,7 @@ data:
         cluster-api-enabled: true
       base-path: /
       csrf:
-        cookie:
-          domain: null
-          http-only: true
-          max-age: 43200
-          name: kubetail_dashhboard_csrf
-          path: /
-          same-site: strict
-          secure: false
         enabled: true
-        field-name: csrf_token
-        secret: ${KUBETAIL_DASHBOARD_CSRF_SECRET}
       gin-mode: release
       logging:
         access-log:
@@ -65,7 +55,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 ---
@@ -77,7 +67,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 rules:
@@ -96,7 +86,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 roleRef:
@@ -117,7 +107,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 rules:
@@ -134,7 +124,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 roleRef:
@@ -155,7 +145,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 spec:
@@ -172,7 +162,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: kubetail
-        app.kubernetes.io/version: "0.11.5"
+        app.kubernetes.io/version: "0.13.3"
         app.kubernetes.io/instance: kubetail
         app.kubernetes.io/component: dashboard
     spec:
@@ -190,11 +180,6 @@ spec:
           runAsGroup: 1000
           runAsUser: 1000
         imagePullPolicy: IfNotPresent
-        env:
-        - name: KUBETAIL_DASHBOARD_CSRF_SECRET
-          value: "DUMMY"
-        - name: KUBETAIL_DASHBOARD_SESSION_SECRET
-          value: "DUMMY"
         args:
         - --config=/etc/kubetail/config.yaml
         ports:
@@ -237,7 +222,7 @@ metadata:
     kubernetes.io/minikube-addons: kubetail
     addonmanager.kubernetes.io/mode: Reconcile
     app.kubernetes.io/name: kubetail
-    app.kubernetes.io/version: "0.11.5"
+    app.kubernetes.io/version: "0.13.3"
     app.kubernetes.io/instance: kubetail
     app.kubernetes.io/component: dashboard
 spec:
