@@ -61,12 +61,12 @@ type StartedCmd struct {
 // Runner represents an interface to run commands.
 type Runner interface {
 	// RunCmd runs a cmd of exec.Cmd type. allowing user to set cmd.Stdin, cmd.Stdout,...
-	// not all implementors are guaranteed to handle all the properties of cmd.
+	// not all implementers are guaranteed to handle all the properties of cmd.
 	RunCmd(cmd *exec.Cmd) (*RunResult, error)
 
 	// StartCmd starts a cmd of exec.Cmd type.
 	// This func in non-blocking, use WaitCmd to block until complete.
-	// Not all implementors are guaranteed to handle all the properties of cmd.
+	// Not all implementers are guaranteed to handle all the properties of cmd.
 	StartCmd(cmd *exec.Cmd) (*StartedCmd, error)
 
 	// WaitCmd will prevent further execution until the started command has completed.

@@ -37,7 +37,7 @@ grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
-# Force go packages to the Jekins home directory
+# Force go packages to the Jenkins home directory
 # export GOPATH=$HOME/go
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
@@ -120,7 +120,7 @@ cp "out/minikube-${RPM_VERSION}-0.s390x.rpm" out/minikube-latest.s390x.rpm
 echo "Generating tarballs for kicbase images"
 # first get the correct tag of the kic base image
 KIC_VERSION=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
-# then generate tarballs for all achitectures
+# then generate tarballs for all architectures
 for ARCH in "amd64" "arm64" "arm/v7" "ppc64le" "s390x" 
 do
   SUFFIX=$(echo $ARCH | sed 's/\///g')

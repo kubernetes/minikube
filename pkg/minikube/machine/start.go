@@ -106,7 +106,7 @@ func StartHost(api libmachine.API, cfg *config.ClusterConfig, n *config.Node) (*
 func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	// get docker env from user's proxy settings
 	dockerEnv := proxy.SetDockerEnv()
-	// get docker env from user specifiec config
+	// get docker env from user specific config
 	dockerEnv = append(dockerEnv, cfg.DockerEnv...)
 
 	uniqueEnvs := util.RemoveDuplicateStrings(dockerEnv)

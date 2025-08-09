@@ -54,7 +54,7 @@ func TestStep(t *testing.T) {
 		{style.Fatal, "Fatal: {{.error}}", V{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
 		{style.Issue, "http://i/{{.number}}", V{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
 		{style.Usage, "raw: {{.one}} {{.two}}", V{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
-		// spining steps do not support being unit tested with fake file writer, since passing the fake writer to the spininer library is not testable.
+		// spinning steps do not support being unit tested with fake file writer, since passing the fake writer to the spininer library is not testable.
 		{style.Provisioning, "Installing Kubernetes version {{.version}} ...", V{"version": "v1.13"}, "🌱  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
 	}
 	for _, tc := range testCases {

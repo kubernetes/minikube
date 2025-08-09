@@ -75,7 +75,7 @@ func TestGuestEnvironment(t *testing.T) {
 			mount := mount
 			t.Run(mount, func(t *testing.T) {
 				t.Parallel()
-				rr, err := Run(t, exec.CommandContext(ctx, Targt(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
 				if err != nil {
 					t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
 				}

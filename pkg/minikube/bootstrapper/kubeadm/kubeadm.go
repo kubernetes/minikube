@@ -526,7 +526,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	// if extra waiting for system pods to be ready is required, we need node to be ready beforehands
+	// if extra waiting for system pods to be ready is required, we need node to be ready beforehand
 	if cfg.VerifyComponents[kverify.NodeReadyKey] || cfg.VerifyComponents[kverify.ExtraKey] {
 		name := bsutil.KubeNodeName(cfg, n)
 		if err := kverify.WaitNodeCondition(client, name, core.NodeReady, timeout); err != nil {

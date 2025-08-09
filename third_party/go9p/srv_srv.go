@@ -193,7 +193,7 @@ type SrvReq struct {
 	prev, next *SrvReq
 }
 
-// The Start method should be called once the file server implementor
+// The Start method should be called once the file server implementer
 // initializes the Srv struct with the preferred values. It sets default
 // values to the fields that are not initialized and creates the goroutines
 // required for the server's operation. The method receives an empty

@@ -38,7 +38,7 @@ xattr -d com.apple.quarantine /Applications/minikube-gui.app
 
 3. If you see the following, click `More info` and then `Run anyway`
 
-![Windows unreconized app](/images/gui/windows.png)
+![Windows unrecognized app](/images/gui/windows.png)
 {{% /windowstab %}}
 {{% linuxtab %}}
 1. [Download minikube-gui](https://github.com/kubernetes-sigs/minikube-gui/releases/latest/download/minikube-gui-linux.tar.gz)
