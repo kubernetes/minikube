@@ -554,7 +554,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 			f.t.Logf("fake systemctl: SvcRestarted %s", svc)
 		case "is-active":
 			f.t.Logf("fake systemctl: %s is-status: %v", svc, state)
-			if state == SvcRunning {
+			if state == SvcRunning || state == SvcRestarted {
 				return out, nil
 			}
 			return out, fmt.Errorf("%s in state: %v", svc, state)

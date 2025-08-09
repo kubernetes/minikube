@@ -168,8 +168,7 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 		return err
 	}
 
-	_ = r.Init.ResetFailed("docker")
-	if err := r.Init.Restart("docker"); err != nil {
+	if err := r.restartServiceWithExpoRetry("docker"); err != nil {
 		return err
 	}
 
@@ -199,20 +198,9 @@ func (r *Docker) Enable(disOthers bool, cgroupDriver string, inUserNamespace boo
 			return err
 		}
 
-		_ = r.Init.ResetFailed(service)
-		_ = r.Init.Restart(service)
-		// try to restart service if stopped, restart until it works
-		retry.Expo(
-			func() error {
-				if !r.Init.Active(service) {
-					r.Init.ResetFailed(service)
-					r.Init.Restart(service)
-					return fmt.Errorf("cri-docker not running")
-				}
-				return nil
-			},
-			1*time.Second, time.Minute, 5,
-		)
+		if err := r.restartServiceWithExpoRetry(service); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -823,4 +811,21 @@ ExecStart={{.ExecPath}} --container-runtime-endpoint fd:// --pod-infra-container
 		return errors.Wrap(err, "failed to copy template")
 	}
 	return nil
+}
+
+func (r *Docker) restartServiceWithExpoRetry(service string) error {
+	_ = r.Init.ResetFailed(service)
+	_ = r.Init.Restart(service)
+	// try to restart service if stopped, restart until it works
+	return retry.Expo(
+		func() error {
+			if !r.Init.Active(service) {
+				r.Init.ResetFailed(service)
+				r.Init.Restart(service)
+				return fmt.Errorf("%s not running", service)
+			}
+			return nil
+		},
+		1*time.Second, time.Minute, 5,
+	)
 }
