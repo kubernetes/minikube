@@ -43,7 +43,7 @@ type kicRunner struct {
 	ociBin   string
 }
 
-// NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
+// NewKICRunner returns a kicRunner implementer of runner which runs cmds inside a container
 func NewKICRunner(containerNameOrID string, ociName string) Runner {
 	return &kicRunner{
 		nameOrID: containerNameOrID,

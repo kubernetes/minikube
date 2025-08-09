@@ -853,7 +853,7 @@ func TestValidateAutoPause(t *testing.T) {
 			t.Errorf("interval of %q failed validation; expected it to pass: %v", input, err)
 		}
 		if err == nil && tc.shouldError {
-			t.Errorf("interval of %q passed validataion; expected it to fail: %v", input, err)
+			t.Errorf("interval of %q passed validation; expected it to fail: %v", input, err)
 		}
 	}
 }

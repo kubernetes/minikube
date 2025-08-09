@@ -74,7 +74,7 @@ func Exists(pid int, executable string) (bool, error) {
 }
 
 // Terminate a process with pid and matching name. Returns os.ErrProcessDone if
-// the process does not exist, or nil if termiation was requested. Caller need
+// the process does not exist, or nil if termination was requested. Caller need
 // to wait until the process disappears.
 func Terminate(pid int, executable string) error {
 	exists, err := Exists(pid, executable)

@@ -62,7 +62,7 @@ validate_userns() {
 
 overlayfs_preferrable() {
   if [[ -z "$userns" ]]; then
-    # If we are outside userns, we can always assume overlayfs is preferrable
+    # If we are outside userns, we can always assume overlayfs is preferable
     return 0
   fi
 
@@ -107,7 +107,7 @@ configure_containerd() {
   if [[ -n "$userns" ]]; then
     # enable restrict_oom_score_adj
     sed -i 's/restrict_oom_score_adj = false/restrict_oom_score_adj = true/' /etc/containerd/config.toml
-    # Use fuse-overlayfs if overlayfs is not preferrable: https://github.com/kubernetes-sigs/kind/issues/2275
+    # Use fuse-overlayfs if overlayfs is not preferable: https://github.com/kubernetes-sigs/kind/issues/2275
     if [[ -z "$snapshotter" ]] && ! overlayfs_preferrable; then
       snapshotter="fuse-overlayfs"
     fi

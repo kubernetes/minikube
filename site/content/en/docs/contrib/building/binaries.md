@@ -41,7 +41,7 @@ and minikube binary will be available in ./out/minikube
 
 ## build minikube in docker
 
-if you have issues runninng make due to tooling issue you can run the make in "docker"
+if you have issues running make due to tooling issue you can run the make in "docker"
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make
 ```
@@ -74,12 +74,12 @@ make clean
 make gomodtidy
 ```
 
-## Run Short intergration test (functional test)
+## Run Short integration test (functional test)
 ```shell
 make functional
 ```
 
-To see HTML report of the fucntional test you can install [gopogh](https://github.com/medyagh/gopogh)
+To see HTML report of the functional test you can install [gopogh](https://github.com/medyagh/gopogh)
 and run 
 ```shell
 make html_report

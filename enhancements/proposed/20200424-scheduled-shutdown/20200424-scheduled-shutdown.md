@@ -55,7 +55,7 @@ As a `keep-alive` implementation, tools will repeat the command to reset the clo
 
 Advantages:
 
-* Able to re-use all of the existing `pause` and `stop` implementation within minikube.
+* Able to reuse all of the existing `pause` and `stop` implementation within minikube.
 * Built-in handling for multiple architectures
 * Does not consume memory reserved for the VM
 

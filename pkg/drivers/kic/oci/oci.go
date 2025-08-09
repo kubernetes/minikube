@@ -182,7 +182,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, p.Role),
-		// label th enode wuth the node ID
+		// label th enode with the node ID
 		"--label", p.NodeLabel,
 	}
 	// to provide a static IP

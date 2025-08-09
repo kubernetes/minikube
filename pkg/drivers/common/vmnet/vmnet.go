@@ -99,7 +99,7 @@ func ValidateHelper() error {
 		out.ErrT(style.Indent, "To configure vment-helper to run without a password, please check the documentation:")
 		out.ErrT(style.Indent, "https://github.com/nirs/vmnet-helper/#granting-permission-to-run-vmnet-helper")
 
-		// Authenticate the user, updateing the user's cached credentials.
+		// Authenticate the user, updating the user's cached credentials.
 		cmd = exec.Command("sudo", executablePath, "--version")
 		stdout, err = cmd.Output()
 		if err != nil {
@@ -117,7 +117,7 @@ func ValidateHelper() error {
 }
 
 // Start the vmnet-helper child process, creating the vmnet interface for the
-// machine. The helper will create a unix datagram socket at the specfied path.
+// machine. The helper will create a unix datagram socket at the specified path.
 // The client (e.g. vfkit) will connect to this socket.
 func (h *Helper) Start(socketPath string) error {
 	args := []string{

@@ -558,7 +558,7 @@ func validateDeployAppToMultiNode(ctx context.Context, t *testing.T, profile str
 	}
 }
 
-// validatePodsPingHost uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+// validatePodsPingHost uses app previously deployed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 func validatePodsPingHost(ctx context.Context, t *testing.T, profile string) {
 	// get Pod names
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "kubectl", "-p", profile, "--", "get", "pods", "-o", "jsonpath='{.items[*].metadata.name}'"))

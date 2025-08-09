@@ -96,7 +96,7 @@ func TestFreeSubnet(t *testing.T) {
 			t.Fatalf("expected to fail since IP non-private but no error thrown")
 		}
 		if !strings.Contains(err.Error(), startingSubnet) {
-			t.Errorf("expected starting subnet of %q to be included in error, but intead got: %v", startingSubnet, err)
+			t.Errorf("expected starting subnet of %q to be included in error, but instead got: %v", startingSubnet, err)
 		}
 	})
 }
