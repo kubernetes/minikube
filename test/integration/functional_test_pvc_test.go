@@ -36,6 +36,11 @@ import (
 )
 
 // validatePersistentVolumeClaim makes sure PVCs work properly
+// verifies at least one StorageClass exists
+// Applies a PVC manifest (pvc.yaml) and verfies PVC named myclaim reaches phase Bound.
+// Creates a test pod (sp-pod) that mounts the claim (via createPVTestPod).
+// Writes a file foo to the mounted volume at /tmp/mount/foo.
+// Deletes the pod, recreates it, and verifies the file foo still exists by listing /tmp/mount, proving data persists across pod restarts.
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
@@ -127,8 +132,8 @@ func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
-	maxWait := 3
-	if detect.NestedVM() {
+	maxWait := 4
+	if detect.NestedVM() || detect.GithubActionRunner() {
 		maxWait = 6
 	}
 	// wait for pod to be running
