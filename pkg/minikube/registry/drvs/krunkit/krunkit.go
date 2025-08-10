@@ -28,8 +28,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
-	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -87,7 +87,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 func status() registry.State {
 	if runtime.GOOS != "darwin" && runtime.GOARCH != "arm64" {
-		err := errors.New("The krunkit driver is only supported on macOS arm64 machines")
+		err := errors.New("the krunkit driver is only supported on macOS arm64 machines")
 		return registry.State{Error: err, Fix: "Use another driver", Doc: docURL}
 	}
 	if _, err := exec.LookPath("krunkit"); err != nil {

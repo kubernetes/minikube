@@ -31,7 +31,7 @@ var (
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
 	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
 	verbose        = flag.Bool("v", false, "Verbose")
-	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy|test/integration/testdata`)
+	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy|test/integration/testdata|hack/benchmark/image-build/minikube-image-benchmark|hack/benchmark/time-to-k8s/time-to-k8s-repo`)
 	windowdNewLine = regexp.MustCompile(`\r`)
 	txtExtension   = regexp.MustCompile(`\.txt`)
 	goBuildTag     = regexp.MustCompile(`(?m)^(//go:build.*\n)+\n`)
@@ -41,6 +41,7 @@ var (
 )
 
 func main() {
+	flag.Parse()
 	refs, err := extensionToBoilerplate(*boilerplatedir)
 	if err != nil {
 		log.Fatal(err)

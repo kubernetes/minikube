@@ -83,7 +83,7 @@ func (i *Item) apply(data interface{}) error {
 }
 
 // Apply applies concrete update plan (schema + data) to local filesystem repo
-func Apply(schema map[string]Item, data interface{}) {
+func Apply(schema map[string]Item, data interface{}) error {
 	schema, pretty, err := GetPlan(schema, data)
 	if err != nil {
 		klog.Fatalf("Unable to parse schema: %v\n%s", err, pretty)
@@ -93,11 +93,13 @@ func Apply(schema map[string]Item, data interface{}) {
 	changed, err := fsUpdate(FSRoot, schema, data)
 	if err != nil {
 		klog.Errorf("Unable to update local repo: %v", err)
+		return err
 	} else if !changed {
 		klog.Infof("Local repo update skipped: nothing changed")
 	} else {
 		klog.Infof("Local repo successfully updated")
 	}
+	return nil
 }
 
 // GetPlan returns concrete plan replacing placeholders in schema with actual data values, returns JSON-formatted representation of the plan and any error occurred.

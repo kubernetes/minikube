@@ -41,7 +41,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -62,7 +62,7 @@ const (
 
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	EnginePort int
 	FirstQuery bool
 
@@ -286,8 +286,8 @@ func (d *Driver) Create() error {
 	if d.ExtraDisks > 0 {
 		log.Info("Creating extra disk images...")
 		for i := 0; i < d.ExtraDisks; i++ {
-			path := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
-			if err := pkgdrivers.CreateRawDisk(path, d.DiskSize); err != nil {
+			path := common.ExtraDiskPath(d.BaseDriver, i)
+			if err := common.CreateRawDisk(path, d.DiskSize); err != nil {
 				return err
 			}
 		}
@@ -474,7 +474,7 @@ func (d *Driver) Start() error {
 		// low-indexed devices (e.g., firmware, ISO CDROM, cloud config, and network device)
 		index := i + 10
 		startCmd = append(startCmd,
-			"-drive", fmt.Sprintf("file=%s,index=%d,media=disk,format=raw,if=virtio", pkgdrivers.ExtraDiskPath(d.BaseDriver, i), index),
+			"-drive", fmt.Sprintf("file=%s,index=%d,media=disk,format=raw,if=virtio", common.ExtraDiskPath(d.BaseDriver, i), index),
 		)
 	}
 
@@ -510,7 +510,7 @@ func (d *Driver) Start() error {
 	case "socket_vmnet":
 		var err error
 		getIP := func() error {
-			d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(d.MACAddress)
+			d.IPAddress, err = common.GetIPAddressByMACAddress(d.MACAddress)
 			if err != nil {
 				return errors.Wrap(err, "failed to get IP address")
 			}

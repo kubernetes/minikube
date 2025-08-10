@@ -43,8 +43,8 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/klog/v2"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/drivers/vmnet"
+	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -66,7 +66,7 @@ const (
 // Driver is the machine driver for vfkit (Virtualization.framework)
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	Boot2DockerURL string
 	DiskSize       int
 	CPU            int
@@ -84,7 +84,7 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 			MachineName: hostName,
 			StorePath:   storePath,
 		},
-		CommonDriver: &pkgdrivers.CommonDriver{},
+		CommonDriver: &common.CommonDriver{},
 	}
 }
 
@@ -210,8 +210,8 @@ func (d *Driver) Create() error {
 	if d.ExtraDisks > 0 {
 		log.Info("Creating extra disk images...")
 		for i := 0; i < d.ExtraDisks; i++ {
-			path := pkgdrivers.ExtraDiskPath(d.BaseDriver, i)
-			if err := pkgdrivers.CreateRawDisk(path, d.DiskSize); err != nil {
+			path := common.ExtraDiskPath(d.BaseDriver, i)
+			if err := common.CreateRawDisk(path, d.DiskSize); err != nil {
 				return err
 			}
 		}
@@ -223,10 +223,10 @@ func (d *Driver) Create() error {
 
 func (d *Driver) extractKernel() error {
 	log.Info("Extracting bzimage and initrd...")
-	if err := pkgdrivers.ExtractFile(d.isoPath(), "/boot/bzimage", d.kernelPath()); err != nil {
+	if err := common.ExtractFile(d.isoPath(), "/boot/bzimage", d.kernelPath()); err != nil {
 		return err
 	}
-	return pkgdrivers.ExtractFile(d.isoPath(), "/boot/initrd", d.initrdPath())
+	return common.ExtractFile(d.isoPath(), "/boot/initrd", d.initrdPath())
 }
 
 func (d *Driver) Start() error {
@@ -301,7 +301,7 @@ func (d *Driver) startVfkit(socketPath string) error {
 
 	for i := 0; i < d.ExtraDisks; i++ {
 		startCmd = append(startCmd,
-			"--device", fmt.Sprintf("virtio-blk,path=%s", pkgdrivers.ExtraDiskPath(d.BaseDriver, i)))
+			"--device", fmt.Sprintf("virtio-blk,path=%s", common.ExtraDiskPath(d.BaseDriver, i)))
 	}
 
 	serialPath := d.ResolveStorePath(serialFileName)
@@ -332,7 +332,7 @@ func (d *Driver) startVfkit(socketPath string) error {
 func (d *Driver) setupIP(mac string) error {
 	var err error
 	getIP := func() error {
-		d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
 		if err != nil {
 			return errors.Wrap(err, "failed to get IP address")
 		}

@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -52,7 +52,7 @@ import (
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	URL        string
 	exec       command.Runner
 	NodeConfig Config

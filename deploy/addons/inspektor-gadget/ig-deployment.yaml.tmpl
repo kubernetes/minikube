@@ -9,6 +9,8 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget
   namespace: gadget
 ---
@@ -16,12 +18,12 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget
   namespace: gadget
 data:
     config.yaml: |-
-      hook-mode: auto
-      fallback-pod-informer: true
       events-buffer-length: 16384
       containerd-socketpath: /run/containerd/containerd.sock
       crio-socketpath: /run/crio/crio.sock
@@ -30,6 +32,9 @@ data:
       gadget-namespace: gadget
       daemon-log-level: info
       operator:
+        kubemanager:
+          fallback-podinformer: true
+          hook-mode: auto
         oci:
           allowed-gadgets: []
           disallow-pulling: false
@@ -50,6 +55,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: gadget-cluster-role
+  labels:
+    k8s-app: gadget
 rules:
   - apiGroups: [""]
     resources: ["nodes/proxy"]
@@ -88,6 +95,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: gadget-cluster-role-binding
+  labels:
+    k8s-app: gadget
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -101,6 +110,8 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget-role
   namespace: gadget
 rules:
@@ -116,6 +127,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget-role-binding
   namespace: gadget
 roleRef:
@@ -149,7 +162,6 @@ spec:
         # "failed to create server failed to create folder for pinning bpf maps: mkdir /sys/fs/bpf/gadget: permission denied"
         # (For reference, see: https://github.com/inspektor-gadget/inspektor-gadget/runs/3966318270?check_suite_focus=true#step:20:221)
         container.apparmor.security.beta.kubernetes.io/gadget: "unconfined"
-        inspektor-gadget.kinvolk.io/option-hook-mode: "auto"
         # keep aligned with values in pkg/operators/prometheus/prometheus.go
         prometheus.io/scrape: "true"
         prometheus.io/port: "2223"
@@ -322,6 +334,11 @@ spec:
             - mountPath: /etc/ig
               name: config
               readOnly: true
+            # We need a dedicated volume to store the wasm cache
+            # otherwise it will fail as the container root filesystem is read only.
+            - mountPath: /var/run/ig/wasm-cache
+              name: wasm-cache
+              readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
       affinity:
@@ -379,3 +396,5 @@ spec:
           configMap:
             name: gadget
             defaultMode: 0o400
+        - name: wasm-cache
+          emptyDir: {}
