@@ -132,7 +132,7 @@ func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 		maxWait = 6
 	}
 	// wait for pod to be running
-	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(3)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(maxWait)); err != nil {
 		t.Fatalf("failed waiting for pvctest pod : %v", err)
 	}
 }
