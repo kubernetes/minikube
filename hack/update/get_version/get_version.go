@@ -19,7 +19,9 @@ package main
 import (
 	"log"
 	"os"
+	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -84,6 +86,42 @@ func main() {
 		log.Fatalf("the environment variable 'DEP' needs to be set")
 	}
 	depName = standrizeComponentName(depName)
+
+	// Handle special cases
+	switch depName {
+	case "docsy":
+		version, err := getDocsyVersion()
+		if err != nil {
+			log.Fatalf("failed to get docsy version: %v", err)
+		}
+		os.Stdout.WriteString(version)
+		return
+	case "kubeadm-constants":
+		version, err := getKubeadmConstantsVersion()
+		if err != nil {
+			log.Fatalf("failed to get kubeadm constants version: %v", err)
+		}
+		os.Stdout.WriteString(version)
+		return
+	case "kubernetes":
+		version, err := getKubernetesVersion()
+		if err != nil {
+			log.Fatalf("failed to get kubernetes version: %v", err)
+		}
+		os.Stdout.WriteString(version)
+		return
+	case "kubernetes-versions-list":
+		version, err := getKubernetesVersionsList()
+		if err != nil {
+			log.Fatalf("failed to get kubernetes versions list: %v", err)
+		}
+		os.Stdout.WriteString(version)
+		return
+	case "site-node":
+		// Use regular handling for site-node-version (same as "node" from netlify.toml)
+		depName = "node"
+	}
+
 	dep, ok := dependencies[depName]
 	if !ok {
 		log.Fatalf("%s is not a valid dependency", depName)
@@ -109,6 +147,97 @@ func standrizeComponentName(name string) string {
 	// Convert the component name to lowercase and replace underscores with hyphens
 	name = strings.ToLower(name)
 	name = strings.ReplaceAll(name, "_", "-")
-	name = strings.ReplaceAll(name, "-version", "")
+
+	// Remove "-version" suffix only at the end to avoid breaking words like "versions"
+	name = strings.TrimSuffix(name, "-version")
 	return name
+}
+
+// getDocsyVersion returns the current commit hash of the docsy submodule
+func getDocsyVersion() (string, error) {
+	// Change to parent directory since we're running from hack/
+	cmd := exec.Command("git", "submodule", "status", "site/themes/docsy")
+	cmd.Dir = ".." // Change to the repo root
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	// Output format: " commit-hash path/to/submodule (tag or branch)"
+	// We want just the commit hash (first 8 characters for short hash)
+	parts := strings.Fields(string(output))
+	if len(parts) < 1 {
+		return "", log.New(os.Stderr, "", 0).Output(1, "no commit hash found in git submodule status")
+	}
+
+	commitHash := strings.TrimSpace(parts[0])
+	// Remove leading space or other characters and take first 8 characters
+	if len(commitHash) > 8 {
+		commitHash = commitHash[:8]
+	}
+	return commitHash, nil
+}
+
+// getKubeadmConstantsVersion returns a summary of kubeadm constants versions
+func getKubeadmConstantsVersion() (string, error) {
+	// Read the constants file to get a representative version
+	data, err := os.ReadFile("../pkg/minikube/constants/constants_kubeadm_images.go")
+	if err != nil {
+		return "", err
+	}
+
+	// Look for the latest kubernetes version entry in the KubeadmImages map
+	re := regexp.MustCompile(`"(v\d+\.\d+\.\d+[^"]*)":\s*{`)
+	matches := re.FindAllSubmatch(data, -1)
+	if len(matches) == 0 {
+		return "no-versions", nil
+	}
+
+	// Return the last (latest) version found
+	lastMatch := matches[len(matches)-1]
+	return string(lastMatch[1]), nil
+}
+
+// getKubernetesVersion returns the default kubernetes version
+func getKubernetesVersion() (string, error) {
+	data, err := os.ReadFile("../pkg/minikube/constants/constants.go")
+	if err != nil {
+		return "", err
+	}
+
+	// Look for DefaultKubernetesVersion
+	re := regexp.MustCompile(`DefaultKubernetesVersion = "(.*?)"`)
+	matches := re.FindSubmatch(data)
+	if len(matches) < 2 {
+		return "", log.New(os.Stderr, "", 0).Output(1, "DefaultKubernetesVersion not found")
+	}
+
+	return string(matches[1]), nil
+}
+
+// getKubernetesVersionsList returns a count of supported kubernetes versions
+func getKubernetesVersionsList() (string, error) {
+	data, err := os.ReadFile("../pkg/minikube/constants/constants_kubernetes_versions.go")
+	if err != nil {
+		return "", err
+	}
+
+	// Count the number of versions in ValidKubernetesVersions
+	re := regexp.MustCompile(`"v\d+\.\d+\.\d+[^"]*"`)
+	matches := re.FindAll(data, -1)
+
+	if len(matches) == 0 {
+		return "0-versions", nil
+	}
+
+	// Return count and range if available
+	if len(matches) >= 2 {
+		first := string(matches[0])
+		last := string(matches[len(matches)-1])
+		first = strings.Trim(first, "\"")
+		last = strings.Trim(last, "\"")
+		return first + ".." + last + " (" + strconv.Itoa(len(matches)) + " versions)", nil
+	}
+
+	return strings.Trim(string(matches[0]), "\""), nil
 }

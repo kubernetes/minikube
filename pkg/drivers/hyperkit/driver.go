@@ -37,7 +37,7 @@ import (
 	ps "github.com/mitchellh/go-ps"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
 
@@ -53,7 +53,7 @@ const (
 // Driver is the machine driver for Hyperkit
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	Boot2DockerURL string
 	DiskSize       int
 	CPU            int
@@ -73,7 +73,7 @@ func NewDriver(_, _ string) *Driver {
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser: "docker",
 		},
-		CommonDriver: &pkgdrivers.CommonDriver{},
+		CommonDriver: &common.CommonDriver{},
 	}
 }
 
@@ -103,7 +103,7 @@ func (d *Driver) Create() error {
 	}
 
 	// TODO: handle different disk types.
-	if err := pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
+	if err := common.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "making disk image")
 	}
 
@@ -196,7 +196,7 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	return pkgdrivers.Restart(d)
+	return common.Restart(d)
 }
 
 func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
@@ -225,14 +225,14 @@ func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
 
 	h.Disks = []hyperkit.Disk{
 		&hyperkit.RawDisk{
-			Path: pkgdrivers.GetDiskPath(d.BaseDriver),
+			Path: common.GetDiskPath(d.BaseDriver),
 			Size: d.DiskSize,
 			Trim: true,
 		},
 	}
 	for i := 0; i < d.ExtraDisks; i++ {
 		h.Disks = append(h.Disks, &hyperkit.RawDisk{
-			Path: pkgdrivers.ExtraDiskPath(d.BaseDriver, i),
+			Path: common.ExtraDiskPath(d.BaseDriver, i),
 			Size: d.DiskSize,
 			Trim: true,
 		})
@@ -287,7 +287,7 @@ func (d *Driver) setupIP(mac string) error {
 			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
 		}
 
-		d.IPAddress, err = pkgdrivers.GetIPAddressByMACAddress(mac)
+		d.IPAddress, err = common.GetIPAddressByMACAddress(mac)
 		if err != nil {
 			return &tempError{err}
 		}
@@ -430,7 +430,7 @@ func (d *Driver) extractKernel(isoPath string) error {
 		{"/boot/initrd", "initrd"},
 	} {
 		fullDestPath := d.ResolveStorePath(f.destPath)
-		if err := pkgdrivers.ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
+		if err := common.ExtractFile(isoPath, f.pathInIso, fullDestPath); err != nil {
 			return err
 		}
 	}
