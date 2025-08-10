@@ -783,6 +783,7 @@ jobs:
           cp -r ./functional_docker_containerd_ubuntu ./all_reports/
           cp -r ./functional_docker_rootless_containerd_ubuntu ./all_reports/
           cp -r ./functional_podman_ubuntu ./all_reports/
+          cp -r ./functional_baremetal_ubuntu22_04 ./all_reports/
           cp -r ./functional_qemu_macos13_intel ./all_reports/
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

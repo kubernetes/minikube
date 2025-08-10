@@ -31,6 +31,7 @@ import (
 
 	core "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
+	"k8s.io/minikube/pkg/minikube/detect"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -126,8 +127,12 @@ func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
+	maxWait := 3
+	if detect.NestedVM() {
+		maxWait = 6
+	}
 	// wait for pod to be running
-	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(5)); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(3)); err != nil {
 		t.Fatalf("failed waiting for pvctest pod : %v", err)
 	}
 }
