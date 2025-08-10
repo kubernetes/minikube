@@ -63,12 +63,11 @@ controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
-    extraArgs:
-      - name: "proxy-refresh-interval"
-        value: "70000"
+{{- if .EtcdExtraArgs}}    extraArgs:
 {{- range $key, $val := .EtcdExtraArgs }}
       - name: "{{$key}}"
         value: "{{$val}}"
+{{- end}}
 {{- end}}
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
