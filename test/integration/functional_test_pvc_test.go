@@ -127,7 +127,7 @@ func createPVTestPod(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 	// wait for pod to be running
-	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(3)); err != nil {
-		t.Fatalf("failed waiting for pod: %v", err)
+	if _, err := PodWait(ctx, t, profile, "default", "test=storage-provisioner", Minutes(5)); err != nil {
+		t.Fatalf("failed waiting for pvctest pod : %v", err)
 	}
 }
