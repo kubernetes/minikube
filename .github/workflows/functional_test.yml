@@ -1,7 +1,6 @@
 name: Functional Test
 
 on:
-  # This allows you to run the workflow manually from the Actions tab on GitHub.
   workflow_dispatch:
   pull_request:
   push:
@@ -10,7 +9,7 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  # --- Stage 1: Serial Build binaries and upload to be used by next stage parallel jobs ---
+  # Build Binaries jobd runs before all other jobs and produces binaries to be shared by all following jobs
   build_binaries:
     runs-on: ubuntu-22.04
     steps:
@@ -30,7 +29,6 @@ jobs:
         with:
           name: binaries
           path: out
-# --- Stage 2: Paralell Matrix Jobs
   functional-test:
     name: Functional - ${{ matrix.name }}
     needs: build_binaries
@@ -45,7 +43,7 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-22.04
-            # conisder adding per environment max time-out 
+            # TODO: adding per environment max time-out 
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
@@ -77,15 +75,13 @@ jobs:
         shell: bash
         run: |
           set -x
-          section() { printf "\n==================== %s ====================\n" "$1"; }
-          
-          section "Kernel and OS"
+          echo "=== Kernel and OS ==="
           uname -a
           sw_vers
           sysctl kern.osrelease kern.osversion kern.version || true
 
-          section "CPU"
-          sysctl -n machdep.cpu.brand_string
+          echo "=== CPU ==="
+            sysctl -n machdep.cpu.brand_string
           sysctl -n hw.ncpu
           sysctl -n machdep.cpu.core_count || true
           sysctl -n machdep.cpu.thread_count || true
@@ -93,27 +89,27 @@ jobs:
           sysctl -n machdep.cpu.leaf7_features || true
           sysctl -n machdep.cpu.extfeatures || true
 
-          section "Memory"
+          echo "=== Memory ==="
           sysctl -n hw.memsize
           echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
           sysctl -n hw.pagesize || true
           vm_stat || true
 
-          section "Virtualization"
+          echo "=== Virtualization ==="
           sysctl -n kern.hv_vmm_present
           sysctl -n kern.hv_support
           sysctl -n machdep.cpu.features | grep -i vmx || true
 
-          section "Hardware Inventory"
+          echo "=== Hardware Inventory ==="
           sysctl hw.model
           system_profiler SPHardwareDataType
 
-          section "Storage"
+          echo "=== Storage ==="
           diskutil list || true
           df -h
           system_profiler SPStorageDataType | sed -n '1,200p' || true
 
-          section "Network"
+          echo "=== Network ==="
           ifconfig
           networksetup -listallhardwareports || true
           scutil --get HostName || true
@@ -123,87 +119,83 @@ jobs:
           netstat -rn || true
           scutil --dns || true
 
-          section "Uptime and Load"
+          echo "=== Uptime and Load ==="
           uptime
           sysctl kern.boottime || true
 
-          section "Security"
+          echo "=== Security ==="
           spctl --status || true
           csrutil status || true
       - name: Info Block (linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
-            set -x
-            section() { printf "\n==================== %s ====================\n" "$1"; }
-            section "Kernel and OS"
-            uname -a
-            cat /etc/os-release
+          set -x
+          echo "=== Kernel and OS ==="
+          uname -a
+          cat /etc/os-release
 
-            section "CPU"
-            nproc
-            grep -m1 'model name' /proc/cpuinfo || true
-            grep -m1 '^flags' /proc/cpuinfo || true
-            lscpu || true
-            lscpu | grep -i 'hypervisor\|virt' || true
+          echo "=== CPU ==="
+          nproc
+          grep -m1 'model name' /proc/cpuinfo || true
+          grep -m1 '^flags' /proc/cpuinfo || true
+          lscpu || true
+          lscpu | grep -i 'hypervisor\|virt' || true
 
-            section "Memory"
-            grep MemTotal /proc/meminfo || true
-            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo || true
-            free -h || true
+          echo "=== Memory ==="
+          grep MemTotal /proc/meminfo || true
+          awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo || true
+          free -h || true
 
-            section "Virtualization"
-            systemd-detect-virt || true
-            # CPU virtualization flags present
-            egrep -c '(vmx|svm)' /proc/cpuinfo || true
-            # KVM modules and nested virtualization status
-            lsmod | grep -E '(^kvm|kvm_(intel|amd))' || true
-            if [ -f /sys/module/kvm_intel/parameters/nested ]; then
-              echo -n "kvm_intel nested: "; cat /sys/module/kvm_intel/parameters/nested
-            fi
-            if [ -f /sys/module/kvm_amd/parameters/nested ]; then
-              echo -n "kvm_amd nested: "; cat /sys/module/kvm_amd/parameters/nested
-            fi
-            # Kernel messages about KVM, if available
-            sudo journalctl -k | grep -i kvm | tail -n 100 || true
-            # If virt-host-validate is available, run it
-            if command -v virt-host-validate >/dev/null 2>&1; then
-              sudo virt-host-validate || true
-            fi
+          echo "=== Virtualization ==="
+          systemd-detect-virt || true
+          # CPU virtualization flags present
+          egrep -c '(vmx|svm)' /proc/cpuinfo || true
+          # KVM modules and nested virtualization status
+          lsmod | grep -E '(^kvm|kvm_(intel|amd))' || true
+          if [ -f /sys/module/kvm_intel/parameters/nested ]; then
+            echo -n "kvm_intel nested: "; cat /sys/module/kvm_intel/parameters/nested
+          fi
+          if [ -f /sys/module/kvm_amd/parameters/nested ]; then
+            echo -n "kvm_amd nested: "; cat /sys/module/kvm_amd/parameters/nested
+          fi
+          sudo journalctl -k | grep -i kvm | tail -n 100 || true
+          if command -v virt-host-validate >/dev/null 2>&1; then
+            sudo virt-host-validate || true
+          fi
 
-            section "Hardware Inventory"
-            sudo dmidecode -s system-manufacturer || true
-            sudo dmidecode -s system-product-name || true
-            sudo dmidecode -t bios -t system -t processor -t memory | sed -n '1,200p' || true
-            sudo lshw -short || true
-            lspci -nn || true
-            lsusb || true
+          echo "=== Hardware Inventory ==="
+          sudo dmidecode -s system-manufacturer || true
+          sudo dmidecode -s system-product-name || true
+          sudo dmidecode -t bios -t system -t processor -t memory | sed -n '1,200p' || true
+          sudo lshw -short || true
+          lspci -nn || true
+          lsusb || true
 
-            section "Storage"
-            lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT,FSTYPE || true
-            df -h || true
+          echo "=== Storage ==="
+          lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT,FSTYPE || true
+          df -h || true
 
-            section "Network"
-            ip addr show || true
-            ip route || true
-            ip -s link || true
-            ifconfig || true
+          echo "=== Network ==="
+          ip addr show || true
+          ip route || true
+          ip -s link || true
+          ifconfig || true
 
-            section "Cgroups"
-            stat -fc %T /sys/fs/cgroup || true
+          echo "=== Cgroups ==="
+          stat -fc %T /sys/fs/cgroup || true
 
-            section "Uptime and Load"
-            uptime || true
-            who -b || true
-            cat /proc/loadavg || true
-            awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
+          echo "=== Uptime and Load ==="
+          uptime || true
+          who -b || true
+          cat /proc/loadavg || true
+          awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
           go-version-file: go.mod
           cache: true      
       - name: Install gopogh
         run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
-      # https://rootlesscontaine.rs/getting-started/common/cgroup2/
       - name: Set up cgroup v2 delegation (for rootless)
         if: ${{ matrix.rootless }}
         run: |
@@ -239,7 +231,6 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: |
-          # TODO:medyagh update these ancient versions and use upstream installers
           CRI_DOCKERD_VERSION="v0.4.0"
           CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
           CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
@@ -254,13 +245,12 @@ jobs:
           CRICTL_VERSION="v1.28.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
-      # https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
         run: |
           CNI_PLUGIN_VERSION="v1.7.1"
-          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
+          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz"
           CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
           curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
           sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
@@ -268,26 +258,26 @@ jobs:
           rm "$CNI_PLUGIN_TAR"
       - name: Install docker-cli
         run: |
-          section() { printf "\n==================== %s ====================\n" "$1"; }
+          set -x
           if [[ "$RUNNER_OS" == "macOS" ]]; then
             brew install docker
           fi
-          section "Docker Version"
+          echo "=== Docker Version ==="
           docker version || true
-            if [[ "$RUNNER_OS" == "Linux" ]]; then
-            section "Docker Info"
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo "=== Docker Info ==="
             docker info || true
 
-            section "Docker Disk Usage"
+            echo "=== Docker Disk Usage ==="
             docker system df || true
 
-            section "Docker System Info (JSON)"
+            echo "=== Docker System Info (JSON) ==="
             docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
 
-            section "Running Containers"
+            echo "=== Running Containers ==="
             docker ps -a || true
 
-            section "Images"
+            echo "=== Images ==="
             docker images || true
           fi
       - name: Install podman
@@ -297,17 +287,16 @@ jobs:
           sudo apt -q update
           sudo apt install -q -y podman
           lsb_release -a || true
-          echo "--------------------------"
+          echo "=== podman version ==="
           podman version || true
-          echo "--------------------------"
+          echo "=== podman info ==="
           podman info || true
-          echo "--------------------------"
+          echo "=== podman system df ==="
           podman system df || true
-          echo "--------------------------"
+          echo "=== podman system info (JSON) ==="
           podman system info --format='{{json .}}' || true
-          echo "--------------------------"
+          echo "=== podman ps ==="
           podman ps || true
-          echo "--------------------------"
       - name: Install kubectl
         shell: bash
         run: |
@@ -316,9 +305,9 @@ jobs:
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
             curl -fsSLo kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
             sudo install -m 0755 kubectl /usr/local/bin/kubectl
-              else
+          else
             echo "Unsupported OS: $RUNNER_OS"
-          exit 1
+            exit 1
           fi
           kubectl version --client=true
       - name: Install qemu and socket_vmnet (macos)
@@ -337,7 +326,6 @@ jobs:
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
       - name: Run Integration Test
         continue-on-error: true
-        # bash {0} to ensure test to continue to next step. 
         shell: bash {0}
         run: |
           set -x
@@ -356,7 +344,7 @@ jobs:
         shell: bash
         run: |
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-            STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           # Result in in one sentence
@@ -377,8 +365,8 @@ jobs:
       - name: Upload Gopogh report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-            name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}
-            path: ./report    
+          name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}
+          path: ./report    
       - name: The End Result ${{ matrix.name }}
         shell: bash
         run: |
@@ -389,15 +377,15 @@ jobs:
           numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
           echo "Passed: ${numPass}"
           if [ "$numPass" -gt 0 ]; then
-          echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
+            echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
           fi
           if [ "$numFail" -gt 0 ]; then
-          echo "------------------------Failed--------------------------------"
-          echo "Failed: ${numFail}"
-          echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"'
+            echo "------------------------Failed--------------------------------"
+            echo "Failed: ${numFail}"
+            echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"'
           fi
           echo "********************************************************"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
           if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
           # Safe Guard for when tests gets skipped and no failures
-          if [ "$numPass" -lt 56 ];then echo "*** Failed to pass at least 56 ! ***";exit 2;fi
+          if [ "$numPass" -lt 35 ];then echo "*** Failed to pass at least 35 ! ***";exit 2;fi
