@@ -372,7 +372,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - name: Set PR or Branch label
+      - name: Set PR or Branch label for file name
         id: vars
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
