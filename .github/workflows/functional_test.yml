@@ -10,7 +10,7 @@ on:
 env:
   GOPROXY: https://proxy.golang.org
 jobs:
-  # --- STAGE 1: Serial Build binaries and upload to be used by next stage parallel jobs ---
+  # --- Stage 1: Serial Build binaries and upload to be used by next stage parallel jobs ---
   build_binaries:
     runs-on: ubuntu-22.04
     steps:
@@ -30,9 +30,10 @@ jobs:
         with:
           name: binaries
           path: out
-# --- STAGE 2: PARALLEL MATRIX JOB ---
+# --- Stage 2: Paralell Matrix Jobs
   functional-test:
     name: Functional - ${{ matrix.name }}
+    needs: build_binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
@@ -199,7 +200,7 @@ jobs:
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
           go-version-file: go.mod
-          cache: true
+          cache: true      
       - name: Install gopogh
         run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
       # https://rootlesscontaine.rs/getting-started/common/cgroup2/
