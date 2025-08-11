@@ -380,16 +380,32 @@ jobs:
           else
             echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
           fi
-          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT          
+            echo "COMMIT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
+        id: upload_gopogh
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}
-          path: ./report    
+          path: ./report
+      - name: Gopogh report Artifact URL
+        if: always()
+        shell: bash
+        run: |
+          ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
+          ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
+          if [ -n "$ARTIFACT_ID" ]; then
+            URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
+            echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
+            echo "Gopogh report artifact URL: $URL" >> $GITHUB_STEP_SUMMARY
+            echo "REPORT_ARTIFACT_URL=$URL" >> $GITHUB_ENV
+          else
+            echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
+            echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
+          fi
       - name: The End Result ${{ matrix.name }}
         shell: bash
         run: |
-          echo "******************** RESULT SUMMARY ********************"
+          echo "-------------------- RESULT SUMMARY --------------------"
           echo "$RESULT_SHORT"
           echo "--------------------------------------------------------"
           numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
