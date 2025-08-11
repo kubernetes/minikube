@@ -8,6 +8,9 @@ on:
       - master
 env:
   GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.24.0'
+permissions:
+  contents: read
 jobs:
   # Build Binaries jobd runs before all other jobs and produces binaries to be shared by all following jobs
   build_binaries:
@@ -16,7 +19,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
-          go-version-file: go.mod
+          go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Download Dependencies
         run: go mod download
@@ -192,7 +195,7 @@ jobs:
           awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
-          go-version-file: go.mod
+          go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Install gopogh
         run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
