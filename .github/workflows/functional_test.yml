@@ -1,12 +1,7 @@
-# This workflow demonstrates a sequence of jobs:
-# 1. Three jobs that run serially (one after the other).
-# 2. A matrix job that runs in parallel *after* the serial jobs complete.
-# 3. A final job that runs *after* all matrix jobs complete.
-
 name: Functional Test
 
-# This allows you to run the workflow manually from the Actions tab on GitHub.
 on:
+  # This allows you to run the workflow manually from the Actions tab on GitHub.
   workflow_dispatch:
   pull_request:
   push:
@@ -36,7 +31,6 @@ jobs:
           name: binaries
           path: out
 # --- STAGE 2: PARALLEL MATRIX JOB ---
-# This job will create multiple parallel runs based on the matrix strategy.
   functional-test:
     name: Functional - ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
