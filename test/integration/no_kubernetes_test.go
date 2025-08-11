@@ -48,11 +48,11 @@ func TestNoKubernetes(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"VerifyNoK8sDownloadCache", VerifyNoK8sDownloadCache},
 			{"StartNoK8sWithVersion", validateStartNoK8sWithVersion},
 			{"StartWithK8s", validateStartWithK8S},
 			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
+			{"VerifyNok8sNoK8sDownloads", VerifyNoK8sDownloadCache},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
@@ -81,14 +81,7 @@ func TestNoKubernetes(t *testing.T) {
 func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	// Start minikube with --no-kubernetes flag
-	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=2048"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("failed to start minikube with --no-kubernetes: args %q : %v", rr.Command(), err)
-	}
-
-	// Verify cache directory doesn't exist
+	// Reuse the minikube instance started by validateStartNoK8S.
 	homeDir := os.Getenv("HOME")
 	cachePath := filepath.Join(homeDir, ".minikube", "cache", "linux", "amd64", "v0.0.0")
 
