@@ -199,7 +199,7 @@ jobs:
           cache: true      
       - name: Install gopogh
         run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
-      - name: Set up cgroup v2 delegation (for rootless)
+      - name: Set up cgroup v2 delegation (rootless only)
         if: ${{ matrix.rootless }}
         run: |
           sudo mkdir -p /etc/systemd/system/user@.service.d
@@ -208,7 +208,7 @@ jobs:
           Delegate=cpu cpuset io memory pids
           EOF
           sudo systemctl daemon-reload
-      - name: Set up Rootless Docker
+      - name: Set up Rootless Docker (rootless)
         if: ${{ matrix.rootless }}
         run: |
           sudo apt-get remove moby-engine-*
@@ -248,6 +248,14 @@ jobs:
           CRICTL_VERSION="v1.28.0"
           curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
           sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+      # conntrack is required for kubernetes 1.18 and higher
+      # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+      - name: Install conntrack & socat (baremetal only)
+        shell: bash
+        if: matrix.driver == 'none'
+        run: 
+          sudo apt-get -qq -y install conntrack
+          sudo apt-get -qq -y install socat
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
