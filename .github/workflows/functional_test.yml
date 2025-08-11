@@ -26,6 +26,8 @@ jobs:
       - name: Build minikube and e2e test binaries
         run: |
           make e2e-linux-amd64 e2e-darwin-amd64
+          chmod a+x ./out/e2e-*
+          chmod a+x ./out/minikube-*
           cp -r test/integration/testdata ./out
       - name: Upload Test Binaries
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
