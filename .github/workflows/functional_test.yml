@@ -6,6 +6,12 @@ on:
   push:
     branches:
       - master
+# put this at the top level (same level as `on`)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # cancel any currently running workflow in the same group if a new run is triggered.
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
   GO_VERSION: '1.24.0'
