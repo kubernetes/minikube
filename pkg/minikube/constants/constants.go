@@ -163,6 +163,12 @@ const (
 
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
+
+	//TABLE WRITER COLORS
+	Enabled = "\033[32m"
+	Default = "\033[0m"
+	Disabled = "\033[0m"
+	Error = "\033[31m"  
 )
 
 var (
