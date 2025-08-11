@@ -1,0 +1,402 @@
+name: Functional Test
+
+on:
+  # This allows you to run the workflow manually from the Actions tab on GitHub.
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
+env:
+  GOPROXY: https://proxy.golang.org
+jobs:
+  # --- STAGE 1: Serial Build binaries and upload to be used by next stage parallel jobs ---
+  build_binaries:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: go.mod
+          cache: true      
+      - name: Download Dependencies
+        run: go mod download
+      - name: Build minikube and e2e test binaries
+        run: |
+          make e2e-linux-amd64 e2e-darwin-amd64
+          cp -r test/integration/testdata ./out
+      - name: Upload Test Binaries
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: binaries
+          path: out
+# --- STAGE 2: PARALLEL MATRIX JOB ---
+  functional-test:
+    name: Functional - ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: none
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: docker-docker-ubuntu22.04-x86_64
+            driver: docker
+            cruntime: docker
+            os: ubuntu-22.04
+            # conisder adding per environment max time-out 
+          - name: docker-containerd-ubuntu-22.04-x86_64
+            driver: docker
+            cruntime: containerd
+            extra-start-args: --container-runtime=containerd
+            os: ubuntu-22.04
+          - name: docker-containerd-rootless-ubuntu-22.04-x86_64
+            driver: docker
+            cruntime: containerd
+            os: ubuntu-22.04
+            extra-start-args: --container-runtime=containerd --rootless
+            rootless: true
+          - name: podman-docker-ubuntu-24.04-x86_64
+            driver: qemu
+            cruntime: docker
+            os: macos13
+            extra-args: --network socket_vmnet
+          - name: baremetal-docker-ubuntu-22.04-x86_64
+            driver: none
+            cruntime: docker
+            os: ubuntu-22.04
+          - name: qemu-docker-macos13-x86_64
+            driver: qemu
+            cruntime: docker
+            os: macos13
+            extra-args: --network socket_vmnet
+    steps:
+      - name: Info Block (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -x
+          section() { printf "\n==================== %s ====================\n" "$1"; }
+          
+          section "Kernel and OS"
+          uname -a
+          sw_vers
+          sysctl kern.osrelease kern.osversion kern.version || true
+
+          section "CPU"
+          sysctl -n machdep.cpu.brand_string
+          sysctl -n hw.ncpu
+          sysctl -n machdep.cpu.core_count || true
+          sysctl -n machdep.cpu.thread_count || true
+          sysctl -n machdep.cpu.features || true
+          sysctl -n machdep.cpu.leaf7_features || true
+          sysctl -n machdep.cpu.extfeatures || true
+
+          section "Memory"
+          sysctl -n hw.memsize
+          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
+          sysctl -n hw.pagesize || true
+          vm_stat || true
+
+          section "Virtualization"
+          sysctl -n kern.hv_vmm_present
+          sysctl -n kern.hv_support
+          sysctl -n machdep.cpu.features | grep -i vmx || true
+
+          section "Hardware Inventory"
+          sysctl hw.model
+          system_profiler SPHardwareDataType
+
+          section "Storage"
+          diskutil list || true
+          df -h
+          system_profiler SPStorageDataType | sed -n '1,200p' || true
+
+          section "Network"
+          ifconfig
+          networksetup -listallhardwareports || true
+          scutil --get HostName || true
+          scutil --get LocalHostName || true
+          scutil --get ComputerName || true
+          route -n get default || true
+          netstat -rn || true
+          scutil --dns || true
+
+          section "Uptime and Load"
+          uptime
+          sysctl kern.boottime || true
+
+          section "Security"
+          spctl --status || true
+          csrutil status || true
+      - name: Info Block (linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+            set -x
+            section() { printf "\n==================== %s ====================\n" "$1"; }
+            section "Kernel and OS"
+            uname -a
+            cat /etc/os-release
+
+            section "CPU"
+            nproc
+            grep -m1 'model name' /proc/cpuinfo || true
+            grep -m1 '^flags' /proc/cpuinfo || true
+            lscpu || true
+            lscpu | grep -i 'hypervisor\|virt' || true
+
+            section "Memory"
+            grep MemTotal /proc/meminfo || true
+            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo || true
+            free -h || true
+
+            section "Virtualization"
+            systemd-detect-virt || true
+            # CPU virtualization flags present
+            egrep -c '(vmx|svm)' /proc/cpuinfo || true
+            # KVM modules and nested virtualization status
+            lsmod | grep -E '(^kvm|kvm_(intel|amd))' || true
+            if [ -f /sys/module/kvm_intel/parameters/nested ]; then
+              echo -n "kvm_intel nested: "; cat /sys/module/kvm_intel/parameters/nested
+            fi
+            if [ -f /sys/module/kvm_amd/parameters/nested ]; then
+              echo -n "kvm_amd nested: "; cat /sys/module/kvm_amd/parameters/nested
+            fi
+            # Kernel messages about KVM, if available
+            sudo journalctl -k | grep -i kvm | tail -n 100 || true
+            # If virt-host-validate is available, run it
+            if command -v virt-host-validate >/dev/null 2>&1; then
+              sudo virt-host-validate || true
+            fi
+
+            section "Hardware Inventory"
+            sudo dmidecode -s system-manufacturer || true
+            sudo dmidecode -s system-product-name || true
+            sudo dmidecode -t bios -t system -t processor -t memory | sed -n '1,200p' || true
+            sudo lshw -short || true
+            lspci -nn || true
+            lsusb || true
+
+            section "Storage"
+            lsblk -o NAME,MODEL,SIZE,TYPE,MOUNTPOINT,FSTYPE || true
+            df -h || true
+
+            section "Network"
+            ip addr show || true
+            ip route || true
+            ip -s link || true
+            ifconfig || true
+
+            section "Cgroups"
+            stat -fc %T /sys/fs/cgroup || true
+
+            section "Uptime and Load"
+            uptime || true
+            who -b || true
+            cat /proc/loadavg || true
+            awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Install gopogh
+        run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
+      # https://rootlesscontaine.rs/getting-started/common/cgroup2/
+      - name: Set up cgroup v2 delegation (for rootless)
+        if: ${{ matrix.rootless }}
+        run: |
+          sudo mkdir -p /etc/systemd/system/user@.service.d
+          cat <<EOF | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+          [Service]
+          Delegate=cpu cpuset io memory pids
+          EOF
+          sudo systemctl daemon-reload
+      - name: Set up Rootless Docker
+        if: ${{ matrix.rootless }}
+        run: |
+          sudo apt-get remove moby-engine-*
+          curl https://get.docker.com | sudo sh
+          dockerd-rootless-setuptool.sh install -f
+          docker context use rootless
+      - name: Ensure bootpd is enabled (macos)
+        if: matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          set -x
+          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
+          sudo $fw --remove /usr/libexec/bootpd
+          sudo $fw --add /usr/libexec/bootpd
+          sudo $fw --unblock /usr/libexec/bootpd
+      - name: Update brew package index (macos)
+        if: runner.os == 'macOS'
+        run: brew update
+      - name: Update apt-get package index (ubuntu)
+        if: runner.os == 'Linux' && (matrix.driver == 'podman' || matrix.driver == 'none')
+        run: sudo apt-get update -qq
+      - name: Install cri_dockerd (baremetal only)
+        shell: bash
+        if: matrix.driver == 'none'
+        run: |
+          # TODO:medyagh update these ancient versions and use upstream installers
+          CRI_DOCKERD_VERSION="v0.4.0"
+          CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
+          CRI_DOCKERD_BASE_URL="https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}"
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/amd64/cri-dockerd" -o /usr/bin/cri-dockerd
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.socket" -o /usr/lib/systemd/system/cri-docker.socket
+          sudo curl -L "${CRI_DOCKERD_BASE_URL}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
+          sudo chmod +x /usr/bin/cri-dockerd
+      - name: Install crictl (baremetal only)
+        shell: bash
+        if: matrix.driver == 'none'
+        run: |
+          CRICTL_VERSION="v1.28.0"
+          curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$CRICTL_VERSION/crictl-${CRICTL_VERSION}-linux-amd64.tar.gz --output crictl-${CRICTL_VERSION}-linux-amd64.tar.gz
+          sudo tar zxvf crictl-$CRICTL_VERSION-linux-amd64.tar.gz -C /usr/local/bin
+      # https://minikube.sigs.k8s.io/docs/faq/#how-do-i-install-containernetworking-plugins-for-none-driver
+      - name: Install container networking plugins (baremetal only)
+        shell: bash
+        if: matrix.driver == 'none'
+        run: |
+          CNI_PLUGIN_VERSION="v1.7.1"
+          CNI_PLUGIN_TAR="cni-plugins-linux-amd64-$CNI_PLUGIN_VERSION.tgz" # change arch if not on amd64
+          CNI_PLUGIN_INSTALL_DIR="/opt/cni/bin"
+          curl -LO "https://github.com/containernetworking/plugins/releases/download/$CNI_PLUGIN_VERSION/$CNI_PLUGIN_TAR"
+          sudo mkdir -p "$CNI_PLUGIN_INSTALL_DIR"
+          sudo tar -xf "$CNI_PLUGIN_TAR" -C "$CNI_PLUGIN_INSTALL_DIR"
+          rm "$CNI_PLUGIN_TAR"
+      - name: Install docker-cli
+        run: |
+          section() { printf "\n==================== %s ====================\n" "$1"; }
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install docker
+          fi
+          section "Docker Version"
+          docker version || true
+            if [[ "$RUNNER_OS" == "Linux" ]]; then
+            section "Docker Info"
+            docker info || true
+
+            section "Docker Disk Usage"
+            docker system df || true
+
+            section "Docker System Info (JSON)"
+            docker system info --format='{{json .}}' | { command -v jq >/dev/null 2>&1 && jq . || cat; } || true
+
+            section "Running Containers"
+            docker ps -a || true
+
+            section "Images"
+            docker images || true
+          fi
+      - name: Install podman
+        if: matrix.driver == 'podman'
+        shell: bash
+        run: |
+          sudo apt -q update
+          sudo apt install -q -y podman
+          lsb_release -a || true
+          echo "--------------------------"
+          podman version || true
+          echo "--------------------------"
+          podman info || true
+          echo "--------------------------"
+          podman system df || true
+          echo "--------------------------"
+          podman system info --format='{{json .}}' || true
+          echo "--------------------------"
+          podman ps || true
+          echo "--------------------------"
+      - name: Install kubectl
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            brew install kubectl
+          elif [[ "$RUNNER_OS" == "Linux" ]]; then
+            curl -fsSLo kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            sudo install -m 0755 kubectl /usr/local/bin/kubectl
+              else
+            echo "Unsupported OS: $RUNNER_OS"
+          exit 1
+          fi
+          kubectl version --client=true
+      - name: Install qemu and socket_vmnet (macos)
+        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        run: |
+          brew install qemu socket_vmnet
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Download Test Binaries
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: binaries
+      - name: Disable AppArmor for MySQL
+        if: runner.os == 'Linux'
+        run: |
+          sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+      - name: Run Integration Test
+        continue-on-error: true
+        # bash {0} to ensure test to continue to next step. 
+        shell: bash {0}
+        run: |
+          set -x
+          mkdir -p report
+          ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
+          START_TIME=$(date -u +%s)
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} --wait-timeout=15m -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=35m -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          END_TIME=$(date -u +%s)
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
+          min=$((${TIME_ELAPSED}/60))
+          sec=$((${TIME_ELAPSED}%60))
+          TIME_ELAPSED="${min} min $sec seconds "
+          # make variables available for next step 
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV          
+      - name: Generate Gopogh HTML Report
+        shell: bash
+        run: |
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+            STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          FailNum=$(echo $STAT | jq '.NumberOfFail')
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          # Result in in one sentence
+          RESULT_SHORT="${{ matrix.name }} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
+          echo 'STAT<<EOF' >> $GITHUB_ENV
+          echo "${STAT}" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+      - name: Set PR or Branch label
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
+          fi
+          echo "COMMIT_SHA=${{ github.sha }}" >> $GITHUB_OUTPUT          
+      - name: Upload Gopogh report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+            name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}
+            path: ./report    
+      - name: The End Result ${{ matrix.name }}
+        shell: bash
+        run: |
+          echo "******************** RESULT SUMMARY ********************"
+          echo "$RESULT_SHORT"
+          echo "--------------------------------------------------------"
+          numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
+          numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
+          echo "Passed: ${numPass}"
+          if [ "$numPass" -gt 0 ]; then
+          echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
+          fi
+          if [ "$numFail" -gt 0 ]; then
+          echo "------------------------Failed--------------------------------"
+          echo "Failed: ${numFail}"
+          echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"'
+          fi
+          echo "********************************************************"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+          # Safe Guard for when tests gets skipped and no failures
+          if [ "$numPass" -lt 56 ];then echo "*** Failed to pass at least 56 ! ***";exit 2;fi
