@@ -268,7 +268,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 
 	validateBuiltImageVersion(starter.Runner, ds.Name)
 
-	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetBool(createMount) {
+	if existing != nil && driver.IsKIC(existing.Driver) && viper.GetString(mountString) != "" {
 		old := ""
 		if len(existing.ContainerVolumeMounts) > 0 {
 			old = existing.ContainerVolumeMounts[0]
