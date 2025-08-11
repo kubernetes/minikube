@@ -28,7 +28,7 @@ Until now minikube has always been a local single node Kubernetes cluster. Havin
 
 ## Design Details
 
-Since minikube was designed with only a single node cluster in mind, we need to make some fairly significant refactors, the biggest of which is the introduction of the Node object. Each cluster config will be able to have an abitrary number of Node objects, each of which will have attributes that can define it, similar to what [tstromberg proposed](https://github.com/kubernetes/minikube/pull/5874) but with better backwards compatibility with current config.
+Since minikube was designed with only a single node cluster in mind, we need to make some fairly significant refactors, the biggest of which is the introduction of the Node object. Each cluster config will be able to have an arbitrary number of Node objects, each of which will have attributes that can define it, similar to what [tstromberg proposed](https://github.com/kubernetes/minikube/pull/5874) but with better backwards compatibility with current config.
 
 Each node will correspond to one VM (or container) and will connect back to the primary control plane via `kubeadm join`.
 

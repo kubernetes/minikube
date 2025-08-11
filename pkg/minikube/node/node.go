@@ -253,7 +253,7 @@ func Name(index int) string {
 
 // ID returns the appropriate node id from the node name.
 // ID of first (primary control-plane) node (with empty name) is 1, so next one would be "m02", etc.
-// Eg, "m05" should return "5", regardles if any preceded nodes were deleted.
+// Eg, "m05" should return "5", regardless if any preceded nodes were deleted.
 func ID(name string) (int, error) {
 	if name == "" {
 		return 1, nil
