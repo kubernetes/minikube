@@ -35,7 +35,7 @@ func applyStyle(st style.Enum, useColor bool, format string) (string, bool, bool
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
-	// becaue of https://github.com/kubernetes/minikube/issues/21148
+	// because of https://github.com/kubernetes/minikube/issues/21148
 	// will handle making new lines with spinner library itself
 	if !s.ShouldSpin {
 		format += "\n"

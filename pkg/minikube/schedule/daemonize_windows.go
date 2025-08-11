@@ -75,7 +75,7 @@ func daemonize(profiles []string, duration time.Duration) error {
 
 // to start the systemd service, we first have to tell the systemd service how long to sleep for
 // before shutting down minikube from within
-// we do this by settig the SLEEP environment variable in the environment file to the users
+// we do this by setting the SLEEP environment variable in the environment file to the users
 // requested duration
 func startSystemdService(profile string, duration time.Duration) error {
 	// get ssh runner

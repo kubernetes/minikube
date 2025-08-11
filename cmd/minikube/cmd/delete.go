@@ -647,7 +647,7 @@ func killProcess(path string) error {
 		return errors.New("multiple errors encountered while closing mount processes")
 	}
 
-	// if no errors were encoutered, it's safe to delete pidFile
+	// if no errors were encountered, it's safe to delete pidFile
 	if err := os.Remove(pidPath); err != nil {
 		return errors.Wrap(err, "while closing mount-pids file")
 	}

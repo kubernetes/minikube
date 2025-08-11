@@ -67,7 +67,7 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     # list is needed by network-policy gadget
-    # watch is needed by operators enriching with service informations
+    # watch is needed by operators enriching with service information
     verbs: ["list", "watch"]
   - apiGroups: ["gadget.kinvolk.io"]
     resources: ["traces", "traces/status"]

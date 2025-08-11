@@ -142,7 +142,7 @@ func main() {
 	os.Stdout.Write(submatches[1])
 }
 
-// some components have _ or - in their names vs their make folders, standarizing for automation such as as update-all
+// some components have _ or - in their names vs their make folders, standardizing for automation such as as update-all
 func standrizeComponentName(name string) string {
 	// Convert the component name to lowercase and replace underscores with hyphens
 	name = strings.ToLower(name)

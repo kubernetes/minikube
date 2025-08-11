@@ -33,7 +33,7 @@ func CreateTarStream(srcPath, dockerfilePath string) (io.ReadCloser, error) {
 	// then make sure we send both files over to the daemon
 	// because Dockerfile is, obviously, needed no matter what, and
 	// .dockerignore is needed to know if either one needs to be
-	// removed.  The deamon will remove them for us, if needed, after it
+	// removed.  The daemon will remove them for us, if needed, after it
 	// parses the Dockerfile.
 	//
 	// https://github.com/docker/docker/issues/8330

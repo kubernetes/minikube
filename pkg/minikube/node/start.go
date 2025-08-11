@@ -142,7 +142,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 		if err != nil {
 			return nil, err
 		}
-		// configure CoreDNS concurently from primary control-plane node only and only on first node start
+		// configure CoreDNS concurrently from primary control-plane node only and only on first node start
 		if !starter.PreExists {
 			wg.Add(1)
 			go func() {
@@ -393,7 +393,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (comman
 		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	}
 
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Abstraction leakage alert: startHost requires the config to be saved, to satisfy pkg/provision/buildroot.
 	// Hence, SaveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")

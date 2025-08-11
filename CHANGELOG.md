@@ -485,7 +485,7 @@ Bugs:
 * Fix starting kvm2 clusters using Linux on arm64 Mac [#18239](https://github.com/kubernetes/minikube/pull/18239)
 * Fix displaying error when deleting non-existing cluster [#17713](https://github.com/kubernetes/minikube/pull/17713)
 * Fix no-limit not being respected on restart [#17598](https://github.com/kubernetes/minikube/pull/17598)
-* Fix not applying `kubeadm.applyNodeLabels` label to nodes added after inital start [#16416](https://github.com/kubernetes/minikube/pull/16416)
+* Fix not applying `kubeadm.applyNodeLabels` label to nodes added after initial start [#16416](https://github.com/kubernetes/minikube/pull/16416)
 * Fix logs delimiter output [#17734](https://github.com/kubernetes/minikube/pull/17734)
 
 Version Upgrades:
@@ -1268,7 +1268,7 @@ Features (Experimental):
 * QEMU Driver: Add support for dedicated network on macOS (socket_vmnet) [#14989](https://github.com/kubernetes/minikube/pull/14989)
 * QEMU Driver: Add support minikube service and tunnel on macOS [#14989](https://github.com/kubernetes/minikube/pull/14989)
 
-Minor Imprevements:
+Minor Improvements:
 * Check if context is invalid during update-context command [#15032](https://github.com/kubernetes/minikube/pull/15032)
 * Use SSH tunnel if user specifies bindAddress [#14951](https://github.com/kubernetes/minikube/pull/14951)
 * Warn QEMU users if DNS issue detected [#15073](https://github.com/kubernetes/minikube/pull/15073)
@@ -1582,7 +1582,7 @@ Thank you to our triage members for this release!
 
 ## Version 1.26.0-beta.0 - 2022-05-13
 
-Featues:
+Features:
 * Add support for the QEMU driver [#13639](https://github.com/kubernetes/minikube/pull/13639)
 * Add support for building aarch64 ISO [#13762](https://github.com/kubernetes/minikube/pull/13762)
 * Support rootless Podman driver (Usage: `minikube config set rootless true`) [#13829](https://github.com/kubernetes/minikube/pull/13829)
@@ -2348,7 +2348,7 @@ Bugs:
 
 Version Upgrades:
 * bump default k8s version to v1.20.7 and newest to v1.22.0-alpha.2 [#11525](https://github.com/kubernetes/minikube/pull/11525)
-* containerd: upgrade `io.containerd.runtime.v1.linux` to `io.containerd.runc.v2` (suppot cgroup v2) [#11325](https://github.com/kubernetes/minikube/pull/11325)
+* containerd: upgrade `io.containerd.runtime.v1.linux` to `io.containerd.runc.v2` (support cgroup v2) [#11325](https://github.com/kubernetes/minikube/pull/11325)
 * metallb-addon: Update metallb from 0.8.2 to 0.9.6 [#11410](https://github.com/kubernetes/minikube/pull/11410)
 
 For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md).
@@ -2662,7 +2662,7 @@ Minor Improvements:
 * disable minikube-scheduled-stop.service until a user schedules a stop [#10548](https://github.com/kubernetes/minikube/pull/10548)
 * docker/podman: add crun for running on cgroups v2 [#10426](https://github.com/kubernetes/minikube/pull/10426)
 * Specify mount point for cri-o config [#10528](https://github.com/kubernetes/minikube/pull/10528)
-* Esnure addon integrity by adding Image SHA [#10527](https://github.com/kubernetes/minikube/pull/10527)
+* Ensure addon integrity by adding Image SHA [#10527](https://github.com/kubernetes/minikube/pull/10527)
 * improve kvm network delete/cleanup [#10479](https://github.com/kubernetes/minikube/pull/10479)
 * docker/podman: avoid creating overlapping networks with other tools (KVM,...) [#10439](https://github.com/kubernetes/minikube/pull/10439)
 * Improve insecure registry validation [#10493](https://github.com/kubernetes/minikube/pull/10493)
@@ -4976,7 +4976,7 @@ Thank you to the folks who contributed to this bugfix release:
 * Include pod output in 'logs' command & display detected problems during start [#3673](https://github.com/kubernetes/minikube/pull/3673)
 * Upgrade Docker, from 18.06.1-ce to 18.06.2-ce [#3666](https://github.com/kubernetes/minikube/pull/3666)
 * Upgrade opencontainers/runc to 0a012df [#3669](https://github.com/kubernetes/minikube/pull/3669)
-* Clearer output when re-using VM's so that users know what they are waiting on [#3659](https://github.com/kubernetes/minikube/pull/3659)
+* Clearer output when reusing VM's so that users know what they are waiting on [#3659](https://github.com/kubernetes/minikube/pull/3659)
 * Disable kubelet disk eviction by default [#3671](https://github.com/kubernetes/minikube/pull/3671)
 * Run poweroff before delete, only call uninstall if driver is None [#3665](https://github.com/kubernetes/minikube/pull/3665)
 * Add DeleteCluster to bootstrapper [#3656](https://github.com/kubernetes/minikube/pull/3656)

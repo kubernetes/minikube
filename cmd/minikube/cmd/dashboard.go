@@ -79,7 +79,7 @@ var dashboardCmd = &cobra.Command{
 		enabled := addon.IsEnabled(co.Config)
 
 		if !enabled {
-			// Send status messages to stderr for folks re-using this output.
+			// Send status messages to stderr for folks reusing this output.
 			out.ErrT(style.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
 			err = addons.SetAndSave(cname, "dashboard", "true")
