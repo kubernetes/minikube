@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.29.1
-CRIO_BIN_COMMIT = 78e179ba8dd3ce462382a17049e8d1f770246af1
+CRIO_BIN_VERSION = v1.32.3
+CRIO_BIN_COMMIT = 823120c1035558215a91d8e6b9076da57568eda5
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -17,10 +17,14 @@ endif
 CRIO_BIN_ENV = \
 	$(GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
-	GO111MODULE=off \
+	GO111MODULE=on \
 	GOPATH="$(CRIO_BIN_GOPATH)" \
 	PATH=$(CRIO_BIN_GOPATH)/bin:$(BR_PATH) \
-	GOARCH=$(CRIO_BIN_GOARCH)
+	GOARCH=$(CRIO_BIN_GOARCH) \
+	GOPROXY="https://proxy.golang.org,direct" \
+	GOSUMDB='sum.golang.org'\
+	GOOS=linux \
+	GOWORK=off \
 
 define CRIO_BIN_USERS
 	- -1 crio-admin -1 - - - - -
@@ -36,7 +40,7 @@ endef
 
 define CRIO_BIN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) COMMIT_NO=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) COMMIT_NO=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries TRIMPATH="-trimpath -buildvcs=false"
 endef
 
 define CRIO_BIN_INSTALL_TARGET_CMDS
