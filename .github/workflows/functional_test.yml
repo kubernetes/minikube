@@ -374,7 +374,7 @@ jobs:
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
-      - name: Set PR or Branch label for file name
+      - name: Set PR or Branch label for report filename
         id: vars
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -407,22 +407,28 @@ jobs:
       - name: The End Result ${{ matrix.name }}
         shell: bash
         run: |
-          echo "-------------------- RESULT SUMMARY --------------------"
-          echo "$RESULT_SHORT"
-          echo "--------------------------------------------------------"
-          numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
-          numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
-          echo "Passed: ${numPass}"
-          if [ "$numPass" -gt 0 ]; then
+            echo "-------------------- RESULT SUMMARY --------------------"
+            echo "$RESULT_SHORT"
+            numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
+            numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
+            numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
+            echo "------------------------ Passed ------------------------"
+            echo "Passed: ${numPass}"
+            if [ "$numPass" -gt 0 ]; then
             echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
-          fi
-          if [ "$numFail" -gt 0 ]; then
-            echo "------------------------Failed--------------------------------"
+            fi
+            if [ "$numFail" -gt 0 ]; then
+            echo "------------------------ Failed ------------------------"
             echo "Failed: ${numFail}"
             echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"'
-          fi
-          echo "********************************************************"
-          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-          if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
-          # Safe Guard for when tests gets skipped and no failures
-          if [ "$numPass" -lt 35 ];then echo "*** Failed to pass at least 35 ! ***";exit 2;fi
+            fi
+            echo "------------------------ Skipped ------------------------"
+            echo "Skipped: ${numSkip}"
+            if [ "$numSkip" -gt 0 ]; then
+            echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"'
+            fi
+            echo "---------------------------------------------------------"
+            if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+            if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+            # Safe Guard for when tests gets skipped and no failures
+            if [ "$numPass" -lt 35 ];then echo "*** Failed to pass at least 35 ! ***";exit 2;fi
