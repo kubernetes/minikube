@@ -395,11 +395,20 @@ jobs:
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
-      - name: The End Result ${{ matrix.name }}
+      - name: The End Result Summary ${{ matrix.name }}
         shell: bash
         run: |
             summary="$GITHUB_STEP_SUMMARY"
-
+            ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
+            ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
+            if [ -n "$ARTIFACT_ID" ]; then
+              URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
+              echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
+              echo "Gopogh report artifact URL: $URL" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
+              echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
+            fi
             echo "-------------------- RESULT SUMMARY --------------------"
             echo "$RESULT_SHORT" | tee -a "$summary"
 
@@ -430,3 +439,4 @@ jobs:
             if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
             # Safe Guard for when tests gets skipped and no failures
             if [ "$numPass" -lt 35 ];then echo "*** Failed to pass at least 35 ! ***";exit 2;fi
+
