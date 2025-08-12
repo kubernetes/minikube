@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches:
-      - master
+    branches: [ master ]
+
 # Limit one unit test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
