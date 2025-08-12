@@ -51,7 +51,10 @@ jobs:
             make gomodtidy
             if ! git diff --quiet; then
               echo "::error::Please run 'make gomodtidy' and commit the changes"
+              echo "=== files ==="
               git diff --name-only
+              echo "=== diff ==="
+              git diff -
               exit 1
             fi
 

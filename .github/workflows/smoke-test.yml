@@ -19,6 +19,11 @@ env:
   LOG_ARGS: --v=8 --alsologtostderr
   permissions:
   contents: read
+# Limit one unit test job running per PR/Branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
 jobs:
   minikube-vm-boot:
     name: Boot
