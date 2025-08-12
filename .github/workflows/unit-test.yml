@@ -4,17 +4,16 @@ on:
   push:
     branches: [ master ]
     paths: &paths_common
-      - "go.mod"
-      - "**.go"
-      - "Makefile"
-    paths-ignore: &ignore_common
-      - "hack/**"
-      - "site/**"
-      - "**.md"
-      - "**.json"
+      - go.mod
+      - '**/*.go'
+      - Makefile
+      # Exclusions 
+      - '!hack/**'
+      - '!site/**'
+      - '!**/*.md'
+      - '!**/*.json'
   pull_request:
     paths: *paths_common
-    paths-ignore: *ignore_common
 # Limit one unit test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

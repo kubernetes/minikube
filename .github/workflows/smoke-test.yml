@@ -7,14 +7,12 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
-    paths-ignore: &ignore_common
-      - "hack/**"
-      - "site/**"
-      - "**.md"
-      - "**.json"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
   pull_request:
     paths: *paths_common
-    paths-ignore: *ignore_common
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
