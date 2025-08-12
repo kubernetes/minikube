@@ -377,17 +377,22 @@ jobs:
       - name: Set PR or Branch label for report filename
         id: vars
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          else
+            else
             echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
-          fi
+            fi
             echo "COMMIT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+            RUN_ID_SHORT="$GITHUB_RUN_ID"
+            if [ ${#RUN_ID_SHORT} -gt 7 ]; then
+            RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
+            fi
+            echo "RUN_ID=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-            name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ github.run_id }}
+            name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
       - name: Gopogh report Artifact URL
         if: always()
