@@ -806,9 +806,9 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.KubetailAssets, "kubetail/kubetail-cli.yaml", vmpath.GuestAddonsDir, "kubetail-cli.yaml", "0640"),
 	}, false, "kubetail", "3rd party (kubetail.com)", "amorey", "https://minikube.sigs.k8s.io/docs/handbook/addons/kubetail/",
 		map[string]string{
-			"KubetailDashboard":    "kubetail/kubetail-dashboard:0.6.0@sha256:fc8d01805c09f2ad3f5a2c94016e399ece4c03ff7275dc007a213281087490ac",
-			"KubetailClusterAPI":   "kubetail/kubetail-cluster-api:0.4.0@sha256:fec3154c589a31493f14ca5ecbbc48d3ad7bab6b5e30dcddabc2457bd297dae7",
-			"KubetailClusterAgent": "kubetail/kubetail-cluster-agent:0.4.0@sha256:5363ca1a5394943aa6bf4c160860a8dc616c3e939d2006cfa902f8863e182bae",
+			"KubetailDashboard":    "kubetail/kubetail-dashboard:0.6.3@sha256:0350addb95c0b135422cf766ef7ed31dd110b1fb87aa74a600fc10508c782cfa",
+			"KubetailClusterAPI":   "kubetail/kubetail-cluster-api:0.4.2@sha256:67ebae5543164147d21045bff3f77607914b9408d82526866a90c664814b7316",
+			"KubetailClusterAgent": "kubetail/kubetail-cluster-agent:0.4.2@sha256:09f72d4ae63ed6e105298a2a72d276f97a2c9954e2adaffe18389fc1a02353bf",
 		},
 		map[string]string{
 			"Kubetail": "docker.io",
