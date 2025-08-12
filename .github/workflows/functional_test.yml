@@ -403,7 +403,7 @@ jobs:
             if [ ${#RUN_ID_SHORT} -gt 7 ]; then
               RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
             fi
-            echo "RUN_ID=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
+            echo "RUN_ID_SHORT=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
         id: upload_gopogh
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
