@@ -26,10 +26,27 @@ jobs:
             cache: true      
         - name: Download Dependencies
           run: go mod download
-        - name: unit test
-          timeout-minutes: 5
+        - name: lint
+          timeout-minutes: 8
           env:
-            TESTSUITE: lintall
+            TESTSUITE: lint
           run: make test
           continue-on-error: false
+        - name: boilerplate check
+          timeout-minutes: 2
+          env:
+            TESTSUITE: boilerplate
+          run: make test
+          continue-on-error: false
+        - name: gomod tidy check
+          timeout-minutes: 2
+          continue-on-error: false
+          run: |
+            make gomodtidy
+            if ! git diff --quiet; then
+              echo "::error::Please run 'make gomodtidy' and commit the changes"
+              git diff --name-only
+              exit 1
+            fi
 
+          
