@@ -42,6 +42,7 @@ jobs:
           if: runner.os == 'Windows'
           run: choco install make -y
         - name: unit test
+          timeout-minutes: 5
           env:
             TESTSUITE: unittest
           run: make test

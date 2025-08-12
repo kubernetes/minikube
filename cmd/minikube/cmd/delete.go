@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -656,17 +655,16 @@ func killProcess(path string) error {
 	return nil
 }
 
-// trySigKillProcess attempts to terminate a process by PID in a cross-platform way.
-// It first confirms the pid belongs to a minikube process (best-effort heuristic).
-// On Windows, if os.Process.Kill fails (common for some exited or protected processes),
-// it falls back to invoking taskkill.
+// trySigKillProcess takes a PID as argument and tries to SIGKILL it.
+// It performs an ownership check of the pid,
+// before trying to send a sigkill signal to it
 func trySigKillProcess(pid int) error {
 	itDoes, err := isMinikubeProcess(pid)
 	if err != nil {
 		return err
 	}
+
 	if !itDoes {
-		// Not a minikube process; report as stale (kept as error for existing caller semantics)
 		return fmt.Errorf("stale pid: %d", pid)
 	}
 
@@ -677,25 +675,6 @@ func trySigKillProcess(pid int) error {
 
 	klog.Infof("Killing pid %d ...", pid)
 	if err := proc.Kill(); err != nil {
-		// Benign / already gone cases (Unix & Go 1.20+)
-		lower := strings.ToLower(err.Error())
-		if errors.Is(err, os.ErrProcessDone) ||
-			strings.Contains(lower, "no such process") ||
-			strings.Contains(lower, "already finished") {
-			klog.Infof("process %d already exited", pid)
-			return nil
-		}
-
-		// Windows fallback: taskkill (handles some cases where Kill fails)
-		if runtime.GOOS == "windows" {
-			klog.Infof("os.Process.Kill failed for %d with %v - attempting taskkill", pid, err)
-			cmd := exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/F", "/T")
-			if tkErr := cmd.Run(); tkErr == nil {
-				return nil
-			}
-			return errors.Wrapf(err, "failed killing pid %d (taskkill also failed)", pid)
-		}
-
 		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
 		return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
 	}
