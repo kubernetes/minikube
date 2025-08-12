@@ -3,17 +3,23 @@ on:
   workflow_dispatch:
   push:
     branches: [ master ]
-    paths: &paths_common
+    paths:
       - go.mod
       - '**/*.go'
       - Makefile
-      # Exclusions 
       - '!hack/**'
       - '!site/**'
       - '!**/*.md'
       - '!**/*.json'
   pull_request:
-    paths: *paths_common
+    paths:
+      - go.mod
+      - '**/*.go'
+      - Makefile
+      - '!hack/**'
+      - '!site/**'
+      - '!**/*.md'
+      - '!**/*.json'
 # Limit one unit test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
