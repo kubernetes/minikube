@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -225,6 +226,9 @@ func TestDeleteAllProfiles(t *testing.T) {
 // then tries to execute the tryKillOne function on it;
 // if after tryKillOne the process still exists, we consider it a failure
 func TestTryKillOne(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
 
 	var waitForSig = []byte(`
 package main
