@@ -1,13 +1,14 @@
 name: Unit Test
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - master
+  pull_request: &paths_common
     paths:
       - "go.mod"
       - "**.go"
+  push:
+    branches:
+      - master
+    paths: *paths_common
 # Limit one unit test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
