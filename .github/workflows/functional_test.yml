@@ -55,7 +55,9 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-22.04
-            test-timeout: 10m
+            # will try to choose lowest time out per environment (+3m avg)
+            # Test taking longer than their usual's should also be treated as a failure
+            test-timeout: 10m 
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
@@ -66,14 +68,14 @@ jobs:
             driver: docker
             cruntime: containerd
             os: ubuntu-22.04
-            test-timeout: 10m
+            test-timeout: 9m
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
-            test-timeout: 10m
+            test-timeout: 15m
           - name: baremetal-docker-ubuntu-22.04-x86_64
             driver: none
             cruntime: docker
@@ -84,7 +86,7 @@ jobs:
             cruntime: docker
             os: macos-13
             extra-args: --network socket_vmnet
-            test-timeout: 27m
+            test-timeout: 30m
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
@@ -375,14 +377,17 @@ jobs:
         run: |
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
           STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+          PassNum=$(echo $STAT | jq '.NumberOfPass')
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
           if [ "${FailNum}" -eq 0 ]; then
-          STATUS_ICON="✓"
+            STATUS_ICON="✓"
           elif [ "${FailNum}" -gt 1 ]; then
-          STATUS_ICON="✗"
+            STATUS_ICON="✗"
+          elif [ "${PassNum}" -eq 0 ]; then
+            STATUS_ICON="✗"
           else
-          STATUS_ICON="✗"
+            STATUS_ICON="✗"
           fi
           # Result in in one sentence
           RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
