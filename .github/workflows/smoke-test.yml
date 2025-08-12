@@ -1,8 +1,17 @@
 # Boot Smoke Test only tests Bare VM (start,stop,delete) and not any minikube/kubernetes functionality.
-name: Boot Smoke Test
+name: Smoke Test
 on:
   push:
     branches: [ master ]
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+    paths-ignore:
+      - "hack/**"
+      - "site/**"
+      - "enhancements/**"
+      - "**.json"
   pull_request:
   workflow_dispatch:
 env:
@@ -12,7 +21,7 @@ env:
   contents: read
 jobs:
   minikube-vm-boot:
-    name: Boot Smoke Test
+    name: Boot
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
