@@ -129,25 +129,78 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			docs = "n/a"
 		}
 		
-		if cc == nil {
-			temp = []string{addonName, maintainer}
-		} else {
-			enabled := addonBundle.IsEnabled(cc)
-			if enabled{
-				status := fmt.Sprintf("%s%s%s", constants.Enabled, iconFromStatus(enabled), constants.Default)
-   				temp = []string{fmt.Sprintf("%s%s%s", constants.Enabled, addonName, constants.Default),status, fmt.Sprintf("%s%s%s", constants.Enabled, maintainer, constants.Default)}
-			}else{
-			    temp = []string{addonName,"",maintainer}
+		// Determine base row structure and colors
+		var enabled bool
+		var colorCode string
+		var applyColor bool
+		
+		if cc != nil {
+			enabled = addonBundle.IsEnabled(cc)
+			if enabled {
+				colorCode = constants.Enabled
+				applyColor = true
 			}
 		}
+		
+		// Build base row data
+		var rawValues []interface{}
+		if cc == nil {
+			rawValues = []interface{}{addonName, maintainer}
+		} else {
+			status := ""
+			if enabled {
+				status = iconFromStatus(enabled)
+			}
+			rawValues = []interface{}{addonName, status, maintainer}
+		}
+		
+		// Add docs if needed
 		if printDocs {
-			enabled := addonBundle.IsEnabled(cc)
-            if enabled {
-			docs = fmt.Sprintf("%s%s%s", constants.Enabled, docs, constants.Default)
-			temp = append(temp, docs)
+			rawValues = append(rawValues, docs)
+		}
+		
+		// Apply colors using loop
+		temp = make([]string, len(rawValues))
+		for i, value := range rawValues {
+			valueStr := fmt.Sprintf("%v", value)
+			
+			// Apply color based on context
+			shouldColorValue := false
+			var valueColorCode string
+			
+			if cc == nil {
+				// No coloring for null cluster config
+				temp[i] = valueStr
+				continue
+			}
+			
+			switch i {
+			case 0: // addonName
+				shouldColorValue = applyColor
+				valueColorCode = colorCode
+			case 1: // status (only for non-null cc)
+				shouldColorValue = applyColor
+				valueColorCode = colorCode
+			case 2: // maintainer
+				shouldColorValue = applyColor
+				valueColorCode = colorCode
+			default: // docs or other columns
+				if printDocs && i == len(rawValues)-1 {
+					// This is the docs column
+					if enabled {
+						shouldColorValue = true
+						valueColorCode = constants.Enabled
+					} else {
+						shouldColorValue = true
+						valueColorCode = constants.Disabled
+					}
+				}
+			}
+			
+			if shouldColorValue {
+				temp[i] = fmt.Sprintf("%s%s%s", valueColorCode, valueStr, constants.Default)
 			} else {
-			docs = fmt.Sprintf("%s%s%s", constants.Disabled, docs, constants.Default)
-			temp = append(temp, docs)
+				temp[i] = valueStr
 			}
 		}
 		tData = append(tData, temp)

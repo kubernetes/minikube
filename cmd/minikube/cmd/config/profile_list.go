@@ -1,4 +1,20 @@
 /*
+Copyright 2025 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/*
 Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -168,77 +184,90 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			k = "*"
 		}
 		if isDetailed {
-			if p.Status == "OK" {
-				data = append(data, []string{
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Name, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.Driver, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, cpIP, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Enabled, cpPort, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, k8sVersion, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Status, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Enabled, len(p.Config.Nodes), constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, c, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, k, constants.Default),
-				})
-			} else if p.Status == "Broken" || p.Status == "Error"{
-				data = append(data, []string{
-					fmt.Sprintf("%s%s%s", constants.Error, p.Name, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Config.Driver, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, cpIP, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Error, cpPort, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, k8sVersion, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Status, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Error, len(p.Config.Nodes), constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, c, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, k, constants.Default),
-				})
-			} else {
-				data = append(data, []string{
-					fmt.Sprintf("%s%s%s", constants.Default, p.Name, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, p.Config.Driver, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, cpIP, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Default, cpPort, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, k8sVersion, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, p.Status, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Default, len(p.Config.Nodes), constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, c, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Default, k, constants.Default),
-				})
+			var colorCode string
+			switch p.Status {
+			case "OK":
+				colorCode = constants.Enabled
+			case "Broken", "Error":
+				colorCode = constants.Error
+			default:
+				colorCode = constants.Default
 			}
+			
+			rawValues := []interface{}{
+				p.Name,
+				p.Config.Driver,
+				p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP,
+				cpPort,
+				k8sVersion,
+				p.Status,
+				len(p.Config.Nodes),
+				c,
+				k,
+			}
+			
+			row := make([]string, len(rawValues))
+			for i, value := range rawValues {
+				switch v := value.(type) {
+				case string:
+					row[i] = fmt.Sprintf("%s%s%s", colorCode, v, constants.Default)
+				case int:
+					row[i] = fmt.Sprintf("%s%d%s", colorCode, v, constants.Default)
+				default:
+					row[i] = fmt.Sprintf("%s%v%s", colorCode, v, constants.Default)
+				}
+			}
+			data = append(data, row)
 		} else {
-			if p.Status == "OK"{
-			   data = append(data, []string{
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Name, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.Driver, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, cpIP, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, k8sVersion, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, p.Status, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Enabled, len(p.Config.Nodes), constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, c, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Enabled, k, constants.Default),
-				})
-			}else if p.Status == "Broken" || p.Status == "Error"{
-				data = append(data, []string{
-					fmt.Sprintf("%s%s%s", constants.Error, p.Name, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Config.Driver, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Config.KubernetesConfig.ContainerRuntime, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, cpIP, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, k8sVersion, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, p.Status, constants.Default),
-					fmt.Sprintf("%s%d%s", constants.Error, len(p.Config.Nodes), constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, c, constants.Default),
-					fmt.Sprintf("%s%s%s", constants.Error, k, constants.Default),
-				})
-			} else{
-				data = append(data, []string{
-					p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
-					cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k,
-				})
+			var colorCode string
+			var applyColor bool
+			switch p.Status {
+			case "OK":
+				colorCode = constants.Enabled
+				applyColor = true
+			case "Broken", "Error":
+				colorCode = constants.Error
+				applyColor = true
+			default:
+				applyColor = false
 			}
+			
+			rawValues := []interface{}{
+				p.Name,
+				p.Config.Driver,
+				p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP,
+				k8sVersion,
+				p.Status,
+				len(p.Config.Nodes),
+				c,
+				k,
+			}
+			
+			row := make([]string, len(rawValues))
+			for i, value := range rawValues {
+				if applyColor {
+					switch v := value.(type) {
+					case string:
+						row[i] = fmt.Sprintf("%s%s%s", colorCode, v, constants.Default)
+					case int:
+						row[i] = fmt.Sprintf("%s%d%s", colorCode, v, constants.Default)
+					default:
+						row[i] = fmt.Sprintf("%s%v%s", colorCode, v, constants.Default)
+					}
+				} else {
+					switch v := value.(type) {
+					case string:
+						row[i] = v
+					case int:
+						row[i] = strconv.Itoa(v)
+					default:
+						row[i] = fmt.Sprintf("%v", v)
+					}
+				}
+			}
+			data = append(data, row)
 		}
 	}
 	return data
