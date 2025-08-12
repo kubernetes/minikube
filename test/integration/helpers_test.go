@@ -435,6 +435,7 @@ func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns st
 }
 
 // Status returns a minikube component status as a string
+// If the command outputs multiple lines, only the first line is returned to avoid https://github.com/kubernetes/minikube/issues/21326
 func Status(ctx context.Context, t *testing.T, path string, profile string, key string, node string) string {
 	t.Helper()
 	// Reminder of useful keys: "Host", "Kubelet", "APIServer"
@@ -442,7 +443,15 @@ func Status(ctx context.Context, t *testing.T, path string, profile string, key 
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
-	return strings.TrimSpace(rr.Stdout.String())
+	out := strings.TrimSpace(rr.Stdout.String())
+	if out == "" {
+		return out
+	}
+	// Take only the first line if multi-line (ignore warnings or extra notes)
+	if idx := strings.IndexByte(out, '\n'); idx >= 0 {
+		out = out[:idx]
+	}
+	return strings.TrimSpace(out)
 }
 
 // showPodLogs logs debug info for pods
