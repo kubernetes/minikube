@@ -42,7 +42,7 @@ jobs:
           name: binaries
           path: out
   functional-test:
-    name: Functional - ${{ matrix.name }}
+    name: ${{ matrix.name }}
     needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
