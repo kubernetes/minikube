@@ -322,8 +322,10 @@ jobs:
           if [[ "$RUNNER_OS" == "macOS" ]]; then
             brew install kubectl
           elif [[ "$RUNNER_OS" == "Linux" ]]; then
-            curl -fsSLo kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-            sudo install -m 0755 kubectl /usr/local/bin/kubectl
+            tmp=$(mktemp)
+            curl -fsSL -o "$tmp" "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            sudo install -m 0755 "$tmp" /usr/local/bin/kubectl
+            rm "$tmp"
           else
             echo "Unsupported OS: $RUNNER_OS"
             exit 1
