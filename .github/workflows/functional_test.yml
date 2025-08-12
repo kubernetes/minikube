@@ -6,7 +6,10 @@ on:
   push:
     branches:
       - master
-# dont allow concurrent runs for the same PR or branch
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
@@ -208,7 +211,7 @@ jobs:
           cache: true      
       - name: Install gopogh
         run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
-      - name: Set up cgroup v2 delegation (rootless only)
+      - name: Set up cgroup v2 delegation (rootless)
         if: ${{ matrix.rootless }}
         run: |
           sudo mkdir -p /etc/systemd/system/user@.service.d
@@ -224,7 +227,7 @@ jobs:
           curl https://get.docker.com | sudo sh
           dockerd-rootless-setuptool.sh install -f
           docker context use rootless
-      - name: Ensure bootpd is enabled (macos)
+      - name: Ensure bootpd is enabled (macos-13)
         if: matrix.os == 'macos-13'
         shell: bash
         run: |
@@ -266,8 +269,7 @@ jobs:
       - name: Install conntrack & socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
-        run: sudo apt-get -qq -y install socat
-        
+        run: sudo apt-get -qq -y install socat        
       - name: Install container networking plugins (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
@@ -391,14 +393,14 @@ jobs:
         id: vars
         run: |
             if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+              echo "PR_OR_MASTER=PR${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             else
-            echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
+              echo "PR_OR_MASTER=Master" >> $GITHUB_OUTPUT
             fi
             echo "COMMIT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
             RUN_ID_SHORT="$GITHUB_RUN_ID"
             if [ ${#RUN_ID_SHORT} -gt 7 ]; then
-            RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
+              RUN_ID_SHORT="${RUN_ID_SHORT: -7}"
             fi
             echo "RUN_ID=${RUN_ID_SHORT}" >> $GITHUB_OUTPUT
       - name: Upload Gopogh report
