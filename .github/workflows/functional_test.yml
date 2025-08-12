@@ -6,9 +6,9 @@ on:
   push:
     branches:
       - master
+# dont allow concurrent runs for the same PR or branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # cancel any currently running workflow in the same group if a new run is triggered.
   # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
   cancel-in-progress: true
 env:
@@ -17,8 +17,8 @@ env:
 permissions:
   contents: read
 jobs:
-  # Build Binaries jobd runs before all other jobs and produces binaries to be shared by all following jobs
-  build_binaries:
+  # build-test-binaries job runs before all other jobs and produces binaries/test-data to be shared by all following jobs
+  build-test-binaries:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -39,7 +39,7 @@ jobs:
           path: out
   functional-test:
     name: Functional - ${{ matrix.name }}
-    needs: build_binaries
+    needs: build-test-binaries
     runs-on: ${{ matrix.os }}
     permissions:
       contents: none
