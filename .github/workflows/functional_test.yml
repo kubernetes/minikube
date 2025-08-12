@@ -1,5 +1,4 @@
 name: Functional Test
-
 on:
   workflow_dispatch:
   pull_request:
@@ -7,15 +6,13 @@ on:
       - "go.mod"
       - "**.go"
       - "Makefile"
-    paths-ignore: &ignore_common
-      - "site/**"
-      - "**.md"
-      - "**.json"    
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"    
   push:
-    branches:
-      - master
+    branches: [ master ]
     paths: *paths_common
-    paths-ignore: *ignore_common
+
 # Limit one functional test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
