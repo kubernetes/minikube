@@ -46,7 +46,7 @@ var (
 	podmanStorageDriver   = "overlay"
 	containerRuntimes     = []string{"docker", "containerd", "cri-o"}
 	k8sVersions           []string
-	k8sVersion            = flag.String("kubernetes-version", "", "desired Kubernetes version, for example `v1.17.2`")
+	k8sVersion            = flag.String("k8s-version", "", "desired Kubernetes version, for example `v1.17.2`")
 	noUpload              = flag.Bool("no-upload", false, "Do not upload tarballs to GCS")
 	force                 = flag.Bool("force", false, "Generate the preload tarball even if it's already exists")
 	limit                 = flag.Int("limit", 0, "Limit the number of tarballs to generate")
