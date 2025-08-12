@@ -19,6 +19,7 @@ package util
 import (
 	"os"
 	"os/user"
+	"runtime"
 	"syscall"
 	"testing"
 
@@ -80,6 +81,10 @@ func TestParseKubernetesVersion(t *testing.T) {
 }
 
 func TestChownR(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
 	testDir := t.TempDir()
 	if _, err := os.Create(testDir + "/TestChownR"); err != nil {
 		return
@@ -123,6 +128,10 @@ func TestChownR(t *testing.T) {
 }
 
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
 	testDir := t.TempDir()
 	if _, err := os.Create(testDir + "/TestChownR"); nil != err {
 		return
