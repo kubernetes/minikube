@@ -33,11 +33,12 @@ jobs:
             cache: true      
         - name: Download Dependencies
           run: go mod download
+        # needed because pkg/drivers/kvm/domain.go:28:2:
         - name: Install libvirt (Linux)
           if: runner.os == 'Linux'
           run: |
-                sudo apt-get update
-                sudo apt-get install -y libvirt-dev
+              sudo apt-get update              
+              sudo apt-get install -y libvirt-dev
         - name: Install make (Windows)
           if: runner.os == 'Windows'
           run: choco install make -y

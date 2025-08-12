@@ -26,6 +26,12 @@ jobs:
             cache: true      
         - name: Download Dependencies
           run: go mod download
+        # needed because pkg/drivers/kvm/domain.go:28:2:
+        - name: Install libvirt (Linux)
+          if: runner.os == 'Linux'
+          run: |
+              sudo apt-get update              
+              sudo apt-get install -y libvirt-dev
         - name: lint
           timeout-minutes: 8
           env:
