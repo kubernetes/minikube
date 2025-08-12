@@ -24,7 +24,6 @@ import (
 
 const (
 	// Version is the current version of kic
-	// adding a dummy test line
 	Version = "v0.0.47-1754427148-21248"
 
 	// SHA of the kic base image
