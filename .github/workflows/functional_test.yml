@@ -51,31 +51,36 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-22.04
-            # TODO: adding per environment max time-out 
+            test-timeout: 10m
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-22.04
+            test-timeout: 10m
           - name: docker-containerd-rootless-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             os: ubuntu-22.04
+            test-timeout: 10m
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
             os: ubuntu-24.04
+            test-timeout: 10m
           - name: baremetal-docker-ubuntu-22.04-x86_64
             driver: none
             cruntime: docker
             os: ubuntu-22.04
+            test-timeout: 7m
           - name: qemu-docker-macos-13-x86_64
             driver: qemu
             cruntime: docker
             os: macos-13
             extra-args: --network socket_vmnet
+            test-timeout: 27m
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
@@ -354,7 +359,7 @@ jobs:
           chmod a+x ./minikube-*
           ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
           START_TIME=$(date -u +%s)
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} --wait-timeout=15m -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=35m -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -369,8 +374,15 @@ jobs:
           STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           FailNum=$(echo $STAT | jq '.NumberOfFail')
           TestsNum=$(echo $STAT | jq '.NumberOfTests')
+          if [ "${FailNum}" -eq 0 ]; then
+          STATUS_ICON="✓"
+          elif [ "${FailNum}" -gt 1 ]; then
+          STATUS_ICON="✗"
+          else
+          STATUS_ICON="✗"
+          fi
           # Result in in one sentence
-          RESULT_SHORT="${{ matrix.name }} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+          RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
           echo 'STAT<<EOF' >> $GITHUB_ENV
           echo "${STAT}" >> $GITHUB_ENV
@@ -404,7 +416,7 @@ jobs:
             if [ -n "$ARTIFACT_ID" ]; then
               URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
               echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
-              echo "Gopogh report artifact URL: $URL" >> $GITHUB_STEP_SUMMARY
+              echo "Download Gopogh report: $URL" >> $GITHUB_STEP_SUMMARY
             else
               echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
               echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
@@ -415,28 +427,29 @@ jobs:
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
-
-            echo "------------------------ Passed ------------------------" 
+            echo "Failed: ${numFail}" | tee -a "$summary"
             echo "Passed: ${numPass}" | tee -a "$summary"
+            echo "Skipped: ${numSkip}" | tee -a "$summary"
+
+            if [ "$numFail" -gt 0 ]; then
+              echo "------------------------ ${numFail} Failed ------------------------" | tee -a "$summary"              
+              echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"' | tee -a "$summary"
+            fi
+
+            echo "------------------------${numPass} Passed ------------------------" 
             if [ "$numPass" -gt 0 ]; then
               echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
             fi
 
-            if [ "$numFail" -gt 0 ]; then
-              echo "------------------------ Failed ------------------------" | tee -a "$summary"
-              echo "Failed: ${numFail}" | tee -a "$summary"
-              echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"' | tee -a "$summary"
-            fi
-
-            echo "------------------------ Skipped ------------------------" | tee -a "$summary"
-            echo "Skipped: ${numSkip}" | tee -a "$summary"
             if [ "$numSkip" -gt 0 ]; then
+              echo "------------------------${numSkip} Skipped ------------------------" | tee -a "$summary"
               echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"' | tee -a "$summary"
             fi
+
             echo "---------------------------------------------------------" 
             echo $summary >> $GITHUB_STEP_SUMMARY
             if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
             if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
             # Safe Guard for when tests gets skipped and no failures
-            if [ "$numPass" -lt 35 ];then echo "*** Failed to pass at least 35 ! ***";exit 2;fi
+            if [ "$numPass" -lt 45 ];then echo "*** Failed to pass at least 45 ! ***";exit 2;fi
 
