@@ -65,6 +65,7 @@ then
     echo "= go test ==============================================================="
     cov_tmp="$(mktemp)"
     readonly COVERAGE_PATH=./out/coverage.txt
+    mkdir -p "$(dirname "${COVERAGE_PATH}")"
     echo "mode: count" >"${COVERAGE_PATH}"
     pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
     go test \
