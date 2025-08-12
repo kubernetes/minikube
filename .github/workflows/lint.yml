@@ -16,8 +16,8 @@ env:
 permissions:
   contents: read
 jobs:
-    Lint-Boilerplate-Tidy:
-        runs-on: ubuntu-latest
+    Lint-:
+        runs-on: ubuntu-22.04
         steps:
         - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
@@ -38,12 +38,28 @@ jobs:
             TESTSUITE: lint
           run: make test
           continue-on-error: false
+    Boilerplate:
+        runs-on: ubuntu-22.04
+        steps:
+        - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true  
         - name: Boilerplate check
           timeout-minutes: 2
           env:
             TESTSUITE: boilerplate
           run: make test
           continue-on-error: false
+    Gomodtidy:
+       runs-on: ubuntu-22.04
+       steps:
+        - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+          with:
+            go-version: ${{env.GO_VERSION}}
+            cache: true  
         - name: Verify gomod tidy
           timeout-minutes: 2
           continue-on-error: false
@@ -58,4 +74,3 @@ jobs:
               exit 1
             fi
 
-          
