@@ -67,10 +67,10 @@ jobs:
           - name: docker-containerd-rootless-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
-            os: ubuntu-22.04
-            test-timeout: 9m
+            os: ubuntu-22.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
+            test-timeout: 9m
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
@@ -85,7 +85,7 @@ jobs:
             driver: qemu
             cruntime: docker
             os: macos-13
-            extra-args: --network socket_vmnet
+            extra-start-args: --network socket_vmnet
             test-timeout: 30m
     steps:
       - name: Info Block (macOS)
