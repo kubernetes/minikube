@@ -396,45 +396,37 @@ jobs:
         with:
             name: functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}-run-${{ steps.vars.outputs.RUN_ID_SHORT}}
             path: ./report
-      - name: Gopogh report Artifact URL
-        if: always()
-        shell: bash
-        run: |
-          ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
-          ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
-          if [ -n "$ARTIFACT_ID" ]; then
-            URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
-            echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
-            echo "Gopogh report artifact URL: $URL" >> $GITHUB_STEP_SUMMARY
-            echo "REPORT_ARTIFACT_URL=$URL" >> $GITHUB_ENV
-          else
-            echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
-            echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
-          fi
       - name: The End Result ${{ matrix.name }}
         shell: bash
         run: |
-            echo "-------------------- RESULT SUMMARY --------------------"
-            echo "$RESULT_SHORT"
+            summary="$GITHUB_STEP_SUMMARY"
+
+            echo "-------------------- RESULT SUMMARY --------------------" | tee -a "$summary"
+            echo "$RESULT_SHORT" | tee -a "$summary"
+
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
-            echo "------------------------ Passed ------------------------"
-            echo "Passed: ${numPass}"
+
+            echo "------------------------ Passed ------------------------" | tee -a "$summary"
+            echo "Passed: ${numPass}" | tee -a "$summary"
             if [ "$numPass" -gt 0 ]; then
-            echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
+              echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"' | tee -a "$summary"
             fi
+
             if [ "$numFail" -gt 0 ]; then
-            echo "------------------------ Failed ------------------------"
-            echo "Failed: ${numFail}"
-            echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"'
+              echo "------------------------ Failed ------------------------" | tee -a "$summary"
+              echo "Failed: ${numFail}" | tee -a "$summary"
+              echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"' | tee -a "$summary"
             fi
-            echo "------------------------ Skipped ------------------------"
-            echo "Skipped: ${numSkip}"
+
+            echo "------------------------ Skipped ------------------------" | tee -a "$summary"
+            echo "Skipped: ${numSkip}" | tee -a "$summary"
             if [ "$numSkip" -gt 0 ]; then
-            echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"'
+              echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"' | tee -a "$summary"
             fi
-            echo "---------------------------------------------------------"
+            echo "---------------------------------------------------------" | tee -a "$summary"
+            echo $summary >> $GITHUB_STEP_SUMMARY
             if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
             if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
             # Safe Guard for when tests gets skipped and no failures
