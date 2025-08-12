@@ -82,7 +82,7 @@ minikube start [flags]
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --listen-address string             IP Address to use to expose ports (docker and podman driver only)
   -m, --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g). Use "max" to use the maximum amount of memory. Use "no-limit" to not specify a limit (Docker/Podman only)
-      --mount                             This will start the mount daemon and automatically mount files into minikube.
+      --mount                             Kept for backward compatibility, value is ignored.
       --mount-9p-version string           Specify the 9p version that the mount should use (default "9p2000.L")
       --mount-gid string                  Default group id used for the mount (default "docker")
       --mount-ip string                   Specify the ip that the mount should be setup on
