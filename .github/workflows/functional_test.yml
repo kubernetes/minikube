@@ -266,8 +266,8 @@ jobs:
         shell: bash
         if: matrix.driver == 'none'
         run: sudo apt-get -qq -y install conntrack
-      # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
-      - name: Install conntrack & socat (baremetal only)
+      # socat is required for kubectl port forward which is used in some tests
+      - name: Install socat (baremetal only)
         shell: bash
         if: matrix.driver == 'none'
         run: sudo apt-get -qq -y install socat        
