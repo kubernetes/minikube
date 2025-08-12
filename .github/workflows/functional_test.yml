@@ -96,6 +96,12 @@ jobs:
             os: macos-13
             extra-start-args: --network socket_vmnet
             test-timeout: 30m
+          - name: vfkit-docker-macos-13-x86_64
+            driver: vfkit
+            cruntime: docker
+            os: macos-13
+            extra-start-args: --network vmnet-shared
+            test-timeout: 30m
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
@@ -354,6 +360,15 @@ jobs:
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Install vfkit and vmnet_helper (macos)
+        if: matrix.os == 'macos-13' && matrix.driver == 'vfkit'
+        run: |
+          brew install vfkit
+          machine="$(uname -m)"
+          archive="vmnet-helper-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
       - name: Download Test Binaries
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
         with:
