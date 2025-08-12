@@ -1,18 +1,24 @@
+# Functional Test is a subset of minikube integration test, testing the most essential features of minikube.
 name: Functional Test
 on:
   workflow_dispatch:
   pull_request:
-    paths: &paths_common
+    paths:
       - "go.mod"
       - "**.go"
       - "Makefile"
       - "!site/**"
       - "!**.md"
-      - "!**.json"    
+      - "!**.json"
   push:
     branches: [ master ]
-    paths: *paths_common
-
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
 # Limit one functional test job running per PR/Branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

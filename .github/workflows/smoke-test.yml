@@ -3,7 +3,7 @@ name: Smoke Test
 on:
   push:
     branches: [ master ]
-    paths: &paths_common
+    paths:
       - "go.mod"
       - "**.go"
       - "Makefile"
@@ -12,7 +12,14 @@ on:
       - "!**.md"
       - "!**.json"
   pull_request:
-    paths: *paths_common
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
