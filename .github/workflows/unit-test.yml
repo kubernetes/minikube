@@ -42,6 +42,7 @@ jobs:
         - name: Install make (Windows)
           if: runner.os == 'Windows'
           run: choco install make -y
+        # TODO: add gopogh reports for unit tests too
         - name: unit test
           timeout-minutes: 5
           env:

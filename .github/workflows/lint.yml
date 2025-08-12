@@ -16,7 +16,7 @@ env:
 permissions:
   contents: read
 jobs:
-    lint:
+    Lint:
         runs-on: ubuntu-latest
         steps:
         - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -32,19 +32,19 @@ jobs:
           run: |
               sudo apt-get update              
               sudo apt-get install -y libvirt-dev
-        - name: lint
+        - name: Lint
           timeout-minutes: 8
           env:
             TESTSUITE: lint
           run: make test
           continue-on-error: false
-        - name: boilerplate check
+        - name: Boilerplate check
           timeout-minutes: 2
           env:
             TESTSUITE: boilerplate
           run: make test
           continue-on-error: false
-        - name: gomod tidy check
+        - name: Verify gomod tidy
           timeout-minutes: 2
           continue-on-error: false
           run: |
