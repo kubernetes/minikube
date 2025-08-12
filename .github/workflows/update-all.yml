@@ -39,4 +39,4 @@ jobs:
           title: 'deubg pr: update all dependencies'
           body: |
             Changelog:
-            ${{ steps.bumpVersions.outputs.changelog }}
+            ${{ steps.bumpVersions.outputs.changes }}
