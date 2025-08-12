@@ -64,18 +64,17 @@ jobs:
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
           - name: podman-docker-ubuntu-24.04-x86_64
-            driver: qemu
+            driver: podman
             cruntime: docker
-            os: macos13
-            extra-args: --network socket_vmnet
+            os: ubuntu-24.04
           - name: baremetal-docker-ubuntu-22.04-x86_64
             driver: none
             cruntime: docker
             os: ubuntu-22.04
-          - name: qemu-docker-macos13-x86_64
+          - name: qemu-docker-macos-13-x86_64
             driver: qemu
             cruntime: docker
-            os: macos13
+            os: macos-13
             extra-args: --network socket_vmnet
     steps:
       - name: Info Block (macOS)
