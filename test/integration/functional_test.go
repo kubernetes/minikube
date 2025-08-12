@@ -749,7 +749,7 @@ func validateMinikubeKubectlDirectCall(ctx context.Context, t *testing.T, profil
 	err := os.Link(Target(), dstfn)
 
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to link kubectl binary %s: %v", dstfn, err)
 	}
 	defer os.Remove(dstfn) // clean up
 
