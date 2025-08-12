@@ -400,17 +400,17 @@ jobs:
         run: |
             summary="$GITHUB_STEP_SUMMARY"
 
-            echo "-------------------- RESULT SUMMARY --------------------" | tee -a "$summary"
+            echo "-------------------- RESULT SUMMARY --------------------"
             echo "$RESULT_SHORT" | tee -a "$summary"
 
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
 
-            echo "------------------------ Passed ------------------------" | tee -a "$summary"
+            echo "------------------------ Passed ------------------------" 
             echo "Passed: ${numPass}" | tee -a "$summary"
             if [ "$numPass" -gt 0 ]; then
-              echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"' | tee -a "$summary"
+              echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
             fi
 
             if [ "$numFail" -gt 0 ]; then
@@ -424,7 +424,7 @@ jobs:
             if [ "$numSkip" -gt 0 ]; then
               echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"' | tee -a "$summary"
             fi
-            echo "---------------------------------------------------------" | tee -a "$summary"
+            echo "---------------------------------------------------------" 
             echo $summary >> $GITHUB_STEP_SUMMARY
             if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
             if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
