@@ -399,15 +399,26 @@ jobs:
           chmod a+x ./e2e-*
           chmod a+x ./minikube-*
           ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
+
           START_TIME=$(date -u +%s)
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+
+          # Run the test in the background and save its Process ID (PID)
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt &
+          E2E_PID=$!
+
+          # Wait for the background test to finish and capture its exit code
+          # we do this so we can get time elapsed even if test times out
+          wait $E2E_PID
+          EXIT_CODE=$?
+
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED="${min} min $sec seconds "
-          # make variables available for next step 
-          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
+          TIME_ELAPSED_STR="${min} min ${sec} seconds"
+          
+          echo "TIME_ELAPSED=${TIME_ELAPSED_STR}" >> $GITHUB_ENV
+          exit $EXIT_CODE
       - name: Generate Gopogh HTML Report
         if: always()
         shell: bash
