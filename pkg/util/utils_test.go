@@ -1,3 +1,5 @@
+//go:build !windows
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -81,10 +83,6 @@ func TestParseKubernetesVersion(t *testing.T) {
 }
 
 func TestChownR(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows")
-	}
-
 	testDir := t.TempDir()
 	if _, err := os.Create(testDir + "/TestChownR"); err != nil {
 		return
