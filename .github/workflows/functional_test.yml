@@ -415,7 +415,7 @@ jobs:
           # Check if the test step failed AND the log contains "timed out"
           if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "timed out" ./report/testout.txt) -gt 0 ]]; then
             # If it was a timeout, set your custom message
-            RESULT_SHORT="⌛ Test Timed out in ${TIME_ELAPSED}"
+            RESULT_SHORT="⌛⌛⌛ Test Timed out ${TIME_ELAPSED} ⌛⌛⌛"
             echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
           else
             go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
@@ -468,12 +468,12 @@ jobs:
               ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
               ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
               if [ -n "$ARTIFACT_ID" ]; then
-              URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
-              echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
-              echo "Download Gopogh report: $URL" >> $GITHUB_STEP_SUMMARY
+                URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
+                echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
+                echo "[download gopogh report]($URL)" >> "$summary"
               else
-              echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
-              echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
+                echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
+                echo "Report artifact name: $ARTIFACT_NAME" | tee -a "$summary"
               fi
             }
 
@@ -482,16 +482,27 @@ jobs:
             echo "$RESULT_SHORT" | tee -a "$summary"            
             totalDurationSeconds=$(echo "$STAT" | jq -r '.TotalDuration // 0')
             totalDurationMinutes=$(awk -v s="$totalDurationSeconds" 'BEGIN{printf "%.2f", s/60}')
+            echo "Total Duration: ${totalDurationMinutes} minutes" | tee -a "$summary"
+
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
-            echo "Total Duration: ${totalDurationMinutes} minutes" | tee -a "$summary"
-            echo "Failed: ${numFail}" | tee -a "$summary"
-            echo "Passed: ${numPass}" | tee -a "$summary"
-            echo "Skipped: ${numSkip}" | tee -a "$summary"
+            
+            print_test_counts_only() {
+              if [ -n "${numFail}" ]; then
+              echo "Failed: ${numFail}" | tee -a "$summary"
+              fi
+              if [ -n "${numPass}" ]; then
+              echo "Passed: ${numPass}" | tee -a "$summary"
+              fi
+              if [ -n "${numSkip}" ]; then
+              echo "Skipped: ${numSkip}" | tee -a "$summary"
+              fi
+            }
 
-            # Compact, DRY output of test sections
-            print_results() {
+            print_test_counts_only
+
+            print_test_names_by_status() {
               local count="$1" header="$2" sym="$3" field="$4" to_summary="$5"
               (( count > 0 )) || return 0
               local line="------------------------ ${count} ${header} ------------------------"
@@ -504,9 +515,9 @@ jobs:
               fi
             }
 
-            print_results "${numFail:-0}"   "Failed"  "✗" "FailedTests"   yes
-            print_results "${numPass:-0}"   "Passed"  "✓" "PassedTests"   no
-            print_results "${numSkip:-0}"   "Skipped" "•" "SkippedTests"  yes
+            print_test_names_by_status "${numFail:-0}"   "Failed"  "✗" "FailedTests"   yes
+            print_test_names_by_status "${numPass:-0}"   "Passed"  "✓" "PassedTests"   no
+            print_test_names_by_status "${numSkip:-0}"   "Skipped" "•" "SkippedTests"  yes
             echo $summary >> $GITHUB_STEP_SUMMARY
             decide_exit_code() {
               # Allow overriding minimum expected passes for when some tests pass and others are timed out
@@ -517,7 +528,7 @@ jobs:
 
               # Timeout detection
               if echo "$RESULT_SHORT" | grep -iq "$timeout_pattern"; then
-                echo "*** Detected test timeout: '$timeout_pattern' ***"
+                echo "*** Detected test timeout ⌛: '$timeout_pattern' ***"
                 exit 3
               fi
 
