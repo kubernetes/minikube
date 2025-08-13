@@ -397,6 +397,8 @@ jobs:
           TIME_ELAPSED="${min} min $sec seconds "
           # make variables available for next step 
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV  
+          echo "=====cat debug====="
+          cat ./report/testout.txt
       - name: Generate Gopogh HTML Report
         if: always()
         shell: bash
