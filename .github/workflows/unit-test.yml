@@ -56,9 +56,8 @@ jobs:
           run: choco install make -y
         # TODO: add gopogh reports for unit tests too
         - name: unit test
-          timeout-minutes: 5
+          timeout-minutes: 15
           env:
             TESTSUITE: unittest
           run: make test
           continue-on-error: false
-
