@@ -228,7 +228,18 @@ jobs:
           go-version: ${{env.GO_VERSION}}
           cache: true      
       - name: Install gopogh
-        run: go install github.com/medyagh/gopogh/cmd/gopogh@v0.29.0
+        shell: bash
+        run: |
+          GOPOGH_VERSION=v0.29.0
+          GOOS=$(go env GOOS)
+          GOARCH=$(go env GOARCH)
+          URL="https://github.com/medyagh/gopogh/releases/download/${GOPOGH_VERSION}/gopogh-${GOOS}-${GOARCH}"
+          echo "Downloading ${URL}"
+          curl -fsSL "${URL}" -o gopogh
+          sudo install -m 0755 gopogh /usr/local/bin/gopogh
+          rm gopogh
+          command -v gopogh
+          gopogh -version || true
       - name: Set up cgroup v2 delegation (rootless)
         if: ${{ matrix.rootless }}
         run: |
@@ -397,8 +408,6 @@ jobs:
           TIME_ELAPSED="${min} min $sec seconds "
           # make variables available for next step 
           echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV  
-          echo "=====cat debug====="
-          cat ./report/testout.txt
       - name: Generate Gopogh HTML Report
         if: always()
         shell: bash
@@ -455,22 +464,28 @@ jobs:
         shell: bash
         run: |
             summary="$GITHUB_STEP_SUMMARY"
-            ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
-            ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
-            if [ -n "$ARTIFACT_ID" ]; then
+            Print_Gopogh_Artifact_Download_URL() {
+              ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
+              ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
+              if [ -n "$ARTIFACT_ID" ]; then
               URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
               echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
               echo "Download Gopogh report: $URL" >> $GITHUB_STEP_SUMMARY
-            else
+              else
               echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
               echo "Report artifact name: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
-            fi
-            echo "-------------------- RESULT SUMMARY --------------------"
-            echo "$RESULT_SHORT" | tee -a "$summary"
+              fi
+            }
 
+            Print_Gopogh_Artifact_Download_URL
+            echo "-------------------- RESULT SUMMARY --------------------"
+            echo "$RESULT_SHORT" | tee -a "$summary"            
+            totalDurationSeconds=$(echo "$STAT" | jq -r '.TotalDuration // 0')
+            totalDurationMinutes=$(awk -v s="$totalDurationSeconds" 'BEGIN{printf "%.2f", s/60}')
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
+            echo "Total Duration: ${totalDurationMinutes} minutes" | tee -a "$summary"
             echo "Failed: ${numFail}" | tee -a "$summary"
             echo "Passed: ${numPass}" | tee -a "$summary"
             echo "Skipped: ${numSkip}" | tee -a "$summary"
@@ -492,8 +507,12 @@ jobs:
 
             echo "---------------------------------------------------------" 
             echo $summary >> $GITHUB_STEP_SUMMARY
+            if echo "$RESULT_SHORT" | grep -iq "Test Timed out"; then
+              echo $$RESULT_SHORT"
+              exit 3
+            fi
             if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-            if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 2;fi
+            if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 4;fi
             # Safe Guard for when tests gets skipped and no failures
-            if [ "$numPass" -lt 45 ];then echo "*** Failed to pass at least 45 ! ***";exit 2;fi
+            if [ "$numPass" -lt 45 ];then echo "*** Failed to pass at least 45 ! ***";exit 5;fi
 
