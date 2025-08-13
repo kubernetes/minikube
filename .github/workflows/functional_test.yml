@@ -481,8 +481,6 @@ jobs:
             Print_Gopogh_Artifact_Download_URL
             echo "-------------------- RESULT SUMMARY --------------------"
             echo "$RESULT_SHORT" | tee -a "$summary"            
-            totalDurationSeconds=$(echo "$STAT" | jq -r '.TotalDuration // 0')
-            echo "Total Duration: ${totalDurationSeconds} seconds" | tee -a "$summary"
             echo "Time Elapsed: ${TIME_ELAPSED}" | tee -a "$summary"
 
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
