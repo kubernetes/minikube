@@ -95,13 +95,13 @@ jobs:
             cruntime: docker
             os: macos-13
             extra-start-args: --network socket_vmnet
-            test-timeout: 35m
+            test-timeout: 2m
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
             extra-start-args: --network vmnet-shared --wait-timeout 15m
-            test-timeout: 35m            
+            test-timeout: 1m            
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
@@ -379,6 +379,7 @@ jobs:
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
       - name: Run Integration Test
+        id: run_test
         continue-on-error: true
         shell: bash {0}
         run: |
@@ -395,30 +396,39 @@ jobs:
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
           # make variables available for next step 
-          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV          
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV  
       - name: Generate Gopogh HTML Report
+        if: always()
         shell: bash
         run: |
-          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
-          PassNum=$(echo $STAT | jq '.NumberOfPass')
-          FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')
-          if [ "${FailNum}" -eq 0 ]; then
-            STATUS_ICON="✓"
-          elif [ "${FailNum}" -gt 1 ]; then
-            STATUS_ICON="✗"
-          elif [ "${PassNum}" -eq 0 ]; then
-            STATUS_ICON="✗"
+          # Check if the test step failed AND the log contains "timed out"
+          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "timed out" ./report/testout.txt) -gt 0 ]]; then
+            # If it was a timeout, set your custom message
+            RESULT_SHORT="⌛ Test Timed out in ${TIME_ELAPSED}"
+            echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
           else
-            STATUS_ICON="✗"
+            go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+            STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+            PassNum=$(echo $STAT | jq '.NumberOfPass')
+            FailNum=$(echo $STAT | jq '.NumberOfFail')
+            TestsNum=$(echo $STAT | jq '.NumberOfTests')
+
+            if [ "${FailNum}" -eq 0 ]; then
+              STATUS_ICON="✓"
+            else
+              STATUS_ICON="✗"
+            fi
+            if [ "${PassNum}" -eq 0 ]; then
+              STATUS_ICON="✗"
+            fi
+
+            # Result in one sentence
+            RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+            echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
+            echo 'STAT<<EOF' >> $GITHUB_ENV
+            echo "${STAT}" >> $GITHUB_ENV
+            echo 'EOF' >> $GITHUB_ENV
           fi
-          # Result in in one sentence
-          RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
-          echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
-          echo 'STAT<<EOF' >> $GITHUB_ENV
-          echo "${STAT}" >> $GITHUB_ENV
-          echo 'EOF' >> $GITHUB_ENV
       - name: Set PR or Branch label for report filename
         id: vars
         run: |
