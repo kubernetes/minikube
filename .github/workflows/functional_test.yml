@@ -407,7 +407,7 @@ jobs:
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
           # make variables available for next step 
-          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV  
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate Gopogh HTML Report
         if: always()
         shell: bash
@@ -436,6 +436,7 @@ jobs:
             # Result in one sentence
             RESULT_SHORT="${STATUS_ICON} Completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
             echo "RESULT_SHORT=${RESULT_SHORT}" >> $GITHUB_ENV
+            echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
             echo 'STAT<<EOF' >> $GITHUB_ENV
             echo "${STAT}" >> $GITHUB_ENV
             echo 'EOF' >> $GITHUB_ENV
@@ -467,10 +468,10 @@ jobs:
             Print_Gopogh_Artifact_Download_URL() {
               ARTIFACT_NAME="functional-${{ matrix.name }}-${{ steps.vars.outputs.PR_OR_MASTER }}-sha-${{ steps.vars.outputs.COMMIT_SHA }}"
               ARTIFACT_ID='${{ steps.upload_gopogh.outputs.artifact-id }}'
-              if [ -n "$ARTIFACT_ID" ]; then
+                if [ -n "$ARTIFACT_ID" ]; then
                 URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/$ARTIFACT_ID"
                 echo "Gopogh report artifact ($ARTIFACT_NAME): $URL"
-                echo "[download gopogh report]($URL)" >> "$summary"
+                echo "📥 [Download Gopogh Report]($URL)" >> "$summary"
               else
                 echo "Could not determine artifact ID (action version may not expose it). Find artifact named: $ARTIFACT_NAME"
                 echo "Report artifact name: $ARTIFACT_NAME" | tee -a "$summary"
@@ -481,8 +482,8 @@ jobs:
             echo "-------------------- RESULT SUMMARY --------------------"
             echo "$RESULT_SHORT" | tee -a "$summary"            
             totalDurationSeconds=$(echo "$STAT" | jq -r '.TotalDuration // 0')
-            totalDurationMinutes=$(awk -v s="$totalDurationSeconds" 'BEGIN{printf "%.2f", s/60}')
-            echo "Total Duration: ${totalDurationMinutes} minutes" | tee -a "$summary"
+            echo "Total Duration: ${totalDurationSeconds} seconds" | tee -a "$summary"
+            echo "Time Elapsed: ${TIME_ELAPSED}" | tee -a "$summary"
 
             numFail=$(echo "$STAT" | jq -r '.NumberOfFail // 0')
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
@@ -528,7 +529,7 @@ jobs:
 
               # Timeout detection
               if echo "$RESULT_SHORT" | grep -iq "$timeout_pattern"; then
-                echo "*** Detected test timeout ⌛: '$timeout_pattern' ***"
+                echo "*** Detected test timeout ${TIME_ELAPSED} ⌛: '$timeout_pattern' ***"
                 exit 3
               fi
 
