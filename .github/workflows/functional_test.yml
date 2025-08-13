@@ -79,7 +79,7 @@ jobs:
             os: ubuntu-22.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
-            test-timeout: 9m
+            test-timeout: 10m
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
@@ -94,14 +94,14 @@ jobs:
             driver: qemu
             cruntime: docker
             os: macos-13
-            extra-start-args: --network socket_vmnet
-            test-timeout: 2m
+            extra-start-args: --network socket_vmnet --wait-timeout 10m
+            test-timeout: 35m
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
-            extra-start-args: --network vmnet-shared --wait-timeout 15m
-            test-timeout: 1m            
+            extra-start-args: --network vmnet-shared --wait-timeout 10m
+            test-timeout: 35m            
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
@@ -399,26 +399,15 @@ jobs:
           chmod a+x ./e2e-*
           chmod a+x ./minikube-*
           ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
-
           START_TIME=$(date -u +%s)
-
-          # Run the test in the background and save its Process ID (PID)
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr" -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt &
-          E2E_PID=$!
-
-          # Wait for the background test to finish and capture its exit code
-          # we do this so we can get time elapsed even if test times out
-          wait $E2E_PID
-          EXIT_CODE=$?
-
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED_STR="${min} min ${sec} seconds"
-          
-          echo "TIME_ELAPSED=${TIME_ELAPSED_STR}" >> $GITHUB_ENV
-          exit $EXIT_CODE
+          TIME_ELAPSED="${min} min $sec seconds "
+          # make variables available for next step 
+          echo "TIME_ELAPSED=${TIME_ELAPSED}" >> $GITHUB_ENV
       - name: Generate Gopogh HTML Report
         if: always()
         shell: bash
@@ -500,6 +489,7 @@ jobs:
             numPass=$(echo "$STAT" | jq -r '.NumberOfPass // 0')
             numSkip=$(echo "$STAT" | jq -r '.NumberOfSkip // 0')
             
+            # Print test counts only if they are non-zero
             print_test_counts_only() {
               if [ -n "${numFail}" ]; then
               echo "Failed: ${numFail}" | tee -a "$summary"
@@ -514,6 +504,7 @@ jobs:
 
             print_test_counts_only
 
+            # Prints lits of test names grouped by result status
             print_test_names_by_status() {
               local count="$1" header="$2" sym="$3" field="$4" to_summary="$5"
               (( count > 0 )) || return 0
