@@ -35,7 +35,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      - name: Setup Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
         with:
           go-version: ${{env.GO_VERSION}}
           cache: true      
@@ -490,29 +491,56 @@ jobs:
             echo "Passed: ${numPass}" | tee -a "$summary"
             echo "Skipped: ${numSkip}" | tee -a "$summary"
 
-            if [ "$numFail" -gt 0 ]; then
-              echo "------------------------ ${numFail} Failed ------------------------" | tee -a "$summary"              
-              echo "$STAT" | jq -r '.FailedTests[]? | "  ✗ \(.)"' | tee -a "$summary"
-            fi
+            # Compact, DRY output of test sections
+            print_results() {
+              local count="$1" header="$2" sym="$3" field="$4" to_summary="$5"
+              (( count > 0 )) || return 0
+              local line="------------------------ ${count} ${header} ------------------------"
+              if [ "$to_summary" = "yes" ]; then
+                echo "$line" | tee -a "$summary"
+                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT" | tee -a "$summary"
+              else
+                echo "$line"
+                jq -r ".${field}[]? | \"  ${sym} \(.)\"" <<<"$STAT"
+              fi
+            }
 
-            echo "------------------------${numPass} Passed ------------------------" 
-            if [ "$numPass" -gt 0 ]; then
-              echo "$STAT" | jq -r '.PassedTests[]? | "  ✓ \(.)"'
-            fi
-
-            if [ "$numSkip" -gt 0 ]; then
-              echo "------------------------${numSkip} Skipped ------------------------" | tee -a "$summary"
-              echo "$STAT" | jq -r '.SkippedTests[]? | "  • \(.)"' | tee -a "$summary"
-            fi
-
-            echo "---------------------------------------------------------" 
+            print_results "${numFail:-0}"   "Failed"  "✗" "FailedTests"   yes
+            print_results "${numPass:-0}"   "Passed"  "✓" "PassedTests"   no
+            print_results "${numSkip:-0}"   "Skipped" "•" "SkippedTests"  yes
             echo $summary >> $GITHUB_STEP_SUMMARY
-            if echo "$RESULT_SHORT" | grep -iq "Test Timed out"; then
-              echo $$RESULT_SHORT"
-              exit 3
-            fi
-            if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-            if [ "$numPass" -eq 0 ];then echo "*** 0 Passed! ***";exit 4;fi
-            # Safe Guard for when tests gets skipped and no failures
-            if [ "$numPass" -lt 45 ];then echo "*** Failed to pass at least 45 ! ***";exit 5;fi
+            decide_exit_code() {
+              # Allow overriding minimum expected passes for when some tests pass and others are timed out
+              local min_pass="${MIN_PASS_THRESHOLD:-45}"
+              local timeout_pattern="Test Timed out"
 
+              echo "---------------------------------------------------------"
+
+              # Timeout detection
+              if echo "$RESULT_SHORT" | grep -iq "$timeout_pattern"; then
+                echo "*** Detected test timeout: '$timeout_pattern' ***"
+                exit 3
+              fi
+
+              # Any failures
+              if [ "${numFail:-0}" -gt 0 ]; then
+                echo "*** ${numFail} test(s) failed ***" 
+                exit 2
+              fi
+
+              # Zero passes (likely setup issue)
+              if [ "${numPass:-0}" -eq 0 ]; then
+                echo "*** No tests passed ***" 
+                exit 4
+              fi
+
+              # Insufficient passes safeguard
+              if [ "${numPass:-0}" -lt "$min_pass" ]; then
+                echo "*** Only ${numPass} passed (< required ${min_pass}) ***" | tee -a "$summary"
+                exit 5
+              fi
+
+              echo "Exit criteria satisfied: ${numPass} passed, ${numFail} failed, ${numSkip} skipped." 
+            }
+
+            decide_exit_code
