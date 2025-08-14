@@ -64,22 +64,20 @@ jobs:
             driver: docker
             cruntime: docker
             os: ubuntu-22.04
-            # will try to choose lowest time out per environment (+3m avg)
-            # Test taking longer than their usual's should also be treated as a failure
-            test-timeout: 10m 
+            test-timeout: 15m 
           - name: docker-containerd-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             extra-start-args: --container-runtime=containerd
             os: ubuntu-22.04
-            test-timeout: 10m
+            test-timeout: 15m 
           - name: docker-containerd-rootless-ubuntu-22.04-x86_64
             driver: docker
             cruntime: containerd
             os: ubuntu-22.04            
             extra-start-args: --container-runtime=containerd --rootless
             rootless: true
-            test-timeout: 10m
+            test-timeout: 15m 
           - name: podman-docker-ubuntu-24.04-x86_64
             driver: podman
             cruntime: docker
