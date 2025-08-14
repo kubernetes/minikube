@@ -93,13 +93,13 @@ jobs:
             cruntime: docker
             os: macos-13
             extra-start-args: --network socket_vmnet
-            test-timeout: 40m
+            test-timeout: 50m
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
             extra-start-args: --network vmnet-shared
-            test-timeout: 40m            
+            test-timeout: 50m            
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
