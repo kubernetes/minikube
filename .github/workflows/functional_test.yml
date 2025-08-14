@@ -94,14 +94,14 @@ jobs:
             driver: qemu
             cruntime: docker
             os: macos-13
-            extra-start-args: --network socket_vmnet --wait-timeout 10m
-            test-timeout: 35m
+            extra-start-args: --network socket_vmnet
+            test-timeout: 40m
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
-            extra-start-args: --network vmnet-shared --wait-timeout 10m
-            test-timeout: 35m            
+            extra-start-args: --network vmnet-shared
+            test-timeout: 40m            
     steps:
       - name: Info Block (macOS)
         if: runner.os == 'macOS'
