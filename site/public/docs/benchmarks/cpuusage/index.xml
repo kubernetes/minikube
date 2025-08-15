@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>CPU Usage Benchmarks on minikube</title>
+    <link>http://localhost:1313/docs/benchmarks/cpuusage/</link>
+    <description>Recent content in CPU Usage Benchmarks on minikube</description>
+    <generator>Hugo</generator>
+    <language>en</language>
+    <atom:link href="http://localhost:1313/docs/benchmarks/cpuusage/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>CPU Usage Benchmarks (Linux)</title>
+      <link>http://localhost:1313/docs/benchmarks/cpuusage/linux/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/cpuusage/linux/</guid>
+      <description>&lt;h2 id=&#34;cpu-busy-overhead---average-first-5-minutes-only&#34;&gt;CPU% Busy Overhead - Average first 5 minutes only&lt;/h2&gt;&#xA;&lt;p&gt;This chart shows each tool&amp;rsquo;s CPU busy overhead percentage.&#xA;After each tool&amp;rsquo;s starting, we measured each tool&amp;rsquo;s idle for 5 minutes.&#xA;This chart was measured only after the start without deploying any pods.&lt;/p&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;start each local kubernetes tool&lt;/li&gt;&#xA;&lt;li&gt;measure its cpu usage with &lt;a href=&#34;https://github.com/tstromberg/cstat&#34;&gt;cstat&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/cpuUsage/idleOnly/linux.png&#34; alt=&#34;idleOnly&#34;&gt;&lt;/p&gt;&#xA;&lt;p&gt;NOTE: the benchmark environment uses GCE with nested virtualization. This may affect virtual machine&amp;rsquo;s overhead.&#xA;&lt;a href=&#34;https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances&#34;&gt;https://cloud.google.com/compute/docs/instances/enable-nested-virtualization-vm-instances&lt;/a&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;cpu-busy-overhead---with-auto-pause-vs-non-auto-pause&#34;&gt;CPU% Busy Overhead - With Auto Pause vs. Non Auto Pause&lt;/h2&gt;&#xA;&lt;p&gt;This chart shows each tool&amp;rsquo;s CPU busy overhead percentage with auto-pause addon.&#xA;The auto-pause is mechanism which reduce CPU busy usage by pausing kube-apiserver.&#xA;We compare CPU usage after deploying sample application (nginx deployment) to all tools (including minikube and other tools).&#xA;This chart was measured with the following steps.&#xA;By these steps, we compare CPU usage with auto-pause vs. non-auto-pause.&lt;/p&gt;</description>
+    </item>
+    <item>
+      <title>CPU Usage Benchmarks (macOS)</title>
+      <link>http://localhost:1313/docs/benchmarks/cpuusage/macos/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>http://localhost:1313/docs/benchmarks/cpuusage/macos/</guid>
+      <description>&lt;h2 id=&#34;cpu-busy-overhead---average-first-5-minutes-only&#34;&gt;CPU% Busy Overhead - Average first 5 minutes only&lt;/h2&gt;&#xA;&lt;p&gt;This chart shows each tool&amp;rsquo;s CPU busy overhead percentage.&#xA;After each tool&amp;rsquo;s starting, we measured each tool&amp;rsquo;s idle for 5 minutes.&#xA;This chart was measured only after the start without deploying any pods.&lt;/p&gt;&#xA;&lt;ol&gt;&#xA;&lt;li&gt;start each local kubernetes tool&lt;/li&gt;&#xA;&lt;li&gt;measure its cpu usage with &lt;a href=&#34;https://github.com/tstromberg/cstat&#34;&gt;cstat&lt;/a&gt;&lt;/li&gt;&#xA;&lt;/ol&gt;&#xA;&lt;p&gt;&lt;img src=&#34;http://localhost:1313/images/benchmarks/cpuUsage/idleOnly/mac.png&#34; alt=&#34;idleOnly&#34;&gt;&lt;/p&gt;&#xA;&lt;h2 id=&#34;cpu-busy-overhead---with-auto-pause-vs-non-auto-pause&#34;&gt;CPU% Busy Overhead - With Auto Pause vs. Non Auto Pause&lt;/h2&gt;&#xA;&lt;p&gt;This chart shows each tool&amp;rsquo;s CPU busy overhead percentage with auto-pause addon.&#xA;The auto-pause is mechanism which reduce CPU busy usage by pausing kube-apiserver.&#xA;We compare CPU usage after deploying sample application (nginx deployment) to all tools (including minikube and other tools).&#xA;This chart was measured with the following steps.&#xA;By these steps, we compare CPU usage with auto-pause vs. non-auto-pause.&lt;/p&gt;</description>
+    </item>
+  </channel>
+</rss>
