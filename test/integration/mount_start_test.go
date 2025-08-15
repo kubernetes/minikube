@@ -22,10 +22,14 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/test/integration/findmnt"
 )
 
 const (
@@ -139,26 +143,47 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	args = sshArgs
-	args = append(args, "mount", "|", "grep", "9p")
+	args = append(args, "findmnt", "--json", guestPath)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Fatalf("failed to get mount information: %v", err)
+		t.Fatalf("command failed %q: %v", rr.Command(), err)
 	}
+
+	result, err := findmnt.ParseOutput(rr.Stdout.Bytes())
+	if err != nil {
+		t.Fatalf("failed to parse output %s: %v", rr.Stdout.String(), err)
+	}
+
+	if len(result.Filesystems) == 0 {
+		t.Fatalf("no filesystems found")
+	}
+
+	fs := result.Filesystems[0]
+	if fs.FSType == constants.FSTypeVirtiofs {
+		t.Logf("Options not supported yet for %q filesystem", fs.FSType)
+		return
+	}
+
+	if fs.FSType != constants.FSType9p {
+		t.Fatalf("unexpected filesystem %q", fs.FSType)
+	}
+
+	options := strings.Split(fs.Options, ",")
 
 	flags := []struct {
 		key      string
 		expected string
 	}{
-		{"gid", mountGID},
+		{"dfltgid", mountGID},
+		{"dfltuid", mountUID},
 		{"msize", mountMSize},
 		{"port", mountPort()},
-		{"uid", mountUID},
 	}
 
 	for _, flag := range flags {
 		want := fmt.Sprintf("%s=%s", flag.key, flag.expected)
-		if !strings.Contains(rr.Output(), want) {
-			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, rr.Output())
+		if !slices.Contains(options, want) {
+			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, options)
 		}
 	}
 }
