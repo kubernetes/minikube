@@ -74,6 +74,12 @@ metadata:
 spec:
   serviceAccountName: minikube-ingress-dns
   hostNetwork: true
+  nodeSelector:
+    minikube.k8s.io/primary: 'true'
+  tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+        operator: Equal
   containers:
     - name: minikube-ingress-dns
       image: {{.CustomRegistries.IngressDNS | default .ImageRepository | default .Registries.IngressDNS }}{{.Images.IngressDNS}}
