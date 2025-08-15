@@ -35,7 +35,9 @@ const (
 	guestPath  = "/minikube-host"
 )
 
-var mountStartPort = 46463
+// We document to reseve ports 9000-9100/tcp for 9p.
+// TODO: get the value from minikube config.
+var mountStartPort = 9090
 
 func mountPort() string {
 	return strconv.Itoa(mountStartPort)
