@@ -86,8 +86,6 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
-			// Required Until https://github.com/containers/libkrun/issues/264 is fixed.
-			Offloading: true,
 		},
 	}, nil
 }
