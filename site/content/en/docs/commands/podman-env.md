@@ -4,17 +4,57 @@ description: >
   Configure environment to use minikube's Podman service
 ---
 
+## Requirements
+
+- **Recent Podman version with Docker API compatibility is required.**
+- **Docker client is required** - `podman-env` uses Docker's client to communicate with Podman's Docker-compatible API.
+- The `podman-env` command configures Docker client environment variables to connect to minikube's Podman service via its Docker-compatible API.
+
+{{% pageinfo color="info" %}}
+**Note:** This command sets up standard Docker environment variables (`DOCKER_HOST`, `DOCKER_TLS_VERIFY`, `DOCKER_CERT_PATH`) to connect to Podman's Docker-compatible socket. Use the regular `docker` command-line tool to interact with minikube's Podman service.
+{{% /pageinfo %}}
 
 ## minikube podman-env
 
-Configure environment to use minikube's Podman service
+Configure environment to use minikube's Podman service via Docker API compatibility
 
 ### Synopsis
 
-Sets up podman env variables; similar to '$(podman-machine env)'.
+Sets up Docker client env variables to use minikube's Podman Docker-compatible service.
 
 ```shell
 minikube podman-env [flags]
+```
+
+### Usage
+
+After running `minikube podman-env`, you can use the regular Docker client to interact with minikube's Podman service:
+
+```shell
+# Configure your shell
+eval $(minikube podman-env)
+
+# Now use docker commands as usual - they will connect to Podman
+docker images
+docker build -t myapp .
+docker run myapp
+```
+
+This approach provides Docker API compatibility while using Podman as the container runtime inside minikube.
+
+### Building Images for Local Development
+
+You can build images directly in minikube and deploy them without a separate registry:
+
+```shell
+# Configure environment
+eval $(minikube podman-env)
+
+# Build image directly in minikube
+docker build -t my-local-app .
+
+# Deploy to Kubernetes without registry
+kubectl run my-app --image=my-local-app --image-pull-policy=Never
 ```
 
 ### Options
@@ -30,7 +70,7 @@ minikube podman-env [flags]
       --add_dir_header                   If true, adds the file directory to the header of the log messages
       --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
   -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the Kubernetes cluster. (default "kubeadm")
-  -h, --help                             
+  -h, --help
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
       --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
