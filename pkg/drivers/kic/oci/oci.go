@@ -41,13 +41,15 @@ import (
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label
-// if there no containers found with the given 	label, it will return nil
+// if there no containers found with the given label, it will return nil
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	ctx := context.Background()
-	cs, err := ListContainersByLabel(ctx, ociBin, label)
+
+	// Enable slow warning for container listing during delete operations
+	cs, err := ListContainersByLabel(ctx, ociBin, label, true)
 	if err != nil {
-		return []error{fmt.Errorf("listing containers by label %q", label)}
+		return []error{fmt.Errorf("listing containers by label %q: %v", label, err)}
 	}
 
 	if len(cs) == 0 {
@@ -55,7 +57,8 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 	}
 
 	for _, c := range cs {
-		_, err := ContainerStatus(ociBin, c)
+		// Enable slow warning for container status check
+		_, err := ContainerStatus(ociBin, c, true)
 		// only try to delete if docker/podman inspect returns
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
@@ -63,32 +66,36 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			klog.Errorf("%s daemon seems to be stuck. please try restarting your %s :%v", ociBin, ociBin, err)
 			continue
 		}
+
 		if err := ShutDown(ociBin, c); err != nil {
 			klog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
 
-		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c)); err != nil {
+		// Enable slow warning for container removal
+		if _, err := runCmd(exec.Command(ociBin, "rm", "-f", "-v", c), true); err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, err))
 		}
-
 	}
 	return deleteErrs
 }
 
 // DeleteContainer deletes a container by ID or Name
 func DeleteContainer(ctx context.Context, ociBin string, name string) error {
-	_, err := ContainerStatus(ociBin, name)
+	// Enable slow warning for container status check
+	_, err := ContainerStatus(ociBin, name, true)
 	if err == context.DeadlineExceeded {
-		out.WarningT("{{.ocibin}} is taking an unusually long time to respond, consider restarting {{.ocibin}}", out.V{"ociBin": ociBin})
+		out.WarningT("{{.ocibin}} is taking an unusually long time to respond, consider restarting {{.ocibin}}", out.V{"ocibin": ociBin})
 	} else if err != nil {
 		klog.Warningf("error getting container status, will try to delete anyways: %v", err)
 	}
+
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
 		klog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 
-	if _, err := runCmd(exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)); err != nil {
+	// Enable slow warning for container removal
+	if _, err := runCmd(exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name), true); err != nil {
 		return errors.Wrapf(err, "delete %s", name)
 	}
 	return nil
@@ -368,7 +375,12 @@ func ContainerID(ociBin string, nameOrID string) (string, error) {
 
 // ContainerExists checks if container name exists (either running or exited)
 func ContainerExists(ociBin string, name string, warnSlow ...bool) (bool, error) {
-	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), warnSlow...)
+	shouldWarn := false
+	if len(warnSlow) > 0 {
+		shouldWarn = warnSlow[0]
+	}
+
+	rr, err := runCmd(exec.Command(ociBin, "ps", "-a", "--format", "{{.Names}}"), shouldWarn)
 	if err != nil {
 		return false, err
 	}
@@ -540,7 +552,13 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // ListContainersByLabel returns all the container names with a specified label
 func ListContainersByLabel(ctx context.Context, ociBin string, label string, warnSlow ...bool) ([]string, error) {
-	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), warnSlow...)
+	// Default to no warnings, but enable if explicitly requested
+	shouldWarn := false
+	if len(warnSlow) > 0 {
+		shouldWarn = warnSlow[0]
+	}
+
+	rr, err := runCmd(exec.CommandContext(ctx, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}"), shouldWarn)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +637,12 @@ func PointToHostPodman() error {
 
 // ContainerRunning returns running state of a container
 func ContainerRunning(ociBin string, name string, warnSlow ...bool) (bool, error) {
-	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Running}}"), warnSlow...)
+	shouldWarn := false
+	if len(warnSlow) > 0 {
+		shouldWarn = warnSlow[0]
+	}
+
+	rr, err := runCmd(exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Running}}"), shouldWarn)
 	if err != nil {
 		return false, err
 	}
@@ -628,8 +651,13 @@ func ContainerRunning(ociBin string, name string, warnSlow ...bool) (bool, error
 
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string, warnSlow ...bool) (state.State, error) {
+	shouldWarn := false
+	if len(warnSlow) > 0 {
+		shouldWarn = warnSlow[0]
+	}
+
 	cmd := exec.Command(ociBin, "container", "inspect", name, "--format={{.State.Status}}")
-	rr, err := runCmd(cmd, warnSlow...)
+	rr, err := runCmd(cmd, shouldWarn)
 	o := strings.TrimSpace(rr.Stdout.String())
 	switch o {
 	case "configured":

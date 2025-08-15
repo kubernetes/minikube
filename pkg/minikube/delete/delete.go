@@ -47,7 +47,9 @@ func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 
 	klog.Infof("deleting possible leftovers for %s (driver=%s) ...", cname, driverName)
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, cname)
-	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel)
+
+	// Enable slow warning for container listing during delete operations
+	cs, err := oci.ListContainersByLabel(ctx, bin, delLabel, true)
 	if err == nil && len(cs) > 0 {
 		for _, c := range cs {
 			out.Step(style.DeletingHost, `Deleting container "{{.name}}" ...`, out.V{"name": cname})
@@ -55,7 +57,6 @@ func PossibleLeftOvers(ctx context.Context, cname string, driverName string) {
 			if err != nil { // it will error if there is no container to delete
 				klog.Errorf("error deleting container %q. You may want to delete it manually :\n%v", cname, err)
 			}
-
 		}
 	}
 

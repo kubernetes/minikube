@@ -40,7 +40,7 @@ func TestRunCmdWarnSlowOnce(t *testing.T) {
 		t.Errorf("runCmd has error: %v", err)
 	}
 
-	if !strings.Contains(f1.String(), "Executing \"sleep 3\" took an unusually long time") {
+	if !strings.Contains(f1.String(), "is taking an unusually long time to respond") {
 		t.Errorf("runCmd does not print the correct log, instead print :%v", f1.String())
 	}
 
@@ -54,7 +54,7 @@ func TestRunCmdWarnSlowOnce(t *testing.T) {
 		t.Errorf("runCmd has error: %v", err)
 	}
 
-	if strings.Contains(f2.String(), "Executing \"sleep 3\" took an unusually long time") {
+	if strings.Contains(f2.String(), "is taking an unusually long time to respond") {
 		t.Errorf("runCmd does not print the correct log, instead print :%v", f2.String())
 	}
 }
