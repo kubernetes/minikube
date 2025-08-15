@@ -17,10 +17,12 @@ limitations under the License.
 package common
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-const testISOPath = "testdata/test.iso"
+var testISOPath = filepath.Join("testdata", "test.iso")
 
 func TestExtractFile(t *testing.T) {
 	testDir := t.TempDir()
@@ -35,29 +37,29 @@ func TestExtractFile(t *testing.T) {
 		{
 			name:          "all is right",
 			isoPath:       testISOPath,
-			srcPath:       "/test1.txt",
-			destPath:      testDir + "/test1.txt",
+			srcPath:       string(os.PathSeparator) + "test1.txt",
+			destPath:      filepath.Join(testDir, "test1.txt"),
 			expectedError: false,
 		},
 		{
 			name:          "isoPath is error",
-			isoPath:       "testdata/missing.iso",
-			srcPath:       "/test1.txt",
-			destPath:      testDir + "/test1.txt",
+			isoPath:       filepath.Join("testdata", "missing.iso"),
+			srcPath:       string(os.PathSeparator) + "test1.txt",
+			destPath:      filepath.Join(testDir, "test1.txt"),
 			expectedError: true,
 		},
 		{
 			name:          "srcPath is empty",
 			isoPath:       testISOPath,
 			srcPath:       "",
-			destPath:      testDir + "/test1.txt",
+			destPath:      filepath.Join(testDir, "test1.txt"),
 			expectedError: true,
 		},
 		{
 			name:          "srcPath is error",
 			isoPath:       testISOPath,
 			srcPath:       "/t1.txt",
-			destPath:      testDir + "/test1.txt",
+			destPath:      filepath.Join(testDir, "test1.txt"),
 			expectedError: true,
 		},
 		{
@@ -70,8 +72,8 @@ func TestExtractFile(t *testing.T) {
 		{
 			name:          "find files in a folder",
 			isoPath:       testISOPath,
-			srcPath:       "/test2/test2.txt",
-			destPath:      testDir + "/test2.txt",
+			srcPath:       string(os.PathSeparator) + filepath.Join("test2", "test2.txt"),
+			destPath:      filepath.Join(testDir, "test2.txt"),
 			expectedError: false,
 		},
 	}
