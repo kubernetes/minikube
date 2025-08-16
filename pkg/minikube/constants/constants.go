@@ -161,6 +161,11 @@ const (
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
 
+	// FSType9p is 9p filesystem type
+	FSType9p = "9p"
+	// FSTypeVirtiofs is virtiofs filesystem type
+	FSTypeVirtiofs = "virtiofs"
+
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"
 )

@@ -28,6 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/krunkit"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -65,6 +66,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		u = uuid.NewString()
 	}
 
+	mounts, err := virtiofs.ValidateMountString(cfg.MountString)
+	if err != nil {
+		return nil, err
+	}
+
 	return &krunkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: machineName,
@@ -76,6 +82,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		VirtiofsMounts: mounts,
 		VmnetHelper: vmnet.Helper{
 			MachineDir:  filepath.Join(storePath, "machines", machineName),
 			InterfaceID: u,
