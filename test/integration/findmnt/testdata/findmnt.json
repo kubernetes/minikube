@@ -1,0 +1,404 @@
+{
+   "filesystems": [
+      {
+         "target": "/",
+         "source": "tmpfs",
+         "fstype": "tmpfs",
+         "options": "rw,relatime,size=5469192k",
+         "children": [
+            {
+               "target": "/dev",
+               "source": "devtmpfs",
+               "fstype": "devtmpfs",
+               "options": "rw,relatime,size=2838500k,nr_inodes=709625,mode=755",
+               "children": [
+                  {
+                     "target": "/dev/shm",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev"
+                  },{
+                     "target": "/dev/pts",
+                     "source": "devpts",
+                     "fstype": "devpts",
+                     "options": "rw,relatime,gid=5,mode=620,ptmxmode=000"
+                  },{
+                     "target": "/dev/mqueue",
+                     "source": "mqueue",
+                     "fstype": "mqueue",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/dev/hugepages",
+                     "source": "hugetlbfs",
+                     "fstype": "hugetlbfs",
+                     "options": "rw,nosuid,nodev,relatime,pagesize=2M"
+                  }
+               ]
+            },{
+               "target": "/proc",
+               "source": "proc",
+               "fstype": "proc",
+               "options": "rw,relatime",
+               "children": [
+                  {
+                     "target": "/proc/fs/nfsd",
+                     "source": "nfsd",
+                     "fstype": "nfsd",
+                     "options": "rw,relatime"
+                  }
+               ]
+            },{
+               "target": "/sys",
+               "source": "sysfs",
+               "fstype": "sysfs",
+               "options": "rw,relatime",
+               "children": [
+                  {
+                     "target": "/sys/kernel/security",
+                     "source": "securityfs",
+                     "fstype": "securityfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/sys/fs/cgroup",
+                     "source": "cgroup2",
+                     "fstype": "cgroup2",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/sys/fs/pstore",
+                     "source": "pstore",
+                     "fstype": "pstore",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/sys/fs/bpf",
+                     "source": "bpf",
+                     "fstype": "bpf",
+                     "options": "rw,nosuid,nodev,noexec,relatime,mode=700"
+                  },{
+                     "target": "/sys/kernel/debug",
+                     "source": "debugfs",
+                     "fstype": "debugfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/sys/fs/fuse/connections",
+                     "source": "fusectl",
+                     "fstype": "fusectl",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  },{
+                     "target": "/sys/kernel/config",
+                     "source": "configfs",
+                     "fstype": "configfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime"
+                  }
+               ]
+            },{
+               "target": "/run",
+               "source": "tmpfs",
+               "fstype": "tmpfs",
+               "options": "rw,nosuid,nodev,size=1215376k,nr_inodes=819200,mode=755",
+               "children": [
+                  {
+                     "target": "/run/credentials/systemd-journald.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-sysctl.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-network-generator.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-udev-load-credentials.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-tmpfiles-setup-dev-early.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-tmpfiles-setup-dev.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-tmpfiles-setup.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-resolved.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-vconsole-setup.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/systemd-networkd.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/e34d86201b50359fb326eed193a61a235a129e1a96da99941dad9df95fe2b59e/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/284cf9a7218628d934052f4605be7b63714ef412ef3c2856fc221c953f23dc34/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/c10eed7ce9d2eba7b8fa9cf19579da9e0b4ae7bfcb0980e42eae953937e3b896/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/6aa921607668d84b4f739ae03cd1ead5fba746c5e8d8e18a01000c658fa584fb/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/e34d86201b50359fb326eed193a61a235a129e1a96da99941dad9df95fe2b59e/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/52/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/52/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/6aa921607668d84b4f739ae03cd1ead5fba746c5e8d8e18a01000c658fa584fb/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/54/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/54/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/284cf9a7218628d934052f4605be7b63714ef412ef3c2856fc221c953f23dc34/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/51/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/51/work,uuid=on"
+                  },{
+                     "target": "/run/credentials/serial-getty@hvc0.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/credentials/getty@tty1.service",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "ro,nosuid,nodev,noexec,relatime,nosymfollow,size=1024k,nr_inodes=1024,mode=700,noswap"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/3eb5d813911660b252526a94c7eb1363ccce5f1318fa6e5abba72b39de73a20c/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/55/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/55/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/9d418ec1eda31185157bb4f852d5f4be99b8a729eca29b70938d6a7f0b27867a/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/56/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/56/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/2f34cfea501a50923a0782ae9aae2dd5f4bd7906028cdcb704c0ff4e4a9bd321/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/32/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/31/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/30/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/29/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/28/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/27/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/26/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/25/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/24/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/23/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/22/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/21/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/20/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/19/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/57/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/57/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/c10eed7ce9d2eba7b8fa9cf19579da9e0b4ae7bfcb0980e42eae953937e3b896/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/53/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/53/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/f99029c85cc7ad3ef564c21707a9c3662cd5d1872466c0083e82391bd5403614/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/58/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/58/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/a7e20dbaa4471a5f676229a545386c326fede950becf532ddfa83c56a8b1487d/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/a7e20dbaa4471a5f676229a545386c326fede950becf532ddfa83c56a8b1487d/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/59/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/59/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/11d110ba7b0e81e3d0c90c2f05d9e763307798026d88ec1ab42dd0b5cc3442bf/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/e1077355f5e5ca66359243230d6a2adf3dabb8ac21b4902e018142c8521c9e35/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/17/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/60/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/60/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/aba169f7db1e656cc6416422e579493d9b3298a761b67b7eb3c29977b7b4ecc7/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/46/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/65/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/65/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/11d110ba7b0e81e3d0c90c2f05d9e763307798026d88ec1ab42dd0b5cc3442bf/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/61/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/61/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.grpc.v1.cri/sandboxes/26fa1dec99afc4b7241453f5b6d0ecff799e23802e84347886de16d8b6c64da1/shm",
+                     "source": "shm",
+                     "fstype": "tmpfs",
+                     "options": "rw,nosuid,nodev,noexec,relatime,size=65536k"
+                  },{
+                     "target": "/run/netns/cni-be490d49-34fa-1dab-8aee-df4c972de1f9",
+                     "source": "nsfs[net:[4026532231]]",
+                     "fstype": "nsfs",
+                     "options": "rw"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/26fa1dec99afc4b7241453f5b6d0ecff799e23802e84347886de16d8b6c64da1/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/63/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/63/work,uuid=on"
+                  },{
+                     "target": "/run/containerd/io.containerd.runtime.v2.task/k8s.io/29341fb4424e020fae1a352baaf567840b919014229ae56505a97a0a2bcb7b6d/rootfs",
+                     "source": "overlay",
+                     "fstype": "overlay",
+                     "options": "rw,relatime,lowerdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/45/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/44/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/43/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/42/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/41/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/40/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/39/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/38/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/37/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/36/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/35/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/34/fs:/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/33/fs,upperdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/64/fs,workdir=/mnt/vdb1/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/64/work,uuid=on"
+                  }
+               ]
+            },{
+               "target": "/tmp",
+               "source": "tmpfs",
+               "fstype": "tmpfs",
+               "options": "rw,nosuid,nodev,size=3038440k,nr_inodes=1048576",
+               "children": [
+                  {
+                     "target": "/tmp/hostpath_pv",
+                     "source": "/dev/vdb1[/hostpath_pv]",
+                     "fstype": "ext4",
+                     "options": "rw,relatime"
+                  },{
+                     "target": "/tmp/hostpath-provisioner",
+                     "source": "/dev/vdb1[/hostpath-provisioner]",
+                     "fstype": "ext4",
+                     "options": "rw,relatime"
+                  }
+               ]
+            },{
+               "target": "/var/lib/containers/storage/overlay",
+               "source": "tmpfs[/var/lib/containers/storage/overlay]",
+               "fstype": "tmpfs",
+               "options": "rw,relatime,size=5469192k"
+            },{
+               "target": "/mnt/vdb1",
+               "source": "/dev/vdb1",
+               "fstype": "ext4",
+               "options": "rw,relatime",
+               "children": [
+                  {
+                     "target": "/mnt/vdb1/var/lib/kubelet/pods/9c2b9245-eb18-4173-a5a2-e7c4828def00/volumes/kubernetes.io~projected/kube-api-access-ncqgj",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=6076876k,noswap"
+                  },{
+                     "target": "/mnt/vdb1/var/lib/kubelet/pods/2899edb5-37eb-4489-a08a-bd6c751e5f6b/volumes/kubernetes.io~projected/kube-api-access-hfq4d",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=6076876k,noswap"
+                  },{
+                     "target": "/mnt/vdb1/var/lib/kubelet/pods/85f2d794-a45a-425b-96ce-6887df3693d4/volumes/kubernetes.io~projected/kube-api-access-g2tzq",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=174080k,noswap"
+                  }
+               ]
+            },{
+               "target": "/var/lib/boot2docker",
+               "source": "/dev/vdb1[/var/lib/boot2docker]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/docker",
+               "source": "/dev/vdb1[/var/lib/docker]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/containerd",
+               "source": "/dev/vdb1[/var/lib/containerd]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/buildkit",
+               "source": "/dev/vdb1[/var/lib/buildkit]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/containers",
+               "source": "/dev/vdb1[/var/lib/containers]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/log",
+               "source": "/dev/vdb1[/var/log]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/tmp",
+               "source": "/dev/vdb1[/var/tmp]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/kubelet",
+               "source": "/dev/vdb1[/var/lib/kubelet]",
+               "fstype": "ext4",
+               "options": "rw,relatime",
+               "children": [
+                  {
+                     "target": "/var/lib/kubelet/pods/9c2b9245-eb18-4173-a5a2-e7c4828def00/volumes/kubernetes.io~projected/kube-api-access-ncqgj",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=6076876k,noswap"
+                  },{
+                     "target": "/var/lib/kubelet/pods/2899edb5-37eb-4489-a08a-bd6c751e5f6b/volumes/kubernetes.io~projected/kube-api-access-hfq4d",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=6076876k,noswap"
+                  },{
+                     "target": "/var/lib/kubelet/pods/85f2d794-a45a-425b-96ce-6887df3693d4/volumes/kubernetes.io~projected/kube-api-access-g2tzq",
+                     "source": "tmpfs",
+                     "fstype": "tmpfs",
+                     "options": "rw,relatime,size=174080k,noswap"
+                  }
+               ]
+            },{
+               "target": "/var/lib/cni",
+               "source": "/dev/vdb1[/var/lib/cni]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/data",
+               "source": "/dev/vdb1[/data]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/minikube",
+               "source": "/dev/vdb1[/var/lib/minikube]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/toolbox",
+               "source": "/dev/vdb1[/var/lib/toolbox]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            },{
+               "target": "/var/lib/minishift",
+               "source": "/dev/vdb1[/var/lib/minishift]",
+               "fstype": "ext4",
+               "options": "rw,relatime"
+            }
+         ]
+      }
+   ]
+}
