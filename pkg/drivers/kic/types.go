@@ -24,10 +24,10 @@ import (
 
 const (
 	// Version is the current version of kic
-	Version = "v0.0.47-1755081124-21330"
+	Version = "v0.0.47-1755513096-21356"
 
 	// SHA of the kic base image
-	baseImageSHA = "1664f4956e5cfa62cc2d3fde900bf07f14981afee7f6e768cdde6fae5cbaae7c"
+	baseImageSHA = "a81c45d16a0bd1675730f7be60f6a077192ba6d4a549043d48e60839e430ba33"
 	// The name of the GCR kicbase repository
 	gcrRepo = "gcr.io/k8s-minikube/kicbase-builds"
 	// The name of the Dockerhub kicbase repository
