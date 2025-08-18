@@ -4485,6 +4485,9 @@ rules:
   - apiGroups: ["topology.volcano.sh"]
     resources: ["hypernodes", "hypernodes/status"]
     verbs: ["list", "watch", "get", "create", "delete", "update", "patch"]
+  - apiGroups: [ "" ]
+    resources: [ "nodes" ]
+    verbs: [ "list", "watch" ]
 ---
 # Source: volcano/templates/controllers.yaml
 kind: ClusterRoleBinding
