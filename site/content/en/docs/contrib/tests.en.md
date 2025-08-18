@@ -114,6 +114,10 @@ makes sure our docker-machine-driver-hyperkit binary can be installed properly
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
 
+## TestParseAllMounts
+
+## TestParseSingle
+
 ## TestFunctional
 are functionality tests which can safely share a profile in parallel
 
