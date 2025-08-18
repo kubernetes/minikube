@@ -78,7 +78,7 @@ func TestFunctional(t *testing.T) {
 }
 
 // TestFunctionalNewestKubernetes are functionality run functional tests using
-// NewestKubernetesVersion
+// NewestKubernetesVersion (constants.NewestKubernetesVersion)
 func TestFunctionalNewestKubernetes(t *testing.T) {
 	if strings.Contains(*startArgs, "--kubernetes-version") || constants.NewestKubernetesVersion == constants.DefaultKubernetesVersion {
 		t.Skip()
