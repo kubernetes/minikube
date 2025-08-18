@@ -220,7 +220,15 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 	}
 
 	t.Logf("-----------------------post-mortem--------------------------------")
-
+	t.Logf("======>  post-mortem[%s]: network settings <======", t.Name())
+	hostEnv := func(k string) string {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+		return "<empty>"
+	}
+	t.Logf("HOST ENV snapshots: PROXY env: HTTP_PROXY=%q HTTPS_PROXY=%q NO_PROXY=%q",
+		hostEnv("HTTP_PROXY"), hostEnv("HTTPS_PROXY"), hostEnv("NO_PROXY"))
 	for _, n := range nodes {
 		machine := profile
 		if n != profile {
