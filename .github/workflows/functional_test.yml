@@ -415,7 +415,7 @@ jobs:
         shell: bash
         run: |
           # Check if the test step failed AND the log contains "timed out"
-          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "timed out" ./report/testout.txt) -gt 0 ]]; then
+          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "panic: test timed out" ./report/testout.txt) -gt 0 ]]; then
             # If it was a timeout, set your custom message
             RESULT_SHORT="⌛⌛⌛ Test Timed out ${TIME_ELAPSED} ⌛⌛⌛"
           else
