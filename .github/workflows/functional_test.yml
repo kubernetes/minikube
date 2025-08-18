@@ -94,11 +94,13 @@ jobs:
             os: macos-13
             extra-start-args: --network socket_vmnet
             test-timeout: 50m
+            extra-test-args: -test.parallel 1
           - name: vfkit-docker-macos-13-x86_64
             driver: vfkit
             cruntime: docker
             os: macos-13
             extra-start-args: --network vmnet-shared
+            extra-test-args: -test.parallel 1
             test-timeout: 50m            
     steps:
       - name: Info Block (macOS)
@@ -398,7 +400,7 @@ jobs:
           chmod a+x ./minikube-*
           ./minikube-$(go env GOOS)-$(go env GOARCH) delete --all --purge
           START_TIME=$(date -u +%s)
-          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
+          ./e2e-$(go env GOOS)-$(go env GOARCH) -minikube-start-args=" --driver=${{ matrix.driver }} ${{ matrix.extra-start-args }} -v=6 --alsologtostderr"  -test.run TestFunctional -test.timeout=${{ matrix.test-timeout }} -test.v ${{ matrix.extra-test-args }} -binary=./minikube-$(go env GOOS)-$(go env GOARCH) 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
