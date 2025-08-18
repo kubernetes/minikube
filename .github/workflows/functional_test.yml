@@ -410,13 +410,13 @@ jobs:
         if: always()
         shell: bash
         run: |
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           # Check if the test step failed AND the log contains "timed out"
           if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "timed out" ./report/testout.txt) -gt 0 ]]; then
             # If it was a timeout, set your custom message
             RESULT_SHORT="⌛⌛⌛ Test Timed out ${TIME_ELAPSED} ⌛⌛⌛"
           else
-            go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-            STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
             PassNum=$(echo $STAT | jq '.NumberOfPass')
             FailNum=$(echo $STAT | jq '.NumberOfFail')
             TestsNum=$(echo $STAT | jq '.NumberOfTests')
