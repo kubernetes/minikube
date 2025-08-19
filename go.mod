@@ -29,7 +29,7 @@ require (
 	github.com/google/go-github/v74 v74.0.0
 	github.com/google/slowjam v1.1.2
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-getter v1.7.8
+	github.com/hashicorp/go-getter v1.7.9
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hooklift/iso9660 v1.0.0
 	github.com/icza/dyno v0.0.0-20230330125955-09f820a8d9c0
@@ -166,7 +166,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/miekg/dns v1.1.48 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/spdystream v0.5.0 // indirect
