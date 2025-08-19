@@ -141,6 +141,7 @@ jobs:
           system_profiler SPStorageDataType | sed -n '1,200p' || true
 
           echo "=== Network ==="
+          echo $HTTP_PROXY
           ifconfig
           networksetup -listallhardwareports || true
           scutil --get HostName || true
@@ -153,6 +154,7 @@ jobs:
           echo "=== Uptime and Load ==="
           uptime
           sysctl kern.boottime || true
+          top -l 1 -n 0 | head -n 10 || true
 
           echo "=== Security ==="
           spctl --status || true
@@ -208,6 +210,7 @@ jobs:
           df -h || true
 
           echo "=== Network ==="
+          echo $HTTP_PROXY
           ip addr show || true
           ip route || true
           ip -s link || true
@@ -219,6 +222,7 @@ jobs:
           echo "=== Uptime and Load ==="
           uptime || true
           who -b || true
+          top -b -n1 | head -n 10 || true
           cat /proc/loadavg || true
           awk '{printf "Uptime (seconds): %s\n", $1}' /proc/uptime 2>/dev/null || true
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
@@ -413,7 +417,7 @@ jobs:
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
           STAT=$(gopogh -in ./report/testout.json -out_html ./report/testout.html -out_summary ./report/testout_summary.json -name "${{ matrix.name }} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           # Check if the test step failed AND the log contains "timed out"
-          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "timed out" ./report/testout.txt) -gt 0 ]]; then
+          if [[ "${{ steps.run_test.outcome }}" == "failure" && $(grep -c "panic: test timed out" ./report/testout.txt) -gt 0 ]]; then
             # If it was a timeout, set your custom message
             RESULT_SHORT="⌛⌛⌛ Test Timed out ${TIME_ELAPSED} ⌛⌛⌛"
           else
