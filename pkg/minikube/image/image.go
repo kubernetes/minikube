@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	cerrdefs "github.com/containerd/errdefs"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -72,9 +73,11 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	imgClient.NegotiateAPIVersion(ctx)
-	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
-	if err != nil && !client.IsErrNotFound(err) {
-		klog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
+	img, err := imgClient.ImageInspect(ctx, imgName)
+	if err != nil {
+		if !cerrdefs.IsNotFound(err) {
+			klog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
+		}
 		return ""
 	}
 	return img.ID
