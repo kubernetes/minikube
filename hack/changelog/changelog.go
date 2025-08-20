@@ -33,7 +33,7 @@ type Config struct {
 }
 
 var cfg = Config{
-	// Skip PRs tarting with these prefixies in the Changelog
+	// if PR title "starts with" these words, skip them from change log
 	SkipPrefixes: []string{
 		"ci:",
 		"test:",
@@ -42,7 +42,7 @@ var cfg = Config{
 		"docs:",
 		"chore:",
 		"Post-release:"},
-	// Group PRs with these prefixes into their own group heding
+	// if PR title "starts with" these words, put them in these group
 	PrefixGroups: map[string]string{
 		"addon:":       "Addons",
 		"addon ":       "Addons",
@@ -51,6 +51,7 @@ var cfg = Config{
 		"Kicbase":      "Base image versions",
 		"cni":          "CNI",
 	},
+	// if PR title "contains" these words, put them in these group
 	ContainGroups: map[string]string{
 		"bug":         "Bug fixes",
 		"fix":         "Bug fixes",
@@ -65,6 +66,7 @@ var cfg = Config{
 }
 
 func main() {
+
 	var (
 		owner    = flag.String("owner", "kubernetes", "repository owner")
 		repo     = flag.String("repo", "minikube", "repository name")
@@ -75,7 +77,11 @@ func main() {
 	fmt.Println("Generating changelog, this might take a few minutes ...")
 	ctx := context.Background()
 	gh := newGitHubClient(ctx)
+
+	// Determine the starting reference; use the latest release if none is provided.
 	start := resolveStartRef(ctx, gh, *owner, *repo, *startRef)
+
+	// Collect and group pull requests between the refs, then print the result.
 	prs := pullRequestsBetween(ctx, gh, *owner, *repo, start, *endRef)
 	groups := groupPullRequests(prs, cfg)
 	printGroups(groups)
@@ -131,10 +137,13 @@ func pullRequestsBetween(ctx context.Context, gh *github.Client, owner, repo, st
 // configuration and allowed label list.
 func groupPullRequests(prs map[int]*github.PullRequest, cfg Config) map[string][]*github.PullRequest {
 	groups := make(map[string][]*github.PullRequest)
+
+	// Build a quick lookup for allowed labels.
 	allowed := make(map[string]struct{})
 	for _, l := range cfg.AllowedLabels {
 		allowed[strings.ToLower(l)] = struct{}{}
 	}
+
 	for _, pr := range prs {
 		group, skip := classify(pr, cfg, allowed)
 		if skip {
@@ -150,16 +159,41 @@ func groupPullRequests(prs map[int]*github.PullRequest, cfg Config) map[string][
 func classify(pr *github.PullRequest, cfg Config, allowed map[string]struct{}) (string, bool) {
 	title := pr.GetTitle()
 	lower := strings.ToLower(title)
+
+	// Skip PRs with any configured prefix.
 	for _, p := range cfg.SkipPrefixes {
 		if strings.HasPrefix(lower, strings.ToLower(p)) {
 			return "", true
 		}
 	}
+
+	// Group by specific prefixes first.
 	for pref, g := range cfg.PrefixGroups {
 		if strings.HasPrefix(lower, strings.ToLower(pref)) {
 			return g, false
 		}
 	}
+
+	// Then look for substring matches. Iterate in a deterministic order so
+	// overlapping keywords behave predictably. Longer substrings are checked
+	// first to favor more specific matches.
+	subs := make([]string, 0, len(cfg.ContainGroups))
+	for sub := range cfg.ContainGroups {
+		subs = append(subs, sub)
+	}
+	sort.Slice(subs, func(i, j int) bool {
+		if len(subs[i]) == len(subs[j]) {
+			return subs[i] < subs[j]
+		}
+		return len(subs[i]) > len(subs[j])
+	})
+	for _, sub := range subs {
+		if strings.Contains(lower, strings.ToLower(sub)) {
+			return cfg.ContainGroups[sub], false
+		}
+	}
+
+	// Finally, use an allowed label if present.
 	for _, l := range pr.Labels {
 		name := l.GetName()
 		if _, ok := allowed[strings.ToLower(name)]; ok {
@@ -180,6 +214,8 @@ func printGroups(groups map[string][]*github.PullRequest) {
 	for _, g := range groupNames {
 		fmt.Printf("## %s\n", g)
 		prs := groups[g]
+
+		// Sort entries alphabetically by title with PR number as a tiebreaker.
 		sort.Slice(prs, func(i, j int) bool {
 			ti := strings.ToLower(prs[i].GetTitle())
 			tj := strings.ToLower(prs[j].GetTitle())
