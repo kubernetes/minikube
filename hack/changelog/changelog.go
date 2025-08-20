@@ -72,7 +72,7 @@ func main() {
 		endRef   = flag.String("end", "HEAD", "end git ref (inclusive)")
 	)
 	flag.Parse()
-
+	fmt.Println("Generating changelog, this might take a few minutes ...")
 	ctx := context.Background()
 	gh := newGitHubClient(ctx)
 	start := resolveStartRef(ctx, gh, *owner, *repo, *startRef)
