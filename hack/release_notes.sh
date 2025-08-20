@@ -37,7 +37,7 @@ git pull https://github.com/kubernetes/minikube.git master --tags
 recent=$(git describe --abbrev=0)
 recent_date=$(git log -1 --format=%as $recent)
 
-go run ./changelog/changelog.go
+go run hack/changelog/changelog.go
 
 echo ""
 echo "For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md)."
