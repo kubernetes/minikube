@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -108,12 +109,7 @@ func DisplaySupportedDrivers() string {
 
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
-	for _, d := range SupportedDrivers() {
-		if name == d {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(SupportedDrivers(), name)
 }
 
 // MachineType returns appropriate machine name for the driver
@@ -408,12 +404,7 @@ func Status(name string) registry.DriverState {
 // IsAlias checks if an alias belongs to provided driver by name.
 func IsAlias(name, alias string) bool {
 	d := registry.Driver(name)
-	for _, da := range d.Alias {
-		if da == alias {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(d.Alias, alias)
 }
 
 // SetLibvirtURI sets the URI to perform libvirt health checks against

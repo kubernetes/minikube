@@ -18,6 +18,7 @@ package reason
 
 import (
 	"regexp"
+	"slices"
 
 	"k8s.io/klog/v2"
 )
@@ -72,10 +73,8 @@ func MatchKnownIssue(r Kind, err error, goos string) *Kind {
 
 		// Does this match require an OS matchup?
 		if len(ki.GOOS) > 0 {
-			for _, o := range ki.GOOS {
-				if o == goos {
-					return &ki.Kind
-				}
+			if slices.Contains(ki.GOOS, goos) {
+				return &ki.Kind
 			}
 		}
 		if genericMatch == nil {

@@ -86,15 +86,9 @@ func (g *Client) ListOpenPRsWithLabel(label string) ([]int, error) {
 }
 
 func prContainsLabel(labels []*github.Label, label string) bool {
-	for _, l := range labels {
-		if l == nil {
-			continue
-		}
-		if l.GetName() == label {
-			return true
-		}
-	}
-	return false
+    return slices.ContainsFunc(labels, func(l *github.Label) bool {
+        return l != nil && l.GetName() == label
+    })
 }
 
 // NewCommitsExist checks if new commits exist since minikube-pr-bot
