@@ -14,9 +14,21 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Config holds knobs for filtering and grouping pull requests when generating
+// release notes.
+// All string comparisons are case-insensitive.
 type Config struct {
-	SkipPrefixes  []string
-	PrefixGroups  map[string]string
+	// all PRs with these prefixes will be skipped in the Changelog
+	SkipPrefixes []string
+
+	// Group PRs with these prefixes into their own group heading based on their Prefix
+	PrefixGroups map[string]string
+
+	//Group PRs with these prefixes into their own group heading based the string they contain
+	ContainGroups map[string]string
+
+	// AllowedLabels enumerates the labels that can be used for grouping.
+	// Labels outside this list are ignored.
 	AllowedLabels []string
 }
 
@@ -32,12 +44,22 @@ var cfg = Config{
 		"Post-release:"},
 	// Group PRs with these prefixes into their own group heding
 	PrefixGroups: map[string]string{
-		"addon:":       "addons",
-		"addon ":       "addons",
-		"ISO/Kicabse:": "base image",
-		"ISO:":         "base image",
-		"Kicbase":      "base image",
+		"addon:":       "Addons",
+		"addon ":       "Addons",
+		"ISO:":         "Base image versions",
+		"ISO/Kicabse:": "Base image versions",
+		"Kicbase":      "Base image versions",
 		"cni":          "CNI",
+	},
+	ContainGroups: map[string]string{
+		"bug":         "Bug fixes",
+		"fix":         "Bug fixes",
+		"vfkit:":      "Drivers",
+		"qemu:":       "Drivers",
+		"driver":      "Drivers",
+		"krunkit:":    "Drivers",
+		"improve":     "Improvements",
+		"translation": "UI",
 	},
 	AllowedLabels: []string{"kind/feature", "kind/bug", "kind/enhancement"},
 }
@@ -59,6 +81,8 @@ func main() {
 	printGroups(groups)
 }
 
+// newGitHubClient constructs a GitHub client. If GITHUB_TOKEN is set the client
+// uses it for authentication to avoid strict rate limits.
 func newGitHubClient(ctx context.Context) *github.Client {
 	token := os.Getenv("GITHUB_TOKEN")
 	httpClient := http.DefaultClient
@@ -69,6 +93,8 @@ func newGitHubClient(ctx context.Context) *github.Client {
 	return github.NewClient(httpClient)
 }
 
+// resolveStartRef returns the starting git reference. When start is empty the
+// most recent GitHub release tag is used.
 func resolveStartRef(ctx context.Context, gh *github.Client, owner, repo, start string) string {
 	if start != "" {
 		return start
@@ -80,6 +106,8 @@ func resolveStartRef(ctx context.Context, gh *github.Client, owner, repo, start 
 	return rel.GetTagName()
 }
 
+// pullRequestsBetween finds all pull requests merged between start and end by
+// walking the commit comparison and querying PRs for each commit.
 func pullRequestsBetween(ctx context.Context, gh *github.Client, owner, repo, start, end string) map[int]*github.PullRequest {
 	cmp, _, err := gh.Repositories.CompareCommits(ctx, owner, repo, start, end, nil)
 	if err != nil {
@@ -99,6 +127,8 @@ func pullRequestsBetween(ctx context.Context, gh *github.Client, owner, repo, st
 	return prsMap
 }
 
+// groupPullRequests assigns each pull request to a group based on the provided
+// configuration and allowed label list.
 func groupPullRequests(prs map[int]*github.PullRequest, cfg Config) map[string][]*github.PullRequest {
 	groups := make(map[string][]*github.PullRequest)
 	allowed := make(map[string]struct{})
@@ -115,6 +145,8 @@ func groupPullRequests(prs map[int]*github.PullRequest, cfg Config) map[string][
 	return groups
 }
 
+// classify returns the group name for a pull request and whether it should be
+// skipped entirely.
 func classify(pr *github.PullRequest, cfg Config, allowed map[string]struct{}) (string, bool) {
 	title := pr.GetTitle()
 	lower := strings.ToLower(title)
@@ -137,6 +169,8 @@ func classify(pr *github.PullRequest, cfg Config, allowed map[string]struct{}) (
 	return "other", false
 }
 
+// printGroups writes the grouped pull requests to stdout. Groups and the
+// entries within each group are sorted for stable output.
 func printGroups(groups map[string][]*github.PullRequest) {
 	groupNames := make([]string, 0, len(groups))
 	for g := range groups {
