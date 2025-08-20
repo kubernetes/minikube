@@ -53,6 +53,7 @@ var cfg = Config{
 	SkipPrefixes: []string{
 		"ci:",
 		"test:",
+		"build:",
 		"Build(deps):",
 		"site:",
 		"docs:",
@@ -75,6 +76,10 @@ var cfg = Config{
 		"qemu:":       "Drivers",
 		"driver":      "Drivers",
 		"krunkit:":    "Drivers",
+		"kvm:":        "Drivers",
+		"hyperv:":     "Drivers",
+		"hyperkit:":   "Drivers",
+		"vbox:":       "Drivers",
 		"improve":     "Improvements",
 		"translation": "UI",
 	},
