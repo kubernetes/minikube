@@ -36,7 +36,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'deubg pr: update all dependencies'
+          title: 'chore: (debug pr) update all dependencies'
           body: |
             Changelog:
             ${{ steps.bumpVersions.outputs.changes }}
