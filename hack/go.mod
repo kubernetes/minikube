@@ -217,7 +217,7 @@ require (
 	k8s.io/apimachinery v0.33.4 // indirect
 	k8s.io/cli-runtime v0.33.1 // indirect
 	k8s.io/client-go v0.33.4 // indirect
-	k8s.io/cluster-bootstrap v0.33.3 // indirect
+	k8s.io/cluster-bootstrap v0.33.4 // indirect
 	k8s.io/component-base v0.33.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/kubectl v0.33.1 // indirect
