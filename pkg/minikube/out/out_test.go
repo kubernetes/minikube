@@ -181,8 +181,8 @@ func TestCommand(t *testing.T) {
 		},
 		{
 			[]string{"minikube"},
-			"",
-			true,
+			"start",
+			false,
 		},
 	}
 
