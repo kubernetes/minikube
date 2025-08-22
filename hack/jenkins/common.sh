@@ -117,6 +117,10 @@ fi
 docker system prune -a --volumes -f || true
 docker system df || true
 # read only token, never expires
+
+# load ipv6 modules if not loaded
+lsmod | grep -q "^ip6_tables" || { echo "Loading ip6_tables..."; sudo modprobe ip6_tables; } && lsmod | grep -q "^ip6table_nat" || { echo "Loading ip6table_nat..."; sudo modprobe ip6table_nat; } || true
+
 docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
 echo ">> Starting at $(date)"
 echo ""
