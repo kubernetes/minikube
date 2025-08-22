@@ -1442,18 +1442,13 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	validateServiceCmdURL(ctx, t, profile)
 }
 
-// validateServiceCmdDeployApp Create a new `registry.k8s.io/echoserver` deployment
+// validateServiceCmdDeployApp Create a new `kickbase/echo_server` deployment
 func validateServiceCmdDeployApp(ctx context.Context, t *testing.T, profile string) {
 	t.Run("DeployApp", func(t *testing.T) {
 		var rr *RunResult
 		var err error
-		// registry.k8s.io/echoserver is not multi-arch
-		if arm64Platform() {
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=registry.k8s.io/echoserver-arm:1.8"))
-		} else {
-			rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=registry.k8s.io/echoserver:1.8"))
-		}
 
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image", echoServerImage))
 		if err != nil {
 			t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 		}
@@ -1636,14 +1631,9 @@ func validateServiceCmdConnect(ctx context.Context, t *testing.T, profile string
 
 	var rr *RunResult
 	var err error
-	// docs: Create a new `registry.k8s.io/echoserver` deployment
-	// registry.k8s.io/echoserver is not multi-arch
-	if arm64Platform() {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=registry.k8s.io/echoserver-arm:1.8"))
-	} else {
-		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image=registry.k8s.io/echoserver:1.8"))
-	}
 
+	// docs: Create a new `kickbase/echo-server` deployment
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node-connect", "--image", echoServerImage))
 	if err != nil {
 		t.Fatalf("failed to create hello-node deployment with this command %q: %v.", rr.Command(), err)
 	}
