@@ -59,8 +59,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-const echoServerImg = "kicbase/echo-server"
-
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
 
@@ -203,7 +201,7 @@ func cleanupUnwantedImages(ctx context.Context, t *testing.T, profile string) {
 		t.Run("delete echo-server images", func(t *testing.T) {
 			tags := []string{"1.0", profile}
 			for _, tag := range tags {
-				image := fmt.Sprintf("%s:%s", echoServerImg, tag)
+				image := fmt.Sprintf("%s:%s", echoServerImage, tag)
 				rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", "-f", image))
 				if err != nil {
 					t.Logf("failed to remove image %q from docker images. args %q: %v", image, rr.Command(), err)
@@ -248,7 +246,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 
 // tagAndLoadImage is a helper function to pull, tag, load image (decreases cyclomatic complexity for linter).
 func tagAndLoadImage(ctx context.Context, t *testing.T, profile, taggedImage string) {
-	newPulledImage := fmt.Sprintf("%s:%s", echoServerImg, "latest")
+	newPulledImage := fmt.Sprintf("%s:%s", echoServerImage, "latest")
 	rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", newPulledImage))
 	if err != nil {
 		t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
@@ -343,7 +341,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		checkImageExists(ctx, t, profile, newImage)
 	})
 
-	taggedImage := fmt.Sprintf("%s:%s", echoServerImg, profile)
+	taggedImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
 	imageFile := "echo-server-save.tar"
 	var imagePath string
 	defer os.Remove(imageFile)
@@ -355,7 +353,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
 		}
 
-		pulledImage := fmt.Sprintf("%s:%s", echoServerImg, "1.0")
+		pulledImage := fmt.Sprintf("%s:%s", echoServerImage, "1.0")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
 		if err != nil {
 			t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
