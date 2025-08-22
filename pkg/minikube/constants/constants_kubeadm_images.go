@@ -18,6 +18,96 @@ package constants
 
 var (
 	KubeadmImages = map[string]map[string]string{
+		"v1.34.0-rc.2": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.4-0",
+			"pause":           "3.10.1",
+		},
+		"v1.33.4": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.34.0-rc.1": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.4-0",
+			"pause":           "3.10.1",
+		},
+		"v1.34.0-rc.0": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.4-0",
+			"pause":           "3.10.1",
+		},
+		"v1.34.0-beta.0": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.1-1",
+			"pause":           "3.10",
+		},
+		"v1.33.3": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.34.0-alpha.3": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.1-1",
+			"pause":           "3.10",
+		},
+		"v1.34.0-alpha.2": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.0-0",
+			"pause":           "3.10",
+		},
+		"v1.33.2": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.34.0-alpha.1": {
+			"coredns/coredns": "v1.12.1",
+			"etcd":            "3.6.0-0",
+			"pause":           "3.10",
+		},
+		"v1.33.1": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-rc.1": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-rc.0": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.21-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-beta.0": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.17-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-alpha.3": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.17-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-alpha.2": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.17-0",
+			"pause":           "3.10",
+		},
+		"v1.33.0-alpha.1": {
+			"coredns/coredns": "v1.12.0",
+			"etcd":            "3.5.17-0",
+			"pause":           "3.10",
+		},
 		"v1.32.8": {
 			"coredns/coredns": "v1.11.3",
 			"etcd":            "3.5.16-0",
