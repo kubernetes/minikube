@@ -397,6 +397,27 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		checkImageExists(ctx, t, profile, taggedImage)
 	})
 
+	// docs: Make sure image saving to Docker daemon works by `minikube image save --daemon`
+	t.Run("ImageSaveToDaemon", func(t *testing.T) {
+		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", taggedImage))
+		if err != nil {
+			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
+		}
+
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage, "--alsologtostderr"))
+		if err != nil {
+			t.Fatalf("saving image from minikube to daemon: %v\n%s", err, rr.Output())
+		}
+		imageToDelete := taggedImage
+		if ContainerRuntime() == "crio" {
+			imageToDelete = cruntime.AddLocalhostPrefix(imageToDelete)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, "docker", "image", "inspect", imageToDelete))
+		if err != nil {
+			t.Fatalf("expected image to be loaded into Docker, but image was not found: %v\n%s", err, rr.Output())
+		}
+	})
+
 	// docs: Make sure image saving works by `minikube image load --daemon`
 	t.Run("ImageSaveToFile", func(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath, "--alsologtostderr"))
@@ -427,27 +448,6 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		checkImageExists(ctx, t, profile, taggedImage)
-	})
-
-	// docs: Make sure image saving to Docker daemon works by `minikube image load`
-	t.Run("ImageSaveToDaemon", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", taggedImage))
-		if err != nil {
-			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
-		}
-
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage, "--alsologtostderr"))
-		if err != nil {
-			t.Fatalf("saving image from minikube to daemon: %v\n%s", err, rr.Output())
-		}
-		imageToDelete := taggedImage
-		if ContainerRuntime() == "crio" {
-			imageToDelete = cruntime.AddLocalhostPrefix(imageToDelete)
-		}
-		rr, err = Run(t, exec.CommandContext(ctx, "docker", "image", "inspect", imageToDelete))
-		if err != nil {
-			t.Fatalf("expected image to be loaded into Docker, but image was not found: %v\n%s", err, rr.Output())
-		}
 	})
 }
 
