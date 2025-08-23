@@ -367,7 +367,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	// docs: Make sure image loading from Docker daemon works by `minikube image load --daemon`
-	t.Run("ImageLoadDaemon", func(t *testing.T) {
+	t.Run("ImageLoadFromDaemon", func(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
@@ -377,7 +377,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
-	t.Run("ImageReloadDaemon", func(t *testing.T) {
+	t.Run("ImageReloadFromDaemon", func(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
@@ -387,7 +387,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	// docs: Make sure a new updated tag works by `minikube image load --daemon`
-	t.Run("ImageTagAndLoadDaemon", func(t *testing.T) {
+	t.Run("ImageTagAndLoadFromDaemon", func(t *testing.T) {
 		tagAndLoadImage(ctx, t, profile, taggedImage)
 	})
 
@@ -424,7 +424,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	// docs: Make sure image saving to Docker daemon works by `minikube image load`
-	t.Run("ImageSaveDaemon", func(t *testing.T) {
+	t.Run("ImageSaveToDaemon", func(t *testing.T) {
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", taggedImage))
 		if err != nil {
 			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
