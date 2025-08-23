@@ -328,7 +328,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		checkImageExists(ctx, t, profile, newImage)
 	})
 
-	taggedImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
+	daemonTestImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
 
 	t.Run("SetupDaemon", func(t *testing.T) {
 		var err error
@@ -343,7 +343,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", pulledImage, taggedImage))
+		rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", pulledImage, daemonTestImage))
 		if err != nil {
 			t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 		}
@@ -355,12 +355,12 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("docker daemon is not available on this host")
 		}
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", daemonTestImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 		}
 
-		checkImageExists(ctx, t, profile, taggedImage)
+		checkImageExists(ctx, t, profile, daemonTestImage)
 	})
 
 	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
@@ -369,12 +369,12 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("docker daemon is not available on this host")
 		}
 
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", daemonTestImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 		}
 
-		checkImageExists(ctx, t, profile, taggedImage)
+		checkImageExists(ctx, t, profile, daemonTestImage)
 	})
 
 	// docs: Make sure a new updated tag works by `minikube image load --daemon`
@@ -389,17 +389,17 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("failed to setup test (pull image): %v\n%s", err, rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", newPulledImage, taggedImage))
+		rr, err = Run(t, exec.CommandContext(ctx, "docker", "tag", newPulledImage, daemonTestImage))
 		if err != nil {
 			t.Fatalf("failed to setup test (tag image) : %v\n%s", err, rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", daemonTestImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
 		}
 
-		checkImageExists(ctx, t, profile, taggedImage)
+		checkImageExists(ctx, t, profile, daemonTestImage)
 	})
 
 	// docs: Make sure image saving to Docker daemon works by `minikube image save --daemon`
@@ -408,16 +408,16 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Skip("docker daemon is not available on this host")
 		}
 
-		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", taggedImage))
+		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", daemonTestImage))
 		if err != nil {
 			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
 		}
 
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", taggedImage, "--alsologtostderr"))
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", "--daemon", daemonTestImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("saving image from minikube to daemon: %v\n%s", err, rr.Output())
 		}
-		imageToDelete := taggedImage
+		imageToDelete := daemonTestImage
 		if ContainerRuntime() == "crio" {
 			imageToDelete = cruntime.AddLocalhostPrefix(imageToDelete)
 		}
