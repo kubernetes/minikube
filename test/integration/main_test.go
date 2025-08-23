@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/detect"
 )
@@ -184,6 +185,15 @@ func ContainerRuntime() string {
 		}
 	}
 	return constants.Docker
+}
+
+// HaveDockerDaemon return true if docker daemon is accessble on the host. Can
+// be used to skip tests depending on docker daemon.
+func HaveDockerDaemon() bool {
+	if _, err := oci.CachedDaemonInfo(oci.Docker); err == nil {
+		return true
+	}
+	return false
 }
 
 // arm64Platform returns true if running on arm64/* platform

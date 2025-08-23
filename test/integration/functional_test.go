@@ -257,10 +257,6 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("image commands are not available on the none driver")
 	}
-	// docs(skip): Skips on GitHub Actions and macOS as this test case requires a running docker daemon
-	if detect.GithubActionRunner() && runtime.GOOS == "darwin" {
-		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
-	}
 
 	// docs: Make sure image listing works by `minikube image ls --format short`
 	t.Run("ImageListShort", func(t *testing.T) {
@@ -334,8 +330,12 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	taggedImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
 
-	t.Run("Setup", func(t *testing.T) {
+	t.Run("SetupDaemon", func(t *testing.T) {
 		var err error
+
+		if !HaveDockerDaemon() {
+			t.Skip("docker daemon is not available on this host")
+		}
 
 		pulledImage := fmt.Sprintf("%s:%s", echoServerImage, "1.0")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
@@ -351,6 +351,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image loading from Docker daemon works by `minikube image load --daemon`
 	t.Run("ImageLoadFromDaemon", func(t *testing.T) {
+		if !HaveDockerDaemon() {
+			t.Skip("docker daemon is not available on this host")
+		}
+
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
@@ -361,6 +365,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Try to load image already loaded and make sure `minikube image load --daemon` works
 	t.Run("ImageReloadFromDaemon", func(t *testing.T) {
+		if !HaveDockerDaemon() {
+			t.Skip("docker daemon is not available on this host")
+		}
+
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", "--daemon", taggedImage, "--alsologtostderr"))
 		if err != nil {
 			t.Fatalf("loading image into minikube from daemon: %v\n%s", err, rr.Output())
@@ -371,6 +379,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure a new updated tag works by `minikube image load --daemon`
 	t.Run("ImageTagAndLoadFromDaemon", func(t *testing.T) {
+		if !HaveDockerDaemon() {
+			t.Skip("docker daemon is not available on this host")
+		}
+
 		newPulledImage := fmt.Sprintf("%s:%s", echoServerImage, "latest")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", newPulledImage))
 		if err != nil {
@@ -392,6 +404,10 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image saving to Docker daemon works by `minikube image save --daemon`
 	t.Run("ImageSaveToDaemon", func(t *testing.T) {
+		if !HaveDockerDaemon() {
+			t.Skip("docker daemon is not available on this host")
+		}
+
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "rmi", taggedImage))
 		if err != nil {
 			t.Fatalf("failed to remove image from docker: %v\n%s", err, rr.Output())
@@ -598,6 +614,11 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	if cr := ContainerRuntime(); cr != "docker" {
 		t.Skipf("only validate docker env with docker container runtime, currently testing %s", cr)
 	}
+
+	if _, err := exec.LookPath(oci.Docker); err != nil {
+		t.Skipf("docker command is not found on the host")
+	}
+
 	defer PostMortemLogs(t, profile)
 
 	type ShellTest struct {
