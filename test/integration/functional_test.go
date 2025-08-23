@@ -34,6 +34,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -409,14 +410,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 			t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
 		}
 
-		// make sure the image was removed
-		rr, err = listImages(ctx, t, profile)
-		if err != nil {
-			t.Fatalf("listing images: %v\n%s", err, rr.Output())
-		}
-		if strings.Contains(rr.Output(), taggedImage) {
-			t.Fatalf("expected %q to be removed from minikube but still exists", taggedImage)
-		}
+		checkImageNotExists(ctx, t, profile, taggedImage)
 	})
 
 	// docs: Make sure image loading from file works by `minikube image load`
@@ -452,18 +446,35 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 }
 
 func checkImageExists(ctx context.Context, t *testing.T, profile string, image string) {
-	// make sure the image was correctly loaded
-	rr, err := listImages(ctx, t, profile)
-	if err != nil {
-		t.Fatalf("listing images: %v\n%s", err, rr.Output())
-	}
-	if !strings.Contains(rr.Output(), image) {
-		t.Fatalf("expected %q to be loaded into minikube but the image is not there", image)
+	images := listImages(ctx, t, profile)
+	if !slices.Contains(images, image) {
+		t.Fatalf("expected %q to exist in minikube but the image is not there", image)
 	}
 }
 
-func listImages(ctx context.Context, t *testing.T, profile string) (*RunResult, error) {
-	return Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+func checkImageNotExists(ctx context.Context, t *testing.T, profile string, image string) {
+	images := listImages(ctx, t, profile)
+	if slices.Contains(images, image) {
+		t.Fatalf("expected %q to not exist in minikube but the image is there", image)
+	}
+}
+
+func listImages(ctx context.Context, t *testing.T, profile string) []string {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
+	if err != nil {
+		t.Fatalf("failed to list images: %v\n%s", err, rr.Output())
+	}
+
+	scanner := bufio.NewScanner(rr.Stdout)
+	var images []string
+	for scanner.Scan() {
+		images = append(images, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		t.Fatalf("failed to scan lines: %v: %q", err, rr.Stdout.String())
+	}
+
+	return images
 }
 
 // check functionality of minikube after evaluating docker-env
