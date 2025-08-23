@@ -40,6 +40,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"gopkg.in/yaml.v2"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -70,6 +71,11 @@ var apiPortTest = 8441
 var mitm *StartSession
 
 var runCorpProxy = detect.GithubActionRunner() && runtime.GOOS == "linux" && !arm64Platform()
+
+var expectedImageNames = []string{
+	"registry.k8s.io/pause",
+	"registry.k8s.io/kube-apiserver",
+}
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
@@ -245,41 +251,6 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// runImageList is a helper function to run 'image ls' command test.
-func runImageList(ctx context.Context, t *testing.T, profile, testName, format, expectedFormat string) {
-	expectedResult := expectedImageFormat(expectedFormat)
-
-	// docs: Make sure image listing works by `minikube image ls`
-	t.Run(testName, func(t *testing.T) {
-		MaybeParallel(t)
-
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format, "--alsologtostderr"))
-		if err != nil {
-			t.Fatalf("listing image with minikube: %v\n%s", err, rr.Output())
-		}
-		if rr.Stdout.Len() > 0 {
-			t.Logf("(dbg) Stdout: %s:\n%s", rr.Command(), rr.Stdout)
-		}
-		if rr.Stderr.Len() > 0 {
-			t.Logf("(dbg) Stderr: %s:\n%s", rr.Command(), rr.Stderr)
-		}
-
-		list := rr.Output()
-		for _, theImage := range expectedResult {
-			if !strings.Contains(list, theImage) {
-				t.Fatalf("expected %s to be listed with minikube but the image is not there", theImage)
-			}
-		}
-	})
-}
-
-func expectedImageFormat(format string) []string {
-	return []string{
-		fmt.Sprintf(format, "registry.k8s.io/pause"),
-		fmt.Sprintf(format, "registry.k8s.io/kube-apiserver"),
-	}
-}
-
 // validateImageCommands runs tests on all the `minikube image` commands, ex. `minikube image load`, `minikube image list`, etc.
 func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	// docs(skip): Skips on `none` driver as image loading is not supported
@@ -291,10 +262,50 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		t.Skip("skipping on darwin github action runners, as this test requires a running docker daemon")
 	}
 
-	runImageList(ctx, t, profile, "ImageListShort", "short", "%s")
-	runImageList(ctx, t, profile, "ImageListTable", "table", "│ %s")
-	runImageList(ctx, t, profile, "ImageListJson", "json", "[\"%s")
-	runImageList(ctx, t, profile, "ImageListYaml", "yaml", "- %s")
+	// docs: Make sure image listing works by `minikube image ls --format short`
+	t.Run("ImageListShort", func(t *testing.T) {
+		images := listImagesShort(ctx, t, profile)
+		names := imageNames(images)
+		for _, name := range expectedImageNames {
+			if _, ok := names[name]; !ok {
+				t.Errorf("expected %q to be listed with minikube but the image is not there", name)
+			}
+		}
+	})
+
+	// docs: Make sure image listing works by `minikube image ls --format table`
+	t.Run("ImageListTable", func(t *testing.T) {
+		out := listImagesTable(ctx, t, profile)
+		for _, name := range expectedImageNames {
+			// | registry/name:tag      | ...
+			needle := fmt.Sprintf("| %s ", name)
+			if strings.Contains(out, needle) {
+				t.Errorf("expected %q to be listed with minikube but the image is not there", name)
+			}
+		}
+	})
+
+	// docs: Make sure image listing works by `minikube image ls --format json`
+	t.Run("ImageListJSON", func(t *testing.T) {
+		images := listImagesJSON(ctx, t, profile)
+		names := repoTagNames(images)
+		for _, name := range expectedImageNames {
+			if _, ok := names[name]; !ok {
+				t.Errorf("expected %q to be listed with minikube but the image is not there", name)
+			}
+		}
+	})
+
+	// docs: Make sure image listing works by `minikube image ls --format yaml`
+	t.Run("ImageListYAML", func(t *testing.T) {
+		images := listImagesJSON(ctx, t, profile)
+		names := repoTagNames(images)
+		for _, name := range expectedImageNames {
+			if _, ok := names[name]; !ok {
+				t.Errorf("expected %q to be listed with minikube but the image is not there", name)
+			}
+		}
+	})
 
 	// docs: Make sure image building works by `minikube image build`
 	t.Run("ImageBuild", func(t *testing.T) {
@@ -441,25 +452,21 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 }
 
 func checkImageExists(ctx context.Context, t *testing.T, profile string, image string) {
-	images := listImages(ctx, t, profile)
+	images := listImagesShort(ctx, t, profile)
 	if !slices.Contains(images, image) {
 		t.Fatalf("expected %q to exist in minikube but the image is not there", image)
 	}
 }
 
 func checkImageNotExists(ctx context.Context, t *testing.T, profile string, image string) {
-	images := listImages(ctx, t, profile)
+	images := listImagesShort(ctx, t, profile)
 	if slices.Contains(images, image) {
 		t.Fatalf("expected %q to not exist in minikube but the image is there", image)
 	}
 }
 
-func listImages(ctx context.Context, t *testing.T, profile string) []string {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls"))
-	if err != nil {
-		t.Fatalf("failed to list images: %v\n%s", err, rr.Output())
-	}
-
+func listImagesShort(ctx context.Context, t *testing.T, profile string) []string {
+	rr := listImages(ctx, t, profile, "short")
 	scanner := bufio.NewScanner(rr.Stdout)
 	var images []string
 	for scanner.Scan() {
@@ -468,8 +475,60 @@ func listImages(ctx context.Context, t *testing.T, profile string) []string {
 	if err := scanner.Err(); err != nil {
 		t.Fatalf("failed to scan lines: %v: %q", err, rr.Stdout.String())
 	}
-
 	return images
+}
+
+func listImagesTable(ctx context.Context, t *testing.T, profile string) string {
+	rr := listImages(ctx, t, profile, "table")
+	return rr.Stdout.String()
+}
+
+func listImagesJSON(ctx context.Context, t *testing.T, profile string) []cruntime.ListImage {
+	rr := listImages(ctx, t, profile, "json")
+	var images []cruntime.ListImage
+	if err := json.Unmarshal(rr.Stdout.Bytes(), &images); err != nil {
+		t.Fatalf("failed to parse json: %v\n%q", err, rr.Stdout.String())
+	}
+	return images
+}
+
+func listImagesYAML(ctx context.Context, t *testing.T, profile string) []cruntime.ListImage {
+	rr := listImages(ctx, t, profile, "yaml")
+	var images []cruntime.ListImage
+	if err := yaml.Unmarshal(rr.Stdout.Bytes(), &images); err != nil {
+		t.Fatalf("failed to parse json: %v\n%q", err, rr.Stdout.String())
+	}
+	return images
+}
+
+func listImages(ctx context.Context, t *testing.T, profile string, format string) *RunResult {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "ls", "--format", format))
+	if err != nil {
+		t.Fatalf("failed to list images: %v\n%s", err, rr.Output())
+	}
+	return rr
+}
+
+func repoTagNames(images []cruntime.ListImage) map[string]struct{} {
+	names := map[string]struct{}{}
+	for _, image := range images {
+		for _, repoTag := range image.RepoTags {
+			// "registry/repo/name:tag" -> ["registry/repo/name", "tag"]
+			parts := strings.SplitN(repoTag, ":", 2)
+			names[parts[0]] = struct{}{}
+		}
+	}
+	return names
+}
+
+func imageNames(images []string) map[string]struct{} {
+	names := map[string]struct{}{}
+	for _, image := range images {
+		// "registry/repo/name:tag" -> ["registry/repo/name", "tag"]
+		parts := strings.SplitN(image, ":", 2)
+		names[parts[0]] = struct{}{}
+	}
+	return names
 }
 
 // check functionality of minikube after evaluating docker-env
