@@ -333,16 +333,9 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 	})
 
 	taggedImage := fmt.Sprintf("%s:%s", echoServerImage, profile)
-	imageFile := "echo-server-save.tar"
-	var imagePath string
-	defer os.Remove(imageFile)
 
 	t.Run("Setup", func(t *testing.T) {
 		var err error
-		imagePath, err = filepath.Abs(imageFile)
-		if err != nil {
-			t.Fatalf("failed to get absolute path of file %q: %v", imageFile, err)
-		}
 
 		pulledImage := fmt.Sprintf("%s:%s", echoServerImage, "1.0")
 		rr, err := Run(t, exec.CommandContext(ctx, "docker", "pull", pulledImage))
@@ -418,36 +411,58 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		}
 	})
 
-	// docs: Make sure image saving works by `minikube image load --daemon`
-	t.Run("ImageSaveToFile", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", taggedImage, imagePath, "--alsologtostderr"))
-		if err != nil {
-			t.Fatalf("saving image from minikube to file: %v\n%s", err, rr.Output())
-		}
+	// docs: Make sure image tagging works by `minikube image tag`
+	t.Run("ImageTag", func(t *testing.T) {
+		pauseImage := findPauseImage(ctx, t, profile)
+		testImage := "localhost/image-tag:test"
 
-		if _, err := os.Stat(imagePath); err != nil {
-			t.Fatalf("expected %q to exist after `image save`, but doesn't exist", imagePath)
-		}
+		tagImage(ctx, t, profile, pauseImage, testImage)
+		t.Cleanup(func() {
+			removeImage(ctx, t, profile, testImage)
+		})
+
+		checkImageExists(ctx, t, profile, testImage)
 	})
 
 	// docs: Make sure image removal works by `minikube image rm`
 	t.Run("ImageRemove", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", taggedImage, "--alsologtostderr"))
-		if err != nil {
-			t.Fatalf("removing image from minikube: %v\n%s", err, rr.Output())
-		}
+		pauseImage := findPauseImage(ctx, t, profile)
+		testImage := "localhost/image-remove:test"
 
-		checkImageNotExists(ctx, t, profile, taggedImage)
+		tagImage(ctx, t, profile, pauseImage, testImage)
+		removeImage(ctx, t, profile, testImage)
+
+		checkImageNotExists(ctx, t, profile, testImage)
+	})
+
+	// docs: Make sure image saving works by `minikube image load --daemon`
+	t.Run("ImageSaveToFile", func(t *testing.T) {
+		pauseImage := findPauseImage(ctx, t, profile)
+		testPath := filepath.Join(t.TempDir(), "test.tar")
+
+		saveImageToFile(ctx, t, profile, pauseImage, testPath)
+
+		if _, err := os.Stat(testPath); err != nil {
+			t.Fatalf("expected %q to exist after `image save`, but doesn't exist", testPath)
+		}
 	})
 
 	// docs: Make sure image loading from file works by `minikube image load`
 	t.Run("ImageLoadFromFile", func(t *testing.T) {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", imagePath, "--alsologtostderr"))
-		if err != nil || strings.Contains(rr.Output(), "failed pushing to: functional") {
-			t.Fatalf("loading image into minikube from file: %v\n%s", err, rr.Output())
-		}
+		pauseImage := findPauseImage(ctx, t, profile)
+		testImage := "localhost/image-load-from-file:test"
+		testPath := filepath.Join(t.TempDir(), "test.tar")
 
-		checkImageExists(ctx, t, profile, taggedImage)
+		tagImage(ctx, t, profile, pauseImage, testImage)
+		t.Cleanup(func() {
+			removeImage(ctx, t, profile, testImage)
+		})
+
+		saveImageToFile(ctx, t, profile, testImage, testPath)
+		removeImage(ctx, t, profile, testImage)
+		loadImageFromFile(ctx, t, profile, testPath)
+
+		checkImageExists(ctx, t, profile, testImage)
 	})
 }
 
@@ -529,6 +544,47 @@ func imageNames(images []string) map[string]struct{} {
 		names[parts[0]] = struct{}{}
 	}
 	return names
+}
+
+func findPauseImage(ctx context.Context, t *testing.T, profile string) string {
+	images := listImagesShort(ctx, t, profile)
+	for _, image := range images {
+		// "registry/repo/name:tag" -> ["registry/repo/name", "tag"]
+		parts := strings.SplitN(image, ":", 2)
+		if parts[0] == pauseImageName {
+			return image
+		}
+	}
+	t.Fatalf("failed to find pause image %q", pauseImageName)
+	return ""
+}
+
+func tagImage(ctx context.Context, t *testing.T, profile string, sourceImage string, targetImage string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "tag", sourceImage, targetImage, "--alsologtostderr"))
+	if err != nil {
+		t.Fatalf("failed to tag image: %v\n%s", err, rr.Output())
+	}
+}
+
+func removeImage(ctx context.Context, t *testing.T, profile string, image string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "rm", image, "--alsologtostderr"))
+	if err != nil {
+		t.Fatalf("failed to remove image: %v\n%s", err, rr.Output())
+	}
+}
+
+func saveImageToFile(ctx context.Context, t *testing.T, profile string, sourceImage string, targetPath string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "save", sourceImage, targetPath, "--alsologtostderr"))
+	if err != nil {
+		t.Fatalf("failed to save image to file: %v\n%s", err, rr.Output())
+	}
+}
+
+func loadImageFromFile(ctx context.Context, t *testing.T, profile string, sourcePath string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "image", "load", sourcePath, "--alsologtostderr"))
+	if err != nil || strings.Contains(rr.Output(), "failed pushing to: functional") {
+		t.Fatalf("failed to load image from file: %v\n%s", err, rr.Output())
+	}
 }
 
 // check functionality of minikube after evaluating docker-env

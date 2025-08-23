@@ -20,4 +20,5 @@ package integration
 
 const (
 	echoServerImage = "docker.io/kicbase/echo-server"
+	pauseImageName  = "registry.k8s.io/pause"
 )
