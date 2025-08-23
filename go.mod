@@ -47,7 +47,7 @@ require (
 	github.com/moby/hyperkit v0.0.0-20210108224842-2f061e447e14
 	github.com/moby/patternmatcher v0.6.0
 	github.com/olekukonko/tablewriter v1.0.9
-	github.com/opencontainers/cgroups v0.0.1
+	github.com/opencontainers/cgroups v0.0.4
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/otiai10/copy v1.14.1
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
