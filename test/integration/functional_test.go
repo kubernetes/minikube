@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"archive/tar"
 	"bufio"
 	"bytes"
 	"context"
@@ -457,10 +458,7 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		testPath := filepath.Join(t.TempDir(), "test.tar")
 
 		saveImageToFile(ctx, t, profile, pauseImage, testPath)
-
-		if _, err := os.Stat(testPath); err != nil {
-			t.Fatalf("expected %q to exist after `image save`, but doesn't exist", testPath)
-		}
+		checkSavedImage(t, testPath)
 	})
 
 	// docs: Make sure image loading from file works by `minikube image load`
@@ -475,6 +473,8 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		saveImageToFile(ctx, t, profile, testImage, testPath)
+		checkSavedImage(t, testPath)
+
 		removeImage(ctx, t, profile, testImage)
 		loadImageFromFile(ctx, t, profile, testPath)
 
@@ -493,6 +493,36 @@ func checkImageNotExists(ctx context.Context, t *testing.T, profile string, imag
 	images := listImagesShort(ctx, t, profile)
 	if slices.Contains(images, image) {
 		t.Fatalf("expected %q to not exist in minikube but the image is there", image)
+	}
+}
+
+// checkSavedImage validates a saved image. Validating the contents is not easy
+// without depending on docker or podmamn, but we can check that we have a non
+// empty tar file. We log the tar contents for debugging.
+func checkSavedImage(t *testing.T, tarPath string) {
+	f, err := os.Open(tarPath)
+	if err != nil {
+		t.Fatalf("failed to open file %q: %v", tarPath, err)
+	}
+	defer f.Close()
+
+	reader := tar.NewReader(f)
+	count := 0
+
+	for {
+		header, err := reader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatalf("failed to read tar header: %s", err)
+		}
+		t.Logf("tar: %s (%d bytes)", header.Name, header.Size)
+		count++
+	}
+
+	if count == 0 {
+		t.Fatalf("tar file is empty: %q", tarPath)
 	}
 }
 
