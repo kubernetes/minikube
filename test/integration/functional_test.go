@@ -454,6 +454,11 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image saving works by `minikube image load --daemon`
 	t.Run("ImageSaveToFile", func(t *testing.T) {
+		if ContainerRuntime() == "containerd" {
+			// https://github.com/kubernetes/minikube/issues/21408
+			t.Skip("image save is broken with containerd runtime")
+		}
+
 		pauseImage := findPauseImage(ctx, t, profile)
 		testPath := filepath.Join(t.TempDir(), "test.tar")
 
@@ -463,6 +468,11 @@ func validateImageCommands(ctx context.Context, t *testing.T, profile string) {
 
 	// docs: Make sure image loading from file works by `minikube image load`
 	t.Run("ImageLoadFromFile", func(t *testing.T) {
+		if ContainerRuntime() == "containerd" {
+			// https://github.com/kubernetes/minikube/issues/21408
+			t.Skip("image save is broken with containerd runtime")
+		}
+
 		pauseImage := findPauseImage(ctx, t, profile)
 		testImage := "localhost/image-load-from-file:test"
 		testPath := filepath.Join(t.TempDir(), "test.tar")
