@@ -3,6 +3,7 @@
 # containerd-bin
 #
 ################################################################################
+
 CONTAINERD_BIN_VERSION = 2.1.4
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_VERSION)
 CONTAINERD_BIN_SOURCE = containerd-$(CONTAINERD_BIN_VERSION)-linux-amd64.tar.gz
@@ -13,7 +14,6 @@ define CONTAINERD_BIN_CONFIGURE_CMDS
 endef
 
 define CONTAINERD_BIN_INSTALL_TARGET_CMDS
-
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/containerd \
 		$(TARGET_DIR)/usr/bin

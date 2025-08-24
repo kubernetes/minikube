@@ -1,6 +1,6 @@
 ################################################################################
 #
-# crictl-bin
+# containerd-bin
 #
 ################################################################################
 
@@ -8,7 +8,6 @@ CONTAINERD_BIN_VERSION = 2.1.4
 CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_VERSION)
 CONTAINERD_BIN_SOURCE = containerd-$(CONTAINERD_BIN_VERSION)-linux-arm64.tar.gz
 CONTAINERD_BIN_STRIP_COMPONENTS = 0
-
 
 define CONTAINERD_BIN_CONFIGURE_CMDS
 	mkdir -p $(TARGET_DIR)/etc/containerd/containerd.conf.d
