@@ -4,17 +4,17 @@
 #
 ################################################################################
 
-CONTAINERD_BIN_VERSION = 2.1.4
-CONTAINERD_BIN_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_VERSION)
-CONTAINERD_BIN_SOURCE = containerd-$(CONTAINERD_BIN_VERSION)-linux-arm64.tar.gz
-CONTAINERD_BIN_STRIP_COMPONENTS = 0
+CONTAINERD_BIN_AARCH64_VERSION = 2.1.4
+CONTAINERD_BIN_AARCH64_SITE = https://github.com/containerd/containerd/releases/download/v$(CONTAINERD_BIN_AARCH64_VERSION)
+CONTAINERD_BIN_AARCH64_SOURCE = containerd-$(CONTAINERD_BIN_AARCH64_VERSION)-linux-arm64.tar.gz
+CONTAINERD_BIN_AARCH64_STRIP_COMPONENTS = 0
 
 
-define CONTAINERD_BIN_CONFIGURE_CMDS
+define CONTAINERD_BIN_AARCH64_CONFIGURE_CMDS
 	mkdir -p $(TARGET_DIR)/etc/containerd/containerd.conf.d
 endef
 
-define CONTAINERD_BIN_INSTALL_TARGET_CMDS
+define CONTAINERD_BIN_AARCH64_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/containerd \
 		$(TARGET_DIR)/usr/bin
@@ -28,19 +28,19 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/containerd-stress \
 		$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/config.toml \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/config.toml \
 		$(TARGET_DIR)/etc/containerd/config.toml
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/containerd_docker_io_hosts.toml \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/containerd_docker_io_hosts.toml \
 		$(TARGET_DIR)/etc/containerd/certs.d/docker.io/hosts.toml
 endef
 
-define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD
+define CONTAINERD_BIN_AARCH64_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/containerd.service \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/containerd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/containerd.service
 	$(INSTALL) -Dm644 \
-		$(CONTAINERD_BIN_PKGDIR)/50-minikube.preset \
+		$(CONTAINERD_BIN_AARCH64_PKGDIR)/50-minikube.preset \
 		$(TARGET_DIR)/usr/lib/systemd/system-preset/50-minikube.preset
 endef
 
