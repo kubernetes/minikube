@@ -17,14 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"k8s.io/minikube/hack/update"
 
@@ -82,21 +80,23 @@ type Data struct {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	// defer cancel()
 
-	stable, _, _, err := update.GHReleases(ctx, "Mirantis", "cri-dockerd")
-	if err != nil {
-		klog.Fatalf("Unable to get stable version: %v", err)
-	}
+	// stable, _, _, err := update.GHReleases(ctx, "Mirantis", "cri-dockerd")
+	// if err != nil {
+	// 	klog.Fatalf("Unable to get stable version: %v", err)
+	// }
 
-	version := strings.TrimPrefix(stable.Tag, "v")
+	// version := strings.TrimPrefix(stable.Tag, "v")
 
-	data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
+	// data := Data{Version: version, FullCommit: stable.Commit, ShortCommit: stable.Commit[:7]}
+
+	data := Data{Version: "v0.3.18", FullCommit: "5709af9c357718c9097868325a6583e0c52a6db1", ShortCommit: "5709af9"}
 
 	update.Apply(schema, data)
 
-	if err := updateHashFiles(stable.Commit); err != nil {
+	if err := updateHashFiles("5709af9c357718c9097868325a6583e0c52a6db1"); err != nil {
 		klog.Fatalf("failed to update hash files: %v", err)
 	}
 }
