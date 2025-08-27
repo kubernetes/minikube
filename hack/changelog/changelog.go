@@ -21,8 +21,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"maps"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 
@@ -198,10 +200,7 @@ func classify(pr *github.PullRequest, cfg Config, allowed map[string]struct{}) (
 	// Then look for substring matches. Iterate in a deterministic order so
 	// overlapping keywords behave predictably. Longer substrings are checked
 	// first to favor more specific matches.
-	subs := make([]string, 0, len(cfg.ContainGroups))
-	for sub := range cfg.ContainGroups {
-		subs = append(subs, sub)
-	}
+	subs := slices.Collect(maps.Keys(cfg.ContainGroups))
 	sort.Slice(subs, func(i, j int) bool {
 		if len(subs[i]) == len(subs[j]) {
 			return subs[i] < subs[j]
