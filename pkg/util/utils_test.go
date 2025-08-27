@@ -19,9 +19,7 @@ package util
 import (
 	"os"
 	"os/user"
-	"reflect"
-	"runtime"
-	"strconv"
+	"syscall"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -83,28 +81,9 @@ func TestParseKubernetesVersion(t *testing.T) {
 
 func TestChownR(t *testing.T) {
 	testDir := t.TempDir()
-	f, err := os.Create(testDir + "/TestChownR")
-	if err != nil {
+	if _, err := os.Create(testDir + "/TestChownR"); err != nil {
 		return
 	}
-	_ = f.Close()
-
-	curUID := -1
-	curGID := -1
-	if u, err := user.Current(); err == nil {
-		if u.Uid != "" {
-			if v, err := strconv.Atoi(u.Uid); err == nil {
-				curUID = v
-			}
-		}
-		if u.Gid != "" {
-			if v, err := strconv.Atoi(u.Gid); err == nil {
-				curGID = v
-			}
-		}
-	}
-
-	normalExpectError := runtime.GOOS == "windows"
 
 	cases := []struct {
 		name          string
@@ -114,96 +93,52 @@ func TestChownR(t *testing.T) {
 	}{
 		{
 			name:          "normal",
-			uid:           curUID,
-			gid:           curGID,
-			expectedError: normalExpectError,
+			uid:           os.Getuid(),
+			gid:           os.Getgid(),
+			expectedError: false,
 		},
 		{
 			name:          "invalid uid",
 			uid:           2147483647,
-			gid:           curGID,
+			gid:           os.Getgid(),
 			expectedError: true,
 		},
 		{
 			name:          "invalid gid",
-			uid:           curUID,
+			uid:           os.Getuid(),
 			gid:           2147483647,
 			expectedError: true,
 		},
 	}
-
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			err := ChownR(testDir+"/TestChownR", c.uid, c.gid)
-			// Basic expectation: error vs no error
-			if (err != nil) != c.expectedError {
-				t.Fatalf("case %q: expectedError=%v, got err=%v", c.name, c.expectedError, err)
-			}
-
-			// Skip strict ownership assertions on Windows or if the operation errored.
-			if runtime.GOOS == "windows" || c.expectedError {
-				return
-			}
-
-			// Runtime-reflectively inspect FileInfo.Sys() for Uid/Gid (Unix).
-			fileInfo, statErr := os.Stat(testDir + "/TestChownR")
-			if statErr != nil {
-				t.Fatalf("stat failed: %v", statErr)
-			}
+			fileInfo, _ := os.Stat(testDir + "/TestChownR")
 			fileSys := fileInfo.Sys()
-			if fileSys == nil {
-				return
-			}
-			v := reflect.ValueOf(fileSys)
-			if v.Kind() == reflect.Ptr {
-				v = v.Elem()
-			}
-			uidField := v.FieldByName("Uid")
-			gidField := v.FieldByName("Gid")
-			if uidField.IsValid() && gidField.IsValid() {
-				uid := int(uidField.Convert(reflect.TypeOf(uint32(0))).Uint())
-				gid := int(gidField.Convert(reflect.TypeOf(uint32(0))).Uint())
-				if curUID != -1 && uid != curUID {
-					t.Fatalf("ownership uid mismatch: expected %d, got %d", curUID, uid)
-				}
-				if curGID != -1 && gid != curGID {
-					t.Fatalf("ownership gid mismatch: expected %d, got %d", curGID, gid)
-				}
+			if (nil != err) != c.expectedError || ((false == c.expectedError) && (fileSys.(*syscall.Stat_t).Gid != uint32(c.gid) || fileSys.(*syscall.Stat_t).Uid != uint32(c.uid))) {
+				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
 			}
 		})
 	}
 }
+
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 	testDir := t.TempDir()
-	f, err := os.Create(testDir + "/TestChownR")
-	if err != nil {
+	if _, err := os.Create(testDir + "/TestChownR"); nil != err {
 		return
 	}
-	_ = f.Close()
 
-	// Ensure CHANGE_MINIKUBE_NONE_USER is set for the test.
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 		t.Setenv("CHANGE_MINIKUBE_NONE_USER", "1")
 	}
 
-	// Determine if the current user's UID string is numeric (Unix) or not (Windows SIDs).
-	uidNumeric := false
-	u, err := user.Current()
-	if err == nil {
-		// set SUDO_USER to username as before
-		t.Setenv("SUDO_USER", u.Username)
-		if u.Uid != "" {
-			if _, err := strconv.Atoi(u.Uid); err == nil {
-				uidNumeric = true
-			}
+	if os.Getenv("SUDO_USER") == "" {
+		user, err := user.Current()
+		if nil != err {
+			t.Error("fail to get user")
 		}
-	} else {
-		// best-effort: still set SUDO_USER to empty to avoid unexpected behavior
-		t.Setenv("SUDO_USER", "")
+		t.Setenv("SUDO_USER", user.Username)
 	}
-
-	// If UID is non-numeric (Windows), the normal case should expect an error
-	normalExpectError := !uidNumeric
 
 	cases := []struct {
 		name          string
@@ -213,7 +148,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 		{
 			name:          "normal",
 			dir:           testDir,
-			expectedError: normalExpectError,
+			expectedError: false,
 		},
 		{
 			name:          "invalid dir",
@@ -225,7 +160,7 @@ func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			err := MaybeChownDirRecursiveToMinikubeUser(c.dir)
-			if (err != nil) != c.expectedError {
+			if (nil != err) != c.expectedError {
 				t.Errorf("expectedError: %v, got: %v", c.expectedError, err)
 			}
 		})
