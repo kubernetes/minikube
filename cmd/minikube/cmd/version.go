@@ -18,8 +18,9 @@ package cmd
 
 import (
 	"encoding/json"
+	"maps"
 	"os/exec"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -89,11 +90,7 @@ var versionCmd = &cobra.Command{
 				if gitCommitID != "" {
 					out.Ln("commit: %v", gitCommitID)
 				}
-				keys := make([]string, 0, len(data))
-				for k := range data {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
+				keys := slices.Sorted(maps.Keys(data))
 				for _, k := range keys {
 					v := data[k]
 					// for backward compatibility we keep displaying the old way for these two
