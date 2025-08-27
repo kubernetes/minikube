@@ -21,7 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
+	"runtime"
 	"testing"
 
 	"github.com/docker/machine/libmachine"
@@ -277,7 +277,17 @@ func main() {
 	}
 
 	// waiting for process to exit
-	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process: %v\n", err)
+	waitErr := processToKill.Wait()
+	if runtime.GOOS == "windows" {
+		// Windows Wait commonly returns a non-nil error (exit status).
+		// Expect a non-nil Wait error on Windows; fail if we got nil.
+		if waitErr == nil {
+			t.Fatalf("expected non-nil Wait error on windows, got nil")
+		}
+	} else {
+		// On POSIX we signal SIGHUP — child should exit cleanly.
+		if waitErr != nil {
+			t.Fatalf("unable to kill process: %v\n", waitErr)
+		}
 	}
 }

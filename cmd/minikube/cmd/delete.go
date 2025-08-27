@@ -22,8 +22,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -674,9 +676,22 @@ func trySigKillProcess(pid int) error {
 	}
 
 	klog.Infof("Killing pid %d ...", pid)
-	if err := proc.Kill(); err != nil {
-		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
+	// On non-Windows try to send SIGUP first (graceful), fallback to kill if signaling fails.
+	// Use numeric syscall.Signal(1) (SIGUP) to avoid referencing platform-specific constant names.
+	if runtime.GOOS != "windows" {
+		if err := proc.Signal(syscall.Signal(1)); err != nil {
+			klog.Infof("SIGUP failed with %v - falling back to kill...", err)
+			if err := proc.Kill(); err != nil {
+				klog.Infof("Kill failed with %v - removing probably stale pid...", err)
+				return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
+			}
+		}
+	} else {
+		// On Windows, Signal is not meaningful, so we just kill the process
+		if err := proc.Kill(); err != nil {
+			klog.Infof("Kill failed with %v - removing probably stale pid...", err)
+			return errors.Wrapf(err, "removing likely stale unkillable pid: %d", pid)
+		}
 	}
 
 	return nil
