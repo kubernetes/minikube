@@ -30,8 +30,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// Config holds knobs for filtering and grouping pull requests when generating
-// release notes.
+// Config holds knobs for filtering and grouping pull requests when generating release notes.
 // All string comparisons are case-insensitive.
 type Config struct {
 	// all PRs with these prefixes will be skipped in the Changelog
