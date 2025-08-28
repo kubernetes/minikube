@@ -10,6 +10,7 @@
   "docker.io/nvidia/k8s-device-plugin": "registry.cn-hangzhou.aliyuncs.com/google_containers/k8s-device-plugin",
   "docker.io/ivans3/minikube-log-viewer": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-log-viewer",
   "docker.io/cryptexlabs/minikube-ingress-dns": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-ingress-dns",
+  "docker.io/kicbase/minikube-ingress-dns": "registry.cn-hangzhou.aliyuncs.com/google_containers/minikube-ingress-dns",
   "quay.io/datawire/ambassador-operator": "registry.cn-hangzhou.aliyuncs.com/google_containers/ambassador-operator",
   "docker.io/jettech/kube-webhook-certgen": "registry.cn-hangzhou.aliyuncs.com/google_containers/kube-webhook-certgen",
   "gcr.io/k8s-minikube/gcp-auth-webhook": "registry.cn-hangzhou.aliyuncs.com/google_containers/gcp-auth-webhook",
