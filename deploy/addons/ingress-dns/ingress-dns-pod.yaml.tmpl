@@ -80,6 +80,7 @@ spec:
       imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 53
+          hostPort: 53
           protocol: UDP
       env:
         - name: DNS_PORT
@@ -88,3 +89,21 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+      volumeMounts:
+        - mountPath: /config
+          name: minikube-ingress-dns-config-volume
+  volumes:
+    - name: minikube-ingress-dns-config-volume
+      configMap:
+        name: minikube-ingress-dns
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minikube-ingress-dns
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns
+    app.kubernetes.io/part-of: kube-system
+data:
+  dns-nodata-delay-ms: "20"
