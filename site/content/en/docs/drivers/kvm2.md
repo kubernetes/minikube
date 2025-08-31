@@ -118,7 +118,9 @@ where:
 
         *  ***IF THEY MATCH, or THE IP ADDRESS ISN'T LISTED ANYWHERE***: Run `sudo ip link delete <bridge>` followed by `sudo virsh net-start <network>` and  `sudo virsh net-autostart <network>` to let libvirt recreate the **bridge** and [auto]start the **network**.
         *  ***IF THE IP ADDRESS BELONGS TO ANOTHER INTERFACE***: something else occupied the IP **address** creating the conflict, and you'll have to determine what and then choose between the two...
-
+      
+        c. Check if **bridge** is not blocked by firewall.
+        
 4.  Run `sudo systemctl restart libvirtd` or `sudo systemctl restart libvirt` (depending on your OS/distro) to restart the libvirt daemon.
 
 Hopefully, by now you have libvirt network operational, and you will be successfully running minikube again.
