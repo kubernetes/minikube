@@ -29,7 +29,7 @@ SYSDIG_DEPENDENCIES = \
 	zlib
 
 # sysdig creates the module Makefile from a template, which contains a
-# single place-holder, KBUILD_FLAGS, wich is only replaced with two
+# single place-holder, KBUILD_FLAGS, which is only replaced with two
 # things:
 #   - debug flags, which we don't care about here,
 #   - 'sysdig-feature' flags, which are never set, so always empty

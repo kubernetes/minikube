@@ -28,9 +28,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cni"
@@ -139,6 +139,7 @@ const (
 	binaryMirror            = "binary-mirror"
 	disableOptimizations    = "disable-optimizations"
 	disableMetrics          = "disable-metrics"
+	disableCoreDNSLog       = "disable-coredns-log"
 	qemuFirmwarePath        = "qemu-firmware-path"
 	socketVMnetClientPath   = "socket-vmnet-client-path"
 	socketVMnetPath         = "socket-vmnet-path"
@@ -172,8 +173,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().StringP(containerRuntime, "c", constants.DefaultContainerRuntime, fmt.Sprintf("The container runtime to be used. Valid options: %s (default: auto)", strings.Join(cruntime.ValidRuntimes(), ", ")))
-	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().Bool(createMount, false, "Kept for backward compatibility, value is ignored.")
+	startCmd.Flags().String(mountString, "", "Directory to mount in the guest using format '/host-path:/guest-path'.")
 	startCmd.Flags().String(mount9PVersion, defaultMount9PVersion, mount9PVersionDescription)
 	startCmd.Flags().String(mountGID, defaultMountGID, mountGIDDescription)
 	startCmd.Flags().String(mountIPFlag, defaultMountIP, mountIPDescription)
@@ -201,11 +202,12 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(network, "", "network to run minikube with. Used by docker/podman, qemu, kvm, and vfkit drivers. If left empty, minikube will create a new network.")
 	startCmd.Flags().StringVarP(&outputFormat, "output", "o", "text", "Format to print stdout in. Options include: [text,json]")
 	startCmd.Flags().String(trace, "", "Send trace events. Options include: [gcp]")
-	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, and vfkit drivers)")
+	startCmd.Flags().Int(extraDisks, 0, "Number of extra disks created and attached to the minikube VM (currently only implemented for hyperkit, kvm2, qemu2, vfkit, and krunkit drivers)")
 	startCmd.Flags().Duration(certExpiration, constants.DefaultCertExpiration, "Duration until minikube certificate expiration, defaults to three years (26280h).")
 	startCmd.Flags().String(binaryMirror, "", "Location to fetch kubectl, kubelet, & kubeadm binaries from.")
 	startCmd.Flags().Bool(disableOptimizations, false, "If set, disables optimizations that are set for local Kubernetes. Including decreasing CoreDNS replicas from 2 to 1. Defaults to false.")
 	startCmd.Flags().Bool(disableMetrics, false, "If set, disables metrics reporting (CPU and memory usage), this can improve CPU usage. Defaults to false.")
+	startCmd.Flags().Bool(disableCoreDNSLog, false, "If set, disable CoreDNS verbose logging. Defaults to false.")
 	startCmd.Flags().String(staticIP, "", "Set a static IP for the minikube cluster, the IP must be: private, IPv4, and the last octet must be between 2 and 254, for example 192.168.200.200 (Docker and Podman drivers only)")
 	startCmd.Flags().StringP(gpus, "g", "", "Allow pods to use your GPUs. Options include: [all,nvidia,amd] (Docker driver with Docker container-runtime only)")
 	startCmd.Flags().Duration(autoPauseInterval, time.Minute*1, "Duration of inactivity before the minikube VM is paused (default 1m0s)")
@@ -612,7 +614,6 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		SSHPort:                 viper.GetInt(sshSSHPort),
 		ExtraDisks:              viper.GetInt(extraDisks),
 		CertExpiration:          viper.GetDuration(certExpiration),
-		Mount:                   viper.GetBool(createMount),
 		MountString:             viper.GetString(mountString),
 		Mount9PVersion:          viper.GetString(mount9PVersion),
 		MountGID:                viper.GetString(mountGID),
@@ -625,6 +626,7 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		BinaryMirror:            viper.GetString(binaryMirror),
 		DisableOptimizations:    viper.GetBool(disableOptimizations),
 		DisableMetrics:          viper.GetBool(disableMetrics),
+		DisableCoreDNSLog:       viper.GetBool(disableCoreDNSLog),
 		CustomQemuFirmwarePath:  viper.GetString(qemuFirmwarePath),
 		SocketVMnetClientPath:   detect.SocketVMNetClientPath(),
 		SocketVMnetPath:         detect.SocketVMNetPath(),
@@ -652,7 +654,8 @@ func generateNewConfigFromFlags(cmd *cobra.Command, k8sVersion string, rtime str
 		AutoPauseInterval:  viper.GetDuration(autoPauseInterval),
 	}
 	cc.VerifyComponents = interpretWaitFlag(*cmd)
-	if viper.GetBool(createMount) && driver.IsKIC(drvName) {
+
+	if viper.GetString(mountString) != "" && driver.IsKIC(drvName) {
 		cc.ContainerVolumeMounts = []string{viper.GetString(mountString)}
 	}
 
@@ -864,7 +867,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	updateStringFromFlag(cmd, &cc.KubernetesConfig.ServiceCIDR, serviceCIDR)
 	updateBoolFromFlag(cmd, &cc.KubernetesConfig.ShouldLoadCachedImages, cacheImages)
 	updateDurationFromFlag(cmd, &cc.CertExpiration, certExpiration)
-	updateBoolFromFlag(cmd, &cc.Mount, createMount)
 	updateStringFromFlag(cmd, &cc.MountString, mountString)
 	updateStringFromFlag(cmd, &cc.Mount9PVersion, mount9PVersion)
 	updateStringFromFlag(cmd, &cc.MountGID, mountGID)
@@ -1011,7 +1013,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 }
 
 func checkExtraDiskOptions(cmd *cobra.Command, driverName string) {
-	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit}
+	supportedDrivers := []string{driver.HyperKit, driver.KVM2, driver.QEMU2, driver.VFKit, driver.Krunkit}
 
 	if cmd.Flags().Changed(extraDisks) {
 		supported := false

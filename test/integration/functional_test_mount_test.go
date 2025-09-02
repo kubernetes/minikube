@@ -180,7 +180,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) { // no
 			// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "stat", gp))
 			if err != nil {
-				t.Errorf("failed to stat the file %q iniside minikube : args %q: %v", gp, rr.Command(), err)
+				t.Errorf("failed to stat the file %q inside minikube : args %q: %v", gp, rr.Command(), err)
 			}
 
 			if runtime.GOOS == "windows" {

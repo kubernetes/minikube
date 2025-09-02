@@ -294,11 +294,11 @@ func CleanUpOlderPreloads() {
 	}
 
 	for _, file := range files {
-		splited := strings.Split(file.Name(), "-")
-		if len(splited) < 4 {
+		split := strings.Split(file.Name(), "-")
+		if len(split) < 4 {
 			continue
 		}
-		ver := splited[3]
+		ver := split[3]
 		if ver != PreloadVersion {
 			fn := path.Join(targetDir(), file.Name())
 			klog.Infof("deleting older generation preload %s", fn)

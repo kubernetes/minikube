@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -196,13 +197,16 @@ func outputMarkdownTable(categories []plotter.Values, totals []float64, names []
 	c = append(c, totalStrings)
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetAutoWrapText(false)
-	t.SetHeader(headers)
-	t.SetAutoFormatHeaders(false)
-	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-	t.SetCenterSeparator("|")
-	t.AppendBulk(c)
-	t.Render()
+	t.Header(headers)
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+	)
+	if err := t.Bulk(c); err != nil {
+		fmt.Fprintf(os.Stderr, "error writing table: %v\n", err)
+	}
+	if err := t.Render(); err != nil {
+		fmt.Fprintf(os.Stderr, "error rendering table: %v\n", err)
+	}
 	data.TimeMarkdown = b.String()
 }
 

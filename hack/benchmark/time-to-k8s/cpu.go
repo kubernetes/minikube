@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
@@ -43,13 +44,16 @@ func cpuMarkdownTable(categories []plotter.Values, names []string) {
 	}
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetAutoWrapText(false)
-	t.SetHeader(headers)
-	t.SetAutoFormatHeaders(false)
-	t.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
-	t.SetCenterSeparator("|")
-	t.AppendBulk(c)
-	t.Render()
+	t.Header(headers)
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+	)
+	if err := t.Bulk(c); err != nil {
+		fmt.Printf("error writing table: %v\n", err)
+	}
+	if err := t.Render(); err != nil {
+		fmt.Printf("error rendering table: %v\n", err)
+	}
 	data.CPUMarkdown = b.String()
 }
 

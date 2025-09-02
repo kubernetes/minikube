@@ -37,7 +37,7 @@ grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
-# Force go packages to the Jekins home directory
+# Force go packages to the Jenkins home directory
 # export GOPATH=$HOME/go
 ./hack/jenkins/installers/check_install_golang.sh "/usr/local"
 
@@ -77,15 +77,20 @@ env BUILD_IN_DOCKER=y \
   "out/docker-machine-driver-kvm2-${RPM_VERSION}-${RPM_REVISION}.x86_64.rpm"
 
 # check if 'commit: <commit-id>' line contains '-dirty' commit suffix
-BUILT_VERSION=$("out/minikube-$(go env GOOS)-$(go env GOARCH)" version)
-echo ${BUILT_VERSION}
+BUILT_VERSION="$(out/minikube-$(go env GOOS)-$(go env GOARCH) version)"
+echo "$BUILT_VERSION"
+# Extract commit hash from the correct line
+COMMIT=$(echo "$BUILT_VERSION" | grep '^commit:' | awk '{print $2}')
 
-COMMIT=$(echo ${BUILT_VERSION} | grep 'commit:' | awk '{print $2}')
-if (echo ${COMMIT} | grep -q dirty); then
-  echo "'minikube version' reports dirty commit: ${COMMIT}"
+if echo "$COMMIT" | grep -q dirty; then
+  echo "'minikube version' reports dirty commit: $COMMIT"
+  echo "------------------------------------------------------------------------"
+  echo "The following uncommitted changes are causing the build to be dirty:"
+  git status --porcelain
+  echo "------------------------------------------------------------------------"
+  echo "To fix this, commit or stash the above changes."
   exit 1
 fi
-
 # Don't upload temporary copies, avoid unused duplicate files in the release storage
 rm -f out/minikube-linux-x86_64
 rm -f out/minikube-linux-i686
@@ -115,7 +120,7 @@ cp "out/minikube-${RPM_VERSION}-0.s390x.rpm" out/minikube-latest.s390x.rpm
 echo "Generating tarballs for kicbase images"
 # first get the correct tag of the kic base image
 KIC_VERSION=$(grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" -f 2 | cut -d "-" -f 1)
-# then generate tarballs for all achitectures
+# then generate tarballs for all architectures
 for ARCH in "amd64" "arm64" "arm/v7" "ppc64le" "s390x" 
 do
   SUFFIX=$(echo $ARCH | sed 's/\///g')

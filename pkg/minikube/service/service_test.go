@@ -766,12 +766,13 @@ func TestPrintServiceList(t *testing.T) {
 	out := &buf
 	input := [][]string{{"foo", "bar", "baz", "nah"}}
 	PrintServiceList(out, input)
-	expected := `|-----------|------|-------------|-----|
-| NAMESPACE | NAME | TARGET PORT | URL |
-|-----------|------|-------------|-----|
-| foo       | bar  | baz         | nah |
-|-----------|------|-------------|-----|
+	expected := `┌───────────┬──────┬─────────────┬─────┐
+│ NAMESPACE │ NAME │ TARGET PORT │ URL │
+├───────────┼──────┼─────────────┼─────┤
+│ foo       │ bar  │ baz         │ nah │
+└───────────┴──────┴─────────────┴─────┘
 `
+
 	got := out.String()
 	if got != expected {
 		t.Fatalf("PrintServiceList(%v) expected to return %v but got \n%v", input, expected, got)

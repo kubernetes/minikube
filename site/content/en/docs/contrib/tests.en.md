@@ -114,6 +114,10 @@ makes sure our docker-machine-driver-hyperkit binary can be installed properly
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
 
+## TestParseAllMounts
+
+## TestParseSingle
+
 ## TestFunctional
 are functionality tests which can safely share a profile in parallel
 
@@ -324,7 +328,7 @@ Steps:
 asserts basic "service" command functionality
 
 #### validateServiceCmdDeployApp
-Create a new `registry.k8s.io/echoserver` deployment
+Create a new `kickbase/echo_server` deployment
 
 #### validateServiceCmdList
 Run `minikube service list` to make sure the newly created service is correctly listed in the output
@@ -344,7 +348,7 @@ Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL
 #### validateServiceCmdConnect
 
 Steps:
-- Create a new `registry.k8s.io/echoserver` deployment
+- Create a new `kickbase/echo-server` deployment
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 - Make sure we can hit the endpoint URL with an HTTP GET request
 
@@ -439,6 +443,11 @@ for the platforms that support it, we're testing:
 
 #### validatePersistentVolumeClaim
 makes sure PVCs work properly
+verifies at least one StorageClass exists
+Applies a PVC manifest (pvc.yaml) and verfies PVC named myclaim reaches phase Bound.
+Creates a test pod (sp-pod) that mounts the claim (via createPVTestPod).
+Writes a file foo to the mounted volume at /tmp/mount/foo.
+Deletes the pod, recreates it, and verifies the file foo still exists by listing /tmp/mount, proving data persists across pod restarts.
 
 #### validateTunnelCmd
 makes sure the minikube tunnel command works as expected
@@ -486,7 +495,7 @@ ensures ha (multi-control plane) cluster can start.
 deploys an app to ha (multi-control plane) cluster and ensures all nodes can serve traffic.
 
 #### validateHAPingHostFromPods
-uses app previously deplyed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+uses app previously deployed by validateDeployAppToHACluster to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 
 #### validateHAAddWorkerNode
 uses the minikube node add command to add a worker node to an existing ha (multi-control plane) cluster.
@@ -641,7 +650,7 @@ tests that the node name verification works as expected
 deploys an app to a multinode cluster and makes sure all nodes can serve traffic
 
 #### validatePodsPingHost
-uses app previously deplyed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
+uses app previously deployed by validateDeployAppToMultiNode to verify its pods, located on different nodes, can resolve "host.minikube.internal".
 
 ## TestNetworkPlugins
 tests all supported CNI options

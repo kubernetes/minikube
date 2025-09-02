@@ -42,9 +42,6 @@ controlPlaneEndpoint: control-plane.minikube.internal:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
-    extraArgs:
-      - name: "proxy-refresh-interval"
-        value: "70000"
 kubernetesVersion: v1.32.0
 networking:
   dnsDomain: cluster.local

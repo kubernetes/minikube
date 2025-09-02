@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -52,7 +52,7 @@ import (
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	URL        string
 	exec       command.Runner
 	NodeConfig Config
@@ -458,7 +458,7 @@ func (d *Driver) Stop() error {
 
 	crMgr, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
 	if err != nil { // won't return error because:
-		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
+		// even though we can't stop the containers inside, we still wanna stop the minikube container itself
 		klog.Errorf("unable to get container runtime: %v", err)
 	} else {
 		containers, err := crMgr.ListContainers(cruntime.ListContainersOptions{Namespaces: constants.DefaultNamespaces})

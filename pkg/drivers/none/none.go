@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog/v2"
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -46,7 +46,7 @@ var cleanupPaths = []string{
 // https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 type Driver struct {
 	*drivers.BaseDriver
-	*pkgdrivers.CommonDriver
+	*common.CommonDriver
 	URL     string
 	runtime cruntime.Manager
 	exec    command.Runner

@@ -116,7 +116,8 @@ fi
 # let's just clean all docker artifacts up
 docker system prune -a --volumes -f || true
 docker system df || true
-
+# read only token, never expires
+docker login -u minikubebot -p "$DOCKERHUB_READONLY_TOKEN"
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
@@ -143,6 +144,9 @@ case "${DRIVER}" in
   ;;
   vfkit)
     echo "vfkit:     $(vfkit --version)"
+  ;;
+  krunkit)
+    echo "krunkit:   $(krunkit --version)"
   ;;
 esac
 

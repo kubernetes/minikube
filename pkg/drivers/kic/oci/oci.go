@@ -182,7 +182,7 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, p.Role),
-		// label th enode wuth the node ID
+		// label th enode with the node ID
 		"--label", p.NodeLabel,
 	}
 	// to provide a static IP
@@ -194,6 +194,8 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 	switch p.GPUs {
 	case "all", "nvidia":
 		runArgs = append(runArgs, "--gpus", "all", "--env", "NVIDIA_DRIVER_CAPABILITIES=all")
+	case "nvidia.com":
+		runArgs = append(runArgs, "--device", "nvidia.com/gpu=all")
 	case "amd":
 		/* https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/docker.html
 		 * "--security-opt seccomp=unconfined" is also required but included above.

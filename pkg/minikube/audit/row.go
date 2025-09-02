@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -124,11 +125,15 @@ func rowsToASCIITable(rows []row, headers []string) string {
 	}
 	b := new(bytes.Buffer)
 	t := tablewriter.NewWriter(b)
-	t.SetHeader(headers)
-	t.SetAutoFormatHeaders(false)
-	t.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	t.SetCenterSeparator("|")
-	t.AppendBulk(c)
-	t.Render()
+	t.Header(headers)
+	t.Options(
+		tablewriter.WithHeaderAutoFormat(tw.Off),
+	)
+	if err := t.Bulk(c); err != nil {
+		fmt.Fprintf(b, "Error adding rows: %v\n", err)
+	}
+	if err := t.Render(); err != nil {
+		fmt.Fprintf(b, "Error rendering table: %v", err)
+	}
 	return b.String()
 }

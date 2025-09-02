@@ -23,7 +23,7 @@ The `nat` network is always available, but it does not provide access
 between minikube clusters. To access other clusters or run multi-node
 cluster, you need the `vmnet-shared` network. The `vmnet-shared` network
 requires [vmnet-helper](https://github.com/nirs/vmnet-helper), see
-installation instructions bellow.
+installation instructions below.
 
 {{% tabs %}}
 {{% tab vmnet-shared %}}
@@ -35,10 +35,9 @@ installation instructions bellow.
 ### Install vment-helper
 
 ```shell
-tag="$(curl -fsSL https://api.github.com/repos/nirs/vmnet-helper/releases/latest | jq -r .tag_name)"
 machine="$(uname -m)"
-archive="vmnet-helper-$tag-$machine.tar.gz"
-curl -LOf "https://github.com/nirs/vmnet-helper/releases/download/$tag/$archive"
+archive="vmnet-helper-$machine.tar.gz"
+curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
 sudo tar xvf "$archive" -C / opt/vmnet-helper
 rm "$archive"
 ```

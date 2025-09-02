@@ -22,16 +22,21 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/test/integration/findmnt"
 )
 
 const (
 	mountGID   = "0"
 	mountMSize = "6543"
 	mountUID   = "0"
+	guestPath  = "/minikube-host"
 )
 
 var mountStartPort = 46463
@@ -55,14 +60,19 @@ func TestMountStart(t *testing.T) {
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
+		hostPath := t.TempDir()
+		startProfileWithMount := func(ctx context.Context, t *testing.T, profile string) {
+			validateStartWithMount(ctx, t, profile, hostPath)
+		}
+
 		tests := []struct {
 			name      string
 			validator validateFunc
 			profile   string
 		}{
-			{"StartWithMountFirst", validateStartWithMount, profile1},
+			{"StartWithMountFirst", startProfileWithMount, profile1},
 			{"VerifyMountFirst", validateMount, profile1},
-			{"StartWithMountSecond", validateStartWithMount, profile2},
+			{"StartWithMountSecond", startProfileWithMount, profile2},
 			{"VerifyMountSecond", validateMount, profile2},
 			{"DeleteFirst", validateDelete, profile1},
 			{"VerifyMountPostDelete", validateMount, profile2},
@@ -87,13 +97,23 @@ func TestMountStart(t *testing.T) {
 }
 
 // validateStartWithMount starts a cluster with mount enabled
-func validateStartWithMount(ctx context.Context, t *testing.T, profile string) {
+func validateStartWithMount(ctx context.Context, t *testing.T, profile string, hostPath string) {
 	defer PostMortemLogs(t, profile)
 
 	// We have to increment this because if you have two mounts with the same port, when you kill one cluster the mount will break for the other
 	mountStartPort++
 
-	args := []string{"start", "-p", profile, "--memory=3072", "--mount", "--mount-gid", mountGID, "--mount-msize", mountMSize, "--mount-port", mountPort(), "--mount-uid", mountUID, "--no-kubernetes"}
+	args := []string{
+		"start",
+		"-p", profile,
+		"--memory=3072",
+		"--mount-string", fmt.Sprintf("%s:%s", hostPath, guestPath),
+		"--mount-gid", mountGID,
+		"--mount-msize", mountMSize,
+		"--mount-port", mountPort(),
+		"--mount-uid", mountUID,
+		"--no-kubernetes",
+	}
 	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
@@ -110,7 +130,7 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	sshArgs := []string{"-p", profile, "ssh", "--"}
 
 	args := sshArgs
-	args = append(args, "ls", "/minikube-host")
+	args = append(args, "ls", guestPath)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("mount failed: %q : %v", rr.Command(), err)
@@ -123,26 +143,47 @@ func validateMount(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	args = sshArgs
-	args = append(args, "mount", "|", "grep", "9p")
+	args = append(args, "findmnt", "--json", guestPath)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Fatalf("failed to get mount information: %v", err)
+		t.Fatalf("command failed %q: %v", rr.Command(), err)
 	}
+
+	result, err := findmnt.ParseOutput(rr.Stdout.Bytes())
+	if err != nil {
+		t.Fatalf("failed to parse output %s: %v", rr.Stdout.String(), err)
+	}
+
+	if len(result.Filesystems) == 0 {
+		t.Fatalf("no filesystems found")
+	}
+
+	fs := result.Filesystems[0]
+	if fs.FSType == constants.FSTypeVirtiofs {
+		t.Logf("Options not supported yet for %q filesystem", fs.FSType)
+		return
+	}
+
+	if fs.FSType != constants.FSType9p {
+		t.Fatalf("unexpected filesystem %q", fs.FSType)
+	}
+
+	options := strings.Split(fs.Options, ",")
 
 	flags := []struct {
 		key      string
 		expected string
 	}{
-		{"gid", mountGID},
+		{"dfltgid", mountGID},
+		{"dfltuid", mountUID},
 		{"msize", mountMSize},
 		{"port", mountPort()},
-		{"uid", mountUID},
 	}
 
 	for _, flag := range flags {
 		want := fmt.Sprintf("%s=%s", flag.key, flag.expected)
-		if !strings.Contains(rr.Output(), want) {
-			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, rr.Output())
+		if !slices.Contains(options, want) {
+			t.Errorf("wanted %s to be: %q; got: %q", flag.key, want, options)
 		}
 	}
 }

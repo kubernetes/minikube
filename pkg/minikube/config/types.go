@@ -88,7 +88,6 @@ type ClusterConfig struct {
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration
-	Mount                   bool
 	MountString             string
 	Mount9PVersion          string
 	MountGID                string
@@ -101,6 +100,7 @@ type ClusterConfig struct {
 	BinaryMirror            string // Mirror location for kube binaries (kubectl, kubelet, & kubeadm)
 	DisableOptimizations    bool
 	DisableMetrics          bool
+	DisableCoreDNSLog       bool
 	CustomQemuFirmwarePath  string
 	SocketVMnetClientPath   string
 	SocketVMnetPath         string

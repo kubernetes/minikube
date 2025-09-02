@@ -1,0 +1,42 @@
+name: "update-all"
+on:
+  workflow_dispatch:
+env:
+  GOPROXY: https://proxy.golang.org
+  GO_VERSION: '1.24.6'
+permissions:
+  contents: read
+jobs:
+  update-all:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version: ${{env.GO_VERSION}}
+      - name: Bump versions
+        id: bumpVersions
+        run: |
+          MAKEALL_OUTPUT=$(make _update-all)
+          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MAKEALL_OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "$(git status --porcelain)" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+      - name: Create PR
+        id: createPR
+        if: ${{ steps.bumpVersions.outputs.changes != '' }}
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        with:
+          token: ${{ secrets.MINIKUBE_BOT_PAT }}
+          commit-message: 'Kicbase/ISO: Update dependency versions'
+          committer: minikube-bot <minikube-bot@google.com>
+          author: minikube-bot <minikube-bot@google.com>
+          branch: bump_iso_image_versions
+          branch-suffix: short-commit-hash
+          push-to-fork: minikube-bot/minikube
+          base: master
+          delete-branch: true
+          title: 'chore: (debug pr) update all dependencies'
+          body: |
+            Changelog:
+            ${{ steps.bumpVersions.outputs.changes }}

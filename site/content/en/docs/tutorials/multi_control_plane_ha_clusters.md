@@ -31,7 +31,7 @@ minikube will try to automatically enable control-plane load-balancing if these 
 
 ## Caveat
 
-While a minikube HA cluster will continue to operate (although in degraded mode) after loosing any one control-plane node, keep in mind that there might be some components that are attached only to the primary control-plane node, like the storage-provisioner.
+While a minikube HA cluster will continue to operate (although in degraded mode) after losing any one control-plane node, keep in mind that there might be some components that are attached only to the primary control-plane node, like the storage-provisioner.
 
 ## Tutorial
 
@@ -245,7 +245,7 @@ minikube ssh -p ha-demo -- 'find /var/lib/minikube/binaries -iname kubectl -exec
 +------------------+---------+-------------+---------------------------+---------------------------+------------+
 ```
 
-- Loosing a control-plane node - degrades cluster, but not a problem!
+- Losing a control-plane node - degrades cluster, but not a problem!
 
 ```shell
 minikube node delete m02 -p ha-demo

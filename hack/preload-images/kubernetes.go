@@ -18,9 +18,10 @@ package main
 
 import (
 	"context"
+	"os"
 	"strings"
 
-	"github.com/google/go-github/v72/github"
+	"github.com/google/go-github/v74/github"
 
 	"k8s.io/klog/v2"
 )
@@ -28,8 +29,8 @@ import (
 // recentK8sVersions returns the most recent k8s version, usually around 100.
 func recentK8sVersions() ([]string, error) {
 	const k8s = "kubernetes"
-	client := github.NewClient(nil)
-	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{PerPage: 100})
+	ghc := ghClient()
+	list, _, err := ghc.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{PerPage: 100})
 	if err != nil {
 		return nil, err
 	}
@@ -43,4 +44,14 @@ func recentK8sVersions() ([]string, error) {
 	}
 	klog.InfoS("Got releases", "releases", releases)
 	return releases, nil
+}
+
+// ghClient returns a GitHub client regardless of whether the GITHUB_TOKEN is set or not.
+// NOTE: do NOT use "k8s.io/minikube/hack/update" instead, as its flags will conflict with the ones from this package
+func ghClient() *github.Client {
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		return github.NewClient(nil)
+	}
+	return github.NewClient(nil).WithAuthToken(os.Getenv("GITHUB_TOKEN"))
+
 }

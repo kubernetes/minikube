@@ -142,7 +142,7 @@ func Start(starter Starter) (*kubeconfig.Settings, error) { // nolint:gocyclo
 		if err != nil {
 			return nil, err
 		}
-		// configure CoreDNS concurently from primary control-plane node only and only on first node start
+		// configure CoreDNS concurrently from primary control-plane node only and only on first node start
 		if !starter.PreExists {
 			wg.Add(1)
 			go func() {
@@ -393,7 +393,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, delOnFail bool) (comman
 		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime, cc.Driver)
 	}
 
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Abstraction leakage alert: startHost requires the config to be saved, to satisfy pkg/provision/buildroot.
 	// Hence, SaveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
@@ -956,11 +956,15 @@ func addCoreDNSEntry(runner command.Runner, name, ip string, cc config.ClusterCo
 		sed = fmt.Sprintf("sed -e '/^        hosts {.*/a \\           %s %s'", ip, name)
 	}
 
-	// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
-	regex := regexp.MustCompile(`(?smU)^ *log *$`)
-	if !regex.MatchString(cm) {
-		// inject log plugin into coredns configmap
-		sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
+	if cc.DisableCoreDNSLog {
+		sed = fmt.Sprintf("%s -e '/^        log *$/d'", sed)
+	} else {
+		// check if logging is already enabled (via log plugin) in coredns configmap, so not to duplicate it
+		regex := regexp.MustCompile(`(?smU)^ *log *$`)
+		if !regex.MatchString(cm) {
+			// inject log plugin into coredns configmap
+			sed = fmt.Sprintf("%s -e '/^        errors *$/i \\        log'", sed)
+		}
 	}
 
 	// replace coredns configmap via kubectl

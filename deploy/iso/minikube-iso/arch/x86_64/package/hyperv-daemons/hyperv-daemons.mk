@@ -5,7 +5,7 @@
 ################################################################################
 
 HYPERV_DAEMONS_VERSION = $(call qstrip,$(BR2_LINUX_KERNEL_VERSION))
-HYPERV_DAEMONS_SITE = https://www.kernel.org/pub/linux/kernel/v5.x
+HYPERV_DAEMONS_SITE = https://www.kernel.org/pub/linux/kernel/v6.x
 HYPERV_DAEMONS_SOURCE = linux-$(HYPERV_DAEMONS_VERSION).tar.xz
 
 define HYPERV_DAEMONS_BUILD_CMDS

@@ -31,31 +31,33 @@ func applyPrefix(prefix, format string) string {
 }
 
 // applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(st style.Enum, useColor bool, format string) (string, bool) {
+func applyStyle(st style.Enum, useColor bool, format string) (string, bool, bool) {
 	format = translate.T(format)
 
 	s, ok := style.Config[st]
-	if !s.OmitNewline {
+	// because of https://github.com/kubernetes/minikube/issues/21148
+	// will handle making new lines with spinner library itself
+	if !s.ShouldSpin {
 		format += "\n"
 	}
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
 	if !ok || JSON {
-		return format, s.Spinner
+		return format, s.ShouldSpin, s.HideAfterSpin
 	}
 
 	if !useColor {
-		return applyPrefix(style.LowPrefix(s), format), s.Spinner
+		return applyPrefix(style.LowPrefix(s), format), s.ShouldSpin, s.HideAfterSpin
 	}
-	return applyPrefix(s.Prefix, format), s.Spinner
+	return applyPrefix(s.Prefix, format), s.ShouldSpin, s.HideAfterSpin
 }
 
 // stylized applies formatting to the provided template
-func stylized(st style.Enum, useColor bool, format string, a ...V) (string, bool) {
-	var spinner bool
+func stylized(st style.Enum, useColor bool, format string, a ...V) (string, bool, bool) {
+	var shouldSpin, hideAfterSpin bool
 	if a == nil {
 		a = []V{}
 	}
-	format, spinner = applyStyle(st, useColor, format)
-	return Fmt(format, a...), spinner
+	format, shouldSpin, hideAfterSpin = applyStyle(st, useColor, format)
+	return Fmt(format, a...), shouldSpin, hideAfterSpin
 }

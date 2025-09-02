@@ -814,7 +814,7 @@ func TestValidateGPUs(t *testing.T) {
 		{"nvidia", "docker", "", ""},
 		{"all", "kvm", "docker", "The gpus flag can only be used with the docker driver and docker container-runtime"},
 		{"nvidia", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
-		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia", "amd" or "all"`},
+		{"cat", "docker", "docker", `The gpus flag must be passed a value of "nvidia", "nvidia.com", "amd" or "all"`},
 		{"amd", "docker", "docker", ""},
 		{"amd", "docker", "", ""},
 		{"amd", "docker", "containerd", "The gpus flag can only be used with the docker driver and docker container-runtime"},
@@ -853,7 +853,7 @@ func TestValidateAutoPause(t *testing.T) {
 			t.Errorf("interval of %q failed validation; expected it to pass: %v", input, err)
 		}
 		if err == nil && tc.shouldError {
-			t.Errorf("interval of %q passed validataion; expected it to fail: %v", input, err)
+			t.Errorf("interval of %q passed validation; expected it to fail: %v", input, err)
 		}
 	}
 }

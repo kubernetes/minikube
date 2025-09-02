@@ -63,6 +63,8 @@ const (
 	Parallels = "parallels"
 	// VFKit driver
 	VFKit = "vfkit"
+	// Krunkit driver
+	Krunkit = "krunkit"
 
 	// AliasKVM is driver name alias for kvm2
 	AliasKVM = "kvm"
@@ -178,6 +180,11 @@ func IsVFKit(name string) bool {
 	return name == VFKit
 }
 
+// IsKrunkit checks if the driver is krunkit
+func IsKrunkit(name string) bool {
+	return name == Krunkit
+}
+
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
 	if IsKIC(name) || BareMetal(name) {
@@ -211,9 +218,19 @@ func IsHyperV(name string) bool {
 	return name == HyperV
 }
 
+// IsHyperKit check if the driver is HyperKit
+func IsHyperKit(name string) bool {
+	return name == HyperKit
+}
+
 // SupportsNetworkFlag reutuns if driver supports the --network flag
 func SupportsNetworkFlag(name string) bool {
 	return IsKIC(name) || IsKVM(name) || IsQEMU(name) || IsVFKit(name)
+}
+
+// SupportsVirtiofsMounts returns if driver supports virtiofs mounts
+func SupportsVirtiofsMounts(name string) bool {
+	return IsVFKit(name) || IsKrunkit(name)
 }
 
 // AllowsPreload returns if preload is allowed for the driver

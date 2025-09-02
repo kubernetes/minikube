@@ -28,8 +28,9 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common/virtiofs"
+	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/vfkit"
-	"k8s.io/minikube/pkg/drivers/vmnet"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -88,6 +89,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		return nil, fmt.Errorf("unsupported network: %q", cfg.Network)
 	}
 
+	mounts, err := virtiofs.ValidateMountString(cfg.MountString)
+	if err != nil {
+		return nil, err
+	}
+
 	return &vfkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: machineName,
@@ -99,6 +105,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
 		ExtraDisks:     cfg.ExtraDisks,
+		VirtiofsMounts: mounts,
 		Network:        cfg.Network,
 		MACAddress:     mac,
 		VmnetHelper:    helper,

@@ -71,20 +71,25 @@ func (p *UbuntuProvisioner) GenerateDockerOptions(dockerPort int) (*provision.Do
 		klog.Infof("root file system type: %s", fstype)
 		noPivot = fstype == "rootfs"
 	}
+	/* Template is copied from https://github.com/moby/moby/blob/44bca1adf3c806c4ed6688d67c6f995653b09b26/contrib/init/systemd/docker.service#L2 with the following changes:
+	   ExecStart: additional flags are added
 
+	   StartLimitBurst=3 : The service can be restarted up to 3 times within the time window defined by StartLimitIntervalSec.
+
+	   StartLimitIntervalSec=60 : The time window is 60 seconds. If the service fails and restarts more than 3 times in 60 seconds, systemd will stop trying to restart it automatically.
+	*/
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-BindsTo=containerd.service
-After=network-online.target firewalld.service containerd.service
-Wants=network-online.target
+After=network-online.target nss-lookup.target docker.socket firewalld.service containerd.service time-set.target
+Wants=network-online.target containerd.service
 Requires=docker.socket
 StartLimitBurst=3
 StartLimitIntervalSec=60
 
 [Service]
 Type=notify
-Restart=on-failure
+Restart=always
 `
 	if noPivot {
 		klog.Warning("Using fundamentally insecure --no-pivot option")
@@ -108,7 +113,14 @@ Environment=DOCKER_RAMDISK=yes
 # NOTE: default-ulimit=nofile is set to an arbitrary number for consistency with other
 # container runtimes. If left unlimited, it may result in OOM issues with MySQL.
 ExecStart=
-ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2376 \
+	-H fd:// --containerd=/run/containerd/containerd.sock \
+	-H unix:///var/run/docker.sock \
+	--default-ulimit=nofile=1048576:1048576 \
+	--tlsverify \
+	--tlscacert {{.AuthOptions.CaCertRemotePath}} \
+	--tlscert {{.AuthOptions.ServerCertRemotePath}} \
+	--tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
 ExecReload=/bin/kill -s HUP \$MAINPID
 
 # Having non-zero Limit*s causes performance problems due to accounting overhead
@@ -127,6 +139,7 @@ Delegate=yes
 
 # kill only the docker process, not all processes in the cgroup
 KillMode=process
+OOMScoreAdjust=-500
 
 [Install]
 WantedBy=multi-user.target

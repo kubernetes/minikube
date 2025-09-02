@@ -19,11 +19,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -90,16 +92,12 @@ var stringFromStatus = func(addonStatus bool) string {
 }
 
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
-		addonNames = append(addonNames, addonName)
-	}
-	sort.Strings(addonNames)
-
+	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetAutoFormatHeaders(true)
-	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-	table.SetCenterSeparator("|")
+
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+	)
 
 	// Create table header
 	var tHeader []string
@@ -111,7 +109,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	if printDocs {
 		tHeader = append(tHeader, "Docs")
 	}
-	table.SetHeader(tHeader)
+	table.Header(tHeader)
 
 	// Create table data
 	var tData [][]string
@@ -203,10 +201,12 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 		}
 		tData = append(tData, temp)
 	}
-	table.AppendBulk(tData)
-
-	table.Render()
-
+	if err := table.Bulk(tData); err != nil {
+		klog.Error("Error rendering table (bulk)", err)
+	}
+	if err := table.Render(); err != nil {
+		klog.Error("Error rendering table", err)
+	}
 	v, _, err := config.ListProfiles()
 	if err != nil {
 		klog.Errorf("list profiles returned error: %v", err)
@@ -217,12 +217,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 }
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
-		addonNames = append(addonNames, addonName)
-	}
-	sort.Strings(addonNames)
-
+	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	addonsMap := map[string]map[string]interface{}{}
 
 	for _, addonName := range addonNames {

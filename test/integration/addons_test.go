@@ -250,7 +250,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(8)); err != nil {
-		t.Fatalf("failed waiting for ngnix pod: %v", err)
+		t.Fatalf("failed waiting for nginx pod: %v", err)
 	}
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
 		t.Errorf("failed waiting for nginx service to be up: %v", err)

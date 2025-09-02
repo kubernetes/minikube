@@ -17,6 +17,8 @@ limitations under the License.
 package localpath
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -189,27 +191,56 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 	return p, nil
 }
 
-func getWindowsVolumeNameCmd(d string) (string, error) {
-	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
-
-	stdout, err := cmd.Output()
-	if err != nil {
-		return "", err
+// findPowerShell locates the PowerShell executable
+func findPowerShell() (string, error) {
+	// First try to find powershell.exe in PATH
+	if ps, err := exec.LookPath("powershell.exe"); err == nil {
+		return ps, nil
 	}
 
-	outs := strings.Split(strings.ReplaceAll(string(stdout), "\r", ""), "\n")
+	// Fallback to using SystemRoot environment variable
+	systemRoot := os.Getenv("SystemRoot")
+	if systemRoot == "" {
+		systemRoot = "C:\\Windows"
+	}
 
-	var vname string
-	for _, l := range outs {
-		s := strings.TrimSpace(l)
-		if strings.HasPrefix(s, `\\?\Volume{`) && strings.HasSuffix(s, `}\`) {
-			vname = s
-			break
+	// Try common PowerShell locations
+	locations := []string{
+		filepath.Join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+		filepath.Join(systemRoot, "SysWOW64", "WindowsPowerShell", "v1.0", "powershell.exe"),
+	}
+
+	for _, loc := range locations {
+		if _, err := os.Stat(loc); err == nil {
+			return loc, nil
 		}
 	}
 
-	if vname == "" {
-		return "", errors.New("failed to get a volume GUID")
+	return "", fmt.Errorf("PowerShell not found in PATH or common locations")
+}
+
+// getWindowsVolumeNameCmd returns the Windows volume GUID for a given drive letter
+func getWindowsVolumeNameCmd(d string) (string, error) {
+	psPath, err := findPowerShell()
+	if err != nil {
+		return "", fmt.Errorf("failed to locate PowerShell: %w", err)
+	}
+
+	psCommand := `Get-CimInstance -ClassName Win32_Volume -Filter "DriveLetter = '` + d + `:'" | Select-Object -ExpandProperty DeviceID`
+
+	cmd := exec.Command(psPath, "-NoProfile", "-NonInteractive", "-Command", psCommand)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err = cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("PowerShell command failed: %w", err)
+	}
+
+	vname := strings.TrimSpace(out.String())
+	if !strings.HasPrefix(vname, `\\?\Volume{`) || !strings.HasSuffix(vname, `}\`) {
+		return "", fmt.Errorf("failed to get a volume GUID, got: %s", vname)
 	}
 
 	return vname, nil

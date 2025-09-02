@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0-1749153077-20895
+ISO_VERSION ?= v1.36.0-1753487480-21147
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,12 +35,12 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.24.0
+GO_VERSION ?= 1.24.6
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
 # update this only by running `make update-golang-version`
-GO_K8S_VERSION_PREFIX ?= v1.33.0
+GO_K8S_VERSION_PREFIX ?= v1.34.0
 
 # replace "x.y.0" => "x.y". kube-cross and go.dev/dl use different formats for x.y.0 go versions
 KVM_GO_VERSION ?= $(GO_VERSION:.0=)
@@ -49,7 +49,7 @@ KVM_GO_VERSION ?= $(GO_VERSION:.0=)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2025.02
 # the go version on the line below is for the ISO
-GOLANG_OPTIONS = GO_VERSION=1.23.4 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
+GOLANG_OPTIONS = GOWORK=off GO_VERSION=1.23.4 GO_HASH_FILE=$(PWD)/deploy/iso/minikube-iso/go.hash
 BUILDROOT_OPTIONS = BR2_EXTERNAL=../../deploy/iso/minikube-iso $(GOLANG_OPTIONS)
 REGISTRY ?= gcr.io/k8s-minikube
 
@@ -59,7 +59,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO
 COMMIT_SHORT = $(shell git rev-parse --short HEAD 2> /dev/null || true)
 COMMIT_NOQUOTES := $(patsubst "%",%,$(COMMIT))
 # source code for image: https://github.com/neilotoole/xcgo
-HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy
+HYPERKIT_BUILD_IMAGE ?= quay.io/nirsof/xcgo:jammy-v2
 
 # NOTE: "latest" as of 2021-02-06. kube-cross images aren't updated as often as Kubernetes
 # https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
@@ -79,7 +79,6 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 5.10.207
 # latest from https://github.com/golangci/golangci-lint/releases
 # update this only by running `make update-golint-version`
 GOLINT_VERSION ?= v2.1.5
@@ -103,7 +102,7 @@ $(shell mkdir -p $(BUILD_DIR))
 CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube:Z -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
@@ -189,7 +188,7 @@ endef
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app:Z -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -302,20 +301,7 @@ out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 minikube-iso-amd64: minikube-iso-x86_64
 minikube-iso-arm64: minikube-iso-aarch64
 
-minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
-	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
-	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
-	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
-	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
-		mkdir -p $(BUILD_DIR); \
-		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
-		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
-		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
-		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
-		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
-	fi;
-	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+minikube-iso-%: iso-prepare-% deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/auto-pause # build minikube iso
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* host-python3
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$*
 	# x86_64 ISO is still BIOS rather than EFI because of AppArmor issues for KVM, and Gen 2 issues for Hyper-V
@@ -325,29 +311,48 @@ minikube-iso-%: deploy/iso/minikube-iso/board/minikube/%/rootfs-overlay/usr/bin/
                 mv $(BUILD_DIR)/buildroot/output-x86_64/images/rootfs.iso9660 $(BUILD_DIR)/minikube-amd64.iso; \
         fi;
 
+.PHONY: iso-prepare-%
+iso-prepare-%: buildroot
+	echo $(VERSION_JSON) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/version.json
+	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/minikube/$*/rootfs-overlay/etc/VERSION
+	cp deploy/iso/minikube-iso/arch/$*/Config.in.tmpl deploy/iso/minikube-iso/Config.in
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* minikube_$*_defconfig
+
+.PHONY: buildroot
+buildroot:
+	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
+		mkdir -p $(BUILD_DIR); \
+		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		perl -pi -e 's@\s+source "package/sysdig/Config\.in"\n@@;' $(BUILD_DIR)/buildroot/package/Config.in; \
+		rm -r $(BUILD_DIR)/buildroot/package/sysdig; \
+		cp deploy/iso/minikube-iso/go.hash $(BUILD_DIR)/buildroot/package/go/go.hash; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.email "dev@random.com"; \
+		git --git-dir=$(BUILD_DIR)/buildroot/.git config user.name "Random developer"; \
+	fi;
+
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
-iso-menuconfig-%: ## Configure buildroot configuration
+iso-menuconfig-%: iso-prepare-% ## Configure buildroot configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* savedefconfig
 
 # Change the kernel configuration for the minikube ISO
-linux-menuconfig-%:  ## Configure Linux kernel configuration
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/ savedefconfig
-	cp $(BUILD_DIR)/buildroot/output-$*/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/minikube/$*/linux_$*_defconfig
+linux-menuconfig-%: iso-prepare-% ## Configure Linux kernel configuration
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-savedefconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot $(BUILDROOT_OPTIONS) O=$(BUILD_DIR)/buildroot/output-$* linux-update-defconfig
 
 out/minikube-%.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube-iso-$*
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash -lc '/usr/bin/make minikube-iso-$*'
 endif
 
 iso_in_docker:
-	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt:Z $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
@@ -394,6 +399,11 @@ integration-functional-only: out/minikube$(IS_EXE) ## Trigger only functioanl te
 .PHONY: html_report
 html_report: ## Generate HTML  report out of the last ran integration test logs.
 	@go tool test2json -t < "./out/testout_$(COMMIT_SHORT).txt" > "./out/testout_$(COMMIT_SHORT).json"
+	# install gopogh if not already installed
+	@if ! command -v gopogh >/dev/null 2>&1; then \
+		echo "gopogh not found, installing..."; \
+		GOBIN=$(shell go env GOPATH)/bin go install github.com/medyagh/gopogh/cmd/gopogh@latest; \
+	fi
 	@gopogh -in "./out/testout_$(COMMIT_SHORT).json" -out ./out/testout_$(COMMIT_SHORT).html -name "$(shell git rev-parse --abbrev-ref HEAD)" -pr "" -repo github.com/kubernetes/minikube/  -details "${COMMIT_SHORT}"
 	@echo "-------------------------- Open HTML Report in Browser: ---------------------------"
 ifeq ($(GOOS),windows)
@@ -480,6 +490,7 @@ clean: ## Clean build
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
 	rm -rf /tmp/tmp.*.minikube_*
+	rm -rf test/integration/licenses
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md  ## Generate documentation
@@ -523,7 +534,7 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 lint:
-	docker run --rm -v `pwd`:/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	docker run --rm -v `pwd`:/app:Z -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
 	golangci-lint run ${GOLINT_OPTIONS} ./..." 
 	# --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" 
 	# The "--skip-dirs" parameter is no longer supported in the V2 version. If you need to skip the directory, 
@@ -555,7 +566,7 @@ verify-iso: # Make sure the current ISO exists in the expected bucket
 	gsutil stat gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION)-arm64.iso
 
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants")
-	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
+	cd hack && go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs help_text/gen_help_text.go
 
 .PHONY: debs ## Build all deb packages
 debs: out/minikube_$(DEB_VERSION)-$(DEB_REVISION)_amd64.deb \
@@ -657,7 +668,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
 		--user $(shell id -u):$(shell id -g) -w /app \
-		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
+		-v $(PWD):/app:Z -v $(GOPATH):/go:Z --init --entrypoint "" \
 		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	$(if $(quiet),@echo "  GO       $@")
@@ -767,7 +778,7 @@ endif
 	docker buildx build -f ./deploy/kicbase/Dockerfile --platform $(KICBASE_ARCH) $(addprefix -t ,$(KICBASE_IMAGE_REGISTRIES)) --push --build-arg VERSION_JSON=$(VERSION_JSON) --build-arg COMMIT_SHA=${VERSION}-$(COMMIT_NOQUOTES) --build-arg PREBUILT_AUTO_PAUSE=true .
 
 out/preload-tool:
-	go build -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ ./hack/preload-images/*.go
+	cd hack && go build -ldflags="$(MINIKUBE_LDFLAGS)" -o ../$@ preload-images/*.go
 
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: out/minikube out/preload-tool ## Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
@@ -1004,7 +1015,7 @@ out/performance-bot:
 
 .PHONY: out/metrics-collector
 out/metrics-collector:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ hack/metrics/*.go
+	cd hack && GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o ../$@ metrics/*.go
 
 
 .PHONY: compare
@@ -1017,39 +1028,22 @@ compare: out/mkcmp out/minikube
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
 
 
+.PHONY: generate-licenses
+generate-licenses:
+	./hack/generate_licenses.sh
+
+.PHONY: gomodtidy
+gomodtidy: ## run go mod tidy everywhere needed
+	go mod tidy
+	cd hack && go mod tidy
+
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
 	@printf "\033[1m--------------------------------------\033[21m\n"
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-
-
-.PHONY: update-golang-version
-update-golang-version:
-	(cd hack/update/golang_version && \
-	 go run update_golang_version.go)
-
-.PHONY: update-kubernetes-version
-update-kubernetes-version:
-	@(cd hack/update/kubernetes_version && \
-	 go run update_kubernetes_version.go)
-
-.PHONY: update-golint-version
-update-golint-version:
-	(cd hack/update/golint_version && \
-	 go run update_golint_version.go)
-
-.PHONY: update-preload-version
-update-preload-version:
-	(cd hack/update/preload_version && \
-	 go run update_preload_version.go)
-
-.PHONY: update-kubeadm-constants
-update-kubeadm-constants:
-	(cd hack/update/kubeadm_constants && \
-	 go run update_kubeadm_constants.go)
-	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 
 .PHONY: stress
 stress: ## run the stress tests
@@ -1067,216 +1061,202 @@ cpu-benchmark-autopause: ## run the cpu usage auto-pause benchmark
 time-to-k8s-benchmark:
 	./hack/benchmark/time-to-k8s/time-to-k8s.sh
 
+.PHONY: update-golang-version
+update-golang-version:
+	 cd hack && go run update/golang_version/golang_version.go
+
+.PHONY: update-kubernetes-version
+update-kubernetes-version:
+	 @(cd hack && go run update/kubernetes_version/kubernetes_version.go)
+
+.PHONY: update-golint-version
+update-golint-version:
+	 cd hack && go run update/golint_version/golint_version.go
+
+.PHONY: update-preload-version
+update-preload-version:
+	 cd hack && go run update/preload_version/preload_version.go
+
+.PHONY: update-kubeadm-constants
+update-kubeadm-constants:
+	cd hack && go run update/kubeadm_constants/kubeadm_constants.go
+	gofmt -w pkg/minikube/constants/constants_kubeadm_images.go
 .PHONY: update-gopogh-version
 update-gopogh-version: ## update gopogh version
-	(cd hack/update/gopogh_version && \
-	 go run update_gopogh_version.go)
+	cd hack && go run update/gopogh_version/gopogh_version.go
 
 .PHONY: update-gotestsum-version
 update-gotestsum-version:
-	(cd hack/update/gotestsum_version && \
-	 go run update_gotestsum_version.go)
+	cd hack && go run update/gotestsum_version/gotestsum_version.go
 
 .PHONY: update-gh-version
 update-gh-version:
-	(cd hack/update/gh_version && \
-	 go run update_gh_version.go)
+	cd hack && go run update/gh_version/gh_version.go
 
 .PHONY: update-docsy-version
 update-docsy-version:
-	@(cd hack/update/docsy_version && \
-	  go run update_docsy_version.go)
+	cd hack && go run update/docsy_version/docsy_version.go
 
 .PHONY: update-hugo-version
 update-hugo-version:
-	(cd hack/update/hugo_version && \
-	 go run update_hugo_version.go)
+	cd hack && go run update/hugo_version/hugo_version.go
 
 .PHONY: update-cloud-spanner-emulator-version
 update-cloud-spanner-emulator-version:
-	(cd hack/update/cloud_spanner_emulator_version && \
-	 go run update_cloud_spanner_emulator_version.go)
+	cd hack && go run update/cloud_spanner_emulator_version/cloud_spanner_emulator_version.go
 
 .PHONY: update-containerd-version
 update-containerd-version:
-	(cd hack/update/containerd_version && \
-	 go run update_containerd_version.go)
+	cd hack && go run update/containerd_version/containerd_version.go
 
 .PHONY: update-buildkit-version
 update-buildkit-version:
-	(cd hack/update/buildkit_version && \
-	 go run update_buildkit_version.go)
+	cd hack && go run update/buildkit_version/buildkit_version.go
 
 .PHONY: update-cri-o-version
 update-cri-o-version:
-	(cd hack/update/cri-o_version && \
-	 go run update_cri-o_version.go)
+	cd hack && go run update/cri_o_version/cri_o_version.go
 
 .PHONY: update-crun-version
 update-crun-version:
-	(cd hack/update/crun_version && \
-	 go run update_crun_version.go)
+	cd hack && go run update/crun_version/crun_version.go
 
 .PHONY: update-metrics-server-version
 update-metrics-server-version:
-	(cd hack/update/metrics_server_version && \
-	 go run update_metrics_server_version.go)
+	cd hack && go run update/metrics_server_version/metrics_server_version.go
 
 .PHONY: update-runc-version
 update-runc-version:
-	(cd hack/update/runc_version && \
-	 go run update_runc_version.go)
+	cd hack && go run update/runc_version/runc_version.go
 
 .PHONY: update-docker-version
 update-docker-version:
-	(cd hack/update/docker_version && \
-	 go run update_docker_version.go)
+	cd hack && go run update/docker_version/docker_version.go
 
 .PHONY: update-ubuntu-version
 update-ubuntu-version:
-	(cd hack/update/ubuntu_version && \
-	 go run update_ubuntu_version.go)
+	cd hack && go run update/ubuntu_version/ubuntu_version.go
 
 .PHONY: update-cni-plugins-version
 update-cni-plugins-version:
-	(cd hack/update/cni_plugins_version && \
-	 go run update_cni_plugins_version.go)
+	cd hack && go run update/cni_plugins_version/cni_plugins_version.go
 
 .PHONY: update-gcp-auth-version
 update-gcp-auth-version:
-	(cd hack/update/gcp_auth_version && \
-	 go run update_gcp_auth_version.go)
+	cd hack && go run update/gcp_auth_version/gcp_auth_version.go
 
 .PHONY: update-kubernetes-versions-list
 update-kubernetes-versions-list:
-	(cd hack/update/kubernetes_versions_list && \
-	 go run update_kubernetes_versions_list.go)
+	cd hack && go run update/kubernetes_versions_list/kubernetes_versions_list.go
 
 .PHONY: update-ingress-version
 update-ingress-version:
-	(cd hack/update/ingress_version && \
-	 go run update_ingress_version.go)
+	cd hack && go run update/ingress_version/ingress_version.go
 
 .PHONY: update-flannel-version
 update-flannel-version:
-	(cd hack/update/flannel_version && \
-	 go run update_flannel_version.go)
+	cd hack && go run update/flannel_version/flannel_version.go
 
 .PHONY: update-inspektor-gadget-version
 update-inspektor-gadget-version:
-	(cd hack/update/inspektor_gadget_version && \
-	 go run update_inspektor_gadget_version.go)
+	cd hack && go run update/inspektor_gadget_version/inspektor_gadget_version.go
 
 .PHONY: update-calico-version
 update-calico-version:
-	(cd hack/update/calico_version && \
-	 go run update_calico_version.go)
+	cd hack && go run update/calico_version/calico_version.go
 
 .PHONY: update-cri-dockerd-version
 update-cri-dockerd-version:
-	(cd hack/update/cri_dockerd_version && \
-	 go run update_cri_dockerd_version.go)
+	cd hack && go run update/cri_dockerd_version/cri_dockerd_version.go
 
 .PHONY: update-go-github-version
 update-go-github-version:
-	(cd hack/update/go_github_version && \
-	 go run update_go_github_version.go)
+	cd hack && go run update/go_github_version/go_github_version.go
 
 .PHONY: update-docker-buildx-version
 update-docker-buildx-version:
-	(cd hack/update/docker_buildx_version && \
-	 go run update_docker_buildx_version.go)
+	cd hack && go run update/docker_buildx_version/docker_buildx_version.go
 
 .PHONY: update-nerdctl-version
 update-nerdctl-version:
-	(cd hack/update/nerdctl_version && \
-	 go run update_nerdctl_version.go)
+	cd hack && go run update/nerdctl_version/nerdctl_version.go
 
 .PHONY: update-crictl-version
 update-crictl-version:
-	(cd hack/update/crictl_version && \
-	 go run update_crictl_version.go)
+	cd hack && go run update/crictl_version/crictl_version.go
 
 .PHONY: update-kindnetd-version
 update-kindnetd-version:
-	(cd hack/update/kindnetd_version && \
-	 go run update_kindnetd_version.go)
+	cd hack && go run update/kindnetd_version/kindnetd_version.go
 
 .PHONY: update-istio-operator-version
 update-istio-operator-version:
-	(cd hack/update/istio_operator_version && \
-	 go run update_istio_operator_version.go)
+	cd hack && go run update/istio_operator_version/istio_operator_version.go
 
 .PHONY: update-registry-version
 update-registry-version:
-	(cd hack/update/registry_version && \
-	 go run update_registry_version.go)
+	cd hack && go run update/registry_version/registry_version.go
 
 .PHONY: update-volcano-version
 update-volcano-version:
-	(cd hack/update/volcano_version && \
-	 go run update_volcano_version.go)
+	cd hack && go run update/volcano_version/volcano_version.go
 
 .PHONY: update-kong-version
 update-kong-version:
-	(cd hack/update/kong_version && \
-	 go run update_kong_version.go)
+	cd hack && go run update/kong_version/kong_version.go
 
 .PHONY: update-kong-ingress-controller-version
 update-kong-ingress-controller-version:
-	(cd hack/update/kong_ingress_controller_version && \
-	 go run update_kong_ingress_controller_version.go)
+	cd hack && go run update/kong_ingress_controller_version/kong_ingress_controller_version.go
 
 .PHONY: update-nvidia-device-plugin-version
 update-nvidia-device-plugin-version:
-	(cd hack/update/nvidia_device_plugin_version && \
-	 go run update_nvidia_device_plugin_version.go)
+	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
-.PHONY: update-amd-gpu-device-plugin-version
-update-amd-gpu-device-plugin-version:
-	(cd hack/update/amd_device_plugin_version && \
-	 go run update_amd_device_plugin_version.go)
+# for amd gpu 
+.PHONY: update-amd-device-plugin-version
+update-amd-device-plugin-version:
+	cd hack && go run update/amd_device_gpu_plugin_version/amd_device_gpu_plugin_version.go
 
 .PHONY: update-nerdctld-version
 update-nerdctld-version:
-	(cd hack/update/nerdctld_version && \
-	 go run update_nerdctld_version.go)
+	cd hack && go run update/nerdctld_version/nerdctld_version.go
 
 .PHONY: update-kubectl-version
 update-kubectl-version:
-	(cd hack/update/kubectl_version && \
-	 go run update_kubectl_version.go)
+	cd hack && go run update/kubectl_version/kubectl_version.go
 
 .PHONY: update-site-node-version
 update-site-node-version:
-	(cd hack/update/site_node_version && \
-	 go run update_site_node_version.go)
+	cd hack && go run update/site_node_version/site_node_version.go
 
 .PHONY: update-cilium-version
 update-cilium-version:
-	(cd hack/update/cilium_version && \
-	 go run update_cilium_version.go)
+	cd hack && go run update/cilium_version/cilium_version.go
 
 .PHONY: update-yakd-version
 update-yakd-version:
-	(cd hack/update/yakd_version && \
-	 go run update_yakd_version.go)
+	cd hack && go run update/yakd_version/yakd_version.go
 
 .PHONY: update-kube-registry-proxy-version
 update-kube-registry-proxy-version:
-	(cd hack/update/kube_registry_proxy_version && \
-	 go run update_kube_registry_proxy_version.go)
+	cd hack && go run update/kube_registry_proxy_version/kube_registry_proxy_version.go
 
-.PHONY: get-dependency-verison
-get-dependency-version:
-	@(cd hack/update/get_version && \
-	  go run get_version.go)
-
-.PHONY: generate-licenses
-generate-licenses:
-	./hack/generate_licenses.sh
+.PHONY: update-headlamp-version
+update-headlamp-version:
+	cd hack && go run update/headlamp_version/headlamp_version.go
 
 .PHONY: update-kube-vip-version
 update-kube-vip-version:
-	(cd hack/update/kube_vip_version && \
-	 go run update_kube_vip_version.go)
+	cd hack && go run update/kube_vip_version/kube_vip_version.go
+
+# used by update- Targets to get before/after versions of tools it updates
+# example usage echo "OLD_VERSION=$(DEP=node make get-dependency-version)" >> "$GITHUB_OUTPUT"
+.PHONY: get-dependency-verison
+get-dependency-version:
+	@(cd hack && go run update/get_version/get_version.go)
+
+# runs update on all hack/update/components only used for debugging purposes, not meant to be used regularly
+.PHONY: _update-all
+_update-all:
+	@(cd hack && go run update/update_all/update_all.go)

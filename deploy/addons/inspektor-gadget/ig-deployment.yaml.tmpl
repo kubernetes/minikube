@@ -9,6 +9,8 @@ metadata:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget
   namespace: gadget
 ---
@@ -16,35 +18,45 @@ metadata:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget
   namespace: gadget
 data:
     config.yaml: |-
-      hook-mode: auto
-      fallback-pod-informer: true
       events-buffer-length: 16384
       containerd-socketpath: /run/containerd/containerd.sock
       crio-socketpath: /run/crio/crio.sock
       docker-socketpath: /run/docker.sock
       podman-socketpath: /run/podman/podman.sock
+      gadget-namespace: gadget
+      daemon-log-level: info
       operator:
+        kubemanager:
+          fallback-podinformer: true
+          hook-mode: auto
         oci:
-          verify-image: true
-          public-keys:
-            - |
-              -----BEGIN PUBLIC KEY-----
-              MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoDOC0gYSxZTopenGmX3ZFvQ1DSfh
-              Ir4EKRt5jC+mXaJ7c7J+oREskYMn/SfZdRHNSOjLTZUMDm60zpXGhkFecg==
-              -----END PUBLIC KEY-----
-          allowed-gadgets:
-            []
+          allowed-gadgets: []
           disallow-pulling: false
+          insecure-registries: []
+          public-keys:
+          - |
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoDOC0gYSxZTopenGmX3ZFvQ1DSfh
+            Ir4EKRt5jC+mXaJ7c7J+oREskYMn/SfZdRHNSOjLTZUMDm60zpXGhkFecg==
+            -----END PUBLIC KEY-----
+          verify-image: true
+        otel-metrics:
+          otel-metrics-listen: false
+          otel-metrics-listen-address: 0.0.0.0:2224
 ---
 # Source: gadget/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: gadget-cluster-role
+  labels:
+    k8s-app: gadget
 rules:
   - apiGroups: [""]
     resources: ["nodes/proxy"]
@@ -83,6 +95,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: gadget-cluster-role-binding
+  labels:
+    k8s-app: gadget
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -96,6 +110,8 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget-role
   namespace: gadget
 rules:
@@ -111,6 +127,8 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
+  labels:
+    k8s-app: gadget
   name: gadget-role-binding
   namespace: gadget
 roleRef:
@@ -144,7 +162,6 @@ spec:
         # "failed to create server failed to create folder for pinning bpf maps: mkdir /sys/fs/bpf/gadget: permission denied"
         # (For reference, see: https://github.com/inspektor-gadget/inspektor-gadget/runs/3966318270?check_suite_focus=true#step:20:221)
         container.apparmor.security.beta.kubernetes.io/gadget: "unconfined"
-        inspektor-gadget.kinvolk.io/option-hook-mode: "auto"
         # keep aligned with values in pkg/operators/prometheus/prometheus.go
         prometheus.io/scrape: "true"
         prometheus.io/port: "2223"
@@ -158,7 +175,7 @@ spec:
           terminationMessagePolicy: FallbackToLogsOnError
           image: {{.CustomRegistries.InspektorGadget  | default .ImageRepository | default .Registries.InspektorGadget }}{{.Images.InspektorGadget}}
           imagePullPolicy: Always
-          command: [ "/bin/gadgettracermanager", "-serve", "-controller" ]
+          command: [ "/bin/gadgettracermanager", "-serve" ]
           lifecycle:
             preStop:
               exec:
@@ -196,18 +213,10 @@ spec:
                   fieldPath: metadata.uid
             - name: GADGET_IMAGE
               value: "ghcr.io/inspektor-gadget/inspektor-gadget"
-            - name: INSPEKTOR_GADGET_OPTION_HOOK_MODE
-              value: "auto"
-            - name: INSPEKTOR_GADGET_OPTION_FALLBACK_POD_INFORMER
-              value: "true"
             - name: HOST_ROOT
               value: "/host"
             - name: IG_EXPERIMENTAL
               value: "false"
-            - name: EVENTS_BUFFER_LENGTH
-              value: "16384"
-            - name: GADGET_TRACER_MANAGER_LOG_LEVEL
-              value: "info"
           securityContext:
             readOnlyRootFilesystem: true
             # With hostPID/hostNetwork/privileged [1] set to false, we need to set appropriate
@@ -325,6 +334,11 @@ spec:
             - mountPath: /etc/ig
               name: config
               readOnly: true
+            # We need a dedicated volume to store the wasm cache
+            # otherwise it will fail as the container root filesystem is read only.
+            - mountPath: /var/run/ig/wasm-cache
+              name: wasm-cache
+              readOnly: false
       nodeSelector:
         kubernetes.io/os: linux
       affinity:
@@ -382,3 +396,5 @@ spec:
           configMap:
             name: gadget
             defaultMode: 0o400
+        - name: wasm-cache
+          emptyDir: {}

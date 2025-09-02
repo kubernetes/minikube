@@ -173,7 +173,7 @@ func mntCmd(source string, target string, c *MountConfig) string {
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f -l %s || echo ", target, target, target))
 	if _, err := r.RunCmd(c); err != nil {
 		return errors.Wrap(err, "unmount")
 	}

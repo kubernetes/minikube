@@ -1,0 +1,149 @@
+# Boot Smoke Test only tests Bare VM (start,stop,delete) and not any minikube/kubernetes functionality.
+name: Smoke Test
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
+  pull_request:
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
+  workflow_dispatch:
+env:
+  GOPROXY: https://proxy.golang.org
+  LOG_ARGS: --v=8 --alsologtostderr
+  permissions:
+  contents: read
+# Limit one unit test job running per PR/Branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
+jobs:
+  minikube-vm-boot:
+    name: Boot
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - driver: qemu
+            os: macos-13
+            network_flag: --network socket_vmnet
+          - driver: vfkit
+            os: macos-13
+            network_flag: --network vmnet-shared
+          - driver: docker
+            os: ubuntu-24.04
+            network_flag: ""
+    steps:
+      - name: Info Block (macos)
+        if: contains(matrix.os, 'macos')
+        shell: bash
+        run: |
+          uname -a
+          sysctl -n hw.memsize
+          echo "$(sysctl -n hw.memsize) / 1024 / 1024 / 1024" | bc
+          sysctl -n hw.ncpu
+          sysctl -n machdep.cpu.brand_string
+          sysctl hw.model
+          sysctl -n kern.hv_vmm_present
+          sysctl -n kern.hv_support
+          system_profiler SPHardwareDataType
+          sw_vers
+          ifconfig
+      - name: Info Block (linux)
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash
+        run: |
+            uname -a
+            grep MemTotal /proc/meminfo
+            awk '/MemTotal/ {printf "%.2f\n", $2 / 1024 / 1024}' /proc/meminfo
+            nproc
+            grep 'model name' /proc/cpuinfo | head -n1
+            # System model (requires `dmidecode`, may need sudo)
+            sudo dmidecode -s system-product-name
+            systemd-detect-virt
+            # Check if KVM is available (can show virtualization support)
+            egrep -c '(vmx|svm)' /proc/cpuinfo
+            # Detailed hardware info (like `system_profiler`)
+            sudo lshw -short
+            cat /etc/os-release
+            ip addr show
+            ifconfig
+            docker version
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Download Golang Dependencies
+        run: go mod download
+      - name: Build Binaries
+        run: make
+      - name: Ensure bootpd is enabled (macos)
+        if: matrix.os == 'macos-13'
+        shell: bash
+        run: |
+          set -x
+          fw=/usr/libexec/ApplicationFirewall/socketfilterfw
+          sudo $fw --remove /usr/libexec/bootpd
+          sudo $fw --add /usr/libexec/bootpd
+          sudo $fw --unblock /usr/libexec/bootpd
+      - name: Update brew (macos)
+        if: matrix.os == 'macos-13'
+        run: brew update
+      - name: Install tools (macos)
+        if: matrix.os == 'macos-13'
+        run: brew install tree
+      - name: Install vfkit and vmnet-helper (macos)
+        if: matrix.driver == 'vfkit'
+        run: |
+          brew install vfkit
+          machine="$(uname -m)"
+          archive="vmnet-helper-$machine.tar.gz"
+          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
+          sudo tar xvf "$archive" -C / opt/vmnet-helper
+          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
+      - name: Install qemu and socket_vmnet (macos)
+        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        run: |
+          brew install qemu socket_vmnet
+          HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
+      - name: Start minikube (1st boot)
+        run: |
+          ./out/minikube start \
+              --no-kubernetes \
+              --memory 4gb \
+              --driver ${{ matrix.driver }} \
+              ${{ matrix.network_flag }} \
+              ${{ env.LOG_ARGS }}
+      - name: Inspect minikube
+        if: always()
+        run: |
+          tree -h ~/.minikube
+          machine="$HOME/.minikube/machines/minikube"
+          machine_logs=$(find "$machine" -name "*.log")
+          minikube_logs="$HOME/.minikube/logs/lastStart.txt"
+          for f in $machine_logs $minikube_logs /var/db/dhcpd_leases; do
+            echo "==> $f <=="
+            head -n 1000 "$f" || true
+          done
+      - name: Stop minikube
+        run: ./out/minikube stop ${{ env.LOG_ARGS }}
+      - name: Start minikube again (2nd boot)
+        run: ./out/minikube start ${{ env.LOG_ARGS }}
+      - name: Delete minikube
+        run: ./out/minikube delete ${{ env.LOG_ARGS }}

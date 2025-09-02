@@ -40,7 +40,7 @@ type execRunner struct {
 	sudo bool
 }
 
-// NewExecRunner returns a kicRunner implementor of runner which runs cmds inside a container
+// NewExecRunner returns a kicRunner implementer of runner which runs cmds inside a container
 func NewExecRunner(sudo bool) Runner {
 	return &execRunner{sudo: sudo}
 }
