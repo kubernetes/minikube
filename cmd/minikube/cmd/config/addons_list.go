@@ -27,6 +27,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+	"github.com/fatih/color"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -35,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 var addonListOutput string
@@ -91,128 +91,94 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
-var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
+func printAddonsList(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
+	table.Options(tablewriter.WithHeaderAutoFormat(tw.On))
 
-	table.Options(
-		tablewriter.WithHeaderAutoFormat(tw.On),
-	)
-
-	// Create table header
-	var tHeader []string
-	if cc == nil {
-		tHeader = []string{"Addon Name", "Maintainer"}
-	} else {
-		tHeader = []string{"Addon Name", "Enabled", "Maintainer"}
+	// Table header
+	header := []string{"Addon Name", "Maintainer"}
+	if cc != nil {
+		header = []string{"Addon Name", "Enabled", "Maintainer"}
 	}
 	if printDocs {
-		tHeader = append(tHeader, "Docs")
+		header = append(header, "Docs")
 	}
-	table.Header(tHeader)
+	table.Header(header)
 
-	// Create table data
-	var tData [][]string
-	var temp []string
+	var rows [][]string
+
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
+
 		maintainer := addonBundle.Maintainer
 		if maintainer == "" {
 			maintainer = "3rd party (unknown)"
 		}
+
 		docs := addonBundle.Docs
 		if docs == "" {
 			docs = "n/a"
 		}
-		
-		// Determine base row structure and colors
-		var enabled bool
-		var colorCode string
-		var applyColor bool
-		
-		if cc != nil {
-			enabled = addonBundle.IsEnabled(cc)
-			if enabled {
-				colorCode = constants.Enabled
-				applyColor = true
-			}
-		}
-		
-		// Build base row data
-		var rawValues []interface{}
+
+		// Step 1: build row
+		var row []string
 		if cc == nil {
-			rawValues = []interface{}{addonName, maintainer}
+			row = []string{addonName, maintainer}
 		} else {
-			status := ""
-			if enabled {
-				status = iconFromStatus(enabled)
+			enabled := addonBundle.IsEnabled(cc)
+			status := iconFromStatus(enabled)
+			row = []string{addonName, status, maintainer}
+			if printDocs {
+				row = append(row, docs)
 			}
-			rawValues = []interface{}{addonName, status, maintainer}
-		}
-		
-		// Add docs if needed
-		if printDocs {
-			rawValues = append(rawValues, docs)
-		}
-		
-		// Apply colors using loop
-		temp = make([]string, len(rawValues))
-		for i, value := range rawValues {
-			valueStr := fmt.Sprintf("%v", value)
-			
-			// Apply color based on context
-			shouldColorValue := false
-			var valueColorCode string
-			
-			if cc == nil {
-				// No coloring for null cluster config
-				temp[i] = valueStr
-				continue
-			}
-			
-			switch i {
-			case 0: // addonName
-				shouldColorValue = applyColor
-				valueColorCode = colorCode
-			case 1: // status (only for non-null cc)
-				shouldColorValue = applyColor
-				valueColorCode = colorCode
-			case 2: // maintainer
-				shouldColorValue = applyColor
-				valueColorCode = colorCode
-			default: // docs or other columns
-				if printDocs && i == len(rawValues)-1 {
-					// This is the docs column
-					if enabled {
-						shouldColorValue = true
-						valueColorCode = constants.Enabled
-					} else {
-						shouldColorValue = true
-						valueColorCode = constants.Disabled
-					}
-				}
-			}
-			
-			if shouldColorValue {
-				temp[i] = fmt.Sprintf("%s%s%s", valueColorCode, valueStr, constants.Default)
-			} else {
-				temp[i] = valueStr
+
+			// Step 2: apply coloring
+			switch {
+			case enabled:
+				ColorRow(row, color.GreenString)
+			default:
+				ColorRow(row, color.WhiteString)
 			}
 		}
-		tData = append(tData, temp)
+
+		if cc == nil && printDocs {
+			row = append(row, docs)
+		}
+
+		rows = append(rows, row)
 	}
-	if err := table.Bulk(tData); err != nil {
+
+	if err := table.Bulk(rows); err != nil {
 		klog.Error("Error rendering table (bulk)", err)
 	}
 	if err := table.Render(); err != nil {
 		klog.Error("Error rendering table", err)
 	}
-	v, _, err := config.ListProfiles()
-	if err != nil {
-		klog.Errorf("list profiles returned error: %v", err)
-	}
-	if len(v) > 1 {
+
+	// Profiles hint
+	if v, _, err := config.ListProfiles(); err == nil && len(v) > 1 {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
+	}
+}
+
+// ----------------
+// Helpers
+// ----------------
+
+// colorFunc allows generic coloring
+type colorFunc func(string, ...interface{}) string
+
+func isEmoji(s string) bool {
+	return strings.Contains(s, "✅")
+}
+
+func ColorRow(row []string, colored colorFunc) {
+	for i := range row {
+		if row[i] == "" || isEmoji(row[i]) {
+			continue
+		}
+		row[i] = colored("%s", row[i])
 	}
 }
 
