@@ -1,20 +1,4 @@
 /*
-Copyright 2025 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-/*
 Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package config
 
 import (
@@ -38,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -50,9 +34,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/spf13/cobra"
+
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -87,17 +74,21 @@ func listProfiles() (validProfiles, invalidProfiles []*config.Profile, err error
 	} else {
 		validProfiles, invalidProfiles, err = config.ListProfiles()
 	}
+
 	return validProfiles, invalidProfiles, err
 }
 
 func printProfilesTable() {
 	validProfiles, invalidProfiles, err := listProfiles()
+
 	if err != nil {
 		klog.Warningf("error loading profiles: %v", err)
 	}
+
 	if len(validProfiles) == 0 {
 		exit.Message(reason.UsageNoProfileRunning, "No minikube profile was found.")
 	}
+
 	updateProfilesStatus(validProfiles)
 	renderProfilesTable(profilesToTableData(validProfiles))
 	warnInvalidProfiles(invalidProfiles)
@@ -110,11 +101,13 @@ func updateProfilesStatus(profiles []*config.Profile) {
 		}
 		return
 	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		klog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
+
 	for _, p := range profiles {
 		p.Status = profileStatus(p, api).StatusName
 	}
@@ -135,7 +128,9 @@ func profileStatus(p *config.Profile, api libmachine.API) cluster.State {
 			},
 		}
 	}
-	return cluster.GetState(statuses, ClusterFlagValue(), p.Config)
+	clusterStatus := cluster.GetState(statuses, ClusterFlagValue(), p.Config)
+
+	return clusterStatus
 }
 
 func renderProfilesTable(ps [][]string) {
@@ -172,8 +167,9 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 			cpIP = cp.IP
 			cpPort = cp.Port
 		}
+
 		k8sVersion := p.Config.KubernetesConfig.KubernetesVersion
-		if k8sVersion == constants.NoKubernetesVersion {
+		if k8sVersion == constants.NoKubernetesVersion { // for --no-kubernetes flag
 			k8sVersion = "N/A"
 		}
 		var c, k string
@@ -183,92 +179,26 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		if p.ActiveKubeContext {
 			k = "*"
 		}
+		var row []string
 		if isDetailed {
-			var colorCode string
-			switch p.Status {
-			case "OK":
-				colorCode = constants.Enabled
-			case "Broken", "Error":
-				colorCode = constants.Error
-			default:
-				colorCode = constants.Default
-			}
-			
-			rawValues := []interface{}{
-				p.Name,
-				p.Config.Driver,
-				p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP,
-				cpPort,
-				k8sVersion,
-				p.Status,
-				len(p.Config.Nodes),
-				c,
-				k,
-			}
-			
-			row := make([]string, len(rawValues))
-			for i, value := range rawValues {
-				switch v := value.(type) {
-				case string:
-					row[i] = fmt.Sprintf("%s%s%s", colorCode, v, constants.Default)
-				case int:
-					row[i] = fmt.Sprintf("%s%d%s", colorCode, v, constants.Default)
-				default:
-					row[i] = fmt.Sprintf("%s%v%s", colorCode, v, constants.Default)
-				}
-			}
-			data = append(data, row)
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, strconv.Itoa(cpPort), k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		} else {
-			var colorCode string
-			var applyColor bool
-			switch p.Status {
-			case "OK":
-				colorCode = constants.Enabled
-				applyColor = true
-			case "Broken", "Error":
-				colorCode = constants.Error
-				applyColor = true
-			default:
-				applyColor = false
-			}
-			
-			rawValues := []interface{}{
-				p.Name,
-				p.Config.Driver,
-				p.Config.KubernetesConfig.ContainerRuntime,
-				cpIP,
-				k8sVersion,
-				p.Status,
-				len(p.Config.Nodes),
-				c,
-				k,
-			}
-			
-			row := make([]string, len(rawValues))
-			for i, value := range rawValues {
-				if applyColor {
-					switch v := value.(type) {
-					case string:
-						row[i] = fmt.Sprintf("%s%s%s", colorCode, v, constants.Default)
-					case int:
-						row[i] = fmt.Sprintf("%s%d%s", colorCode, v, constants.Default)
-					default:
-						row[i] = fmt.Sprintf("%s%v%s", colorCode, v, constants.Default)
-					}
-				} else {
-					switch v := value.(type) {
-					case string:
-						row[i] = v
-					case int:
-						row[i] = strconv.Itoa(v)
-					default:
-						row[i] = fmt.Sprintf("%v", v)
-					}
-				}
-			}
-			data = append(data, row)
+			row = []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime,
+				cpIP, k8sVersion, p.Status, strconv.Itoa(len(p.Config.Nodes)), c, k}
 		}
+		
+		// Apply coloring based on status
+		switch p.Status {
+		case "OK":
+			ColorRow(row, color.GreenString)
+		case "Stopped", "Paused":
+			ColorRow(row, color.YellowString)
+		default:
+			ColorRow(row, color.WhiteString)
+		}
+		
+		data = append(data, row)
 	}
 	return data
 }
@@ -277,10 +207,12 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 	if invalidProfiles == nil {
 		return
 	}
+
 	out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 	for _, p := range invalidProfiles {
 		out.ErrT(style.Empty, "\t "+p.Name)
 	}
+
 	out.ErrT(style.Tip, "You can delete them using the following command(s): ")
 	for _, p := range invalidProfiles {
 		out.Errf("\t $ minikube delete -p %s \n", p.Name)
@@ -290,7 +222,8 @@ func warnInvalidProfiles(invalidProfiles []*config.Profile) {
 func printProfilesJSON() {
 	validProfiles, invalidProfiles, err := listProfiles()
 	updateProfilesStatus(validProfiles)
-	body := map[string]interface{}{}
+
+	var body = map[string]interface{}{}
 	if err == nil || config.IsNotExist(err) {
 		body["valid"] = profilesOrDefault(validProfiles)
 		body["invalid"] = profilesOrDefault(invalidProfiles)
