@@ -28,9 +28,8 @@ function cleanup_token() {
 }
 trap cleanup_token EXIT
 
-if ! [[ -x "${DIR}/release-notes" ]] || ! [[ -x "${DIR}/pullsheet" ]]; then
-  echo >&2 'Installing release-notes'
-  GOBIN="$DIR" go install github.com/corneliusweig/release-notes@latest
+if  ! [[ -x "${DIR}/pullsheet" ]]; then
+  echo >&2 'Installing pullsheet'
   GOBIN="$DIR" go install github.com/google/pullsheet@latest
 fi
 
@@ -38,7 +37,7 @@ git pull https://github.com/kubernetes/minikube.git master --tags
 recent=$(git describe --abbrev=0)
 recent_date=$(git log -1 --format=%as $recent)
 
-"${DIR}/release-notes" kubernetes minikube --since $recent
+go run hack/changelog/changelog.go
 
 echo ""
 echo "For a more detailed changelog, including changes occurring in pre-release versions, see [CHANGELOG.md](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md)."

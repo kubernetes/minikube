@@ -228,6 +228,11 @@ func SupportsNetworkFlag(name string) bool {
 	return IsKIC(name) || IsKVM(name) || IsQEMU(name) || IsVFKit(name)
 }
 
+// SupportsVirtiofsMounts returns if driver supports virtiofs mounts
+func SupportsVirtiofsMounts(name string) bool {
+	return IsVFKit(name) || IsKrunkit(name)
+}
+
 // AllowsPreload returns if preload is allowed for the driver
 func AllowsPreload(driverName string) bool {
 	return !BareMetal(driverName) && !IsSSH(driverName)

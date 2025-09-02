@@ -18,9 +18,11 @@ package node
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/detect"
@@ -272,10 +274,9 @@ func imagesInConfigFile() ([]string, error) {
 		return nil, errors.Wrap(err, "read")
 	}
 	if values, ok := configFile[cacheImageConfigKey]; ok {
-		var images []string
-		for key := range values.(map[string]interface{}) {
-			images = append(images, key)
-		}
+		// Type assertion needed because config values are stored as interface{}
+		m := values.(map[string]interface{})
+		images := slices.Collect(maps.Keys(m))
 		return images, nil
 	}
 	return []string{}, nil

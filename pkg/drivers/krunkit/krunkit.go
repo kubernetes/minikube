@@ -42,6 +42,7 @@ import (
 
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/common"
+	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/firewall"
@@ -71,6 +72,7 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	ExtraDisks     int
+	VirtiofsMounts []*virtiofs.Mount
 	MACAddress     string
 	VmnetHelper    vmnet.Helper
 }
@@ -207,8 +209,18 @@ func (d *Driver) Start() error {
 	}
 
 	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
+		return err
+	}
 
-	return WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second)
+	if len(d.VirtiofsMounts) > 0 {
+		log.Infof("Setup virtiofs mounts ...")
+		if err := virtiofs.SetupMounts(d, d.VirtiofsMounts); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // startKrunkit starts the krunkit child process.
@@ -229,6 +241,11 @@ func (d *Driver) startKrunkit(socketPath string) error {
 	for i := 0; i < d.ExtraDisks; i++ {
 		args = append(args,
 			"--device", fmt.Sprintf("virtio-blk,path=%s", common.ExtraDiskPath(d.BaseDriver, i)))
+	}
+
+	for _, mount := range d.VirtiofsMounts {
+		args = append(args,
+			"--device", fmt.Sprintf("virtio-fs,sharedDir=%s,mountTag=%s", mount.HostPath, mount.Tag))
 	}
 
 	log.Debugf("executing: krunkit %s", strings.Join(args, " "))
