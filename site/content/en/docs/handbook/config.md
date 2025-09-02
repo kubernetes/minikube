@@ -2,7 +2,7 @@
 title: "Configuration"
 weight: 4
 description: >
-  Configuring your cluster 
+  Configuring your cluster
 aliases:
   - /docs/reference/environment_variables/
   - /docs/reference/configuration/kubernetes/
@@ -50,9 +50,9 @@ This flag is repeated, so you can pass it several times with several different v
 By default, minikube installs the latest stable version of Kubernetes that was available at the time of the minikube release. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
 
 ```shell
-minikube start --kubernetes-version=v1.11.10
+minikube start --kubernetes-version=v1.34.0
 ```
-  
+
 minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims to support older releases as well so that users can emulate legacy environments.
 
 For up to date information on supported versions, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
