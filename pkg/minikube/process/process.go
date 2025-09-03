@@ -73,6 +73,20 @@ func Exists(pid int, executable string) (bool, error) {
 	return entry.Executable() == executable, nil
 }
 
+// ExistsPID reports whether a process with the given pid exists.
+// This is a PID-only check (no executable name matching).
+func ExistsPID(pid int) (bool, error) {
+	if pid <= 0 {
+		return false, nil
+	}
+
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return true, err
+	}
+	return entry != nil, nil
+}
+
 // Terminate a process with pid and matching name. Returns os.ErrProcessDone if
 // the process does not exist, or nil if termination was requested. Caller need
 // to wait until the process disappears.

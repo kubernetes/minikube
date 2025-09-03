@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine"
@@ -33,6 +32,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/process"
 )
 
 // exclude returns a list of strings, minus the excluded ones
@@ -246,7 +246,7 @@ func main() {
 	done := make(chan struct{})
 	defer close(ch)
 
-	signal.Notify(ch, syscall.SIGHUP)
+	signal.Notify(ch, syscall.SIGTERM)
 	defer signal.Stop(ch)
 
 	go func() {
@@ -267,7 +267,7 @@ func main() {
 	processToKill := exec.Command("go", "run", tmpfile)
 	err := processToKill.Start()
 	if err != nil {
-		t.Fatalf("while execing child process: %v\n", err)
+		t.Fatalf("while executing child process: %v\n", err)
 	}
 	pid := processToKill.Process.Pid
 
@@ -281,7 +281,12 @@ func main() {
 	}
 
 	// waiting for process to exit
-	if err := processToKill.Wait(); !strings.Contains(err.Error(), "killed") {
-		t.Fatalf("unable to kill process: %v\n", err)
+	waitErr := processToKill.Wait()
+	exists, err := process.ExistsPID(pid)
+	if err != nil {
+		t.Fatalf("error checking process existence for pid %d: %v", pid, err)
+	}
+	if exists {
+		t.Fatalf("process %d still exists after trySigKillProcess; waitErr=%v", pid, waitErr)
 	}
 }
