@@ -391,7 +391,7 @@ jobs:
         run: |
           sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
           sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
-      - name: Run Integration Test
+      - name: Run Functional Test
         id: run_test
         continue-on-error: true
         shell: bash
