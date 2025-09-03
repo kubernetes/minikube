@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/google/go-cmp/cmp"
@@ -276,8 +277,17 @@ func main() {
 		t.Fatalf("while trying to kill child proc %d: %v\n", pid, err)
 	}
 
-	// waiting for process to exit
-	waitErr := processToKill.Wait()
+	done := make(chan error, 1)
+	go func() { done <- processToKill.Wait() }()
+
+	var waitErr error
+	select {
+	case waitErr = <-done:
+		t.Logf("child process wait result: %v", waitErr)
+	case <-time.After(1 * time.Second):
+		t.Fatalf("timed out waiting for process %d to exit", pid)
+	}
+
 	exists, err := process.ExistsPID(pid)
 	if err != nil {
 		t.Fatalf("error checking process existence for pid %d: %v", pid, err)
