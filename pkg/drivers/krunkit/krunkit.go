@@ -229,7 +229,8 @@ func (d *Driver) startKrunkit(socketPath string) error {
 		"--memory", fmt.Sprintf("%d", d.Memory),
 		"--cpus", fmt.Sprintf("%d", d.CPU),
 		"--restful-uri", d.restfulURI(),
-		"--device", fmt.Sprintf("virtio-net,unixSocketPath=%s,mac=%s", socketPath, d.MACAddress),
+		"--device", fmt.Sprintf("virtio-net,type=unixgram,path=%s,mac=%s,offloading=%t",
+			socketPath, d.MACAddress, d.VmnetHelper.Offloading),
 		"--device", fmt.Sprintf("virtio-serial,logFilePath=%s", d.serialPath()),
 		"--krun-log-level", logLevelInfo,
 
