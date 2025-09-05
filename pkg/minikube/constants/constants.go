@@ -208,7 +208,6 @@ var (
 	DefaultNamespaces = []string{
 		"kube-system",
 		"kubernetes-dashboard",
-		"storage-gluster",
 		"istio-operator",
 	}
 
