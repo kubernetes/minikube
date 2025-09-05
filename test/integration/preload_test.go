@@ -38,8 +38,7 @@ func TestPreload(t *testing.T) {
 
 	startArgs := []string{"start", "-p", profile, "--memory=3072", "--alsologtostderr", "--wait=true", "--preload=false"}
 	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion := "v1.24.4"
-	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
+	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", legacyVersion()))
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {

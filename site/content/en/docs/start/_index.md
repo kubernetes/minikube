@@ -758,7 +758,7 @@ minikube addons list
 Create a second cluster running an older Kubernetes release:
 
 ```shell
-minikube start -p aged --kubernetes-version=v1.16.1
+minikube start -p aged --kubernetes-version=v1.34.0
 ```
 
 Delete all of the minikube clusters:
