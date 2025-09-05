@@ -14,7 +14,7 @@ This tutorial explains how to set up the CSI Hostpath Driver in minikube and cre
 ## Prerequisites
 
 - latest version of minikube
-- kubernetes v1.20 or later
+- kubernetes v1.28 or later
 
 ## What you’ll need
 
