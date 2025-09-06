@@ -20,7 +20,7 @@ minikube start supports some VirtualBox specific flags:
 * **`--no-vtx-check`**: Disable checking for the availability of hardware virtualization
 
 ## Issues
-
+* Minikube does not officially support VirtualBox on Intel-based Macs with recent macOS versions. It is not supported on Apple Silicon (M1/M2/M3) Macs at all. The recommended alternatives for macOS are vfit, qemu, krunkit, and docker
 * [Full list of open 'virtualbox' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fvirtualbox)
 
 ## Troubleshooting
