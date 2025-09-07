@@ -58,18 +58,7 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 
 	containerRuntime := ContainerRuntime()
 
-	versions := []string{
-		constants.OldestKubernetesVersion,
-		constants.DefaultKubernetesVersion,
-		constants.NewestKubernetesVersion,
-	}
-
-	// Small optimization, don't run the exact same set of tests twice
-	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
-		versions = versions[:len(versions)-1]
-	}
-
-	for _, v := range versions {
+	for _, v := range KubernetesVersions() {
 		t.Run(v, func(t *testing.T) {
 			profile := UniqueProfileName("download-only")
 			profiles = append(profiles, profile)
