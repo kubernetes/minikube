@@ -704,3 +704,17 @@ func CopyDir(src, dst string) error {
 
 	return nil
 }
+
+// getKubernetesVersionsForTesting returns unique Kubernetes versions to test against
+func getKubernetesVersionsForTesting() []string {
+    versions := []string{
+        constants.OldestKubernetesVersion,
+        constants.DefaultKubernetesVersion,
+    }
+    
+    if constants.NewestKubernetesVersion != constants.DefaultKubernetesVersion {
+        versions = append(versions, constants.NewestKubernetesVersion)
+    }
+    
+    return versions
+}
