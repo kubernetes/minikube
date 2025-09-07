@@ -1,0 +1,25 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['buildx', 'create',  '--name', 'multiarch', '--bootstrap']
+- name: 'gcr.io/cloud-builders/docker'
+  args: 
+  - buildx
+  - build
+  - --builder=multiarch
+  - --platform=linux/amd64,linux/arm64
+  - --tag=gcr.io/$PROJECT_ID/prow-test:$_GIT_TAG
+  - --tag=gcr.io/$PROJECT_ID/prow-test:$_PROW_TEST_TAG
+  - --tag=gcr.io/$PROJECT_ID/prow-test:latest
+  - --build-arg
+  - GO_VERSION=$_GO_VERSION
+  - ./deploy/prow
+timeout: 7200s
+images:
+  -  gcr.io/$PROJECT_ID/prow-test:$_GIT_TAG
+  -  gcr.io/$PROJECT_ID/prow-test:$_PROW_TEST_TAG
+  -  gcr.io/$PROJECT_ID/prow-test:latest
+substitutions:
+  _GIT_TAG: '12345'
+  _PROW_TEST_TAG: v0.0.7
+  _GO_VERSION: '1.24.5'
+
