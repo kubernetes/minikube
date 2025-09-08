@@ -39,7 +39,7 @@ ii  e2fsprogs                       1.46.5-2ubuntu1.2                       amd6
 ii  ebtables                        2.0.11-4build2                          amd64        Ethernet bridge frame table administration
 ii  ethtool                         1:5.16-1ubuntu0.2                       amd64        display or change Ethernet device settings
 ii  findutils                       4.8.0-1ubuntu3                          amd64        utilities for finding files--find, xargs
-ii  gcc-12-base:amd64               12.3.0-1ubuntu1~22.04                   amd64        GCC, the GNU Compiler Collection (base package)
+ii  gcc-12-base:amd64               12.3.0-1ubuntu1~22.04.2                 amd64        GCC, the GNU Compiler Collection (base package)
 ii  gnupg                           2.2.27-3ubuntu2.4                       all          GNU privacy guard - a free PGP replacement
 ii  gnupg-l10n                      2.2.27-3ubuntu2.4                       all          GNU privacy guard - localization files
 ii  gnupg-utils                     2.2.27-3ubuntu2.4                       amd64        GNU privacy guard - utility programs
@@ -94,7 +94,7 @@ ii  libexpat1:amd64                 2.4.7-1ubuntu0.6                        amd6
 ii  libext2fs2:amd64                1.46.5-2ubuntu1.2                       amd64        ext2/ext3/ext4 file system libraries
 ii  libffi8:amd64                   3.4.2-4                                 amd64        Foreign Function Interface library runtime
 ii  libfido2-1:amd64                1.10.0-1                                amd64        library for generating and verifying FIDO 2.0 objects
-ii  libgcc-s1:amd64                 12.3.0-1ubuntu1~22.04                   amd64        GCC support library
+ii  libgcc-s1:amd64                 12.3.0-1ubuntu1~22.04.2                 amd64        GCC support library
 ii  libgcrypt20:amd64               1.9.4-3ubuntu3                          amd64        LGPL Crypto library - runtime library
 ii  libglib2.0-0:amd64              2.72.4-0ubuntu2.6                       amd64        GLib library of C routines
 ii  libgmp10:amd64                  2:6.2.1+dfsg-3ubuntu1                   amd64        Multiprecision arithmetic library
@@ -168,7 +168,7 @@ ii  libsqlite3-0:amd64              3.37.2-2ubuntu0.5                       amd6
 ii  libss2:amd64                    1.46.5-2ubuntu1.2                       amd64        command-line interface parsing library
 ii  libssh-4:amd64                  0.9.6-2ubuntu0.22.04.4                  amd64        tiny C SSH library (OpenSSL flavor)
 ii  libssl3:amd64                   3.0.2-0ubuntu1.19                       amd64        Secure Sockets Layer toolkit - shared libraries
-ii  libstdc++6:amd64                12.3.0-1ubuntu1~22.04                   amd64        GNU Standard C++ Library v3
+ii  libstdc++6:amd64                12.3.0-1ubuntu1~22.04.2                 amd64        GNU Standard C++ Library v3
 ii  libsystemd0:amd64               249.11-0ubuntu3.16                      amd64        systemd utility library
 ii  libtasn1-6:amd64                4.18.0-4ubuntu0.1                       amd64        Manage ASN.1 structures (runtime)
 ii  libtinfo6:amd64                 6.3-2ubuntu0.1                          amd64        shared low-level terminfo library for terminal handling
