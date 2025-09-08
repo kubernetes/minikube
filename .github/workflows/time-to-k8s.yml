@@ -5,7 +5,7 @@ on:
     types: [released]
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
+  GO_VERSION: '1.24.6'
 permissions:
   contents: read
 
@@ -36,5 +36,5 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: "Post-release: Add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }}"
+          title: "site: Add time-to-k8s benchmark for ${{ steps.timeToK8sBenchmark.outputs.version }} (Post-release)"
           body: Updating time-to-k8s benchmark as part of the release process

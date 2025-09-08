@@ -68,7 +68,7 @@ As Kubernetes has full access to both your filesystem as well as your docker ima
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashLoopBackOff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
-* Some versions of Linux have a version of docker that is newer than what Kubernetes expects. To overwrite this, run minikube with the following parameters: `minikube start --driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
+* Some versions of Linux have a version of docker that is newer than what Kubernetes expects. To overwrite this, run minikube with the following parameters: `minikube start --driver=none --kubernetes-version v1.34.0 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
 
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)
 

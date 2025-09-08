@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
+  GO_VERSION: '1.24.6'
 permissions:
   contents: read
 jobs:
@@ -60,17 +60,17 @@ jobs:
           with:
             go-version: ${{env.GO_VERSION}}
             cache: true  
-        - name: Verify gomod tidy
+        - name: Verify go mod tidy
           timeout-minutes: 2
           continue-on-error: false
           run: |
+            echo "::group::go mod tidy"
             make gomodtidy
-            if ! git diff --quiet; then
-              echo "::error::Please run 'make gomodtidy' and commit the changes"
-              echo "=== files ==="
-              git diff --name-only
-              echo "=== diff ==="
-              git diff -
+            echo "::endgroup::"
+            if ! git diff-index --quiet HEAD; then
+              echo "::group::diff"
+              git --no-pager diff
+              echo "::endgroup::"
+              echo "::notice::Please run 'make gomodtidy' and commit the changes"
               exit 1
             fi
-

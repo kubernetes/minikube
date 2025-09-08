@@ -112,11 +112,7 @@ jobs:
         if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
-          machine="$(uname -m)"
-          archive="vmnet-helper-$machine.tar.gz"
-          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
-          sudo tar xvf "$archive" -C / opt/vmnet-helper
-          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
+          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash -s
       - name: Install qemu and socket_vmnet (macos)
         if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
         run: |

@@ -6,7 +6,7 @@ on:
     - cron: "0 9 * * 1"
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
+  GO_VERSION: '1.24.6'
 permissions:
   contents: read
 
@@ -42,7 +42,7 @@ jobs:
           push-to-fork: minikube-bot/minikube
           base: master
           delete-branch: true
-          title: 'Update go from ${{ steps.bumpGolang.outputs.OLD_VERSION }} to ${{ steps.bumpGolang.outputs.NEW_VERSION }}'
+          title: 'build: Update go from ${{ steps.bumpGolang.outputs.OLD_VERSION }} to ${{ steps.bumpGolang.outputs.NEW_VERSION }}'
           body: |
             Kubernetes Project just updated the [golang version](https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION), updating minikube golang to match Kubernetes.
 

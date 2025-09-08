@@ -1,3 +1,5 @@
+//go:build !windows
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -19,6 +21,7 @@ package util
 import (
 	"os"
 	"os/user"
+	"runtime"
 	"syscall"
 	"testing"
 
@@ -123,6 +126,10 @@ func TestChownR(t *testing.T) {
 }
 
 func TestMaybeChownDirRecursiveToMinikubeUser(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+
 	testDir := t.TempDir()
 	if _, err := os.Create(testDir + "/TestChownR"); nil != err {
 		return

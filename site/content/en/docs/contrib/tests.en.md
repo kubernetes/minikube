@@ -114,6 +114,10 @@ makes sure our docker-machine-driver-hyperkit binary can be installed properly
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
 
+## TestParseAllMounts
+
+## TestParseSingle
+
 ## TestFunctional
 are functionality tests which can safely share a profile in parallel
 
@@ -324,7 +328,7 @@ Steps:
 asserts basic "service" command functionality
 
 #### validateServiceCmdDeployApp
-Create a new `registry.k8s.io/echoserver` deployment
+Create a new `kickbase/echo_server` deployment
 
 #### validateServiceCmdList
 Run `minikube service list` to make sure the newly created service is correctly listed in the output
@@ -344,7 +348,7 @@ Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL
 #### validateServiceCmdConnect
 
 Steps:
-- Create a new `registry.k8s.io/echoserver` deployment
+- Create a new `kickbase/echo-server` deployment
 - Run `minikube service` with a regular `--url` to make sure the HTTP endpoint URL of the service is printed
 - Make sure we can hit the endpoint URL with an HTTP GET request
 

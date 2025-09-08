@@ -87,7 +87,7 @@ weight: -99992025
 </head>
 <body>
     <h1>kubernetes/minikube</h1>
-    <div class="subtitle">2025-01-01 &mdash; 2025-07-31</div>
+    <div class="subtitle">2025-01-01 &mdash; 2025-08-31</div>
 
     
         <h2>Reviewers</h2>
@@ -103,13 +103,15 @@ weight: -99992025
                 function drawreviewCounts() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Merged PRs reviewed', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 51, "51"],
-                    ["nirs", 8, "8"],
-                    ["afbjorklund", 5, "5"],
-                    ["prezha", 4, "4"],
-                    ["cfergeau", 2, "2"],
+                    ["medyagh", 65, "65"],
+                    ["nirs", 14, "14"],
+                    ["prezha", 7, "7"],
+                    ["afbjorklund", 6, "6"],
+                    ["cfergeau", 3, "3"],
+                    ["Copilot", 2, "2"],
                     ["wt", 1, "1"],
                     ["illume", 1, "1"],
+                    ["bobsira", 1, "1"],
                     
                     ]);
 
@@ -142,11 +144,13 @@ weight: -99992025
                 function drawreviewWords() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of words written in merged PRs', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 2083, "2083"],
-                    ["nirs", 1705, "1705"],
-                    ["prezha", 556, "556"],
-                    ["afbjorklund", 281, "281"],
-                    ["cfergeau", 228, "228"],
+                    ["medyagh", 3270, "3270"],
+                    ["nirs", 3022, "3022"],
+                    ["prezha", 908, "908"],
+                    ["afbjorklund", 304, "304"],
+                    ["cfergeau", 238, "238"],
+                    ["Copilot", 175, "175"],
+                    ["bobsira", 61, "61"],
                     ["illume", 21, "21"],
                     ["wt", 14, "14"],
                     
@@ -181,11 +185,13 @@ weight: -99992025
                 function drawreviewComments() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Review Comments in merged PRs', type: 'number'}, { role: 'annotation' }],
-                    ["nirs", 47, "47"],
-                    ["medyagh", 46, "46"],
-                    ["prezha", 9, "9"],
+                    ["nirs", 106, "106"],
+                    ["medyagh", 76, "76"],
+                    ["prezha", 11, "11"],
                     ["afbjorklund", 8, "8"],
-                    ["cfergeau", 2, "2"],
+                    ["Copilot", 5, "5"],
+                    ["cfergeau", 3, "3"],
+                    ["bobsira", 1, "1"],
                     ["wt", 0, "0"],
                     ["illume", 0, "0"],
                     
@@ -224,21 +230,21 @@ weight: -99992025
                 function drawprCounts() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of Pull Requests Merged', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 31, "31"],
-                    ["nirs", 29, "29"],
-                    ["ComradeProgrammer", 9, "9"],
-                    ["prezha", 8, "8"],
+                    ["medyagh", 50, "50"],
+                    ["nirs", 39, "39"],
+                    ["prezha", 14, "14"],
+                    ["ComradeProgrammer", 10, "10"],
                     ["LJTian", 6, "6"],
-                    ["jeffmaury", 5, "5"],
+                    ["jeffmaury", 6, "6"],
                     ["Victorthedev", 3, "3"],
                     ["joaquimrocha", 3, "3"],
-                    ["divysinghvi", 2, "2"],
+                    ["amorey", 2, "2"],
                     ["Cosmicoppai", 2, "2"],
                     ["ipochi", 2, "2"],
+                    ["divysinghvi", 2, "2"],
                     ["zvdy", 2, "2"],
                     ["yankay", 1, "1"],
-                    ["spowelljr", 1, "1"],
-                    ["xcarolan", 1, "1"],
+                    ["luchenhan", 1, "1"],
                     
                     ]);
 
@@ -271,21 +277,21 @@ weight: -99992025
                 function drawprDeltas() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: 'Lines of code (delta)', type: 'number'}, { role: 'annotation' }],
-                    ["nirs", 4307, "4307"],
-                    ["medyagh", 1593, "1593"],
+                    ["nirs", 5492, "5492"],
+                    ["medyagh", 5112, "5112"],
                     ["LJTian", 1297, "1297"],
-                    ["prezha", 942, "942"],
+                    ["prezha", 1111, "1111"],
+                    ["amorey", 843, "843"],
+                    ["ComradeProgrammer", 838, "838"],
                     ["Victorthedev", 764, "764"],
-                    ["amorey", 752, "752"],
-                    ["ComradeProgrammer", 742, "742"],
                     ["panyam", 738, "738"],
+                    ["laxman-gupta1006", 137, "137"],
                     ["joaquimrocha", 114, "114"],
                     ["divysinghvi", 62, "62"],
                     ["yankay", 59, "59"],
+                    ["james-world", 59, "59"],
+                    ["flushthemoney", 50, "50"],
                     ["xcarolan", 27, "27"],
-                    ["zvdy", 21, "21"],
-                    ["sugymt", 18, "18"],
-                    ["ipochi", 16, "16"],
                     
                     ]);
 
@@ -318,21 +324,21 @@ weight: -99992025
                 function drawprSize() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: 'Average PR size (added+changed)', type: 'number'}, { role: 'annotation' }],
-                    ["amorey", 752, "752"],
                     ["panyam", 504, "504"],
+                    ["amorey", 392, "392"],
                     ["Victorthedev", 150, "150"],
+                    ["laxman-gupta1006", 131, "131"],
                     ["LJTian", 127, "127"],
-                    ["nirs", 102, "102"],
-                    ["prezha", 68, "68"],
+                    ["nirs", 97, "97"],
                     ["yankay", 54, "54"],
-                    ["ComradeProgrammer", 47, "47"],
+                    ["medyagh", 49, "49"],
+                    ["ComradeProgrammer", 48, "48"],
+                    ["james-world", 45, "45"],
+                    ["prezha", 41, "41"],
                     ["joaquimrocha", 37, "37"],
-                    ["medyagh", 26, "26"],
                     ["divysinghvi", 26, "26"],
                     ["xcarolan", 25, "25"],
-                    ["sugymt", 13, "13"],
-                    ["zvdy", 9, "9"],
-                    ["ipochi", 7, "7"],
+                    ["aaron-nall", 18, "18"],
                     
                     ]);
 
@@ -372,18 +378,18 @@ weight: -99992025
                     ["Ritikaa96", 60, "60"],
                     ["afbjorklund", 58, "58"],
                     ["Ruchi1499", 42, "42"],
+                    ["nirs", 32, "32"],
                     ["dhairya-seth", 31, "31"],
-                    ["nirs", 25, "25"],
-                    ["medyagh", 24, "24"],
+                    ["medyagh", 26, "26"],
                     ["LJTian", 15, "15"],
                     ["divysinghvi", 10, "10"],
                     ["AmarNathChary", 10, "10"],
                     ["kundan2707", 7, "7"],
+                    ["Angelin01", 4, "4"],
                     ["xcarolan", 4, "4"],
                     ["ljluestc", 4, "4"],
                     ["eshentials", 4, "4"],
-                    ["nhochamvui", 3, "3"],
-                    ["panyam", 3, "3"],
+                    ["danmaninc", 3, "3"],
                     
                     ]);
 
@@ -418,19 +424,19 @@ weight: -99992025
                     [{label:'',type:'string'},{label: '# of words (excludes authored)', type: 'number'}, { role: 'annotation' }],
                     ["afbjorklund", 3059, "3059"],
                     ["huttsMichael", 2234, "2234"],
-                    ["nirs", 1719, "1719"],
+                    ["nirs", 2225, "2225"],
                     ["Ruchi1499", 1084, "1084"],
                     ["Ritikaa96", 988, "988"],
+                    ["medyagh", 861, "861"],
                     ["mardonner", 790, "790"],
-                    ["medyagh", 784, "784"],
                     ["ljluestc", 715, "715"],
                     ["dhairya-seth", 615, "615"],
                     ["polarathene", 556, "556"],
+                    ["venkateswarareddy027", 448, "448"],
                     ["Zenner2", 423, "423"],
                     ["LJTian", 338, "338"],
                     ["danmaninc", 336, "336"],
                     ["ptiseo-mcs", 326, "326"],
-                    ["haoyun", 314, "314"],
                     
                     ]);
 
@@ -463,7 +469,7 @@ weight: -99992025
                 function drawissueCloser() {
                     var data = new google.visualization.arrayToDataTable([
                     [{label:'',type:'string'},{label: '# of issues closed (excludes authored)', type: 'number'}, { role: 'annotation' }],
-                    ["medyagh", 17, "17"],
+                    ["medyagh", 20, "20"],
                     ["prezha", 2, "2"],
                     ["afbjorklund", 1, "1"],
                     

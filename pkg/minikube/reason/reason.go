@@ -556,7 +556,7 @@ var (
 
 		Please install vmnet-helper using these instructions:
 
-		https://github.com/nirs/vmnet-helper#installation`),
+			curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash`),
 		Style: style.SeeNoEvil,
 	}
 	NotConfiguredVmnetHelper = Kind{
@@ -565,8 +565,7 @@ var (
 		Advice: translate.T(`Configure vmnet-helper to run without a password.
 
 		Please install a vmnet-helper sudoers rule using these instructions:
-
-		https://github.com/nirs/vmnet-helper#granting-permission-to-run-vmnet-helper`),
+			curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash`),
 		Style: style.SeeNoEvil,
 	}
 )

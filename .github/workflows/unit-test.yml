@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.0'
+  GO_VERSION: '1.24.6'
 permissions:
   contents: read
 jobs:
@@ -56,9 +56,8 @@ jobs:
           run: choco install make -y
         # TODO: add gopogh reports for unit tests too
         - name: unit test
-          timeout-minutes: 5
+          timeout-minutes: 15
           env:
             TESTSUITE: unittest
           run: make test
           continue-on-error: false
-
