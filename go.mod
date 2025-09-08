@@ -18,7 +18,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.16.0
 	github.com/containerd/errdefs v1.0.0
 	github.com/distribution/reference v0.6.0
-	github.com/docker/cli v28.3.3+incompatible
+	github.com/docker/cli v28.4.0+incompatible
 	github.com/docker/docker v28.3.3+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/docker/go-units v0.5.0
