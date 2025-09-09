@@ -91,7 +91,7 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
-func printAddonsList(cc *config.ClusterConfig, printDocs bool) {
+var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
 	table.Options(tablewriter.WithHeaderAutoFormat(tw.On))
