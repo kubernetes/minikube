@@ -3,18 +3,16 @@
 ## Version 1.37.0 - 2025-09-09
 
 ## Highlight
-Run AI workloads on Macbook's GPUS using the new `krunkit driver`. Checkout the [AI Playground tutorial/demo](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
-
+Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. Get started with our [AI Playground tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 
 ## Features
 * Bump Kubernetes version default: v1.34.0 and latest: v1.34.0 (#21439)
-* Add krunkit driver supporting GPU acceleration on macOS (#20826) 
-* Add support to docker runtime for OCI access to NVIDIA GPUs (#20959)
+* Add krunkit driver supporting GPU acceleration on macOS (#20826) [Tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
 * add short hand -m for --memory (#20854)
+* Add support to docker runtime for OCI access to NVIDIA GPUs (#20959)
 * Add `--disable-coredns-log` flag to suppress coredns logs (#20992)
 * new addon: kubetail (#20345)
 * drivers: Add support for Virtiofs mounts for vfkit and krunkit (#21149)
-
 
 ## Improvements
 * Improve ingress-dns addon for ipv4 and windows v0.0.4  (#21449)
