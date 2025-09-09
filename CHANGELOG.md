@@ -1,5 +1,139 @@
 # Release Notes
 
+## Version 1.37.0 - 2025-09-09
+
+## Highlight
+Run AI workloads on Macbook's GPU in Kubernetes using the new `krunkit driver`. Get started with our [AI Playground tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
+
+## Features
+* Bump Kubernetes version default: v1.34.0 and latest: v1.34.0 (#21439)
+* Add krunkit driver supporting GPU acceleration on macOS (#20826) [Tutorial](https://minikube.sigs.k8s.io/docs/tutorials/ai-playground/)
+* add short hand -m for --memory (#20854)
+* Add support to docker runtime for OCI access to NVIDIA GPUs (#20959)
+* Add `--disable-coredns-log` flag to suppress coredns logs (#20992)
+* new addon: kubetail (#20345)
+* drivers: Add support for Virtiofs mounts for vfkit and krunkit (#21149)
+
+## Improvements
+* Improve ingress-dns addon for ipv4 and windows v0.0.4  (#21449)
+* iso: Disable grub timeout speeding up vm start by 5 seconds (#20895)
+* improve docker service reliability, update docker systemd files (#21174)
+* Don't require both --mount for using --mount-string and remove default mount-string (#21250)
+* Update oldest supported Kubernetes versions (#21490)
+* license cmd: don't fail if output dir doesn't exist & download  from github assets first (#21206)
+* remove deprecated proxy-refresh-interval v2 etcd flag (#21278)
+* vmnet: Support offloading for krunkit (#20831)
+* Don't call startKicServiceTunnel for non-kic drivers (#20863)
+* krunkit: Disable offloading for faster networking (#21341)
+
+## Deprication
+* Deprecate HyperKit driver with warning (#21024)
+
+## Bug fixes
+* fix dirty commit version  (#21062)
+* Fix minikube image load on windows (#20529) (#20921)
+* Fix mount to same folder causing Input/output error (#21077)
+* fix: YAML file escape error problem affecting addons (#20904)
+* iso: Fix `minikube stop` with vfkit and krunkit drivers (#21089)
+* iso: Fix console for vfkit/krunkit (#20832)
+
+## Addons 
+* Addon nvidia-device-plugin: Update nvidia/k8s-device-plugin image from v0.17.2 to v0.17.3 (#21225)
+* Addon cloud-spanner: Update cloud-spanner-emulator/emulator image from 1.5.34 to 1.5.41 (#20976)(#21040)(#21243)(#21287)(#21359)(#21512)
+* Addon Headlamp: Update Headlamp image from v0.28.0 to v0.34.0 (#21238)(#21508)
+* Addon ingress: Update ingress-nginx/controller image from v1.12.2 to v1.13.2 (#20909)(#21232)(#21353)(#21458)
+* Addon inspektor-gadget: Update inspektor-gadget image from v0.40.0 to v0.44.1 (#20873)(#21038)(#21240)(#21462)(#21510)(#21358)
+* Addon kong: Update kong image from 3.9.0 to 3.9.1 (#20966)(#21503)
+* Addon kong: Update kong/kubernetes-ingress-controller image from 3.4.5 to 3.5.1 (#20908)(#20969)(#21034)(#21282)
+* Addon kubevirt: Update bitnami/kubectl image from 1.33.1 to 1.33.4  (#20911)(#20939)(#21235)(#21283)(#21414)
+* Addon metrics-server: Update metrics-server/metrics-server image from v0.7.2 to v0.8.0 (#21033)
+* Addon registry: Update registry image from 3.0.0 to 3.0.0 (#21242)
+* Addon Volcano: Update volcano images from v1.11.2 to v1.12.2 (#20868)(#21351)
+* Addon kubetail: update version 0.13.3 (#21244)
+* HA (multi-control plane): Update kube-vip from v0.9.1 to v1.0.0 (#20999)(#21228)
+
+## CNI versions
+* CNI: Update calico from v3.30.0 to v3.30.3 (#20871)(#20971)(#21416)
+* CNI: Update cilium from v1.17.4 to v1.18.1 (#20968)(#21226)(#21349)
+* CNI: Update flannel from v0.26.7 to v0.27.0 (#20907)(#21230)(#21504)
+
+## Base image versions
+* iso: Update to longterm kernel to 6.6.95 (#20995)
+* iso: Enable VirtioFS for x86_64 and aarch64 (#21147)
+* iso: Improve build and clean up configuration (#20991)
+* Kicbase/ISO: Update cni-plugins from v1.7.1 to v1.8.0 (#21517)
+* Kicbase/ISO: Update crun from 1.19 to 1.23.1 (#21198)(#21330)
+* Kicbase/ISO: Update docker from 28.0.4 to 28.4.0 (#21053)(#21248)(#21488)
+* Kicbase: Bump ubuntu:jammy from 20250415.1 to 20250819 (#21233)(#21413)(#21505)
+
+## UI
+* redo "minikube profile list" to move the verbose details into a --det… (#20544)
+* improve config flag long description (#21515)
+* Refactor spinner library & hide sub steps after spinning (#21215)
+* do not show "create github issue" twice if kubeadm init fails (#21263)
+* Refactor table rendering (#20893)
+
+## UI/Translations
+* Add Greak Translation 
+* Add more Korean translations (#21467)(#21465)
+* Add more French translation (#21050)(#20862)(#20945)(#20964)(#21156)(#21372)(#21514)
+
+
+Thank you to our contributors for this release!
+
+- Aaron Nall
+- Andres Morey
+- ByoungUk Lee
+- Chemabj
+- Cosmic Oppai
+- Divy Singhvi
+- gopherorg
+- Imran Pochi
+- James World
+- Jeff MAURY
+- Joaquim Rocha
+- Jun Sugimoto
+- Kartik Joshi
+- Kaviraj Sankameeswaran
+- Kay Yan
+- Kubernetes Prow Robot
+- Laxman Gupta
+- Lefteris T.
+- Medya Ghazizadeh
+- Nir Soffer
+- Predrag Rogic
+- Shin Jihoon
+- Shin_Jihoon
+- Steven Powell
+- Tian
+- VerlorenerReisender
+- Victor Ubahakwe
+
+Thank you to our PR reviewers for this release!
+
+- medyagh (145 comments)
+- nirs (102 comments)
+- afbjorklund (18 comments)
+- prezha (11 comments)
+- Copilot (5 comments)
+- bobsira (4 comments)
+- cfergeau (2 comments)
+- gabrielgbs97 (2 comments)
+- aronahl (1 comments)
+- ComradeProgrammer (1 comments)
+- illume (1 comments)
+- rata (1 comments)
+- wt (1 comments)
+
+Thank you to our triage members for this release!
+
+- afbjorklund (37 comments)
+- nirs (21 comments)
+- divysinghvi (10 comments)
+- LJTian (9 comments)
+- medyagh (8 comments)
+
+
 ## Version 1.36.0 - 2025-05-22
 
 Features
