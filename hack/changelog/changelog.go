@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -138,12 +138,22 @@ func resolveStartRef(ctx context.Context, gh *github.Client, owner, repo, start 
 // pullRequestsBetween finds all pull requests merged between start and end by
 // walking the commit comparison and querying PRs for each commit.
 func pullRequestsBetween(ctx context.Context, gh *github.Client, owner, repo, start, end string) map[int]*github.PullRequest {
-	cmp, _, err := gh.Repositories.CompareCommits(ctx, owner, repo, start, end, nil)
-	if err != nil {
-		log.Fatalf("compare commits: %v", err)
+	var allCommits []*github.RepositoryCommit
+	opts := &github.ListOptions{PerPage: 100}
+	for {
+		cmp, resp, err := gh.Repositories.CompareCommits(ctx, owner, repo, start, end, opts)
+		if err != nil {
+			log.Fatalf("compare commits: %v", err)
+		}
+		allCommits = append(allCommits, cmp.Commits...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opts.Page = resp.NextPage
 	}
+
 	prsMap := make(map[int]*github.PullRequest)
-	for _, c := range cmp.Commits {
+	for _, c := range allCommits {
 		prs, _, err := gh.PullRequests.ListPullRequestsWithCommit(ctx, owner, repo, c.GetSHA(), nil)
 		if err != nil {
 			log.Printf("list PRs for commit %s: %v", c.GetSHA(), err)
