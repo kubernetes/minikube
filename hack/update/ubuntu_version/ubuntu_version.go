@@ -29,7 +29,7 @@ var (
 	schema = map[string]update.Item{
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`UBUNTU_JAMMY_IMAGE=.*`: `UBUNTU_JAMMY_IMAGE="{{.LatestVersion}}"`,
+				`UBUNTU_NOBLE_IMAGE=.*`: `UBUNTU_NOBLE_IMAGE="{{.LatestVersion}}"`,
 			},
 		},
 	}
@@ -42,7 +42,7 @@ type Data struct {
 
 func latestJammyTag(tags []string) (string, error) {
 	for _, tag := range tags {
-		if strings.Contains(tag, "jammy-") {
+		if strings.Contains(tag, "noble-") {
 			return tag, nil
 		}
 	}
