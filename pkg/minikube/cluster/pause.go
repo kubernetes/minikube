@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -136,10 +137,5 @@ func doesNamespaceContainKubeSystem(namespaces []string) bool {
 	if namespaces == nil {
 		return true
 	}
-	for _, ns := range namespaces {
-		if ns == "kube-system" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(namespaces, "kube-system")
 }

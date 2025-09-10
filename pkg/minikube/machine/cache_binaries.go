@@ -19,6 +19,7 @@ package machine
 import (
 	"path"
 	"runtime"
+	"slices"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -34,12 +35,7 @@ func isExcluded(binary string, excludedBinaries []string) bool {
 	if excludedBinaries == nil {
 		return false
 	}
-	for _, excludedBinary := range excludedBinaries {
-		if binary == excludedBinary {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(excludedBinaries, binary)
 }
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
