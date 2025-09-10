@@ -37,7 +37,7 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 22.04, this image is reasonably small as a starting point
+# start from ubuntu 24.04, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${UBUNTU_NOBLE_IMAGE} as kicbase
 
@@ -137,8 +137,8 @@ RUN clean-install \
     sudo \
     openssh-server \
     dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0
+    # libglib2.0-0t64 is required for conmon, which is required for podman
+    libglib2.0-0t64
 
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
