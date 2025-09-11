@@ -42,7 +42,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
 
 	}
-	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_rsa")
+	defaultKeyPath := filepath.Join(homedir.HomeDir(), ".ssh", "id_ed25519")
 	auth := &machinessh.Auth{}
 	if h.SSHKeyPath != "" {
 		auth.Keys = []string{h.SSHKeyPath}

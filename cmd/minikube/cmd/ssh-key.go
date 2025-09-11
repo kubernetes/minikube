@@ -41,7 +41,7 @@ var sshKeyCmd = &cobra.Command{
 			exit.Error(reason.GuestNodeRetrieve, "retrieving node", err)
 		}
 
-		out.Ln(filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "id_rsa"))
+		out.Ln(filepath.Join(localpath.MiniPath(), "machines", config.MachineName(*cc, *n), "id_ed25519"))
 	},
 }
 

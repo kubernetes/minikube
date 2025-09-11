@@ -67,7 +67,7 @@ func appendKnownHelper(nodeName string, appendKnown bool) {
 		}
 	}
 
-	scanArgs := []string{"-t", "rsa"}
+	scanArgs := []string{"-t", "ed25519"}
 
 	keys, err := machine.RunSSHHostCommand(co.API, *co.Config, *n, "ssh-keyscan", scanArgs)
 	if err != nil {

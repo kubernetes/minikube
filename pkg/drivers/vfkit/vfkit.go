@@ -38,7 +38,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
@@ -52,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -107,7 +107,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 }
 
 func (d *Driver) GetSSHKeyPath() string {
-	return d.ResolveStorePath("id_rsa")
+	return d.ResolveStorePath("id_ed25519")
 }
 
 func (d *Driver) GetSSHPort() (int, error) {
@@ -200,7 +200,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Creating SSH key...")
-	if err := ssh.GenerateSSHKey(d.sshKeyPath()); err != nil {
+	if err := sshutil.GenerateSSHKey(d.sshKeyPath()); err != nil {
 		return err
 	}
 
@@ -523,7 +523,7 @@ func (d *Driver) Upgrade() error {
 
 func (d *Driver) sshKeyPath() string {
 	machineDir := filepath.Join(d.StorePath, "machines", d.GetMachineName())
-	return filepath.Join(machineDir, "id_rsa")
+	return filepath.Join(machineDir, "id_ed25519")
 }
 
 func (d *Driver) publicSSHKeyPath() string {
