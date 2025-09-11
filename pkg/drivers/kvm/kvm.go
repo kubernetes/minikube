@@ -108,7 +108,7 @@ func NewDriver(hostName, storePath string) *Driver {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
-			SSHUser:     "docker",
+                       SSHUser:     "root",
 		},
 		CommonDriver:   &common.CommonDriver{},
 		PrivateNetwork: defaultPrivateNetworkName,

@@ -36,7 +36,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 
@@ -49,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/process"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/style"
 )
 
@@ -60,7 +60,7 @@ const (
 	logFileName    = "krunkit.log"
 	serialFileName = "serial.log"
 	logLevelInfo   = "3"
-	defaultSSHUser = "docker"
+        defaultSSHUser = "root"
 )
 
 // Driver is the machine driver for krunkit.
@@ -109,7 +109,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 }
 
 func (d *Driver) GetSSHKeyPath() string {
-	return d.ResolveStorePath("id_rsa")
+	return d.ResolveStorePath("id_ed25519")
 }
 
 func (d *Driver) GetSSHPort() (int, error) {
@@ -169,7 +169,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Creating SSH key...")
-	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
+	if err := sshutil.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
 		return err
 	}
 
@@ -208,7 +208,7 @@ func (d *Driver) Start() error {
 		return err
 	}
 
-	log.Infof("Waiting for VM to start (ssh -p %d docker@%s)...", d.SSHPort, d.IPAddress)
+       log.Infof("Waiting for VM to start (ssh -p %d root@%s)...", d.SSHPort, d.IPAddress)
 	if err := WaitForTCPWithDelay(fmt.Sprintf("%s:%d", d.IPAddress, d.SSHPort), time.Second); err != nil {
 		return err
 	}

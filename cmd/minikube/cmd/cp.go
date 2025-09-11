@@ -49,9 +49,9 @@ var cpCmd = &cobra.Command{
 	Long: `Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.
 Default target node controlplane and If <source node name> is omitted, It will trying to copy from host.
 
-Example Command : "minikube cp a.txt /home/docker/b.txt" +
-                  "minikube cp a.txt minikube-m02:/home/docker/b.txt"
-                  "minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt"`,
+Example Command : "minikube cp a.txt /root/b.txt" +
+                  "minikube cp a.txt minikube-m02:/root/b.txt"
+                  "minikube cp minikube-m01:a.txt minikube-m02:/root/b.txt"`,
 	Run: func(_ *cobra.Command, args []string) {
 		if len(args) != 2 {
 			exit.Message(reason.Usage, `Please specify the path to copy: 
@@ -210,6 +210,6 @@ func validateArgs(src, dst *remotePath) {
 	// if node name not explicitly specified in both of source and target,
 	// consider target node is control-plane for backward compatibility.
 	if src.node == "" && dst.node == "" && !strings.HasPrefix(dst.path, "/") {
-		exit.Message(reason.Usage, `Target <remote file path> must be an absolute Path. Relative Path is not allowed (example: "minikube:/home/docker/copied.txt")`)
+           exit.Message(reason.Usage, `Target <remote file path> must be an absolute Path. Relative Path is not allowed (example: "minikube:/root/copied.txt")`)
 	}
 }

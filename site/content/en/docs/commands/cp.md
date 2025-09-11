@@ -14,9 +14,9 @@ Copy the specified file into minikube
 Copy the specified file into minikube, it will be saved at path <target file absolute path> in your minikube.
 Default target node controlplane and If <source node name> is omitted, It will trying to copy from host.
 
-Example Command : "minikube cp a.txt /home/docker/b.txt" +
-                  "minikube cp a.txt minikube-m02:/home/docker/b.txt"
-                  "minikube cp minikube-m01:a.txt minikube-m02:/home/docker/b.txt"
+Example Command : "minikube cp a.txt /root/b.txt" +
+                  "minikube cp a.txt minikube-m02:/root/b.txt"
+                  "minikube cp minikube-m01:a.txt minikube-m02:/root/b.txt"
 
 ```shell
 minikube cp <source node name>:<source file path> <target node name>:<target file absolute path> [flags]

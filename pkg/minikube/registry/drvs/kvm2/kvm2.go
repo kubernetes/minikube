@@ -80,7 +80,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
-			SSHUser:     "docker",
+                   SSHUser:     "root",
 		},
 		Memory:         cc.Memory,
 		CPU:            cc.CPUs,
