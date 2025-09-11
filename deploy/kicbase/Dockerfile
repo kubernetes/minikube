@@ -262,6 +262,8 @@ RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker
 RUN mkdir /home/docker/.ssh
 USER root
+# prepare root ssh directory for minikube access
+RUN mkdir /root/.ssh
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
 RUN mkdir -p /kind

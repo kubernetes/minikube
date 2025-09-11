@@ -530,7 +530,7 @@ func killProcessFamily(t *testing.T, pid int) {
 
 // cpTestMinikubePath is where the test file will be located in the Minikube instance
 func cpTestMinikubePath() string {
-	return "/home/docker/cp-test.txt"
+    return "/root/cp-test.txt"
 }
 
 // cpTestLocalPath is where the test file located in host os

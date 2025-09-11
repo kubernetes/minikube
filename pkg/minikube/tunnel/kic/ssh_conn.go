@@ -49,7 +49,7 @@ func createSSHConn(name, sshPort, sshKey, bindAddress string, resourcePorts []in
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "IdentitiesOnly=yes",
 		"-N",
-		"docker@127.0.0.1",
+               "root@127.0.0.1",
 		"-p", sshPort,
 		"-i", sshKey,
 	}
@@ -122,7 +122,7 @@ func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service)
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "IdentitiesOnly=yes",
 		"-N",
-		"docker@127.0.0.1",
+               "root@127.0.0.1",
 		"-p", sshPort,
 		"-i", sshKey,
 	}

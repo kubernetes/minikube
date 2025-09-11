@@ -71,7 +71,7 @@ type Driver struct {
 func NewDriver(_, _ string) *Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
-			SSHUser: "docker",
+                       SSHUser: "root",
 		},
 		CommonDriver: &common.CommonDriver{},
 	}

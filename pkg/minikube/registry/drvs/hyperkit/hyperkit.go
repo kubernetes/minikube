@@ -69,7 +69,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: config.MachineName(cfg, n),
 			StorePath:   localpath.MiniPath(),
-			SSHUser:     "docker",
+                   SSHUser:     "root",
 		},
 		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,

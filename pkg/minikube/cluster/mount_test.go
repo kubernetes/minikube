@@ -41,8 +41,8 @@ func TestMntCmd(t *testing.T) {
 			name:   "named uid",
 			source: "src",
 			target: "target",
-			cfg:    &MountConfig{Type: "9p", UID: "docker", GID: "docker"},
-			want:   "sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker),trans=tcp src target",
+                       cfg:    &MountConfig{Type: "9p", UID: "root", GID: "root"},
+                       want:   "sudo mount -t 9p -o dfltgid=$(grep ^root: /etc/group | cut -d: -f3),dfltuid=$(id -u root),trans=tcp src target",
 		},
 		{
 			name:   "everything",
