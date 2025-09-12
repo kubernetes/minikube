@@ -140,6 +140,11 @@ RUN clean-install \
     # libglib2.0-0t64 is required for conmon, which is required for podman
     libglib2.0-0t64
 
+# TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
+# ubuntu noble doesnt support rsa1 by default, so we need to enable it to support older ssh clients
+RUN echo 'PubkeyAcceptedAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config && \ 
+    echo 'HostkeyAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config
+
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
