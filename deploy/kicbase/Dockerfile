@@ -150,11 +150,12 @@ RUN NO_APT_UPDATE=1 clean-install \
 
 # TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
 # ubuntu noble doesnt support rsa1 by default, so we need to enable it to support older ssh clients
-RUN echo 'PubkeyAcceptedAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config && \ 
-    echo 'HostkeyAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config \
-    echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config \
-    echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config 
-        
+RUN cat <<EOF >> /etc/ssh/sshd_config
+PubkeyAcceptedAlgorithms +ssh-rsa
+HostkeyAlgorithms +ssh-rsa
+PubkeyAuthentication yes
+PasswordAuthentication no
+EOF
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
