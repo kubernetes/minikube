@@ -63,6 +63,14 @@ COPY deploy/kicbase/nerdctld/nerdctld.socket  /etc/systemd/system/nerdctld.socke
 COPY deploy/kicbase/nerdctld/nerdctld.service  /etc/systemd/system/nerdctld.service
 COPY --from=auto-pause /src/cmd/auto-pause/auto-pause-${TARGETARCH} /bin/auto-pause
 
+# create docker user for minikube ssh. to match VM using "docker" as username
+# Ensure 'docker' group exists; create a 'docker' user with a shell
+RUN groupadd -f docker \
+ && useradd -m -s /bin/bash -g docker docker \
+ && usermod -aG sudo,docker docker
+ # Ensure the account is usable for key-only SSH - unlock the account, and disable password
+RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
+
 # Install dependencies, first from apt, then from release tarballs.
 # NOTE: we use one RUN to minimize layers.
 #
@@ -260,13 +268,6 @@ RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 EXPOSE 22
-# create docker user for minikube ssh. to match VM using "docker" as username
-# Ensure 'docker' group exists; create a 'docker' user with a shell
-RUN groupadd -f docker \
- && useradd -m -s /bin/bash -g docker docker \
- && usermod -aG sudo,docker docker
- # Ensure the account is usable for key-only SSH
-RUN usermod -U docker  && passwd -u docker && passwd -d docker
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
