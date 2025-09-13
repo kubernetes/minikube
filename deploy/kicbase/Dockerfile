@@ -275,7 +275,7 @@ USER root
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
 RUN mkdir -p /kind
 # Deleting leftovers
-RUN apt-get clean -y \
+RUN apt-get clean -y && \
    rm -rf \
    /var/cache/debconf/* \
    /var/lib/apt/lists/* \
