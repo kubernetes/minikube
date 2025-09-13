@@ -77,17 +77,14 @@ fi
 GCR_IMG=${GCR_REPO}:${KIC_VERSION}
 DH_IMG=${DH_REPO}:${KIC_VERSION}
 export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
-set -x -o pipefail
 # Build a new kicbase image
-CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
-
-# Abort with error message if above command failed
-ec=${PIPESTATUS[0]}
-if [ $ec -gt 0 ]; then
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.
-		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/kic_image_build.txt
-		"
-	exit $ec
+if ! CIBUILD=yes make push-kic-base-image 2>&1 | tee kic-logs.txt; then
+  ec=${PIPESTATUS[0]:-1}                       # bash-only; exit of `make`, not `tee`
+  if [[ ${release:-false} != "true" ]]; then   # default release to false if unset
+    gh pr comment "${ghprbPullId}" --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.
+See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/kic_image_build.txt"
+  fi
+  exit "$ec"
 fi
 
 # Retrieve the sha from the new image
