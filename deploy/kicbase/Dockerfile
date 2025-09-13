@@ -259,8 +259,12 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker
-RUN adduser docker sudo
+# Ensure 'docker' group exists; create an unlocked 'docker' user with a shell
+# unlock account avoids "account is locked" with no password login
+RUN groupadd -f docker \
+ && useradd -m -s /bin/bash -g docker docker \
+ && usermod -aG sudo,docker docker \
+ && usermod -U docker  
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
