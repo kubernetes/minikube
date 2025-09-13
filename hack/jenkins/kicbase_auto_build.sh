@@ -82,7 +82,7 @@ export KICBASE_IMAGE_REGISTRIES="${GCR_IMG} ${DH_IMG}"
 CIBUILD=yes make push-kic-base-image | tee kic-logs.txt
 
 # Abort with error message if above command failed
-ec=$?
+ec=${PIPESTATUS[0]}
 if [ $ec -gt 0 ]; then
 	if [ "$release" = false ]; then
 		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new kicbase image failed.
