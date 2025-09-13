@@ -276,10 +276,16 @@ USER root
 RUN mkdir -p /kind
 # Deleting leftovers
 RUN rm -rf \
-  /usr/share/doc/* \
-  /usr/share/man/* \
-  /usr/share/local/*
-RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+   /var/cache/debconf/* \
+   /var/lib/apt/lists/* \
+   /var/log/* \
+   /tmp/* \
+   /var/tmp/* \
+   /usr/share/doc/* \
+   /usr/share/man/* \
+   /usr/share/local/*
+
+  RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 
 # squash all layers into one
 FROM scratch
