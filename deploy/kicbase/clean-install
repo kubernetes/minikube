@@ -27,4 +27,3 @@ fi
 
 apt-get update
 apt-get install -y --no-install-recommends -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" "$@"
-apt-get clean -y
