@@ -143,8 +143,10 @@ RUN NO_APT_UPDATE=1 clean-install \
 # TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
 # ubuntu noble doesnt support rsa1 by default, so we need to enable it to support older ssh clients
 RUN echo 'PubkeyAcceptedAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config && \ 
-    echo 'HostkeyAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config
-
+    echo 'HostkeyAlgorithms +ssh-rsa' >> /etc/ssh/sshd_config \
+    echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config \
+    echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config 
+        
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
@@ -259,12 +261,12 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-# Ensure 'docker' group exists; create an unlocked 'docker' user with a shell
-# unlock account avoids "account is locked" with no password login
+# Ensure 'docker' group exists; create a 'docker' user with a shell
 RUN groupadd -f docker \
  && useradd -m -s /bin/bash -g docker docker \
- && usermod -aG sudo,docker docker \
- && usermod -U docker  
+ && usermod -aG sudo,docker docker
+ # Ensure the account is usable for key-only SSH
+RUN usermod -U docker  && passwd -u docker && passwd -d docker
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
