@@ -131,7 +131,7 @@ RUN echo "Installing cri-dockerd ${CRI_DOCKERD_VERSION}" && \
 	curl -L "https://storage.googleapis.com/kicbase-artifacts/cri-dockerd/${CRI_DOCKERD_COMMIT}/cri-docker.service" -o /usr/lib/systemd/system/cri-docker.service
 
 # install system requirements from the regular distro repositories
-RUN clean-install \
+RUN NO_APT_UPDATE=1 clean-install \
     lz4 \
     gnupg \
     sudo \
@@ -183,7 +183,7 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     && systemctl enable buildkit.socket
 
 # install podman
-RUN clean-install podman && \
+RUN NO_APT_UPDATE=1 clean-install podman && \
     addgroup --system podman && \
     mkdir -p /etc/systemd/system/podman.socket.d && \
     printf "[Socket]\nSocketMode=0660\nSocketUser=root\nSocketGroup=podman\n" \
@@ -286,7 +286,7 @@ RUN apt-get clean -y && \
    /usr/share/man/* \
    /usr/share/local/*
 
-  RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 
 # squash all layers into one
 FROM scratch

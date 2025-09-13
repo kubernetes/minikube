@@ -25,5 +25,6 @@ if [ $# = 0 ]; then
   exit 1
 fi
 
-apt-get update
+# If NO_APT_UPDATE is not set, run apt-get update to refresh package lists.
+[ -z "${NO_APT_UPDATE:-}" ] && apt-get update
 apt-get install -y --no-install-recommends -o DPkg::options::="--force-confdef" -o DPkg::options::="--force-confold" "$@"
