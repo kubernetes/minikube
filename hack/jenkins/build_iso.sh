@@ -65,16 +65,20 @@ else
 	export ISO_BUCKET
 fi
 
-make release-iso | tee iso-logs.txt
-# Abort with error message if above command failed
-ec=$?
-if [ $ec -gt 0 ]; then
-	if [ "$release" = false ]; then
-		gh pr comment ${ghprbPullId} --body "Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed.
-		See the logs at: https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
-		"
-	fi
-	exit $ec
+if ! make release-iso 2>&1 | tee iso-logs.txt; then
+  # Exit of `make` (PIPESTATUS[0]); fallback to 1 if unavailable
+  ec=${PIPESTATUS[0]:-1}
+
+  # Only comment on non-release; default release=false if unset
+  if [[ ${release:-false} != "true" ]]; then
+    gh pr comment "${ghprbPullId}" --body "$(cat <<'MSG'
+Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
+See the logs at:
+https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+MSG
+)"
+  fi
+  exit "$ec"
 fi
 
 git config user.name "minikube-bot"
