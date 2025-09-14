@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -e
+
+OS="linux"
+ARCH="amd64"
+DRIVER="kvm2"
+CONTAINER_RUNTIME="docker"
+# in prow, if you want libvirtd to be run, you have to start a privileged container as root
+EXTRA_START_ARGS="--force" 
+EXTRA_TEST_ARGS="-gvisor" # We pick kvm as our gvisor testbed because it is fast & reliable
+JOB_NAME="KVM_Linux"
+
+apt-get update
+apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
+adduser $(whoami) libvirt || true
+
+source ./hack/prow/common.sh 
+
+
