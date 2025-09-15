@@ -131,11 +131,18 @@ func collectK8sVers() ([]string, error) {
 		}
 		k8sVersions = recent
 	}
-	versions := append([]string{
+	versions := []string{
+		constants.OldestKubernetesVersion,
 		constants.DefaultKubernetesVersion,
 		constants.NewestKubernetesVersion,
-		constants.OldestKubernetesVersion,
-	}, k8sVersions...)
+	}
+	
+	// Remove duplicate versions if DefaultKubernetesVersion == NewestKubernetesVersion
+	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
+		versions = versions[:len(versions)-1]
+	}
+	
+	versions = append(versions, k8sVersions...)
 	return util.RemoveDuplicateStrings(versions), nil
 }
 
