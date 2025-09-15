@@ -93,7 +93,7 @@ func verifyExecutes(name string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		details := strings.TrimSpace(string(output))
-		klog.Errorf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, details)
+		klog.Warningf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, details)
 		return ErrAuxDriverVersionCommandFailed
 	}
 
