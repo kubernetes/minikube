@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // TestDownloadOnly makes sure the --download-only parameter in minikube start caches the appropriate images and tarballs.
@@ -58,16 +59,11 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 
 	containerRuntime := ContainerRuntime()
 
-	versions := []string{
+	versions := util.RemoveDuplicateStrings([]string{
 		constants.OldestKubernetesVersion,
 		constants.DefaultKubernetesVersion,
 		constants.NewestKubernetesVersion,
-	}
-
-	// Small optimization, don't run the exact same set of tests twice
-	if constants.DefaultKubernetesVersion == constants.NewestKubernetesVersion {
-		versions = versions[:len(versions)-1]
-	}
+	})
 
 	for _, v := range versions {
 		t.Run(v, func(t *testing.T) {
