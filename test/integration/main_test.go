@@ -140,6 +140,11 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// KVM returns true is is KVM driver
+func KVMDriver() bool {
+	return strings.Contains(*startArgs, "--driver=kvm") || strings.Contains(*startArgs, "--vm-driver=kvm") || strings.Contains(*startArgs, "--driver=kvm2") || strings.Contains(*startArgs, "--vm-driver=kvm2")
+}
+
 // VirtualboxDriver returns whether or not this test is using the VirtualBox driver
 func VirtualboxDriver() bool {
 	return strings.Contains(*startArgs, "--driver=virtualbox") || strings.Contains(*startArgs, "--vm-driver=virtualbox")
@@ -163,6 +168,11 @@ func RootlessDriver() bool {
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
+}
+
+// Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
+func DriverHasAuxDriver() bool {
+	return HyperVDriver() || KVMDriver()
 }
 
 // VMDriver checks if the driver is a VM
