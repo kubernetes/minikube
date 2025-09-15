@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
 	"k8s.io/minikube/pkg/minikube/style"
+	pkgcolor "k8s.io/minikube/pkg/minikube/color"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/fatih/color"
@@ -191,11 +192,11 @@ func profilesToTableData(profiles []*config.Profile) [][]string {
 		// Apply coloring based on status
 		switch p.Status {
 		case "OK":
-			ColorRow(row, color.GreenString)
+			pkgcolor.ColorRow(row, color.GreenString)
 		case "Stopped", "Paused":
-			ColorRow(row, color.YellowString)
+			pkgcolor.ColorRow(row, color.YellowString)
 		default:
-			ColorRow(row, color.WhiteString)
+			pkgcolor.ColorRow(row, color.WhiteString)
 		}
 		
 		data = append(data, row)

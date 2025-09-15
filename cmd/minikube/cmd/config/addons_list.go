@@ -30,6 +30,7 @@ import (
 	"github.com/fatih/color"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/assets"
+	pkgcolor "k8s.io/minikube/pkg/minikube/color"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -94,28 +95,28 @@ var stringFromStatus = func(addonStatus bool) string {
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
-	table.Options(tablewriter.WithHeaderAutoFormat(tw.On))
+	table.Options(
+		tablewriter.WithHeaderAutoFormat(tw.On),
+	)
 
 	// Table header
-	header := []string{"Addon Name", "Maintainer"}
+	theader := []string{"Addon Name", "Maintainer"}
 	if cc != nil {
-		header = []string{"Addon Name", "Enabled", "Maintainer"}
+		theader = []string{"Addon Name", "Enabled", "Maintainer"}
 	}
 	if printDocs {
-		header = append(header, "Docs")
+		theader = append(theader, "Docs")
 	}
-	table.Header(header)
+	table.Header(theader)
 
 	var rows [][]string
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-
 		maintainer := addonBundle.Maintainer
 		if maintainer == "" {
 			maintainer = "3rd party (unknown)"
 		}
-
 		docs := addonBundle.Docs
 		if docs == "" {
 			docs = "n/a"
@@ -136,9 +137,9 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 			// Step 2: apply coloring
 			switch {
 			case enabled:
-				ColorRow(row, color.GreenString)
+				pkgcolor.ColorRow(row, color.GreenString)
 			default:
-				ColorRow(row, color.WhiteString)
+				pkgcolor.ColorRow(row, color.WhiteString)
 			}
 		}
 
@@ -159,26 +160,6 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 	// Profiles hint
 	if v, _, err := config.ListProfiles(); err == nil && len(v) > 1 {
 		out.Styled(style.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
-	}
-}
-
-// ----------------
-// Helpers
-// ----------------
-
-// colorFunc allows generic coloring
-type colorFunc func(string, ...interface{}) string
-
-func isEmoji(s string) bool {
-	return strings.Contains(s, "✅")
-}
-
-func ColorRow(row []string, colored colorFunc) {
-	for i := range row {
-		if row[i] == "" || isEmoji(row[i]) {
-			continue
-		}
-		row[i] = colored("%s", row[i])
 	}
 }
 
