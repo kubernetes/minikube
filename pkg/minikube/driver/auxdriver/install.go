@@ -65,7 +65,35 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 			return err
 		}
 	}
-	return fixDriverPermissions(name, path, interactive)
+	if err := fixDriverPermissions(name, path, interactive); err != nil {
+		return err
+	}
+	return verifyExecutes(name)
+}
+
+// verifyExecutes ensures the installed auxiliary driver binary executes successfully.
+func verifyExecutes(name string) error {
+	if name != driver.KVM2 && name != driver.HyperKit {
+		return nil
+	}
+
+	executable := fmt.Sprintf("docker-machine-driver-%s", name)
+	path, err := exec.LookPath(executable)
+	if err != nil {
+		return errors.Wrapf(err, "%s not found in PATH", executable)
+	}
+
+	cmd := exec.Command(path, "version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		details := strings.TrimSpace(string(output))
+		if details != "" {
+			return errors.Wrapf(err, "%s failed:\n%s", strings.Join(cmd.Args, " "), details)
+		}
+		return errors.Wrapf(err, "%s failed", strings.Join(cmd.Args, " "))
+	}
+
+	return nil
 }
 
 // fixDriverPermissions fixes the permissions on a driver
