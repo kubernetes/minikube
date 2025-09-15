@@ -39,11 +39,11 @@ import (
 )
 
 func newAuxUnthealthyError(path string) error {
-	return errors.New(fmt.Sprintf(`failed to execute auxiliary version command "%s --version"`, path))
+	return fmt.Errorf(`failed to execute auxiliary version command "%s --version"`, path)
 }
 
-func newAuxNotFoundError(path string) error {
-	return errors.New(fmt.Sprintf("auxiliary driver not found in path command %s", path))
+func newAuxNotFoundError(name, path string) error {
+	return fmt.Errorf("auxiliary driver %s not found in path %s", name, path)
 }
 
 // ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
@@ -139,7 +139,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	path, err := exec.LookPath(executable)
 	if err != nil {
 		klog.Warningf("driver not in path : %s, %v", path, err.Error())
-		ErrAuxDriverVersionNotinPath = newAuxNotFoundError(path)
+		ErrAuxDriverVersionNotinPath = newAuxNotFoundError(executable, path)
 		return path, ErrAuxDriverVersionNotinPath
 	}
 
