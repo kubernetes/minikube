@@ -19,6 +19,7 @@ make -j 16 \
   out/minikube-${OS_ARCH} \
   out/e2e-${OS_ARCH} \
   drivers \
+  out/gvisor-addon \
 && failed=$? || failed=$?
 
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
