@@ -32,8 +32,6 @@ JOB_NAME="KVM_Linux"
 
 # We pick kvm as our gvisor testbed because it is fast & reliable
 EXTRA_TEST_ARGS="-gvisor"
-# we want to test the aux-drivers that are from HEAD not from the release minikube
-EXTRA_START_ARGS="--auto-update-drivers=false"
 
 sudo apt-get update
 sudo apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
