@@ -38,6 +38,12 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+// ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
+var ErrAuxDriverVersionCommandFailed = errors.New("failed to execute auxiliary driver version command")
+
+// ErrAuxDriverVersionNotinPath was not found in PATH
+var ErrAuxDriverVersionNotinPath = errors.New("auxiliary driver was not found in path")
+
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
 	if name != driver.KVM2 && name != driver.HyperKit {
@@ -80,17 +86,15 @@ func verifyExecutes(name string) error {
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)
 	path, err := exec.LookPath(executable)
 	if err != nil {
-		return errors.Wrapf(err, "%s not found in PATH", executable)
+		return ErrAuxDriverVersionNotinPath
 	}
 
 	cmd := exec.Command(path, "version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		details := strings.TrimSpace(string(output))
-		if details != "" {
-			return errors.Wrapf(err, "%s failed:\n%s", strings.Join(cmd.Args, " "), details)
-		}
-		return errors.Wrapf(err, "%s failed", strings.Join(cmd.Args, " "))
+		klog.Errorf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, details)
+		return ErrAuxDriverVersionCommandFailed
 	}
 
 	return nil
