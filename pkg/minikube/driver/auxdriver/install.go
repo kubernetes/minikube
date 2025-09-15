@@ -43,7 +43,7 @@ func newAuxUnthealthyError(path string) error {
 }
 
 func newAuxNotFoundError(path string) error {
-	return errors.New(fmt.Sprintf("auxiliary not pound in path command %s", path))
+	return errors.New(fmt.Sprintf("auxiliary driver not found in path command %s", path))
 }
 
 // ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
