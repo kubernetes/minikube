@@ -74,7 +74,11 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	if err := fixDriverPermissions(name, path, interactive); err != nil {
 		return err
 	}
-	return verifyExecutes(name)
+
+	if _, err := validateDriver(executable, minAcceptableDriverVersion(name, v)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // verifyExecutes ensures the installed auxiliary driver binary executes successfully.
@@ -149,12 +153,15 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
-		return path, err
+		klog.Warningf("driver not in path : %s, %v", path, err.Error())
+		return path, ErrAuxDriverVersionNotinPath
 	}
 
-	output, err := exec.Command(path, "version").Output()
+	cmd := exec.Command(path, "version")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return path, err
+		klog.Warningf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, output)
+		return path, ErrAuxDriverVersionCommandFailed
 	}
 
 	ev := extractDriverVersion(string(output))
