@@ -38,11 +38,19 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+func newAuxUnthealthyError(path string) error {
+	return errors.New(fmt.Sprintf(`failed to execute auxiliary version command "%s --version"`, path))
+}
+
+func newAuxNotFoundError(path string) error {
+	return errors.New(fmt.Sprintf("auxiliary not pound in path command %s", path))
+}
+
 // ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
-var ErrAuxDriverVersionCommandFailed = errors.New("failed to execute auxiliary driver version command")
+var ErrAuxDriverVersionCommandFailed error
 
 // ErrAuxDriverVersionNotinPath was not found in PATH
-var ErrAuxDriverVersionNotinPath = errors.New("auxiliary driver was not found in path")
+var ErrAuxDriverVersionNotinPath error
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
@@ -78,29 +86,6 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	if _, err := validateDriver(executable, minAcceptableDriverVersion(name, v)); err != nil {
 		return err
 	}
-	return nil
-}
-
-// verifyExecutes ensures the installed auxiliary driver binary executes successfully.
-func verifyExecutes(name string) error {
-	if name != driver.KVM2 && name != driver.HyperKit {
-		return nil
-	}
-
-	executable := fmt.Sprintf("docker-machine-driver-%s", name)
-	path, err := exec.LookPath(executable)
-	if err != nil {
-		return ErrAuxDriverVersionNotinPath
-	}
-
-	cmd := exec.Command(path, "version")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		details := strings.TrimSpace(string(output))
-		klog.Warningf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, details)
-		return ErrAuxDriverVersionCommandFailed
-	}
-
 	return nil
 }
 
@@ -154,6 +139,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	path, err := exec.LookPath(executable)
 	if err != nil {
 		klog.Warningf("driver not in path : %s, %v", path, err.Error())
+		ErrAuxDriverVersionNotinPath = newAuxNotFoundError(path)
 		return path, ErrAuxDriverVersionNotinPath
 	}
 
@@ -161,6 +147,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		klog.Warningf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, output)
+		ErrAuxDriverVersionCommandFailed = newAuxUnthealthyError(path)
 		return path, ErrAuxDriverVersionCommandFailed
 	}
 
