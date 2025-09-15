@@ -146,7 +146,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	cmd := exec.Command(path, "version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		klog.Warningf("%s failed: %v: %s", strings.Join(cmd.Args, " "), err, output)
+		klog.Warningf("%s failed: %v: %s", cmd, err, output)
 		ErrAuxDriverVersionCommandFailed = newAuxUnthealthyError(path)
 		return path, ErrAuxDriverVersionCommandFailed
 	}
