@@ -210,6 +210,7 @@ spec:
           --threads, "6",
           --no-warmup,
           --log-colors,
+          auto,
         ]
         resources:
           limits:
@@ -292,6 +293,7 @@ spec:
           --threads, "6",
           --no-warmup,
           --log-colors,
+          auto,
         ]
         resources:
           limits:
