@@ -15,6 +15,12 @@ apt-get update
 apt-get -y install qemu-system libvirt-clients libvirt-daemon-system ebtables iptables dnsmasq
 adduser $(whoami) libvirt || true
 
+# start libvirtd 
+systemctl start libvirtd
+sleep 5  # wait for libvirtd to be running
+echo "=========libvirtd status=========="
+systemctl status libvirtd
+
 source ./hack/prow/common.sh 
 
 
