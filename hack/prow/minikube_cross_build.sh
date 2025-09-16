@@ -39,5 +39,7 @@ if [[ "${failed}" -ne 0 ]]; then
   echo "build failed"
   exit "${failed}"
 fi
-cp out/gvisor-addon testdata/
+
 cp -r test/integration/testdata out/
+
+cp out/gvisor-addon out/testdata/

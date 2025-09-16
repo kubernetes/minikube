@@ -36,6 +36,7 @@ export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 function print_test_info() {
     echo ">> Starting at $(date)"
     echo ""
+    echo "user:      $(whoami)"
     echo "arch:      ${OS_ARCH}"
     echo "build:     ${MINIKUBE_LOCATION}"
     echo "driver:    ${DRIVER}"
