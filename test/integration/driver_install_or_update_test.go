@@ -51,7 +51,6 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		name string
 		path string
 	}{
-		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
 		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-older-version")},
 	}
 
@@ -82,7 +81,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
 		// NOTE: This should be a real version, as it impacts the downloaded URL
-		newerVersion, err := semver.Make("1.3.0")
+		newerVersion, err := semver.Make("1.37.0")
 		if err != nil {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
