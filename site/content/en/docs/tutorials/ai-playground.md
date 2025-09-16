@@ -209,8 +209,7 @@ spec:
           -ngl, "999",
           --threads, "6",
           --no-warmup,
-          --log-colors,
-          auto,
+          --log-colors, auto,
         ]
         resources:
           limits:
@@ -292,8 +291,7 @@ spec:
           -ngl, "999",
           --threads, "6",
           --no-warmup,
-          --log-colors,
-          auto,
+          --log-colors, auto,
         ]
         resources:
           limits:
