@@ -58,7 +58,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir := t.TempDir()
+		tempDLDir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -78,7 +78,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
 
-		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
+		os.Setenv("PATH", fmt.Sprintf("%s:%s:%s", tempDLDir, path, originalPath))
 
 		// NOTE: This should be a real version, as it impacts the downloaded URL
 		newerVersion, err := semver.Make("1.37.0")
@@ -86,12 +86,12 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = auxdriver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
+		err = auxdriver.InstallOrUpdate("kvm2", tempDLDir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
 
-		_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-kvm2"))
+		_, err = os.Stat(filepath.Join(tempDLDir, "docker-machine-driver-kvm2"))
 		if err != nil {
 			t.Fatalf("Expected driver to be download. test: %s, got: %v", tc.name, err)
 		}
