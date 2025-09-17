@@ -227,14 +227,19 @@ RUN export ARCH=$(dpkg --print-architecture) && \
     chmod +x /usr/local/bin/crictl && \
     if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.34/install.md#install-packaged-versions-of-cri-o
+# install cri-o from the OBS repositories
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
     if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
-        mkdir -p /etc/apt/keyrings && \
-        curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}/deb/Release.key | \
-            gpg --dearmor --yes -o /etc/apt/keyrings/cri-o-archive-keyring.gpg && \
-        sh -c "echo 'deb [signed-by=/etc/apt/keyrings/cri-o-archive-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}/deb/ /' > /etc/apt/sources.list.d/isv:cri-o:stable:${CRIO_VERSION}.list" && \
-        clean-install cri-o cri-o-runc; \
+        mkdir -p /etc/apt/sources.list.d /etc/apt/trusted.gpg.d && \
+        echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' \
+            > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
+        curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key \
+            | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_stable.gpg && \
+        echo "deb http://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}:/build/deb/ /" \
+            > "/etc/apt/sources.list.d/isv:cri-o:stable:${CRIO_VERSION}:build.list" && \
+        curl -fsSL "https://download.opensuse.org/repositories/isv:cri-o:stable:${CRIO_VERSION}:build/deb/Release.key" \
+            | gpg --dearmor --yes -o "/etc/apt/trusted.gpg.d/isv_cri-o_stable_${CRIO_VERSION}_build.gpg" && \
+        clean-install cri-o; \
     fi
 
 # install NVIDIA container toolkit
