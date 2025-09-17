@@ -1135,7 +1135,7 @@ update-docker-version:
 
 .PHONY: update-ubuntu-version update-debian-version
 update-ubuntu-version update-debian-version:
-        cd hack && go run update/debian_version/debian_version.go
+	cd hack && go run update/debian_version/debian_version.go
 
 .PHONY: update-cni-plugins-version
 update-cni-plugins-version:
