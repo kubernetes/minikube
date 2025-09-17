@@ -19,8 +19,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -90,12 +91,7 @@ var stringFromStatus = func(addonStatus bool) string {
 }
 
 var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
-		addonNames = append(addonNames, addonName)
-	}
-	sort.Strings(addonNames)
-
+	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	table := tablewriter.NewWriter(os.Stdout)
 
 	table.Options(
@@ -154,12 +150,7 @@ var printAddonsList = func(cc *config.ClusterConfig, printDocs bool) {
 }
 
 var printAddonsJSON = func(cc *config.ClusterConfig) {
-	addonNames := make([]string, 0, len(assets.Addons))
-	for addonName := range assets.Addons {
-		addonNames = append(addonNames, addonName)
-	}
-	sort.Strings(addonNames)
-
+	addonNames := slices.Sorted(maps.Keys(assets.Addons))
 	addonsMap := map[string]map[string]interface{}{}
 
 	for _, addonName := range addonNames {

@@ -318,6 +318,10 @@ var (
 	DrvNotFound = Kind{ID: "DRV_NOT_FOUND", ExitCode: ExDriverNotFound}
 	// minikube could not find a valid driver
 	DrvNotDetected = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
+	// aux drivers (kvm or hyperkit) were not found
+	DrvAuxNotNotFound = Kind{ID: "DRV_AUX_NOT_FOUND", ExitCode: ExDriverNotFound}
+	// aux drivers (kvm or hyperkit) were found but not healthy
+	DrvAuxNotHealthy = Kind{ID: "DRV_AUX_NOT_HEALTHY", ExitCode: ExDriverError}
 	// minikube found drivers but none were ready to use
 	DrvNotHealthy = Kind{ID: "DRV_NOT_HEALTHY", ExitCode: ExDriverNotFound}
 	// minikube found the docker driver but the docker service was not running
@@ -556,7 +560,7 @@ var (
 
 		Please install vmnet-helper using these instructions:
 
-		https://github.com/nirs/vmnet-helper#installation`),
+			curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash`),
 		Style: style.SeeNoEvil,
 	}
 	NotConfiguredVmnetHelper = Kind{
@@ -565,8 +569,7 @@ var (
 		Advice: translate.T(`Configure vmnet-helper to run without a password.
 
 		Please install a vmnet-helper sudoers rule using these instructions:
-
-		https://github.com/nirs/vmnet-helper#granting-permission-to-run-vmnet-helper`),
+			curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash`),
 		Style: style.SeeNoEvil,
 	}
 )

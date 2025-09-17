@@ -51,7 +51,6 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		name string
 		path string
 	}{
-		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
 		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-older-version")},
 	}
 
@@ -59,7 +58,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 	defer os.Setenv("PATH", originalPath)
 
 	for _, tc := range tests {
-		dir := t.TempDir()
+		tempDLDir := t.TempDir()
 
 		pwd, err := os.Getwd()
 		if err != nil {
@@ -70,8 +69,18 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 
 		_, err = os.Stat(filepath.Join(path, "docker-machine-driver-kvm2"))
 		if err != nil {
-			t.Fatalf("Expected driver to exist. test: %s, got: %v", tc.name, err)
+			t.Fatalf("Expected test data driver to exist. test: %s, got: %v", tc.name, err)
 		}
+
+		// copy test data driver into the temp download dir so we can point PATH to it for before/after install
+		src := filepath.Join(path, "docker-machine-driver-kvm2")
+		dst := filepath.Join(tempDLDir, "docker-machine-driver-kvm2")
+		if err = CopyFile(src, dst, false); err != nil {
+			t.Fatalf("Failed to copy test data driver to temp dir. test: %s, got: %v", tc.name, err)
+		}
+
+		// point to the copied driver for the rest of the test
+		path = tempDLDir
 
 		// change permission to allow driver to be executable
 		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0700)
@@ -82,17 +91,17 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
 		// NOTE: This should be a real version, as it impacts the downloaded URL
-		newerVersion, err := semver.Make("1.3.0")
+		newerVersion, err := semver.Make("1.37.0")
 		if err != nil {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = auxdriver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
+		err = auxdriver.InstallOrUpdate("kvm2", tempDLDir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
 
-		_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-kvm2"))
+		_, err = os.Stat(filepath.Join(tempDLDir, "docker-machine-driver-kvm2"))
 		if err != nil {
 			t.Fatalf("Expected driver to be download. test: %s, got: %v", tc.name, err)
 		}

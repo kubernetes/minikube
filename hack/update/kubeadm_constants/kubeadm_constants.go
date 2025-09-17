@@ -120,7 +120,7 @@ func getKubeadmImagesMapString(version string) (string, error) {
 	}
 
 	kubeadmCommand := fmt.Sprintf("./%s", fileName)
-	args := []string{"config", "images", "list"}
+	args := []string{"config", "images", "list", "--kubernetes-version", version}
 	imageListString, err := executeCommand(kubeadmCommand, args...)
 	if err != nil {
 		klog.Errorf("failed to execute kubeadm command %s", kubeadmCommand)

@@ -38,6 +38,20 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+func newAuxUnthealthyError(path string) error {
+	return fmt.Errorf(`failed to execute auxiliary version command "%s --version"`, path)
+}
+
+func newAuxNotFoundError(name, path string) error {
+	return fmt.Errorf("auxiliary driver %s not found in path %s", name, path)
+}
+
+// ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
+var ErrAuxDriverVersionCommandFailed error
+
+// ErrAuxDriverVersionNotinPath was not found in PATH
+var ErrAuxDriverVersionNotinPath error
+
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
 	if name != driver.KVM2 && name != driver.HyperKit {
@@ -65,7 +79,14 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 			return err
 		}
 	}
-	return fixDriverPermissions(name, path, interactive)
+	if err := fixDriverPermissions(name, path, interactive); err != nil {
+		return err
+	}
+
+	if _, err := validateDriver(executable, minAcceptableDriverVersion(name, v)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // fixDriverPermissions fixes the permissions on a driver
@@ -117,12 +138,17 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
-		return path, err
+		klog.Warningf("driver not in path : %s, %v", path, err.Error())
+		ErrAuxDriverVersionNotinPath = newAuxNotFoundError(executable, path)
+		return path, ErrAuxDriverVersionNotinPath
 	}
 
-	output, err := exec.Command(path, "version").Output()
+	cmd := exec.Command(path, "version")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return path, err
+		klog.Warningf("%s failed: %v: %s", cmd, err, output)
+		ErrAuxDriverVersionCommandFailed = newAuxUnthealthyError(path)
+		return path, ErrAuxDriverVersionCommandFailed
 	}
 
 	ev := extractDriverVersion(string(output))

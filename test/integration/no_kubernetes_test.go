@@ -30,6 +30,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
@@ -99,7 +100,7 @@ func validateStartNoK8sWithVersion(ctx context.Context, t *testing.T, profile st
 	defer PostMortemLogs(t, profile)
 
 	// docs: start minikube with no kubernetes.
-	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--kubernetes-version=1.20"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--kubernetes-version=" + constants.OldestKubernetesVersion}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err == nil {
 		t.Fatalf("expected an error but none was thrown with args: %q", rr.Command())

@@ -57,7 +57,9 @@ const (
 func TestMain(m *testing.M) {
 	flag.Parse()
 	setMaxParallelism()
-
+	if NeedsAuxDriver() {
+		*startArgs += " --auto-update-drivers=false"
+	}
 	start := time.Now()
 	code := m.Run()
 	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
@@ -97,14 +99,9 @@ func setMaxParallelism() {
 	// Each "minikube start" consumes up to 2 cores, though the average usage is somewhat lower
 	limit := int(math.Floor(float64(maxp) / 1.75))
 
-	// Windows and MacOS tests were failing from timeouts due to too much parallelism
+	// Windows tests were failing from timeouts due to too much parallelism
 	if runtime.GOOS == "windows" {
 		limit /= 2
-	}
-
-	// Hardcode limit to 2 for macOS
-	if runtime.GOOS == "darwin" {
-		limit = 2
 	}
 
 	fmt.Fprintf(os.Stderr, "Found %d cores, limiting parallelism with --test.parallel=%d\n", maxp, limit)
@@ -145,6 +142,11 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// KVM returns true is is KVM driver
+func KVMDriver() bool {
+	return strings.Contains(*startArgs, "--driver=kvm") || strings.Contains(*startArgs, "--vm-driver=kvm") || strings.Contains(*startArgs, "--driver=kvm2") || strings.Contains(*startArgs, "--vm-driver=kvm2")
+}
+
 // VirtualboxDriver returns whether or not this test is using the VirtualBox driver
 func VirtualboxDriver() bool {
 	return strings.Contains(*startArgs, "--driver=virtualbox") || strings.Contains(*startArgs, "--vm-driver=virtualbox")
@@ -168,6 +170,11 @@ func RootlessDriver() bool {
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
+}
+
+// NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
+func NeedsAuxDriver() bool {
+	return HyperVDriver() || KVMDriver()
 }
 
 // VMDriver checks if the driver is a VM

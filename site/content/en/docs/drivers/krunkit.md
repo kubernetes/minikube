@@ -16,7 +16,7 @@ workloads.
 - Available only on Apple silicon.
 - Requires macOS 13 or later.
 - Requires minikube version 1.37.0 or later.
-- Requires krunkit version 0.2.2 or later.
+- Requires krunkit version 1.0.0 or later.
 - Requires [vmnet-helper](https://github.com/nirs/vmnet-helper).
 
 ## Installing krunkit
@@ -37,11 +37,7 @@ instructions below.
 ### Install vment-helper
 
 ```shell
-machine="$(uname -m)"
-archive="vmnet-helper-$machine.tar.gz"
-curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
-sudo tar xvf "$archive" -C / opt/vmnet-helper
-rm "$archive"
+    curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash
 ```
 
 The command downloads the latest release from github and installs it to
@@ -51,11 +47,14 @@ The command downloads the latest release from github and installs it to
 > The vmnet-helper executable and the directory where it is installed
 > must be owned by root and may not be modifiable by unprivileged users.
 
-### Grant permission to run vmnet-helper
+### Grant permission to run vmnet-helper manually (if said no to script above)
+
 
 The vment-helper process must run as root to create a vmnet interface.
 To allow users in the `staff` group to run the vmnet helper without a
 password, you can install the default sudoers rule:
+
+The installation script will ask your permission to add to the sudoers but if you say no and prefer to do manually here is the command:
 
 ```shell
 sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
@@ -63,6 +62,8 @@ sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-he
 
 You can change the sudoers configuration to allow access to specific
 users or other groups.
+
+
 
 ### Usage
 

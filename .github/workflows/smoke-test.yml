@@ -1,18 +1,39 @@
 # Boot Smoke Test only tests Bare VM (start,stop,delete) and not any minikube/kubernetes functionality.
-name: Boot Smoke Test
+name: Smoke Test
 on:
   push:
     branches: [ master ]
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
   pull_request:
+    paths:
+      - "go.mod"
+      - "**.go"
+      - "Makefile"
+      - "!hack/**"
+      - "!site/**"
+      - "!**.md"
+      - "!**.json"
   workflow_dispatch:
 env:
   GOPROXY: https://proxy.golang.org
   LOG_ARGS: --v=8 --alsologtostderr
   permissions:
   contents: read
+# Limit one unit test job running per PR/Branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # For example, if you push multiple commits to a pull request in quick succession, only the latest workflow run will continue
+  cancel-in-progress: true
 jobs:
   minikube-vm-boot:
-    name: Boot Smoke Test
+    name: Boot
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -63,8 +84,8 @@ jobs:
             ip addr show
             ifconfig
             docker version
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
         with:
           go-version-file: go.mod
           cache: true
@@ -91,11 +112,7 @@ jobs:
         if: matrix.driver == 'vfkit'
         run: |
           brew install vfkit
-          machine="$(uname -m)"
-          archive="vmnet-helper-$machine.tar.gz"
-          curl -LOf "https://github.com/nirs/vmnet-helper/releases/latest/download/$archive"
-          sudo tar xvf "$archive" -C / opt/vmnet-helper
-          sudo install -m 0640 /opt/vmnet-helper/share/doc/vmnet-helper/sudoers.d/vmnet-helper /etc/sudoers.d/
+          curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | bash -s
       - name: Install qemu and socket_vmnet (macos)
         if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
         run: |

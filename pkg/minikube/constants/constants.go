@@ -34,12 +34,14 @@ var (
 
 const (
 	// DefaultKubernetesVersion is the default Kubernetes version
-	DefaultKubernetesVersion = "v1.33.2"
+	DefaultKubernetesVersion = "v1.34.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
 	// NOTE: You may need to update coreDNS & etcd versions in pkg/minikube/bootstrapper/images/images.go
-	NewestKubernetesVersion = "v1.33.2"
+	NewestKubernetesVersion = "v1.34.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
-	OldestKubernetesVersion = "v1.20.0"
+	// TODO: upodate to 6 releases before from DefaultKubernetesVersion
+	OldestKubernetesVersion = "v1.28.0"
+
 	// NoKubernetesVersion is the version used when users does NOT want to install kubernetes
 	NoKubernetesVersion = "v0.0.0"
 
@@ -160,6 +162,11 @@ const (
 	MountTypeFlag = "type"
 	// MountUIDFlag is the flag used to set the mount UID
 	MountUIDFlag = "uid"
+
+	// FSType9p is 9p filesystem type
+	FSType9p = "9p"
+	// FSTypeVirtiofs is virtiofs filesystem type
+	FSTypeVirtiofs = "virtiofs"
 
 	// Mirror CN
 	AliyunMirror = "registry.cn-hangzhou.aliyuncs.com/google_containers"

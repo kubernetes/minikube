@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 36
+VERSION_MINOR ?= 37
 VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
@@ -24,7 +24,7 @@ KIC_VERSION ?= $(shell grep -E "Version =" pkg/drivers/kic/types.go | cut -d \" 
 HUGO_VERSION ?= $(shell grep -E "HUGO_VERSION = \"" netlify.toml | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.36.0-1753487480-21147
+ISO_VERSION ?= v1.37.0
 
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
@@ -35,7 +35,7 @@ RPM_REVISION ?= 0
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 # update this only by running `make update-golang-version`
-GO_VERSION ?= 1.24.5
+GO_VERSION ?= 1.24.6
 # set GOTOOLCHAIN to GO_VERSION to override any toolchain version specified in
 # go.mod (ref: https://go.dev/doc/toolchain#GOTOOLCHAIN)
 export GOTOOLCHAIN := go$(GO_VERSION)
@@ -1067,7 +1067,7 @@ update-golang-version:
 
 .PHONY: update-kubernetes-version
 update-kubernetes-version:
-	 cd hack && go run update/kubernetes_version/kubernetes_version.go
+	 @(cd hack && go run update/kubernetes_version/kubernetes_version.go)
 
 .PHONY: update-golint-version
 update-golint-version:

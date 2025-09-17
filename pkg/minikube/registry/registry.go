@@ -18,6 +18,8 @@ package registry
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sync"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -157,11 +159,7 @@ func (r *driverRegistry) List() []DriverDef {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 
-	result := make([]DriverDef, 0, len(r.drivers))
-
-	for _, def := range r.drivers {
-		result = append(result, def)
-	}
+	result := slices.Collect(maps.Values(r.drivers))
 
 	return result
 }

@@ -1,0 +1,10 @@
+{
+   "filesystems": [
+      {
+         "target": "/proc",
+         "source": "proc",
+         "fstype": "proc",
+         "options": "rw,relatime"
+      }
+   ]
+}

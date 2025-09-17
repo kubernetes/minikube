@@ -220,7 +220,15 @@ func PostMortemLogs(t *testing.T, profile string, multinode ...bool) {
 	}
 
 	t.Logf("-----------------------post-mortem--------------------------------")
-
+	t.Logf("======>  post-mortem[%s]: network settings <======", t.Name())
+	hostEnv := func(k string) string {
+		if v := os.Getenv(k); v != "" {
+			return v
+		}
+		return "<empty>"
+	}
+	t.Logf("HOST ENV snapshots: PROXY env: HTTP_PROXY=%q HTTPS_PROXY=%q NO_PROXY=%q",
+		hostEnv("HTTP_PROXY"), hostEnv("HTTPS_PROXY"), hostEnv("NO_PROXY"))
 	for _, n := range nodes {
 		machine := profile
 		if n != profile {
@@ -435,6 +443,7 @@ func VolumeSnapshotWait(ctx context.Context, t *testing.T, profile string, ns st
 }
 
 // Status returns a minikube component status as a string
+// If the command outputs multiple lines, only the first line is returned to avoid https://github.com/kubernetes/minikube/issues/21326
 func Status(ctx context.Context, t *testing.T, path string, profile string, key string, node string) string {
 	t.Helper()
 	// Reminder of useful keys: "Host", "Kubelet", "APIServer"
@@ -442,7 +451,15 @@ func Status(ctx context.Context, t *testing.T, path string, profile string, key 
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
-	return strings.TrimSpace(rr.Stdout.String())
+	out := strings.TrimSpace(rr.Stdout.String())
+	if out == "" {
+		return out
+	}
+	// Take only the first line if multi-line (ignore warnings or extra notes)
+	if idx := strings.IndexByte(out, '\n'); idx >= 0 {
+		out = out[:idx]
+	}
+	return strings.TrimSpace(out)
 }
 
 // showPodLogs logs debug info for pods
