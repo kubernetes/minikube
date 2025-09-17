@@ -58,6 +58,11 @@ var (
 				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
 			},
 		},
+		"deploy/kicbase/Dockerfile": {
+			Replace: map[string]string{
+				`CRICTL_VERSION=.*`: `CRICTL_VERSION="{{.Version}}"`,
+			},
+		},
 	}
 )
 

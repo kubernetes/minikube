@@ -18,8 +18,8 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
-# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20250819"
+# this ARG needs to be global to use it in `FROM`
+ARG DEBIAN_BOOKWORM_IMAGE="debian:bookworm-slim"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.24.6 as auto-pause
 WORKDIR /src
@@ -37,12 +37,13 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 22.04, this image is reasonably small as a starting point
+# start from debian 12 (bookworm), this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
+FROM ${DEBIAN_BOOKWORM_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.18.1"
-ARG CRIO_VERSION="1.24"
+ARG CRIO_VERSION="v1.34"
+ARG CRICTL_VERSION="v1.34.0"
 ARG CRI_DOCKERD_VERSION="v0.4.0"
 ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -108,7 +109,11 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
+    && if [ -f /usr/lib/systemd/system/systemd-tmpfiles-clean.timer ]; then \
+         sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'; \
+       elif [ -f /lib/systemd/system/systemd-tmpfiles-clean.timer ]; then \
+         sed -i /lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'; \
+       fi \
  && echo "Disabling udev" \
     && systemctl disable udev.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
@@ -153,9 +158,9 @@ RUN export ARCH=$(dpkg --print-architecture) \
     fi
 
 # install docker
-RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu jammy stable' > /etc/apt/sources.list.d/docker.list" && \
-    curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
-    apt-key add - < docker.key && \
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/docker-archive-keyring.gpg && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable' > /etc/apt/sources.list.d/docker.list" && \
     clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
@@ -189,11 +194,12 @@ RUN clean-install podman && \
 
 # install cri-o dependencies:
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key | \
+        gpg --dearmor --yes -o /etc/apt/keyrings/libcontainers-archive-keyring.gpg && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit conmon cri-tools crun; \
+        clean-install catatonit conmon crun; \
     else \
         clean-install conmon crun; \
     fi
@@ -205,12 +211,31 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
+# install crictl
+RUN export ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+      amd64) CRICTL_ARCH="amd64" ;; \
+      arm64) CRICTL_ARCH="arm64" ;; \
+      armhf) CRICTL_ARCH="arm" ;; \
+      ppc64el) CRICTL_ARCH="ppc64le" ;; \
+      s390x) CRICTL_ARCH="s390x" ;; \
+      *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
+    esac && \
+    curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+    tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+    rm -f /tmp/crictl.tgz && \
+    chmod +x /usr/local/bin/crictl && \
+    if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi
+
+# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.34/install.md#install-packaged-versions-of-cri-o
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+        mkdir -p /etc/apt/keyrings && \
+        curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}/deb/Release.key | \
+            gpg --dearmor --yes -o /etc/apt/keyrings/cri-o-archive-keyring.gpg && \
+        sh -c "echo 'deb [signed-by=/etc/apt/keyrings/cri-o-archive-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}/deb/ /' > /etc/apt/sources.list.d/isv:cri-o:stable:${CRIO_VERSION}.list" && \
+        clean-install cri-o cri-o-runc; \
+    fi
 
 # install NVIDIA container toolkit
 RUN export ARCH=$(dpkg --print-architecture) && \
@@ -240,7 +265,7 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 RUN systemctl disable containerd
 # disable crio for archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm /etc/crictl.yaml; fi
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default

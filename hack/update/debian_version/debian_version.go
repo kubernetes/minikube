@@ -29,36 +29,41 @@ var (
 	schema = map[string]update.Item{
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`UBUNTU_JAMMY_IMAGE=.*`: `UBUNTU_JAMMY_IMAGE="{{.LatestVersion}}"`,
+				`DEBIAN_BOOKWORM_IMAGE=.*`: `DEBIAN_BOOKWORM_IMAGE="{{.LatestVersion}}"`,
 			},
 		},
 	}
 )
 
-// Data holds latest Ubuntu jammy version in semver format.
+// Data holds the latest Debian bookworm slim tag.
 type Data struct {
 	LatestVersion string
 }
 
-func latestJammyTag(tags []string) (string, error) {
+func latestBookwormSlimTag(tags []string) (string, error) {
 	for _, tag := range tags {
-		if strings.Contains(tag, "jammy-") {
+		if strings.HasPrefix(tag, "bookworm-") && strings.HasSuffix(tag, "-slim") {
 			return tag, nil
 		}
 	}
-	return "", fmt.Errorf("no tag found that matches: jammy-")
+	for _, tag := range tags {
+		if tag == "bookworm-slim" {
+			return tag, nil
+		}
+	}
+	return "", fmt.Errorf("no tag found that matches: bookworm-*-slim")
 }
 
 func main() {
-	tags, err := update.ImageTagsFromDockerHub("library/ubuntu")
+	tags, err := update.ImageTagsFromDockerHub("library/debian")
 	if err != nil {
 		klog.Fatal(err)
 	}
-	jammyTag, err := latestJammyTag(tags)
+	bookwormTag, err := latestBookwormSlimTag(tags)
 	if err != nil {
 		klog.Fatal(err)
 	}
-	data := Data{LatestVersion: fmt.Sprintf("ubuntu:%s", jammyTag)}
+	data := Data{LatestVersion: fmt.Sprintf("debian:%s", bookwormTag)}
 
 	update.Apply(schema, data)
 }
