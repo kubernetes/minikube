@@ -25,10 +25,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
@@ -84,8 +86,7 @@ func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string)
 	defer PostMortemLogs(t, profile)
 
 	// Reuse the minikube instance started by validateStartNoK8S.
-	homeDir := os.Getenv("HOME")
-	cachePath := filepath.Join(homeDir, ".minikube", "cache", "linux", "amd64", "v0.0.0")
+	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
 
 	if _, err := os.Stat(cachePath); err == nil {
 		t.Fatalf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
