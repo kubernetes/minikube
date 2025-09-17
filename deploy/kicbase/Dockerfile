@@ -142,7 +142,7 @@ RUN clean-install \
     sudo \
     openssh-server \
     dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
+    # # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
 
 # Install nerdctl and nerdctld
@@ -199,9 +199,9 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
         gpg --dearmor --yes -o /etc/apt/keyrings/libcontainers-archive-keyring.gpg && \
     sh -c "echo 'deb [signed-by=/etc/apt/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit conmon crun; \
+        clean-install catatonit crun; \
     else \
-        clean-install conmon crun; \
+        clean-install crun; \
     fi
 
 # install containernetworking-plugins
