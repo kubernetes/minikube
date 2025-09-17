@@ -71,12 +71,15 @@ if ! make release-iso 2>&1 | tee iso-logs.txt; then
 
   # Only comment on non-release; default release=false if unset
   if [[ ${release:-false} != "true" ]]; then
-    gh pr comment "${ghprbPullId}" --body "$(cat <<'MSG'
-Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
-See the logs at:
-https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
-MSG
-)"
+	body="$(cat <<'EOF'
+	Hi ${ghprbPullAuthorLoginMention}, building a new ISO failed for Commit ${ghprbActualCommit}
+	See the logs at:
+	https://storage.cloud.google.com/minikube-builds/logs/${ghprbPullId}/${ghprbActualCommit::7}/iso_build.txt
+	EOF
+	"
+
+	gh pr comment "${ghprbPullId}" --body "$body"
+
   fi
   exit "$ec"
 fi
