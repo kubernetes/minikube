@@ -596,6 +596,10 @@ func PullImages(images []string, profile *config.Profile) error {
 			err = pullImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
+				// Rate limit check
+				if strings.Contains(err.Error(), "429 Too Many Requests") {
+					klog.Warningf("Docker Hub rate limit reached for profile %s. See: https://www.docker.com/increase-rate-limit", pName)
+				}
 				klog.Warningf("Failed to pull images for profile %s %v", pName, err.Error())
 				continue
 			}
