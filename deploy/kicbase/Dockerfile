@@ -49,6 +49,7 @@ ARG CNI_PLUGINS_VERSION="v1.4.0"
 ARG TARGETARCH
 ARG NERDCTL_VERSION="1.7.7"
 ARG NERDCTLD_VERSION="0.6.1"
+ARG CRICTL_VERSION="v1.34.0"
 
 # copy in static files (configs, scripts)
 COPY deploy/kicbase/10-network-security.conf /etc/sysctl.d/10-network-security.conf
@@ -156,6 +157,22 @@ HostkeyAlgorithms +ssh-rsa
 PubkeyAuthentication yes
 PasswordAuthentication no
 EOF
+
+
+RUN ARCH="$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/; s/armhf/arm/')"; \
+    base="https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}"; \
+    tgz="crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"; \
+    curl -fsSL --retry 3 "${base}/${tgz}" -o "/tmp/${tgz}"; \
+    # verify if checksum exists for this arch
+    if curl -fsSL --retry 3 "${base}/${tgz}.sha256" -o "/tmp/${tgz}.sha256"; then \
+      (cd /tmp && sha256sum -c "${tgz}.sha256"); \
+    else \
+      echo "⚠️  no checksum for ${tgz}; skipping verify"; \
+    fi; \
+    tar -xzf "/tmp/${tgz}" -C /tmp; \
+    install -m 0755 /tmp/crictl /usr/local/bin/crictl; \
+    rm -f "/tmp/${tgz}" "/tmp/${tgz}.sha256" /tmp/crictl
+
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
