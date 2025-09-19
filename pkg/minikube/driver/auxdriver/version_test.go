@@ -17,37 +17,117 @@ limitations under the License.
 package auxdriver
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/blang/semver/v4"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
-func Test_minDriverVersion(t *testing.T) {
-
+func TestMinAcceptableDriverVersion(t *testing.T) {
 	tests := []struct {
-		desc   string
-		driver string
-		mkV    string
-		want   semver.Version
+		desc            string
+		driver          string
+		minikubeVersion string
+		wantedVersion   semver.Version
 	}{
 		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
-		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
-		{"KVM2", driver.KVM2, "1.1.1", v("1.1.1")},
+		{"Invalid", "_invalid_", "1.1.1", semanticVersion("1.1.1")},
+		{"KVM2", driver.KVM2, "1.1.1", semanticVersion("1.1.1")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			if got := minAcceptableDriverVersion(tt.driver, v(tt.mkV)); !got.EQ(tt.want) {
-				t.Errorf("Invalid min supported version, got: %v, want: %v", got, tt.want)
+			if got := minAcceptableDriverVersion(tt.driver, semanticVersion(tt.minikubeVersion)); !got.EQ(tt.wantedVersion) {
+				t.Errorf("Invalid min acceptable driver version, got: %v, want: %v", got, tt.wantedVersion)
 			}
 		})
 	}
 }
 
-func v(s string) semver.Version {
+func semanticVersion(s string) semver.Version {
 	r, err := semver.New(s)
 	if err != nil {
 		panic(err)
 	}
 	return *r
+}
+
+func TestDriverVersion(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		path := buildTestDriver(t, "valid")
+		v, err := driverVersion(path)
+		if err != nil {
+			t.Fatalf("failed to get driver version: %s", err)
+		}
+		expected := Version{Version: "v1.2.3", Commit: "1af8bdc072232de4b1fec3b6cc0e8337e118bc83"}
+		if v != expected {
+			t.Errorf("Invalid driver version, got: %v, want: %v", v, expected)
+		}
+	})
+
+	t.Run("no version", func(t *testing.T) {
+		path := buildTestDriver(t, "no-version")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing version did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("no commit", func(t *testing.T) {
+		path := buildTestDriver(t, "no-commit")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing commit did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		path := buildTestDriver(t, "invalid")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("invalid yaml did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		path := buildTestDriver(t, "fail")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("failing driver did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "driver.exe")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing driver did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+}
+
+func buildTestDriver(t *testing.T, name string) string {
+	out := filepath.Join(t.TempDir(), name)
+	if runtime.GOOS == "windows" {
+		out += ".exe"
+	}
+
+	cmd := exec.Command("go", "build", "-o", out, "testdata/driver.go")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	t.Logf("Building %q", out)
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	return out
 }

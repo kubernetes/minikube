@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -37,20 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
-
-func newAuxUnthealthyError(path string) error {
-	return fmt.Errorf(`failed to execute auxiliary version command "%s --version"`, path)
-}
-
-func newAuxNotFoundError(name, path string) error {
-	return fmt.Errorf("auxiliary driver %s not found in path %s", name, path)
-}
-
-// ErrAuxDriverVersionCommandFailed indicates the aux driver 'version' command failed to run
-var ErrAuxDriverVersionCommandFailed error
-
-// ErrAuxDriverVersionNotinPath was not found in PATH
-var ErrAuxDriverVersionNotinPath error
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
@@ -134,55 +119,30 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 }
 
 // validateDriver validates if a driver appears to be up-to-date and installed properly
-func validateDriver(executable string, v semver.Version) (string, error) {
+func validateDriver(executable string, minimalVersion semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
-		klog.Warningf("driver not in path : %s, %v", path, err.Error())
-		ErrAuxDriverVersionNotinPath = newAuxNotFoundError(executable, path)
-		return path, ErrAuxDriverVersionNotinPath
+		return path, fmt.Errorf("failed to find driver %q: %w", executable, err)
 	}
 
-	cmd := exec.Command(path, "version")
-	output, err := cmd.CombinedOutput()
+	dv, err := driverVersion(path)
 	if err != nil {
-		klog.Warningf("%s failed: %v: %s", cmd, err, output)
-		ErrAuxDriverVersionCommandFailed = newAuxUnthealthyError(path)
-		return path, ErrAuxDriverVersionCommandFailed
+		return path, err
 	}
 
-	ev := extractDriverVersion(string(output))
-	if len(ev) == 0 {
-		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
-	}
+	klog.Infof("%s version is %+v", path, dv)
 
-	driverVersion, err := semver.Make(ev)
+	actualVersion, err := semver.Make(strings.TrimPrefix(dv.Version, "v"))
 	if err != nil {
-		return path, errors.Wrap(err, "can't parse driver version")
+		return path, fmt.Errorf("%s: invalid driver version: %w", executable, err)
 	}
-	klog.Infof("%s version is %s", path, driverVersion)
 
-	if driverVersion.LT(v) {
-		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
+	if actualVersion.LT(minimalVersion) {
+		return path, fmt.Errorf("%s is version %s, want %s or later", executable, actualVersion, minimalVersion)
 	}
+
 	return path, nil
-}
-
-// extractDriverVersion extracts the driver version.
-// KVM and Hyperkit drivers support the 'version' command, that display the information as:
-// version: vX.X.X
-// commit: XXXX
-// This method returns the version 'vX.X.X' or empty if the version isn't found.
-func extractDriverVersion(s string) string {
-	versionRegex := regexp.MustCompile(`version:(.*)`)
-	matches := versionRegex.FindStringSubmatch(s)
-
-	if len(matches) != 2 {
-		return ""
-	}
-
-	v := strings.TrimSpace(matches[1])
-	return strings.TrimPrefix(v, "v")
 }
 
 func driverExists(driverName string) bool {
