@@ -39,7 +39,7 @@ import (
 )
 
 func newAuxUnthealthyError(path string) error {
-	return fmt.Errorf(`failed to execute auxiliary version command "%s --version"`, path)
+	return fmt.Errorf(`failed to execute auxiliary version command "%s version"`, path)
 }
 
 func newAuxNotFoundError(name, path string) error {
