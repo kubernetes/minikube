@@ -120,7 +120,7 @@ func fixDriverPermissions(name string, path string, interactive bool) error {
 }
 
 // validateDriver validates if a driver appears to be up-to-date and installed properly
-func validateDriver(executable string, v semver.Version) (string, error) {
+func validateDriver(executable string, minimalVersion semver.Version) (string, error) {
 	klog.Infof("Validating %s, PATH=%s", executable, os.Getenv("PATH"))
 	path, err := exec.LookPath(executable)
 	if err != nil {
@@ -138,14 +138,14 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
 	}
 
-	driverVersion, err := semver.Make(ev)
+	actualVersion, err := semver.Make(ev)
 	if err != nil {
 		return path, fmt.Errorf("%s: invalid driver version: %w", executable, err)
 	}
-	klog.Infof("%s version is %s", path, driverVersion)
+	klog.Infof("%s version is %s", path, actualVersion)
 
-	if driverVersion.LT(v) {
-		return path, fmt.Errorf("%s is version %s, want %s or later", executable, driverVersion, v)
+	if actualVersion.LT(minimalVersion) {
+		return path, fmt.Errorf("%s is version %s, want %s or later", executable, actualVersion, minimalVersion)
 	}
 
 	return path, nil
