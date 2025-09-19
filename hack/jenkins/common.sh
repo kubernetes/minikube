@@ -89,6 +89,13 @@ if [ "$(uname)" = "Darwin" ]; then
   fi
 fi
 
+## set sysctl params for inotify, to avoid "too many open files" errors
+## ref: https://cloud.google.com/kubernetes-engine/distributed-cloud/bare-metal/docs/installing/configure-os/ubuntu
+if [ "$OS" == "linux" ]; then
+  sudo sysctl -w fs.inotify.max_user_instances=8192
+  sudo sysctl -w fs.inotify.max_user_watches=524288
+fi
+
 # We need pstree for the restart cronjobs
 if [ "$(uname)" != "Darwin" ]; then
   sudo apt-get -y install lsof psmisc dnsutils
