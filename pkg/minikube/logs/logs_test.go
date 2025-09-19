@@ -17,6 +17,7 @@ limitations under the License.
 package logs
 
 import (
+	"slices"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -77,14 +78,7 @@ func TestEnabledAddonPods(t *testing.T) {
 	got := enabledAddonPods(cfg)
 	expectedPods := []string{"kubernetes-dashboard", "gcp-auth", "controller_ingress", "storage-provisioner"}
 	for _, expectedPod := range expectedPods {
-		found := false
-		for _, pod := range got {
-			if expectedPod == pod {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(got, expectedPod) {
 			t.Errorf("%q was not found; got = %s", expectedPod, got)
 		}
 	}
