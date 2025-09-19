@@ -328,8 +328,9 @@ EXPOSE 22
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container=docker
-# Debian doesn't put sbin in PATH for rootless users by default (need for kubeadm modprobe)
-ENV PATH="/usr/local/sbin:/usr/sbin:/sbin:${PATH}"
+# Set the full, absolute PATH for all users and services.
+# Do not use ${PATH} here, as the 'scratch' image has no base PATH.
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
