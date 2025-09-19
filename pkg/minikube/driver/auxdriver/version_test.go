@@ -23,7 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
-func Test_minDriverVersion(t *testing.T) {
+func TestMinAcceptableDriverVersion(t *testing.T) {
 
 	tests := []struct {
 		desc   string
@@ -38,7 +38,7 @@ func Test_minDriverVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			if got := minAcceptableDriverVersion(tt.driver, v(tt.mkV)); !got.EQ(tt.want) {
-				t.Errorf("Invalid min supported version, got: %v, want: %v", got, tt.want)
+				t.Errorf("Invalid min acceptable driver version, got: %v, want: %v", got, tt.want)
 			}
 		})
 	}
