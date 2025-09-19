@@ -42,14 +42,14 @@ jobs:
         - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
           with:
             go-version: ${{env.GO_VERSION}}
-            cache: true      
+            cache: true
         - name: Download Dependencies
           run: go mod download
         # needed because pkg/drivers/kvm/domain.go:28:2:
         - name: Install libvirt (Linux)
           if: runner.os == 'Linux'
           run: |
-              sudo apt-get update              
+              sudo apt-get update
               sudo apt-get install -y libvirt-dev
         - name: Install make (Windows)
           if: runner.os == 'Windows'
