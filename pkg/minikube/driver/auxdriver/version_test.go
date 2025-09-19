@@ -17,6 +17,10 @@ limitations under the License.
 package auxdriver
 
 import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -49,4 +53,81 @@ func semanticVersion(s string) semver.Version {
 		panic(err)
 	}
 	return *r
+}
+
+func TestDriverVersion(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		path := buildTestDriver(t, "valid")
+		v, err := driverVersion(path)
+		if err != nil {
+			t.Fatalf("failed to get driver version: %s", err)
+		}
+		expected := Version{Version: "v1.2.3", Commit: "1af8bdc072232de4b1fec3b6cc0e8337e118bc83"}
+		if v != expected {
+			t.Errorf("Invalid driver version, got: %v, want: %v", v, expected)
+		}
+	})
+
+	t.Run("no version", func(t *testing.T) {
+		path := buildTestDriver(t, "no-version")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing version did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("no commit", func(t *testing.T) {
+		path := buildTestDriver(t, "no-commit")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing commit did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		path := buildTestDriver(t, "invalid")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("invalid yaml did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("fail", func(t *testing.T) {
+		path := buildTestDriver(t, "fail")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("failing driver did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "driver.exe")
+		if _, err := driverVersion(path); err == nil {
+			t.Fatalf("missing driver did not fail")
+		} else {
+			t.Logf("expected error: %v", err)
+		}
+	})
+}
+
+func buildTestDriver(t *testing.T, name string) string {
+	out := filepath.Join(t.TempDir(), name)
+	if runtime.GOOS == "windows" {
+		out += ".exe"
+	}
+
+	cmd := exec.Command("go", "build", "-o", out, "testdata/driver.go")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	t.Logf("Building %q", out)
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+
+	return out
 }
