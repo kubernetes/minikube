@@ -4,6 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
+      - .github/workflows/unit-test.yml
       - go.mod
       - '**/*.go'
       - Makefile
@@ -13,6 +14,7 @@ on:
       - '!**/*.json'
   pull_request:
     paths:
+      - .github/workflows/unit-test.yml
       - go.mod
       - '**/*.go'
       - Makefile
