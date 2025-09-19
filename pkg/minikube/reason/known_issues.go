@@ -963,7 +963,7 @@ var guestIssues = []match{
 			Advice:   "Ensure the tmp directory path is writable to the current user.",
 			Issues:   []int{10772},
 		},
-		// copying pub key: docker copy /var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169 into minikube:/home/docker/.ssh/authorized_keys, output: lstat /private/var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169: no such file or directory
+           // copying pub key: docker copy /var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169 into minikube:/root/.ssh/authorized_keys, output: lstat /private/var/folders/s8/wxxccj3x7mncysv_zzm5w_r400h78j/T/tmpf-memory-asset645583169: no such file or directory
 		Regexp: re(`copying pub key:*.* no such file or directory`),
 	},
 	{
@@ -1059,7 +1059,7 @@ var guestIssues = []match{
 			Advice:   "minikube is missing files relating to your guest environment. This can be fixed by running 'minikube delete'",
 			Issues:   []int{9130},
 		},
-		Regexp: re(`id_rsa: no such file or directory`),
+		Regexp: re(`id_ed25519: no such file or directory`),
 	},
 	{
 		Kind: Kind{

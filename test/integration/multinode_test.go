@@ -209,7 +209,7 @@ func validateCopyFileWithMultiNode(ctx context.Context, t *testing.T, profile st
 			if n.Name == n2.Name {
 				continue
 			}
-			fp := path.Join("/home/docker", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
+                   fp := path.Join("/root", fmt.Sprintf("cp-test_%s_%s.txt", n.Name, n2.Name))
 			testCpCmd(ctx, t, profile, n.Name, dstPath, n2.Name, fp)
 		}
 	}

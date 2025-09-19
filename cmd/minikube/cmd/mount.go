@@ -51,7 +51,7 @@ const (
 	nineP                     = "9p"
 	defaultMount9PVersion     = "9p2000.L"
 	mount9PVersionDescription = "Specify the 9p version that the mount should use"
-	defaultMountGID           = "docker"
+       defaultMountGID           = "root"
 	mountGIDDescription       = "Default group id used for the mount"
 	defaultMountIP            = ""
 	mountIPDescription        = "Specify the ip that the mount should be setup on"
@@ -62,7 +62,7 @@ const (
 	mountPortDescription      = "Specify the port that the mount should be setup on, where 0 means any free port."
 	defaultMountType          = nineP
 	mountTypeDescription      = "Specify the mount filesystem type (supported types: 9p)"
-	defaultMountUID           = "docker"
+       defaultMountUID           = "root"
 	mountUIDDescription       = "Default user id used for the mount"
 )
 

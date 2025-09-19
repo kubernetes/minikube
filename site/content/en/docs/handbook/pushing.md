@@ -328,10 +328,10 @@ In order to access containerd, you need to log in as `root`.
 This requires adding the ssh key to `/root/authorized_keys`..
 
 ```console
-docker@minikube:~$ sudo mkdir /root/.ssh
-docker@minikube:~$ sudo chmod 700 /root/.ssh
-docker@minikube:~$ sudo cp .ssh/authorized_keys /root/.ssh/authorized_keys
-docker@minikube:~$ sudo chmod 600 /root/.ssh
+root@minikube:~# mkdir -p /root/.ssh
+root@minikube:~# chmod 700 /root/.ssh
+root@minikube:~# cp .ssh/authorized_keys /root/.ssh/authorized_keys
+root@minikube:~# chmod 600 /root/.ssh/authorized_keys
 ```
 
 Note the flags that are needed for the `ssh` command.
@@ -360,16 +360,16 @@ Images in "k8s.io" namespace are accessible to kubernetes cluster.
 Start the BuildKit daemon, using the containerd backend.
 
 ```console
-docker@minikube:~$ sudo -b buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io
+root@minikube:~# buildkitd --oci-worker=false --containerd-worker=true --containerd-worker-namespace=k8s.io &
 ```
 
 Make the BuildKit socket accessible to the regular user.
 
 ```console
-docker@minikube:~$ sudo groupadd buildkit
-docker@minikube:~$ sudo chgrp -R buildkit /run/buildkit
-docker@minikube:~$ sudo usermod -aG buildkit $USER
-docker@minikube:~$ exit
+root@minikube:~# groupadd buildkit
+root@minikube:~# chgrp -R buildkit /run/buildkit
+root@minikube:~# usermod -aG buildkit $USER
+root@minikube:~# exit
 ```
 
 Note the flags that are needed for the `ssh` command.
