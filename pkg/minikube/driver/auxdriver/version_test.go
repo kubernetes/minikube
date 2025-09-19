@@ -24,27 +24,26 @@ import (
 )
 
 func TestMinAcceptableDriverVersion(t *testing.T) {
-
 	tests := []struct {
-		desc   string
-		driver string
-		mkV    string
-		want   semver.Version
+		desc            string
+		driver          string
+		minikubeVersion string
+		wantedVersion   semver.Version
 	}{
 		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
-		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
-		{"KVM2", driver.KVM2, "1.1.1", v("1.1.1")},
+		{"Invalid", "_invalid_", "1.1.1", semanticVersion("1.1.1")},
+		{"KVM2", driver.KVM2, "1.1.1", semanticVersion("1.1.1")},
 	}
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			if got := minAcceptableDriverVersion(tt.driver, v(tt.mkV)); !got.EQ(tt.want) {
-				t.Errorf("Invalid min acceptable driver version, got: %v, want: %v", got, tt.want)
+			if got := minAcceptableDriverVersion(tt.driver, semanticVersion(tt.minikubeVersion)); !got.EQ(tt.wantedVersion) {
+				t.Errorf("Invalid min acceptable driver version, got: %v, want: %v", got, tt.wantedVersion)
 			}
 		})
 	}
 }
 
-func v(s string) semver.Version {
+func semanticVersion(s string) semver.Version {
 	r, err := semver.New(s)
 	if err != nil {
 		panic(err)
