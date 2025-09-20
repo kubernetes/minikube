@@ -248,8 +248,18 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	}
 
 	out.Step(style.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
-	url := remoteTarballURL(k8sVersion, containerRuntime)
+	state, ok := getPreloadState(k8sVersion, containerRuntime)
+	source := preloadSourceGCS
+	if ok {
+		switch state.source {
+		case preloadSourceGitHub:
+			source = preloadSourceGitHub
+		case preloadSourceGCS:
+			source = preloadSourceGCS
+		}
+	}
 
+	url := remoteTarballURL(k8sVersion, containerRuntime, source)
 	checksum, err := getChecksum(k8sVersion, containerRuntime)
 	var realPath string
 	if err != nil {
@@ -282,7 +292,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	}
 
 	// If the download was successful, mark off that the preload exists in the cache.
-	setPreloadState(k8sVersion, containerRuntime, true)
+	setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: source})
 	return nil
 }
 
