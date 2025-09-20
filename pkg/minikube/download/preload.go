@@ -113,6 +113,15 @@ func remoteTarballURLGitHub(k8sVersion, containerRuntime string) string {
 	return fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", PreloadGitHubRepo, PreloadVersion, TarballName(k8sVersion, containerRuntime))
 }
 
+func remoteTarballURL(k8sVersion, containerRuntime string, source preloadSource) string {
+	switch source {
+	case preloadSourceGitHub:
+		return remoteTarballURLGitHub(k8sVersion, containerRuntime)
+	default:
+		return remoteTarballURLGCS(k8sVersion, containerRuntime)
+	}
+}
+
 func setPreloadState(k8sVersion, containerRuntime string, value bool) {
 	cRuntimes, ok := preloadStates[k8sVersion]
 	if !ok {
