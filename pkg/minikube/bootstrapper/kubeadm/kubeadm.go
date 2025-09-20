@@ -228,6 +228,17 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
+	fmt.Println("---->DEBUG <----")
+	dd, _ := k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /etc/environment"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo echo $PATH"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo -E echo $PATH"))
+	fmt.Println(dd.Output())
+	fmt.Println("---->/DEBUG END <----")
+
 	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	c.Stdout = kw
@@ -649,16 +660,6 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
 	}
-	fmt.Println("---->DEBUG <----")
-	if r, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH")); err != nil {
-		fmt.Println(r.Output())
-	}
-
-	if r, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /etc/environment")); err != nil {
-		fmt.Println(r.Output())
-	}
-
-	fmt.Println("---->/DEBUG END <----")
 
 	baseCmd := fmt.Sprintf("%s init", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion))
 	cmds := []string{
