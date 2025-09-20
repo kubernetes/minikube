@@ -141,8 +141,7 @@ func getPreloadState(k8sVersion, containerRuntime string) (preloadState, bool) {
 	return preloadState{}, false
 }
 
-var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
-	url := remoteTarballURL(k8sVersion, containerRuntime)
+func remotePreloadExists(url string) bool {
 	resp, err := http.Head(url)
 	if err != nil {
 		klog.Warningf("%s fetch error: %v", url, err)
@@ -157,6 +156,16 @@ var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
 
 	klog.Infof("Found remote preload: %s", url)
 	return true
+}
+
+var checkRemotePreloadExistsGCS = func(k8sVersion, containerRuntime string) bool {
+	url := remoteTarballURLGCS(k8sVersion, containerRuntime)
+	return remotePreloadExists(url)
+}
+
+var checkRemotePreloadExistsGitHub = func(k8sVersion, containerRuntime string) bool {
+	url := remoteTarballURLGitHub(k8sVersion, containerRuntime)
+	return remotePreloadExists(url)
 }
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
