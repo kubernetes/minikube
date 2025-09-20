@@ -184,7 +184,13 @@ func testImageToCache(t *testing.T) {
 }
 
 // Validates that preload existence checks correctly caches values retrieved by remote checks.
-// Validates that preload existence checks correctly caches values retrieved by remote checks.
+// testPreloadExistsCaching verifies the caching semantics of PreloadExists when
+// the local cache is absent and remote existence checks are required.
+// In summary, this test enforces that:
+// - PreloadExists performs remote checks only on cache misses.
+// - Negative and positive results are cached per (k8sVersion, containerVersion, runtime) key.
+// - GitHub is only consulted when GCS reports the preload as not existing.
+// - Global state is correctly restored after the test.
 func testPreloadExistsCaching(t *testing.T) {
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("cache not found")
