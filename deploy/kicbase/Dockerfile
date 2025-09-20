@@ -155,6 +155,8 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 EOF
 
+RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment
 
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
@@ -308,14 +310,8 @@ RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
-# ensure sudo uses a PATH that includes sbin, and allow preserving PATH if you use -E
-RUN printf 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"\n' \
-      > /etc/sudoers.d/10-path && chmod 440 /etc/sudoers.d/10-path \
- && printf 'Defaults env_keep += "PATH"\n' \
-      > /etc/sudoers.d/11-keep-path && chmod 440 /etc/sudoers.d/11-keep-path  
 USER docker
 RUN mkdir /home/docker/.ssh
-RUN echo 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> /home/docker/.bashrc
 USER root
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
@@ -334,8 +330,6 @@ EXPOSE 22
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container=docker
-# Debian doesn't include sbin for non root users by default
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
