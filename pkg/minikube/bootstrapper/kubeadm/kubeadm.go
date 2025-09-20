@@ -238,7 +238,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo -E echo $PATH"))
 	fmt.Println(dd.Output())
 	fmt.Println("---->setting path <----")
-	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprint("export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%s:$PATH"), bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion)))
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%s:$PATH"), bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion)))
 	fmt.Println(dd.Output())
 	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH"))
 	fmt.Println(dd.Output())
