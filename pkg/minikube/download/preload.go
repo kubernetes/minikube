@@ -103,9 +103,14 @@ func TarballPath(k8sVersion, containerRuntime string) string {
 	return filepath.Join(targetDir(), TarballName(k8sVersion, containerRuntime))
 }
 
-// remoteTarballURL returns the URL for the remote tarball in GCS
-func remoteTarballURL(k8sVersion, containerRuntime string) string {
+// remoteTarballURLGCS returns the URL for the remote tarball in GCS
+func remoteTarballURLGCS(k8sVersion, containerRuntime string) string {
 	return fmt.Sprintf("https://%s/%s/%s/%s/%s", downloadHost, PreloadBucket, PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
+}
+
+// remoteTarballURLGitHub returns the URL for the remote tarball hosted on GitHub releases
+func remoteTarballURLGitHub(k8sVersion, containerRuntime string) string {
+	return fmt.Sprintf("https://github.com/%s/releases/download/%s/%s", PreloadGitHubRepo, PreloadVersion, TarballName(k8sVersion, containerRuntime))
 }
 
 func setPreloadState(k8sVersion, containerRuntime string, value bool) {
