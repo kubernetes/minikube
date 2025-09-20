@@ -649,6 +649,16 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
 	}
+	fmt.Println("---->DEBUG <----")
+	if r, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH")); err != nil {
+		fmt.Println(r.Output())
+	}
+
+	if r, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /etc/environment")); err != nil {
+		fmt.Println(r.Output())
+	}
+
+	fmt.Println("---->/DEBUG END <----")
 
 	baseCmd := fmt.Sprintf("%s init", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion))
 	cmds := []string{

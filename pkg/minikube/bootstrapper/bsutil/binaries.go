@@ -97,7 +97,7 @@ func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) 
 	return true, nil
 }
 
-// binRoot returns the persistent path binaries are stored in
-func binRoot(version string) string {
+// BinRoot returns the persistent path binaries are stored in
+func BinRoot(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
 }
