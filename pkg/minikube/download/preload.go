@@ -168,6 +168,16 @@ var checkRemotePreloadExistsGitHub = func(k8sVersion, containerRuntime string) b
 	return remotePreloadExists(url)
 }
 
+// PreloadExistsGCS returns true if there is a preloaded tarball in GCS that can be used
+func PreloadExistsGCS(k8sVersion, containerRuntime string) bool {
+	return checkRemotePreloadExistsGCS(k8sVersion, containerRuntime)
+}
+
+// PreloadExistsGH returns true if there is a preloaded tarball in GitHub releases that can be used
+func PreloadExistsGH(k8sVersion, containerRuntime string) bool {
+	return checkRemotePreloadExistsGitHub(k8sVersion, containerRuntime)
+}
+
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload ...bool) bool {
 	// TODO (#8166): Get rid of the need for this and viper at all
