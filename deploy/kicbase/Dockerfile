@@ -315,6 +315,7 @@ RUN printf 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/
       > /etc/sudoers.d/11-keep-path && chmod 440 /etc/sudoers.d/11-keep-path  
 USER docker
 RUN mkdir /home/docker/.ssh
+RUN echo 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> /home/docker/.bashrc
 USER root
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint

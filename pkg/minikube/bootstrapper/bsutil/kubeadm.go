@@ -222,7 +222,8 @@ var KubeadmExtraConfigOpts = []string{
 
 // InvokeKubeadm returns the invocation command for Kubeadm
 func InvokeKubeadm(version string) string {
-	return fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm", binRoot(version))
+	// PATH=/var/lib/minikube/binaries/v1.34.0:$PATH
+	return fmt.Sprintf(`sudo -E PATH=%s:$PATH %s/kubeadm`, binRoot(version), binRoot(version))
 }
 
 // EtcdDataDir is where etcd data is stored.
