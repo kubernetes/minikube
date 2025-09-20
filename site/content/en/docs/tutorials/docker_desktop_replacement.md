@@ -1,5 +1,5 @@
 ---
-title: "Using minikube as Docker Desktop Replacement"                     
+title: "Using minikube as Docker Desktop Replacement"
 linkTitle: "Using minikube as Docker Desktop Replacement"
 weight: 1
 date: 2022-02-02
@@ -12,7 +12,7 @@ date: 2022-02-02
 ## Before You Begin
 - This only works with the `docker` container runtime, not with `containerd` or `crio`.
 
-- You need to start minikube with a VM driver instead of `docker`, such as `hyperkit` on macOS and `hyperv` on Windows.
+- You need to start minikube with a VM driver instead of `docker`, such as `vfkit` on macOS and `hyperv` on Windows.
 
 - Alternatively, you can use the [`minikube image build`]({{< ref "/docs/commands/image#minikube-image-build" >}}) command instead of `minikube docker-env` and `docker build`.
 

@@ -276,31 +276,6 @@ function cleanup_procs() {
         || true
   fi
 
-  # cleaning up stale hyperkits
-  if type -P hyperkit; then
-    for pid in $(pgrep hyperkit); do
-      info=$(ps -f -p "$pid")
-      if [[ $info == *"com.docker.hyperkit"* ]]; then
-        continue
-      fi
-      echo "Killing stale hyperkit $pid"
-      echo "$info" || true
-      kill "$pid" || true
-      kill -9 "$pid" || true
-    done
-  fi
-
-  if [[ "${DRIVER}" == "hyperkit" ]]; then
-    # even though Internet Sharing is disabled in the UI settings, it's still preventing HyperKit from starting
-    # the error is "Could not create vmnet interface, permission denied or no entitlement?"
-    # I've discovered that if you kill the "InternetSharing" process that this resolves the error and HyperKit starts normally
-    sudo pkill InternetSharing
-    if [[ -e out/docker-machine-driver-hyperkit ]]; then
-      sudo chown root:wheel out/docker-machine-driver-hyperkit || true
-      sudo chmod u+s out/docker-machine-driver-hyperkit || true
-    fi
-  fi
-
   kprocs=$(pgrep kubectl || true)
   if [[ "${kprocs}" != "" ]]; then
     echo "error: killing hung kubectl processes ..."
@@ -493,7 +468,7 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-else 
+else
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
   mkdir -p "$REPORTS_PATH"

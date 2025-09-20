@@ -80,7 +80,6 @@ var cfg = Config{
 		"krunkit:":    "Drivers",
 		"kvm:":        "Drivers",
 		"hyperv:":     "Drivers",
-		"hyperkit:":   "Drivers",
 		"vbox:":       "Drivers",
 		"improve":     "Improvements",
 		"translation": "UI",

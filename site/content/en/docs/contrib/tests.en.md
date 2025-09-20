@@ -105,12 +105,6 @@ makes sure that minikube docker-env command works when the runtime is containerd
 ## TestKVMDriverInstallOrUpdate
 makes sure our docker-machine-driver-kvm2 binary can be installed properly
 
-## TestHyperKitDriverInstallOrUpdate
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
-
-## TestHyperkitDriverSkipUpgrade
-makes sure our docker-machine-driver-hyperkit binary can be installed properly
-
 ## TestErrorSpam
 asserts that there are no unexpected errors displayed in minikube command outputs.
 
@@ -798,4 +792,3 @@ upgrades Kubernetes from oldest to newest
 
 ## TestMissingContainerUpgrade
 tests a Docker upgrade where the underlying container is missing
-

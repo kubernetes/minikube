@@ -31,7 +31,6 @@ func Test_minDriverVersion(t *testing.T) {
 		mkV    string
 		want   semver.Version
 	}{
-		{"Hyperkit", driver.HyperKit, "1.1.1", *minHyperkitVersion},
 		{"Invalid", "_invalid_", "1.1.1", v("1.1.1")},
 		{"KVM2", driver.KVM2, "1.1.1", v("1.1.1")},
 	}

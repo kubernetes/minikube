@@ -33,8 +33,6 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -54,7 +52,7 @@ var ErrAuxDriverVersionNotinPath error
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
-	if name != driver.KVM2 && name != driver.HyperKit {
+	if name != driver.KVM2 {
 		return nil
 	}
 
@@ -79,56 +77,9 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 			return err
 		}
 	}
-	if err := fixDriverPermissions(name, path, interactive); err != nil {
-		return err
-	}
 
 	if _, err := validateDriver(executable, minAcceptableDriverVersion(name, v)); err != nil {
 		return err
-	}
-	return nil
-}
-
-// fixDriverPermissions fixes the permissions on a driver
-func fixDriverPermissions(name string, path string, interactive bool) error {
-	if name != driver.HyperKit {
-		return nil
-	}
-
-	// Using the find command for hyperkit is far easier than cross-platform uid checks in Go.
-	stdout, err := exec.Command("find", path, "-uid", "0", "-perm", "4755").Output()
-	klog.Infof("stdout: %s", stdout)
-	if err == nil && strings.TrimSpace(string(stdout)) == path {
-		klog.Infof("%s looks good", path)
-		return nil
-	}
-
-	cmds := []*exec.Cmd{
-		exec.Command("sudo", "chown", "root:wheel", path),
-		exec.Command("sudo", "chmod", "u+s", path),
-	}
-
-	var example strings.Builder
-	for _, c := range cmds {
-		example.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
-	}
-
-	out.Styled(style.Permissions, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", out.V{"driver": name, "example": example.String()})
-	for _, c := range cmds {
-		testArgs := append([]string{"-n"}, c.Args[1:]...)
-		test := exec.Command("sudo", testArgs...)
-		klog.Infof("testing: %v", test.Args)
-		if err := test.Run(); err != nil {
-			klog.Infof("%v may require a password: %v", c.Args, err)
-			if !interactive {
-				return fmt.Errorf("%v requires a password, and --interactive=false", c.Args)
-			}
-		}
-		klog.Infof("running: %v", c.Args)
-		err := c.Run()
-		if err != nil {
-			return errors.Wrapf(err, "%v", c.Args)
-		}
 	}
 	return nil
 }
@@ -169,7 +120,7 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 }
 
 // extractDriverVersion extracts the driver version.
-// KVM and Hyperkit drivers support the 'version' command, that display the information as:
+// KVM driver support the 'version' command, that display the information as:
 // version: vX.X.X
 // commit: XXXX
 // This method returns the version 'vX.X.X' or empty if the version isn't found.

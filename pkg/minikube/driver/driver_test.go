@@ -71,7 +71,6 @@ func TestMachineType(t *testing.T) {
 		VFKit:      "VM",
 		Krunkit:    "VM",
 		VirtualBox: "VM",
-		HyperKit:   "VM",
 		VMware:     "VM",
 		HyperV:     "VM",
 		Parallels:  "VM",
