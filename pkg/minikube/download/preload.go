@@ -195,21 +195,30 @@ func PreloadExists(k8sVersion, containerRuntime, driverName string, forcePreload
 	}
 
 	// If the preload existence is cached, just return that value.
-	if preloadState, ok := preloadStates[k8sVersion][containerRuntime]; ok {
-		return preloadState
+	if state, ok := getPreloadState(k8sVersion, containerRuntime); ok {
+		return state.exists
 	}
 
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion, containerRuntime)
 	if f, err := checkCache(targetPath); err == nil && f.Size() != 0 {
 		klog.Infof("Found local preload: %s", targetPath)
-		setPreloadState(k8sVersion, containerRuntime, true)
+		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceLocal})
 		return true
 	}
 
-	existence := checkRemotePreloadExists(k8sVersion, containerRuntime)
-	setPreloadState(k8sVersion, containerRuntime, existence)
-	return existence
+	if PreloadExistsGCS(k8sVersion, containerRuntime) {
+		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGCS})
+		return true
+	}
+
+	if PreloadExistsGH(k8sVersion, containerRuntime) {
+		setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: preloadSourceGitHub})
+		return true
+	}
+
+	setPreloadState(k8sVersion, containerRuntime, preloadState{exists: false, source: preloadSourceNone})
+	return false
 }
 
 var checkPreloadExists = PreloadExists
