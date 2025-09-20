@@ -44,7 +44,7 @@ var (
 		},
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`ARG CRIO_VERSION=.*`: `ARG CRIO_VERSION="{{.MMVersion}}"`,
+				`ARG CRIO_VERSION=.*`: `ARG CRIO_VERSION="v{{.MMVersion}}"`,
 			},
 		},
 	}

@@ -18,8 +18,8 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
-# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
-ARG UBUNTU_JAMMY_IMAGE="ubuntu:jammy-20250819"
+# this ARG needs to be global to use it in `FROM`
+ARG DEBIAN_BOOKWORM_IMAGE="debian:bookworm-slim"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.24.6 as auto-pause
 WORKDIR /src
@@ -37,12 +37,13 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 22.04, this image is reasonably small as a starting point
+# start from debian 12 (bookworm), this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ${UBUNTU_JAMMY_IMAGE} as kicbase
+FROM ${DEBIAN_BOOKWORM_IMAGE} as kicbase
 
 ARG BUILDKIT_VERSION="v0.18.1"
-ARG CRIO_VERSION="1.24"
+ARG CRIO_VERSION="v1.34"
+ARG CRICTL_VERSION="v1.34.0"
 ARG CRI_DOCKERD_VERSION="v0.4.0"
 ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -108,7 +109,11 @@ RUN echo "Ensuring scripts are executable ..." \
  && echo "Ensuring /etc/kubernetes/manifests" \
     && mkdir -p /etc/kubernetes/manifests \
  && echo "Adjusting systemd-tmpfiles timer" \
-    && sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#' \
+    && if [ -f /usr/lib/systemd/system/systemd-tmpfiles-clean.timer ]; then \
+         sed -i /usr/lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'; \
+       elif [ -f /lib/systemd/system/systemd-tmpfiles-clean.timer ]; then \
+         sed -i /lib/systemd/system/systemd-tmpfiles-clean.timer -e 's#OnBootSec=.*#OnBootSec=1min#'; \
+       fi \
  && echo "Disabling udev" \
     && systemctl disable udev.service \
  && echo "Modifying /etc/nsswitch.conf to prefer hosts" \
@@ -137,8 +142,19 @@ RUN clean-install \
     sudo \
     openssh-server \
     dnsutils \
-    # libglib2.0-0 is required for conmon, which is required for podman
+    # # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
+
+# Add support for rsa1 in sshd
+# TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
+# ubuntu noble doesnt support rsa1 by default, so we need to enable it to support older ssh clients
+RUN cat <<EOF >> /etc/ssh/sshd_config
+PubkeyAcceptedAlgorithms +ssh-rsa
+HostkeyAlgorithms +ssh-rsa
+PubkeyAuthentication yes
+PasswordAuthentication no
+EOF
+
 
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
@@ -153,9 +169,9 @@ RUN export ARCH=$(dpkg --print-architecture) \
     fi
 
 # install docker
-RUN sh -c "echo 'deb https://download.docker.com/linux/ubuntu jammy stable' > /etc/apt/sources.list.d/docker.list" && \
-    curl -L https://download.docker.com/linux/ubuntu/gpg -o docker.key && \
-    apt-key add - < docker.key && \
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/docker-archive-keyring.gpg && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable' > /etc/apt/sources.list.d/docker.list" && \
     clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
@@ -189,13 +205,14 @@ RUN clean-install podman && \
 
 # install cri-o dependencies:
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
-    sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
+    mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key | \
+        gpg --dearmor --yes -o /etc/apt/keyrings/libcontainers-archive-keyring.gpg && \
+    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/libcontainers-archive-keyring.gpg] https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \
     if [ "$ARCH" != "ppc64le" ]; then \
-        clean-install catatonit conmon cri-tools crun; \
+        clean-install catatonit crun; \
     else \
-        clean-install conmon crun; \
+        clean-install crun; \
     fi
 
 # install containernetworking-plugins
@@ -205,12 +222,40 @@ RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/
     tar -xf "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz" -C /opt/cni/bin && \
     rm "cni-plugins-linux-$ARCH-${CNI_PLUGINS_VERSION}.tgz"
 
-# install cri-o based on https://github.com/cri-o/cri-o/blob/release-1.24/README.md#installing-cri-o
+# install crictl
+RUN export ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+      amd64) CRICTL_ARCH="amd64" ;; \
+      arm64) CRICTL_ARCH="arm64" ;; \
+      armhf) CRICTL_ARCH="armhf" ;; \
+      ppc64el) CRICTL_ARCH="ppc64le" ;; \
+      s390x) CRICTL_ARCH="s390x" ;; \
+      *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
+    esac && \
+    if [ "$CRICTL_ARCH" != "armhf" ]; then \
+      curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+      tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+      rm -f /tmp/crictl.tgz && \
+      chmod +x /usr/local/bin/crictl && \
+      if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi; \
+    else \
+      echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
+    fi
+
+# install cri-o from the OBS repositories
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then sh -c "echo 'deb https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable:cri-o:${CRIO_VERSION}.list" && \
-    curl -LO https://downloadcontent.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/${CRIO_VERSION}/xUbuntu_22.04/Release.key && \
-    apt-key add - < Release.key && \
-    clean-install cri-o cri-o-runc; fi
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then \
+        mkdir -p /etc/apt/sources.list.d /etc/apt/trusted.gpg.d && \
+        echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/ /' \
+            > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list && \
+        curl -fsSL https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_12/Release.key \
+            | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_stable.gpg && \
+        echo "deb http://download.opensuse.org/repositories/isv:/cri-o:/stable:/${CRIO_VERSION}:/build/deb/ /" \
+            > "/etc/apt/sources.list.d/isv:cri-o:stable:${CRIO_VERSION}:build.list" && \
+        curl -fsSL "https://download.opensuse.org/repositories/isv:cri-o:stable:${CRIO_VERSION}:build/deb/Release.key" \
+            | gpg --dearmor --yes -o "/etc/apt/trusted.gpg.d/isv_cri-o_stable_${CRIO_VERSION}_build.gpg" && \
+        clean-install cri-o; \
+    fi
 
 # install NVIDIA container toolkit
 RUN export ARCH=$(dpkg --print-architecture) && \
@@ -240,7 +285,7 @@ RUN  chmod +x /var/lib/minikube/scheduled-stop/minikube-scheduled-stop
 RUN systemctl disable containerd
 # disable crio for archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') && \
-    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm /etc/crictl.yaml; fi
+    if [ "$ARCH" != "ppc64le" ] && [ "$ARCH" != "arm-v7" ]; then systemctl disable crio && rm -f /etc/crictl.yaml; fi
 # enable podman socket on archs that support it
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then systemctl enable podman.socket; fi
 # enable docker which is default
@@ -254,13 +299,23 @@ RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
 EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
-RUN adduser --ingroup docker --disabled-password --gecos '' docker
-RUN adduser docker sudo
+# Ensure 'docker' group exists; create a 'docker' user with a shell
+RUN groupadd -f docker \
+ && useradd -m -s /bin/bash -g docker docker \
+ && usermod -aG sudo,docker docker
+ # Ensure the account is usable for key-only SSH - unlock the account, and disable password
+RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+# ensure sudo uses a PATH that includes sbin, and allow preserving PATH if you use -E
+RUN printf 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"\n' \
+      > /etc/sudoers.d/10-path && chmod 440 /etc/sudoers.d/10-path \
+ && printf 'Defaults env_keep += "PATH"\n' \
+      > /etc/sudoers.d/11-keep-path && chmod 440 /etc/sudoers.d/11-keep-path  
 USER docker
 RUN mkdir /home/docker/.ssh
+RUN echo 'export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> /home/docker/.bashrc
 USER root
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
@@ -279,6 +334,8 @@ EXPOSE 22
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container=docker
+# Debian doesn't include sbin for non root users by default
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
