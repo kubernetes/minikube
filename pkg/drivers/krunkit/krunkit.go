@@ -274,7 +274,7 @@ func (d *Driver) openLogfile() (*os.File, error) {
 	return os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
 }
 
-// TODO: duplicate from vfkit and hyperkit:
+// TODO: duplicate from vfkit:
 // https://github.com/kubernetes/minikube/issues/21093
 func (d *Driver) setupIP(mac string) error {
 	var err error

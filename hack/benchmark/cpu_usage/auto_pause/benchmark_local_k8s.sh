@@ -249,7 +249,7 @@ main() {
 
     # test different drivers
     if [[ "${OS}" == "Darwin" ]]; then
-      drivers=(docker hyperkit virtualbox)
+      drivers=(docker virtualbox)
     elif [[ "${OS}" == "Linux" ]]; then
       drivers=(docker kvm2 virtualbox)
     fi

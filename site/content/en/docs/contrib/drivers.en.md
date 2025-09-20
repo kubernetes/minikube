@@ -20,7 +20,6 @@ Most drivers are built-in: they are included into minikube as a code dependency,
 installation is required. There are two primary cases you may want to use an external driver:
 
 - The driver has a code dependency which minikube should not rely on due to platform incompatibilities (kvm2) or licensing
-- The driver needs to run with elevated permissions (hyperkit)
 
 External drivers are instantiated by executing a command `docker-machine-driver-<name>`, which begins an RPC server which minikube will talk to.
 

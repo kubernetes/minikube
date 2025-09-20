@@ -182,10 +182,10 @@ var hostIssues = []match{
 			ID:       "HOST_CGROUP_NOT_SUPPORTED",
 			ExitCode: ExHostUnsupported,
 			Advice: `CGroup allocation is not available in your environment. You might be running minikube in a nested container. Try running:
-			
+
 	minikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
 
-			
+
 			`,
 			Issues: []int{12232},
 		},
@@ -197,10 +197,10 @@ var hostIssues = []match{
 			ID:       "HOST_ROOT_CGROUP",
 			ExitCode: ExHostUnsupported,
 			Advice: `CGroup allocation is not available in your environment, You might be running minikube in a nested container. Try running:
-			
+
 	minikube start --extra-config=kubelet.cgroups-per-qos=false --extra-config=kubelet.enforce-node-allocatable=""
 
-			
+
 			`,
 			Issues: []int{12232},
 		},
@@ -337,50 +337,6 @@ or
 		},
 		GOOS:   []string{"windows"},
 		Regexp: re(`Post "http://ipc/filesharing/share": context deadline exceeded`),
-	},
-
-	// Hyperkit hypervisor
-	{
-		Kind: Kind{
-			ID:       "PR_HYPERKIT_NO_IP",
-			ExitCode: ExProviderError,
-			Advice:   "Install the latest hyperkit binary, and run 'minikube delete'",
-			URL:      "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
-			Issues:   []int{1926, 4206},
-		},
-		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
-		GOOS:   []string{"darwin"},
-	},
-	{
-		Kind: Kind{
-			ID:       "PR_HYPERKIT_NOT_FOUND",
-			ExitCode: ExProviderNotFound,
-			Advice:   "Please install the minikube hyperkit VM driver, or select an alternative --driver",
-			URL:      "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
-		},
-		Regexp: re(`Driver "hyperkit" not found.`),
-		GOOS:   []string{"darwin"},
-	},
-	{
-		Kind: Kind{
-			ID:       "PR_HYPERKIT_VMNET_FRAMEWORK",
-			ExitCode: ExProviderError,
-			Advice: `Hyperkit networking is broken. Try disabling Internet Sharing: System Preference > Sharing > Internet Sharing. 
-Alternatively, you can try upgrading to the latest hyperkit version, or using an alternate driver.`,
-			Issues: []int{6028, 5594},
-		},
-		Regexp: re(`error from vmnet.framework: -1`),
-		GOOS:   []string{"darwin"},
-	},
-	{
-		Kind: Kind{
-			ID:       "PR_HYPERKIT_CRASHED",
-			ExitCode: ExProviderError,
-			Advice:   "Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver",
-			Issues:   []int{6079, 5780},
-		},
-		Regexp: re(`hyperkit crashed!`),
-		GOOS:   []string{"darwin"},
 	},
 
 	// Hyper-V hypervisor
@@ -709,15 +665,6 @@ var driverIssues = []match{
 		},
 		Regexp: re(`Unable to remove machine directory`),
 		GOOS:   []string{"windows"},
-	},
-
-	// HyperKit
-	{
-		Kind: Kind{
-			ID:       "DRV_HYPERKIT_RENEWAL",
-			ExitCode: ExDriverError,
-		},
-		Regexp: re(`new-ing Hyperkit`),
 	},
 
 	// KVM
