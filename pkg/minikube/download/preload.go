@@ -47,10 +47,26 @@ const (
 	PreloadVersion = "v18"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
+	// PreloadGitHubRepo is the GitHub repo that hosts the preload artifacts
+	PreloadGitHubRepo = "kubernetes/minikube-preloads"
 )
 
+type preloadSource string
+
+const (
+	preloadSourceNone   preloadSource = ""
+	preloadSourceLocal  preloadSource = "local"
+	preloadSourceGCS    preloadSource = "gcs"
+	preloadSourceGitHub preloadSource = "github"
+)
+
+type preloadState struct {
+	exists bool
+	source preloadSource
+}
+
 var (
-	preloadStates = make(map[string]map[string]bool)
+	preloadStates = make(map[string]map[string]preloadState)
 )
 
 // TarballName returns name of the tarball
