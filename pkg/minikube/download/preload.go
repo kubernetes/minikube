@@ -122,13 +122,23 @@ func remoteTarballURL(k8sVersion, containerRuntime string, source preloadSource)
 	}
 }
 
-func setPreloadState(k8sVersion, containerRuntime string, value bool) {
+func setPreloadState(k8sVersion, containerRuntime string, state preloadState) {
 	cRuntimes, ok := preloadStates[k8sVersion]
 	if !ok {
-		cRuntimes = make(map[string]bool)
+		cRuntimes = make(map[string]preloadState)
 		preloadStates[k8sVersion] = cRuntimes
 	}
-	cRuntimes[containerRuntime] = value
+	cRuntimes[containerRuntime] = state
+}
+
+func getPreloadState(k8sVersion, containerRuntime string) (preloadState, bool) {
+	if cRuntimes, ok := preloadStates[k8sVersion]; ok {
+		state, ok := cRuntimes[containerRuntime]
+		if ok {
+			return state, true
+		}
+	}
+	return preloadState{}, false
 }
 
 var checkRemotePreloadExists = func(k8sVersion, containerRuntime string) bool {
