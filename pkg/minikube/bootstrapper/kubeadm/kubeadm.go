@@ -237,6 +237,17 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	fmt.Println(dd.Output())
 	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo -E echo $PATH"))
 	fmt.Println(dd.Output())
+	fmt.Println("---->setting path <----")
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprint("export PATH=$PATH:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%s:$PATH")),bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion)))
+	fmt.Println(dd.Output())
+	dd, _ := k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /etc/environment"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo echo $PATH"))
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo -E echo $PATH"))
+	fmt.Println(dd.Output())
 	fmt.Println("---->/DEBUG END <----")
 
 	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
