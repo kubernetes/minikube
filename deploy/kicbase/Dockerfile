@@ -17,11 +17,10 @@
 # For systemd + docker configuration used below, see the following references:
 # https://systemd.io/CONTAINER_INTERFACE/
 
-
 # this ARG needs to be global to use it in `FROM`
 ARG DEBIAN_BOOKWORM_IMAGE="debian:bookworm-slim"
 # multi-stage docker build so we can build auto-pause for arm64
-FROM golang:1.24.6 as auto-pause
+FROM golang:1.24.6 AS auto-pause
 WORKDIR /src
 # auto-pause depends on core minikube code so we need to pass the whole source code as the context
 # copy in the minimal amount of source code possible
@@ -39,7 +38,7 @@ RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go bui
 
 # start from debian 12 (bookworm), this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
-FROM ${DEBIAN_BOOKWORM_IMAGE} as kicbase
+FROM ${DEBIAN_BOOKWORM_IMAGE} AS kicbase
 
 ARG BUILDKIT_VERSION="v0.18.1"
 ARG CRIO_VERSION="v1.34"
@@ -168,10 +167,15 @@ RUN export ARCH=$(dpkg --print-architecture) \
     fi
 
 # install docker
-RUN mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor --yes -o /etc/apt/keyrings/docker-archive-keyring.gpg && \
-    sh -c "echo 'deb [signed-by=/etc/apt/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable' > /etc/apt/sources.list.d/docker.list" && \
-    clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
+## ref: https://docs.docker.com/engine/install/debian/#install-using-the-repository
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && clean-install docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 # install buildkit
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/' | sed 's/armhf/arm-v7/') \
@@ -292,30 +296,37 @@ RUN systemctl enable docker.service
 # making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
-# Ensure sudo uses a secure_path that includes sbin
-RUN printf 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"\n' \
-      > /etc/sudoers.d/10-secure-path && chmod 0440 /etc/sudoers.d/10-secure-path
-
-# If you *also* want to allow PATH from the caller when using `-E`:
-RUN printf 'Defaults env_keep += "PATH"\n' \
-      > /etc/sudoers.d/11-keep-path && chmod 0440 /etc/sudoers.d/11-keep-path
 
 # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
-EXPOSE 22
 # create docker user for minikube ssh. to match VM using "docker" as username
 # Ensure 'docker' group exists; create a 'docker' user with a shell
+## ref: https://docs.docker.com/engine/install/linux-postinstall/
 RUN groupadd -f docker \
- && useradd -m -s /bin/bash -g docker docker \
- && usermod -aG sudo,docker docker
- # Ensure the account is usable for key-only SSH - unlock the account, and disable password
+    && useradd -m -s /bin/bash -g docker -G sudo docker
+# Ensure the account is usable for key-only SSH - unlock the account, and disable password
 RUN usermod -p '*' docker && passwd -u docker && passwd -d docker
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && if [ "$ARCH" != "ppc64le" ]; then adduser docker podman; fi
 RUN adduser docker buildkit
-RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/20-passwordless-sudo \
+    && chmod 0440 /etc/sudoers.d/20-passwordless-sudo
 USER docker
 RUN mkdir /home/docker/.ssh
+## sshd initially sets the PATH to its own default value that it was compiled with
+## ref: https://wiki.debian.org/EnvironmentVariables#Using_text_console_or_remote_ssh
+##   $ minikube ssh -- grep PATH /etc/ssh/sshd_config
+##     This sshd was compiled with PATH=/usr/local/bin:/usr/bin:/bin:/usr/games
+## sshd then calls .bashrc, but .bashrc only does something if running interactively:
+##   $ minikube ssh -- grep interactive -A4 '$HOME/.bashrc'
+##     If not running interactively, don't do anything
+##     case $- in
+##         *i*) ;;
+##           *) return;;
+##     esac
+## so we add adjust PATH before that check:
+RUN sed -i '1 i\PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"' /home/docker/.bashrc
+
 USER root
 # kind base-image entry-point expects a "kind" folder for product_name,product_uuid
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
@@ -334,7 +345,6 @@ EXPOSE 22
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container=docker
-ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH}"
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
