@@ -1260,3 +1260,5 @@ get-dependency-version:
 .PHONY: _update-all
 _update-all:
 	@(cd hack && go run update/update_all/update_all.go)
+
+include tests/e2e/e2e.mk
