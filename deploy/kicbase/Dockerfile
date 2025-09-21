@@ -155,9 +155,6 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 EOF
 
-RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
-RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment
-
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
@@ -295,7 +292,14 @@ RUN systemctl enable docker.service
 # making SSH work for docker container
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 RUN mkdir /var/run/sshd
-RUN sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config
+# Ensure sudo uses a secure_path that includes sbin
+RUN printf 'Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"\n' \
+      > /etc/sudoers.d/10-secure-path && chmod 0440 /etc/sudoers.d/10-secure-path
+
+# If you *also* want to allow PATH from the caller when using `-E`:
+RUN printf 'Defaults env_keep += "PATH"\n' \
+      > /etc/sudoers.d/11-keep-path && chmod 0440 /etc/sudoers.d/11-keep-path
+
 # minikube relies on /etc/hosts for control-plane discovery. This prevents nefarious DNS servers from breaking it.
 RUN sed -ri 's/dns files/files dns/g' /etc/nsswitch.conf
 
@@ -330,6 +334,7 @@ EXPOSE 22
 # tell systemd that it is in docker (it will check for the container env)
 # https://systemd.io/CONTAINER_INTERFACE/
 ENV container=docker
+ENV PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin${PATH:+:$PATH}"
 # systemd exits on SIGRTMIN+3, not SIGTERM (which re-executes it)
 # https://bugzilla.redhat.com/show_bug.cgi?id=1201657
 STOPSIGNAL SIGRTMIN+3
