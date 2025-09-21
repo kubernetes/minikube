@@ -224,7 +224,7 @@ var KubeadmExtraConfigOpts = []string{
 // InvokeKubeadm returns the invocation command for Kubeadm
 func InvokeKubeadm(version string) string {
 	// PATH=/var/lib/minikube/binaries/v1.34.0:$PATH
-	prefix := []string{BinRoot(version), "/usr/sbin"}
+	prefix := []string{binRoot(version), "/usr/sbin"}
 	return fmt.Sprintf("sudo env PATH=\"%s:$PATH\" kubeadm", strings.Join(prefix, ":"))
 }
 

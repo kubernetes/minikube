@@ -140,7 +140,7 @@ func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	}{
 		ExtraOptions:     convertToFlags(extraOpts),
 		ContainerRuntime: k8s.ContainerRuntime,
-		KubeletPath:      path.Join(BinRoot(k8s.KubernetesVersion), "kubelet"),
+		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
 	}
 	if err := ktmpl.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return nil, err
@@ -152,7 +152,7 @@ func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 // NewKubeletService returns a generated systemd unit file for the kubelet
 func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	var b bytes.Buffer
-	opts := struct{ KubeletPath string }{KubeletPath: path.Join(BinRoot(cfg.KubernetesVersion), "kubelet")}
+	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
 	if err := ktmpl.KubeletServiceTemplate.Execute(&b, opts); err != nil {
 		return nil, errors.Wrap(err, "template execute")
 	}
