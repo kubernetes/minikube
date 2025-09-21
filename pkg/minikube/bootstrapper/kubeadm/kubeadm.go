@@ -229,14 +229,14 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	defer cancel()
 	kr, kw := io.Pipe()
 	fmt.Println("---->DEBUG <----")
-	// fmt.Println("---->setting path <----")
-	// fmt.Println(cfg.KubernetesConfig.KubernetesVersion)
-	// cmdStr := fmt.Sprintf(`echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%s"' | sudo tee /etc/environment`, bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion))
-	// fixCmd := exec.Command("/bin/bash", "-c",
-	// 	cmdStr)
-	// dd, _ = k.c.RunCmd(fixCmd)
-
-	dd, _ := k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH"))
+	fmt.Println("---->setting path <----")
+	fmt.Println(cfg.KubernetesConfig.KubernetesVersion)
+	cmdStr := fmt.Sprintf(`echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:%s"' | sudo tee /etc/environment`, bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion))
+	fixCmd := exec.Command("/bin/bash", "-c",
+		cmdStr)
+	dd, _ := k.c.RunCmd(fixCmd)
+	fmt.Println(dd.Output())
+	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo $PATH"))
 	fmt.Println(dd.Output())
 	dd, _ = k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /etc/environment"))
 	fmt.Println(dd.Output())
