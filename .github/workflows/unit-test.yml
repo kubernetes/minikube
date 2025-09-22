@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 env:
   GOPROXY: https://proxy.golang.org
-  GO_VERSION: '1.24.6'
+  GO_VERSION: '1.25.1'
 permissions:
   contents: read
 jobs:
