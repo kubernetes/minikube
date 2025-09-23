@@ -228,8 +228,19 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	ctx, cancel := context.WithTimeout(context.Background(), initTimeoutMinutes*time.Minute)
 	defer cancel()
 	kr, kw := io.Pipe()
-	c := exec.CommandContext(ctx, "/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
-		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
+
+	// NOTE: The command must run with the a root shell to expand PATH to the
+	// root PATH. On Debian 12 user PATH does not contain /usr/sbin which breaks
+	// kubeadm since https://github.com/kubernetes/kubernetes/pull/129450.
+	cmd := fmt.Sprintf(
+		"env PATH=\"%s:$PATH\" kubeadm init --config %s %s --ignore-preflight-errors=%s",
+		bsutil.BinRoot(cfg.KubernetesConfig.KubernetesVersion),
+		conf,
+		extraFlags,
+		strings.Join(ignore, ","),
+	)
+	c := exec.CommandContext(ctx, "sudo", "bash", "-c", cmd)
+
 	c.Stdout = kw
 	c.Stderr = kw
 	var wg sync.WaitGroup
