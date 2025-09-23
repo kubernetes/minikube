@@ -17,10 +17,16 @@ limitations under the License.
 package machine
 
 import (
+	"net/http"
+	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"k8s.io/klog/v2"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
@@ -255,5 +261,83 @@ func TestMergeImageLists(t *testing.T) {
 		if ok := reflect.DeepEqual(got, tc.expected); !ok {
 			t.Errorf("%s:\nmergeImageLists() = %+v;\nwant %+v", tc.description, got, tc.expected)
 		}
+	}
+}
+
+func createDummyDocker(t *testing.T, dir string) string {
+	dummyPath := filepath.Join(dir, "docker")
+	script := `#!/bin/bash
+if [[ "$1" == "pull" ]]; then
+  echo "429 Too Many Requests"
+  exit 1
+else
+  echo "dummy docker $@"
+  exit 0
+fi`
+	if err := os.WriteFile(dummyPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to write dummy docker: %v", err)
+	}
+	return dummyPath
+}
+
+func TestPullImages_RateLimitWithDummyDocker(t *testing.T) {
+	tmpDir := t.TempDir()
+	createDummyDocker(t, tmpDir)
+
+	oldPath := os.Getenv("PATH")
+	os.Setenv("PATH", "/home/henry/dummy-docker-bin:"+oldPath)
+	defer os.Setenv("PATH", oldPath)
+
+	profile := &config.Profile{
+		Name: "minikube",
+		Config: &config.ClusterConfig{
+			KubernetesConfig: config.KubernetesConfig{
+				ContainerRuntime: "docker",
+			},
+			Nodes: []config.Node{
+				{Name: "dummy-node"},
+			},
+		},
+	}
+
+	err := PullImages([]string{"busybox:latest"}, profile)
+	if err == nil {
+		t.Errorf("expected error due to rate limit, got nil")
+	}
+}
+
+func TestPullImages_RateLimit(t *testing.T) {
+	profile := &config.Profile{Name: "test-cluster"}
+	images := []string{"busybox:latest"}
+
+	// mock pullImages
+	orig := pullImages
+	defer func() { pullImages = orig }()
+
+	pullImages = func(crMgr cruntime.Manager, imgs []string) error {
+		t.Logf("mock pullImages called with imgs: %v", imgs)
+		return &transport.Error{
+			StatusCode: http.StatusTooManyRequests, // 429
+		}
+	}
+
+	// 2. mock config.Load
+	origLoad := loadConfig
+	defer func() { loadConfig = origLoad }()
+
+	loadConfig = func(name string, miniHome ...string) (*config.ClusterConfig, error) {
+		return &config.ClusterConfig{
+			KubernetesConfig: config.KubernetesConfig{
+				ContainerRuntime: "docker",
+			},
+		}, nil
+	}
+
+	err := PullImages(images, profile)
+	// expect a transport.Error with StatusCode 429
+	klog.Infof("PullImages() = %v", err)
+
+	if terr, ok := err.(*transport.Error); !ok || terr.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("expected 429 transport.Error, got %v", err)
 	}
 }
