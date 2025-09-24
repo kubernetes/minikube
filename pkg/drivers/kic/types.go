@@ -66,7 +66,10 @@ type Config struct {
 	ContainerRuntime  string            // container runtime kic is running
 	Network           string            // network to run with kic
 	Subnet            string            // subnet to be used on kic cluster
+	Subnetv6	  string
 	StaticIP          string            // static IP for the kic cluster
+	StaticIPv6 	  string
+	IPFamily   	  string 	    // "ipv4", "ipv6", or "dual"
 	ExtraArgs         []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
 	ListenAddress     string            // IP Address to listen to
 	GPUs              string            // add GPU devices to the container
