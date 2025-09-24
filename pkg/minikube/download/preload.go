@@ -137,8 +137,7 @@ func setPreloadState(k8sVersion, containerRuntime string, state preloadState) {
 
 func getPreloadState(k8sVersion, containerRuntime string) (preloadState, bool) {
 	if cRuntimes, ok := preloadStates[k8sVersion]; ok {
-		state, ok := cRuntimes[containerRuntime]
-		if ok {
+		if state, ok := cRuntimes[containerRuntime]; ok {
 			return state, true
 		}
 	}
