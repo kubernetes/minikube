@@ -120,8 +120,6 @@ func remoteTarballURL(k8sVersion, containerRuntime string, source preloadSource)
 	case preloadSourceGCS:
 		return remoteTarballURLGCS(k8sVersion, containerRuntime)
 	default:
-		// this should never happen
-		klog.Fatalf("unknown preload source: %s", source)
 		return string(preloadSourceNone)
 	}
 }
@@ -341,7 +339,6 @@ func getChecksum(ps preloadSource, k8sVersion, containerRuntime string) ([]byte,
 		return getChecksumGithub(k8sVersion, containerRuntime)
 	}
 	// this should never happen
-	klog.Fatalf("unknown preload source: %s", ps)
 	return nil, fmt.Errorf("unknown preload source: %s", ps)
 }
 
