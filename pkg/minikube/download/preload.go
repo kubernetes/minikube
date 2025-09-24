@@ -117,8 +117,12 @@ func remoteTarballURL(k8sVersion, containerRuntime string, source preloadSource)
 	switch source {
 	case preloadSourceGitHub:
 		return remoteTarballURLGitHub(k8sVersion, containerRuntime)
-	default:
+	case preloadSourceGCS:
 		return remoteTarballURLGCS(k8sVersion, containerRuntime)
+	default:
+		// this should never happen
+		klog.Fatalf("unknown preload source: %s", source)
+		return string(preloadSourceNone)
 	}
 }
 
