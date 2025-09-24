@@ -260,6 +260,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	var checksum []byte
 	var chksErr error
 	checksum, chksErr = getChecksum(source, k8sVersion, containerRuntime)
+
 	var realPath string
 	if chksErr != nil {
 		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
@@ -272,9 +273,11 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
 		if source == preloadSourceGCS { // GCS API givs us MD5 checksums only
 			url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
+			klog.Infof("Got checksum from GCS API %q", hex.EncodeToString(checksum))
 		}
 		if source == preloadSourceGitHub {
 			url += fmt.Sprintf("?checksum=sha256:%s", checksum)
+			klog.Infof("Got checksum from Github API %q", checksum)
 		}
 
 	}
@@ -318,9 +321,6 @@ var getChecksumGCS = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	klog.Infof("got checksum %q for %s from gcs api...", attrs.MD5, filename)
-	klog.Infof("all attrs %v", attrs)
-	klog.Infof("all attrs %+v", attrs)
 	return attrs.MD5, nil
 }
 
