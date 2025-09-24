@@ -26,6 +26,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -42,6 +43,10 @@ import (
 const (
 	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/"
 )
+
+// The driver is implemented for amd64 and arm64, but we cannot build the arm64
+// version yet: https://github.com/kubernetes/minikube/issues/19959.
+var supportedArchictures = []string{"amd64"}
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -99,6 +104,18 @@ func defaultURI() string {
 }
 
 func status() registry.State {
+	if !slices.Contains(supportedArchictures, runtime.GOARCH) {
+		rs := registry.State{
+			Error: fmt.Errorf("KVM is not supported on %q, contributions are welcome", runtime.GOARCH),
+			Fix:   fmt.Sprintf("you can use the KVM driver on %s", strings.Join(supportedArchictures, ",")),
+		}
+		// The driver is implemented but we cannot build it yet.
+		if runtime.GOARCH == "arm64" {
+			rs.Doc = "https://github.com/kubernetes/minikube/issues/19959"
+		}
+		return rs
+	}
+
 	// Allow no more than 6 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
@@ -148,17 +165,6 @@ func status() registry.State {
 			Fix:       "Check that the libvirtd service is running and the socket is ready",
 			Doc:       docURL,
 		}
-	}
-
-	if runtime.GOARCH == "arm64" {
-		return registry.State{
-			Installed: true,
-			Running:   true,
-			Error:     fmt.Errorf("KVM is not supported on arm64 due to a gcc build error, contributions are welcome"),
-			Fix:       "follow the github issue for possible fix",
-			Doc:       "https://github.com/kubernetes/minikube/issues/19959",
-		}
-
 	}
 
 	if err != nil {
