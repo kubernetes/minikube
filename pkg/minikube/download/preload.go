@@ -259,12 +259,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	url := remoteTarballURL(k8sVersion, containerRuntime, source)
 	var checksum []byte
 	var chksErr error
-	if source == preloadSourceGCS {
-		checksum, chksErr = getChecksumGCS(k8sVersion, containerRuntime)
-	}
-	if source == preloadSourceGitHub {
-		checksum, chksErr = getChecksumGithub(k8sVersion, containerRuntime)
-	}
+	checksum, chksErr = getChecksum(source, k8sVersion, containerRuntime)
 	var realPath string
 	if chksErr != nil {
 		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
@@ -274,15 +269,21 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 			return errors.Wrap(err, "tempfile")
 		}
 		targetPath = tmp.Name()
-	} else if checksum != nil {
-		// add URL parameter for go-getter to automatically verify the checksum
-		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
+	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
+		if source == preloadSourceGCS { // GCS API givs us MD5 checksums only
+			url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
+		}
+		if source == preloadSourceGitHub {
+			url += fmt.Sprintf("?checksum=sha256:%s", checksum)
+		}
+
 	}
 
 	if err := download(url, targetPath); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
+	//  to avoid partial/corrupt files in final dest. only rename tmp if download didn't error out.
 	if realPath != "" {
 		klog.Infof("renaming tempfile to %s ...", TarballName(k8sVersion, containerRuntime))
 		err := os.Rename(targetPath, realPath)
@@ -311,19 +312,37 @@ func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
 
 // getChecksumGCS returns the MD5 checksum of the preload tarball
 var getChecksumGCS = func(k8sVersion, containerRuntime string) ([]byte, error) {
-	klog.Infof("getting checksum for %s from gcs...", TarballName(k8sVersion, containerRuntime))
+	klog.Infof("getting checksum for %s from gcs api...", TarballName(k8sVersion, containerRuntime))
 	filename := fmt.Sprintf("%s/%s/%s", PreloadVersion, k8sVersion, TarballName(k8sVersion, containerRuntime))
 	attrs, err := getStorageAttrs(filename)
 	if err != nil {
 		return nil, err
 	}
+	klog.Infof("got checksum %q for %s from gcs api...", attrs.MD5, filename)
+	klog.Infof("all attrs %v", attrs)
+	klog.Infof("all attrs %+v", attrs)
 	return attrs.MD5, nil
 }
 
 var getChecksumGithub = func(k8sVersion, containerRuntime string) ([]byte, error) {
-	klog.Infof("getting checksum for %s from github...", TarballName(k8sVersion, containerRuntime))
-	gh.ReleaseAssets(PreloadGitHubRepo, PreloadGitHubRepo, PreloadVersion)
-	return nil, nil
+	klog.Infof("getting checksum for %s from github api...", TarballName(k8sVersion, containerRuntime))
+	assets, err := gh.ReleaseAssets(PreloadGitHubRepo, PreloadGitHubRepo, PreloadVersion)
+	if err != nil { // could not find release or rate limited
+		return nil, err
+	}
+	return gh.AssetSHA256(TarballName(k8sVersion, containerRuntime), assets)
+}
+
+func getChecksum(ps preloadSource, k8sVersion, containerRuntime string) ([]byte, error) {
+	if ps == preloadSourceGCS {
+		return getChecksumGCS(k8sVersion, containerRuntime)
+	}
+	if ps == preloadSourceGitHub {
+		return getChecksumGithub(k8sVersion, containerRuntime)
+	}
+	// this should never happen
+	klog.Fatalf("unknown preload source: %s", ps)
+	return nil, fmt.Errorf("unknown preload source: %s", ps)
 }
 
 // CleanUpOlderPreloads deletes preload files belonging to older minikube versions
