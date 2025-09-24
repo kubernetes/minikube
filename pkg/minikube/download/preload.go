@@ -83,19 +83,9 @@ func TarballName(k8sVersion, containerRuntime string) string {
 	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, storageDriver, runtime.GOARCH)
 }
 
-// returns the name of the checksum file
-func checksumName(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("%s.checksum", TarballName(k8sVersion, containerRuntime))
-}
-
 // returns target dir for all cached items related to preloading
 func targetDir() string {
 	return localpath.MakeMiniPath("cache", "preloaded-tarball")
-}
-
-// PreloadChecksumPath returns the local path to the cached checksum file
-func PreloadChecksumPath(k8sVersion, containerRuntime string) string {
-	return filepath.Join(targetDir(), checksumName(k8sVersion, containerRuntime))
 }
 
 // TarballPath returns the local path to the cached preload tarball
@@ -261,7 +251,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 
 	var realPath string
 	if chksErr != nil {
-		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, err)
+		klog.Warningf("No checksum for preloaded tarball for k8s version %s: %v", k8sVersion, chksErr)
 		realPath = targetPath
 		tmp, err := os.CreateTemp(targetDir(), TarballName(k8sVersion, containerRuntime)+".*")
 		if err != nil {
