@@ -97,7 +97,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 		return os.Stat(f.Name())
 	}
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return true }
-	getChecksum = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
+	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(_, _, _ string, _ []byte) error { return nil }
 
 	var group sync.WaitGroup
@@ -125,7 +125,7 @@ func testPreloadNotExists(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return false }
-	getChecksum = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
+	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(_, _, _ string, _ []byte) error { return nil }
 
 	err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker")
@@ -144,7 +144,7 @@ func testPreloadChecksumMismatch(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) { return nil, fmt.Errorf("cache not found") }
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return true }
-	getChecksum = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
+	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(_, _, _ string, _ []byte) error {
 		return fmt.Errorf("checksum mismatch")
 	}
@@ -256,7 +256,7 @@ func testPreloadWithCachedSizeZero(t *testing.T) {
 
 	checkCache = func(_ string) (fs.FileInfo, error) { return os.Stat(f.Name()) }
 	checkPreloadExists = func(_, _, _ string, _ ...bool) bool { return true }
-	getChecksum = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
+	getChecksumGCS = func(_, _ string) ([]byte, error) { return []byte("check"), nil }
 	ensureChecksumValid = func(_, _, _ string, _ []byte) error { return nil }
 
 	if err := Preload(constants.DefaultKubernetesVersion, constants.Docker, "docker"); err != nil {
