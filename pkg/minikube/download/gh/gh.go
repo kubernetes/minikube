@@ -28,15 +28,16 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 // to avoid rate limits. encouraged to call pass results of ReleaseAssets here.
 func AssetSHA256(assetName string, assets []*github.ReleaseAsset) ([]byte, error) {
 	for _, asset := range assets {
-		if asset.GetName() == assetName {
-			d := asset.GetDigest() // e.g. "sha256:fdcb..."
-			if d == "" {
-				return []byte(""), fmt.Errorf("asset %q has no digest; id=%d url=%s", assetName, asset.GetID(), asset.GetBrowserDownloadURL())
-			}
-			const prefix = "sha256:"
-			d = strings.TrimPrefix(d, prefix)
-			return []byte(d), nil
+		if asset.GetName() != assetName {
+			continue
 		}
+		d := asset.GetDigest() // e.g. "sha256:fdcb..."
+		if d == "" {
+			return []byte(""), fmt.Errorf("asset %q has no digest; id=%d url=%s", assetName, asset.GetID(), asset.GetBrowserDownloadURL())
+		}
+		const prefix = "sha256:"
+		d = strings.TrimPrefix(d, prefix)
+		return []byte(d), nil
 	}
 	return []byte(""), fmt.Errorf("asset %q not found", assetName)
 }
