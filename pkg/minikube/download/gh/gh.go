@@ -1,0 +1,50 @@
+package gh
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/google/go-github/v74/github"
+	"golang.org/x/oauth2"
+)
+
+// ReleaseAssets retrieves a GitHub release by tag from org/project.
+// Try to not call this too often. preferably cache and re-use. to avoid rate limits.
+func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
+	ctx := context.Background()
+	// Use an authenticated client when GITHUB_TOKEN is set to avoid low rate limits.
+	httpClient := oauthClient(ctx, os.Getenv("GITHUB_TOKEN"))
+	gh := github.NewClient(httpClient)
+
+	rel, _, err := gh.Repositories.GetReleaseByTag(ctx, org, project, tag)
+	return rel.Assets, err
+}
+
+// AssetSHA256 returns the  SHA-256 digest for the asset with the given name
+// from the provided release assets from github API.
+// to avoid rate limits. encouraged to call pass results of ReleaseAssets here.
+func AssetSHA256(assetName string, assets []*github.ReleaseAsset) (string, error) {
+	for _, asset := range assets {
+		if asset.GetName() == assetName {
+			d := asset.GetDigest() // e.g. "sha256:fdcb..."
+			if d == "" {
+				return "", fmt.Errorf("asset %q has no digest; id=%d url=%s", assetName, asset.GetID(), asset.GetBrowserDownloadURL())
+			}
+			const prefix = "sha256:"
+			d = strings.TrimPrefix(d, prefix)
+			return d, nil
+		}
+	}
+	return "", fmt.Errorf("asset %q not found", assetName)
+}
+
+func oauthClient(ctx context.Context, token string) *http.Client {
+	if token == "" {
+		return nil // unauthenticated client (lower rate limit)
+	}
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	return oauth2.NewClient(ctx, ts)
+}
