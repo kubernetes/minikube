@@ -36,6 +36,7 @@ import (
 // defaultFirstSubnetAddr is a first subnet to be used on first kic cluster
 // it is one octet more than the one used by KVM to avoid possible conflict
 const defaultFirstSubnetAddr = "192.168.49.0"
+const defaultFirstSubnetAddrv6 = "fd00::/64"
 
 // name of the default bridge network, used to lookup the MTU (see #9528)
 const dockerDefaultBridge = "bridge"
@@ -63,13 +64,29 @@ func firstSubnetAddr(subnet string) string {
 	return subnet
 }
 
+func firstSubnetAddrv6(subnet string) string {
+    if subnet == "" {
+        return defaultFirstSubnetAddrv6
+    }
+   return subnet
+}
+
 // CreateNetwork creates a network returns gateway and error, minikube creates one network per cluster
 func CreateNetwork(ociBin, networkName, subnet, staticIP string) (net.IP, error) {
-	defaultBridgeName := defaultBridgeName(ociBin)
-	if networkName == defaultBridgeName {
+	return CreateNetworkWithIPFamily(ociBin, networkName, subnet, "", staticIP, "", "ipv4")
+}
+
+func CreateNetworkWithIPFamily(ociBin, networkName, subnet, subnetv6, staticIP, staticIPv6, ipFamily string) (net.IP, error) {
+	bridgeName := defaultBridgeName(ociBin)
+	if networkName == bridgeName {
 		klog.Infof("skipping creating network since default network %s was specified", networkName)
 		return nil, nil
 	}
+
+	// For IPv6-only or dual-stack networks, use the v6/dual creator
+    	if ipFamily == "ipv6" || ipFamily == "dual" {
+        	return createV6OrDualNetwork(ociBin, networkName, subnet, subnetv6, ipFamily)
+    	}
 
 	// check if the network already exists
 	info, err := containerNetworkInspect(ociBin, networkName)
@@ -80,9 +97,9 @@ func CreateNetwork(ociBin, networkName, subnet, staticIP string) (net.IP, error)
 
 	// will try to get MTU from the docker network to avoid issue with systems with exotic MTU settings.
 	// related issue #9528
-	info, err = containerNetworkInspect(ociBin, defaultBridgeName)
+	info, err = containerNetworkInspect(ociBin, bridgeName)
 	if err != nil {
-		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, defaultBridgeName, err)
+		klog.Warningf("failed to get mtu information from the %s's default network %q: %v", ociBin, bridgeName, err)
 	}
 
 	tries := 20
@@ -117,6 +134,59 @@ func CreateNetwork(ociBin, networkName, subnet, staticIP string) (net.IP, error)
 		subnetAddr = subnet.IP
 	}
 	return info.gateway, fmt.Errorf("failed to create %s network %s: %w", ociBin, networkName, err)
+}
+
+// createV6OrDualNetwork creates a user-defined bridge network with IPv6 enabled,
+// and adds both subnets when ipFamily == "dual". Returns the gateway reported by inspect (may be nil for v6-only).
+func createV6OrDualNetwork(ociBin, name, subnetV4, subnetV6, ipFamily string) (net.IP, error) {
+    klog.Infof("creating %s network %q (family=%s, v4=%q, v6=%q)", ociBin, name, ipFamily, subnetV4, subnetV6)
+
+    // If exists, reuse as-is
+    if info, err := containerNetworkInspect(ociBin, name); err == nil {
+        klog.Infof("found existing network %q", name)
+        return info.gateway, nil
+    }
+
+    // Defaults
+    if subnetV6 == "" {
+        subnetV6 = firstSubnetAddrv6("")
+    }
+
+   // Build args
+    args := []string{"network", "create", "--driver=bridge"}
+    if ipFamily == "ipv6" || ipFamily == "dual" {
+        args = append(args, "--ipv6")
+    }
+    if ipFamily == "dual" && subnetV4 != "" {
+        args = append(args, "--subnet", subnetV4)
+    }
+    if subnetV6 != "" {
+        args = append(args, "--subnet", subnetV6)
+    }
+    // Optional bridge knobs (safe to omit)
+    // if ociBin == Docker {
+    //     args = append(args, "-o", "com.docker.network.bridge.enable_ip_masquerade=true")
+    //     args = append(args, "-o", "com.docker.network.bridge.enable_icc=true")
+    // }
+    args = append(args,
+        fmt.Sprintf("--label=%s=%s", CreatedByLabelKey, "true"),
+        fmt.Sprintf("--label=%s=%s", ProfileLabelKey, name),
+        name,
+    )
+
+    if _, err := runCmd(exec.Command(ociBin, args...)); err != nil {
+        klog.Warningf("failed to create %s network %q: %v", ociBin, name, err)
+        return nil, fmt.Errorf("create %s network %q: %w", ociBin, name, err)
+    }
+
+    // Rely on inspect (gateway may be empty for IPv6)
+    info, err := containerNetworkInspect(ociBin, name)
+    if err != nil {
+        // non-fatal: just return nil gateway
+        klog.Warningf("post-create inspect failed for %s: %v", name, err)
+        return nil, nil
+    }
+    return info.gateway, nil
 }
 
 func tryCreateDockerNetwork(ociBin string, subnet *network.Parameters, mtu int, name string) (net.IP, error) {
@@ -185,22 +255,36 @@ func containerNetworkInspect(ociBin string, name string) (netInfo, error) {
 
 // networkInspect is only used to unmarshal the docker network inspect output and translate it to netInfo
 type networkInspect struct {
-	Name         string
-	Driver       string
-	Subnet       string
-	Gateway      string
-	MTU          int
-	ContainerIPs []string
+	Name         string   `json:"Name"`
+	Driver       string   `json:"Driver"`
+	// Legacy single fields (older template)
+	Subnet       string   `json:"Subnet"`
+	Gateway      string   `json:"Gateway"`
+	// Multi-family (new template)
+	Subnets      []string `json:"Subnets"`
+	Gateways     []string `json:"Gateways"`
+	MTU          int      `json:"MTU"`
+	ContainerIPs []string `json:"ContainerIPs"`
 }
 
+
 var dockerInspectGetter = func(name string) (*RunResult, error) {
-	// hack -- 'support ancient versions of docker again (template parsing issue) #10362' and resolve 'Template parsing error: template: :1: unexpected "=" in operand' / 'exit status 64'
-	// note: docker v18.09.7 and older use go v1.10.8 and older, whereas support for '=' operator in go templates came in go v1.11
-	cmd := exec.Command(Docker, "network", "inspect", name, "--format", `{"Name": "{{.Name}}","Driver": "{{.Driver}}","Subnet": "{{range .IPAM.Config}}{{.Subnet}}{{end}}","Gateway": "{{range .IPAM.Config}}{{.Gateway}}{{end}}","MTU": {{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}}, "ContainerIPs": [{{range $k,$v := .Containers }}"{{$v.IPv4Address}}",{{end}}]}`)
+    // keep the old workaround: avoid eq/== in templates; emit trailing commas then strip ",]"
+	cmd := exec.Command(
+		Docker, "network", "inspect", name, "--format",
+		`{"Name":"{{.Name}}","Driver":"{{.Driver}}",` +
+			`"Subnet":"{{range .IPAM.Config}}{{.Subnet}}{{end}}",` +
+			`"Gateway":"{{range .IPAM.Config}}{{.Gateway}}{{end}}",` +
+			`"Subnets":[{{range .IPAM.Config}}{{if .Subnet}}"{{.Subnet}}",{{end}}{{end}}],` +
+			`"Gateways":[{{range .IPAM.Config}}{{if .Gateway}}"{{.Gateway}}",{{end}}{{end}}],` +
+			`"MTU":{{if (index .Options "com.docker.network.driver.mtu")}}{{(index .Options "com.docker.network.driver.mtu")}}{{else}}0{{end}},` +
+			`"ContainerIPs":[{{range $k,$v := .Containers}}"{{$v.IPv4Address}}",{{end}}]}`,
+	)
 	rr, err := runCmd(cmd)
-	// remove extra ',' after the last element in the ContainerIPs slice
-	rr.Stdout = *bytes.NewBuffer(bytes.ReplaceAll(rr.Stdout.Bytes(), []byte(",]"), []byte("]")))
-	return rr, err
+    	// remove any trailing commas from arrays we just built
+    	cleaned := bytes.ReplaceAll(rr.Stdout.Bytes(), []byte(",]"), []byte("]"))
+	rr.Stdout = *bytes.NewBuffer(cleaned)
+    	return rr, err
 }
 
 // if exists returns subnet, gateway and mtu
@@ -217,19 +301,51 @@ func dockerNetworkInspect(name string) (netInfo, error) {
 		return info, err
 	}
 
-	// results looks like {"Name": "bridge","Driver": "bridge","Subnet": "172.17.0.0/16","Gateway": "172.17.0.1","MTU": 1500, "ContainerIPs": ["172.17.0.3/16", "172.17.0.2/16"]}
+	// results look like:
+	// {"Name":"bridge","Driver":"bridge",
+	//  "Subnet":"172.17.0.0/16","Gateway":"172.17.0.1",
+	//  "Subnets":["172.17.0.0/16","fd00::/64"],"Gateways":["172.17.0.1","fd00::1"],
+	//  "MTU":1500,"ContainerIPs":[...]}
 	if err := json.Unmarshal(rr.Stdout.Bytes(), &vals); err != nil {
 		return info, fmt.Errorf("error parsing network inspect output: %q", rr.Stdout.String())
 	}
 
-	info.gateway = net.ParseIP(vals.Gateway)
-	info.mtu = vals.MTU
-
-	_, info.subnet, err = net.ParseCIDR(vals.Subnet)
-	if err != nil {
-		return info, errors.Wrapf(err, "parse subnet for %s", name)
+	// Choose a subnet/gateway:
+	// - Prefer an IPv4 entry (back-compat with existing IPv4 flows),
+	// - else fall back to first entry,
+	// - else use legacy single fields.
+	pickSubnet := ""
+	pickGateway := ""
+	if len(vals.Subnets) > 0 {
+		for i, s := range vals.Subnets {
+			if ip, _, e := net.ParseCIDR(s); e == nil && ip.To4() != nil {
+				pickSubnet = s
+				if i < len(vals.Gateways) {
+					pickGateway = vals.Gateways[i]
+				}
+				break
+			}
+		}
+		if pickSubnet == "" {
+			pickSubnet = vals.Subnets[0]
+			if len(vals.Gateways) > 0 {
+				pickGateway = vals.Gateways[0]
+			}
+		}
 	}
-
+	if pickSubnet == "" {
+		pickSubnet = vals.Subnet
+		pickGateway = vals.Gateway
+	}
+	if pickSubnet != "" {
+		if _, info.subnet, err = net.ParseCIDR(pickSubnet); err != nil {
+			return info, errors.Wrapf(err, "parse subnet for %s", name)
+		}
+	}
+	if pickGateway != "" {
+		info.gateway = net.ParseIP(pickGateway)
+	}
+	info.mtu = vals.MTU
 	return info, nil
 }
 

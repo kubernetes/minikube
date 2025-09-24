@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,7 +53,13 @@ func UpdateEndpoint(contextName string, host string, port int, configPath string
 		return false, errors.Wrap(err, "get kubeconfig")
 	}
 
-	address := "https://" + host + ":" + strconv.Itoa(port)
+        // Bracket IPv6 literals for a valid URL (e.g. https://[::1]:8443)
+        hostForURL := host
+        if strings.Contains(hostForURL, ":") && !strings.HasPrefix(hostForURL, "[") {
+                hostForURL = "[" + hostForURL + "]"
+        }
+
+        address := "https://" + hostForURL + ":" + strconv.Itoa(port)
 
 	// check & fix kubeconfig if the cluster or context setting is missing, or server address needs updating
 	errs := configIssues(cfg, contextName, address)

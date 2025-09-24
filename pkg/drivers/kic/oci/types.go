@@ -61,6 +61,8 @@ type CreateParams struct {
 	OCIBinary     string            // docker or podman
 	Network       string            // network name that the container will attach to
 	IP            string            // static IP to assign the container in the cluster network
+	IPv6          string 		// optional static IPv6 to assign to the node container (--ip6)
+	IPFamily      string 		// "ipv4", "ipv6", or "dual" (from cc.KubernetesConfig.IPFamily)
 	GPUs          string            // add GPU devices to the container
 }
 

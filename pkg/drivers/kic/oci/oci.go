@@ -185,11 +185,23 @@ func CreateContainerNode(p CreateParams) error { //nolint to suppress cyclomatic
 		// label th enode with the node ID
 		"--label", p.NodeLabel,
 	}
-	// to provide a static IP
-	if p.Network != "" && p.IP != "" {
-		runArgs = append(runArgs, "--network", p.Network)
-		runArgs = append(runArgs, "--ip", p.IP)
-	}
+
+	// attach to the user-defined bridge network (once), and set static IPs if provided
+        if p.Network != "" {
+                runArgs = append(runArgs, "--network", p.Network)
+               if p.IP != "" {
+                        runArgs = append(runArgs, "--ip", p.IP)   // IPv4
+                }
+                if p.IPv6 != "" {
+                        runArgs = append(runArgs, "--ip6", p.IPv6) // IPv6
+                }
+        }
+
+ 	// For IPv6/dual clusters, enable forwarding inside the node container
+        // (safe sysctl; avoid disable_ipv6 which may be blocked by Docker's safe list)
+        if p.IPFamily == "ipv6" || p.IPFamily == "dual" {
+                runArgs = append(runArgs, "--sysctl", "net.ipv6.conf.all.forwarding=1")
+        }
 
 	switch p.GPUs {
 	case "all", "nvidia":
@@ -509,7 +521,12 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	for _, pm := range portMappings {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
-		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
+		host := pm.ListenAddress
+                // If the listen address is an IPv6 literal, bracket it for Docker syntax.
+                if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
+                        host = "[" + host + "]"
+                }
+                publish := fmt.Sprintf("--publish=%s::%d", host, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result

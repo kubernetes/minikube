@@ -50,6 +50,7 @@ type ClusterConfig struct {
 	InsecureRegistry        []string
 	RegistryMirror          []string
 	HostOnlyCIDR            string // Only used by the virtualbox driver
+	HostOnlyCIDRv6          string // IPv6 CIDR for the virtualbox driver
 	HypervVirtualSwitch     string
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
@@ -85,6 +86,7 @@ type ClusterConfig struct {
 	ListenAddress           string   // Only used by the docker and podman driver
 	Network                 string   // only used by docker driver
 	Subnet                  string   // only used by the docker and podman driver
+	Subnetv6                string   // IPv6 subnet for docker and podman driver
 	MultiNodeRequested      bool
 	ExtraDisks              int // currently only implemented for hyperkit and kvm2
 	CertExpiration          time.Duration
@@ -105,6 +107,7 @@ type ClusterConfig struct {
 	SocketVMnetClientPath   string
 	SocketVMnetPath         string
 	StaticIP                string
+	StaticIPv6              string // Static IPv6 address for the cluster
 	SSHAuthSock             string
 	SSHAgentPID             int
 	GPUs                    string
@@ -126,6 +129,10 @@ type KubernetesConfig struct {
 	NetworkPlugin       string
 	FeatureGates        string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
 	ServiceCIDR         string // the subnet which Kubernetes services will be deployed to
+	ServiceCIDRv6       string // the IPv6 subnet which Kubernetes services will be deployed to
+	PodCIDR             string // the IPv4 subnet which Kubernetes pods will be deployed to
+        PodCIDRv6           string // the IPv6 subnet which Kubernetes pods will be deployed to
+        IPFamily            string // IP family mode: ipv4, ipv6, or dual
 	ImageRepository     string
 	LoadBalancerStartIP string // currently only used by MetalLB addon
 	LoadBalancerEndIP   string // currently only used by MetalLB addon
@@ -143,6 +150,7 @@ type KubernetesConfig struct {
 type Node struct {
 	Name              string
 	IP                string
+	IPv6              string // IPv6 address of the node
 	Port              int
 	KubernetesVersion string
 	ContainerRuntime  string
