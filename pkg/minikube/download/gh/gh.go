@@ -26,19 +26,19 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 // AssetSHA256 returns the  SHA-256 digest for the asset with the given name
 // from the provided release assets from github API.
 // to avoid rate limits. encouraged to call pass results of ReleaseAssets here.
-func AssetSHA256(assetName string, assets []*github.ReleaseAsset) (string, error) {
+func AssetSHA256(assetName string, assets []*github.ReleaseAsset) ([]byte, error) {
 	for _, asset := range assets {
 		if asset.GetName() == assetName {
 			d := asset.GetDigest() // e.g. "sha256:fdcb..."
 			if d == "" {
-				return "", fmt.Errorf("asset %q has no digest; id=%d url=%s", assetName, asset.GetID(), asset.GetBrowserDownloadURL())
+				return []byte(""), fmt.Errorf("asset %q has no digest; id=%d url=%s", assetName, asset.GetID(), asset.GetBrowserDownloadURL())
 			}
 			const prefix = "sha256:"
 			d = strings.TrimPrefix(d, prefix)
-			return d, nil
+			return []byte(d), nil
 		}
 	}
-	return "", fmt.Errorf("asset %q not found", assetName)
+	return []byte(""), fmt.Errorf("asset %q not found", assetName)
 }
 
 func oauthClient(ctx context.Context, token string) *http.Client {
