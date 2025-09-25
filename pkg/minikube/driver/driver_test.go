@@ -72,9 +72,7 @@ func TestMachineType(t *testing.T) {
 		Krunkit:    "VM",
 		VirtualBox: "VM",
 		HyperKit:   "VM",
-		VMware:     "VM",
 		HyperV:     "VM",
-		Parallels:  "VM",
 	}
 
 	drivers := SupportedDrivers()

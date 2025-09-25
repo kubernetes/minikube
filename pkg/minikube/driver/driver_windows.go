@@ -30,7 +30,6 @@ import (
 var supportedDrivers = []string{
 	VirtualBox,
 	HyperV,
-	VMware,
 	QEMU2,
 	Docker,
 	Podman,
