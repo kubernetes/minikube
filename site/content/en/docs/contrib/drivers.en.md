@@ -8,11 +8,7 @@ description: >
 
 This document is written for contributors who are familiar with minikube, who would like to add support for a new VM driver.
 
-minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --driver=<new_driver>`.
-
-## Creating a new driver
-
-See [machine-drivers](https://github.com/machine-drivers) , the fork where all new docker-machine drivers are located.
+This document discusses how to modify minikube, so that this driver may be used by `minikube start --driver=<new_driver>`.
 
 ## Builtin vs External Drivers
 
