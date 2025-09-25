@@ -11,7 +11,7 @@ Log into the minikube environment (for debugging)
 
 ### Synopsis
 
-Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.
+Log into or run a command on a machine with SSH.
 
 ```shell
 minikube ssh [flags]
