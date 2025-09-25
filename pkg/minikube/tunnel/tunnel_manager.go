@@ -23,7 +23,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker/machine/libmachine"
+	"k8s.io/minikube/pkg/libmachine"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/minikube/config"

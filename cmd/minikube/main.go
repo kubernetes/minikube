@@ -42,7 +42,7 @@ import (
 	// Force exp dependency
 	_ "golang.org/x/exp/ebnf"
 
-	mlog "github.com/docker/machine/libmachine/log"
+	mlog "k8s.io/minikube/pkg/libmachine/log"
 
 	"github.com/google/slowjam/pkg/stacklog"
 	"github.com/pkg/profile"

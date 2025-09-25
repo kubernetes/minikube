@@ -23,7 +23,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"k8s.io/minikube/pkg/libmachine/drivers/plugin/localbinary"
 
 	"k8s.io/minikube/pkg/minikube/driver"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"

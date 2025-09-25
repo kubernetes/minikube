@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/pkg/errors"
 	knet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/klog/v2"

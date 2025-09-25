@@ -31,7 +31,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
