@@ -408,11 +408,7 @@ func virtualBoxDeprecationWarning(driverName string) {
 		return
 	}
 	out.WarningT(`The 'virtualbox' driver is deprecated and will be removed in a future release.
-    You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
-    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
-    https://minikube.sigs.k8s.io/docs/drivers/qemu/
-    https://minikube.sigs.k8s.io/docs/drivers/docker/
-	`)
+    You can use alternative drivers: {{.drivers}}.`, out.V{"drivers": strings.Join(driver.SupportedDrivers(), ", ")})
 }
 
 // hyperkitDeprecationWarning prints a deprecation warning for the hyperkit driver
