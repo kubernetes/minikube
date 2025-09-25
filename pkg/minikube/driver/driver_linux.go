@@ -26,7 +26,6 @@ var supportedDrivers = []string{
 	KVM2,
 	QEMU2,
 	QEMU,
-	VMware,
 	None,
 	Docker,
 	Podman,

@@ -280,12 +280,8 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return machineExistsState(s, err)
 	case driver.None:
 		return machineExistsState(s, err)
-	case driver.Parallels:
-		return machineExistsMessage(s, err, "connection is shut down")
 	case driver.VirtualBox:
 		return machineExistsMessage(s, err, "machine does not exist")
-	case driver.VMware:
-		return machineExistsState(s, err)
 	case driver.Docker:
 		return machineExistsDocker(s, err)
 	case driver.Mock:

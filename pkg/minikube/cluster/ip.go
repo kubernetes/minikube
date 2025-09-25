@@ -105,40 +105,10 @@ func HostIP(hostInfo *host.Host, clusterName string) (net.IP, error) {
 		ip := re.FindStringSubmatch(string(ipList))[1]
 
 		return net.ParseIP(ip), nil
-	case driver.Parallels:
-		bin := "prlsrvctl"
-		var binPath string
-		if fullPath, err := exec.LookPath(bin); err != nil {
-			binPath = fullPath
-		} else {
-			binPath = bin
-		}
-		out, err := exec.Command(binPath, "net", "info", "Shared").Output()
-		if err != nil {
-			return []byte{}, errors.Wrap(err, "Error reading the info of Parallels Shared network interface")
-		}
-		re := regexp.MustCompile(`IPv4 address: (.*)`)
-		ipMatch := re.FindStringSubmatch(string(out))
-		if len(ipMatch) < 2 {
-			return []byte{}, errors.Wrap(err, "Error getting the IP address of Parallels Shared network interface")
-		}
-		ip := ipMatch[1]
-
-		return net.ParseIP(ip), nil
 	case driver.HyperKit:
 		vmIPString, _ := hostInfo.Driver.GetIP()
 		gatewayIPString := vmIPString[:strings.LastIndex(vmIPString, ".")+1] + "1"
 		return net.ParseIP(gatewayIPString), nil
-	case driver.VMware:
-		vmIPString, err := hostInfo.Driver.GetIP()
-		if err != nil {
-			return []byte{}, errors.Wrap(err, "Error getting VM IP address")
-		}
-		vmIP := net.ParseIP(vmIPString).To4()
-		if vmIP == nil {
-			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
-		}
-		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	case driver.VFKit, driver.Krunkit:
 		// TODO: check why we need this and test with:
 		// - vfkkit+nat

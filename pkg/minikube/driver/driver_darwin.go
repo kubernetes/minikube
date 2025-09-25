@@ -30,7 +30,6 @@ var supportedDrivers = func() []string {
 			QEMU2,
 			VFKit,
 			Krunkit,
-			Parallels,
 			Docker,
 			Podman,
 			SSH,
@@ -40,18 +39,14 @@ var supportedDrivers = func() []string {
 	if strings.HasPrefix(runtime.GOARCH, "ppc") {
 		return []string{
 			VirtualBox,
-			Parallels,
 			HyperKit,
-			VMware,
 			Docker,
 			SSH,
 		}
 	}
 	return []string{
 		VirtualBox,
-		Parallels,
 		HyperKit,
-		VMware,
 		QEMU2,
 		VFKit,
 		Docker,

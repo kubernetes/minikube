@@ -55,12 +55,8 @@ const (
 	VirtualBox = "virtualbox"
 	// HyperKit driver
 	HyperKit = "hyperkit"
-	// VMware driver
-	VMware = "vmware"
 	// HyperV driver
 	HyperV = "hyperv"
-	// Parallels driver
-	Parallels = "parallels"
 	// VFKit driver
 	VFKit = "vfkit"
 	// Krunkit driver
@@ -206,11 +202,6 @@ func IsSSH(name string) bool {
 // IsVirtualBox checks if the driver is VirtualBox
 func IsVirtualBox(name string) bool {
 	return name == VirtualBox
-}
-
-// IsVMware checks if the driver is VMware
-func IsVMware(name string) bool {
-	return name == VMware
 }
 
 // IsHyperV check if the driver is Hyper-V
