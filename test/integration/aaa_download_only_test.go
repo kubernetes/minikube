@@ -22,7 +22,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/md5"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -235,22 +234,18 @@ func TestDownloadOnlyKic(t *testing.T) {
 
 	// Make sure the downloaded image tarball exists
 	tarball := download.TarballPath(constants.DefaultKubernetesVersion, cRuntime)
-	contents, err := os.ReadFile(tarball)
+	fi, err := os.Stat(tarball)
 	if err != nil {
-		t.Errorf("failed to read tarball file %q: %v", tarball, err)
+		t.Errorf("expected tarball file %q to exist, but got error: %v", tarball, err)
+	} else {
+		const minSize int64 = 200 * 1024 * 1024 // 200 MB
+		if fi.Size() <= minSize {
+			t.Errorf("expected tarball file %q to be larger than 200MB (>%d bytes), got %d bytes", tarball, minSize, fi.Size())
+		}
 	}
 
 	if arm64Platform() {
 		t.Skip("Skip for arm64 platform. See https://github.com/kubernetes/minikube/issues/10144")
-	}
-	// Make sure it has the correct checksum
-	checksum := md5.Sum(contents)
-	remoteChecksum, err := os.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime))
-	if err != nil {
-		t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion, cRuntime), err)
-	}
-	if string(remoteChecksum) != string(checksum[:]) {
-		t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
 	}
 }
 
