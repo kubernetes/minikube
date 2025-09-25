@@ -89,9 +89,9 @@ func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string)
 	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
 
 	if _, err := os.Stat(cachePath); err == nil {
-		t.Fatalf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
+		t.Errorf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
 	} else if err != nil && !os.IsNotExist(err) {
-		t.Fatalf("Error checking cache directory %s: %v", cachePath, err)
+		t.Errorf("Error checking cache directory %s: %v", cachePath, err)
 	}
 }
 

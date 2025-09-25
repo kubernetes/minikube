@@ -81,11 +81,15 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, contai
 	}
 
 	binariesURL := viper.GetString("binary-mirror")
-	if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
-		exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
-	}
-	if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
-		exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+
+	// Skip binary downloads in --no-kubernetes mode
+	if !viper.GetBool("no-kubernetes") {
+		if err := doCacheBinaries(k8sVersion, containerRuntime, driverName, binariesURL); err != nil {
+			exit.Error(reason.InetCacheBinaries, "Failed to cache binaries", err)
+		}
+		if _, err := CacheKubectlBinary(k8sVersion, binariesURL); err != nil {
+			exit.Error(reason.InetCacheKubectl, "Failed to cache kubectl", err)
+		}
 	}
 	waitCacheRequiredImages(cacheGroup)
 	if driver.IsKIC(driverName) {
