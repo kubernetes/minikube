@@ -712,7 +712,7 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 		if cfg.KubernetesConfig.ExtraOptions.Exists("kubeadm.skip-phases=addon/kube-proxy") {
 			addons = "coredns"
 		}
-		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
+		_, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s phase addon %s --config %s", baseCmd, addons, conf)))
 		return err
 	}
 	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
@@ -768,11 +768,11 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 			" --apiserver-bind-port=" + strconv.Itoa(n.Port)
 	}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
+	if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", joinCmd)); err != nil {
 		return errors.Wrapf(err, "kubeadm join")
 	}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
+	if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", "systemctl daemon-reload && systemctl enable kubelet && systemctl start kubelet")); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
 
