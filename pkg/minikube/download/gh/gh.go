@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package gh provides helper utilities for interacting with the GitHub API
 package gh
 
 import (
@@ -33,9 +34,9 @@ func ReleaseAssets(org, project, tag string) ([]*github.ReleaseAsset, error) {
 	ctx := context.Background()
 	// Use an authenticated client when GITHUB_TOKEN is set to avoid low rate limits.
 	httpClient := oauthClient(ctx, os.Getenv("GITHUB_TOKEN"))
-	gh := github.NewClient(httpClient)
+	ghc := github.NewClient(httpClient)
 
-	rel, _, err := gh.Repositories.GetReleaseByTag(ctx, org, project, tag)
+	rel, _, err := ghc.Repositories.GetReleaseByTag(ctx, org, project, tag)
 	return rel.Assets, err
 }
 
