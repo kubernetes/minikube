@@ -225,7 +225,7 @@ var KubeadmExtraConfigOpts = []string{
 // root PATH. On Debian 12 user PATH does not contain /usr/sbin which breaks
 // kubeadm since https://github.com/kubernetes/kubernetes/pull/129450.
 func KubeadmCmdWithPath(version string) string {
-	return fmt.Sprintf("env PATH=\"%s:$PATH\" kubeadm", BinRoot(version))
+	return fmt.Sprintf("env PATH=\"%s:$PATH\" kubeadm", binRoot(version))
 }
 
 // EtcdDataDir is where etcd data is stored.
