@@ -47,7 +47,7 @@ func init() {
 		Config:   configure,
 		Status:   status,
 		Default:  true,
-		Priority: registry.Fallback,
+		Priority: registry.Deprecated,
 		Init:     func() drivers.Driver { return virtualbox.NewDriver("", "") },
 	})
 	if err != nil {
