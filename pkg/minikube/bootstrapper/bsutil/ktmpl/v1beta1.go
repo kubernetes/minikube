@@ -93,7 +93,7 @@ staticPodPath: {{.StaticPodPath}}
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 clusterCIDR: "{{.PodSubnet }}"
-metricsBindAddress: 0.0.0.0:10249
+metricsBindAddress: {{.KubeProxyMetricsBindAddress}}
 conntrack:
   maxPerCore: 0
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"

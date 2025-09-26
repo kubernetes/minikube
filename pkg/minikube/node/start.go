@@ -631,12 +631,21 @@ func setupKubeconfig(h host.Host, cc config.ClusterConfig, n config.Node, cluste
 		if hostIP, _, port, err = driver.ControlPlaneEndpoint(&cc, &n, h.DriverName); err != nil {
 			exit.Message(reason.DrvCPEndpoint, fmt.Sprintf("failed to construct cluster server address: %v", err), out.V{"profileArg": fmt.Sprintf("--profile=%s", clusterName)})
 		}
-	}
-	addr := fmt.Sprintf("https://%s", net.JoinHostPort(hostIP, strconv.Itoa(port)))
 
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.ReplaceAll(addr, hostIP, cc.KubernetesConfig.APIServerName)
+		if hostIP == "" {
+                       hostIP = "localhost"
+               }
+
 	}
+
+
+
+	// Build address *after* picking the final host (don’t string-replace inside a bracketed IPv6 literal).
+        hostForAddr := hostIP
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+               hostForAddr = cc.KubernetesConfig.APIServerName
+       }
+       addr := "https://" + net.JoinHostPort(hostForAddr, strconv.Itoa(port))
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,

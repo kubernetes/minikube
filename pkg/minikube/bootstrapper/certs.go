@@ -256,14 +256,31 @@ func generateProfileCerts(cfg config.ClusterConfig, n config.Node, shared shared
 	klog.Info("generating profile certs ...")
 
 	k8s := cfg.KubernetesConfig
-
 	serviceIP, err := util.ServiceClusterIP(k8s.ServiceCIDR)
-	if err != nil {
-		return nil, errors.Wrap(err, "get service cluster ip")
-	}
+        if err != nil {
+                return nil, errors.Wrap(err, "get service cluster ip")
+        }
 
-	apiServerIPs := append([]net.IP{}, k8s.APIServerIPs...)
-	apiServerIPs = append(apiServerIPs, serviceIP, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1"))
+	// Collect both service VIPs if present
+	var serviceIPv6 net.IP
+        if k8s.ServiceCIDRv6 != "" {
+                if sip6, err := util.ServiceClusterIP(k8s.ServiceCIDRv6); err == nil {
+                        serviceIPv6 = sip6
+                } else {
+                        klog.Warningf("failed to compute service IPv6 from %q: %v", k8s.ServiceCIDRv6, err)
+                }
+        }
+
+        apiServerIPs := append([]net.IP{}, k8s.APIServerIPs...)
+        apiServerIPs = append(apiServerIPs, serviceIP)
+        if serviceIPv6 != nil {
+                apiServerIPs = append(apiServerIPs, serviceIPv6)
+        }
+        // Always include loopbacks for both families; the docker driver publishes ports on ::1.
+        apiServerIPs = append(apiServerIPs, net.ParseIP("127.0.0.1"), net.ParseIP("::1"))
+        // Common local addresses used by the node runtime/bridge
+        apiServerIPs = append(apiServerIPs, net.ParseIP(oci.DefaultBindIPV4), net.ParseIP("10.0.0.1"))
+
 	// append ip addresses of all control-plane nodes
 	for _, n := range config.ControlPlanes(cfg) {
 		apiServerIPs = append(apiServerIPs, net.ParseIP(n.IP))

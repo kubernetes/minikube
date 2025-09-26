@@ -386,6 +386,45 @@ func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
 	return nil
 }
 
+
+// ensureControlPlaneAlias adds control-plane.minikube.internal -> IP mapping in /etc/hosts
+func (k *Bootstrapper) ensureControlPlaneAlias(cfg config.ClusterConfig) error {
+    family := strings.ToLower(cfg.KubernetesConfig.IPFamily)
+
+    // HA: use the VIP that kube-vip sets
+    if config.IsHA(cfg) {
+        if ip := net.ParseIP(cfg.KubernetesConfig.APIServerHAVIP); ip != nil {
+            return machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip)
+        }
+        return nil
+    }
+
+    // Single-CP: pick the right address based on IP family
+    cp, err := config.ControlPlane(cfg)
+    if err != nil {
+        return errors.Wrap(err, "get control-plane node")
+    }
+
+    // For ipv6-only or dual, add AAAA
+    if family == "ipv6" || family == "dual" {
+        if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+            if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+                return errors.Wrap(err, "add control-plane alias (ipv6)")
+            }
+        }
+    }
+    // For ipv4-only or dual, add A
+    if family != "ipv6" {
+        if ip4 := net.ParseIP(cp.IP); ip4 != nil {
+            if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip4); err != nil {
+                return errors.Wrap(err, "add control-plane alias (ipv4)")
+            }
+        }
+    }
+    return nil
+}
+
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	start := time.Now()
@@ -421,6 +460,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	conf := constants.KubeadmYamlPath
 	if _, err := k.c.RunCmd(exec.Command("sudo", "cp", conf+".new", conf)); err != nil {
 		return errors.Wrap(err, "cp")
+	}
+
+	if err := k.ensureControlPlaneAlias(cfg); err != nil {
+    		klog.Warningf("could not ensure control-plane alias: %v", err)
 	}
 
 	err := k.init(cfg)
@@ -743,6 +786,18 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 	return nil
 }
 
+
+func advertiseIP(cc config.ClusterConfig, n config.Node) string {
+    switch strings.ToLower(cc.KubernetesConfig.IPFamily) {
+    case "ipv6":
+        if n.IPv6 != "" {
+            return n.IPv6
+        }
+    }
+    // default / ipv4 / dual: keep IPv4
+    return n.IP
+}
+
 // JoinCluster adds new node to an existing cluster.
 func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
 	// Join the control plane by specifying its token
@@ -755,8 +810,10 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 		// ref: https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-join/#options
 		// "If the node should host a new control plane instance, the IP address the API Server will advertise it's listening on. If not set the default network interface will be used."
 		// "If the node should host a new control plane instance, the port for the API Server to bind to."
-		joinCmd += " --apiserver-advertise-address=" + n.IP +
-			" --apiserver-bind-port=" + strconv.Itoa(n.Port)
+		// pick IPv6 for ipv6 clusters, otherwise IPv4
+    		addr := advertiseIP(cc, n)
+		joinCmd += " --apiserver-advertise-address=" + addr +
+        		" --apiserver-bind-port=" + strconv.Itoa(n.Port)
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd)); err != nil {
@@ -996,18 +1053,45 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	// add "control-plane.minikube.internal" dns alias
 	// note: needs to be called after APIServerHAVIP is set (in startPrimaryControlPlane()) and before kubeadm kicks off
-	cpIP := cfg.KubernetesConfig.APIServerHAVIP
-	if !config.IsHA(cfg) {
-		cp, err := config.ControlPlane(cfg)
-		if err != nil {
-			return errors.Wrap(err, "get control-plane node")
-		}
-		cpIP = cp.IP
-	}
-	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cpIP)); err != nil {
-		return errors.Wrap(err, "add control-plane alias")
-	}
+	
+	family := strings.ToLower(cfg.KubernetesConfig.IPFamily)
 
+if config.IsHA(cfg) {
+    // For HA we already have APIServerHAVIP set appropriately by kube-vip generation
+    if ip := net.ParseIP(cfg.KubernetesConfig.APIServerHAVIP); ip != nil {
+        if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip); err != nil {
+            return errors.Wrap(err, "add HA control-plane alias")
+        }
+    }
+} else {
+    cp, err := config.ControlPlane(cfg)
+    if err != nil {
+        return errors.Wrap(err, "get control-plane node")
+    }
+
+    // ipv6-only → write AAAA; ipv4/dual → write A; dual → write both
+    if family == "ipv6" {
+        if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+            if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+                return errors.Wrap(err, "add control-plane alias (ipv6)")
+            }
+        }
+    } else {
+        if ip4 := net.ParseIP(cp.IP); ip4 != nil {
+            if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip4); err != nil {
+                return errors.Wrap(err, "add control-plane alias (ipv4)")
+            }
+        }
+        if family == "dual" {
+            if ip6 := net.ParseIP(cp.IPv6); ip6 != nil {
+                // add AAAA alongside A
+                if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, ip6); err != nil {
+                    return errors.Wrap(err, "add control-plane alias (dual, ipv6)")
+                }
+            }
+        }
+    }
+}
 	// "ensure" kubelet is started, intentionally non-fatal in case of an error
 	if err := sysinit.New(k.c).Start("kubelet"); err != nil {
 		klog.Errorf("Couldn't ensure kubelet is started this might cause issues (will continue): %v", err)

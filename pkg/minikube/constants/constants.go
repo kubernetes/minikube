@@ -80,6 +80,10 @@ const (
 	ClusterDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
+	// DefaultServiceCIDRv6 is The IPv6 CIDR to be used for service cluster IPs
+        DefaultServiceCIDRv6 = "fd00::/108"
+        // DefaultPodCIDRv6 is The IPv6 CIDR to be used for pod IPs
+        DefaultPodCIDRv6 = "fd01::/64"
 	// HostAlias is a DNS alias to the container/VM host IP
 	HostAlias = "host.minikube.internal"
 	// ControlPlaneAlias is a DNS alias pointing to the apiserver frontend
