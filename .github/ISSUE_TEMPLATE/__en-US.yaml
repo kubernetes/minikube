@@ -47,8 +47,6 @@ body:
         - VirtualBox
         - None (Baremetal)
         - SSH
-        - VMware
-        - Parallels
         - QEMU
     validations:
       required: false
