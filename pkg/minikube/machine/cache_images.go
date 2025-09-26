@@ -19,6 +19,7 @@ package machine
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -32,6 +33,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
 	"github.com/pkg/errors"
@@ -47,6 +49,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/style"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -528,7 +531,7 @@ func transferAndSaveImage(cr command.Runner, k8s config.KubernetesConfig, dst st
 }
 
 // pullImages pulls images to the container run time
-func pullImages(crMgr cruntime.Manager, imgs []string) error {
+var pullImages = func(crMgr cruntime.Manager, imgs []string) error {
 	klog.Infof("pullImages start: %s", imgs)
 	start := time.Now()
 
@@ -551,6 +554,9 @@ func pullImages(crMgr cruntime.Manager, imgs []string) error {
 	return nil
 }
 
+// function variable so tests can override
+var loadConfig = config.Load
+
 // PullImages pulls images to all nodes in profile
 func PullImages(images []string, profile *config.Profile) error {
 	api, err := NewAPIClient()
@@ -564,7 +570,7 @@ func PullImages(images []string, profile *config.Profile) error {
 
 	pName := profile.Name
 
-	c, err := config.Load(pName)
+	c, err := loadConfig(pName)
 	if err != nil {
 		klog.Errorf("Failed to load profile %q: %v", pName, err)
 		return errors.Wrapf(err, "error loading config for profile :%v", pName)
@@ -596,6 +602,12 @@ func PullImages(images []string, profile *config.Profile) error {
 			err = pullImages(crMgr, images)
 			if err != nil {
 				failed = append(failed, m)
+				if terr, ok := err.(*transport.Error); ok {
+					if terr.StatusCode == http.StatusTooManyRequests {
+						// This confirms it's a 429 rate limit error
+						out.Styled(style.Notice, "Kicbase images have not been deleted. To delete images run:")
+					}
+				}
 				klog.Warningf("Failed to pull images for profile %s %v", pName, err.Error())
 				continue
 			}
