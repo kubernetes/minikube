@@ -170,11 +170,6 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:      "storage-provisioner-gluster",
-		set:       SetBool,
-		callbacks: []setFn{enableOrDisableStorageClasses},
-	},
-	{
 		name:      "storage-provisioner-rancher",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableStorageClasses},
