@@ -122,6 +122,13 @@ func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
 	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Running" {
 		t.Errorf("Kubernetes status, got: %s, want: Running", k8sStatus)
 	}
+
+	// docs: delete minikube profile to clean up cache for subsequent --no-kubernetes tests.
+	args = []string{"delete", "-p", profile}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to delete minikube profile with args: %q : %v", rr.Command(), err)
+	}
 }
 
 // validateStartWithStopK8s starts a minikube cluster while stopping Kubernetes.
