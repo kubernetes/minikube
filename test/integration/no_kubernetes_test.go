@@ -29,8 +29,8 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
@@ -121,6 +121,13 @@ func validateStartWithK8S(ctx context.Context, t *testing.T, profile string) {
 	// docs: return an error if Kubernetes is not running.
 	if k8sStatus := getK8sStatus(ctx, t, profile); k8sStatus != "Running" {
 		t.Errorf("Kubernetes status, got: %s, want: Running", k8sStatus)
+	}
+
+	// docs: delete minikube profile to clean up cache for subsequent --no-kubernetes tests.
+	args = []string{"delete", "-p", profile}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to delete minikube profile with args: %q : %v", rr.Command(), err)
 	}
 }
 
