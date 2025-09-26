@@ -140,6 +140,16 @@ RUN clean-install \
     # libglib2.0-0 is required for conmon, which is required for podman
     libglib2.0-0
 
+# Add support for rsa1 in sshd
+# modern debian-based OSs dont support rsa1 by default, so we need to enable it to support older ssh clients
+# TODO: remove after https://github.com/kubernetes/minikube/issues/21543 is solved
+RUN cat <<EOF >> /etc/ssh/sshd_config
+PubkeyAcceptedAlgorithms +ssh-rsa
+HostkeyAlgorithms +ssh-rsa
+PubkeyAuthentication yes
+PasswordAuthentication no
+EOF
+
 # Install nerdctl and nerdctld
 RUN export ARCH=$(dpkg --print-architecture) \
     && if [ "$ARCH" = 'amd64' ] || [ "$ARCH" = 'arm64' ]; then \
