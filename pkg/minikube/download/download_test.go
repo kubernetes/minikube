@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Force download tests to run in serial.
@@ -47,7 +48,31 @@ func mockSleepDownload(downloadsCounter *int) func(src, dst string) error {
 	}
 }
 
+//	point each subtest at an isolated MINIKUBE_HOME, pre-create the preload cache directory,
+//
+// and automatically restore the global download/preload mocks after each run.
+// Applied the helper across all download-related tests
+func setupTestMiniHome(t *testing.T) {
+	t.Helper()
+	tmpHome := t.TempDir()
+	t.Setenv(localpath.MinikubeHome, tmpHome)
+	if err := os.MkdirAll(targetDir(), 0o755); err != nil {
+		t.Fatalf("failed to create preload cache dir: %v", err)
+	}
+	origDownloadMock := DownloadMock
+	origCheckCache := checkCache
+	origCheckPreloadExists := checkPreloadExists
+	origGetChecksumGCS := getChecksumGCS
+	t.Cleanup(func() {
+		DownloadMock = origDownloadMock
+		checkCache = origCheckCache
+		checkPreloadExists = origCheckPreloadExists
+		getChecksumGCS = origGetChecksumGCS
+	})
+}
+
 func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
+	setupTestMiniHome(t)
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
@@ -78,6 +103,8 @@ func testBinaryDownloadPreventsMultipleDownload(t *testing.T) {
 }
 
 func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
+	setupTestMiniHome(t)
+
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 	f, err := os.CreateTemp("", "preload")
@@ -118,6 +145,7 @@ func testPreloadDownloadPreventsMultipleDownload(t *testing.T) {
 }
 
 func testPreloadNotExists(t *testing.T) {
+	setupTestMiniHome(t)
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
@@ -136,6 +164,7 @@ func testPreloadNotExists(t *testing.T) {
 }
 
 func testImageToCache(t *testing.T) {
+	setupTestMiniHome(t)
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 
@@ -169,6 +198,7 @@ func testImageToCache(t *testing.T) {
 // - GitHub is only consulted when GCS reports the preload as not existing.
 // - Global state is correctly restored after the test.
 func testPreloadExistsCaching(t *testing.T) {
+	setupTestMiniHome(t)
 	checkCache = func(_ string) (fs.FileInfo, error) {
 		return nil, fmt.Errorf("cache not found")
 	}
@@ -224,6 +254,8 @@ func testPreloadExistsCaching(t *testing.T) {
 }
 
 func testPreloadWithCachedSizeZero(t *testing.T) {
+	setupTestMiniHome(t)
+
 	downloadNum := 0
 	DownloadMock = mockSleepDownload(&downloadNum)
 	f, err := os.CreateTemp("", "preload")
