@@ -346,7 +346,7 @@ func joinCluster(starter Starter, cpBs bootstrapper.Bootstrapper, bs bootstrappe
 
 			// reset node to revert any changes made by previous kubeadm init/join
 			klog.Infof("resetting %s node %q before attempting to rejoin cluster...", role, starter.Node.Name)
-			if _, err := starter.Runner.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
+			if _, err := starter.Runner.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("%s reset --force", bsutil.KubeadmCmdWithPath(starter.Cfg.KubernetesConfig.KubernetesVersion)))); err != nil {
 				klog.Infof("kubeadm reset failed, continuing anyway: %v", err)
 			} else {
 				klog.Infof("successfully reset %s node %q", role, starter.Node.Name)

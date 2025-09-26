@@ -17,69 +17,12 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/download"
 )
-
-type copyFailRunner struct {
-	command.Runner
-}
-
-func (copyFailRunner) Copy(_ assets.CopyableFile) error {
-	return fmt.Errorf("test error during copy file")
-}
-
-func newFakeCommandRunnerCopyFail() command.Runner {
-	return copyFailRunner{command.NewFakeCommandRunner()}
-}
-
-func TestCopyBinary(t *testing.T) {
-	var tc = []struct {
-		lastUpdateCheckFilePath string
-		src, dst, desc          string
-		err                     bool
-		runner                  command.Runner
-	}{
-		{
-			desc:   "not existing src",
-			dst:    "/tmp/testCopyBinary1",
-			src:    "/tmp/testCopyBinary2",
-			err:    true,
-			runner: command.NewFakeCommandRunner(),
-		},
-		{
-			desc:   "src /etc/hosts",
-			dst:    "/tmp/testCopyBinary1",
-			src:    "/etc/hosts",
-			err:    false,
-			runner: command.NewFakeCommandRunner(),
-		},
-		{
-			desc:   "existing src, copy fail",
-			dst:    "/etc/passwd",
-			src:    "/etc/hosts",
-			err:    true,
-			runner: newFakeCommandRunnerCopyFail(),
-		},
-	}
-	for _, test := range tc {
-		t.Run(test.desc, func(t *testing.T) {
-			err := CopyBinary(test.runner, test.src, test.dst)
-			if err != nil && !test.err {
-				t.Fatalf("Got unexpected error %v", err)
-			}
-			if err == nil && test.err {
-				t.Fatal("Expected error but got nil")
-			}
-		})
-	}
-}
 
 func TestCacheBinariesForBootstrapper(t *testing.T) {
 	download.DownloadMock = download.CreateDstDownloadMock
