@@ -72,6 +72,14 @@ type interfaceInfo struct {
 // The returned error.Kind can be used to provide a suggestion for resolving the
 // issue.
 func ValidateHelper() error {
+	// Ideally minikube will not try to validate in download-only mode, but this
+	// is called from different places in different drivers, so the easier way
+	// to skip validation is to skip it here.
+	if viper.GetBool("download-only") {
+		log.Debug("Skipping vmnet-helper validation in download-only mode")
+		return nil
+	}
+
 	// Is it installed?
 	if _, err := os.Stat(executablePath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
