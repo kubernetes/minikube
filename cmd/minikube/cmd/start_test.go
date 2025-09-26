@@ -319,7 +319,6 @@ func TestBaseImageFlagDriverCombo(t *testing.T) {
 		{driver.None, false},
 		{driver.KVM2, false},
 		{driver.VirtualBox, false},
-		{driver.HyperKit, false},
 		{driver.VMware, false},
 		{driver.HyperV, false},
 		{driver.Parallels, false},
@@ -731,11 +730,6 @@ func TestValidateStaticIP(t *testing.T) {
 			staticIP: "8.8.8.8",
 			drvName:  "docker",
 			errorMsg: "static IP must be private",
-		},
-		{
-			staticIP: "8.8.8.8",
-			drvName:  "hyperkit",
-			errorMsg: "",
 		},
 		{
 			staticIP: "fdfc:a4c0:e99e:7ad3::",

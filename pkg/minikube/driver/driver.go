@@ -53,8 +53,6 @@ const (
 	QEMU = "qemu"
 	// VirtualBox driver
 	VirtualBox = "virtualbox"
-	// HyperKit driver
-	HyperKit = "hyperkit"
 	// VMware driver
 	VMware = "vmware"
 	// HyperV driver
@@ -216,11 +214,6 @@ func IsVMware(name string) bool {
 // IsHyperV check if the driver is Hyper-V
 func IsHyperV(name string) bool {
 	return name == HyperV
-}
-
-// IsHyperKit check if the driver is HyperKit
-func IsHyperKit(name string) bool {
-	return name == HyperKit
 }
 
 // SupportsNetworkFlag reutuns if driver supports the --network flag

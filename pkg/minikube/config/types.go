@@ -43,8 +43,6 @@ type ClusterConfig struct {
 	CPUs                    int
 	DiskSize                int
 	Driver                  string
-	HyperkitVpnKitSock      string   // Only used by the Hyperkit driver
-	HyperkitVSockPorts      []string // Only used by the Hyperkit driver
 	DockerEnv               []string // Each entry is formatted as KEY=VALUE.
 	ContainerVolumeMounts   []string // Only used by container drivers: Docker, Podman
 	InsecureRegistry        []string
@@ -61,18 +59,16 @@ type ClusterConfig struct {
 	APIServerPort           int
 	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts     bool     // Only used by virtualbox
-	NFSShare                []string
-	NFSSharesRoot           string
-	UUID                    string // Only used by hyperkit to restore the mac address
-	NoVTXCheck              bool   // Only used by virtualbox
-	DNSProxy                bool   // Only used by virtualbox
-	HostDNSResolver         bool   // Only used by virtualbox
-	HostOnlyNicType         string // Only used by virtualbox
-	NatNicType              string // Only used by virtualbox
-	SSHIPAddress            string // Only used by ssh driver
-	SSHUser                 string // Only used by ssh driver
-	SSHKey                  string // Only used by ssh driver
-	SSHPort                 int    // Only used by ssh driver
+	UUID                    string   // Only used by vfkit and krunkit drivers to restore the mac address
+	NoVTXCheck              bool     // Only used by virtualbox
+	DNSProxy                bool     // Only used by virtualbox
+	HostDNSResolver         bool     // Only used by virtualbox
+	HostOnlyNicType         string   // Only used by virtualbox
+	NatNicType              string   // Only used by virtualbox
+	SSHIPAddress            string   // Only used by ssh driver
+	SSHUser                 string   // Only used by ssh driver
+	SSHKey                  string   // Only used by ssh driver
+	SSHPort                 int      // Only used by ssh driver
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool

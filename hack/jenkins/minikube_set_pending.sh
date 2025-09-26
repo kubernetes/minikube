@@ -27,7 +27,6 @@
 set -eux -o pipefail
 
 jobs=(
-    #  'Hyperkit_macOS'
      'Hyper-V_Windows'
      'KVM_Linux'
      'KVM_Linux_containerd'

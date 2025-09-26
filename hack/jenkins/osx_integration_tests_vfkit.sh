@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This script runs the integration tests on an OSX machine for the Hyperkit Driver
+# This script runs the integration tests on an OSX machine for the vfkit Driver
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
