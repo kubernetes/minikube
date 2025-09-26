@@ -669,7 +669,6 @@ func (k *Bootstrapper) restartPrimaryControlPlane(cfg config.ClusterConfig) erro
 
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, c := range cmds {
-		// c := exec.CommandContext(ctx, "sudo", "bash", "-c", cmd)
 		if _, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", c)); err != nil {
 			klog.Errorf("%s failed - will try once more: %v", c, err)
 
