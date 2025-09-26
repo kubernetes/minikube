@@ -149,8 +149,8 @@ func teardown(cc config.ClusterConfig, name string) (*config.Node, error) {
 				sp = "unix://" + sp
 			}
 
-			cmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("KUBECONFIG=/var/lib/minikube/kubeconfig %s reset --force --ignore-preflight-errors=all --cri-socket=%s",
-				bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), sp))
+			cmd := exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("KUBECONFIG=/var/lib/minikube/kubeconfig %s reset --force --ignore-preflight-errors=all --cri-socket=%s",
+				bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), sp))
 			if _, kerr = r.RunCmd(cmd); kerr == nil {
 				klog.Infof("successfully reset node %q", m)
 			}
