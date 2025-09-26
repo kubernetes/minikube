@@ -46,7 +46,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 	}
 	klog.Infof("Didn't find k8s binaries: %v\nInitiating transfer...", err)
 
-	dir := binRoot(cfg.KubernetesVersion)
+	dir := BinRoot(cfg.KubernetesVersion)
 	_, err = c.RunCmd(exec.Command("sudo", "mkdir", "-p", dir))
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 
 // binariesExist returns true if the binaries already exist
 func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) {
-	dir := binRoot(cfg.KubernetesVersion)
+	dir := BinRoot(cfg.KubernetesVersion)
 	rr, err := c.RunCmd(exec.Command("sudo", "ls", dir))
 	if err != nil {
 		return false, err
@@ -97,7 +97,7 @@ func binariesExist(cfg config.KubernetesConfig, c command.Runner) (bool, error) 
 	return true, nil
 }
 
-// binRoot returns the persistent path binaries are stored in
-func binRoot(version string) string {
+// BinRoot returns the persistent path binaries are stored in
+func BinRoot(version string) string {
 	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
 }
