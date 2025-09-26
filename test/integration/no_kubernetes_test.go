@@ -22,11 +22,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestNoKubernetes tests starting minikube without Kubernetes,
@@ -52,6 +56,7 @@ func TestNoKubernetes(t *testing.T) {
 			{"StartWithK8s", validateStartWithK8S},
 			{"StartWithStopK8s", validateStartWithStopK8s},
 			{"Start", validateStartNoK8S},
+			{"VerifyNok8sNoK8sDownloads", VerifyNoK8sDownloadCache},
 			{"VerifyK8sNotRunning", validateK8SNotRunning},
 			{"ProfileList", validateProfileListNoK8S},
 			{"Stop", validateStopNoK8S},
@@ -74,6 +79,32 @@ func TestNoKubernetes(t *testing.T) {
 			})
 		}
 	})
+}
+
+// VerifyNoK8sDownloadCache verifies that starting minikube with --no-kubernetes does not create a download cache.
+func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string) {
+	defer PostMortemLogs(t, profile)
+
+	// Clean any existing cache from previous tests to ensure we test only --no-kubernetes behavior
+	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
+	if err := os.RemoveAll(cachePath); err != nil {
+		t.Fatalf("failed to remove cache directory %s: %v", cachePath, err)
+	}
+
+	// Restart the existing minikube instance with --no-kubernetes to verify no cache is created
+	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("failed to restart minikube with --no-kubernetes: %v", err)
+		return
+	}
+
+	// Now check that cache was not created during the --no-kubernetes start
+	if _, err := os.Stat(cachePath); err == nil {
+		t.Errorf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
+	} else if err != nil && !os.IsNotExist(err) {
+		t.Errorf("Error checking cache directory %s: %v", cachePath, err)
+	}
 }
 
 // validateStartNoK8sWithVersion expect an error when starting a minikube cluster without kubernetes and with a kubernetes version.
