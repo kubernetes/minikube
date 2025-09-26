@@ -29,7 +29,7 @@ var (
 	schema = map[string]update.Item{
 		"deploy/kicbase/Dockerfile": {
 			Replace: map[string]string{
-				`UBUNTU_JAMMY_IMAGE=.*`: `UBUNTU_JAMMY_IMAGE="{{.LatestVersion}}"`,
+				`KICBASE_IMAGE=.*`: `KICBASE_IMAGE="{{.LatestVersion}}"`,
 			},
 		},
 	}
