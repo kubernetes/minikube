@@ -43,6 +43,7 @@ FROM ${KICBASE_IMAGE} AS kicbase
 
 ARG BUILDKIT_VERSION="v0.18.1"
 ARG CRIO_VERSION="v1.34"
+ARG CRICTL_VERSION="v1.34.0"
 ARG CRI_DOCKERD_VERSION="v0.4.0"
 ARG CRI_DOCKERD_COMMIT="b9b889355f3002c01db294427964e454dfbc3feb"
 ARG CNI_PLUGINS_VERSION="v1.4.0"
@@ -202,6 +203,25 @@ RUN clean-install podman && \
     echo "d /run/podman 0770 root podman" > /etc/tmpfiles.d/podman.conf && \
     systemd-tmpfiles --create
 
+ # install crictl
+RUN export ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+      amd64) CRICTL_ARCH="amd64" ;; \
+      arm64) CRICTL_ARCH="arm64" ;; \
+      armhf) CRICTL_ARCH="armhf" ;; \
+      ppc64el) CRICTL_ARCH="ppc64le" ;; \
+      s390x) CRICTL_ARCH="s390x" ;; \
+      *) echo "Unsupported architecture for crictl: $ARCH" && exit 1 ;; \
+    esac && \
+    if [ "$CRICTL_ARCH" != "armhf" ]; then \
+      curl -fsSL --retry 5 --output /tmp/crictl.tgz "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${CRICTL_ARCH}.tar.gz" && \
+      tar -C /usr/local/bin -xzvf /tmp/crictl.tgz && \
+      rm -f /tmp/crictl.tgz && \
+      chmod +x /usr/local/bin/crictl && \
+      if [ -f /usr/local/bin/critest ]; then chmod +x /usr/local/bin/critest; fi; \
+    else \
+      echo "Skipping crictl install for armhf: No asset available in v1.34.0"; \
+    fi   
 # install cri-o dependencies:
 RUN export ARCH=$(dpkg --print-architecture | sed 's/ppc64el/ppc64le/') && \
     mkdir -p /etc/apt/keyrings && \
