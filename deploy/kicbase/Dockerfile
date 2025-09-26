@@ -37,7 +37,7 @@ ENV GOARCH=${TARGETARCH}
 ARG PREBUILT_AUTO_PAUSE
 RUN if [ "$PREBUILT_AUTO_PAUSE" != "true" ]; then cd ./cmd/auto-pause/ && go build -o auto-pause-${TARGETARCH}; fi
 
-# start from ubuntu 22.04, this image is reasonably small as a starting point
+# start from debin 12, this image is reasonably small as a starting point
 # for a kubernetes node image, it doesn't contain much we don't need
 FROM ${KICBASE_IMAGE} AS kicbase
 
