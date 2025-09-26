@@ -18,7 +18,7 @@
 # https://systemd.io/CONTAINER_INTERFACE/
 
 
-# this ARG needs to be global to use it in `FROM` & is updated for new versions of ubuntu:jammy-*
+# this ARG needs to be global to use it in `FROM` & is updated for new versions of debian:bookworm-slim-*
 ARG KICBASE_IMAGE="bookworm-20250908-slim"
 # multi-stage docker build so we can build auto-pause for arm64
 FROM golang:1.24.6 as auto-pause
