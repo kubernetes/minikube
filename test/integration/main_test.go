@@ -172,9 +172,13 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+func HyperkitDriver() bool {
+	return strings.Contains(*startArgs, "--driver=hyperkit") || strings.Contains(*startArgs, "--vm-driver=hyperkit")
+}
+
 // NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
 func NeedsAuxDriver() bool {
-	return HyperVDriver() || KVMDriver()
+	return HyperkitDriver() || KVMDriver()
 }
 
 // VMDriver checks if the driver is a VM
