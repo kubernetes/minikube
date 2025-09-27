@@ -134,32 +134,32 @@ func Target() string {
 
 // NoneDriver returns whether or not this test is using the none driver
 func NoneDriver() bool {
-	return strings.Contains(*startArgs, "--driver=none") || strings.Contains(*startArgs, "--vm-driver=none")
+	return matchDriverFlag("none")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
-	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
+	return matchDriverFlag("hyperv")
 }
 
 // KVM returns true is is KVM driver
 func KVMDriver() bool {
-	return strings.Contains(*startArgs, "--driver=kvm") || strings.Contains(*startArgs, "--vm-driver=kvm") || strings.Contains(*startArgs, "--driver=kvm2") || strings.Contains(*startArgs, "--vm-driver=kvm2")
+	return matchDriverFlag("kvm", "kvm2")
 }
 
 // VirtualboxDriver returns whether or not this test is using the VirtualBox driver
 func VirtualboxDriver() bool {
-	return strings.Contains(*startArgs, "--driver=virtualbox") || strings.Contains(*startArgs, "--vm-driver=virtualbox")
+	return matchDriverFlag("virtualbox")
 }
 
 // DockerDriver returns whether or not this test is using the docker or podman driver
 func DockerDriver() bool {
-	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker")
+	return matchDriverFlag("docker")
 }
 
 // PodmanDriver returns whether or not this test is using the docker or podman driver
 func PodmanDriver() bool {
-	return strings.Contains(*startArgs, "--driver=podman") || strings.Contains(*startArgs, "--vm-driver=podman")
+	return matchDriverFlag("podman")
 }
 
 // RootlessDriver returns whether or not this test is using the rootless KIC driver
@@ -172,9 +172,13 @@ func KicDriver() bool {
 	return DockerDriver() || PodmanDriver()
 }
 
+func HyperkitDriver() bool {
+	return matchDriverFlag("hyperkit")
+}
+
 // NeedsAuxDriver Returns true if the driver needs an auxiliary driver (kvm, hyperkit,..)
 func NeedsAuxDriver() bool {
-	return HyperVDriver() || KVMDriver()
+	return HyperkitDriver() || KVMDriver()
 }
 
 // VMDriver checks if the driver is a VM
@@ -227,4 +231,16 @@ func Seconds(n int) time.Duration {
 // TestingKicBaseImage will return true if the integraiton test is running against a passed --base-image flag
 func TestingKicBaseImage() bool {
 	return strings.Contains(*startArgs, "base-image")
+}
+
+func matchDriverFlag(names ...string) bool {
+	args := *startArgs
+	for _, name := range names {
+		for _, prefix := range []string{"--driver=", "--vm-driver="} {
+			if strings.Contains(args, prefix+name) {
+				return true
+			}
+		}
+	}
+	return false
 }

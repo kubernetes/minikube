@@ -500,7 +500,7 @@ if [ -z "${EXTERNAL}" ]; then
   echo ">> uploading ${SUMMARY_OUT} to gs://${JOB_GCS_BUCKET}_summary.json"
   echo ">>   public URL:  ${REPORT_URL_BASE}/${JOB_GCS_BUCKET}_summary.json"
   gsutil -qm cp "${SUMMARY_OUT}" "gs://${JOB_GCS_BUCKET}_summary.json" || true
-else 
+else
   # Otherwise, put the results in a predictable spot so the upload job can find them
   REPORTS_PATH=test_reports
   mkdir -p "$REPORTS_PATH"
