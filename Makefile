@@ -1213,7 +1213,7 @@ update-kong-ingress-controller-version:
 update-nvidia-device-plugin-version:
 	cd hack && go run update/nvidia_device_plugin_version/nvidia_device_plugin_version.go
 
-# for amd gpu 
+# for amd gpu
 .PHONY: update-amd-device-plugin-version
 update-amd-device-plugin-version:
 	cd hack && go run update/amd_device_gpu_plugin_version/amd_device_gpu_plugin_version.go
