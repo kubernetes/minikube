@@ -318,9 +318,9 @@ var (
 	DrvNotFound = Kind{ID: "DRV_NOT_FOUND", ExitCode: ExDriverNotFound}
 	// minikube could not find a valid driver
 	DrvNotDetected = Kind{ID: "DRV_NOT_DETECTED", ExitCode: ExDriverNotFound}
-	// aux drivers (kvm or hyperkit) were not found
+	// aux drivers (hyperkit) were not found
 	DrvAuxNotNotFound = Kind{ID: "DRV_AUX_NOT_FOUND", ExitCode: ExDriverNotFound}
-	// aux drivers (kvm or hyperkit) were found but not healthy
+	// aux drivers (hyperkit) were found but not healthy
 	DrvAuxNotHealthy = Kind{ID: "DRV_AUX_NOT_HEALTHY", ExitCode: ExDriverError}
 	// minikube found drivers but none were ready to use
 	DrvNotHealthy = Kind{ID: "DRV_NOT_HEALTHY", ExitCode: ExDriverNotFound}
