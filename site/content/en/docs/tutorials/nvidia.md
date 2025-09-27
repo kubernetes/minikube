@@ -86,10 +86,6 @@ to expose GPUs with `--driver=kvm`. Please don't mix these instructions.
 When using NVIDIA GPUs with the kvm driver, we passthrough spare GPUs on the
 host to the minikube VM. Doing so has a few prerequisites:
 
-- You must install the [kvm driver]({{< ref "/docs/drivers/kvm2" >}}) If you already had
-  this installed make sure that you fetch the latest
-  `docker-machine-driver-kvm` binary that has GPU support.
-
 - Your CPU must support IOMMU. Different vendors have different names for this
   technology. Intel calls it Intel VT-d. AMD calls it AMD-Vi. Your motherboard
   must also support IOMMU.
