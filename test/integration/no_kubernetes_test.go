@@ -85,25 +85,20 @@ func TestNoKubernetes(t *testing.T) {
 func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string) {
 	defer PostMortemLogs(t, profile)
 
-	// Clean any existing cache from previous tests to ensure we test only --no-kubernetes behavior
 	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
-	if err := os.RemoveAll(cachePath); err != nil {
-		t.Fatalf("failed to remove cache directory %s: %v", cachePath, err)
-	}
 
-	// Restart the existing minikube instance with --no-kubernetes to verify no cache is created
-	args := append([]string{"start", "-p", profile, "--no-kubernetes", "--memory=3072"}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("failed to restart minikube with --no-kubernetes: %v", err)
-		return
-	}
-
-	// Now check that cache was not created during the --no-kubernetes start
-	if _, err := os.Stat(cachePath); err == nil {
-		t.Errorf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
+	// Printing Cache files for debugging purposes
+	t.Logf("Checking cache directory: %s", cachePath)
+	if files, err := filepath.Glob(filepath.Join(cachePath, "*")); err == nil && len(files) > 0 {
+		t.Logf("Files found in cache after --no-kubernetes start:")
+		for _, file := range files {
+			t.Logf("  - %s", file)
+		}
+		t.Errorf("Cache directory %s should not contain files when using --no-kubernetes, but found %d files", cachePath, len(files))
 	} else if err != nil && !os.IsNotExist(err) {
 		t.Errorf("Error checking cache directory %s: %v", cachePath, err)
+	} else {
+		t.Logf("No files found in cache directory after --no-kubernetes start (as expected)")
 	}
 }
 
