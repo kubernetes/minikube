@@ -1,10 +1,9 @@
-package deploy
+package deployer
 
 import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -25,7 +24,7 @@ const (
 
 type MiniTestBosKosDeployer struct {
 	ctx    context.Context
-	config *MiniTestConfig
+	config *MiniTestBoskosConfig
 	isUp   bool
 
 	id               string
@@ -34,6 +33,7 @@ type MiniTestBosKosDeployer struct {
 	networkName      string
 	firewallRuleName string
 	instanceName     string
+	sshAddr          string
 
 	boskosClient *client.Client
 	// this channel serves as a signal channel for the hearbeat goroutine
@@ -41,7 +41,7 @@ type MiniTestBosKosDeployer struct {
 	boskosHeartbeatClose chan struct{}
 }
 
-func NewMiniTestBosKosDeployer(config *MiniTestConfig) MiniTestDeployer {
+func NewMiniTestBosKosDeployer(config *MiniTestBoskosConfig) MiniTestDeployer {
 	boskosClient, err := boskos.NewClient(config.BoskosLocation)
 	if err != nil {
 		klog.Fatalf("failed to make boskos client: %v", err)
@@ -74,11 +74,11 @@ func (m *MiniTestBosKosDeployer) Up() error {
 		klog.Errorf("Failed to set up ssh: %v", err)
 		return err
 	}
-
-	if err:=m.sshConnectionCheck();err!=nil{
+	if err := sshConnectionCheck(m.ctx, m.remoteUserName, m.sshAddr, nil); err != nil {
 		klog.Errorf("Failed to conntect via ssh: %v", err)
 		return err
 	}
+
 	klog.Infof("Successfully started vm in gcp: %s", m.instanceName)
 	m.isUp = true
 	return nil
@@ -108,17 +108,12 @@ func (m *MiniTestBosKosDeployer) Down() error {
 func (m *MiniTestBosKosDeployer) IsUp() (bool, error) {
 	return m.isUp, nil
 }
-
-func (m *MiniTestBosKosDeployer) DumpLogs() error {
-	return nil
+func (m *MiniTestBosKosDeployer) Execute(args ...string) error {
+	return executeSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, args...)
 }
 
-func (m *MiniTestBosKosDeployer) SSHAddr() (string, error) {
-	addr := fmt.Sprintf("%s.%s.%s", m.instanceName, m.config.GCPZone, m.gcpProject)
-	if m.instanceName == "" || m.config.GCPZone == "" || m.gcpProject == "" {
-		return "", fmt.Errorf("gcp project configuration incorrect: %s", addr)
-	}
-	return addr, nil
+func (m *MiniTestBosKosDeployer) Sync(src string, dst string) error {
+	return executeRsyncSSHCommand(m.ctx, m.remoteUserName, m.sshAddr, nil, src, dst, nil)
 }
 
 func (m *MiniTestBosKosDeployer) requestGCPProject() error {
@@ -150,20 +145,20 @@ func (m *MiniTestBosKosDeployer) gcpVMSetUp() error {
 	}
 
 	// execute gcloud commands to set environment up a vm
-	if err := m.executeGloudCommand(m.ctx, "services", "enable", "compute.googleapis.com"); err != nil {
+	if err := m.executeLocalGloudCommand("services", "enable", "compute.googleapis.com"); err != nil {
 		klog.Warningf("failed to enable service: %v", err)
 	}
-	if err := m.executeGloudCommand(m.ctx, "compute", "networks", "create", m.networkName); err != nil {
+	if err := m.executeLocalGloudCommand("compute", "networks", "create", m.networkName); err != nil {
 		klog.Warningf("failed to set up network: %v", err)
 	}
-	if err := m.executeGloudCommand(m.ctx, "compute", "firewall-rules", "create", m.firewallRuleName, "--network="+m.networkName, "--allow=tcp:22"); err != nil {
+	if err := m.executeLocalGloudCommand("compute", "firewall-rules", "create", m.firewallRuleName, "--network="+m.networkName, "--allow=tcp:22"); err != nil {
 		klog.Warningf("failed to set up firewalls: %v", err)
 	}
 
 	// create the vm
 	description := fmt.Sprintf("%s instance (login ID: %q)", m.instanceName, m.remoteUserName)
 	instImgPair := strings.SplitN(m.config.InstanceImage, "/", 2)
-	if err := m.executeGloudCommand(m.ctx, "compute", "instances", "create",
+	if err := m.executeLocalGloudCommand("compute", "instances", "create",
 		"--zone="+m.config.GCPZone,
 		"--description="+description,
 		"--network="+m.networkName,
@@ -202,50 +197,31 @@ func (m *MiniTestBosKosDeployer) gcpSSHSetUp() error {
 	if err = os.WriteFile(sshKeysPath, sshKeysContent, 0400); err != nil {
 		return fmt.Errorf("failed to create new public key file: %v", err)
 	}
+
 	// set up ssh login with pub key
-	if err := m.executeGloudCommand(m.ctx, "compute", "instance", "add-metadata", m.instanceName, "--zone="+m.config.GCPZone); err != nil {
+	if err := m.executeLocalGloudCommand("compute", "instances", "add-metadata", m.instanceName, "--zone="+m.config.GCPZone, "--metadata-from-file=ssh-keys="+sshKeysPath); err != nil {
 		klog.Warningf("failed to add metadata: %v", err)
+		// continue anyway
 	}
 	// update the local ssh config
-	if err := m.executeGloudCommand(m.ctx, "compute", "config-ssh"); err != nil {
+	if err := m.executeLocalGloudCommand("compute", "config-ssh"); err != nil {
 		klog.Warningf("failed to compute ssh: %v", err)
+		// continue anyway
 	}
 
-	// check ssh connnectivity
+	// set sshAddr field
+	if m.instanceName == "" || m.config.GCPZone == "" || m.gcpProject == "" {
+		return fmt.Errorf("gcp project configuration incorrect: %s.%s.%s", m.instanceName, m.config.GCPZone, m.gcpProject)
+	}
+	m.sshAddr = fmt.Sprintf("%s.%s.%s", m.instanceName, m.config.GCPZone, m.gcpProject)
+
 	return nil
 }
 
-func (m *MiniTestBosKosDeployer) executeGloudCommand(ctx context.Context, args ...string) error {
-	cmd := exec.CommandContext(ctx, "gcloud", append([]string{"--project=" + m.gcpProject}, args...)...)
-	klog.Infof("Executing: %v", cmd.Args)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+func (m *MiniTestBosKosDeployer) executeLocalGloudCommand(args ...string) error {
+
+	if err := executeLocalCommand(m.ctx, "gcloud", append([]string{"--project=" + m.gcpProject}, args...)...); err != nil {
 		return fmt.Errorf("failed to run %v: %v", args, err)
 	}
 	return nil
-}
-
-func (m *MiniTestBosKosDeployer) sshConnectionCheck() error {
-	addr, err := m.SSHAddr()
-	if err != nil {
-		return fmt.Errorf("failed to get ssh addr:%v", err)
-	}
-	for i := range 10 {
-		//  cmd cannot be reused after its failure
-		cmd := exec.CommandContext(m.ctx, addr,
-			"-o",
-			"StrictHostKeyChecking=no",
-			"-o",
-			"User="+m.remoteUserName,
-			"--", "uname", "-a")
-		klog.Infof("executing %v", cmd.Args)
-		
-		if err = cmd.Run(); err == nil {
-			return nil
-		}
-		klog.Infof("[%d/10]ssh command failed with error: %v, command: %v", i, err, cmd)
-		time.Sleep(10 * time.Second)
-	}
-	return fmt.Errorf("failed to connect to vm: %v", err)
 }
