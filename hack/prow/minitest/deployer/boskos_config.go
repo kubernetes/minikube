@@ -1,6 +1,6 @@
-package deploy
+package deployer
 
-type MiniTestConfig struct {
+type MiniTestBoskosConfig struct {
 	GCPZone       string `desc:"GCP zone"`
 	InstanceImage string `desc:"Instance image"`
 	InstanceType  string `desc:"Instance type"`

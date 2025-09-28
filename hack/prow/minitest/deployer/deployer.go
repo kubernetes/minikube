@@ -1,5 +1,4 @@
-package deploy
-
+package deployer
 
 
 type MiniTestDeployer interface {
@@ -9,7 +8,9 @@ type MiniTestDeployer interface {
 	Down() error
 	// IsUp should return true if a test cluster is successfully provisioned
 	IsUp() ( bool,  error)
-	
+	// Execute execute a command in the deployed environment
+	Execute(args ...string)error
+	// Sync copy files from src on host to dst on deployed environment 
+	Sync(src string, dst string) error
 }
-
 
