@@ -261,7 +261,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		}
 		targetPath = tmp.Name()
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
-		url = addChecksumToUrl(url, source, checksum)
+		url = addChecksumToURL(url, source, checksum)
 	}
 
 	if err := download(url, targetPath); err != nil {
@@ -282,8 +282,8 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	return nil
 }
 
-// addChecksumToUrl appends the checksum query parameter to the URL for go-getter (so it can verify before/after download)
-func addChecksumToUrl(url string, ps preloadSource, checksum []byte) string {
+// addChecksumToURL appends the checksum query parameter to the URL for go-getter (so it can verify before/after download)
+func addChecksumToURL(url string, ps preloadSource, checksum []byte) string {
 	switch ps {
 	case preloadSourceGCS: // GCS API gives us MD5 checksums only
 		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
