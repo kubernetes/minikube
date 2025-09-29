@@ -205,8 +205,8 @@ func testPreloadExistsCaching(t *testing.T) {
 	doesPreloadExist := false
 	gcsCheckCalls := 0
 	ghCheckCalls := 0
-	originalGCSCheck := checkRemotePreloadExistsGCS
-	originalGHCheck := checkRemotePreloadExistsGitHub
+	savedGCSCheck := checkRemotePreloadExistsGCS
+	savedGHCheck := checkRemotePreloadExistsGitHub
 	preloadStates = make(map[string]map[string]preloadState)
 	checkRemotePreloadExistsGCS = func(_, _ string) bool {
 		gcsCheckCalls++
@@ -217,8 +217,8 @@ func testPreloadExistsCaching(t *testing.T) {
 		return false
 	}
 	t.Cleanup(func() {
-		checkRemotePreloadExistsGCS = originalGCSCheck
-		checkRemotePreloadExistsGitHub = originalGHCheck
+		checkRemotePreloadExistsGCS = savedGCSCheck
+		checkRemotePreloadExistsGitHub = savedGHCheck
 		preloadStates = make(map[string]map[string]preloadState)
 	})
 
