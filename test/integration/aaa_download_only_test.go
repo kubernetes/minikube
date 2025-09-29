@@ -152,7 +152,7 @@ func TestDownloadOnly(t *testing.T) { // nolint:gocyclo
 				}
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubernetesReleaseBinaries {
-					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, v, bin)
+					fp := localpath.CachedBinaryPath(bin, v, "linux", runtime.GOARCH)
 					_, err := os.Stat(fp)
 					if err != nil {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
