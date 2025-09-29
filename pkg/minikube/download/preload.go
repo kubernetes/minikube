@@ -261,15 +261,7 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		}
 		targetPath = tmp.Name()
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
-		switch source {
-		case preloadSourceGCS: // GCS API gives us MD5 checksums only
-			url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
-			klog.Infof("Got checksum from GCS API %q", hex.EncodeToString(checksum))
-		case preloadSourceGitHub:
-			url += fmt.Sprintf("?checksum=sha256:%s", checksum)
-			klog.Infof("Got checksum from Github API %q", checksum)
-		}
-
+		url = addChecksumToUrl(url, source, checksum)
 	}
 
 	if err := download(url, targetPath); err != nil {
@@ -288,6 +280,19 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 	// If the download was successful, mark off that the preload exists in the cache.
 	setPreloadState(k8sVersion, containerRuntime, preloadState{exists: true, source: source})
 	return nil
+}
+
+// addChecksumToUrl appends the checksum query parameter to the URL for go-getter (so it can verify before/after download)
+func addChecksumToUrl(url string, ps preloadSource, checksum []byte) string {
+	switch ps {
+	case preloadSourceGCS: // GCS API gives us MD5 checksums only
+		url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
+		klog.Infof("Got checksum from GCS API %q", hex.EncodeToString(checksum))
+	case preloadSourceGitHub: // GCS API gives us sha256
+		url += fmt.Sprintf("?checksum=sha256:%s", checksum)
+		klog.Infof("Got checksum from Github API %q", checksum)
+	}
+	return url
 }
 
 func getStorageAttrs(name string) (*storage.ObjectAttrs, error) {
@@ -314,6 +319,7 @@ var getChecksumGCS = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	return attrs.MD5, nil
 }
 
+// getChecksumGithub returns the SHA256 checksum of the preload tarball
 var getChecksumGithub = func(k8sVersion, containerRuntime string) ([]byte, error) {
 	klog.Infof("getting checksum for %s from github api...", TarballName(k8sVersion, containerRuntime))
 	assets, err := gh.ReleaseAssets(PreloadGitHubRepo, PreloadGitHubRepo, PreloadVersion)
