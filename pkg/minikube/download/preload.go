@@ -149,11 +149,13 @@ func remotePreloadExists(url string) bool {
 	return true
 }
 
+// this is a function variable so it can be overridden in tests
 var checkRemotePreloadExistsGCS = func(k8sVersion, containerRuntime string) bool {
 	url := remoteTarballURLGCS(k8sVersion, containerRuntime)
 	return remotePreloadExists(url)
 }
 
+// this is a function variable so it can be overridden in tests
 var checkRemotePreloadExistsGitHub = func(k8sVersion, containerRuntime string) bool {
 	url := remoteTarballURLGitHub(k8sVersion, containerRuntime)
 	return remotePreloadExists(url)
