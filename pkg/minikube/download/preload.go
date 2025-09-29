@@ -261,11 +261,11 @@ func Preload(k8sVersion, containerRuntime, driverName string) error {
 		}
 		targetPath = tmp.Name()
 	} else if checksum != nil { // add URL parameter for go-getter to automatically verify the checksum
-		if source == preloadSourceGCS { // GCS API givs us MD5 checksums only
+		switch source {
+		case preloadSourceGCS: // GCS API gives us MD5 checksums only
 			url += fmt.Sprintf("?checksum=md5:%s", hex.EncodeToString(checksum))
 			klog.Infof("Got checksum from GCS API %q", hex.EncodeToString(checksum))
-		}
-		if source == preloadSourceGitHub {
+		case preloadSourceGitHub:
 			url += fmt.Sprintf("?checksum=sha256:%s", checksum)
 			klog.Infof("Got checksum from Github API %q", checksum)
 		}
@@ -324,14 +324,14 @@ var getChecksumGithub = func(k8sVersion, containerRuntime string) ([]byte, error
 }
 
 func getChecksum(ps preloadSource, k8sVersion, containerRuntime string) ([]byte, error) {
-	if ps == preloadSourceGCS {
+	switch ps {
+	case preloadSourceGCS:
 		return getChecksumGCS(k8sVersion, containerRuntime)
-	}
-	if ps == preloadSourceGitHub {
+	case preloadSourceGitHub:
 		return getChecksumGithub(k8sVersion, containerRuntime)
+	default:
+		return nil, fmt.Errorf("unknown preload source: %s", ps)
 	}
-	// this should never happen
-	return nil, fmt.Errorf("unknown preload source: %s", ps)
 }
 
 // CleanUpOlderPreloads deletes preload files belonging to older minikube versions
