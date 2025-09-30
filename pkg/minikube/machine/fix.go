@@ -272,8 +272,6 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return true, nil
 	}
 	switch d {
-	case driver.HyperKit:
-		return machineExistsMessage(s, err, "connection is shut down")
 	case driver.HyperV:
 		return machineExistsState(s, err)
 	case driver.KVM2:

@@ -118,7 +118,7 @@ func execute() error {
 	// Add x-lay names
 	switch runtime.GOOS {
 	case "darwin":
-		p.NominalX("OS idle", "minikube hyperkit", "minikube virtualbox", "minikube docker", "Docker for Mac Kubernetes", "k3d", "kind")
+		p.NominalX("OS idle", "minikube virtualbox", "minikube docker", "Docker for Mac Kubernetes", "k3d", "kind")
 	case "linux":
 		p.NominalX("OS idle", "minikube kvm2", "minikube virtualbox", "minikube docker", "Docker idle", "k3d", "kind")
 	}
