@@ -420,7 +420,7 @@ func renewExpiredKubeadmCerts(cmd command.Runner, cc config.ClusterConfig) error
 	}
 	out.WarningT("kubeadm certificates have expired. Generating new ones...")
 	bashCmd := fmt.Sprintf("%s certs renew all --config %s", bsutil.KubeadmCmdWithPath(cc.KubernetesConfig.KubernetesVersion), constants.KubeadmYamlPath)
-	if _, err := cmd.RunCmd(exec.Command("/bin/bash", "-c", bashCmd)); err != nil {
+	if _, err := cmd.RunCmd(exec.Command("sudo", "/bin/bash", "-c", bashCmd)); err != nil {
 		return errors.Wrap(err, "kubeadm certs renew")
 	}
 	return nil
