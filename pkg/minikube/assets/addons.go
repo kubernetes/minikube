@@ -292,7 +292,7 @@ var Addons = map[string]*Addon{
 			"0640"),
 	}, false, "kong", "3rd party (Kong HQ)", "@gAmUssA", "https://minikube.sigs.k8s.io/docs/handbook/addons/kong-ingress/", map[string]string{
 		"Kong":        "kong:3.9.1@sha256:14c689c0caf1b8da1403a742016ec64d2f5b5b12ecdec2989f36b2c2c4aa1ac0",
-		"KongIngress": "kong/kubernetes-ingress-controller:3.5.1@sha256:4dc74b6fd7bcea07196900b53b6e1d5fabf6b7e56a7ed5d786e0d1c0ab950d1d",
+		"KongIngress": "kong/kubernetes-ingress-controller:3.5.2@sha256:472012b0f7dca838f2b9cd8fcf6e6daeb2572631b37adb0dbb0770defeb89f04",
 	}, map[string]string{
 		"Kong":        "docker.io",
 		"KongIngress": "docker.io",
@@ -580,9 +580,9 @@ var Addons = map[string]*Addon{
 			"volcano-deployment.yaml",
 			"0640"),
 	}, false, "volcano", "third-party (volcano)", "hwdef", "", map[string]string{
-		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.12.2@sha256:b7c3bd73e2d9240cf17662451d50e0d73654342235a66cdfb2ec221f1628ae35",
-		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.12.2@sha256:286112e70bdbf88174a66895bb3c64dd9026b5a762025b61bcd8f6cac04e1b90",
-		"vc_scheduler":          "volcanosh/vc-scheduler:v1.12.2@sha256:6e28f0f79d4cd09c1c34afaba41623c1b4d0fd7087cc99d6449a8a62e073b50e",
+		"vc_webhook_manager":    "volcanosh/vc-webhook-manager:v1.13.0@sha256:03e36eb220766397b4cd9c2f42bab8666661a0112fa9033ae9bd80d2a9611001",
+		"vc_controller_manager": "volcanosh/vc-controller-manager:v1.13.0@sha256:8dd7ce0cef2df19afb14ba26bec90e2999a3c0397ebe5c9d75a5f68d1c80d242",
+		"vc_scheduler":          "volcanosh/vc-scheduler:v1.13.0@sha256:b05b30b3c25eff5af77e1859f47fc6acfc3520d62dc2838f0623aa4309c40b34",
 	}, map[string]string{
 		"vc_webhook_manager":    "docker.io",
 		"vc_controller_manager": "docker.io",
@@ -751,7 +751,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(addons.NvidiaDevicePlugin, "nvidia-device-plugin/nvidia-device-plugin.yaml.tmpl", vmpath.GuestAddonsDir, "nvidia-device-plugin.yaml", "0640"),
 	}, false, "nvidia-device-plugin", "3rd party (NVIDIA)", "", "https://minikube.sigs.k8s.io/docs/tutorials/nvidia/",
 		map[string]string{
-			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.3@sha256:630596340f8e83aa10b0bc13a46db76772e31b7dccfc34d3a4e41ab7e0aa6117",
+			"NvidiaDevicePlugin": "nvidia/k8s-device-plugin:v0.17.4@sha256:3c54348fe5a57e5700e7d8068e7531d2ef2d5f3ccb70c8f6bac0953432527abd",
 		}, map[string]string{
 			"NvidiaDevicePlugin": "nvcr.io",
 		}),
