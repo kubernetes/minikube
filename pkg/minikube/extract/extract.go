@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -349,10 +350,8 @@ func checkString(s string) string {
 	}
 
 	// Don't translate excluded strings
-	for _, e := range exclude {
-		if e == stringToTranslate {
-			return ""
-		}
+	if slices.Contains(exclude, stringToTranslate) {
+		return ""
 	}
 
 	// Remove unnecessary backslashes
