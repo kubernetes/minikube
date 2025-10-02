@@ -19,7 +19,7 @@ ii  conntrack                       1:1.4.7-1+b2                   amd64        
 ii  containerd.io                   1.7.28-0~debian.12~bookworm    amd64        An open and reliable container runtime
 ii  containernetworking-plugins     1.1.1+ds1-3+b5                 amd64        standard networking plugins - binaries
 ii  coreutils                       9.1-1                          amd64        GNU core utilities
-ii  cri-o                           1.34.0-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
+ii  cri-o                           1.34.1-1.1                     amd64        Open Container Initiative-based implementation of Kubernetes Container Runtime Interface
 ii  criu                            4.1.1-3                        amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                      amd64        OCI runtime written in C
 ii  curl                            7.88.1-10+deb12u14             amd64        command line tool for transferring data with URL syntax
@@ -31,7 +31,7 @@ ii  diffutils                       1:3.8-4                        amd64        
 ii  dirmngr                         2.2.40-1.1+deb12u1             amd64        GNU privacy guard - network certificate management service
 ii  dmsetup                         2:1.02.185-2                   amd64        Linux Kernel Device Mapper userspace library
 ii  dnsutils                        1:9.18.33-1~deb12u2            all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.28.0-0~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
+ii  docker-buildx-plugin            0.29.0-0~debian.12~bookworm    amd64        Docker Buildx plugin extends build capabilities with BuildKit.
 ii  docker-ce                       5:28.4.0-1~debian.12~bookworm  amd64        Docker: the open-source application container engine
 ii  docker-ce-cli                   5:28.4.0-1~debian.12~bookworm  amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.22                        amd64        Debian package management system
@@ -167,7 +167,7 @@ ii  libsmartcols1:amd64             2.38.1-5+deb12u3               amd64        
 ii  libsqlite3-0:amd64              3.40.1-2+deb12u2               amd64        SQLite 3 shared library
 ii  libss2:amd64                    1.47.0-2+b2                    amd64        command-line interface parsing library
 ii  libssh2-1:amd64                 1.10.0-3+b1                    amd64        SSH2 client-side library
-ii  libssl3:amd64                   3.0.17-1~deb12u2               amd64        Secure Sockets Layer toolkit - shared libraries
+ii  libssl3:amd64                   3.0.17-1~deb12u3               amd64        Secure Sockets Layer toolkit - shared libraries
 ii  libstdc++6:amd64                12.2.0-14+deb12u1              amd64        GNU Standard C++ Library v3
 ii  libsubid4:amd64                 1:4.13+dfsg1-1+deb12u1         amd64        subordinate id handling library -- shared library
 ii  libsystemd-shared:amd64         252.39-1~deb12u1               amd64        systemd shared private library
@@ -202,7 +202,7 @@ ii  nvidia-container-toolkit-base   1.17.8-1                       amd64        
 ii  openssh-client                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:9.2p1-2+deb12u7              amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:9.2p1-2+deb12u7              amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
-ii  openssl                         3.0.17-1~deb12u2               amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  openssl                         3.0.17-1~deb12u3               amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.13+dfsg1-1+deb12u1         amd64        change and administer password and group data
 ii  perl-base                       5.36.0-7+deb12u3               amd64        minimal Perl system
 ii  pigz                            2.6-1                          amd64        Parallel Implementation of GZip
