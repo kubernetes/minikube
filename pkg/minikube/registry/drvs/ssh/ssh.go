@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 func init() {
@@ -47,7 +48,7 @@ func init() {
 	}
 }
 
-func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node, _ run.Options) (interface{}, error) {
 	d := ssh.NewDriver(ssh.Config{
 		MachineName:      config.MachineName(cc, n),
 		StorePath:        localpath.MiniPath(),
@@ -82,6 +83,6 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return d, nil
 }
 
-func status() registry.State {
+func status(_ run.Options) registry.State {
 	return registry.State{Installed: true, Healthy: true}
 }

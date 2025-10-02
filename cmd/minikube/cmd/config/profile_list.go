@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/style"
 
 	"github.com/docker/machine/libmachine"
@@ -54,7 +55,7 @@ var profileListCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, _ []string) {
 		output := strings.ToLower(profileOutput)
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(run.Options{})
 
 		switch output {
 		case "json":

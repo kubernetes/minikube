@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 	"k8s.io/minikube/pkg/minikube/translate"
 	"k8s.io/minikube/pkg/version"
 )
@@ -350,5 +351,13 @@ func applyToAllCommands(cmd *cobra.Command, f func(subCmd *cobra.Command)) {
 		if c.HasSubCommands() {
 			applyToAllCommands(c, f)
 		}
+	}
+}
+
+func commandOptions() run.Options {
+	return run.Options{
+		NonInteractive:  !viper.GetBool(interactive),
+		DownloadOnly:    viper.GetBool(downloadOnly),
+		DeleteOnFailure: viper.GetBool(deleteOnFailure),
 	}
 }

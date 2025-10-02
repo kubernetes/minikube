@@ -165,7 +165,7 @@ func runStart(cmd *cobra.Command, _ []string) {
 	go download.CleanUpOlderPreloads()
 
 	// Avoid blocking execution on optional HTTP fetches
-	go notify.MaybePrintUpdateTextFromGithub()
+	go notify.MaybePrintUpdateTextFromGithub(commandOptions())
 
 	displayEnviron(os.Environ())
 	if viper.GetBool(force) {
@@ -300,6 +300,8 @@ func runStart(cmd *cobra.Command, _ []string) {
 }
 
 func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
+	options := commandOptions()
+
 	driverName := ds.Name
 	klog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -348,7 +350,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	klog.Infof("cluster config:\n%+v", cc)
 
 	if firewall.IsBootpdBlocked(cc) {
-		if err := firewall.UnblockBootpd(); err != nil {
+		if err := firewall.UnblockBootpd(options); err != nil {
 			klog.Warningf("failed unblocking bootpd from firewall: %v", err)
 		}
 	}
@@ -385,7 +387,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, viper.GetBool(deleteOnFailure))
+	mRunner, preExists, mAPI, host, err := node.Provision(&cc, &n, options)
 	if err != nil {
 		return node.Starter{}, err
 	}
@@ -471,8 +473,10 @@ func imageMatchesBinaryVersion(imageVersion, binaryVersion string) bool {
 }
 
 func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+	options := commandOptions()
+
 	// start primary control-plane node
-	configInfo, err := node.Start(starter)
+	configInfo, err := node.Start(starter, options)
 	if err != nil {
 		configInfo, err = maybeDeleteAndRetry(cmd, *starter.Cfg, *starter.Node, starter.ExistingAddons, err)
 		if err != nil {
@@ -515,7 +519,7 @@ func startWithDriver(cmd *cobra.Command, starter node.Starter, existing *config.
 		}
 
 		out.Ln("") // extra newline for clarity on the command line
-		if err := node.Add(starter.Cfg, n, viper.GetBool(deleteOnFailure)); err != nil {
+		if err := node.Add(starter.Cfg, n, options); err != nil {
 			return nil, errors.Wrap(err, "adding node")
 		}
 	}
@@ -648,8 +652,13 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 		// Re-generate the cluster config, just in case the failure was related to an old config format
 		cc := updateExistingConfigFromFlags(cmd, &existing)
 		var configInfo *kubeconfig.Settings
+
+		options := commandOptions()
+		provisionOptions := commandOptions()
+		provisionOptions.DeleteOnFailure = false
+
 		for _, n := range cc.Nodes {
-			r, p, m, h, err := node.Provision(&cc, &n, false)
+			r, p, m, h, err := node.Provision(&cc, &n, provisionOptions)
 			s := node.Starter{
 				Runner:         r,
 				PreExists:      p,
@@ -664,7 +673,7 @@ func maybeDeleteAndRetry(cmd *cobra.Command, existing config.ClusterConfig, n co
 				return nil, err
 			}
 
-			k, err := node.Start(s)
+			k, err := node.Start(s, options)
 			if n.ControlPlane {
 				configInfo = k
 			}
@@ -706,13 +715,16 @@ func kubectlVersion(path string) (string, error) {
 
 // returns (current_driver, suggested_drivers, "true, if the driver is set by command line arg or in the config file")
 func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState, bool) {
+	options := commandOptions()
+
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 	register.Reg.SetStep(register.SelectingDriver)
+
 	// By default, the driver is whatever we used last time
 	if existing != nil {
 		old := hostDriver(existing)
-		ds := driver.Status(old)
+		ds := driver.Status(old, options)
 		out.Step(style.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds, nil, true
 	}
@@ -729,7 +741,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 			`
 			out.WarningT(warning, out.V{"driver": d, "vmd": vmd})
 		}
-		ds := driver.Status(d)
+		ds := driver.Status(d, options)
 		if ds.Name == "" {
 			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
@@ -739,7 +751,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 
 	// Fallback to old driver parameter
 	if d := viper.GetString("vm-driver"); d != "" {
-		ds := driver.Status(viper.GetString("vm-driver"))
+		ds := driver.Status(viper.GetString("vm-driver"), options)
 		if ds.Name == "" {
 			exit.Message(reason.DrvUnsupportedOS, "The driver '{{.driver}}' is not supported on {{.os}}/{{.arch}}", out.V{"driver": d, "os": runtime.GOOS, "arch": runtime.GOARCH})
 		}
@@ -747,7 +759,7 @@ func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []regis
 		return ds, nil, true
 	}
 
-	choices := driver.Choices(viper.GetBool("vm"))
+	choices := driver.Choices(viper.GetBool("vm"), options)
 	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
 		out.Step(style.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
