@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"path"
+	"slices"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -261,7 +262,7 @@ func kubeletConfigOpts(extraOpts config.ExtraOptionSlice) map[string]string {
 		if eo.Component != Kubelet {
 			continue
 		}
-		if config.ContainsParam(kubeletConfigParams, eo.Key) {
+		if slices.Contains(kubeletConfigParams, eo.Key) {
 			args[eo.Key] = eo.Value
 		}
 	}
