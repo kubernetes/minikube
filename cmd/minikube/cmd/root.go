@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -98,14 +99,7 @@ var RootCmd = &cobra.Command{
 func Execute() {
 	// Check whether this is a windows binary (.exe) running inisde WSL.
 	if runtime.GOOS == "windows" && detect.IsMicrosoftWSL() {
-		var found = false
-		for _, a := range os.Args {
-			if a == "--force" {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(os.Args, "--force") {
 			exit.Message(reason.WrongBinaryWSL, "You are trying to run a windows .exe binary inside WSL. For better integration please use a Linux binary instead (Download at https://minikube.sigs.k8s.io/docs/start/.). Otherwise if you still want to do this, you can do it using --force")
 		}
 	}
