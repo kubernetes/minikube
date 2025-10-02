@@ -87,18 +87,23 @@ func VerifyNoK8sDownloadCache(ctx context.Context, t *testing.T, profile string)
 
 	cachePath := filepath.Join(localpath.MiniPath(), "cache", "linux", runtime.GOARCH, "v0.0.0")
 
-	// Printing Cache files for debugging purposes
+	// Check if the cache directory exists at all
 	t.Logf("Checking cache directory: %s", cachePath)
-	if files, err := filepath.Glob(filepath.Join(cachePath, "*")); err == nil && len(files) > 0 {
-		t.Logf("Files found in cache after --no-kubernetes start:")
-		for _, file := range files {
-			t.Logf("  - %s", file)
+	if _, err := os.Stat(cachePath); err == nil {
+		// Directory exists - let's see what's in it for debugging
+		if files, err := filepath.Glob(filepath.Join(cachePath, "*")); err == nil && len(files) > 0 {
+			t.Logf("Files found in cache directory:")
+			for _, file := range files {
+				t.Logf("  - %s", file)
+			}
+		} else {
+			t.Logf("Cache directory exists but is empty")
 		}
-		t.Errorf("Cache directory %s should not contain files when using --no-kubernetes, but found %d files", cachePath, len(files))
-	} else if err != nil && !os.IsNotExist(err) {
-		t.Errorf("Error checking cache directory %s: %v", cachePath, err)
+		t.Errorf("Cache directory %s should not exist when using --no-kubernetes", cachePath)
+	} else if os.IsNotExist(err) {
+		t.Logf("No cache directory found (as expected)")
 	} else {
-		t.Logf("No files found in cache directory after --no-kubernetes start (as expected)")
+		t.Errorf("Error checking cache directory %s: %v", cachePath, err)
 	}
 }
 
