@@ -535,7 +535,7 @@ func validateVfkitNetwork(n string) string {
 		// always available
 	case "vmnet-shared":
 		// "vment-shared" provides access between machines, with lower performance compared to "nat".
-		if err := vmnet.ValidateHelper(); err != nil {
+		if err := vmnet.ValidateHelper(commandOptions()); err != nil {
 			vmnetErr := err.(*vmnet.Error)
 			exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
 		}

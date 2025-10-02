@@ -56,7 +56,7 @@ func Set(name string, value string) error {
 		return errors.Wrapf(err, "find settings for %q value of %q", name, value)
 	}
 	// Validate the new value
-	err = run(name, value, s.validations)
+	err = invoke(name, value, s.validations)
 	if err != nil {
 		return errors.Wrapf(err, "run validations for %q with value of %q", name, value)
 	}
@@ -71,8 +71,8 @@ func Set(name string, value string) error {
 		return errors.Wrapf(err, "set")
 	}
 
-	// Run any callbacks for this property
-	err = run(name, value, s.callbacks)
+	// Invoke any callbacks for this property
+	err = invoke(name, value, s.callbacks)
 	if err != nil {
 		return errors.Wrapf(err, "run callbacks for %q with value of %q", name, value)
 	}

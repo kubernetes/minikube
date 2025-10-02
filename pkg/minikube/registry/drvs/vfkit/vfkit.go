@@ -28,6 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/uuid"
 
+	"k8s.io/minikube/pkg/drivers/common"
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"
 	"k8s.io/minikube/pkg/drivers/common/vmnet"
 	"k8s.io/minikube/pkg/drivers/vfkit"
@@ -36,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 const (
@@ -59,7 +61,7 @@ func init() {
 	}
 }
 
-func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cfg config.ClusterConfig, n config.Node, options run.Options) (interface{}, error) {
 	var mac string
 	var helper *vmnet.Helper
 
@@ -100,6 +102,9 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 			StorePath:   storePath,
 			SSHUser:     "docker",
 		},
+		CommonDriver: &common.CommonDriver{
+			Options: options,
+		},
 		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,
 		Memory:         cfg.Memory,
@@ -112,7 +117,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	}, nil
 }
 
-func status() registry.State {
+func status(_ run.Options) registry.State {
 	_, err := exec.LookPath("vfkit")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install vfkit'", Doc: docURL}

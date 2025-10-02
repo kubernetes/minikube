@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/reason"
+	"k8s.io/minikube/pkg/minikube/run"
 )
 
 var (
@@ -90,7 +91,7 @@ var statusCmd = &cobra.Command{
 		}
 
 		out.SetJSON(output == "json")
-		go notify.MaybePrintUpdateTextFromGithub()
+		go notify.MaybePrintUpdateTextFromGithub(run.Options{})
 
 		cname := ClusterFlagValue()
 		api, cc := mustload.Partial(cname)
