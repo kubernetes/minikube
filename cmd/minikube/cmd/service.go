@@ -208,7 +208,7 @@ func startKicServiceTunnel(services service.URLs, configName, driverName string)
 			exit.Error(reason.DrvPortForward, "error getting ssh port", err)
 		}
 		sshPort := strconv.Itoa(port)
-		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
+		sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_ed25519")
 
 		serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1(), serviceURLMode)
 		urls, err := serviceTunnel.Start(svc.Name, namespace)
