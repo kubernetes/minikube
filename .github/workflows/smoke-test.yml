@@ -114,7 +114,7 @@ jobs:
           brew install vfkit
           curl -fsSL https://github.com/minikube-machine/vmnet-helper/releases/latest/download/install.sh | sudo VMNET_INTERACTIVE=0 bash
       - name: Install qemu and socket_vmnet (macos)
-        if: matrix.os == 'macos-13' && matrix.driver == 'qemu'
+        if: contains(matrix.os, 'macos') && matrix.driver == 'qemu'
         run: |
           brew install qemu socket_vmnet
           HOMEBREW=$(which brew) && sudo ${HOMEBREW} services start socket_vmnet
