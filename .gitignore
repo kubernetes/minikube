@@ -27,6 +27,7 @@ _testmain.go
 *.test
 *.prof
 *.pprof
+*.log
 
 /deploy/iso/minikube-iso/board/minikube/x86_64/rootfs-overlay/usr/bin/auto-pause
 /deploy/iso/minikube-iso/board/minikube/aarch64/rootfs-overlay/usr/bin/auto-pause
