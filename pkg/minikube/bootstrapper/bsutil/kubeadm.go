@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -76,13 +77,25 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "cni")
 	}
 
-	podCIDR := cnm.CIDR()
-	overrideCIDR := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm)
-	if overrideCIDR != "" {
-		podCIDR = overrideCIDR
-	}
-	klog.Infof("Using pod CIDR: %s", podCIDR)
-
+        // Build podSubnet(s) based on IP family
+        family := strings.ToLower(k8s.IPFamily)
+        v4Pod := cnm.CIDR()
+        if o := k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm); o != "" {
+                v4Pod = o
+        }
+        var podSubnets []string
+        if family != "ipv6" && v4Pod != "" {
+                podSubnets = append(podSubnets, v4Pod)
+        }
+        if family != "ipv4" && k8s.PodCIDRv6 != "" {
+                podSubnets = append(podSubnets, k8s.PodCIDRv6)
+        }
+        podCIDR := strings.Join(podSubnets, ",")
+        if podCIDR != "" {
+                klog.Infof("Using pod subnet(s): %s", podCIDR)
+        } else {
+                klog.Infof("No pod subnet set via kubeadm (CNI will configure)")
+        }
 	// ref: https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/#kubelet-config-k8s-io-v1beta1-KubeletConfiguration
 	kubeletConfigOpts := kubeletConfigOpts(k8s.ExtraOptions)
 	// container-runtime-endpoint kubelet flag was deprecated but corresponding containerRuntimeEndpoint kubelet config field is "required" but supported only from k8s v1.27
@@ -107,11 +120,79 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		kubeletConfigOpts["runtimeRequestTimeout"] = "15m"
 	}
 
+        // Build serviceSubnet(s) per IP family
+        // v4 default comes from constants; v6 must be provided via ServiceCIDRv6
+        v4Svc := constants.DefaultServiceCIDR
+        if k8s.ServiceCIDR != "" {
+                v4Svc = k8s.ServiceCIDR
+        }
+        var svcSubnets []string
+        if family != "ipv6" && v4Svc != "" {
+                svcSubnets = append(svcSubnets, v4Svc)
+        }
+        if family != "ipv4" && k8s.ServiceCIDRv6 != "" {
+                svcSubnets = append(svcSubnets, k8s.ServiceCIDRv6)
+        }
+        serviceCIDR := strings.Join(svcSubnets, ",")
+ 
+        // Choose advertise address & nodeIP according to family
+        advertiseAddress := n.IP
+        nodeIP := n.IP
+        if family == "ipv6" && n.IPv6 != "" {
+                advertiseAddress = n.IPv6
+                nodeIP = n.IPv6
+        } else if family == "dual" {
+                // let kubelet auto-detect both; don’t force a single family
+                nodeIP = ""
+        }
+
+	cpEndpoint := fmt.Sprintf("%s:%d", constants.ControlPlaneAlias, nodePort)
+	if family == "ipv6" && advertiseAddress != "" {
+        	cpEndpoint = fmt.Sprintf("[%s]:%d", advertiseAddress, nodePort)
+	}
+
+if family == "ipv6" {
+    ensured := false
+    for i := range componentOpts {
+        // match "apiServer" regardless of accidental casing
+        if strings.EqualFold(componentOpts[i].Component, "apiServer") {
+            if componentOpts[i].ExtraArgs == nil {
+                componentOpts[i].ExtraArgs = map[string]string{}
+            }
+            if _, ok := componentOpts[i].ExtraArgs["bind-address"]; !ok {
+                componentOpts[i].ExtraArgs["bind-address"] = "::"
+            }
+            // normalize the component name so the template emits 'apiServer'
+            componentOpts[i].Component = "apiServer"
+            ensured = true
+            break
+        }
+    }
+    if !ensured {
+        componentOpts = append(componentOpts, componentOptions{
+            Component: "apiServer",
+            ExtraArgs: map[string]string{
+                "bind-address": "::",
+            },
+        })
+    }
+}
+
+apiServerCertSANs := []string{constants.ControlPlaneAlias}
+switch strings.ToLower(k8s.IPFamily) {
+case "ipv6":
+    apiServerCertSANs = append(apiServerCertSANs, "::1")
+case "dual":
+    apiServerCertSANs = append(apiServerCertSANs, "127.0.0.1", "::1")
+default: // ipv4
+    apiServerCertSANs = append(apiServerCertSANs, "127.0.0.1")
+}
 	opts := struct {
 		CertDir                    string
 		ServiceCIDR                string
 		PodSubnet                  string
 		AdvertiseAddress           string
+		APIServerCertSANs          []string
 		APIServerPort              int
 		KubernetesVersion          string
 		EtcdDataDir                string
@@ -132,11 +213,14 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ResolvConfSearchRegression bool
 		KubeletConfigOpts          map[string]string
 		PrependCriSocketUnix       bool
+		ControlPlaneEndpoint       string
+		KubeProxyMetricsBindAddress string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
-		ServiceCIDR:       constants.DefaultServiceCIDR,
-		PodSubnet:         podCIDR,
-		AdvertiseAddress:  n.IP,
+		ServiceCIDR:       serviceCIDR,
+                PodSubnet:         podCIDR,
+                AdvertiseAddress:  advertiseAddress,
+		APIServerCertSANs: apiServerCertSANs,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
@@ -149,7 +233,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		ComponentOptions:           componentOpts,
 		FeatureArgs:                kubeadmFeatureArgs,
 		DNSDomain:                  k8s.DNSDomain,
-		NodeIP:                     n.IP,
+		NodeIP:                     nodeIP,
 		CgroupDriver:               cgroupDriver,
 		ClientCAFile:               path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
 		StaticPodPath:              vmpath.GuestManifestsDir,
@@ -157,10 +241,15 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		KubeProxyOptions:           createKubeProxyOptions(k8s.ExtraOptions),
 		ResolvConfSearchRegression: HasResolvConfSearchRegression(k8s.KubernetesVersion),
 		KubeletConfigOpts:          kubeletConfigOpts,
-	}
-
-	if k8s.ServiceCIDR != "" {
-		opts.ServiceCIDR = k8s.ServiceCIDR
+		ControlPlaneEndpoint:       cpEndpoint,
+		KubeProxyMetricsBindAddress: func() string {
+                  switch strings.ToLower(k8s.IPFamily) {
+                  case "ipv6":
+                          return "[::]:10249"
+                  default: // ipv4 or dual
+                          return "0.0.0.0:10249"
+                  }
+          }(),
 	}
 
 	configTmpl := ktmpl.V1Beta1

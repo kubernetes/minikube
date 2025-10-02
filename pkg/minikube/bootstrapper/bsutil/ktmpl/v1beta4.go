@@ -24,7 +24,7 @@ var V1Beta4 = template.Must(template.New("configTmpl-v1beta4").Funcs(template.Fu
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta4
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: {{.AdvertiseAddress}}
+  advertiseAddress: "{{.AdvertiseAddress}}"
   bindPort: {{.APIServerPort}}
 bootstrapTokens:
   - groups:
@@ -44,12 +44,24 @@ nodeRegistration:
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 {{ if .ImageRepository}}imageRepository: {{.ImageRepository}}
-{{end}}{{range .ComponentOptions}}{{.Component}}:
-{{- range $k, $v := .Pairs }}
+{{end}}{{range .ComponentOptions }}
+  {{- $co := . }}
+{{$co.Component}}:
+{{- if eq $co.Component "apiServer" }}
+  {{- if $.APIServerCertSANs }}
+  certSANs:
+  {{- range $.APIServerCertSANs }}
+    - "{{ . }}"
+  {{- end }}
+  {{- end }}
+{{- end }}
+{{- range $k, $v := $co.Pairs }}
+  {{- if not (and (eq $co.Component "apiServer") (eq $k "certSANs")) }}
   {{$k}}: {{$v}}
+  {{- end }}
 {{- end}}
   extraArgs:
-{{- range $key, $val := .ExtraArgs }}
+{{- range $key, $val := $co.ExtraArgs }}
     - name: "{{$key}}"
       value: "{{$val}}"
 {{- end}}
@@ -59,7 +71,7 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: mk
-controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
+controlPlaneEndpoint: "{{.ControlPlaneEndpoint}}"
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
@@ -73,7 +85,7 @@ kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   podSubnet: "{{.PodSubnet }}"
-  serviceSubnet: {{.ServiceCIDR}}
+  serviceSubnet: "{{.ServiceCIDR}}"
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
@@ -98,7 +110,7 @@ resolvConf: /etc/kubelet-resolv.conf{{end}}
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 clusterCIDR: "{{.PodSubnet }}"
-metricsBindAddress: 0.0.0.0:10249
+metricsBindAddress: "{{.KubeProxyMetricsBindAddress}}"
 conntrack:
   maxPerCore: 0
 # Skip setting "net.netfilter.nf_conntrack_tcp_timeout_established"
