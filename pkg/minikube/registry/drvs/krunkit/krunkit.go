@@ -98,9 +98,5 @@ func status() registry.State {
 	if _, err := exec.LookPath("krunkit"); err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew tap slp/krunkit && brew install krunkit'", Doc: docURL}
 	}
-	if err := vmnet.ValidateHelper(); err != nil {
-		vmnetErr := err.(*vmnet.Error)
-		return registry.State{Error: vmnetErr.Err, Fix: "Install and configure vment-helper", Doc: docURL}
-	}
 	return registry.State{Installed: true, Healthy: true, Running: true}
 }

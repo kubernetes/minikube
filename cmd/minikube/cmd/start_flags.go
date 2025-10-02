@@ -490,6 +490,8 @@ func getNetwork(driverName string) string {
 		return validateQemuNetwork(n)
 	} else if driver.IsVFKit(driverName) {
 		return validateVfkitNetwork(n)
+	} else if driver.IsKrunkit(driverName) {
+		return validateVmnetNetwork(n)
 	}
 	return n
 }
@@ -535,15 +537,23 @@ func validateVfkitNetwork(n string) string {
 		// always available
 	case "vmnet-shared":
 		// "vment-shared" provides access between machines, with lower performance compared to "nat".
-		if err := vmnet.ValidateHelper(); err != nil {
-			vmnetErr := err.(*vmnet.Error)
-			exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}", out.V{"network": n, "reason": err})
-		}
+		n = validateVmnetNetwork(n)
 	case "":
 		// Default to nat since it is always available and provides the best performance.
 		n = "nat"
 	default:
 		exit.Message(reason.Usage, "--network with vfkit must be 'nat' or 'vmnet-shared'")
+	}
+	return n
+}
+
+func validateVmnetNetwork(n string) string {
+	if !viper.GetBool(downloadOnly) {
+		if err := vmnet.ValidateHelper(); err != nil {
+			vmnetErr := err.(*vmnet.Error)
+			exit.Message(vmnetErr.Kind, "failed to validate {{.network}} network: {{.reason}}",
+				out.V{"network": n, "reason": err})
+		}
 	}
 	return n
 }
