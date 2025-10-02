@@ -8,15 +8,15 @@ ii  apt                             2.4.14                                  amd6
 ii  base-files                      12ubuntu4.7                             amd64        Debian base system miscellaneous files
 ii  base-passwd                     3.5.52build1                            amd64        Debian base system master password and group files
 ii  bash                            5.1-6ubuntu1.1                          amd64        GNU Bourne Again SHell
-ii  bind9-dnsutils                  1:9.18.30-0ubuntu0.22.04.2              amd64        Clients provided with BIND 9
-ii  bind9-host                      1:9.18.30-0ubuntu0.22.04.2              amd64        DNS Lookup Utility
-ii  bind9-libs:amd64                1:9.18.30-0ubuntu0.22.04.2              amd64        Shared Libraries used by BIND 9
+ii  bind9-dnsutils                  1:9.18.39-0ubuntu0.22.04.1              amd64        Clients provided with BIND 9
+ii  bind9-host                      1:9.18.39-0ubuntu0.22.04.1              amd64        DNS Lookup Utility
+ii  bind9-libs:amd64                1:9.18.39-0ubuntu0.22.04.1              amd64        Shared Libraries used by BIND 9
 ii  bsdutils                        1:2.37.2-4ubuntu3.4                     amd64        basic utilities from 4.4BSD-Lite
 ii  ca-certificates                 20240203~22.04.1                        all          Common CA certificates
 ii  catatonit                       0.1.7-1                                 amd64        init process for containers
 ii  conmon                          100:2.1.2~0                             amd64        OCI container runtime monitor
 ii  conntrack                       1:1.4.6-2build2                         amd64        Program to modify the conntrack tables
-ii  containerd.io                   1.7.27-1                                amd64        An open and reliable container runtime
+ii  containerd.io                   1.7.28-0~ubuntu.22.04~jammy             amd64        An open and reliable container runtime
 ii  containernetworking-plugins     0.9.1+ds1-1ubuntu0.1                    amd64        standard networking plugins - binaries
 ii  coreutils                       8.32-4.1ubuntu1.2                       amd64        GNU core utilities
 ii  cri-o                           1.24.6~0                                amd64        OCI-based implementation of Kubernetes Container Runtime Interface.
@@ -24,14 +24,14 @@ ii  cri-o-runc                      1.1.12~0                                amd6
 ii  cri-tools                       1.25.0~0                                amd64        A command line tool used for creating OCI images.
 ii  criu                            4.1.1-3                                 amd64        checkpoint and restore in userspace
 ii  crun                            100:1.2-2                               amd64        OCI runtime written in C
-ii  curl                            7.81.0-1ubuntu1.20                      amd64        command line tool for transferring data with URL syntax
+ii  curl                            7.81.0-1ubuntu1.21                      amd64        command line tool for transferring data with URL syntax
 ii  dash                            0.5.11+git20210903+057cd650a4ed-3build1 amd64        POSIX-compliant shell
 ii  debconf                         1.5.79ubuntu1                           all          Debian configuration management system
 ii  debianutils                     5.5-1ubuntu2                            amd64        Miscellaneous utilities specific to Debian
 ii  diffutils                       1:3.8-0ubuntu2                          amd64        File comparison utilities
 ii  dirmngr                         2.2.27-3ubuntu2.4                       amd64        GNU privacy guard - network certificate management service
-ii  dnsutils                        1:9.18.30-0ubuntu0.22.04.2              all          Transitional package for bind9-dnsutils
-ii  docker-buildx-plugin            0.27.0-1~ubuntu.22.04~jammy             amd64        Docker Buildx cli plugin.
+ii  dnsutils                        1:9.18.39-0ubuntu0.22.04.1              all          Transitional package for bind9-dnsutils
+ii  docker-buildx-plugin            0.28.0-0~ubuntu.22.04~jammy             amd64        Docker Buildx plugin extends build capabilities with BuildKit.
 ii  docker-ce                       5:28.4.0-1~ubuntu.22.04~jammy           amd64        Docker: the open-source application container engine
 ii  docker-ce-cli                   5:28.4.0-1~ubuntu.22.04~jammy           amd64        Docker CLI: the open-source application container engine
 ii  dpkg                            1.21.1ubuntu2.3                         amd64        Debian package management system
@@ -83,7 +83,7 @@ ii  libcbor0.8:amd64                0.8.0-2ubuntu1                          amd6
 ii  libcom-err2:amd64               1.46.5-2ubuntu1.2                       amd64        common error description library
 ii  libcrypt1:amd64                 1:4.4.27-1                              amd64        libcrypt shared library
 ii  libcryptsetup12:amd64           2:2.4.3-1ubuntu1.3                      amd64        disk encryption support - shared library
-ii  libcurl4:amd64                  7.81.0-1ubuntu1.20                      amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
+ii  libcurl4:amd64                  7.81.0-1ubuntu1.21                      amd64        easy-to-use client-side URL transfer library (OpenSSL flavour)
 ii  libdb5.3:amd64                  5.3.28+dfsg1-0.8ubuntu3                 amd64        Berkeley v5.3 Database Libraries [runtime]
 ii  libdebconfclient0:amd64         0.261ubuntu1                            amd64        Debian Configuration Management System (C-implementation library)
 ii  libdevmapper1.02.1:amd64        2:1.02.175-2.1ubuntu5                   amd64        Linux Kernel Device Mapper userspace library
@@ -179,7 +179,7 @@ ii  libunistring2:amd64             1.0-1                                   amd6
 ii  libuuid1:amd64                  2.37.2-4ubuntu3.4                       amd64        Universally Unique ID library
 ii  libuv1:amd64                    1.43.0-1ubuntu0.1                       amd64        asynchronous event notification library - runtime library
 ii  libwrap0:amd64                  7.6.q-31build2                          amd64        Wietse Venema's TCP wrappers library
-ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.8                  amd64        GNOME XML library
+ii  libxml2:amd64                   2.9.13+dfsg-1ubuntu0.9                  amd64        GNOME XML library
 ii  libxtables12:amd64              1.8.7-1ubuntu5.2                        amd64        netfilter xtables library
 ii  libxxhash0:amd64                0.8.1-1                                 amd64        shared library for xxhash
 ii  libyajl2:amd64                  2.1.0-3ubuntu0.22.04.1                  amd64        Yet Another JSON Library
@@ -201,7 +201,7 @@ ii  nvidia-container-toolkit-base   1.17.8-1                                amd6
 ii  openssh-client                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) client, for secure access to remote machines
 ii  openssh-server                  1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) server, for secure access from remote machines
 ii  openssh-sftp-server             1:8.9p1-3ubuntu0.13                     amd64        secure shell (SSH) sftp server module, for SFTP access from remote machines
-ii  openssl                         3.0.2-0ubuntu1.19                       amd64        Secure Sockets Layer toolkit - cryptographic utility
+ii  openssl                         3.0.2-0ubuntu1.20                       amd64        Secure Sockets Layer toolkit - cryptographic utility
 ii  passwd                          1:4.8.1-2ubuntu2.2                      amd64        change and administer password and group data
 ii  perl-base                       5.34.0-3ubuntu1.5                       amd64        minimal Perl system
 ii  pigz                            2.6-1                                   amd64        Parallel Implementation of GZip
