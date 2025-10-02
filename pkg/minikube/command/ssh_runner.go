@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"

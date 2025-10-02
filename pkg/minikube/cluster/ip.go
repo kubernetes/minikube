@@ -24,8 +24,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
+	"k8s.io/minikube/pkg/libmachine"
+	"k8s.io/minikube/pkg/libmachine/host"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/minikube/pkg/drivers/kic/oci"

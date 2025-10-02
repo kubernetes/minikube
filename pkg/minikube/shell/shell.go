@@ -23,7 +23,7 @@ import (
 	"runtime"
 	"text/template"
 
-	"github.com/docker/machine/libmachine/shell"
+	"k8s.io/minikube/pkg/libmachine/shell"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )

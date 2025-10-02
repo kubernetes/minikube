@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/drivers"
 	"github.com/google/uuid"
 
 	"k8s.io/minikube/pkg/drivers/common/virtiofs"

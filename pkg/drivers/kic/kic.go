@@ -27,9 +27,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/drivers"
+	"k8s.io/minikube/pkg/libmachine/ssh"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
 
@@ -331,7 +331,7 @@ func (d *Driver) GetSSHKeyPath() string {
 
 // GetURL returns a Docker URL inside this host
 // e.g. tcp://1.2.3.4:2376
-// more info https://github.com/docker/machine/blob/b170508bf44c3405e079e26d5fdffe35a64c6972/libmachine/provision/utils.go#L159_L175
+// more info https://github.com/minikube-machine/machine/blob/c31c20ac79574d9c9fa7803e1ff56d584ed256b1/libmachine/provision/utils.go#L159_L175
 func (d *Driver) GetURL() (string, error) {
 	ip, err := d.GetIP()
 	if err != nil {

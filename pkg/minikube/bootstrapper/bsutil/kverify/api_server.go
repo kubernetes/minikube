@@ -32,7 +32,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/version"
