@@ -40,6 +40,8 @@ func init() {
 		Status:   status,
 		Default:  false, // no isolation
 		Priority: registry.Discouraged,
+		// None driver requires sudo
+		NeedsSudo: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
