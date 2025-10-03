@@ -46,7 +46,7 @@ date: 2018-01-02
   minikube delete
   ```
   This will make sure minikube does any required setup or addon installs now that the nvidia runtime is available.
-  
+
 - Start minikube with one of:
   - The NVIDIA Container Toolkit
     ```shell
@@ -85,10 +85,6 @@ to expose GPUs with `--driver=kvm`. Please don't mix these instructions.
 
 When using NVIDIA GPUs with the kvm driver, we passthrough spare GPUs on the
 host to the minikube VM. Doing so has a few prerequisites:
-
-- You must install the [kvm driver]({{< ref "/docs/drivers/kvm2" >}}) If you already had
-  this installed make sure that you fetch the latest
-  `docker-machine-driver-kvm` binary that has GPU support.
 
 - Your CPU must support IOMMU. Different vendors have different names for this
   technology. Intel calls it Intel VT-d. AMD calls it AMD-Vi. Your motherboard
@@ -154,7 +150,7 @@ drivers supported by minikube for macOS doesn't support GPU passthrough:
 - [moby/hyperkit#159](https://github.com/moby/hyperkit/issues/159)
 - [VirtualBox docs](https://www.virtualbox.org/manual/ch09.html#pcipassthrough)
 
-Also: 
+Also:
 
 - For quite a while, all Mac hardware (both laptops and desktops) have come with
   Intel or AMD GPUs (and not with NVIDIA GPUs). Recently, Apple added [support
