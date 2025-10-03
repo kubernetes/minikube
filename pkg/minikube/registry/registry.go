@@ -110,6 +110,9 @@ type DriverDef struct {
 
 	// Priority returns the prioritization for selecting a driver by default.
 	Priority Priority
+
+	// New field: whether this driver requires sudo permissions
+	NeedsSudo bool
 }
 
 // Empty returns true if the driver is nil

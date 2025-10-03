@@ -81,6 +81,8 @@ type DriverState struct {
 	Rejection string
 	// Suggestion is how the user could improve health
 	Suggestion string
+	// New field: whether this driver requires sudo permissions
+	NeedsSudo bool
 }
 
 func (d DriverState) String() string {
@@ -137,7 +139,7 @@ func Available(vm bool) []DriverState {
 		if !s.Healthy {
 			priority = Unhealthy
 		}
-		sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s})
+		sts = append(sts, DriverState{Name: d.Name, Default: d.Default, Preference: preference, Priority: priority, State: s, NeedsSudo: d.NeedsSudo})
 	}
 
 	// Descending priority for predictability

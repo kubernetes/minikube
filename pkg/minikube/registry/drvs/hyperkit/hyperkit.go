@@ -54,6 +54,8 @@ func init() {
 		Status:   status,
 		Default:  true,
 		Priority: registry.Deprecated,
+		// Hyperkit driver requires sudo
+		NeedsSudo: true,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
