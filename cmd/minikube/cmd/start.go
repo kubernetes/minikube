@@ -308,6 +308,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		klog.Errorf("Error autoSetOptions : %v", err)
 	}
 
+	virtualBoxMacOS13PlusWarning(driverName)
 	warnDriverDeprecated(driverName)
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
@@ -399,6 +400,18 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 		Cfg:            &cc,
 		Node:           &n,
 	}, nil
+}
+
+func virtualBoxMacOS13PlusWarning(driverName string) {
+	if !driver.IsVirtualBox(driverName) || !detect.MacOS13Plus() {
+		return
+	}
+	out.WarningT(`Due to changes in macOS 13+ minikube doesn't currently support VirtualBox. You can use alternative drivers such as 'vfkit', 'qemu', or 'docker'.
+    https://minikube.sigs.k8s.io/docs/drivers/vfkit/
+    https://minikube.sigs.k8s.io/docs/drivers/qemu/
+    https://minikube.sigs.k8s.io/docs/drivers/docker/
+    For more details on the issue see: https://github.com/kubernetes/minikube/issues/15274
+`)
 }
 
 // warnDriverDeprecated prints a small deprecation warning if the selected driver is deprecated
